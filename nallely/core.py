@@ -11,7 +11,7 @@ from typing import Any, Counter, Type
 
 import mido
 
-from .modules import IntExt, Module, ModulePadsOrKeys, ModuleParameter, ModuleState
+from .modules import Int, Module, ModulePadsOrKeys, ModuleParameter, DeviceState, Scaler
 
 
 running_virtual_devices = []
@@ -75,7 +75,7 @@ class Parameter:
                     lambda value, ctx: device.set_parameter(self.name, value),
                     stream=self.stream,
                 )
-        elif isinstance(value, IntExt):
+        elif isinstance(value, Int):
             if self.consummer:
                 value.device.bind(lambda value, ctx: device.consume_output(value, ctx), stream=self.stream, type="control_change", value=value.parameter.cc)  # type: ignore
             else:
@@ -88,12 +88,30 @@ class Parameter:
                         ThreadContext({**ctx, "kind": value.parameter.name}),
                     )
                 )
+        elif isinstance(value, Scaler):
+            scaler = value
+            if self.consummer:
+                scaler.device.bind(
+                    lambda value, ctx: device.consume_output(
+                        scaler.convert(value), ctx
+                    ),
+                    type="control_change",
+                    value=value.data.parameter.cc,
+                )
+            else:
+                scaler.device.bind(
+                    lambda value, ctx: device.set_parameter(
+                        self.name, scaler.convert(value)
+                    ),
+                    type="control_change",
+                    value=value.data.parameter.cc,
+                )
 
 
 class VirtualDevice(threading.Thread):
     def __init__(self, target_cycle_time: float = 0.005):
         super().__init__(daemon=True)
-        self.device = self  # to be polymorphic with IntExt
+        self.device = self  # to be polymorphic with Int
         self.callbacks = []
         self.stream_callbacks = []
         self.input_queue = Queue(maxsize=200)
@@ -270,7 +288,7 @@ class MidiDevice:
             list
         )
         self.output_callbacks = []  # callbacks that are classed when sending a value
-        self.modules = ModuleState(self, self.modules_descr)
+        self.modules = DeviceState(self, self.modules_descr)
         self.listening = False
         if autoconnect:
             try:

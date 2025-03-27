@@ -2,14 +2,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from inspect import isfunction
 import math
-from traceback import print_exc
 from typing import Any, Literal, Type
 from typing import TYPE_CHECKING
-import mido
-
-
-# import threading
-# import queue
+import wrapt
 
 if TYPE_CHECKING:
     from .core import MidiDevice
@@ -18,64 +13,49 @@ if TYPE_CHECKING:
 NOT_INIT = "uninitialized"
 
 
-# class ModuleWorker(threading.Thread):
-#     def __init__(self):
-#         super().__init__(daemon=True)
-#         self.task_queue = queue.Queue()
-#         self.running = True
-#         self.start()
+class Int(wrapt.ObjectProxy):
+    def __init__(self, obj, device, parameter):
+        super().__init__(obj)
+        object.__setattr__(self, "device", device)
+        object.__setattr__(self, "parameter", parameter)
 
-#     def run(self):
-#         while self.running:
-#             try:
-#                 task, args = self.task_queue.get(timeout=1)
-#                 task(*args)
-#             except queue.Empty:
-#                 continue
-#             except:
-#                 print_exc()
+    def update(self, value):
+        self.__wrapped__ = value
 
-#     def submit_task(self, task, *args):
-#         self.task_queue.put((task, args))
+    def scale(self, min, max, method: Literal["lin"] | Literal["log"] = "log"):
+        return Scaler(data=self, device=self.device, min=min, max=max, method=method)
 
-#     def stop(self):
-#         self.running = False
-
-# worker = ModuleWorker()
+    def __repr__(self):
+        return str(self.__wrapped__)
 
 
-def intex(val, param, device):
-    v = IntExt(val)
-    v.parameter = param
-    v.device = device
-    v.converter = lambda x: x  # type: ignore
-    return v.converter(v)
+@dataclass
+class Scaler:
+    data: Int
+    device: Any
+    min: int
+    max: int
+    method: str = "log"
 
+    def __post_init__(self):
+        if self.min == 0:
+            self.min = 1
 
-class IntExt(int):
-    def __init__(self, val):
-        super().__init__()
-        self.value = val
-        self.cv = None
-        self.parameter = None
-        self.device = None
-        self.converter = None
-
-    def __iadd__(self, other):
-        return self
-
-    def __isub__(self, other):
-        print("TODO Removing", other.parameter, self.parameter)
-        return self
-
-    def scale(self, min, max, method: Literal["lin"] | Literal["log"] = "lin"):
-        if method == "lin":
-            self.converter = lambda x: min + (x / 127) * (max - min)
-        elif method == "log":
-            self.converter = lambda x: math.exp(
-                math.log(min) + (x / 127) * (math.log(max) - math.log(min))
+    def convert(self, value):
+        if self.method == "lin":
+            convert = lambda x: min + (x / 127) * (self.max - self.min)
+        elif self.method == "log":
+            convert = lambda x: math.exp(
+                math.log(self.min)
+                + (x / 127) * (math.log(self.max) - math.log(self.min))
             )
-        return self
+        else:
+            raise Exception("Unknown conversion method")
+        res = convert(value)
+        if isinstance(value, Int):
+            value.update(res)
+            return value
+        return res
 
 
 @dataclass
@@ -86,11 +66,11 @@ class ModuleParameter:
     module_state_name: str = NOT_INIT
     stream: bool = False
 
-    def __get__(self, instance, owner=None) -> IntExt:
+    def __get__(self, instance, owner=None) -> Int:
         return instance.state[self.name]
 
     def __set__(self, instance, value, send=True, debug=False, force=False):
-        if not force and isinstance(value, IntExt):
+        if not force and isinstance(value, Int):
             to_module: MidiDevice = instance
             from_module: MidiDevice = value.device  # type: ignore
             # we create a callback on from_module that will "set" the module parameter to value of to_module
@@ -122,21 +102,41 @@ class ModuleParameter:
         if isfunction(value):
             instance.device.bind(value, type="control_change", value=self.cc)
             return
+        if isinstance(value, Scaler):
+            # scaler = value
+            # scaler.device.bind(
+            #     lambda value, ctx: setattr(instance, self.name, scaler.convert(value)),
+            #     type="control_change",
+            #     value=self.cc,
+            # )
+
+            # Currently, scaler are not supported for non virtual device parameter, but will be in the future
+            return
         if send:
             # Normal case, we set a value through the descriptor, this triggers the send of the message
             instance.device.control_change(self.cc, value, channel=self.channel)
-        instance.state[self.name] = intex(value, self, instance.device)
+        instance.state[self.name].update(value)
 
     def basic_set(self, device: MidiDevice, value):
-        getattr(device.modules, self.module_state_name).state[self.name] = intex(
-            value, self, device
-        )
+        getattr(device.modules, self.module_state_name).state[self.name].update(value)
 
+
+@dataclass
+class PadOrKey:
+    note: int = -1
 
 
 @dataclass
 class ModulePadsOrKeys:
     channel: int = 0
+    keys: dict[int, PadOrKey] = field(default_factory=dict)
+
+    def __getitem__(self, key):
+        if key in dict:
+            return self.keys[key]
+        pad = PadOrKey(key)
+        self.keys[key] = pad
+        return pad
 
     # def __post_init__(self):
     #     self.callbacks = []
@@ -186,7 +186,7 @@ class Module:
     device: MidiDevice
     meta: Any = None
     state_name: str = NOT_INIT
-    state: dict[str, int] = field(default_factory=dict)
+    state: dict[str, Int] = field(default_factory=dict)
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
@@ -204,7 +204,7 @@ class Module:
     def __post_init__(self):
         self.meta = self.__class__.meta
         for param in self.meta.parameters:
-            self.state[param.name] = intex(0, param, self.device)
+            self.state[param.name] = Int(0, parameter=param, device=self.device)
 
     def setup_function(self, control, lfo): ...
 
@@ -213,6 +213,11 @@ class Module:
             setattr(self, control.name, value) if value is not None else None
         )
 
+    # def __setattr__(self, key, value):
+    #     if key in ["device", "meta", "state_name", "state"]:
+    #         return super().__setattr__(key, value)
+    #     return self.state[key].update(value)
+
 
 @dataclass
 class KeySection(Module):
@@ -220,7 +225,7 @@ class KeySection(Module):
     notes = ModulePadsOrKeys()
 
 
-class ModuleState:
+class DeviceState:
     def __init__(self, device, modules: list[Type[Module]]):
         init_modules = {}
         for ModuleCls in modules:

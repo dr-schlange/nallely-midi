@@ -33,9 +33,10 @@ class TerminalOscilloscope(VirtualDevice):
         plt.theme("clear")
         plt.xticks([])
         plt.yticks([])
-        plt.title(
-            f"LFO {ctx.parent.waveform} speed={ctx.parent.speed} [{ctx.parent.min_value} - {ctx.parent.max_value}]"
-        )
+        # plt.title(f"value={value}")
+        # plt.title(
+        #     f"LFO {ctx.parent.waveform} speed={ctx.parent.speed} [{ctx.parent.min_value} - {ctx.parent.max_value}]"
+        # )
         plt.scatter([0, 127], marker=" ")
         # plt.plot(self.visu_data, color="green")
 
