@@ -2,8 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from inspect import isfunction
 import math
-from typing import Any, Literal, Type
-from typing import TYPE_CHECKING
+from typing import Any, Literal, Type, TYPE_CHECKING
 import wrapt
 
 if TYPE_CHECKING:

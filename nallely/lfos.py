@@ -1,8 +1,6 @@
 from decimal import Decimal
 import math
-from traceback import print_exc
 from typing import Any
-import wave
 
 from .core import Parameter, VirtualDevice, ThreadContext
 

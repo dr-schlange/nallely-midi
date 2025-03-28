@@ -1,13 +1,8 @@
-from collections import defaultdict
+from collections import defaultdict, deque
 import json
-from pyparsing import deque
 import plotext as plt
 from websockets.sync.server import serve
 from .core import Parameter, VirtualDevice, ThreadContext
-
-# from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
-# from PyQt6.QtCore import QTimer
-# import pyqtgraph as pg
 
 
 class TerminalOscilloscope(VirtualDevice):
@@ -83,8 +78,9 @@ class WebSocketSwitchDevice(VirtualDevice):
         finally:
             self.connected[device].remove(websocket)
 
-    def main(self, ctx):
+    def setup(self):
         self.server.serve_forever()
+        return super().setup()
 
     def stop(self, clear_queues=False):
         if self.running and self.server:

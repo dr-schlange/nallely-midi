@@ -1,7 +1,6 @@
 from collections import defaultdict
 from dataclasses import InitVar, dataclass, field
-from queue import Empty, Queue
-import queue
+from queue import Empty, Queue, Full
 import threading
 import time
 import traceback
@@ -151,10 +150,10 @@ class VirtualDevice(threading.Thread):
         self.input_queue.put((param, value))
 
     def run(self):
+        self.ready_event.set()
         ctx = self.setup()
         ctx.parent = self
         ctx.last_value = None
-        self.ready_event.set()
         while self.running:
             start_time = time.perf_counter()
             self.pause_event.wait()
@@ -256,7 +255,7 @@ class VirtualDevice(threading.Thread):
         if value is not None:
             try:
                 self.output_queue.put_nowait((value, ctx))
-            except queue.Full:
+            except Full:
                 pass  # Drop if full
         for callback in self.stream_callbacks:
             try:
@@ -278,7 +277,7 @@ class VirtualDevice(threading.Thread):
         def queue_callback(value, ctx):
             try:
                 other.output_queue.put_nowait((value, ctx))
-            except queue.Full:
+            except Full:
                 pass
 
         self.bind(queue_callback, stream=stream)
