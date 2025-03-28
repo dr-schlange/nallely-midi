@@ -16,10 +16,11 @@ class TerminalOscilloscope(VirtualDevice):
         self.all = defaultdict(lambda: deque([], maxlen=self.buffer_size))
         # super().__init__(target_cycle_time=1 / refresh_rate)
         super().__init__()
+        self.display = True
         self.start()
 
     def receiving(self, value, on: str, ctx: ThreadContext):
-        if not self.running:
+        if not self.running or not self.display:
             return
         colors = ["red", "blue", "green", "orange"]
         t = ctx.get("t", 0)
@@ -91,7 +92,7 @@ class WebSocketSwitchDevice(VirtualDevice):
 
     def receiving(self, value, on, ctx: ThreadContext):
         device, parameter = on.split("::")
-        print("value", value, on)
+        # print("value", value, on)
 
         for connected in self.connected[device]:
             connected.send(str((value, parameter)))

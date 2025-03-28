@@ -2,49 +2,10 @@ import math
 from decimal import Decimal
 from typing import Any
 
-from .core import Parameter, ThreadContext, VirtualDevice
+from .core import Parameter, TimeBasedDevice
 
 
-class TimeBasedModule(VirtualDevice):
-    def __init__(self, speed: int | float = 10.0, sampling_rate: int = 44100, **kwargs):
-        self._speed = speed
-        self._sampling_rate = sampling_rate
-        self.time_step = Decimal(speed) / sampling_rate
-        super().__init__(**kwargs)
-
-    @property
-    def speed(self):
-        return self._speed
-
-    @speed.setter
-    def speed(self, value):
-        self._speed = value
-        self.time_step = Decimal(value) / self._sampling_rate
-
-    @property
-    def sampling_rate(self):
-        return self._sampling_rate
-
-    @sampling_rate.setter
-    def sampling_rate(self, value):
-        self._sampling_rate = value
-        self.time_step = Decimal(value) / self._sampling_rate
-
-    def generate_value(self, t) -> Any: ...
-
-    def setup(self):
-        return ThreadContext({"t": Decimal(0), "ticks": 0})
-
-    def main(self, ctx: ThreadContext):
-        t = ctx.t
-        waveform_value = self.generate_value(t)
-        t += self.time_step
-        ctx.t = t % 1
-        ctx.ticks += 1
-        return waveform_value
-
-
-class LFO(TimeBasedModule):
+class LFO(TimeBasedDevice):
     speed_cv = Parameter("speed")
     waveform_cv = Parameter("waveform")
     min_value_cv = Parameter("min_value")

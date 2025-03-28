@@ -61,6 +61,7 @@ class Scaler:
 
 @dataclass
 class ModuleParameter:
+    type = "control_change"
     cc: int
     channel: int = 0
     name: str = NOT_INIT
@@ -70,38 +71,33 @@ class ModuleParameter:
     def __get__(self, instance, owner=None) -> Int:
         return instance.state[self.name]
 
-    def __set__(self, instance, value, send=True, debug=False, force=False):
+    def __set__(self, module, value, send=True, debug=False, force=False):
         if not force and isinstance(value, Int):
-            to_module: MidiDevice = instance
-            from_module: MidiDevice = value.device  # type: ignore
+            device_value = value
+            to_module: MidiDevice = module
+            from_module: MidiDevice = device_value.device  # type: ignore
             # we create a callback on from_module that will "set" the module parameter to value of to_module
             # finally triggering the code that sends the cc and sync the state lower in this class.
             from_module.bind(
                 lambda value, ctx: setattr(to_module, self.name, value),
-                type="control_change",
-                value=value.parameter.cc,
+                # type="control_change",
+                type=device_value.parameter.type,
+                value=device_value.parameter.cc,
+                to=module.device,
             )
             return
 
         from .core import VirtualDevice
 
         if isinstance(value, VirtualDevice):
-            if debug:
-                value.bind(
-                    lambda lfo_value, ctx: print(
-                        f"[{instance.meta.name} #{self.name}]",
-                        ctx.parent.waveform,
-                        "t =",
-                        ctx.ticks,
-                        "v =",
-                        lfo_value,
-                    )
-                )
-                return
-            value.bind(lambda value, ctx: setattr(instance, self.name, value))
+            device = value
+            device.bind(
+                lambda value, ctx: setattr(module, self.name, value), to=module.device
+            )
             return
         if isfunction(value):
-            instance.device.bind(value, type="control_change", value=self.cc)
+            fun = value
+            module.device.bind(fun, type=self.type, value=self.cc, to=module.device)
             return
         if isinstance(value, Scaler):
             # scaler = value
@@ -115,8 +111,8 @@ class ModuleParameter:
             return
         if send:
             # Normal case, we set a value through the descriptor, this triggers the send of the message
-            instance.device.control_change(self.cc, value, channel=self.channel)
-        instance.state[self.name].update(value)
+            module.device.control_change(self.cc, value, channel=self.channel)
+        module.state[self.name].update(value)
 
     def basic_set(self, device: MidiDevice, value):
         getattr(device.modules, self.module_state_name).state[self.name].update(value)
@@ -124,11 +120,13 @@ class ModuleParameter:
 
 @dataclass
 class PadOrKey:
+    type = "note"
     note: int = -1
 
 
 @dataclass
 class ModulePadsOrKeys:
+    type = "note"
     channel: int = 0
     keys: dict[int, PadOrKey] = field(default_factory=dict)
 

@@ -1,3 +1,4 @@
+from decimal import Decimal
 import threading
 import time
 import traceback
@@ -20,6 +21,7 @@ connected_devices = []
 def stop_all_virtual_devices():
     for device in list(running_virtual_devices):
         device.stop()
+    # scheduler.stop()
 
 
 def stop_all_connected_devices():
@@ -68,11 +70,13 @@ class Parameter:
                         on=self.name,
                         ctx=ThreadContext({**ctx, "param": self.name}),
                     ),
+                    to=device,
                     stream=self.stream,
                 )
             else:
                 value.device.bind(
                     lambda value, ctx: device.set_parameter(self.name, value),
+                    to=device,
                     stream=self.stream,
                 )
         elif isinstance(value, Int):
@@ -83,16 +87,20 @@ class Parameter:
                         on=self.name,
                         ctx=ThreadContext({**ctx, "param": self.name}),
                     ),
-                    stream=self.stream,
-                    type="control_change",
+                    to=device,
+                    # type="control_change",
+                    type=value.parameter.type,
                     value=value.parameter.cc,
+                    stream=self.stream,
                 )
             else:
                 value.device.bind(
                     lambda value, ctx: device.set_parameter(self.name, value),
-                    stream=self.stream,
-                    type="control_change",
+                    to=device,
+                    # type="control_change",
+                    type=value.parameter.type,
                     value=value.parameter.cc,
+                    stream=self.stream,
                 )
         elif isinstance(value, ParameterInstance):
             if self.consummer:
@@ -101,7 +109,8 @@ class Parameter:
                         getattr(value.device, value.parameter.name),
                         on=self.name,
                         ctx=ThreadContext({**ctx, "kind": value.parameter.name}),
-                    )
+                    ),
+                    to=device,
                 )
         elif isinstance(value, Scaler):
             scaler = value
@@ -110,16 +119,20 @@ class Parameter:
                     lambda value, ctx: device.receiving(
                         scaler.convert(value), on=self.name, ctx=ctx
                     ),
-                    type="control_change",
+                    # type="control_change",
+                    type=value.data.parameter.type,
                     value=value.data.parameter.cc,
+                    to=device,
                 )
             else:
                 scaler.device.bind(
                     lambda value, ctx: device.set_parameter(
                         self.name, scaler.convert(value)
                     ),
-                    type="control_change",
+                    # type="control_change",
+                    type=value.data.parameter.type,
                     value=value.data.parameter.cc,
+                    to=device,
                 )
 
 
@@ -237,7 +250,9 @@ class VirtualDevice(threading.Thread):
             self.paused = False
             self.pause_event.set()
 
-    def bind(self, callback, stream=False, append=True):
+    def bind(self, callback, to, stream=False, append=True):
+        # if to:
+        #     scheduler.connections.append((self, to))
         if stream:
             if not append:
                 self.stream_callbacks.clear()
@@ -411,7 +426,9 @@ class MidiDevice:
             )
         )
 
-    def bind(self, callback, type, value, stream=False, append=True):
+    def bind(self, callback, type, value, to, stream=False, append=True):
+        # if to:
+        #     scheduler.connections.append((self, to))
         if not append:
             self.input_callbacks[(type, value)].clear()
         self.input_callbacks[(type, value)].append(callback)
@@ -446,3 +463,73 @@ class MidiDevice:
 class DeviceNotFound(Exception):
     def __init__(self, device_name):
         super().__init__(f"Device {device_name!r} couldn't be found")
+
+
+class TimeBasedDevice(VirtualDevice):
+    def __init__(self, speed: int | float = 10.0, sampling_rate: int = 44100, **kwargs):
+        self._speed = speed
+        self._sampling_rate = sampling_rate
+        self.time_step = Decimal(speed) / sampling_rate
+        super().__init__(**kwargs)
+
+    @property
+    def speed(self):
+        return self._speed
+
+    @speed.setter
+    def speed(self, value):
+        self._speed = value
+        self.time_step = Decimal(value) / self._sampling_rate
+
+    @property
+    def sampling_rate(self):
+        return self._sampling_rate
+
+    @sampling_rate.setter
+    def sampling_rate(self, value):
+        self._sampling_rate = value
+        self.time_step = Decimal(value) / self._sampling_rate
+
+    def generate_value(self, t) -> Any: ...
+
+    def setup(self):
+        return ThreadContext({"t": Decimal(0), "ticks": 0})
+
+    def main(self, ctx: ThreadContext):
+        t = ctx.t
+        waveform_value = self.generate_value(t)
+        t += self.time_step
+        ctx.t = t % 1
+        ctx.ticks += 1
+        return waveform_value
+
+
+# class VirtualDeviceScheduler(VirtualDevice):
+#     def __init__(self, **kwargs):
+#         self.connections = []
+#         super().__init__(**kwargs)
+
+#     def main(self, ctx):
+#         for src, dest in self.connections:
+#             if isinstance(src, TimeBasedDevice):
+#                 current_hz = 1/src.time_step
+#                 current = 1/dest.target_cycle_time
+#                 new_freq = 1/(src.target_cycle_time * 2)
+#                 if new_freq != current:
+#                     print(f"src={src.target_cycle_time}, dest={dest.target_cycle_time}")
+#                     print(f"src={src}, dest={dest}")
+#                     print(f"  * refresh={current_hz}Hz")
+#                     print(f"   => This src device will produce {current_hz} data every 1s")
+#                     print(f"   => This dest device will consume {dest.target_cycle_time} data every 1s")
+#                 if new_freq < current:
+#                     print(f"   => We could lower refresh of dest to {1/(src.target_cycle_time * 2)}Hz")
+#                     print(f"   => I'm lowering it's refresh frequency from {current} to 2times the speed {new_freq}Hz")
+#                     dest.set_parameter("target_cycle_time", 1/new_freq)
+#                 elif new_freq > current:
+#                     print(f"   => We could increase refresh of dest to {1/(src.target_cycle_time * 2)}Hz")
+#                     print(f"   => I'm increasing it's refresh frequency from {current} to {new_freq}Hz")
+#                     dest.set_parameter("target_cycle_time", 1/new_freq)
+
+
+# scheduler = VirtualDeviceScheduler(target_cycle_time=1)  # Try to enforce 1Hz
+# scheduler.start()
