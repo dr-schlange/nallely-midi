@@ -1,8 +1,8 @@
-from decimal import Decimal
 import math
+from decimal import Decimal
 from typing import Any
 
-from .core import Parameter, VirtualDevice, ThreadContext
+from .core import Parameter, ThreadContext, VirtualDevice
 
 
 class TimeBasedModule(VirtualDevice):

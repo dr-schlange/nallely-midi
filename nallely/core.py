@@ -1,17 +1,16 @@
-from collections import defaultdict
-from dataclasses import InitVar, dataclass, field
-from queue import Empty, Queue, Full
 import threading
 import time
 import traceback
+from collections import defaultdict
+from dataclasses import InitVar, dataclass, field
+from queue import Empty, Full, Queue
 
 # from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Counter, Type
 
 import mido
 
-from .modules import Int, Module, ModulePadsOrKeys, ModuleParameter, DeviceState, Scaler
-
+from .modules import DeviceState, Int, Module, ModulePadsOrKeys, ModuleParameter, Scaler
 
 running_virtual_devices = []
 connected_devices = []

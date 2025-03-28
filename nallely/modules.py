@@ -1,8 +1,10 @@
 from __future__ import annotations
+
+import math
 from dataclasses import dataclass, field
 from inspect import isfunction
-import math
-from typing import Any, Literal, Type, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Literal, Type
+
 import wrapt
 
 if TYPE_CHECKING:

@@ -1,8 +1,10 @@
-from collections import defaultdict, deque
 import json
+from collections import defaultdict, deque
+
 import plotext as plt
 from websockets.sync.server import serve
-from .core import Parameter, VirtualDevice, ThreadContext
+
+from .core import Parameter, ThreadContext, VirtualDevice
 
 
 class TerminalOscilloscope(VirtualDevice):

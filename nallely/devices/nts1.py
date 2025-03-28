@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
-from ..modules import KeySection, Module, ModuleParameter
 from ..core import MidiDevice
+from ..modules import KeySection, Module, ModuleParameter
 
 
 @dataclass
