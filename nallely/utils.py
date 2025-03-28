@@ -1,4 +1,5 @@
 import json
+import threading
 from collections import defaultdict, deque
 
 import plotext as plt
@@ -9,14 +10,18 @@ from .core import Parameter, ThreadContext, VirtualDevice
 
 class TerminalOscilloscope(VirtualDevice):
     data = Parameter("data", stream=True, consummer=True)
+    data2 = Parameter("data2", stream=True, consummer=True)
 
-    def __init__(self, buffer_size=100, refresh_rate: float = 60):
+    def __init__(self, enable_display=True, buffer_size=100, refresh_rate: float = 60):
         self.buffer_size = buffer_size
         # self.visu_data = deque([], maxlen=self.buffer_size)
-        self.all = defaultdict(lambda: deque([], maxlen=self.buffer_size))
-        # super().__init__(target_cycle_time=1 / refresh_rate)
-        super().__init__()
-        self.display = True
+        # self.all = defaultdict(lambda: deque([], maxlen=self.buffer_size))
+        self.flows = defaultdict(
+            lambda: defaultdict(lambda: deque([], maxlen=self.buffer_size))
+        )
+        super().__init__(target_cycle_time=1 / refresh_rate)
+        self.display = enable_display
+        self.lock = threading.Lock()
         self.start()
 
     def receiving(self, value, on: str, ctx: ThreadContext):
@@ -24,35 +29,41 @@ class TerminalOscilloscope(VirtualDevice):
             return
         colors = ["red", "blue", "green", "orange"]
         t = ctx.get("t", 0)
-        datakind = ctx.get("kind", "main")
-        self.all[datakind].append(value)
+        datakind = ctx.get("param", "main")
+        # self.all[datakind].append(value)
+        self.flows[on][datakind].append(value)
         # self.visu_data.append(value)
 
-        plt.clt()
-        plt.cld()
-        plt.theme("clear")
-        plt.xticks([])
-        plt.yticks([])
-        # plt.title(f"value={value}")
-        # plt.title(
-        #     f"LFO {ctx.parent.waveform} speed={ctx.parent.speed} [{ctx.parent.min_value} - {ctx.parent.max_value}]"
-        # )
-        plt.scatter([0, 127], marker=" ")
-        # plt.plot(self.visu_data, color="green")
+        with self.lock:
+            plt.clt()
+            plt.cld()
+            plt.theme("clear")
+            plt.xticks([])
+            plt.yticks([])
+            plt.subplots(1, len(self.flows))
+            # plt.title(
+            #     f"LFO {ctx.parent.waveform} speed={ctx.parent.speed} [{ctx.parent.min_value} - {ctx.parent.max_value}]"
+            # )
+            plt.scatter([0, 127], marker=" ")
+            # plt.plot(self.visu_data, color="green")
 
-        # threashold = 15
-        # plt.plot([i for i, v in enumerate(self.visu_data) if v <= threashold], [v for v in self.visu_data if v <= threashold], color="green")
-        # plt.plot([i for i, v in enumerate(self.visu_data) if v > threashold], [v for v in self.visu_data if v > threashold], color="red")
+            # threashold = 15
+            # plt.plot([i for i, v in enumerate(self.visu_data) if v <= threashold], [v for v in self.visu_data if v <= threashold], color="green")
+            # plt.plot([i for i, v in enumerate(self.visu_data) if v > threashold], [v for v in self.visu_data if v > threashold], color="red")
 
-        # plt.plot(self.visu_data, color="red" if t < 0.25 else "blue")
-        # plt.plot(self.visu_data, color="green")
+            # plt.plot(self.visu_data, color="red" if t < 0.25 else "blue")
+            # plt.plot(self.visu_data, color="green")
 
-        for kind, data in self.all.items():
-            plt.plot(data, label=kind)
-        # if t == 0:
-        #     t = previous
-        # previous = t
-        plt.show()
+            for i, (plotname, values) in enumerate(self.flows.items()):
+                for kind, data in list(values.items()):
+                    plt.subplot(1, i + 1).title(f"[{plotname}]")
+                    plt.subplot(1, i + 1).plot(data, label=kind)
+            # for kind, data in self.all.items():
+            #     plt.plot(data, label=kind)
+            # if t == 0:
+            #     t = previous
+            # previous = t
+            plt.show()
 
     def reset(self):
         self.visu_data = deque([], maxlen=self.buffer_size)

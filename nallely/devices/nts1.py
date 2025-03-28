@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from ..core import MidiDevice
-from ..modules import KeySection, Module, ModuleParameter
+from ..modules import Module, ModulePadsOrKeys, ModuleParameter
 
 
 @dataclass
@@ -66,6 +66,15 @@ class ArpSection(Module):
     pattern = ModuleParameter(117)
     intervals = ModuleParameter(118)
     length = ModuleParameter(119)
+
+
+@dataclass
+class KeySection(Module):
+    state_name = "keys"
+    notes = ModulePadsOrKeys()
+
+    def __getitem__(self, key):
+        return self.state[self.__class__.state_name][key]
 
 
 class NTS1(MidiDevice):

@@ -1,21 +1,26 @@
-from decimal import Decimal
 import threading
 import time
 import traceback
 from collections import defaultdict
 from dataclasses import InitVar, dataclass, field
+from decimal import Decimal
 from queue import Empty, Full, Queue
-
-# from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Counter, Type
 
 import mido
 
-from .modules import DeviceState, Int, Module, ModulePadsOrKeys, ModuleParameter, Scaler
+from .modules import (
+    DeviceState,
+    Int,
+    Module,
+    ModulePadsOrKeys,
+    ModuleParameter,
+    PadOrKey,
+    Scaler,
+)
 
 running_virtual_devices = []
 connected_devices = []
-# executor = ThreadPoolExecutor(max_workers=10)  # Shared pool for callbacks
 
 
 def stop_all_virtual_devices():
@@ -64,11 +69,14 @@ class Parameter:
     def __set__(self, device: "VirtualDevice", value):
         if isinstance(value, VirtualDevice):
             if self.consummer:
+                virtual_device = value
                 value.device.bind(
                     lambda value, ctx: device.receiving(
                         value,
                         on=self.name,
-                        ctx=ThreadContext({**ctx, "param": self.name}),
+                        ctx=ThreadContext(
+                            {**ctx, "param": virtual_device.__class__.__name__}
+                        ),
                     ),
                     to=device,
                     stream=self.stream,
@@ -81,11 +89,12 @@ class Parameter:
                 )
         elif isinstance(value, Int):
             if self.consummer:
-                value.device.bind(
+                int_val = value
+                int_val.device.bind(
                     lambda value, ctx: device.receiving(
                         value,
                         on=self.name,
-                        ctx=ThreadContext({**ctx, "param": self.name}),
+                        ctx=ThreadContext({**ctx, "param": int_val.parameter.name}),
                     ),
                     to=device,
                     # type="control_change",
@@ -108,7 +117,7 @@ class Parameter:
                     lambda _, ctx: device.receiving(
                         getattr(value.device, value.parameter.name),
                         on=self.name,
-                        ctx=ThreadContext({**ctx, "kind": value.parameter.name}),
+                        ctx=ThreadContext({**ctx, "param": value.parameter.name}),
                     ),
                     to=device,
                 )
@@ -117,23 +126,88 @@ class Parameter:
             if self.consummer:
                 scaler.device.bind(
                     lambda value, ctx: device.receiving(
-                        scaler.convert(value), on=self.name, ctx=ctx
+                        scaler.convert(value),
+                        on=self.name,
+                        ctx=ThreadContext({**ctx, "param": value.data.parameter.name}),
                     ),
-                    # type="control_change",
-                    type=value.data.parameter.type,
-                    value=value.data.parameter.cc,
+                    type=scaler.data.parameter.type,
+                    value=scaler.data.parameter.cc,
                     to=device,
                 )
             else:
                 scaler.device.bind(
-                    lambda value, ctx: device.set_parameter(
-                        self.name, scaler.convert(value)
+                    lambda value, ctx: (
+                        device.set_parameter(self.name, scaler.convert(value))
                     ),
-                    # type="control_change",
-                    type=value.data.parameter.type,
-                    value=value.data.parameter.cc,
+                    type=scaler.data.parameter.type,
+                    value=scaler.data.parameter.cc,
                     to=device,
                 )
+        elif isinstance(value, PadOrKey):
+            # TODO: change this logic, otherwise, not directly composable with Scalers
+            pad = value
+            if self.consummer:
+                if pad.mode == "hold":
+                    pad.device.bind(
+                        lambda value, ctx: (
+                            device.receiving(
+                                value,
+                                on=self.name,
+                                ctx=ThreadContext(
+                                    {
+                                        **ctx,
+                                        "param": f"key/pad #{pad.note}",
+                                        "mode": pad.mode,
+                                    }
+                                ),
+                            )
+                            if ctx["type"] == "note_on"
+                            else ...
+                        ),
+                        type=pad.type,
+                        value=pad.note,
+                        to=device,
+                    )
+                elif pad.mode == "latch":
+                    ...
+                else:
+                    pad.device.bind(
+                        lambda value, ctx: device.receiving(
+                            value,
+                            on=self.name,
+                            ctx=ThreadContext(
+                                {
+                                    **ctx,
+                                    "param": f"key/pad #{pad.note}",
+                                    "mode": pad.mode,
+                                }
+                            ),
+                        ),
+                        type=pad.type,
+                        value=pad.note,
+                        to=device,
+                    )
+            else:
+                if pad.mode == "hold":
+                    pad.device.bind(
+                        lambda value, ctx: (
+                            device.set_parameter(self.name, value)
+                            if ctx["type"] == "note_on"
+                            else ...
+                        ),
+                        type=pad.type,
+                        value=pad.note,
+                        to=device,
+                    )
+                elif pad.mode == "latch":
+                    ...
+                else:
+                    pad.device.bind(
+                        lambda value, ctx: device.set_parameter(self.name, value),
+                        type=pad.type,
+                        value=pad.note,
+                        to=device,
+                    )
 
 
 class VirtualDevice(threading.Thread):
@@ -286,15 +360,13 @@ class VirtualDevice(threading.Thread):
                     traceback.print_exc()
                     raise e
 
-    def bind_to(self, other: "VirtualDevice", stream=False):
-
-        def queue_callback(value, ctx):
-            try:
-                other.output_queue.put_nowait((value, ctx))
-            except Full:
-                pass
-
-        self.bind(queue_callback, stream=stream)
+    # def bind_to(self, other: "VirtualDevice", stream=False):
+    #     def queue_callback(value, ctx):
+    #         try:
+    #             other.output_queue.put_nowait((value, ctx))
+    #         except Full:
+    #             pass
+    #     self.bind(queue_callback, stream=stream)
 
 
 @dataclass
@@ -366,7 +438,7 @@ class MidiDevice:
             control.basic_set(self, msg.value)
         if msg.type == "note_on" or msg.type == "note_off":
             try:
-                for callback in self.input_callbacks.get((msg.type, msg.note), []):
+                for callback in self.input_callbacks.get(("note", msg.note), []):
                     callback(
                         msg.note,
                         ThreadContext(
@@ -374,6 +446,17 @@ class MidiDevice:
                                 "debug": self.debug,
                                 "type": msg.type,
                                 "velocity": msg.velocity,
+                            }
+                        ),
+                    )
+                for callback in self.input_callbacks.get(("velocity", msg.note), []):
+                    callback(
+                        msg.velocity,
+                        ThreadContext(
+                            {
+                                "debug": self.debug,
+                                "type": msg.type,
+                                "note": msg.velocity,
                             }
                         ),
                     )
@@ -386,6 +469,9 @@ class MidiDevice:
         if not self.outport:
             return
         self.outport.send(msg)
+
+    def note(self, type, note, velocity=127 // 2, channel=0):
+        getattr(self, type)(note, velocity=velocity, channel=channel)
 
     def note_on(self, note, velocity=127 // 2, channel=0):
         if not self.outport:
