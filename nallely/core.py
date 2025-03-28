@@ -65,8 +65,10 @@ class Parameter:
         if isinstance(value, VirtualDevice):
             if self.consummer:
                 value.device.bind(
-                    lambda value, ctx: device.consume_output(
-                        value, ThreadContext({**ctx, "kind": "main"})
+                    lambda value, ctx: device.receiving(
+                        value,
+                        on=self.name,
+                        ctx=ThreadContext({**ctx, "param": self.name}),
                     ),
                     stream=self.stream,
                 )
@@ -77,23 +79,38 @@ class Parameter:
                 )
         elif isinstance(value, Int):
             if self.consummer:
-                value.device.bind(lambda value, ctx: device.consume_output(value, ctx), stream=self.stream, type="control_change", value=value.parameter.cc)  # type: ignore
+                value.device.bind(
+                    lambda value, ctx: device.receiving(
+                        value,
+                        on=self.name,
+                        ctx=ThreadContext({**ctx, "param": self.name}),
+                    ),
+                    stream=self.stream,
+                    type="control_change",
+                    value=value.parameter.cc,
+                )
             else:
-                value.device.bind(lambda value, ctx: device.set_parameter(self.name, value), stream=self.stream, type="control_change", value=value.parameter.cc)  # type: ignore
+                value.device.bind(
+                    lambda value, ctx: device.set_parameter(self.name, value),
+                    stream=self.stream,
+                    type="control_change",
+                    value=value.parameter.cc,
+                )
         elif isinstance(value, ParameterInstance):
             if self.consummer:
                 value.device.bind(
-                    lambda _, ctx: device.consume_output(
+                    lambda _, ctx: device.receiving(
                         getattr(value.device, value.parameter.name),
-                        ThreadContext({**ctx, "kind": value.parameter.name}),
+                        on=self.name,
+                        ctx=ThreadContext({**ctx, "kind": value.parameter.name}),
                     )
                 )
         elif isinstance(value, Scaler):
             scaler = value
             if self.consummer:
                 scaler.device.bind(
-                    lambda value, ctx: device.consume_output(
-                        scaler.convert(value), ctx
+                    lambda value, ctx: device.receiving(
+                        scaler.convert(value), on=self.name, ctx=ctx
                     ),
                     type="control_change",
                     value=value.data.parameter.cc,
@@ -128,7 +145,7 @@ class VirtualDevice(threading.Thread):
 
     def main(self, ctx: ThreadContext) -> Any: ...
 
-    def consume_output(self, value, ctx: ThreadContext): ...
+    def receiving(self, value, on: str, ctx: ThreadContext): ...
 
     def set_parameter(self, param: str, value: Any):
         self.input_queue.put((param, value))
@@ -155,7 +172,7 @@ class VirtualDevice(threading.Thread):
             while not self.output_queue.empty():
                 try:
                     value, output_ctx = self.output_queue.get_nowait()
-                    self.consume_output(value, output_ctx)
+                    self.receiving(value, "output_queue", output_ctx)
                     self.output_queue.task_done()
                 except Empty:
                     break

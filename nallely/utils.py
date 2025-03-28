@@ -1,7 +1,9 @@
 from collections import defaultdict
+import json
 from pyparsing import deque
-from .core import Parameter, VirtualDevice, ThreadContext
 import plotext as plt
+from websockets.sync.server import serve
+from .core import Parameter, VirtualDevice, ThreadContext
 
 # from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
 # from PyQt6.QtCore import QTimer
@@ -19,7 +21,7 @@ class TerminalOscilloscope(VirtualDevice):
         super().__init__()
         self.start()
 
-    def consume_output(self, value, ctx: ThreadContext):
+    def receiving(self, value, on: str, ctx: ThreadContext):
         if not self.running:
             return
         colors = ["red", "blue", "green", "orange"]
@@ -58,30 +60,52 @@ class TerminalOscilloscope(VirtualDevice):
         self.visu_data = deque([], maxlen=self.buffer_size)
 
 
-# class Oscilloscope(VirtualDevice):
-#     def __init__(self, buffer_size=100, refresh_rate: float = 60):
-#         self.buffer_size = buffer_size
-#         self.visu_data = deque([], maxlen=self.buffer_size)
-#         self.app = QApplication.instance() or QApplication([])
-#         self.win = QMainWindow()
-#         self.plot_widget = pg.PlotWidget()
-#         self.plot_widget.setYRange(0, 127)  # Match LFO range
-#         self.plot_widget.setXRange(0, buffer_size)
-#         self.plot_curve = self.plot_widget.plot(pen="g")  # Green line
-#         layout = QVBoxLayout()
-#         layout.addWidget(self.plot_widget)
-#         central_widget = QWidget()
-#         central_widget.setLayout(layout)
-#         self.win.setCentralWidget(central_widget)
-#         self.win.show()
-#         super().__init__(target_cycle_time=1 / refresh_rate)
+class WebSocketSwitchDevice(VirtualDevice):
+    def __init__(self, **kwargs):
+        super().__init__(target_cycle_time=1 / 20, **kwargs)
+        self.server = serve(self.handler, "localhost", 6789)
+        self.connected = defaultdict(list)
 
-#     def consume_output(self, value, ctx: ThreadContext):
-#         if not self.running:
-#             return
-#         self.visu_data.append(value)
-#         self.plot_curve.setData(self.visu_data)
+    def handler(self, websocket):
+        path = websocket.request.path
+        if path.endswith("/autoconfig"):
+            message = json.loads(websocket.recv())
+            self.configure_remote_device(
+                message["name"], parameters=message["parameters"]
+            )
+        if not path.endswith("/connect") and not path.endswith("/autoconfig"):
+            return
+        device = path.split("/")[1]
+        self.connected[device].append(websocket)
+        try:
+            for message in websocket:
+                ...
+        finally:
+            self.connected[device].remove(websocket)
 
-#     def stop(self, clear_queues: bool = True):
-#         super().stop(clear_queues)
-#         self.win.close()
+    def main(self, ctx):
+        self.server.serve_forever()
+
+    def stop(self, clear_queues=False):
+        if self.running and self.server:
+            self.server.shutdown()
+        super().stop(clear_queues)
+
+    def receiving(self, value, on, ctx: ThreadContext):
+        device, parameter = on.split("::")
+        print("value", value, on)
+
+        for connected in self.connected[device]:
+            connected.send(str((value, parameter)))
+
+    def configure_remote_device(self, name, parameters: list[str]):
+        for parameter in parameters:
+            param_name = f"{name}_{parameter}"
+            rebind = getattr(self, param_name, None)
+            setattr(
+                self.__class__,
+                param_name,
+                Parameter(f"{name}::{parameter}", consummer=True),
+            )
+            if rebind is not None:
+                setattr(self, param_name, rebind)
