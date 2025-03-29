@@ -10,6 +10,7 @@ class LFO(TimeBasedDevice):
     waveform_cv = Parameter("waveform")
     min_value_cv = Parameter("min_value")
     max_value_cv = Parameter("max_value")
+    sampling_rate_cv = Parameter("sampling_rate")
 
     def __init__(
         self,

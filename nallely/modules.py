@@ -24,8 +24,21 @@ class Int(wrapt.ObjectProxy):
     def update(self, value):
         self.__wrapped__ = value
 
-    def scale(self, min, max, method: Literal["lin"] | Literal["log"] = "log"):
-        return Scaler(data=self, device=self.device, min=min, max=max, method=method)
+    def scale(
+        self,
+        min,
+        max,
+        method: Literal["lin"] | Literal["log"] = "log",
+        as_int: bool = False,
+    ):
+        return Scaler(
+            data=self,
+            device=self.device,
+            min=min,
+            max=max,
+            method=method,
+            as_int=as_int,
+        )
 
     def __repr__(self):
         return str(self.__wrapped__)
@@ -35,13 +48,14 @@ class Int(wrapt.ObjectProxy):
 class Scaler:
     data: Int
     device: Any
-    min: int
-    max: int
+    min: int | float
+    max: int | float
     method: str = "log"
+    as_int: bool = False
 
     def __post_init__(self):
-        if self.min == 0:
-            self.min = 1
+        if self.min == 0 and self.method == "log":
+            self.min = 0.001
 
     def convert(self, value):
         if self.method == "lin":
@@ -53,7 +67,7 @@ class Scaler:
             )
         else:
             raise Exception("Unknown conversion method")
-        res = convert(value)
+        res = int(convert(value)) if self.as_int else convert(value)
         if isinstance(value, Int):
             value.update(res)
             return value
@@ -184,6 +198,7 @@ class PadOrKey:
         self.last_value = None
         self.parameter = self
         self.cc = self.note
+        self.name = f"#{self.note}"
 
     def bind(self, value):
         if isfunction(value):
@@ -209,8 +224,21 @@ class PadOrKey:
         self.triggered = not self.triggered
         return self
 
-    def scale(self, min, max, method: Literal["lin"] | Literal["log"] = "log"):
-        return Scaler(data=self, device=self.device, min=min, max=max, method=method)
+    def scale(
+        self,
+        min,
+        max,
+        method: Literal["lin"] | Literal["log"] = "log",
+        as_int: bool = False,
+    ):
+        return Scaler(
+            data=self,
+            device=self.device,
+            min=min,
+            max=max,
+            method=method,
+            as_int=as_int,
+        )
 
 
 @dataclass

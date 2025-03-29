@@ -573,7 +573,7 @@ class TimeBasedDevice(VirtualDevice):
 
     @sampling_rate.setter
     def sampling_rate(self, value):
-        self._sampling_rate = value
+        self._sampling_rate = Decimal(value)
         self.time_step = Decimal(value) / self._sampling_rate
 
     def generate_value(self, t) -> Any: ...
