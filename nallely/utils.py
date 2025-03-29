@@ -82,7 +82,6 @@ class WebSocketSwitchDevice(VirtualDevice):
             self.configure_remote_device(
                 message["name"], parameters=message["parameters"]
             )
-        if not path.endswith("/connect") and not path.endswith("/autoconfig"):
             return
         device = path.split("/")[1]
         self.connected[device].append(websocket)

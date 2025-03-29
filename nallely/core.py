@@ -286,6 +286,13 @@ class VirtualDevice(threading.Thread):
                     traceback.print_exc()
                     raise e
 
+    def scale(self, min, max, method="log", as_int=False):
+        return Scaler(self, self, min, max, method, as_int, max_range=self.max_range)
+
+    @property
+    def max_range(self) -> float | int:
+        return 127
+
     # def bind_to(self, other: "VirtualDevice", stream=False):
     #     def queue_callback(value, ctx):
     #         try:

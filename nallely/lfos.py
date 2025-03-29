@@ -73,6 +73,10 @@ class LFO(TimeBasedDevice):
             raise ValueError(f"Unsupported waveform type: {waveform}")
         return int(result) if self.as_int else result
 
+    @property
+    def max_range(self):
+        return float(self.max_value)
+
     generate_value = generate_waveform
 
     def process_input(self, param, value):

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
+from decimal import Decimal
 from inspect import isfunction
 from typing import TYPE_CHECKING, Any, Literal, Type
 
@@ -54,25 +55,31 @@ class Scaler:
     max: int | float
     method: str = "log"
     as_int: bool = False
+    max_range: int | float = 127
 
     def __post_init__(self):
         if self.min == 0 and self.method == "log":
             self.min = 0.001
+        self.as_int = (
+            self.as_int or isinstance(self.min, int) and isinstance(self.max, int)
+        )
 
-    def convert_lin(self, value):
-        return self.min + (value / 127) * (self.max - self.min)
+    def convert_lin(self, value, max_range):
+        return self.min + (value / max_range) * (self.max - self.min)
 
-    def convert_log(self, value):
+    def convert_log(self, value, max_range):
         return math.exp(
             math.log(self.min)
-            + (value / 127) * (math.log(self.max) - math.log(self.min))
+            + (value / max_range) * (math.log(self.max) - math.log(self.min))
         )
 
     def convert(self, value):
+        if isinstance(value, Decimal):
+            value = float(value)
         if self.method == "lin":
-            res = self.convert_lin(value)
+            res = self.convert_lin(value, self.max_range)
         elif self.method == "log":
-            res = self.convert_log(value)
+            res = self.convert_log(value, self.max_range)
         else:
             raise Exception("Unknown conversion method")
         res = int(res) if self.as_int else res
@@ -82,6 +89,16 @@ class Scaler:
         return res
 
     def install_fun(self, to_device, to_parameter):
+        from .core import VirtualDevice
+
+        if isinstance(self.data, VirtualDevice):
+            self.data.bind(
+                lambda value, ctx: (
+                    setattr(to_device, to_parameter.name, self.convert(value))
+                ),
+                to=to_device,
+            )
+            return
         pad: ModuleParameter = self.data.parameter
         fun = pad.generate_fun(to_device, to_parameter)
         self.data.device.bind(
@@ -113,8 +130,8 @@ class ModuleParameter:
 
             return lambda value, ctx: to_device.receiving(
                 value,
-                on=self.name,
-                ctx=ThreadContext({**ctx, "param": to_param.name}),
+                on=to_param.name,
+                ctx=ThreadContext({**ctx, "param": self.name}),
             )
         else:
             return lambda value, ctx: to_device.set_parameter(to_param.name, value)
