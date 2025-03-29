@@ -103,10 +103,18 @@ class WebSocketSwitchDevice(VirtualDevice):
 
     def receiving(self, value, on, ctx: ThreadContext):
         device, parameter = on.split("::")
-        # print("value", value, on)
 
         for connected in self.connected[device]:
-            connected.send(str((value, parameter)))
+            connected.send(
+                json.dumps(
+                    {
+                        "value": value,
+                        "device": device,
+                        "on": parameter,
+                        "sender": ctx["param"],
+                    }
+                )
+            )
 
     def configure_remote_device(self, name, parameters: list[str]):
         for parameter in parameters:
@@ -115,7 +123,7 @@ class WebSocketSwitchDevice(VirtualDevice):
             setattr(
                 self.__class__,
                 param_name,
-                Parameter(f"{name}::{parameter}", consummer=True),
+                Parameter(f"{name}::{parameter}", consummer=True, stream=False),
             )
             if rebind is not None:
                 setattr(self, param_name, rebind)
