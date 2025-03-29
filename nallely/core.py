@@ -1,9 +1,11 @@
+import json
 import threading
 import time
 import traceback
 from collections import defaultdict
 from dataclasses import InitVar, dataclass, field
 from decimal import Decimal
+from pathlib import Path
 from queue import Empty, Full, Queue
 from typing import Any, Counter, Type
 
@@ -468,6 +470,24 @@ class MidiDevice:
                 except StopIteration:
                     raise DeviceNotFound(self.device_name)
             self.inport.callback = self._sync_state
+
+    def save_preset(self, file: Path | str):
+        d = self.modules.as_dict()
+        p = Path(file)
+        p.write_text(json.dumps(d, indent=2, cls=DeviceSerializer))
+
+    def load_preset(self, file: Path | str):
+        p = Path(file)
+        self.modules.from_dict(json.loads(p.read_text()))
+
+
+class DeviceSerializer(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, Decimal):
+            return float(o)
+        if isinstance(o, Int):
+            return int(o)
+        return super().default(o)
 
 
 class DeviceNotFound(Exception):

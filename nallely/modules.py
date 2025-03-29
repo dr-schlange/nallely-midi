@@ -469,3 +469,21 @@ class DeviceState:
 
     def __getattr__(self, name):
         return self.modules[name]
+
+    def as_dict(self):
+        d = {}
+        for name, module in self.modules.items():
+            module_state = {}
+            d[name] = module_state
+            for parameter in module.meta.parameters:
+                module_state[parameter.name] = getattr(
+                    getattr(self, name), parameter.name
+                )
+            if not module_state:
+                del d[name]
+        return d
+
+    def from_dict(self, d):
+        for sec_name, section in d.items():
+            for param, value in section.items():
+                setattr(self.modules[sec_name], param, value)
