@@ -2,15 +2,15 @@ import math
 from decimal import Decimal
 from typing import Any
 
-from .core import Parameter, TimeBasedDevice
+from .core import TimeBasedDevice, VirtualParameter
 
 
 class LFO(TimeBasedDevice):
-    speed_cv = Parameter("speed")
-    waveform_cv = Parameter("waveform")
-    min_value_cv = Parameter("min_value")
-    max_value_cv = Parameter("max_value")
-    sampling_rate_cv = Parameter("sampling_rate")
+    speed_cv = VirtualParameter("speed")
+    waveform_cv = VirtualParameter("waveform")
+    min_value_cv = VirtualParameter("min_value")
+    max_value_cv = VirtualParameter("max_value")
+    sampling_rate_cv = VirtualParameter("sampling_rate")
 
     def __init__(
         self,

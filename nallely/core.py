@@ -53,12 +53,12 @@ class ThreadContext(dict):
 
 @dataclass
 class ParameterInstance:
-    parameter: "Parameter"
+    parameter: "VirtualParameter"
     device: "VirtualDevice"
 
 
 @dataclass
-class Parameter:
+class VirtualParameter:
     name: str
     stream: bool = False
     consummer: bool = False
@@ -123,91 +123,15 @@ class Parameter:
                 )
         elif isinstance(value, Scaler):
             scaler = value
-            if self.consummer:
-                scaler.device.bind(
-                    lambda value, ctx: device.receiving(
-                        scaler.convert(value),
-                        on=self.name,
-                        ctx=ThreadContext({**ctx, "param": scaler.data.parameter.name}),
-                    ),
-                    type=scaler.data.parameter.type,
-                    value=scaler.data.parameter.cc,
-                    to=device,
-                )
-            else:
-                scaler.device.bind(
-                    lambda value, ctx: (
-                        device.set_parameter(self.name, scaler.convert(value))
-                    ),
-                    type=scaler.data.parameter.type,
-                    value=scaler.data.parameter.cc,
-                    to=device,
-                )
+            scaler.install_fun(device, self)
         elif isinstance(value, PadOrKey):
-            # TODO: change this logic, otherwise, not directly composable with Scalers
             pad = value
-            if self.consummer:
-                if pad.mode == "hold":
-                    pad.device.bind(
-                        lambda value, ctx: (
-                            device.receiving(
-                                value,
-                                on=self.name,
-                                ctx=ThreadContext(
-                                    {
-                                        **ctx,
-                                        "param": f"key/pad #{pad.note}",
-                                        "mode": pad.mode,
-                                    }
-                                ),
-                            )
-                            if ctx["type"] == "note_on"
-                            else ...
-                        ),
-                        type=pad.type,
-                        value=pad.note,
-                        to=device,
-                    )
-                elif pad.mode == "latch":
-                    ...
-                else:
-                    pad.device.bind(
-                        lambda value, ctx: device.receiving(
-                            value,
-                            on=self.name,
-                            ctx=ThreadContext(
-                                {
-                                    **ctx,
-                                    "param": f"key/pad #{pad.note}",
-                                    "mode": pad.mode,
-                                }
-                            ),
-                        ),
-                        type=pad.type,
-                        value=pad.note,
-                        to=device,
-                    )
-            else:
-                if pad.mode == "hold":
-                    pad.device.bind(
-                        lambda value, ctx: (
-                            device.set_parameter(self.name, value)
-                            if ctx["type"] == "note_on"
-                            else ...
-                        ),
-                        type=pad.type,
-                        value=pad.note,
-                        to=device,
-                    )
-                elif pad.mode == "latch":
-                    ...
-                else:
-                    pad.device.bind(
-                        lambda value, ctx: device.set_parameter(self.name, value),
-                        type=pad.type,
-                        value=pad.note,
-                        to=device,
-                    )
+            pad.device.bind(
+                lambda value, ctx: pad.generate_fun(value, ctx),
+                type=pad.type,
+                value=pad.note,  # equiv pad.cc
+                to=device,
+            )
 
 
 class VirtualDevice(threading.Thread):

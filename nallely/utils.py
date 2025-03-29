@@ -5,12 +5,12 @@ from collections import defaultdict, deque
 import plotext as plt
 from websockets.sync.server import serve
 
-from .core import Parameter, ThreadContext, VirtualDevice
+from .core import ThreadContext, VirtualDevice, VirtualParameter
 
 
 class TerminalOscilloscope(VirtualDevice):
-    data = Parameter("data", stream=True, consummer=True)
-    data2 = Parameter("data2", stream=True, consummer=True)
+    data = VirtualParameter("data", stream=True, consummer=True)
+    data2 = VirtualParameter("data2", stream=True, consummer=True)
 
     def __init__(self, enable_display=True, buffer_size=100, refresh_rate: float = 60):
         self.buffer_size = buffer_size
@@ -108,7 +108,7 @@ class WebSocketSwitchDevice(VirtualDevice):
             connected.send(
                 json.dumps(
                     {
-                        "value": value,
+                        "value": float(value),
                         "device": device,
                         "on": parameter,
                         "sender": ctx["param"],
@@ -123,7 +123,7 @@ class WebSocketSwitchDevice(VirtualDevice):
             setattr(
                 self.__class__,
                 param_name,
-                Parameter(f"{name}::{parameter}", consummer=True, stream=False),
+                VirtualParameter(f"{name}::{parameter}", consummer=True, stream=False),
             )
             if rebind is not None:
                 setattr(self, param_name, rebind)

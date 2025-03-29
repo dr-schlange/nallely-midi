@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import math
-from collections import defaultdict
 from dataclasses import dataclass, field
 from inspect import isfunction
 from typing import TYPE_CHECKING, Any, Literal, Type
@@ -9,7 +8,7 @@ from typing import TYPE_CHECKING, Any, Literal, Type
 import wrapt
 
 if TYPE_CHECKING:
-    from .core import MidiDevice, VirtualDevice
+    from .core import MidiDevice, ThreadContext
 
 
 NOT_INIT = "uninitialized"
@@ -43,6 +42,9 @@ class Int(wrapt.ObjectProxy):
     def __repr__(self):
         return str(self.__wrapped__)
 
+    def install_fun(self, to_module, to_param):
+        self.parameter.install_fun(to_module, to_param)
+
 
 @dataclass
 class Scaler:
@@ -57,23 +59,37 @@ class Scaler:
         if self.min == 0 and self.method == "log":
             self.min = 0.001
 
+    def convert_lin(self, value):
+        return self.min + (value / 127) * (self.max - self.min)
+
+    def convert_log(self, value):
+        return math.exp(
+            math.log(self.min)
+            + (value / 127) * (math.log(self.max) - math.log(self.min))
+        )
+
     def convert(self, value):
         if self.method == "lin":
-            convert = lambda x: self.min + (x / 127) * (self.max - self.min)
+            res = self.convert_lin(value)
         elif self.method == "log":
-            convert = lambda x: math.exp(
-                math.log(self.min)
-                + (x / 127) * (math.log(self.max) - math.log(self.min))
-            )
+            res = self.convert_log(value)
         else:
             raise Exception("Unknown conversion method")
-        res = int(convert(value)) if self.as_int else convert(value)
+        res = int(res) if self.as_int else res
         if isinstance(value, Int):
             value.update(res)
             return value
-        # else:
-        #     res = Int(value, device=self.device, parameter=self.data.parameter)
         return res
+
+    def install_fun(self, to_device, to_parameter):
+        pad: ModuleParameter = self.data.parameter
+        fun = pad.generate_fun(to_device, to_parameter)
+        self.data.device.bind(
+            lambda value, ctx: fun(self.convert(value), ctx),
+            type=pad.type,
+            value=pad.cc,  # equiv pad.note
+            to=to_device,
+        )
 
 
 @dataclass
@@ -88,10 +104,34 @@ class ModuleParameter:
     def __get__(self, instance, owner=None) -> Int:
         return instance.state[self.name]
 
-    def __set__(self, module, value, send=True, debug=False, force=False):
-        if not force and isinstance(value, Int):
-            device_value = value
-            to_module: MidiDevice = module
+    def install_fun(self, to_module, feeder):
+        self.__set__(to_module, feeder, send=False)
+
+    def generate_inner_fun_virtual(self, to_device, to_param):
+        if to_param.consummer:
+            from .core import ThreadContext
+
+            return lambda value, ctx: to_device.receiving(
+                value,
+                on=self.name,
+                ctx=ThreadContext({**ctx, "param": to_param.name}),
+            )
+        else:
+            return lambda value, ctx: to_device.set_parameter(to_param.name, value)
+
+    def generate_inner_fun_normal(self, to_device, to_param):
+        return lambda value, ctx: to_device.set_parameter(to_param.name, value)
+
+    def generate_fun(self, to_device, to_param):
+        from .core import VirtualParameter
+
+        if isinstance(to_param, VirtualParameter):
+            return self.generate_inner_fun_virtual(to_device, to_param)
+        return self.generate_inner_fun_normal(to_device, to_param)
+
+    def __set__(self, to_module, feeder, send=True, debug=False, force=False):
+        if not force and isinstance(feeder, Int):
+            device_value = feeder
             from_module: MidiDevice = device_value.device  # type: ignore
             # we create a callback on from_module that will "set" the module parameter to value of to_module
             # finally triggering the code that sends the cc and sync the state lower in this class.
@@ -99,88 +139,44 @@ class ModuleParameter:
                 lambda value, ctx: setattr(to_module, self.name, value),
                 type=device_value.parameter.type,
                 value=device_value.parameter.cc,
-                to=module.device,
+                to=to_module.device,
             )
             return
 
         from .core import VirtualDevice
 
-        if isinstance(value, VirtualDevice):
-            device = value
+        if isinstance(feeder, VirtualDevice):
+            device = feeder
             device.bind(
-                lambda value, ctx: setattr(module, self.name, value), to=module.device
+                lambda value, ctx: setattr(to_module, self.name, value),
+                to=to_module.device,
             )
             return
-        if isfunction(value):
-            fun = value
-            module.device.bind(fun, type=self.type, value=self.cc, to=module.device)
+        if isfunction(feeder):
+            fun = feeder
+            to_module.device.bind(
+                fun, type=self.type, value=self.cc, to=to_module.device
+            )
             return
-        if isinstance(value, Scaler):
-            # scaler = value
-            # scaler.device.bind(
-            #     lambda value, ctx: setattr(instance, self.name, scaler.convert(value)),
-            #     type="control_change",
-            #     value=self.cc,
-            # )
-
-            # Currently, scaler are not supported for non virtual device parameter, but will be in the future
+        if isinstance(feeder, Scaler):
+            scaler = feeder
+            scaler.install_fun(to_device=to_module, to_parameter=self)
             return
-        if isinstance(value, PadOrKey):
-            pad: PadOrKey = value
-            if pad.type == "velocity":
-                to_module: MidiDevice = module
-                from_module: MidiDevice = pad.device
-                if pad.mode == "note":
-                    from_module.bind(
-                        lambda value, ctx: setattr(to_module, self.name, value),
-                        type=pad.type,
-                        value=pad.note,
-                        to=module.device,
-                    )
-                elif pad.mode == "latch":
-
-                    def foo(value, ctx, to_module, name, pad):
-                        if ctx["type"] == "note_off":
-                            return
-                        if pad.toggle().triggered:
-                            pad.set_last(int(getattr(to_module, name)))
-                            setattr(to_module, name, value)
-                        else:
-                            setattr(to_module, name, pad.last_value)
-
-                    from_module.bind(
-                        # lambda value, ctx: (
-                        #     (
-                        #         pad.set_last(getattr(to_module, self.name)),
-                        #         setattr(to_module, self.name, value),
-                        #     )
-                        #     if ctx["type"] == "note_on" and pad.toggle().triggered
-                        #     else setattr(to_module, self.name, pad.last_value)
-                        # ),
-                        lambda value, ctx: foo(value, ctx, to_module, self.name, pad),
-                        type=pad.type,
-                        value=pad.note,
-                        to=module.device,
-                    )
-                elif pad.mode == "hold":
-                    from_module.bind(
-                        lambda value, ctx: (
-                            setattr(to_module, self.name, value)
-                            if ctx["type"] == "note_on"
-                            else ...
-                        ),
-                        type=pad.type,
-                        value=pad.note,
-                        to=module.device,
-                    )
-            else:
-                ...
+        if isinstance(feeder, PadOrKey):
+            pad: PadOrKey = feeder
+            from_module: MidiDevice = pad.device
+            from_module.bind(
+                pad.generate_fun(to_module, self),
+                type=pad.type,
+                value=pad.note,
+                to=to_module.device,
+            )
             return
 
         if send:
             # Normal case, we set a value through the descriptor, this triggers the send of the message
-            module.device.control_change(self.cc, value, channel=self.channel)
-        module.state[self.name].update(value)
+            to_module.device.control_change(self.cc, feeder, channel=self.channel)
+        to_module.state[self.name].update(feeder)
 
     def basic_set(self, device: MidiDevice, value):
         getattr(device.modules, self.module_state_name).state[self.name].update(value)
@@ -195,14 +191,10 @@ class PadOrKey:
 
     def __post_init__(self):
         self.triggered = False
-        self.last_value = None
+        self.last_value = 0
         self.parameter = self
         self.cc = self.note
         self.name = f"#{self.note}"
-
-    def bind(self, value):
-        if isfunction(value):
-            self.device.bind(value, type=self.type, value=self.note, to=self.device)
 
     @property
     def velocity(self):
@@ -239,6 +231,125 @@ class PadOrKey:
             method=method,
             as_int=as_int,
         )
+
+    def generate_inner_fun_virtual_consummer(self, to_device, to_param):
+        from .core import ThreadContext
+
+        if self.mode == "hold":
+            return lambda value, ctx: (
+                (
+                    to_device.receiving(
+                        value,
+                        on=to_param.name,
+                        ctx=ThreadContext(
+                            {
+                                **ctx,
+                                "param": f"key/pad #{self.note}",
+                                "mode": self.mode,
+                            }
+                        ),
+                    )
+                    if ctx["type"] == "note_on"
+                    else ...
+                )
+            )
+        if self.mode == "latch":
+
+            def foo(value, ctx, to_module, to_param, pad):
+                if ctx["type"] == "note_off":
+                    return
+                if pad.toggle().triggered:
+                    pad.set_last(value)
+                    to_module.receiving(
+                        value,
+                        on=to_param.name,
+                        ctx=ThreadContext(
+                            {
+                                **ctx,
+                                "param": f"key/pad #{self.note}",
+                                "mode": self.mode,
+                            }
+                        ),
+                    )
+                else:
+                    to_device.receiving(
+                        pad.last_value,
+                        on=to_param.name,
+                        ctx=ThreadContext(
+                            {
+                                **ctx,
+                                "param": f"key/pad #{self.note}",
+                                "mode": self.mode,
+                            }
+                        ),
+                    )
+
+            return lambda value, ctx: foo(value, ctx, to_device, to_param, self)
+
+        return lambda value, ctx: to_device.receiving(
+            value,
+            on=to_param.name,
+            ctx=ThreadContext(
+                {
+                    **ctx,
+                    "param": f"key/pad #{self.note}",
+                    "mode": self.mode,
+                }
+            ),
+        )
+
+    def generate_inner_fun_virtual_normal(self, to_device, to_param):
+        if self.mode == "hold":
+            lambda value, ctx: (
+                to_device.set_parameter(to_param.name, value)
+                if ctx["type"] == "note_on"
+                else ...
+            )
+        if self.mode == "latch":
+            ...
+        return lambda value, ctx: to_device.receiving(
+            value,
+            on=to_param.name,
+            ctx=ThreadContext(
+                {
+                    **ctx,
+                    "param": f"key/pad #{self.note}",
+                    "mode": self.mode,
+                }
+            ),
+        )
+
+    def generate_inner_fun_midiparam(self, to_module, to_param):
+        if self.mode == "latch":
+
+            def foo(value, ctx, to_module, name, pad):
+                if ctx["type"] == "note_off":
+                    return
+                if pad.toggle().triggered:
+                    pad.set_last(int(getattr(to_module, name)))
+                    setattr(to_module, name, value)
+                else:
+                    setattr(to_module, name, pad.last_value)
+
+            return lambda value, ctx: foo(value, ctx, to_module, to_param.name, self)
+        elif self.mode == "hold":
+            return lambda value, ctx: (
+                setattr(to_module, self.name, value)
+                if ctx["type"] == "note_on"
+                else ...
+            )
+        return lambda value, ctx: setattr(to_module, self.name, value)
+
+    def generate_fun(self, to_device, to_param):
+        from .core import VirtualParameter
+
+        if isinstance(to_param, VirtualParameter):
+            if to_param.consummer:
+                return self.generate_inner_fun_virtual_consummer(to_device, to_param)
+            else:
+                return self.generate_inner_fun_virtual_normal(to_device, to_param)
+        else:
+            return self.generate_inner_fun_midiparam(to_device, to_param)
 
 
 @dataclass
@@ -330,13 +441,13 @@ class Module:
             return [self[i] for i in range(*indices)]  # type: ignore
         raise Exception(f"Don't know what to look for key of type {key.__class__}")
 
-    def __setitem__(self, key, value):
-        if isinstance(key, int):
-            self[key].bind(value)
-            return
-        if isinstance(key, slice):
-            for k in self[key]:
-                k.bind(value)
+    # def __setitem__(self, key, value):
+    #     if isinstance(key, int):
+    #         self[key].bind(value)
+    #         return
+    #     if isinstance(key, slice):
+    #         for k in self[key]:
+    #             k.bind(value)
 
     # def __setattr__(self, key, value):
     #     if key in ["device", "meta", "state_name", "state"]:
