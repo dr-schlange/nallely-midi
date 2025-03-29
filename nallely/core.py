@@ -128,7 +128,7 @@ class Parameter:
                     lambda value, ctx: device.receiving(
                         scaler.convert(value),
                         on=self.name,
-                        ctx=ThreadContext({**ctx, "param": value.data.parameter.name}),
+                        ctx=ThreadContext({**ctx, "param": scaler.data.parameter.name}),
                     ),
                     type=scaler.data.parameter.type,
                     value=scaler.data.parameter.cc,

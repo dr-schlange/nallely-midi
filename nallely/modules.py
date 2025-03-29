@@ -57,6 +57,8 @@ class Scaler:
         if isinstance(value, Int):
             value.update(res)
             return value
+        # else:
+        #     res = Int(value, device=self.device, parameter=self.data.parameter)
         return res
 
 
