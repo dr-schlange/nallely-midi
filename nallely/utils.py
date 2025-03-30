@@ -76,6 +76,7 @@ class WebSocketSwitchDevice(VirtualDevice):
         super().__init__(target_cycle_time=10, **kwargs)
         self.waiting_for_module = defaultdict(list)
         self.connected = defaultdict(list)
+        self.known_services = {}
         self.server = serve(self.handler, host=host, port=port)
 
         def __setattr__(self, key, value):
@@ -93,10 +94,16 @@ class WebSocketSwitchDevice(VirtualDevice):
             print(f"Autoconfig for {service_name}")
             message = json.loads(client.recv())
             parameters = [
-                (str(p["name"]), bool(p["stream"])) for p in message["parameters"]
+                (str(p["name"]), bool(p.get("stream", False)))
+                for p in message["parameters"]
             ]
             print(f"Parameters: {message['parameters']}")
             self.configure_remote_device(service_name, parameters=parameters)  # type: ignore
+        elif service_name not in self.known_services:
+            print(
+                f"Service {service_name} is not yet configured, you cannot subscribe to it yet"
+            )
+            return
         connected_devices = self.connected[service_name]
         connected_devices.append(client)
         try:
@@ -119,7 +126,8 @@ class WebSocketSwitchDevice(VirtualDevice):
         super().stop(clear_queues)
 
     def receiving(self, value, on, ctx: ThreadContext):
-        device, parameter = on.split("::")
+        device, *parameter = on.split("_")
+        parameter = "_".join(parameter)
 
         for connected in self.connected[device]:
             connected.send(
@@ -134,20 +142,18 @@ class WebSocketSwitchDevice(VirtualDevice):
             )
 
     def configure_remote_device(self, name, parameters: list[str | tuple[str, bool]]):
+        virtual_parameters = []
         for parameter in parameters:
             is_stream = False
             if isinstance(parameter, tuple):
                 parameter, is_stream = parameter
             param_name = f"{name}_{parameter}"
             rebind = self.waiting_for_module[param_name]
-            setattr(
-                self.__class__,
-                param_name,
-                VirtualParameter(
-                    f"{name}::{parameter}", consummer=True, stream=is_stream
-                ),
-            )
+            vparam = VirtualParameter(f"{param_name}", consummer=True, stream=is_stream)
+            virtual_parameters.append(vparam)
+            setattr(self.__class__, param_name, vparam)
             for element in rebind:
                 setattr(self, param_name, element)
             if rebind:
                 del self.waiting_for_module[param_name]
+        self.known_services[name] = virtual_parameters

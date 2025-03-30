@@ -21,12 +21,12 @@ from .modules import (
     Scaler,
 )
 
-running_virtual_devices = []
+virtual_devices = []
 connected_devices = []
 
 
 def stop_all_virtual_devices():
-    for device in list(running_virtual_devices):
+    for device in list(virtual_devices):
         device.stop()
     # scheduler.stop()
 
@@ -35,6 +35,14 @@ def stop_all_connected_devices():
     stop_all_virtual_devices()
     for device in list(connected_devices):
         device.close()
+
+
+def get_connected_devices():
+    return connected_devices
+
+
+def get_virtual_devices():
+    return virtual_devices
 
 
 class ThreadContext(dict):
@@ -141,6 +149,7 @@ class VirtualDevice(threading.Thread):
 
     def __init__(self, target_cycle_time: float = 0.005):
         super().__init__(daemon=True)
+        virtual_devices.append(self)
         self.device = self  # to be polymorphic with Int
         self.callbacks = []
         self.stream_callbacks = []
@@ -210,12 +219,15 @@ class VirtualDevice(threading.Thread):
         self.running = True
         self.paused = False
         self.pause_event.set()
-        running_virtual_devices.append(self)
+        if self not in virtual_devices:
+            virtual_devices.append(self)
         super().start()
         self.ready_event.wait()
 
     def stop(self, clear_queues=True):
         """Stop the LFO thread."""
+        if not self.running:
+            return
         self.running = False
         self.pause_event.set()
         if self.is_alive():
@@ -235,8 +247,8 @@ class VirtualDevice(threading.Thread):
                     self.output_queue.task_done()
                 except Empty:
                     break
-        if self in running_virtual_devices:
-            running_virtual_devices.remove(self)
+        if self in virtual_devices:
+            virtual_devices.remove(self)
 
     def pause(self, duration=None):
         """Pause the LFO, optionally for a specific duration."""
@@ -294,6 +306,19 @@ class VirtualDevice(threading.Thread):
     @property
     def max_range(self) -> float | int:
         return 127
+
+    def generate_fun(self, to_device, to_param):
+        if isinstance(to_param, VirtualParameter):
+            if to_param.consummer:
+                return lambda value, ctx: to_device.receiving(
+                    value,
+                    on=to_param.name,
+                    ctx=ThreadContext({**ctx, "param": self.__class__.__name__}),
+                )
+            else:
+                return lambda value, ctx: to_device.set_parameter(to_param.name, value)
+        else:
+            return lambda value, ctx: setattr(to_device, to_param.name, value)
 
     # def bind_to(self, other: "VirtualDevice", stream=False):
     #     def queue_callback(value, ctx):

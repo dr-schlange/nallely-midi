@@ -92,19 +92,17 @@ class Scaler:
         from .core import VirtualDevice
 
         if isinstance(self.data, VirtualDevice):
+            fun = self.data.generate_fun(to_device, to_parameter)
             self.data.bind(
-                lambda value, ctx: (
-                    setattr(to_device, to_parameter.name, self.convert(value))
-                ),
-                to=to_device,
+                lambda value, ctx: fun(self.convert(value), ctx), to=to_device
             )
             return
-        pad: ModuleParameter = self.data.parameter
-        fun = pad.generate_fun(to_device, to_parameter)
+        modparam: ModuleParameter = self.data.parameter
+        fun = modparam.generate_fun(to_device, to_parameter)
         self.data.device.bind(
             lambda value, ctx: fun(self.convert(value), ctx),
-            type=pad.type,
-            value=pad.cc,  # equiv pad.note
+            type=modparam.type,
+            value=modparam.cc,  # equiv pad.note
             to=to_device,
         )
 

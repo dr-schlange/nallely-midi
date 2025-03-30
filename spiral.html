@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Psychedelic Endless Spiral Zoom</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: black;
+        }
+
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script>
+        // parameters
+        // Spiral parameters
+        const config = {
+            spiralFactor: 0.01,   // 0.01 Controls spiral tightness  0.01 .. 1
+            maxRadius: 100,       // Max radius before reset 1 .. 100
+            pattern: 1.5,         // 0.1 .. 3
+            animationSpeed: 0.02, // 0.02 .. 5
+            rotationSpeed: 0.001, // 0.001 .. 1000
+            particleColor: 0.04,  // 0..1
+            hueCircling: 0,       // 0 = false, != 0 = true
+        }
+
+        // Scene setup
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Camera position
+        camera.position.z = 50;
+
+        // Particle system
+        const particleCount = 5000;
+        const particles = new THREE.BufferGeometry();
+        const positions = new Float32Array(particleCount * 3); // x, y, z
+        const sizes = new Float32Array(particleCount); // Particle sizes
+        const colors = new Float32Array(particleCount * 3); // RGB colors
+
+        // Initialize particles
+        for (let i = 0; i < particleCount; i++) {
+            const theta = i * 0.1; // Angle for spiral
+            const radius = config.spiralFactor * theta;
+            const x = radius * Math.cos(theta);
+            const y = radius * Math.sin(theta);
+            const z = 0;
+
+            positions[i * 3] = x;
+            positions[i * 3 + 1] = y;
+            positions[i * 3 + 2] = z;
+
+            // Size increases with radius
+            sizes[i] = Math.min(1 + radius * 0.5, 10);
+
+            // Psychedelic colors (HSL hue cycling)
+            let hue = (theta / (2 * Math.PI)) % 1; // 0 to 1
+            if (config.hueCircling === 0) {
+                hue = config.particleColor
+            }
+            const color = new THREE.Color().setHSL(hue, 1, 0.5);
+            colors[i * 3] = color.r;
+            colors[i * 3 + 1] = color.g;
+            colors[i * 3 + 2] = color.b;
+        }
+
+        particles.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        particles.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+        particles.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+        // Material for particles
+        const particleMaterial = new THREE.PointsMaterial({
+            size: 1,
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.8,
+            sizeAttenuation: true // Size scales with distance
+        });
+
+        // Create particle system
+        const particleSystem = new THREE.Points(particles, particleMaterial);
+        scene.add(particleSystem);
+
+        // Animation variables
+        let time = 0;
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            time += config.animationSpeed; // Speed of animation
+
+            // Rotate the spiral
+            particleSystem.rotation.z += config.rotationSpeed;
+
+            // Update particle positions and sizes
+            const positions = particleSystem.geometry.attributes.position.array;
+            const sizes = particleSystem.geometry.attributes.size.array;
+            const colors = particleSystem.geometry.attributes.color.array;
+
+            for (let i = 0; i < particleCount; i++) {
+                const theta = i * config.pattern + time;
+                let radius = config.spiralFactor * theta;
+
+                // Reset particles that go too far
+                if (radius > config.maxRadius) {
+                    radius -= config.maxRadius; // Loop back to center
+                }
+
+                const x = radius * Math.cos(theta);
+                const y = radius * Math.sin(theta);
+
+                positions[i * 3] = x;
+                positions[i * 3 + 1] = y;
+                sizes[i] = Math.min(1 + radius * 0.5, 10);
+
+                // Update colors for psychedelic effect
+                let hue = (theta / (2 * Math.PI) + time * 0.1) % 1;
+                if (config.hueCircling === 0) {
+                    hue = config.particleColor
+                }
+                const color = new THREE.Color().setHSL(hue, 1, 0.5);
+                colors[i * 3] = color.r;
+                colors[i * 3 + 1] = color.g;
+                colors[i * 3 + 2] = color.b;
+            }
+
+            particleSystem.geometry.attributes.position.needsUpdate = true;
+            particleSystem.geometry.attributes.size.needsUpdate = true;
+            particleSystem.geometry.attributes.color.needsUpdate = true;
+
+            renderer.render(scene, camera);
+        }
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // WebSocket setup to control the cube
+        const connect = () => {
+            const ws = new WebSocket('ws://localhost:6789/spiral/autoconfig');
+
+            ws.onopen = () => {
+                ws.send(JSON.stringify({
+                    kind: "visual",
+                    parameters: Object.keys(config).map(name => { return { name } })
+                }))
+            }
+
+            ws.onclose = (e) => {
+                console.log('Socket is closed. Reconnect will be attempted in 1 second.', e.reason);
+                setTimeout(() => {
+                    connect();
+                }, 1000);
+            };
+
+            ws.onerror = (err) => {
+                console.error('Socket encountered error: ', err.message, 'Closing socket');
+                ws.close();
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                console.log("receiving", data)
+                config[data.on] = data.value
+            };
+        }
+        // Start ws connection
+        connect();
+        // Start animation
+        animate();
+    </script>
+
+</body>
+
+</html>
