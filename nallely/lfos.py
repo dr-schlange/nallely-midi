@@ -1,6 +1,6 @@
 import math
 from decimal import Decimal
-from typing import Any
+from typing import Any, Literal
 
 from .core import TimeBasedDevice, VirtualParameter
 
@@ -18,7 +18,7 @@ class LFO(TimeBasedDevice):
         min_value: int | float | Decimal = 0,
         max_value: int | float | Decimal = 128,
         speed: int | float = 10.0,
-        sampling_rate: int = 44100,
+        sampling_rate: int | Literal["auto"] = "auto",
     ):
         self.as_int = isinstance(min_value, int) and isinstance(max_value, int)
         self.waveform = waveform
@@ -28,11 +28,7 @@ class LFO(TimeBasedDevice):
         self.max_value: Decimal | int = (
             Decimal(max_value) if isinstance(max_value, float) else max_value
         )
-        super().__init__(
-            speed=speed,
-            sampling_rate=sampling_rate,
-            target_cycle_time=1 / sampling_rate,
-        )
+        super().__init__(speed=speed, sampling_rate=sampling_rate)
 
     def generate_waveform(self, t):
         waveform = self.waveform
@@ -127,16 +123,17 @@ class CombinedLFO(LFO):
         self.lfo1 = lfo1
         self.lfo2 = lfo2
 
-        self.min_value = min(lfo1.min_value, lfo2.min_value)
-        self.max_value = max(lfo1.max_value, lfo2.max_value)
-        self.sampling_rate = max(lfo1.sampling_rate, lfo2.sampling_rate)
-        self.speed = max(lfo1.speed, lfo2.speed)
+        min_value = min(lfo1.min_value, lfo2.min_value)
+        max_value = max(lfo1.max_value, lfo2.max_value)
+        speed = max(lfo1.speed, lfo2.speed)
+        sampling_rate = int(max(lfo1.sampling_rate, lfo2.sampling_rate))
 
         super().__init__(
             waveform="combined",
-            min_value=self.min_value,
-            max_value=self.max_value,
-            speed=self.speed,
+            min_value=min_value,
+            max_value=max_value,
+            speed=speed,
+            sampling_rate=sampling_rate,
         )
 
     def normalize(self, value):

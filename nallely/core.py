@@ -7,7 +7,7 @@ from dataclasses import InitVar, dataclass, field
 from decimal import Decimal
 from pathlib import Path
 from queue import Empty, Full, Queue
-from typing import Any, Counter, Type
+from typing import Any, Callable, Counter, Literal, Type
 
 import mido
 
@@ -137,6 +137,8 @@ class VirtualParameter:
 
 
 class VirtualDevice(threading.Thread):
+    variable_refresh: bool = True
+
     def __init__(self, target_cycle_time: float = 0.005):
         super().__init__(daemon=True)
         self.device = self  # to be polymorphic with Int
@@ -304,6 +306,8 @@ class VirtualDevice(threading.Thread):
 
 @dataclass
 class MidiDevice:
+    variable_refresh = False
+
     device_name: str
     modules_descr: list[Type[Module]]
     autoconnect: InitVar[bool] = True
@@ -312,9 +316,7 @@ class MidiDevice:
     outport: mido.ports.BaseOutput | None = None
     inport: mido.ports.BaseInput | None = None
     debug: bool = False
-    # on_midi_message: Callable[[mido.Message], None] | Callable[[Self, mido.Message], None] = field(
-    #     default=lambda msg: (print("received", msg) if msg.type != "clock" else None)  # type: ignore
-    # )
+    on_midi_message: Callable[["MidiDevice", mido.Message], None] | None = None
 
     def __post_init__(self, autoconnect, read_input_only):
         self.reverse_map = {}
@@ -352,13 +354,11 @@ class MidiDevice:
             if self in connected_devices:
                 connected_devices.remove(self)
 
-    def on_midi_message(self, msg, debug): ...
-
     def _sync_state(self, msg):
         if msg.type == "clock":
             return
         if self.on_midi_message:
-            ...
+            self.on_midi_message(self, msg)
         if self.debug:
             print(msg)
         if msg.type == "control_change":
@@ -503,11 +503,19 @@ class DeviceNotFound(Exception):
 
 
 class TimeBasedDevice(VirtualDevice):
-    def __init__(self, speed: int | float = 10.0, sampling_rate: int = 44100, **kwargs):
+    def __init__(
+        self,
+        speed: int | float = 10.0,
+        sampling_rate: int | Literal["auto"] = "auto",
+        **kwargs,
+    ):
         self._speed = speed
-        self._sampling_rate = sampling_rate
-        self.time_step = Decimal(speed) / sampling_rate
-        super().__init__(**kwargs)
+        self.auto_sampling_rate = sampling_rate == "auto"
+        self._sampling_rate = (
+            self.compute_sampling_rate() if sampling_rate == "auto" else sampling_rate
+        )
+        self.time_step = Decimal(speed) / self._sampling_rate
+        super().__init__(target_cycle_time=1 / self._sampling_rate, **kwargs)
 
     @property
     def speed(self):
@@ -516,7 +524,10 @@ class TimeBasedDevice(VirtualDevice):
     @speed.setter
     def speed(self, value):
         self._speed = value
+        if self.auto_sampling_rate:
+            self._sampling_rate = self.compute_sampling_rate()
         self.time_step = Decimal(value) / self._sampling_rate
+        self.target_cycle_time = float(1 / self._sampling_rate)
 
     @property
     def sampling_rate(self):
@@ -525,7 +536,13 @@ class TimeBasedDevice(VirtualDevice):
     @sampling_rate.setter
     def sampling_rate(self, value):
         self._sampling_rate = Decimal(value)
-        self.time_step = Decimal(value) / self._sampling_rate
+        self.time_step = Decimal(self.speed) / self._sampling_rate
+        self.target_cycle_time = float(1 / self._sampling_rate)
+
+    def compute_sampling_rate(self):
+        if self.speed <= 1:
+            return 20  # we sample 20 point, enough as it's slow
+        return int(self.speed * 20)  # we sample 20 times faster than the speed
 
     def generate_value(self, t) -> Any: ...
 
@@ -547,26 +564,36 @@ class TimeBasedDevice(VirtualDevice):
 #         super().__init__(**kwargs)
 
 #     def main(self, ctx):
+#         devices_graph = defaultdict(list)
+#         devices = {}
+#         is_used_as_src = []
 #         for src, dest in self.connections:
-#             if isinstance(src, TimeBasedDevice):
-#                 current_hz = 1/src.time_step
-#                 current = 1/dest.target_cycle_time
-#                 new_freq = 1/(src.target_cycle_time * 2)
-#                 if new_freq != current:
-#                     print(f"src={src.target_cycle_time}, dest={dest.target_cycle_time}")
-#                     print(f"src={src}, dest={dest}")
-#                     print(f"  * refresh={current_hz}Hz")
-#                     print(f"   => This src device will produce {current_hz} data every 1s")
-#                     print(f"   => This dest device will consume {dest.target_cycle_time} data every 1s")
-#                 if new_freq < current:
-#                     print(f"   => We could lower refresh of dest to {1/(src.target_cycle_time * 2)}Hz")
-#                     print(f"   => I'm lowering it's refresh frequency from {current} to 2times the speed {new_freq}Hz")
-#                     dest.set_parameter("target_cycle_time", 1/new_freq)
-#                 elif new_freq > current:
-#                     print(f"   => We could increase refresh of dest to {1/(src.target_cycle_time * 2)}Hz")
-#                     print(f"   => I'm increasing it's refresh frequency from {current} to {new_freq}Hz")
-#                     dest.set_parameter("target_cycle_time", 1/new_freq)
+#             # We should build a chain for all the dependencies to build multiple trees
+#             # This is a first PoC
+#             if isinstance(src, TimeBasedDevice) and isinstance(dest, TimeBasedDevice):
+#                 dest_id = id(dest)
+#                 devices_graph[dest_id].append(src)
+#                 devices[dest_id] = dest
+#                 is_used_as_src.append(src)
+
+#         for device_id, feeders in devices_graph.items():
+#             device = devices[device_id]
+#             if device not in is_used_as_src:  # We know we are on a "leaf"
+#                 ...  # adjust me
+#             # we go 5 times the sum of all the freqs
+#             ideal_refresh_freq = int(
+#                 sum((1 / f.target_cycle_time) for f in feeders) * 5
+#             )
+#             current_refresh_freq = int(1 / device.target_cycle_time)
+#             print(
+#                 f"Ideal is {ideal_refresh_freq}Hz, and current is {current_refresh_freq}Hz"
+#             )
+#             if ideal_refresh_freq != current_refresh_freq:
+#                 print(f"Change to {ideal_refresh_freq}")
+#                 device.set_parameter("sampling_rate", ideal_refresh_freq)
+#                 time.sleep(1)
 
 
-# scheduler = VirtualDeviceScheduler(target_cycle_time=1)  # Try to enforce 1Hz
+# # Try to enforce 1Hz for this device
+# scheduler = VirtualDeviceScheduler(target_cycle_time=0.5)
 # scheduler.start()
