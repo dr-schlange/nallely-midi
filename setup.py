@@ -5,6 +5,8 @@ from setuptools import setup
 
 
 version = tuple(sys.version_info[:2])
+if version < (3, 13):
+    sys.exit('Sorry, Python < 3.13 is not currently supported')
 
 packages = ["nallely", "nallely.devices"]
 
@@ -29,11 +31,6 @@ setup(
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",
         "Programming Language :: Python",
-        "Programming Language :: Python :: 3.8",  # some versions are not tested
-        "Programming Language :: Python :: 3.9",
-        "Programming Language :: Python :: 3.10",
-        "Programming Language :: Python :: 3.11",
-        "Programming Language :: Python :: 3.12",
         "Programming Language :: Python :: 3.13",
         "Operating System :: OS Independent",
         "Intended Audience :: Developers",
