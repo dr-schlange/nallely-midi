@@ -1,10 +1,9 @@
-import time
 from nallely.core import (
     get_connected_devices,
     get_virtual_devices,
     stop_all_connected_devices,
 )
-from nallely.devices.mpd32 import MPD32
+# from nallely.devices import MPD32
 from nallely.lfos import LFO
 from nallely.utils import WebSocketSwitchDevice
 
@@ -46,10 +45,9 @@ try:
     # We send data on "/scope" also, in case the external scope connects (on "data")
     ws.scope_data = lfo2
 
-    # We map k1 from the MPD32 to the speed of the lfo
-    mpd32 = MPD32()
-
-    lfo2.speed_cv = mpd32.modules.buttons.k1.scale(min=0.01, max=1, method="lin")
+    # # We map k1 from the MPD32 to the speed of the lfo
+    # mpd32 = MPD32()
+    # lfo2.speed_cv = mpd32.modules.buttons.k1.scale(min=0.01, max=1, method="lin")
 
     print("The system is waiting for modules to auto-register")
     while (
