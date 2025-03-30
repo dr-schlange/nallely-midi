@@ -29,3 +29,5 @@ This repo comes with one example of a spiral that is controlled by LFOs created 
 6. (Optional) if you want to see the LFO shape, launch `external-scope.py` from another terminal.
 
 The screenshot below shows you what the result looks like with everything launched
+
+![shot](https://github.com/user-attachments/assets/0fc1a194-5281-4cbc-9ce9-bc2fc86e7342)
