@@ -6,7 +6,7 @@ from setuptools import setup
 
 version = tuple(sys.version_info[:2])
 
-packages = ["nallely"]
+packages = ["nallely", "nallely.devices"]
 
 setup(
     name="nallely",
