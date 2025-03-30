@@ -24,7 +24,7 @@ setup(
     package_data={"": ["README.md", "LICENSE", "CHANGELOG.md"]},
     include_package_data=True,
     # tests_require=['pytest'],
-    install_requires=["mido", "websockets", "plotext", "wrapt"],
+    install_requires=["mido", "websockets", "plotext", "wrapt", "rtmidi"],
     license="BSD 3-Clause",
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",
