@@ -70,26 +70,44 @@ class TerminalOscilloscope(VirtualDevice):
 
 
 class WebSocketSwitchDevice(VirtualDevice):
-    def __init__(self, **kwargs):
-        super().__init__(target_cycle_time=1 / 20, **kwargs)
-        self.server = serve(self.handler, "localhost", 6789)
-        self.connected = defaultdict(list)
+    variable_refresh = False
 
-    def handler(self, websocket):
-        path = websocket.request.path
+    def __init__(self, host="0.0.0.0", port=6789, **kwargs):
+        super().__init__(target_cycle_time=10, **kwargs)
+        self.waiting_for_module = defaultdict(list)
+        self.connected = defaultdict(list)
+        self.server = serve(self.handler, host=host, port=port)
+
+        def __setattr__(self, key, value):
+            if key in self.__dict__ or key in self.__class__.__dict__:
+                object.__setattr__(self, key, value)
+                return
+            self.waiting_for_module[key].append(value)
+
+        self.__class__.__setattr__ = __setattr__
+
+    def handler(self, client):
+        path = client.request.path
+        service_name = path.split("/")[1]
         if path.endswith("/autoconfig"):
-            message = json.loads(websocket.recv())
-            self.configure_remote_device(
-                message["name"], parameters=message["parameters"]
-            )
-            return
-        device = path.split("/")[1]
-        self.connected[device].append(websocket)
+            print(f"Autoconfig for {service_name}")
+            message = json.loads(client.recv())
+            parameters = [
+                (str(p["name"]), bool(p["stream"])) for p in message["parameters"]
+            ]
+            print(f"Parameters: {message['parameters']}")
+            self.configure_remote_device(service_name, parameters=parameters)  # type: ignore
+        connected_devices = self.connected[service_name]
+        connected_devices.append(client)
         try:
-            for message in websocket:
-                ...
+            for message in client:
+                # Sends message to other modules connected to this channel
+                for device in connected_devices:
+                    if device == client:
+                        continue
+                    device.send(message)
         finally:
-            self.connected[device].remove(websocket)
+            connected_devices.remove(client)
 
     def setup(self):
         self.server.serve_forever()
@@ -115,14 +133,21 @@ class WebSocketSwitchDevice(VirtualDevice):
                 )
             )
 
-    def configure_remote_device(self, name, parameters: list[str]):
+    def configure_remote_device(self, name, parameters: list[str | tuple[str, bool]]):
         for parameter in parameters:
+            is_stream = False
+            if isinstance(parameter, tuple):
+                parameter, is_stream = parameter
             param_name = f"{name}_{parameter}"
-            rebind = getattr(self, param_name, None)
+            rebind = self.waiting_for_module[param_name]
             setattr(
                 self.__class__,
                 param_name,
-                VirtualParameter(f"{name}::{parameter}", consummer=True, stream=False),
+                VirtualParameter(
+                    f"{name}::{parameter}", consummer=True, stream=is_stream
+                ),
             )
-            if rebind is not None:
-                setattr(self, param_name, rebind)
+            for element in rebind:
+                setattr(self, param_name, element)
+            if rebind:
+                del self.waiting_for_module[param_name]
