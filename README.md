@@ -28,4 +28,4 @@ This repo comes with one example of a spiral that is controlled by LFOs created 
 5. Profit
 6. (Optional) if you want to see the LFO shape, launch `external-scope.py` from another terminal.
 
-The video below shows you what the result looks like.
+The screenshot below shows you what the result looks like with everything launched
