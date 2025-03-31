@@ -62,9 +62,22 @@ class ThreadContext(dict):
 
 
 @dataclass
+class CallbackRegistryEntry:
+    target: "VirtualDevice | MidiDevice"
+    parameter: "VirtualParameter | ModuleParameter | ModulePadsOrKeys | PadOrKey | ParameterInstance"
+    callback: Callable[[Any, ThreadContext], Any]
+    cc_note: int | None = None
+    type: str | None = None
+
+
+@dataclass
 class ParameterInstance:
     parameter: "VirtualParameter"
     device: "VirtualDevice"
+
+    @property
+    def name(self):
+        return self.parameter.name
 
 
 @dataclass
@@ -89,12 +102,14 @@ class VirtualParameter:
                         ),
                     ),
                     to=device,
+                    param=self,
                     stream=self.stream,
                 )
             else:
                 value.device.bind(
                     lambda value, ctx: device.set_parameter(self.name, value),
                     to=device,
+                    param=self,
                     stream=self.stream,
                 )
         elif isinstance(value, Int):
@@ -107,7 +122,6 @@ class VirtualParameter:
                         ctx=ThreadContext({**ctx, "param": int_val.parameter.name}),
                     ),
                     to=device,
-                    # type="control_change",
                     type=value.parameter.type,
                     value=value.parameter.cc,
                     stream=self.stream,
@@ -116,7 +130,6 @@ class VirtualParameter:
                 value.device.bind(
                     lambda value, ctx: device.set_parameter(self.name, value),
                     to=device,
-                    # type="control_change",
                     type=value.parameter.type,
                     value=value.parameter.cc,
                     stream=self.stream,
@@ -130,17 +143,20 @@ class VirtualParameter:
                         ctx=ThreadContext({**ctx, "param": value.parameter.name}),
                     ),
                     to=device,
+                    param=self,
                 )
         elif isinstance(value, Scaler):
             scaler = value
             scaler.install_fun(device, self)
         elif isinstance(value, PadOrKey):
             pad = value
+            foo = pad.generate_fun(device, self)
             pad.device.bind(
-                lambda value, ctx: pad.generate_fun(value, ctx),
+                lambda value, ctx: foo(value, ctx),
                 type=pad.type,
-                value=pad.note,  # equiv pad.cc
+                note_cc=pad.note,  # equiv pad.cc
                 to=device,
+                param=self,
             )
 
 
@@ -151,6 +167,7 @@ class VirtualDevice(threading.Thread):
         super().__init__(daemon=True)
         virtual_devices.append(self)
         self.device = self  # to be polymorphic with Int
+        self.callbacks_registry: list[CallbackRegistryEntry] = []
         self.callbacks = []
         self.stream_callbacks = []
         self.input_queue = Queue(maxsize=200)
@@ -264,7 +281,7 @@ class VirtualDevice(threading.Thread):
             self.paused = False
             self.pause_event.set()
 
-    def bind(self, callback, to, stream=False, append=True):
+    def bind(self, callback, to, param, stream=False, append=True):
         # if to:
         #     scheduler.connections.append((self, to))
         if stream:
@@ -275,6 +292,23 @@ class VirtualDevice(threading.Thread):
             if not append:
                 self.callbacks.clear()
             self.callbacks.append(callback)
+        self.callbacks_registry.append(
+            CallbackRegistryEntry(target=to, parameter=param, callback=callback)
+        )
+
+    def unbind(self, target, param):
+        for entry in list(self.callbacks_registry):
+            if entry.target == target and entry.parameter.name == param.name:  # type: ignore
+                callback = entry.callback
+                self.callbacks_registry.remove(entry)
+                try:
+                    self.stream_callbacks.remove(callback)
+                except ValueError:
+                    ...
+                try:
+                    self.callbacks.remove(callback)
+                except ValueError:
+                    ...
 
     def process_input(self, param, value):
         setattr(self, param, value)
@@ -346,6 +380,7 @@ class MidiDevice:
     def __post_init__(self, autoconnect, read_input_only):
         self.reverse_map = {}
         # callbacks that are called when reacting to a value
+        self.callbacks_registry: list[CallbackRegistryEntry] = []
         self.input_callbacks: defaultdict[tuple[str, int], list[Any]] = defaultdict(
             list
         )
@@ -470,12 +505,31 @@ class MidiDevice:
             )
         )
 
-    def bind(self, callback, type, value, to, stream=False, append=True):
+    def bind(self, callback, type, cc_note, to, param, stream=False, append=True):
         # if to:
         #     scheduler.connections.append((self, to))
         if not append:
-            self.input_callbacks[(type, value)].clear()
-        self.input_callbacks[(type, value)].append(callback)
+            self.input_callbacks[(type, cc_note)].clear()
+        self.input_callbacks[(type, cc_note)].append(callback)
+        self.callbacks_registry.append(
+            CallbackRegistryEntry(
+                target=to,
+                parameter=param,
+                callback=callback,
+                type=type,
+                cc_note=cc_note,
+            )
+        )
+
+    def unbind(self, target, param, type, cc_note):
+        for entry in list(self.callbacks_registry):
+            if entry.target == target and entry.parameter.name == param.name and entry.type == type and entry.cc_note == cc_note:  # type: ignore
+                callback = entry.callback
+                self.callbacks_registry.remove(entry)
+                try:
+                    self.input_callbacks[(type, cc_note)].remove(callback)
+                except ValueError:
+                    ...
 
     # def bind_output(self, callback):
     #     self.output_callbacks.append(callback)

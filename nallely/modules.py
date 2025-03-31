@@ -94,7 +94,9 @@ class Scaler:
         if isinstance(self.data, VirtualDevice):
             fun = self.data.generate_fun(to_device, to_parameter)
             self.data.bind(
-                lambda value, ctx: fun(self.convert(value), ctx), to=to_device
+                lambda value, ctx: fun(self.convert(value), ctx),
+                to=to_device,
+                param=to_parameter,
             )
             return
         modparam: ModuleParameter = self.data.parameter
@@ -155,6 +157,7 @@ class ModuleParameter:
                 type=device_value.parameter.type,
                 value=device_value.parameter.cc,
                 to=to_module.device,
+                param=self,
             )
             return
 
@@ -165,6 +168,7 @@ class ModuleParameter:
             device.bind(
                 lambda value, ctx: setattr(to_module, self.name, value),
                 to=to_module.device,
+                param=self,
             )
             return
         if isfunction(feeder):
@@ -183,8 +187,9 @@ class ModuleParameter:
             from_module.bind(
                 pad.generate_fun(to_module, self),
                 type=pad.type,
-                value=pad.note,
+                note_cc=pad.note,
                 to=to_module.device,
+                param=self,
             )
             return
 
@@ -388,8 +393,9 @@ class ModulePadsOrKeys:
                     note=value, velocity=ctx["velocity"], type=ctx["type"]
                 ),
                 type=self.type,
-                value=pad.note,
+                note_cc=pad.note,
                 to=instance.device,
+                param=self,
             )
             return
         if isinstance(value, list):

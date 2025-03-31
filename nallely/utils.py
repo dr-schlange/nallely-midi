@@ -1,6 +1,7 @@
 import json
 import threading
 from collections import defaultdict, deque
+from dataclasses import dataclass, field
 
 import plotext as plt
 from websockets.sync.server import serve
@@ -69,21 +70,38 @@ class TerminalOscilloscope(VirtualDevice):
         self.visu_data = deque([], maxlen=self.buffer_size)
 
 
-class WebSocketSwitchDevice(VirtualDevice):
+@dataclass
+class WSWaitingRoom:
+    name: str
+    queue: list = field(default_factory=list)
+
+    def append(self, value):
+        self.queue.append(value)
+
+    def rebind(self, target):
+        for element in self.queue:
+            setattr(target, self.name, element)
+
+
+class WebSocketSwitch(VirtualDevice):
     variable_refresh = False
 
     def __init__(self, host="0.0.0.0", port=6789, **kwargs):
         super().__init__(target_cycle_time=10, **kwargs)
-        self.waiting_for_module = defaultdict(list)
         self.connected = defaultdict(list)
         self.known_services = {}
         self.server = serve(self.handler, host=host, port=port)
 
         def __setattr__(self, key, value):
+            if isinstance(getattr(self, key, None), WSWaitingRoom):
+                getattr(self, key).append(value)
+                return
             if key in self.__dict__ or key in self.__class__.__dict__:
                 object.__setattr__(self, key, value)
                 return
-            self.waiting_for_module[key].append(value)
+            waiting_room = WSWaitingRoom(key)
+            waiting_room.append(value)
+            object.__setattr__(self, key, waiting_room)
 
         self.__class__.__setattr__ = __setattr__
 
@@ -148,12 +166,10 @@ class WebSocketSwitchDevice(VirtualDevice):
             if isinstance(parameter, tuple):
                 parameter, is_stream = parameter
             param_name = f"{name}_{parameter}"
-            rebind = self.waiting_for_module[param_name]
+            waiting_room = getattr(self, param_name, None)
             vparam = VirtualParameter(f"{param_name}", consummer=True, stream=is_stream)
             virtual_parameters.append(vparam)
             setattr(self.__class__, param_name, vparam)
-            for element in rebind:
-                setattr(self, param_name, element)
-            if rebind:
-                del self.waiting_for_module[param_name]
+            if waiting_room:
+                waiting_room.rebind(self)
         self.known_services[name] = virtual_parameters
