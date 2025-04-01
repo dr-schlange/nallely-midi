@@ -507,7 +507,7 @@ class MidiDevice:
                             {
                                 "debug": self.debug,
                                 "type": msg.type,
-                                "note": msg.velocity,
+                                "note": msg.note,
                             }
                         ),
                     )

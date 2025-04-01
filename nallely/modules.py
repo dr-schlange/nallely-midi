@@ -4,6 +4,7 @@ import math
 from dataclasses import dataclass, field
 from decimal import Decimal
 from inspect import isfunction
+from types import FunctionType
 from typing import TYPE_CHECKING, Any, Literal, Type
 
 import wrapt
@@ -52,6 +53,9 @@ class Int(wrapt.ObjectProxy):
                 other.device.unbind(
                     self.device, self.parameter, param.type, param.cc_note
                 )
+            case FunctionType():
+                param = self.parameter
+                self.device.unbind(self.device, param, param.type, param.cc_note)
             case VirtualDevice():
                 other.unbind(self.device, self.parameter)
 
@@ -201,6 +205,7 @@ class ModuleParameter:
                 cc_note=self.cc_note,
                 to=to_module.device,
                 append=append,
+                param=self,
             )
             return
         if isinstance(feeder, Scaler):
@@ -229,6 +234,27 @@ class ModuleParameter:
         getattr(device.modules, self.module_state_name).state[self.name].update(value)
 
 
+class padproperty(property):
+    def __set__(self, instance, inner_function, owner=""):
+        pad: PadOrKey = getattr(instance, self.__name__)
+        if pad.mode == "latch":
+            raise Exception(
+                "Latch mode is not supported when binding a pad/key to a function"
+            )
+        elif pad.mode == "hold":
+            from .core import ThreadContext
+
+            pad.device.bind(
+                lambda value, ctx: (
+                    inner_function(value, ctx) if ctx.type == "note_on" else ...
+                ),
+                type=pad.type,
+                cc_note=pad.cc_note,
+                param=pad,
+                to=pad.device,
+            )
+
+
 @dataclass
 class PadOrKey:
     device: MidiDevice
@@ -242,17 +268,17 @@ class PadOrKey:
         self.parameter = self
         self.name = f"#{self.cc_note}"
 
-    @property
+    @padproperty
     def velocity(self):
         return PadOrKey(self.device, cc_note=self.cc_note, type="velocity")
 
-    @property
+    @padproperty
     def velocity_latch(self):
         return PadOrKey(
             self.device, cc_note=self.cc_note, type="velocity", mode="latch"
         )
 
-    @property
+    @padproperty
     def velocity_hold(self):
         return PadOrKey(self.device, cc_note=self.cc_note, type="velocity", mode="hold")
 
@@ -399,6 +425,25 @@ class PadOrKey:
         else:
             return self.generate_inner_fun_midiparam(to_device, to_param)
 
+    def bind_function(self, fun):
+        self.device.bind(
+            fun,
+            type=self.type,
+            cc_note=self.cc_note,
+            to=self.device,
+            param=self,
+        )
+
+    def __isub__(self, other):
+        match other:
+            case FunctionType():
+                self.device.unbind(
+                    self.device,
+                    param=self,
+                    cc_note=self.cc_note,
+                    type=self.type,
+                )
+
 
 @dataclass
 class ModulePadsOrKeys:
@@ -494,18 +539,13 @@ class Module:
             return [self[i] for i in range(*indices)]  # type: ignore
         raise Exception(f"Don't know what to look for key of type {key.__class__}")
 
-    # def __setitem__(self, key, value):
-    #     if isinstance(key, int):
-    #         self[key].bind(value)
-    #         return
-    #     if isinstance(key, slice):
-    #         for k in self[key]:
-    #             k.bind(value)
-
-    # def __setattr__(self, key, value):
-    #     if key in ["device", "meta", "state_name", "state"]:
-    #         return super().__setattr__(key, value)
-    #     return self.state[key].update(value)
+    def __setitem__(self, key, value):
+        pads = self[key]
+        if not isinstance(pads, list):
+            pads = [pads]
+        match value:
+            case FunctionType():
+                [p.bind_function(value) for p in pads]
 
 
 class DeviceState:

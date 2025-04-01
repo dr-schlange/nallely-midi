@@ -437,6 +437,40 @@ nts1.modules.delay.time = mpd32.modules.buttons.k1.scale(min=10, max=50, method=
 
 This snippet maps `k1` to the cutoff, the resonance, and the delay time. It also applies a scaler on `k1` to have a value for the delay that will be between `10` and `50`.
 
+
+### Map Python function to MIDI device
+
+Nallely lets you map Python functions to the controls/keys/pads of `MidiDevices`. The syntax is more or less equivalent to the one in the previous section, but "in reverse" (at least it feels like this to me). Basically, you tell the device control/pad/key what it will trigger by assigning the function to the control/pad/key. Here is an example using the MPD32 configuration we already used in the documentation:
+
+```python
+mpd32 = MPD32()
+
+# We map a function to k1
+foo = lambda value, ctx: print("Received", value, "with context", ctx)
+mpd32.modules.buttons.k1 = foo
+# We map a function to pad 36
+mpd32.modules.pads[36] = foo
+
+# We map a function to pad 36 velocity
+mpd32.modules.pads[36].velocity = foo
+
+# We map a function to pad 36 velocity in "hold" mode
+mpd32.modules.pads[36].velocity_hold = foo
+```
+
+The function that is passed as callback **must** have 2 parameters: the first parameter (here `value`) is the value that will be received by the function, while the second one (named `ctx` here), is a context with more informations. Basically for pads/keys, in note mode, you'll have the velocity inside the context, in velocity mode, you'll have the note.
+
+To unmap the function, you can use then the `-=` operator, exactly the same way it's done in the previous sections:
+
+```python
+mpd32.modules.buttons.k1 -= foo
+mpd32.modules.pads[36] -= foo
+mpd32.modules.pads[36].velocity -= foo  # removes the callback for "velocity"
+mpd32.modules.pads[36].velocity_hold -= foo  # removes the callback for "velocity hold"
+```
+
+Please note that when you attached a callback to the velocity, you need to explicitally express that you want to remove the function from `.velocity`. Otherwise, it will remove the callback for the `"note"` mode (normal non-velocity mode).
+
 ### Remove mapping
 
 As seen in the previous section, to remove a mapping, you need to use the `-=` operator. Basically, it's the inverse operation than the `=` that creates the mapping.

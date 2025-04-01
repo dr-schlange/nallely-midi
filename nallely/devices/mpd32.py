@@ -43,6 +43,10 @@ class PadSection(Module):
     state_name = "pads"
     pads = ModulePadsOrKeys()
 
+    # def __setitem__(self, key, feeder):
+    #     pad = self.pads[key]
+    #     print("pad", pad)
+
 
 class MPD32(MidiDevice):
     def __init__(self, device_name=None, **kwargs):
