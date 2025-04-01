@@ -5,7 +5,7 @@ Nallely (pronounced "Nayely") is a MIDI companion to help you easily map MIDI co
 
 ## Requirements and how to install
 
-The current version only works for Python >= 3.13, backward compatibility will be added later if possible. The library relies mainly on `mido` and `python-rtmidi`, so your system needs to support them.
+The current version requires Python >= 3.10. The library relies mainly on `mido` and `python-rtmidi`, so your system needs to support them.
 
 ### Installation
 
