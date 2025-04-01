@@ -14,6 +14,10 @@ There is currently no pypi package for it, so the easiest way to install the lib
 1. create a virtual env
 2. `pip install git+https://github.com/dr-schlange/nallely-midi.git`
 
+## Documentation
+
+A first draft about how Nallely can help you declare your devices and map them using the current API can be find in the [documentation](./docs/main.md).
+
 ## Launch the example
 
 This repo comes with one example of a spiral that is controlled by LFOs created by Nallely. To launch it, once you have installed the library:
