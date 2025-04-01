@@ -1,51 +1,482 @@
 # Documentation for Nallely Midi
 
 This documentation is a first draft and tries to concentrate the various concepts that are part of Nallely in a single document, as well as the way of writing your own devices/modules for Nallely to handle.
+The documentation starts by giving a general overview of the concepts that are known by Nallely and how to handle them.
 
+NOTE: Please note that this library/platform makes an intensive use of meta-programming, meaning that sometimes, the auto-completion can be lost. This will be fixed in future versions as much as possible when concepts will be made more polymorphic.
 
 ## General Overview
 
+Nallely is a companion for your MIDI devices, and a platform for scripting interaction between your devices and experiment with other technologies (e.g: Three.js) to give visual animations that are driven by your MIDI devices.
+Basically Nallely defines two big kind of devices: VirtualDevices and MidiDevices. Those devices exposes a bunch of attributes (ports) that can be mapped between each others. To communicate to other devices, a device registers callbacks towards the devices it needs to modify, and how information is transmitted to the mapped devices. In complement, a websocket server coded as a `VirtualDevice`, allows you to subscribe to external modules and send value changes to them. All devices are non-blocking, so a classic "pattern" for a code would be:
+
+```python
+import nallely
+
+try:
+    # ... All your mapping/logic/use of devices
+finally:
+    nallely.stop_all_connected_devices()
+```
+
+The `stop_all_connected_devices()` let you stop all the thread that have been started, as well as closing all the connection that have been opened towards the MIDI devices.
+
 ## Virtual Devices
 
-### Pre-defined virtual devices
+This kind of devices represents devices that are not MIDI devices, but that generates Control Changes (CC) values. Currenly, `VirtualDevices` can only be mapped to CC controls of other devices. In a near future, it will be possible to map them on other the keys/notes of a target device.
+Each `VirtualDevice` runs in its own thread. Consequently, they need to be started to start send information, they can be paused/resumed, and needs to be stopped when they are not used anymore (or using `stop_all_connected_devices()`).
+
+```python
+import time
+import nallely
+
+try:
+    # Defines a triangle LFO that will vary between 15 and 500 at 10Hz
+    lfo = nallely.LFO(waveform="triangle", min_value=15, max_value=500, speed=10)
+    lfo.start()
+
+    input("Press enter to pause the LFO...")
+
+    lfo.pause()    # We pause
+
+    input("Press enter to resume the LFO...)
+
+    lfo.resume()
+finally:
+    nallely.stop_all_connected_devices()
+```
+
+As you can see in this example, the concept of `VirtualDevice` is reified in various subclasses. One of them, `TimeBasedDevice` represents virtual device that produces data on a regular time basis, following a `speed`. `LFO` and `Cycler` are reifications of `TimeBasedDevice`.
+
+There is currently three pre-defined virtual devices:
+
+1. LFO: represents Low Frequency Oscillators,
+2. Cycler: represents a kind of LFO that cycles through a list of values at a specific speed,
+3. WebSocketSwitch: a websocket server that is used more or less as a bus to send information from local devices (virtual device or MIDI device) to external modules.
 
 ### LFOs
 
-#### Sampling rate
+Low Frequency Oscillator are defined by instanciating the `LFO` class. A set of information to configure the LFO can be passed as parameter (all of them are optionals):
+
+```python
+from nallely import LFO
+
+# Creates a sine signal at 2Hz speed, sampled at 1kHz, which will oscillate between 14 and 50
+l = LFO(waveform="sine", min_value=14, max_value=50, speed=2, sampling_rate=1000)
+l.start()  # starts the LFO
+
+input("Press enter to stop the LFO...")
+
+stop_all_connected_devices()
+```
+
+The parameters that are accepted are:
+
+* `waveform`: the shape of the LFO, can be `"triangle"`, `"sine"`, `"square"`, `"sawtooth"`, `"invert_sawtooth"` (default: `"sine"`).
+* `min_value`: the lower bound of the LFO (default: `0`).
+* `min_value`: the upper bound of the LFO, not included in the result (default: `128`).
+* `speed`: the speed in Hz of the LFO (default: `10.0`)
+* `sampling_rate`: the sampling rate for the produced signal (default: `"auto"`)
+
+The values that are generated depends on `min_value`, `max_value`, as well as their type: if both, `min_value` and `max_value` are `int`, then the values produced by the LFO will be rounded as integers. If one of the value is a `float` or a `Decimal`, the values produced will be of type `float`.
+
+Currently it's not possible to set an offset, but it will be in the future versions (as much as possible).
+
+When the value of `sampling_rate` is set as `"auto"`, then automatically, the LFO instance will compute the best sampling rate to have a clean resolution while not sending "too much" information, leveraging a little bit the load on the CPU.
+
+#### Control parameters of the LFO dynamically
+
+It's possible to change the parameters of the LFO dynamically by simply setting the new value.
+
+```python
+l = LFO(waveform="sine", min_value=14, max_value=50, speed=2)
+time.sleep(2)  # We pause the main execution for 2s, the LFO still runs in the background
+l.speed = 0.001
+
+input("Press enter to stop the LFO...")
+
+stop_all_connected_devices()
+```
+
+You can also drive an LFO from another one (or from a `Cycler`), but you need to associate the LFO to a special attribute of the LFO that needs to be modified:
+
+```python
+main_lfo = (waveform="triangle", min_value=0.001, max_value=1, speed=1)
+sub_lfo = LFO(waveform="sine", min_value=14, max_value=50, speed=2)
+
+sub_lfo.speed_cv = main_lfo  # associate the values produced by main_lfo to sub_lfo
+
+# associate the values produced by main_lfo, but scaled between 0 and 127 in a linear fashion
+sub_lfo.max_value_cv = main_lfo.scale(min=0, max=127, method="lin")
+```
+
+The fact of using `speed_cv` instead of `speed` is implementation dependent of the virtual device. For the LFO, `speed` is an accessor (getter/setter), so as it adjusts some values if a new value is set (e.g: for the speed), `xxx_cv` acts as an indirection that knows how to install the required callbacks on the `xxx` attribute.
+
+The last line associated the `main_lfo` to the `max_value_cv` of the LFO, but this time, a scaler is applied. A scaler lets you change the range of the produced values, thus mapping the produced values to a new scale.
 
 #### Arithmetic
 
+LFOs let you compose them by applying mathematical operations on them:
+
+```python
+l1 = (waveform="triangle", min_value=0.001, max_value=1, speed=1)
+l2 = LFO(waveform="sine", min_value=14, max_value=50, speed=2)
+
+l = l1 + l2  # get the value of l1 and l2 for a dedicated point, adds them and clip the result in the range of min(l1.min, l2.min), max(l1.max, l2.max).
+l.start()
+l.stop()
+
+l = (l1 + l2) > l1 / l2
+l.start()
+```
+When composing a LFO from others, only the final LFO created from the composition of the others needs to be started. The others LFO do not need to be started.
+The operations that are supported are: `+`, `-`, `/`, `*`, `<`, `>`. They are self explanatory beside `<` and `>` which returns the max, and min of the two sub-lfos.
+
 ### Build your own virtual device
+
+You can build your own virtual device by inheriting from the `VirtualDevice` class. This class inherits from `Thread` and let you overrides few methods to customize the behavior. When the virtual device is started, it first calls `setup()` which returns a context that is used to pass some information to the `main(ctx)` method. This latter method is called automatically by the virtual device at a specific rate (by default every O.OO5s, so a rate of 200Hz). If you want to make a blocking call "non blocking", then you can put it in `main(...)`.
+
+The virtual device lets you also override the `receiving(value, on, ctx)` method that is triggered by an external source (other virtual device or MIDI device). To see an example of how to code a virtual device, you can check the `LFO` class and the `Cycler` class. They are both based on the `TimeBasedDevice`, so they override the `generate_value(t)` method that generates a value for a time `t` automatically passed to the method.
+
+Here is the code for the `Cycler`:
+
+```python
+class Cycler(LFO):
+    def __init__(self, values: list[Any], speed=10, waveform="triangle"):
+        self.values = values
+        super().__init__(
+            waveform=waveform, speed=speed, min_value=0, max_value=len(values)
+        )
+
+    def generate_value(self, t) -> Any:
+        idx = super().generate_value(t)
+        return self.values[idx]
+```
+
+The initialization method accepts the speed, the type of wave that needs to be applied, as well as the list element to cycle from. The min and max values are set to `0` and the length of the input list (`values`).
+The class inherits from `LFO` and only overrides the `generate_value(t)` method. For a time `t`, as we inherits from LFO, we will compute a value that will be in the range [0, length of values]. This value is considered as the index of the list of values. The value associated to this index is simply returned.
+
+To declare controls that can be driven by another device, like a MIDI device, or another virtual device, you need to declare a `VirtualParameter` on the class that defines your new virtual device.
+
+```python
+class LFO(TimeBasedDevice):
+    speed_cv = VirtualParameter("speed")
+    ...  # rest of the code
+```
+
+For example, this is how the LFO defines the speed control. It explicitly says that when this attribute will be controled, it will impact the `speed` attribute of the device.
+There is some options that can be passed to the `VirtualParamter`. If your parameter is supposed to be only an attribute that will "receive" information, but that will never be used as source of other controls/parameters, you have to tag it as `consummer`. It's also possible to state that the parameter will be used in a `stream` fashion. When information is produced by a virtual device, the information is sent to all the device mapped to the virtual device only if the new value computed is different from the old one. However, if the virtual parameter is set as "steam", it means that the devices mapped to this parameter needs to send the computed information every tick, even if the computed value is not different from the old one. This is handy when information needs to be visualized depending on the time.
+Here is how the `TerminalOscilloscope` defines a channel that will receive information to display later:
+
+```python
+class TerminalOscilloscope(VirtualDevice):
+    data = VirtualParameter("data", stream=True, consummer=True)
+    ...  # rest of the code
+```
+
+The virtual device channel `data` is declared as `consummer`, meaning that it will only consume data, not produce any from this attribute, and it requires all the values when they are produced (`stream=True`) even if it is not different from the previously computed one.
 
 ## Physical MIDI Devices
 
-### Define a new configuration for a device
+Nallely defines a simple way to declare a MIDI device in the form of code. This `MidiDevice` could be seen as a kind of proxy towards the real device. It is used to send notes/cc changes, and it also tracks automatically the values that are send to the physical device by each CC changes, or the CC changes sent from the physical device. This lets you later query controls of the device to know the last recorded value.
+
+Midi devices are split in various modules, which are sections of the device. Each section then defines the set of buttons/controls that can be accessed and controled by Nallely.
 
 ### Pre-defined MIDI Devices
 
+Nallely knows a first version of configuration for the Korg NTS-1, as well as a kind of dedicated configuration for the Akai MPD32.
+Those devices comes with a specific configuration. If your device is setup differently, it's necessary to change the configuration. Currently the only way to do it is to modifying it in Python, but a YAML-based configuration is planned, with preset-loading is planned (just a matter of work, nothing blocking beside time to do it right now).
+
+Here is how to start the NTS-1 device, or any `MidiDevice` based device:
+
+```python
+from nallely.devices import NTS1
+
+try:
+    nts1 = NTS1()
+    ...  # From here the device is ready to use
+    input("Press enter to stop...")
+finally:
+    stop_all_connected_devices()
+```
+We can access the internal sections/modules of the device programmatically by navigating in the attributes of the elements. We can also query those values:
+
+```python
+nts1.modules.filter.cutoff  # access the cutoff of the filter section of the NTS1
+print("Cutoff", nts1.modules.filter.cutoff)
+
+input("Tweak the cutoff button on your NTS1 and press enter...")
+
+print("Cutoff", nts1.modules.filter.cutoff)  # the value is automatically updated
+```
+
+You can send a specific value on a control simply by "setting" the value:
+
+```python
+nts1.modules.filter.cutoff = 45  # sets the value of the cutoff to 45
+```
+
+Obviously, it's possible to map virtual devices or modules parameters to the MIDI device. Here is how to map the MPD32 to the NTS1:
+
+```python
+from nallely.devices import NTS1, MPD32
+
+try:
+    nts1 = NTS1()
+    mpd32 = MPD32()  # loads this basic config, you might need to create your own for your device
+
+    # We map the k1 button to the cutoff of the NTS1
+    nts1.modules.filter.cutoff = mpd32.modules.buttons.k1
+
+    # We map also k2 to the cutoff (now k1 and k2 are mapped), but using a scaler
+    nts1.modules.filter.cutoff = mpd32.modules.buttons.k2.scale(min=20, max=100, method="log")
+    input("Press enter to stop...")
+finally:
+    stop_all_connected_devices()
+```
+
+Some things to consider here: it's not mandatory that the CC value associated to `k1` and `cutoff` matches. Nallely does the translation when sending the value to the target control/device.
+Also, please note that for each device, `xxx.modules` is the only invariant part of the call (where in the code above `xxx` is the instance). The part `filter.cutoff` and `buttons.k1`, ... depends on how the device is declared. From a MIDI device, we access the internal modules using `.modules`, then we navigates to the section: e.g: `.filter` or `.buttons`, then we access the control: e.g: `.cutoff` or `.k1`, etc. For another device that would have other sections and controls, the only invariant part would be `xxx.modules`, the rest would depend on the declaration.
+
+#### Map keys and pads
+
+The support for keys and pads is quite simple at the moment, here is how it's implemented for the NTS1 and the MPD32 at the moment, and how you can associate pads to the keys of the NTS1 or to other devices
+
+```python
+# associate all the pads to all the notes of the NTS1
+nts1.modules.keys.notes = mpd32.modules.pads[:]
+
+# associate only the pad 36 to the notes of the NTS1
+nts1.modules.keys.notes = mpd32.modules.pads[36]
+
+# associate only pads 36 to 44 to the notes of the NTS1
+nts1.modules.keys.notes = mpd32.modules.pads[36:45]
+```
+
+The way to assign a pad to something has slighly different syntax than for the controls. This time, we don't need to navigate until the underlying control of the section that owns the pads/keys, but we stop on the section, and we access the value of the pad/key that interests us.
+
+It's also possible to map a pad to a control from another device:
+
+```python
+nts1.modules.filter.cutoff = mpd32.modules.pads[36]
+```
+
+In this case, the note of the pad/key will be sent as value for the control change to the target control. It's possible to map instead the velocity to the target control:
+
+```python
+nts1.modules.filter.cutoff = mpd32.modules.pads[36].velocity
+```
+
+This will send the value of the velocity to the target control. When dealing with the velocity, you have acces to 2 extra controls: `hold` and `latch`.
+
+```python
+nts1.modules.filter.cutoff = mpd32.modules.pads[36].velocity_hold
+
+nts1.modules.filter.cutoff = mpd32.modules.pads[36].velocity_latch
+```
+
+In `hold` mode, only the `note_on` from the pads are considered, meaning that `note_off` with velocity 0 are not sent. When a pad/key is pressed, the value of the velocity is hold until the pad is hit again. After another press, the new velocity value is hold, etc.
+
+In `latch` mode, the pad "remembers" the old value of the target CC before seting the new value. When the new value is set, then pressing again the pad/key will reset the CC value to the previously saved value.
+
+Please note that scalers can also be applied to pads. Consequently, it's possible to fix a range of action for the pads. The way of doing it is by simply adding the `.scale(...)` method call after accessing the pad/key, or the velocity parameter.
+
+
+### Define a new configuration for a device
+
+Defining a new device and a configuration is done by subclassing `MidiDevice` and `Module`. The `MidiDevice` class is the base class that launch all the MIDI glue using `mido` and `rtmidi`. The `Module` base class lets you define the sections of your device, and then `ModuleParameter` and `ModulePadsOrKeys` are descriptors that lets you define the various controls of your device.
+
+To help you building your configuration, you can start with this simple script:
+
+```python
+import nallely
+
+try:
+    device = nallely.MidiDevice("MyDevice", modules_descr=[], debug=True)
+
+    input()
+finally:
+    nallely.stop_all_connected_devices()
+```
+
+This snippet creates an instance of `MidiDevice` and will look for a device named `MyDevice` (the name doesn't have to be exact, it can be a sub string of the full name), connects to it, and pass in `debug` mode. In `debug` mode, the device logs all the informations that it receives from the device. This way, you can see what CC value and channel is used for a specific control or pad/key.
+
+Once you have those informations, you can tell Nallely about your device. Here is an example about how it's done for the NTS1:
+
+```python
+...  # other sections before
+
+@dataclass
+class FilterSection(Module):
+    state_name = "filter"
+    type = ModuleParameter(42)
+    cutoff = ModuleParameter(43)
+    resonance = ModuleParameter(44)
+    sweep_depth = ModuleParameter(45)
+    sweep_rate = ModuleParameter(46)
+
+
+@dataclass
+class ArpSection(Module):
+    state_name = "arp"
+    pattern = ModuleParameter(117)
+    intervals = ModuleParameter(118)
+    length = ModuleParameter(119)
+
+@dataclass
+class KeySection(Module):
+    state_name = "keys"
+    notes = ModulePadsOrKeys()
+
+class NTS1(MidiDevice):
+    def __init__(self, device_name=None, *args, **kwargs):
+        super().__init__(
+            *args,
+            device_name=device_name or "NTS-1",
+            modules_descr=[
+                OSCSection,
+                FilterSection,
+                EGSection,
+                ModSection,
+                DelaySection,
+                ReverbSection,
+                ArpSection,
+                KeySection,
+            ],
+            **kwargs,
+        )
+```
+
+We can see that the `FilterSection` inherits from `Module`, and defines `filter`, which is the name of the section. Then, it defines a bunch of parameters, which are instances of `ModuleParameter` with the CC value associated. For example, in this configuration, we can see that `type` is the CC `43`.
+The key section is declared using an instance of `ModulePadsOrKeys`.
+Once you have all the section, you just put them in a list as value of the `module_descr` section of the `MidiDevice`. The name also is set to target this device all the time. If various devices contains `NTS-1` in the name, the first one will be selected. To target a specific one, the full name must be used.
+That's all. Following this configuration, we can now access the various sections and controls:
+
+```python
+nts1 = NTS1()
+nts1.modules.arp.length = 15
+
+l = LFO(waveform="triangle", min_value=1, max_value=10, speed=0.25)
+l.start()
+
+nts1.modules.arp.length = l  #  we map an LFO to the arpegiator length
+```
+
 ## How to map components together
+
+Now that we know how to create virtual devices, how to create MIDI devices, let's see how we can map them together.
 
 ### Map virtual device to physical devices
 
+Mapping a virtual device to a MIDI device is done by navigating towards the control of the target device, and assigning to it the virtual device directly, or the special VirtualParameter of the virtual device.
+
+```python
+l = LFO(waveform="triangle", min_value=1, max_value=10, speed=0.25)
+l.start()
+
+# We map the output of the LFO to the cutoff of the NTS-1
+nts1.modules.filter.cutoff = l
+
+# We map the speed of the LFO to the cutoff of the NTS-1
+nts1.modules.filter.cutoff = l.speed_cv
+```
+
+Note that you can start the LFO before or after binding it to a target device. Also, the assignation is cumulative. Assigning two devices/controls to a control will not override it, it will add them. To remove a binding, you need to use the `-=` operation:
+
+```python
+# We bind the speed
+nts1.modules.filter.cutoff = l.speed_cv
+
+# We map the output of the LFO
+nts1.modules.filter.cutoff = l
+
+# the cutoff is driven now by two "controls"
+# we remove one
+nts1.modules.filter.cutoff -= l.speed_cv
+```
+
 ### Map physical devices to virtual devices
+
+You can control your virtual devices from physical ones the same way you would to associate virtual to physical ones:
+
+```python
+l = LFO(waveform="triangle", min_value=1, max_value=10, speed=0.25)
+l.start()
+
+mpd32 = MPD32()
+l.speed_cv = mpd32.modules.buttons.k1
+l.waveform_cv = mpd32.modules.buttons.k2
+```
+
+In this example, we map `k1` from the MPD32 to the speed of the LFO, and `k2` to the waveform.
 
 ### Map multiple sources to a same target
 
-### Map keys and pads
+Nallely lets you associate multiple sources to the same target, and the same source to multiple targets.
+
+You can associate multiple sources to a target simply by assigning it:
+
+```python
+nts1.modules.filter.cutoff = mpd32.modules.buttons.k1
+nts1.modules.filter.cutoff = mpd32.modules.buttons.k2
+
+l = LFO(waveform="triangle", min_value=10, max_value=100, speed=0.25)
+l.start()
+nts1.modules.filter.cutoff = l
+```
+In this snipped the cutoff is associated to `k1`, `k2`, and to an LFO.
+
+You can also assign the same source to multiple target to change multiple CCs at the same time from the same control:
+
+```python
+nts1.modules.filter.cutoff = mpd32.modules.buttons.k1
+nts1.modules.filter.resonance = mpd32.modules.buttons.k1
+nts1.modules.delay.time = mpd32.modules.buttons.k1.scale(min=10, max=50, method="log")
+```
+
+This snippet maps `k1` to the cutoff, the resonance, and the delay time. It also applies a scaler on `k1` to have a value for the delay that will be between `10` and `50`.
 
 ### Remove mapping
 
+As seen in the previous section, to remove a mapping, you need to use the `-=` operator. Basically, it's the inverse operation than the `=` that creates the mapping.
+
+```python
+l = LFO(waveform="triangle", min_value=1, max_value=10, speed=0.25)
+l.start()
+
+nts1.modules.filter.cutoff = mpd32.modules.buttons.k1
+l.waveform_cv = mpd32.modules.buttons.k2
+
+input("Press enter to remove the bindings...")
+
+nts1.modules.filter.cutoff -= mpd32.modules.buttons.k1
+l.waveform_cv -= mpd32.modules.buttons.k2
+```
+
 ### Scalers
 
-## Dynamically explore running devices/modules
+Scalers let you define a new range for your controls/pads or virtual devices. This allows you to have a same control that can drive multiple targets with different values that makes sense for the target in question. This becomes especially handy for animation and visuals as often, the amplitude varation for thos is sometimes between 0 and 1.
 
-## Move computation to other process/machine
+You can create a scaler from any control, any pad, any virtual device, or any virtual parameter of a virtual device. The syntax is always the same:
 
-### Websocket server
+```python
+mymodule.access.to.the.control.scale(min=..., max=..., method=...)
+```
+`min` and `max` represent the lower and upper bound of the new scale, and `method` the kind of method that need to be applied. By default, `method` is `"log"`.
+
+## Move computation to other process/machine using the websocket server
+
+See the example at the root of the repository: `visual-spiral.py` to see how to start the websocket server. While running it the first time, the server places the devices that wants to send information to a specific external module in a waiting room until the external module connects. When the external module connects, it auto-configure itself by registering itself in the websocket server, and declare all the parameters that can be accessed by other devices.
 
 #### External module auto-registration
 
-#### Receive information
+See `spiral.html`
 
-#### Send information from an external module to any bound
+#### Send information to an external module
+
+See `visual-spiral.py` and `external_scope.py`
+
+#### Send information from an external module to any device
 // Soon
+
+## Dynamically explore running devices/modules

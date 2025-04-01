@@ -710,11 +710,11 @@ class TimeBasedDevice(VirtualDevice):
 
     def main(self, ctx: ThreadContext):
         t = ctx.t
-        waveform_value = self.generate_value(t)
+        generated_value = self.generate_value(t)
         t += self.time_step
         ctx.t = t % 1
         ctx.ticks += 1
-        return waveform_value
+        return generated_value
 
 
 # class VirtualDeviceScheduler(VirtualDevice):
