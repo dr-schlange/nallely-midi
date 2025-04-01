@@ -49,7 +49,7 @@ class Int(wrapt.ObjectProxy):
         match other:
             case PadOrKey() | Int():
                 param = other.parameter
-                other.device.unbind(self.device, self.parameter, param.type, param.cc)
+                other.device.unbind(self.device, self.parameter, param.type, param.cc_note)
             case VirtualDevice():
                 other.unbind(self.device, self.parameter)
 
@@ -115,7 +115,7 @@ class Scaler:
         self.data.device.bind(
             lambda value, ctx: fun(self.convert(value), ctx),
             type=modparam.type,
-            cc_note=modparam.cc,  # equiv pad.note
+            cc_note=modparam.cc_note,  # equiv pad.note
             to=to_device,
             param=to_parameter,
             append=append,
@@ -125,7 +125,7 @@ class Scaler:
 @dataclass
 class ModuleParameter:
     type = "control_change"
-    cc: int
+    cc_note: int
     channel: int = 0
     name: str = NOT_INIT
     module_state_name: str = NOT_INIT
@@ -172,7 +172,7 @@ class ModuleParameter:
             from_module.bind(
                 lambda value, ctx: setattr(to_module, self.name, value),
                 type=device_value.parameter.type,
-                cc_note=device_value.parameter.cc,
+                cc_note=device_value.parameter.cc_note,
                 to=to_module.device,
                 param=self,
                 append=append,
@@ -193,7 +193,7 @@ class ModuleParameter:
         if isfunction(feeder):
             fun = feeder
             to_module.device.bind(
-                fun, type=self.type, cc_note=self.cc, to=to_module.device, append=append
+                fun, type=self.type, cc_note=self.cc_note, to=to_module.device, append=append
             )
             return
         if isinstance(feeder, Scaler):
@@ -206,7 +206,7 @@ class ModuleParameter:
             from_module.bind(
                 pad.generate_fun(to_module, self),
                 type=pad.type,
-                cc_note=pad.note,
+                cc_note=pad.cc_note,
                 to=to_module.device,
                 param=self,
                 append=append,
@@ -215,7 +215,7 @@ class ModuleParameter:
 
         if send:
             # Normal case, we set a value through the descriptor, this triggers the send of the message
-            to_module.device.control_change(self.cc, feeder, channel=self.channel)
+            to_module.device.control_change(self.cc_note, feeder, channel=self.channel)
         to_module.state[self.name].update(feeder)
 
     def basic_set(self, device: MidiDevice, value):
@@ -226,27 +226,26 @@ class ModuleParameter:
 class PadOrKey:
     device: MidiDevice
     type: str = "note"
-    note: int = -1
+    cc_note: int = -1
     mode: str = "note"
 
     def __post_init__(self):
         self.triggered = False
         self.last_value = 0
         self.parameter = self
-        self.cc = self.note
-        self.name = f"#{self.note}"
+        self.name = f"#{self.cc_note}"
 
     @property
     def velocity(self):
-        return PadOrKey(self.device, note=self.note, type="velocity")
+        return PadOrKey(self.device, cc_note=self.cc_note, type="velocity")
 
     @property
     def velocity_latch(self):
-        return PadOrKey(self.device, note=self.note, type="velocity", mode="latch")
+        return PadOrKey(self.device, cc_note=self.cc_note, type="velocity", mode="latch")
 
     @property
     def velocity_hold(self):
-        return PadOrKey(self.device, note=self.note, type="velocity", mode="hold")
+        return PadOrKey(self.device, cc_note=self.cc_note, type="velocity", mode="hold")
 
     def set_last(self, value):
         self.last_value = value
@@ -284,7 +283,7 @@ class PadOrKey:
                         ctx=ThreadContext(
                             {
                                 **ctx,
-                                "param": f"key/pad #{self.note}",
+                                "param": f"key/pad #{self.cc_note}",
                                 "mode": self.mode,
                             }
                         ),
@@ -306,7 +305,7 @@ class PadOrKey:
                         ctx=ThreadContext(
                             {
                                 **ctx,
-                                "param": f"key/pad #{self.note}",
+                                "param": f"key/pad #{self.cc_note}",
                                 "mode": self.mode,
                             }
                         ),
@@ -318,7 +317,7 @@ class PadOrKey:
                         ctx=ThreadContext(
                             {
                                 **ctx,
-                                "param": f"key/pad #{self.note}",
+                                "param": f"key/pad #{self.cc_note}",
                                 "mode": self.mode,
                             }
                         ),
@@ -332,7 +331,7 @@ class PadOrKey:
             ctx=ThreadContext(
                 {
                     **ctx,
-                    "param": f"key/pad #{self.note}",
+                    "param": f"key/pad #{self.cc_note}",
                     "mode": self.mode,
                 }
             ),
@@ -353,7 +352,7 @@ class PadOrKey:
             ctx=ThreadContext(
                 {
                     **ctx,
-                    "param": f"key/pad #{self.note}",
+                    "param": f"key/pad #{self.cc_note}",
                     "mode": self.mode,
                 }
             ),
@@ -413,7 +412,7 @@ class ModulePadsOrKeys:
                     note=value, velocity=ctx.velocity, type=ctx.type
                 ),
                 type=self.type,
-                cc_note=pad.note,
+                cc_note=pad.cc_note,
                 to=instance.device,
                 param=self,
                 append=append,
@@ -477,7 +476,7 @@ class Module:
             raise Exception("Your device doesn't have a key/pad section")
         if isinstance(key, int):
             if key not in self._keys_notes:
-                self._keys_notes[key] = PadOrKey(device=self.device, note=key)
+                self._keys_notes[key] = PadOrKey(device=self.device, cc_note=key)
             return self._keys_notes[key]
         if isinstance(key, slice):
             indices = key.indices(128)
@@ -505,7 +504,7 @@ class DeviceState:
             moduleInstance = ModuleCls(device)
             init_modules[ModuleCls.state_name] = moduleInstance
             for param in moduleInstance.meta.parameters:
-                device.reverse_map[("cc", param.cc)] = param
+                device.reverse_map[("cc", param.cc_note)] = param
             if moduleInstance.meta.pads_or_keys:
                 device.reverse_map[("note", None)] = moduleInstance.meta.pads_or_keys
         self.modules = init_modules

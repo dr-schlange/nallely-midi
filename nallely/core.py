@@ -60,7 +60,7 @@ def unbind_all(target=None, param=None):
                 param = param.parameter
                 device.unbind(target, param, type=param.type, cc_note=param.cc_note)
             elif isinstance(param, ModuleParameter):
-                device.unbind(target, param, type=param.type, cc_note=param.cc)
+                device.unbind(target, param, type=param.type, cc_note=param.cc_note)
             else:
                 device.unbind(target, param)
 
@@ -112,7 +112,7 @@ class ParameterInstance:
                 port.unbind(self.device, self)
             case Int() | PadOrKey():
                 device = port.device
-                device.unbind(self.device, self, port.type, port.cc)
+                device.unbind(self.device, self, port.type, port.cc_note)
 
 
 @dataclass
@@ -161,7 +161,7 @@ class VirtualParameter:
                     to=device,
                     param=value.parameter,
                     type=value.parameter.type,
-                    cc_note=value.parameter.cc,
+                    cc_note=value.parameter.cc_note,
                     stream=self.stream,
                     append=append,
                 )
@@ -171,7 +171,7 @@ class VirtualParameter:
                     to=device,
                     param=value.parameter,
                     type=value.parameter.type,
-                    cc_note=value.parameter.cc,
+                    cc_note=value.parameter.cc_note,
                     stream=self.stream,
                     append=append,
                 )
@@ -206,7 +206,7 @@ class VirtualParameter:
             pad.device.bind(
                 lambda value, ctx: foo(value, ctx),
                 type=pad.type,
-                cc_note=pad.note,  # equiv pad.cc
+                cc_note=pad.cc_note,
                 to=device,
                 param=self,
                 append=append,
@@ -607,7 +607,7 @@ class MidiDevice:
         match other:
             case PadOrKey():
                 mm = self.reverse_map[("note", None)]
-                other.device.unbind(self, mm, other.type, other.cc)
+                other.device.unbind(self, mm, other.type, other.cc_note)
                 return
         raise Exception(f"Unbinding {other.__class__.__name__} not yet supported")
 
