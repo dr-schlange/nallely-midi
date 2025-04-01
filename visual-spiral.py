@@ -3,14 +3,15 @@ from nallely.core import (
     get_virtual_devices,
     stop_all_connected_devices,
 )
+
 # from nallely.devices import MPD32
 from nallely.lfos import LFO
-from nallely.utils import WebSocketSwitchDevice
+from nallely.utils import WebSocketSwitch
 
 
 try:
     # Creates the ws server that will send values to the module that registers on it
-    ws = WebSocketSwitchDevice()
+    ws = WebSocketSwitch()
     ws.start()
 
     # Creates various LFOs
