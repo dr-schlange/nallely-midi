@@ -43,6 +43,16 @@ class Int(wrapt.ObjectProxy):
     def __repr__(self):
         return str(self.__wrapped__)
 
+    def __isub__(self, other):
+        from .core import VirtualDevice
+
+        match other:
+            case PadOrKey() | Int():
+                param = other.parameter
+                other.device.unbind(self.device, self.parameter, param.type, param.cc)
+            case VirtualDevice():
+                other.unbind(self.device, self.parameter)
+
     def install_fun(self, to_module, to_param):
         self.parameter.install_fun(to_module, to_param)
 
@@ -88,7 +98,7 @@ class Scaler:
             return value
         return res
 
-    def install_fun(self, to_device, to_parameter):
+    def install_fun(self, to_device, to_parameter, append=True):
         from .core import VirtualDevice
 
         if isinstance(self.data, VirtualDevice):
@@ -97,6 +107,7 @@ class Scaler:
                 lambda value, ctx: fun(self.convert(value), ctx),
                 to=to_device,
                 param=to_parameter,
+                append=append,
             )
             return
         modparam: ModuleParameter = self.data.parameter
@@ -104,8 +115,10 @@ class Scaler:
         self.data.device.bind(
             lambda value, ctx: fun(self.convert(value), ctx),
             type=modparam.type,
-            value=modparam.cc,  # equiv pad.note
+            cc_note=modparam.cc,  # equiv pad.note
             to=to_device,
+            param=to_parameter,
+            append=append,
         )
 
 
@@ -121,8 +134,8 @@ class ModuleParameter:
     def __get__(self, instance, owner=None) -> Int:
         return instance.state[self.name]
 
-    def install_fun(self, to_module, feeder):
-        self.__set__(to_module, feeder, send=False)
+    def install_fun(self, to_module, feeder, append=True):
+        self.__set__(to_module, feeder, send=False, append=append)
 
     def generate_inner_fun_virtual(self, to_device, to_param):
         if to_param.consummer:
@@ -146,7 +159,11 @@ class ModuleParameter:
             return self.generate_inner_fun_virtual(to_device, to_param)
         return self.generate_inner_fun_normal(to_device, to_param)
 
-    def __set__(self, to_module, feeder, send=True, debug=False, force=False):
+    def __set__(
+        self, to_module, feeder, send=True, debug=False, force=False, append=True
+    ):
+        if feeder is None:
+            return
         if not force and isinstance(feeder, Int):
             device_value = feeder
             from_module: MidiDevice = device_value.device  # type: ignore
@@ -155,9 +172,10 @@ class ModuleParameter:
             from_module.bind(
                 lambda value, ctx: setattr(to_module, self.name, value),
                 type=device_value.parameter.type,
-                value=device_value.parameter.cc,
+                cc_note=device_value.parameter.cc,
                 to=to_module.device,
                 param=self,
+                append=append,
             )
             return
 
@@ -169,17 +187,18 @@ class ModuleParameter:
                 lambda value, ctx: setattr(to_module, self.name, value),
                 to=to_module.device,
                 param=self,
+                append=append,
             )
             return
         if isfunction(feeder):
             fun = feeder
             to_module.device.bind(
-                fun, type=self.type, value=self.cc, to=to_module.device
+                fun, type=self.type, cc_note=self.cc, to=to_module.device, append=append
             )
             return
         if isinstance(feeder, Scaler):
             scaler = feeder
-            scaler.install_fun(to_device=to_module, to_parameter=self)
+            scaler.install_fun(to_device=to_module, to_parameter=self, append=append)
             return
         if isinstance(feeder, PadOrKey):
             pad: PadOrKey = feeder
@@ -187,9 +206,10 @@ class ModuleParameter:
             from_module.bind(
                 pad.generate_fun(to_module, self),
                 type=pad.type,
-                note_cc=pad.note,
+                cc_note=pad.note,
                 to=to_module.device,
                 param=self,
+                append=append,
             )
             return
 
@@ -269,14 +289,14 @@ class PadOrKey:
                             }
                         ),
                     )
-                    if ctx["type"] == "note_on"
+                    if ctx.type == "note_on"
                     else ...
                 )
             )
         if self.mode == "latch":
 
             def foo(value, ctx, to_module, to_param, pad):
-                if ctx["type"] == "note_off":
+                if ctx.type == "note_off":
                     return
                 if pad.toggle().triggered:
                     pad.set_last(value)
@@ -322,7 +342,7 @@ class PadOrKey:
         if self.mode == "hold":
             lambda value, ctx: (
                 to_device.set_parameter(to_param.name, value)
-                if ctx["type"] == "note_on"
+                if ctx.type == "note_on"
                 else ...
             )
         if self.mode == "latch":
@@ -343,7 +363,7 @@ class PadOrKey:
         if self.mode == "latch":
 
             def foo(value, ctx, to_module, name, pad):
-                if ctx["type"] == "note_off":
+                if ctx.type == "note_off":
                     return
                 if pad.toggle().triggered:
                     pad.set_last(int(getattr(to_module, name)))
@@ -354,11 +374,11 @@ class PadOrKey:
             return lambda value, ctx: foo(value, ctx, to_module, to_param.name, self)
         elif self.mode == "hold":
             return lambda value, ctx: (
-                setattr(to_module, self.name, value)
-                if ctx["type"] == "note_on"
+                setattr(to_module, to_param.name, value)
+                if ctx.type == "note_on"
                 else ...
             )
-        return lambda value, ctx: setattr(to_module, self.name, value)
+        return lambda value, ctx: setattr(to_module, to_param.name, value)
 
     def generate_fun(self, to_device, to_param):
         from .core import VirtualParameter
@@ -374,28 +394,29 @@ class PadOrKey:
 
 @dataclass
 class ModulePadsOrKeys:
+    name = "all_pads"
     type = "note"
     channel: int = 0
     keys: dict[int, PadOrKey] = field(default_factory=dict)
     module_state_name: str = NOT_INIT
 
     def __get__(self, instance, owner=None):
-        print("Get GET")
         # for i in range(127):
         #     setattr(instance.__class__, "note_"
         return instance.state[self.module_state_name]
 
-    def __set__(self, instance, value):
+    def __set__(self, instance, value, append=True):
         if isinstance(value, PadOrKey):
             pad: PadOrKey = value
             pad.device.bind(
                 lambda value, ctx: instance.device.note(
-                    note=value, velocity=ctx["velocity"], type=ctx["type"]
+                    note=value, velocity=ctx.velocity, type=ctx.type
                 ),
                 type=self.type,
-                note_cc=pad.note,
+                cc_note=pad.note,
                 to=instance.device,
                 param=self,
+                append=append,
             )
             return
         if isinstance(value, list):
@@ -440,7 +461,8 @@ class Module:
         for param in self.meta.parameters:
             self.state[param.name] = Int(0, parameter=param, device=self.device)
         if self.meta.pads_or_keys:
-            self.state[self.meta.pads_or_keys.module_state_name] = self.device  # type: ignore (special key)
+            state_name = self.meta.pads_or_keys.module_state_name
+            self.state[state_name] = self.device  # type: ignore (special key)
         self._keys_notes = {}
 
     def setup_function(self, control, lfo): ...

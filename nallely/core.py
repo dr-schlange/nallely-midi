@@ -45,6 +45,26 @@ def get_virtual_devices():
     return virtual_devices
 
 
+def all_devices():
+    return get_connected_devices() + get_virtual_devices()
+
+
+def unbind_all(target=None, param=None):
+    for device in list(all_devices()):
+        if target == None:
+            device.unbind_all()
+        elif param == None:
+            device.unbind(target)
+        else:
+            if isinstance(param, Int):
+                param = param.parameter
+                device.unbind(target, param, type=param.type, cc_note=param.cc_note)
+            elif isinstance(param, ModuleParameter):
+                device.unbind(target, param, type=param.type, cc_note=param.cc)
+            else:
+                device.unbind(target, param)
+
+
 class ThreadContext(dict):
     def __getattr__(self, key):
         return self[key]
@@ -79,6 +99,21 @@ class ParameterInstance:
     def name(self):
         return self.parameter.name
 
+    # def __iadd__(self, port):
+    #     # self.parameter.__set__(self.device, port, append=True)
+    #     setattr(self.device, self.name, port)
+
+    def __isub__(self, port):
+        match port:
+            case ParameterInstance():
+                device = port.device
+                device.unbind(self.device, self)
+            case VirtualDevice():
+                port.unbind(self.device, self)
+            case Int() | PadOrKey():
+                device = port.device
+                device.unbind(self.device, self, port.type, port.cc)
+
 
 @dataclass
 class VirtualParameter:
@@ -89,7 +124,7 @@ class VirtualParameter:
     def __get__(self, device: "VirtualDevice", owner=None):
         return ParameterInstance(parameter=self, device=device)
 
-    def __set__(self, device: "VirtualDevice", value):
+    def __set__(self, device: "VirtualDevice", value, append=True):
         if isinstance(value, VirtualDevice):
             if self.consummer:
                 virtual_device = value
@@ -104,6 +139,7 @@ class VirtualParameter:
                     to=device,
                     param=self,
                     stream=self.stream,
+                    append=append,
                 )
             else:
                 value.device.bind(
@@ -111,6 +147,7 @@ class VirtualParameter:
                     to=device,
                     param=self,
                     stream=self.stream,
+                    append=append,
                 )
         elif isinstance(value, Int):
             if self.consummer:
@@ -122,17 +159,21 @@ class VirtualParameter:
                         ctx=ThreadContext({**ctx, "param": int_val.parameter.name}),
                     ),
                     to=device,
+                    param=value.parameter,
                     type=value.parameter.type,
-                    value=value.parameter.cc,
+                    cc_note=value.parameter.cc,
                     stream=self.stream,
+                    append=append,
                 )
             else:
                 value.device.bind(
                     lambda value, ctx: device.set_parameter(self.name, value),
                     to=device,
+                    param=value.parameter,
                     type=value.parameter.type,
-                    value=value.parameter.cc,
+                    cc_note=value.parameter.cc,
                     stream=self.stream,
+                    append=append,
                 )
         elif isinstance(value, ParameterInstance):
             if self.consummer:
@@ -144,19 +185,31 @@ class VirtualParameter:
                     ),
                     to=device,
                     param=self,
+                    append=append,
+                )
+            else:
+                value.device.bind(
+                    lambda _, ctx: device.set_parameter(
+                        self.name, getattr(value.device, value.parameter.name)
+                    ),
+                    to=device,
+                    param=self,
+                    stream=self.stream,
+                    append=append,
                 )
         elif isinstance(value, Scaler):
             scaler = value
-            scaler.install_fun(device, self)
+            scaler.install_fun(device, self, append=append)
         elif isinstance(value, PadOrKey):
             pad = value
             foo = pad.generate_fun(device, self)
             pad.device.bind(
                 lambda value, ctx: foo(value, ctx),
                 type=pad.type,
-                note_cc=pad.note,  # equiv pad.cc
+                cc_note=pad.note,  # equiv pad.cc
                 to=device,
                 param=self,
+                append=append,
             )
 
 
@@ -281,24 +334,37 @@ class VirtualDevice(threading.Thread):
             self.paused = False
             self.pause_event.set()
 
+    def unbind_all(self):
+        self.callbacks_registry.clear()
+        self.stream_callbacks.clear()
+        self.callbacks.clear()
+
     def bind(self, callback, to, param, stream=False, append=True):
         # if to:
         #     scheduler.connections.append((self, to))
+        if not append:
+            unbind_all(to, param)
         if stream:
-            if not append:
-                self.stream_callbacks.clear()
             self.stream_callbacks.append(callback)
         else:
-            if not append:
-                self.callbacks.clear()
             self.callbacks.append(callback)
         self.callbacks_registry.append(
             CallbackRegistryEntry(target=to, parameter=param, callback=callback)
         )
 
-    def unbind(self, target, param):
+    # def bind_to(self, other: "VirtualDevice", stream=False):
+    #     def queue_callback(value, ctx):
+    #         try:
+    #             other.output_queue.put_nowait((value, ctx))
+    #         except Full:
+    #             pass
+    #     self.bind(queue_callback, stream=stream)
+
+    def unbind(self, target, param=None):
         for entry in list(self.callbacks_registry):
-            if entry.target == target and entry.parameter.name == param.name:  # type: ignore
+            is_right_target = entry.target == target
+            is_right_param = param is None or entry.parameter.name == param.name
+            if is_right_target and is_right_param:
                 callback = entry.callback
                 self.callbacks_registry.remove(entry)
                 try:
@@ -353,14 +419,6 @@ class VirtualDevice(threading.Thread):
                 return lambda value, ctx: to_device.set_parameter(to_param.name, value)
         else:
             return lambda value, ctx: setattr(to_device, to_param.name, value)
-
-    # def bind_to(self, other: "VirtualDevice", stream=False):
-    #     def queue_callback(value, ctx):
-    #         try:
-    #             other.output_queue.put_nowait((value, ctx))
-    #         except Full:
-    #             pass
-    #     self.bind(queue_callback, stream=stream)
 
 
 @dataclass
@@ -505,11 +563,15 @@ class MidiDevice:
             )
         )
 
+    def unbind_all(self):
+        self.callbacks_registry.clear()
+        self.input_callbacks.clear()
+
     def bind(self, callback, type, cc_note, to, param, stream=False, append=True):
         # if to:
         #     scheduler.connections.append((self, to))
         if not append:
-            self.input_callbacks[(type, cc_note)].clear()
+            unbind_all(to, param)
         self.input_callbacks[(type, cc_note)].append(callback)
         self.callbacks_registry.append(
             CallbackRegistryEntry(
@@ -521,15 +583,33 @@ class MidiDevice:
             )
         )
 
-    def unbind(self, target, param, type, cc_note):
+    def unbind(self, target, param, type=None, cc_note=None):
         for entry in list(self.callbacks_registry):
-            if entry.target == target and entry.parameter.name == param.name and entry.type == type and entry.cc_note == cc_note:  # type: ignore
+            is_right_target = entry.target == target
+            is_right_param = param is None or entry.parameter.name == param.name  # type: ignore
+            is_right_type = type is None or entry.type == type
+            is_right_cc_note = cc_note is None or entry.cc_note == cc_note
+            if (
+                is_right_target
+                and is_right_param
+                and is_right_type
+                and is_right_cc_note
+            ):
                 callback = entry.callback
                 self.callbacks_registry.remove(entry)
                 try:
                     self.input_callbacks[(type, cc_note)].remove(callback)
                 except ValueError:
                     ...
+
+    def __isub__(self, other):
+        # The only way to be here is from a callback removal on the key/pad section
+        match other:
+            case PadOrKey():
+                mm = self.reverse_map[("note", None)]
+                other.device.unbind(self, mm, other.type, other.cc)
+                return
+        raise Exception(f"Unbinding {other.__class__.__name__} not yet supported")
 
     # def bind_output(self, callback):
     #     self.output_callbacks.append(callback)

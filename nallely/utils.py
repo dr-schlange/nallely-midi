@@ -2,6 +2,7 @@ import json
 import threading
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
+from traceback import print_stack
 
 import plotext as plt
 from websockets.sync.server import serve
@@ -76,11 +77,21 @@ class WSWaitingRoom:
     queue: list = field(default_factory=list)
 
     def append(self, value):
-        self.queue.append(value)
+        if value not in self.queue:
+            self.queue.append(value)
 
     def rebind(self, target):
         for element in self.queue:
             setattr(target, self.name, element)
+
+    # def __iadd__(self, value):
+    #     if value not in self.queue:
+    #         self.queue.append(value)
+    #     return value
+
+    def flush(self):
+        self.queue.clear()
+        return self
 
 
 class WebSocketSwitch(VirtualDevice):
@@ -154,7 +165,7 @@ class WebSocketSwitch(VirtualDevice):
                         "value": float(value),
                         "device": device,
                         "on": parameter,
-                        "sender": ctx["param"],
+                        "sender": ctx.param,
                     }
                 )
             )
