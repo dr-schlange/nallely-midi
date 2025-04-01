@@ -48,7 +48,7 @@ class DelaySection(Module):
     type = ModuleParameter(89)
     time = ModuleParameter(30)
     depth = ModuleParameter(31)
-    mix = ModuleParameter(32)
+    mix = ModuleParameter(32, init_value=128 // 2)
 
 
 @dataclass
@@ -57,7 +57,7 @@ class ReverbSection(Module):
     type = ModuleParameter(90)
     time = ModuleParameter(34)
     depth = ModuleParameter(35)
-    mix = ModuleParameter(36)
+    mix = ModuleParameter(36, init_value=128 // 2)
 
 
 @dataclass

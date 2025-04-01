@@ -49,7 +49,9 @@ class Int(wrapt.ObjectProxy):
         match other:
             case PadOrKey() | Int():
                 param = other.parameter
-                other.device.unbind(self.device, self.parameter, param.type, param.cc_note)
+                other.device.unbind(
+                    self.device, self.parameter, param.type, param.cc_note
+                )
             case VirtualDevice():
                 other.unbind(self.device, self.parameter)
 
@@ -130,6 +132,7 @@ class ModuleParameter:
     name: str = NOT_INIT
     module_state_name: str = NOT_INIT
     stream: bool = False
+    init_value: int = 0
 
     def __get__(self, instance, owner=None) -> Int:
         return instance.state[self.name]
@@ -193,7 +196,11 @@ class ModuleParameter:
         if isfunction(feeder):
             fun = feeder
             to_module.device.bind(
-                fun, type=self.type, cc_note=self.cc_note, to=to_module.device, append=append
+                fun,
+                type=self.type,
+                cc_note=self.cc_note,
+                to=to_module.device,
+                append=append,
             )
             return
         if isinstance(feeder, Scaler):
@@ -241,7 +248,9 @@ class PadOrKey:
 
     @property
     def velocity_latch(self):
-        return PadOrKey(self.device, cc_note=self.cc_note, type="velocity", mode="latch")
+        return PadOrKey(
+            self.device, cc_note=self.cc_note, type="velocity", mode="latch"
+        )
 
     @property
     def velocity_hold(self):
@@ -458,7 +467,9 @@ class Module:
     def __post_init__(self):
         self.meta = self.__class__.meta
         for param in self.meta.parameters:
-            self.state[param.name] = Int(0, parameter=param, device=self.device)
+            self.state[param.name] = Int(
+                param.init_value, parameter=param, device=self.device
+            )
         if self.meta.pads_or_keys:
             state_name = self.meta.pads_or_keys.module_state_name
             self.state[state_name] = self.device  # type: ignore (special key)

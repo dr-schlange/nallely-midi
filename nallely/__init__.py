@@ -1,14 +1,14 @@
 from .core import (
-    stop_all_connected_devices,
-    stop_all_virtual_devices,
+    DeviceNotFound,
+    MidiDevice,
     VirtualDevice,
     VirtualParameter,
-    MidiDevice,
-    DeviceNotFound,
+    stop_all_connected_devices,
+    stop_all_virtual_devices,
 )
-from .modules import ModuleParameter, PadOrKey, ModulePadsOrKeys, Module
-from .utils import WebSocketSwitch, TerminalOscilloscope
 from .lfos import LFO, Cycler
+from .modules import Module, ModulePadsOrKeys, ModuleParameter, PadOrKey
+from .utils import TerminalOscilloscope, WebSocketSwitch
 
 __all__ = [
     "stop_all_connected_devices",

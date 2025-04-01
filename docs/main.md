@@ -202,7 +202,7 @@ finally:
 We can access the internal sections/modules of the device programmatically by navigating in the attributes of the elements. We can also query those values:
 
 ```python
-nts1.modules.filter.cutoff  # access the cutoff of the filter section of the NTS1
+nts1.modules.filter.cutoff  # access the cutoff of the filter section of the NTS-1
 print("Cutoff", nts1.modules.filter.cutoff)
 
 input("Tweak the cutoff button on your NTS1 and press enter...")
@@ -240,16 +240,16 @@ Also, please note that for each device, `xxx.modules` is the only invariant part
 
 #### Map keys and pads
 
-The support for keys and pads is quite simple at the moment, here is how it's implemented for the NTS1 and the MPD32 at the moment, and how you can associate pads to the keys of the NTS1 or to other devices
+The support for keys and pads is quite simple at the moment, here is how it's implemented for the NTS-1 and the MPD32 at the moment, and how you can associate pads to the keys of the NTS-1 or to other devices
 
 ```python
-# associate all the pads to all the notes of the NTS1
+# associate all the pads to all the notes of the NTS-1
 nts1.modules.keys.notes = mpd32.modules.pads[:]
 
-# associate only the pad 36 to the notes of the NTS1
+# associate only the pad 36 to the notes of the NTS-1
 nts1.modules.keys.notes = mpd32.modules.pads[36]
 
-# associate only pads 36 to 44 to the notes of the NTS1
+# associate only pads 36 to 44 to the notes of the NTS-1
 nts1.modules.keys.notes = mpd32.modules.pads[36:45]
 ```
 
@@ -301,7 +301,7 @@ finally:
 
 This snippet creates an instance of `MidiDevice` and will look for a device named `MyDevice` (the name doesn't have to be exact, it can be a sub string of the full name), connects to it, and pass in `debug` mode. In `debug` mode, the device logs all the informations that it receives from the device. This way, you can see what CC value and channel is used for a specific control or pad/key.
 
-Once you have those informations, you can tell Nallely about your device. Here is an example about how it's done for the NTS1:
+Once you have those informations, you can tell Nallely about your device. Here is an example about how it's done for the NTS-1:
 
 ```python
 ...  # other sections before
@@ -315,13 +315,13 @@ class FilterSection(Module):
     sweep_depth = ModuleParameter(45)
     sweep_rate = ModuleParameter(46)
 
-
 @dataclass
-class ArpSection(Module):
-    state_name = "arp"
-    pattern = ModuleParameter(117)
-    intervals = ModuleParameter(118)
-    length = ModuleParameter(119)
+class ReverbSection(Module):
+    state_name = "reverb"
+    type = ModuleParameter(90)
+    time = ModuleParameter(34)
+    depth = ModuleParameter(35)
+    mix = ModuleParameter(36, init_value=128 // 2)
 
 @dataclass
 class KeySection(Module):
@@ -350,16 +350,17 @@ class NTS1(MidiDevice):
 We can see that the `FilterSection` inherits from `Module`, and defines `filter`, which is the name of the section. Then, it defines a bunch of parameters, which are instances of `ModuleParameter` with the CC value associated. For example, in this configuration, we can see that `type` is the CC `43`.
 The key section is declared using an instance of `ModulePadsOrKeys`.
 Once you have all the section, you just put them in a list as value of the `module_descr` section of the `MidiDevice`. The name also is set to target this device all the time. If various devices contains `NTS-1` in the name, the first one will be selected. To target a specific one, the full name must be used.
+There is also a way to set a `init_value` for each parameter. This value is the one that is considered as initial value for the device. This value can be important depending on your MIDI device as it will consider it as the equivalent of the value that is supposed to be the one of the physical device when you power it. As Nallely is keeping track of the values for each parameter automatically, it needs to have a first value to consider that this is the "normal startup value" and to not impact preset when they are saved from a freshly powered MIDI device. The default value of the `init_value` parameter is `0`. In this example, for the `ReverbSection`, the `mix` is explicitally set to `64` as with the NTS-1, the mix for this section starts in the middle of the [0..127] CC MIDI range.
 That's all. Following this configuration, we can now access the various sections and controls:
 
 ```python
 nts1 = NTS1()
-nts1.modules.arp.length = 15
+nts1.modules.reverb.time = 15
 
 l = LFO(waveform="triangle", min_value=1, max_value=10, speed=0.25)
 l.start()
 
-nts1.modules.arp.length = l  #  we map an LFO to the arpegiator length
+nts1.modules.reverb.time = l  #  we map an LFO to the reverb time
 ```
 
 ## How to map components together
