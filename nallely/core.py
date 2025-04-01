@@ -83,25 +83,29 @@ class ThreadContext(dict):
 
 @dataclass
 class CallbackRegistryEntry:
-    target: "VirtualDevice | MidiDevice"
-    parameter: "VirtualParameter | ModuleParameter | ModulePadsOrKeys | PadOrKey | ParameterInstance"
-    callback: Callable[[Any, ThreadContext], Any]
-    cc_note: int | None = None
-    type: str | None = None
+    def __init__(
+        self,
+        target: "VirtualDevice | MidiDevice",
+        parameter: "VirtualParameter | ModuleParameter | ModulePadsOrKeys | PadOrKey | ParameterInstance",
+        callback: Callable[[Any, ThreadContext], Any],
+        cc_note: int | None = None,
+        type: str | None = None,
+    ):
+        self.target = target
+        self.parameter = parameter
+        self.callback = callback
+        self.cc_note = cc_note
+        self.type = type
 
 
-@dataclass
 class ParameterInstance:
-    parameter: "VirtualParameter"
-    device: "VirtualDevice"
+    def __init__(self, parameter, device):
+        self.parameter = parameter
+        self.device = device
 
     @property
     def name(self):
         return self.parameter.name
-
-    # def __iadd__(self, port):
-    #     # self.parameter.__set__(self.device, port, append=True)
-    #     setattr(self.device, self.name, port)
 
     def __isub__(self, port):
         match port:
@@ -112,7 +116,9 @@ class ParameterInstance:
                 port.unbind(self.device, self)
             case Int() | PadOrKey():
                 device = port.device
-                device.unbind(self.device, self, port.type, port.cc_note)
+                parameter = port.parameter
+                # device.unbind(self.device, self, port.type, port.cc_note)
+                device.unbind(self.device, self, parameter.type, parameter.cc_note)
 
 
 @dataclass
@@ -586,7 +592,7 @@ class MidiDevice:
     def unbind(self, target, param, type=None, cc_note=None):
         for entry in list(self.callbacks_registry):
             is_right_target = entry.target == target
-            is_right_param = param is None or entry.parameter.name == param.name  # type: ignore
+            is_right_param = param is None or entry.parameter.name == param.name
             is_right_type = type is None or entry.type == type
             is_right_cc_note = cc_note is None or entry.cc_note == cc_note
             if (
@@ -598,7 +604,7 @@ class MidiDevice:
                 callback = entry.callback
                 self.callbacks_registry.remove(entry)
                 try:
-                    self.input_callbacks[(type, cc_note)].remove(callback)
+                    self.input_callbacks[(type, cc_note)].remove(callback)  # type: ignore
                 except ValueError:
                     ...
 

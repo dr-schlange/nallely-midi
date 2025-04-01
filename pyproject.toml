@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=42"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nallely"
+version = "0.0.1"
+description = "MIDI companion, tools and abstraction to easily scripts for your MIDI devices"
+readme = "README.md"
+license-files = ["LICENSE"]
+license = "BSD-3-Clause"
+authors = [{ name = "dr-schlange", email = "drcoatl@proton.me" }]
+urls = { "Bug Tracker" = "https://github.com/dr-schlange/nallely-midi", "Homepage" = "https://github.com/dr-schlange/nallely-midi" }
+keywords = ["music", "midi", "midi-device", "midi-controller", "lfo"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Other Audience",
+    "Topic :: Software Development",
+    "Topic :: Software Development :: Libraries",
+]
+requires-python = ">=3.10"
+dependencies = ["mido", "websockets", "plotext", "python-rtmidi"]
+
+[project.optional-dependencies]
+dev = ["pytest", "build"]
+
+[tool.setuptools.packages.find]
+where = ["nallely"]
+include = ["nallely*"]
+
+[tool.setuptools.package-data]
+nallely = ["README.md", "LICENSE", "CHANGELOG.md"]
+
+[tool.setuptools]
+include-package-data = true

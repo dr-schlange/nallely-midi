@@ -7,20 +7,27 @@ from inspect import isfunction
 from types import FunctionType
 from typing import TYPE_CHECKING, Any, Literal, Type
 
-import wrapt
-
 if TYPE_CHECKING:
-    from .core import MidiDevice, ThreadContext
+    from .core import MidiDevice, ThreadContext, VirtualDevice
 
 
 NOT_INIT = "uninitialized"
 
 
-class Int(wrapt.ObjectProxy):
-    def __init__(self, obj, device, parameter):
-        super().__init__(obj)
-        object.__setattr__(self, "device", device)
-        object.__setattr__(self, "parameter", parameter)
+class Int(int):
+    def __init__(self, val):
+        super().__init__()
+        self.__wrapped__: int
+        self.device: MidiDevice
+        self.parameter: ModuleParameter
+
+    @classmethod
+    def create(cls, val: int, device: MidiDevice, parameter: ModuleParameter) -> Int:
+        result = cls(val)
+        result.__wrapped__ = val
+        result.device = device
+        result.parameter = parameter
+        return result
 
     def update(self, value):
         self.__wrapped__ = value
@@ -65,7 +72,7 @@ class Int(wrapt.ObjectProxy):
 
 @dataclass
 class Scaler:
-    data: Int
+    data: Int | VirtualDevice | PadOrKey | ModuleParameter
     device: Any
     min: int | float
     max: int | float
@@ -116,7 +123,7 @@ class Scaler:
                 append=append,
             )
             return
-        modparam: ModuleParameter = self.data.parameter
+        modparam: ModuleParameter | PadOrKey = self.data.parameter
         fun = modparam.generate_fun(to_device, to_parameter)
         self.data.device.bind(
             lambda value, ctx: fun(self.convert(value), ctx),
@@ -173,7 +180,7 @@ class ModuleParameter:
             return
         if not force and isinstance(feeder, Int):
             device_value = feeder
-            from_module: MidiDevice = device_value.device  # type: ignore
+            from_module: MidiDevice = device_value.device
             # we create a callback on from_module that will "set" the module parameter to value of to_module
             # finally triggering the code that sends the cc and sync the state lower in this class.
             from_module.bind(
@@ -236,7 +243,8 @@ class ModuleParameter:
 
 class padproperty(property):
     def __set__(self, instance, inner_function, owner=""):
-        pad: PadOrKey = getattr(instance, self.__name__)
+        # pad: PadOrKey = getattr(instance, self.__name__)  # only works on python >= 3.13
+        pad: PadOrKey = getattr(instance, self.fget.__name__)  # type: ignore
         if pad.mode == "latch":
             raise Exception(
                 "Latch mode is not supported when binding a pad/key to a function"
@@ -512,7 +520,7 @@ class Module:
     def __post_init__(self):
         self.meta = self.__class__.meta
         for param in self.meta.parameters:
-            self.state[param.name] = Int(
+            self.state[param.name] = Int.create(
                 param.init_value, parameter=param, device=self.device
             )
         if self.meta.pads_or_keys:

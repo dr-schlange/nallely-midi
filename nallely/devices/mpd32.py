@@ -54,5 +54,5 @@ class MPD32(MidiDevice):
             device_name=device_name or "MPD32",
             read_input_only=True,
             modules_descr=[ButtonSection, PadSection, SliderSection],
-            **kwargs
+            **kwargs,
         )
