@@ -31,12 +31,12 @@ dependencies = ["mido", "websockets", "plotext", "python-rtmidi"]
 [project.optional-dependencies]
 dev = ["pytest", "build"]
 
-[tool.setuptools.packages.find]
-where = ["nallely"]
-include = ["nallely*"]
+[tool.setuptools]
+include-package-data = true
 
 [tool.setuptools.package-data]
 nallely = ["README.md", "LICENSE", "CHANGELOG.md"]
 
-[tool.setuptools]
-include-package-data = true
+[tool.setuptools.packages.find]
+where = ["nallely"]
+include = ["*"]
