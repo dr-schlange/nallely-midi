@@ -438,7 +438,7 @@ nts1.modules.delay.time = mpd32.modules.buttons.k1.scale(min=10, max=50, method=
 This snippet maps `k1` to the cutoff, the resonance, and the delay time. It also applies a scaler on `k1` to have a value for the delay that will be between `10` and `50`.
 
 
-### Map Python function to MIDI device
+### Map Python function to MIDI device
 
 Nallely lets you map Python functions to the controls/keys/pads of `MidiDevices`. The syntax is more or less equivalent to the one in the previous section, but "in reverse" (at least it feels like this to me). Basically, you tell the device control/pad/key what it will trigger by assigning the function to the control/pad/key. Here is an example using the MPD32 configuration we already used in the documentation:
 
