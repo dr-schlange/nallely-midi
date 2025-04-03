@@ -119,7 +119,7 @@ class WebSocketSwitch(VirtualDevice):
     def handler(self, client):
         path = client.request.path
         service_name = path.split("/")[1]
-        if path.endswith("/autoconfig"):
+        if path.endswith("/autoconfig") and service_name not in self.connected:
             print(f"Autoconfig for {service_name}")
             message = json.loads(client.recv())
             parameters = [
@@ -133,6 +133,7 @@ class WebSocketSwitch(VirtualDevice):
                 f"Service {service_name} is not yet configured, you cannot subscribe to it yet"
             )
             return
+        print("Connecting on", service_name)
         connected_devices = self.connected[service_name]
         connected_devices.append(client)
         try:
@@ -181,6 +182,6 @@ class WebSocketSwitch(VirtualDevice):
             vparam = VirtualParameter(f"{param_name}", consummer=True, stream=is_stream)
             virtual_parameters.append(vparam)
             setattr(self.__class__, param_name, vparam)
-            if waiting_room:
+            if waiting_room and isinstance(waiting_room, WSWaitingRoom):
                 waiting_room.rebind(self)
         self.known_services[name] = virtual_parameters

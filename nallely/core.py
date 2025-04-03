@@ -432,7 +432,7 @@ class MidiDevice:
     variable_refresh = False
 
     device_name: str
-    modules_descr: list[Type[Module]]
+    modules_descr: list[Type[Module]] | None = None
     autoconnect: InitVar[bool] = True
     read_input_only: InitVar[bool] = False
     played_notes: Counter = field(default_factory=Counter)
@@ -449,6 +449,8 @@ class MidiDevice:
             list
         )
         self.output_callbacks = []  # callbacks that are classed when sending a value
+        if self.modules_descr is None:
+            self.modules_descr = []
         self.modules = DeviceState(self, self.modules_descr)
         self.listening = False
         if autoconnect:
@@ -465,10 +467,11 @@ class MidiDevice:
             if not read_input_only:
                 self.connect()
             self.listen()
-            connected_devices.append(self)
 
     def connect(self):
         self.outport = mido.open_output(self.device_name, autoreset=True)
+        if self not in connected_devices:
+            connected_devices.append(self)
 
     def close(self):
         if self.inport:
@@ -642,6 +645,8 @@ class MidiDevice:
                 except StopIteration:
                     raise DeviceNotFound(self.device_name)
             self.inport.callback = self._sync_state
+        if self not in connected_devices:
+            connected_devices.append(self)
 
     def save_preset(self, file: Path | str):
         d = self.modules.as_dict()
@@ -664,7 +669,11 @@ class DeviceSerializer(json.JSONEncoder):
 
 class DeviceNotFound(Exception):
     def __init__(self, device_name):
-        super().__init__(f"Device {device_name!r} couldn't be found")
+        super().__init__(
+            f"""Device {device_name!r} couldn't be found, known devices are:
+input: {mido.get_output_names()}
+outputs: {mido.get_input_names()}"""
+        )
 
 
 class TimeBasedDevice(VirtualDevice):
