@@ -6,11 +6,11 @@ from .core import TimeBasedDevice, VirtualParameter
 
 
 class LFO(TimeBasedDevice):
-    speed_cv = VirtualParameter("speed")
+    speed_cv = VirtualParameter("speed", range=(0, None))
     waveform_cv = VirtualParameter("waveform")
     min_value_cv = VirtualParameter("min_value")
     max_value_cv = VirtualParameter("max_value")
-    sampling_rate_cv = VirtualParameter("sampling_rate")
+    sampling_rate_cv = VirtualParameter("sampling_rate", range=(0, None))
 
     def __init__(
         self,
@@ -72,6 +72,10 @@ class LFO(TimeBasedDevice):
     @property
     def max_range(self):
         return float(self.max_value)
+
+    @property
+    def min_range(self):
+        return float(self.min_value)
 
     generate_value = generate_waveform
 

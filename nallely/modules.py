@@ -42,8 +42,8 @@ class Int(int):
         return Scaler(
             data=self,
             device=self.device,
-            min=min,
-            max=max,
+            to_min=min,
+            to_max=max,
             method=method,
             as_int=as_int,
         )
@@ -74,35 +74,65 @@ class Int(int):
 class Scaler:
     data: Int | VirtualDevice | PadOrKey | ModuleParameter
     device: Any
-    min: int | float
-    max: int | float
+    to_min: int | float | None
+    to_max: int | float | None
     method: str = "log"
     as_int: bool = False
-    max_range: int | float = 127
+    from_min: int | float | None = None
+    from_max: int | float | None = None
 
     def __post_init__(self):
-        if self.min == 0 and self.method == "log":
-            self.min = 0.001
+        if self.to_min == 0 and self.method == "log":
+            self.to_min = 0.001
         self.as_int = (
-            self.as_int or isinstance(self.min, int) and isinstance(self.max, int)
+            self.as_int or isinstance(self.to_min, int) and isinstance(self.to_max, int)
         )
 
-    def convert_lin(self, value, max_range):
-        return self.min + (value / max_range) * (self.max - self.min)
+    def convert_lin(self, value):
+        match self.from_min, self.from_max, self.to_min, self.to_max:
+            case _, _, None, None:
+                return value
+            case None, None, to_min, None:
+                return value - abs(value - to_min)
+            case None, None, to_min, to_max:
+                print(f"Problem converting from -inf, +inf to {to_min}..{to_max}")
+                return value
+            case from_min, _, to_min, None:
+                return value + abs(from_min - to_min)
+            case from_min, from_max, to_min, to_max:
+                scaled_value = (value - self.from_min) / (from_max - from_min)
+                return self.to_min + scaled_value * (to_max - to_min)
+            case _:
+                print(
+                    f"No match: {self.from_min}, {self.from_max}, {self.to_min}, {self.to_max}"
+                )
 
-    def convert_log(self, value, max_range):
-        return math.exp(
-            math.log(self.min)
-            + (value / max_range) * (math.log(self.max) - math.log(self.min))
-        )
+    def convert_log(self, value) -> int | float:
+        if self.to_min is None or self.to_max is None:
+            raise ValueError(
+                "Logarithmic scaling requires both min and max to be defined."
+            )
+
+        if value <= 0:
+            raise ValueError(
+                "Logarithmic scaling is undefined for non-positive values."
+            )
+
+        log_min = math.log(self.to_min)
+        log_max = math.log(self.to_max)
+
+        scaled_value = log_min + (value / self.from_max) * (log_max - log_min)
+        result = math.exp(scaled_value)
+
+        return int(result) if self.as_int else result
 
     def convert(self, value):
         if isinstance(value, Decimal):
             value = float(value)
         if self.method == "lin":
-            res = self.convert_lin(value, self.max_range)
+            res = self.convert_lin(value)
         elif self.method == "log":
-            res = self.convert_log(value, self.max_range)
+            res = self.convert_log(value)
         else:
             raise Exception("Unknown conversion method")
         res = int(res) if self.as_int else res
@@ -144,6 +174,16 @@ class ModuleParameter:
     module_state_name: str = NOT_INIT
     stream: bool = False
     init_value: int = 0
+    description: str | None = None
+    range: tuple[int, int] = (0, 127)
+
+    @property
+    def min_range(self):
+        return self.range[0]
+
+    @property
+    def max_range(self):
+        return self.range[1]
 
     def __get__(self, instance, owner=None) -> Int:
         return instance.state[self.name]
@@ -269,6 +309,16 @@ class PadOrKey:
     type: str = "note"
     cc_note: int = -1
     mode: str = "note"
+    description: str | None = None
+    range: tuple[int, int] = (0, 127)
+
+    @property
+    def min_range(self):
+        return self.range[0]
+
+    @property
+    def max_range(self):
+        return self.range[1]
 
     def __post_init__(self):
         self.triggered = False
@@ -308,8 +358,8 @@ class PadOrKey:
         return Scaler(
             data=self,
             device=self.device,
-            min=min,
-            max=max,
+            to_min=min,
+            to_max=max,
             method=method,
             as_int=as_int,
         )
