@@ -34,9 +34,9 @@ class Int(int):
 
     def scale(
         self,
-        min,
-        max,
-        method: Literal["lin"] | Literal["log"] = "log",
+        min: int | float | None = None,
+        max: int | float | None = None,
+        method: Literal["lin"] | Literal["log"] = "lin",
         as_int: bool = False,
     ):
         return Scaler(
@@ -44,8 +44,11 @@ class Int(int):
             device=self.device,
             to_min=min,
             to_max=max,
+            from_min=self.parameter.range[0],
+            from_max=self.parameter.range[1],
             method=method,
             as_int=as_int,
+            auto=min is None and max is None,
         )
 
     def __repr__(self):
@@ -76,10 +79,11 @@ class Scaler:
     device: Any
     to_min: int | float | None
     to_max: int | float | None
-    method: str = "log"
+    method: str = "lin"
     as_int: bool = False
     from_min: int | float | None = None
     from_max: int | float | None = None
+    auto: bool = False
 
     def __post_init__(self):
         if self.to_min == 0 and self.method == "log":
@@ -87,6 +91,26 @@ class Scaler:
         self.as_int = (
             self.as_int or isinstance(self.to_min, int) and isinstance(self.to_max, int)
         )
+        if self.auto:
+            # self.adapt_range()
+            ...
+
+    def should_adapt_min(self):
+        return self.to_min is not None and self.from_min != self.to_min
+
+    def should_adapt_max(self):
+        return self.to_max is not None and self.to_max != self.from_max
+
+    # def adapt_range(self, target, source, source_device, min_range, max_range):
+    #     low, high = None, None
+    #     if self.should_adapt_max():
+    #         self.
+    #     if self.should_adapt_min():
+    #         low = low
+    #     if low is not None or high is not None:
+
+    #         return True
+    #     return False
 
     def convert_lin(self, value):
         match self.from_min, self.from_max, self.to_min, self.to_max:
@@ -121,10 +145,7 @@ class Scaler:
         log_min = math.log(self.to_min)
         log_max = math.log(self.to_max)
 
-        scaled_value = log_min + (value / self.from_max) * (log_max - log_min)
-        result = math.exp(scaled_value)
-
-        return int(result) if self.as_int else result
+        return math.exp(log_min + (value / self.from_max) * (log_max - log_min))
 
     def convert(self, value):
         if isinstance(value, Decimal):
@@ -139,12 +160,18 @@ class Scaler:
         if isinstance(value, Int):
             value.update(res)
             return value
+        print(value, res)
         return res
 
     def install_fun(self, to_device, to_parameter, append=True):
         from .core import VirtualDevice
 
         if isinstance(self.data, VirtualDevice):
+            if self.auto:
+                self.to_min, self.to_max = to_parameter.range
+                self.as_int = isinstance(self.to_min, int) and isinstance(
+                    self.to_max, int
+                )
             fun = self.data.generate_fun(to_device, to_parameter)
             self.data.bind(
                 lambda value, ctx: fun(self.convert(value), ctx),
@@ -154,6 +181,9 @@ class Scaler:
             )
             return
         modparam: ModuleParameter | PadOrKey = self.data.parameter
+        if self.auto:
+            self.to_min, self.to_max = to_parameter.range
+            self.as_int = isinstance(self.to_min, int) and isinstance(self.to_max, int)
         fun = modparam.generate_fun(to_device, to_parameter)
         self.data.device.bind(
             lambda value, ctx: fun(self.convert(value), ctx),
@@ -350,9 +380,9 @@ class PadOrKey:
 
     def scale(
         self,
-        min,
-        max,
-        method: Literal["lin"] | Literal["log"] = "log",
+        min: int | float | None = None,
+        max: int | float | None = None,
+        method: Literal["lin"] | Literal["log"] = "lin",
         as_int: bool = False,
     ):
         return Scaler(
@@ -360,8 +390,11 @@ class PadOrKey:
             device=self.device,
             to_min=min,
             to_max=max,
+            from_min=self.range[0],
+            from_max=self.range[1],
             method=method,
             as_int=as_int,
+            auto=min is None and max is None,
         )
 
     def generate_inner_fun_virtual_consummer(self, to_device, to_param):
@@ -439,6 +472,8 @@ class PadOrKey:
             )
         if self.mode == "latch":
             ...
+        from .core import ThreadContext
+
         return lambda value, ctx: to_device.receiving(
             value,
             on=to_param.name,

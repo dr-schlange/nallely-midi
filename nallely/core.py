@@ -127,45 +127,13 @@ class VirtualParameter:
     stream: bool = False
     consummer: bool = False
     description: str | None = None
-    range: tuple[int | None, int | None] = (None, None)
-    prefered_converter_type: Literal["lin"] | Literal["log"] = "lin"
-
-    def should_adapt_low(self, olow):
-        low, _ = self.range
-        return low is not None and olow != low
-
-    def should_adapt_high(self, ohigh):
-        _, high = self.range
-        return high is not None and high != ohigh
+    range: tuple[int | float | None, int | float | None] = (None, None)
 
     def __get__(self, device: "VirtualDevice", owner=None):
         return ParameterInstance(parameter=self, device=device)
 
     def __set__(self, device: "VirtualDevice", value, append=True):
         if isinstance(value, VirtualDevice):
-            input = value
-            low, high = self.range
-            nlow, nhigh = None, None
-            if self.should_adapt_high(None):
-                nhigh = high
-            if self.should_adapt_low(None):
-                nlow = low
-            if nhigh is not None or nlow is not None:
-                print("Adapt range", self.range)
-                self.__set__(
-                    device,
-                    Scaler(
-                        input,
-                        input.device,
-                        to_min=low,
-                        to_max=high,
-                        method=self.prefered_converter_type,
-                        from_min=input.min_range,
-                        from_max=input.max_range,
-                    ),
-                )
-                return
-
             if self.consummer:
                 virtual_device = value
                 value.device.bind(
@@ -440,8 +408,18 @@ class VirtualDevice(threading.Thread):
                     traceback.print_exc()
                     raise e
 
-    def scale(self, min, max, method="log", as_int=False):
-        return Scaler(self, self, min, max, method, as_int, from_max=self.max_range)
+    def scale(self, min=None, max=None, method="lin", as_int=False):
+        return Scaler(
+            self,
+            self,
+            min,
+            max,
+            method,
+            as_int,
+            from_min=self.min_range,
+            from_max=self.max_range,
+            auto=min is None and max is None,
+        )
 
     @property
     def max_range(self) -> float | int | None:

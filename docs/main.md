@@ -175,6 +175,8 @@ class TerminalOscilloscope(VirtualDevice):
 ```
 
 The virtual device channel `data` is declared as `consummer`, meaning that it will only consume data, not produce any from this attribute, and it requires all the values when they are produced (`stream=True`) even if it is not different from the previously computed one.
+There is also two additional optinal parameters for `VirtualParameter`: `range` and `description`. `range` is used to give the lower and higher value that are accepted by this parameter. By default, the range is defined as `(None, None)`, which means that there is no limit for the min and the max. If you set values, the type of the values are important. If the min/low, max/high are `int`, then only integers are considered for the range.
+The second optional parameter you can use is `description`, it's a textual description of the parameter. It's not directly used by Nallely, but it can be used by any app built using Nallely to help you give more information to the final user.
 
 ## Physical MIDI Devices
 
@@ -363,6 +365,9 @@ l.start()
 nts1.modules.reverb.time = l  #  we map an LFO to the reverb time
 ```
 
+There is also two additional parameters that can be passed to a `ModulParameter`. They are optionals, so you don't have to deal with them directly. On, `range` gives the lower and the higher value that is accepted by the parameter. By default for `ModuleParameter` the value is `(0, 127)`. If you set values, the type of the values are important. If the min/low, max/high are `int`, then only integers are considered for the range.
+The other parameter is `description`, you can use this to give a textual description about the parameter, what are the interesting values (if there is some). This is not directly used by Nallely, but it can be used if you develop that uses Nallely as the underlying library.
+
 ## How to map components together
 
 Now that we know how to create virtual devices, how to create MIDI devices, let's see how we can map them together.
@@ -492,12 +497,28 @@ l.waveform_cv -= mpd32.modules.buttons.k2
 
 Scalers let you define a new range for your controls/pads or virtual devices. This allows you to have a same control that can drive multiple targets with different values that makes sense for the target in question. This becomes especially handy for animation and visuals as often, the amplitude varation for thos is sometimes between 0 and 1.
 
-You can create a scaler from any control, any pad, any virtual device, or any virtual parameter of a virtual device. The syntax is always the same:
+You can create a scaler from any control, any pad, any virtual device, or any virtual parameter of a virtual device. If you want to restrict the output to a specific range, the syntax is the following:
 
 ```python
 mymodule.access.to.the.control.scale(min=..., max=..., method=...)
 ```
-`min` and `max` represent the lower and upper bound of the new scale, and `method` the kind of method that need to be applied. By default, `method` is `"log"`.
+`min` and `max` represent the lower and upper bound of the new scale, and `method` the kind of method that need to be applied. By default, `method` is `"lin"`.
+
+#### Auto scaler
+
+If the parameter you are binding to has a `range` specificed and that you want to adapt from the source parameter (the parameter that will feed the receiver, typically, the parameter from the right side of the assignment when you bind them together), you can ask it to auto-scale. This means that you don't have to set manually the `min` and `max` for your scaler, you can just let it adapt itself depending on the source range and the target range:
+
+```python
+# Let's assume we have a virtual device with a virtual parameter declared as [0.0001, 1]
+vdevice.param_cv = mpd32.modules.buttons.k1.scale()
+```
+
+If the `min` and `max` are not set, the auto-scale is activated. By default, the method used is `"lin"`, if you want to use `"log"`, you can just pass it as parameter. Be careful that in this configuration, auto-scale with `"log"` only works if the target parameter defines a closed range, no open range is accepted:
+
+```python
+# Let's assume we have a virtual device with a virtual parameter declared as [0.0001, 1]
+vdevice.param_cv = mpd32.modules.buttons.k1.scale(method="log")
+```
 
 ## Move computation to other process/machine using the websocket server
 
