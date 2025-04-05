@@ -23,6 +23,11 @@ def convert(path: Path | str):
                 _,
                 cc_min_value,
                 cc_max_value,
+                _,
+                _,
+                _,
+                _,
+                orientation,
                 *_,
             ) = row
             section_split = [s.lower().replace("-", "_") for s in section.split()]
@@ -39,12 +44,18 @@ def convert(path: Path | str):
                     parameter_name = "_".join(parameter_name_split[1:])
             else:
                 parameter_name = "_".join(parameter_name_split)
+            min, max = int(cc_min_value), int(cc_max_value)
+            if orientation.lower() == "centered":
+                init = (min - max) // 2
+            else:
+                init = 0
             section = "_".join(section_split)
             sections[section][parameter_name] = {
                 "description": description,
                 "cc": int(cc_msb),
                 "min": int(cc_min_value),
                 "max": int(cc_max_value),
+                "init": init,
             }
     if brand is not None and device is not None:
         return {brand: {device: {**sections}}}
@@ -69,13 +80,18 @@ Generated configuration for the {brand} - {device}
             for parameter_name, config in parameters.items():
                 cc = config["cc"]
                 min, max = config["min"], config["max"]
+                init = config["init"]
+                if init == 0:
+                    init = ""
+                else:
+                    init = f", init_value={init}"
                 if min == 0 and max == 127:
                     range = ""
                 else:
                     range = f", range=({min}, {max})"
                 descr = config["description"]
                 descr = f", description={descr!r}" if descr else ""
-                parameter_code = f"    {parameter_name} = nallely.ModuleParameter({cc}{range}{descr})\n"
+                parameter_code = f"    {parameter_name} = nallely.ModuleParameter({cc}{range}{init}{descr})\n"
                 f.write(parameter_code)
             f.write("\n\n")
         device_name = device.replace("-", "")

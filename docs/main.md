@@ -310,6 +310,7 @@ manufacturer:
                 description: str
                 min: int
                 max: int
+                init: int
 ```
 
 The different parts of the YAML are:
@@ -320,6 +321,7 @@ The different parts of the YAML are:
 * `min`: the min value of this parameter (usually 0)
 * `max`: the max value of this parameter (usually 127)
 * `description`: the description of the parameter
+* `init`: the initial value of the parameter when you power the device
 
 Here is an excerpt about how the NTS-1 configuration is described in YAML:
 
