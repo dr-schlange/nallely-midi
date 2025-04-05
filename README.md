@@ -3,21 +3,21 @@
 Nallely (pronounced "Nayeli") is a MIDI companion to help you easily map MIDI controllers/instruments together, as well as create virtual LFOs, compose them, and the possibility to expose/create remote services with parameters on which you can map your MIDI controllers/instruments.
 
 Features:
-* provides programmatic seemless interface to your MIDI Device,
-* provides virtual devices (LFOs for example) and let you connect them to your MIDI devices (as source or target),
-* let you generates the Python API for your device if it is listed by the [MIDI CC & NRPN database](https://github.com/pencilresearch/midi) project,
-* let you bind/unbing any Python function to any control/pad/key of your MIDI Device,
-* let you bind/unbing control/pad/key of your MIDI devices between each other or virtual devices, converting the CC between source and target,
-* let you bind/unbing the velocity of the pad/key of your MIDI devices to any CC control,
-* let you bind/unbing pad/ey individualy to any control, note, parameter of MIDI devices or virtual devices,
-* let you provide a scale for the values that goes from a source to a target: you can restrict the range of values that will be sent to the target,
-* let you apply auto-scaling if you want the source to adapt to the range of the target without setting the range yourself,
-* provides a websocket-based bus on which external services can auto-register and expose parameters to which you can bind your MIDI/virtual devices in a seemless way,
-* provides simple LFOs with various waveform that you can compose with mathematical expressions,
-* let you save/reload patch for a MIDI device.
+* programmatic seemless interface to your MIDI Device,
+* virtual devices (LFOs for example) you can connect to your MIDI devices (as source or target),
+* the Python API code generator for your device if it is listed by the [MIDI CC & NRPN database](https://github.com/pencilresearch/midi) project,
+* bind/unbing any Python function to any control/pad/key of your MIDI Device,
+* bind/unbing control/pad/key of your MIDI devices between each other or virtual devices, converting the CC between source and target if required,
+* bind/unbing the velocity of the pad/key of your MIDI devices to any CC control,
+* bind/unbing pad/ey individualy to any control, note, parameter of MIDI devices or virtual devices,
+* scaler for the values that goes from a source to a target: you can restrict the range of values that will be sent to the target,
+* auto-scaling: if you want the source to adapt to the range of the target without setting the range yourself,
+* websocket-based bus on which external services can auto-register and expose parameters to which you can bind your MIDI/virtual devices in a seemless way,
+* LFOs composition with mathematical expressions,
+* save/reload patch for a MIDI device.
 
 Planned:
-* handle mulple banks per device/per module,
+* handle multiple banks per device/per section,
 * scaler that maps to a list of elements, or to true/false (boolean scaler), useful for external services,
 * program change support for devices that do not support them (to change banks for example),
 * some new virtual devices:
