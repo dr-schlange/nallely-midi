@@ -47,8 +47,7 @@ def convert(path: Path | str):
                 "max": int(cc_max_value),
             }
     if brand is not None and device is not None:
-        device = device.replace("-", "")
-        return {brand: {device.capitalize(): {**sections}}}
+        return {brand: {device: {**sections}}}
     return {}
 
 
@@ -58,9 +57,11 @@ def generate_code(d: dict, out: Path | str):
     device = next(iter(d[brand]))
     sections = d[brand][device]
     with out.open("w") as f:
-        f.write(f'''"""
+        f.write(
+            f'''"""
 Generated configuration for the {brand} - {device}
-"""\n''')
+"""\n'''
+        )
         f.write("import nallely\n\n")
         for section, parameters in sections.items():
             f.write(f"class {section.capitalize()}Section(nallely.Module):\n")
@@ -77,7 +78,8 @@ Generated configuration for the {brand} - {device}
                 parameter_code = f"    {parameter_name} = nallely.ModuleParameter({cc}{range}{descr})\n"
                 f.write(parameter_code)
             f.write("\n\n")
-        f.write(f"class {device}(nallely.MidiDevice):\n")
+        device_name = device.replace("-", "")
+        f.write(f"class {device_name}(nallely.MidiDevice):\n")
         f.write(f"    def __init__(self, device_name=None, *args, **kwargs):\n")
         f.write(f"        super().__init__(\n")
         f.write(f"            *args, device_name=device_name or {device!r},\n")
@@ -85,8 +87,8 @@ Generated configuration for the {brand} - {device}
         for section in sections:
             f.write(f"                {section.capitalize()}Section,\n")
         f.write(f"            ],\n")
-        f.write( "            **kwargs,\n")
-        f.write( "       )\n\n")
+        f.write("            **kwargs,\n")
+        f.write("       )\n\n")
 
 
 if __name__ == "__main__":
@@ -95,7 +97,7 @@ if __name__ == "__main__":
     csv_file = Path(sys.argv[1])
     d = convert(csv_file)
     yaml = YAML(typ="safe")
-    yaml.dump(d, csv_file.with_suffix('.yaml'))
+    yaml.dump(d, csv_file.with_suffix(".yaml"))
 
     out_code = Path(sys.argv[2])
     generate_code(d, out_code)
