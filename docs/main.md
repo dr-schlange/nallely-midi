@@ -283,8 +283,71 @@ In `latch` mode, the pad "remembers" the old value of the target CC before setin
 
 Please note that scalers can also be applied to pads. Consequently, it's possible to fix a range of action for the pads. The way of doing it is by simply adding the `.scale(...)` method call after accessing the pad/key, or the velocity parameter.
 
+### Generating a new configuration for a device
 
-### Define a new configuration for a device
+If your device is listed by the [MIDI CC & NRPN database](https://github.com/pencilresearch/midi) project, you can directly download the CSV file for your device, and use the `generator.py` script that is at the root of this repository. This script is quickly written and will be rewritten at some point, but right now it's enough for my use (KORG NTS-1 and Minilogue).
+
+The script takes 2 parameters: the path towards the CSV file that contains the device MIDI config, and a name of a file where the Python code will be written:
+
+```bash
+python generator.py NTS1.csv KORG.py
+```
+
+This command line will read `NTS1.csv` and generates the Python API code for the NTS-1 device in the `KORG.py` file, and it will also generate a `NTS1.yaml` file which is the YAML representation of the transformed CSV.
+
+### Define a new configuration for a device using YAML
+
+The script is also able to read YAML configuration, that follow the same structure than the CSV, more or less, and generate the Python API code, exactly the same way the generator does it for CSV -> Python.
+
+You can describe your device following this structure:
+
+```yaml
+manufacturer:
+    device:
+        section:
+            parameter:
+                cc: int
+                description: str
+                min: int
+                max: int
+```
+
+The different parts of the YAML are:
+* `manufacturer`: the name of the manufacturer
+* `device`: the name of the device, for better integration, it's nice if you can name it following the name that would appear in the MIDI port (e.g: for the NTS-1, the full name would be something like `NTS-1 digital kit:NTS-1 digital kit NTS-1 digital`, you can set the name to `NTS-1`, that would be enough)
+* `section`: the name of the section
+* `cc`: the control change number
+* `min`: the min value of this parameter (usually 0)
+* `max`: the max value of this parameter (usually 127)
+* `description`: the description of the parameter
+
+Here is an excerpt about how the NTS-1 configuration is described in YAML:
+
+```yaml
+KORG:
+  NTS-1:
+    arpeggiator:
+      intervals: {cc: 118, description: '', max: 127, min: 0}
+      length: {cc: 119, description: '', max: 127, min: 0}
+      pattern: {cc: 117, description: ARP pattern length, max: 127, min: 0}
+    delay:
+      depth: {cc: 31, description: '', max: 127, min: 0}
+      mix: {cc: 33, description: '', max: 127, min: 0}
+      time: {cc: 30, description: '', max: 127, min: 0}
+    envelope_generator:
+      attack: {cc: 16, description: Sets the time required for the EG to reach its
+          maximum level once a note is played, max: 127, min: 0}
+      release: {cc: 19, description: Sets the time required, max: 127, min: 0}
+    # ...
+```
+
+Once you have your YAML configuration for your device, you can simply run (here for the NTS-1):
+
+```bash
+python generator.py NTS1.yaml KORG.py
+```
+
+### Define a new configuration for a device programmatically
 
 Defining a new device and a configuration is done by subclassing `MidiDevice` and `Module`. The `MidiDevice` class is the base class that launch all the MIDI glue using `mido` and `rtmidi`. The `Module` base class lets you define the sections of your device, and then `ModuleParameter` and `ModulePadsOrKeys` are descriptors that lets you define the various controls of your device.
 

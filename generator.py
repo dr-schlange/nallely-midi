@@ -94,10 +94,16 @@ Generated configuration for the {brand} - {device}
 if __name__ == "__main__":
     import sys
 
-    csv_file = Path(sys.argv[1])
-    d = convert(csv_file)
+    file = Path(sys.argv[1])
     yaml = YAML(typ="safe")
-    yaml.dump(d, csv_file.with_suffix(".yaml"))
+    if file.suffix == ".csv":
+        d = convert(file)
+        yaml.dump(d, file.with_suffix(".yaml"))
+    elif file.suffix == ".yaml":
+        d = yaml.load(file)
+    else:
+        print(f"File format {file.suffix} not supported")
+        sys.exit(1)
 
     out_code = Path(sys.argv[2])
     generate_code(d, out_code)
