@@ -69,12 +69,9 @@ class ArpSection(Module):
 
 
 @dataclass
-class KeySection(Module):
+class KeysSection(Module):
     state_name = "keys"
     notes = ModulePadsOrKeys()
-
-    def __getitem__(self, key):
-        return self.state[self.__class__.state_name][key]
 
 
 class NTS1(MidiDevice):
@@ -82,15 +79,47 @@ class NTS1(MidiDevice):
         super().__init__(
             *args,
             device_name=device_name or "NTS-1",
-            modules_descr=[
-                OSCSection,
-                FilterSection,
-                EGSection,
-                ModSection,
-                DelaySection,
-                ReverbSection,
-                ArpSection,
-                KeySection,
-            ],
+            modules_descr={
+                "ocs": OSCSection,
+                "filter": FilterSection,
+                "eg": EGSection,
+                "mod": ModSection,
+                "delay": DelaySection,
+                "reverb": ReverbSection,
+                "arp": ArpSection,
+                "keys": KeysSection,
+            },
             **kwargs,
         )
+
+    @property
+    def filter(self) -> FilterSection:
+        return self.modules.filter
+
+    @property
+    def ocs(self) -> OSCSection:
+        return self.modules.ocs
+
+    @property
+    def eg(self) -> EGSection:
+        return self.modules.eg
+
+    @property
+    def mod(self) -> ModSection:
+        return self.modules.mod
+
+    @property
+    def delay(self) -> DelaySection:
+        return self.modules.delay
+
+    @property
+    def reverb(self) -> ReverbSection:
+        return self.modules.reverb
+
+    @property
+    def arp(self) -> ArpSection:
+        return self.modules.arp
+
+    @property
+    def keys(self) -> KeysSection:
+        return self.modules.keys

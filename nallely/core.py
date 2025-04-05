@@ -446,9 +446,8 @@ class VirtualDevice(threading.Thread):
 @dataclass
 class MidiDevice:
     variable_refresh = False
-
     device_name: str
-    modules_descr: list[Type[Module]] | None = None
+    modules_descr: dict[str, Type[Module]] | None = None
     autoconnect: InitVar[bool] = True
     read_input_only: InitVar[bool] = False
     played_notes: Counter = field(default_factory=Counter)
@@ -466,7 +465,11 @@ class MidiDevice:
         )
         self.output_callbacks = []  # callbacks that are classed when sending a value
         if self.modules_descr is None:
-            self.modules_descr = []
+            self.modules_descr = {
+                k: v
+                for k, v in self.__class__.__annotations__.items()
+                if isinstance(v, type) and issubclass(v, Module)
+            }
         self.modules = DeviceState(self, self.modules_descr)
         self.listening = False
         if autoconnect:

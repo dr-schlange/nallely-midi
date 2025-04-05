@@ -160,7 +160,7 @@ class Scaler:
         if isinstance(value, Int):
             value.update(res)
             return value
-        print(value, res)
+        # print("Converting", value, res)
         return res
 
     def install_fun(self, to_device, to_parameter, append=True):
@@ -234,7 +234,7 @@ class ModuleParameter:
             return lambda value, ctx: to_device.set_parameter(to_param.name, value)
 
     def generate_inner_fun_normal(self, to_device, to_param):
-        return lambda value, ctx: to_device.set_parameter(to_param.name, value)
+        return lambda value, ctx: setattr(to_device, to_param.name, value)
 
     def generate_fun(self, to_device, to_param):
         from .core import VirtualParameter
@@ -595,11 +595,11 @@ class Module:
         for name, value in vars(cls).items():
             if isinstance(value, ModuleParameter):
                 value.name = name
-                value.module_state_name = cls.state_name
+                # value.module_state_name = cls.state_name
                 parameters.append(value)
             if isinstance(value, ModulePadsOrKeys):
                 pads = value
-                pads.module_state_name = cls.state_name
+                # pads.module_state_name = cls.state_name
         cls.meta = MetaModule(cls.__name__, parameters, pads)
 
     def __post_init__(self):
@@ -642,11 +642,23 @@ class Module:
 
 
 class DeviceState:
-    def __init__(self, device, modules: list[Type[Module]]):
+    # def __init__(self, device, modules: list[Type[Module]]):
+    #     init_modules = {}
+    #     for ModuleCls in modules:
+    #         moduleInstance = ModuleCls(device)
+    #         init_modules[ModuleCls.state_name] = moduleInstance
+    #         for param in moduleInstance.meta.parameters:
+    #             device.reverse_map[("cc", param.cc_note)] = param
+    #         if moduleInstance.meta.pads_or_keys:
+    #             device.reverse_map[("note", None)] = moduleInstance.meta.pads_or_keys
+    #     self.modules = init_modules
+
+    def __init__(self, device, modules: dict[str, Type[Module]]):
         init_modules = {}
-        for ModuleCls in modules:
+        for state_name, ModuleCls in modules.items():
             moduleInstance = ModuleCls(device)
-            init_modules[ModuleCls.state_name] = moduleInstance
+            ModuleCls.state_name = state_name
+            init_modules[state_name] = moduleInstance
             for param in moduleInstance.meta.parameters:
                 device.reverse_map[("cc", param.cc_note)] = param
             if moduleInstance.meta.pads_or_keys:

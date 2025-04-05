@@ -76,7 +76,6 @@ Generated configuration for the {brand} - {device}
         f.write("import nallely\n\n")
         for section, parameters in sections.items():
             f.write(f"class {section.capitalize()}Section(nallely.Module):\n")
-            f.write(f"    state_name = {section.lower()!r}\n")
             for parameter_name, config in parameters.items():
                 cc = config["cc"]
                 min, max = config["min"], config["max"]
@@ -95,16 +94,20 @@ Generated configuration for the {brand} - {device}
                 f.write(parameter_code)
             f.write("\n\n")
         device_name = device.replace("-", "")
-        f.write(f"class {device_name}(nallely.MidiDevice):\n")
+        f.write(f"class {device_name.capitalize()}(nallely.MidiDevice):\n")
+        for section in sections:
+            f.write(f"    {section}: {section.capitalize()}Section  # type: ignore\n")
+        f.write("\n")
         f.write(f"    def __init__(self, device_name=None, *args, **kwargs):\n")
         f.write(f"        super().__init__(\n")
-        f.write(f"            *args, device_name=device_name or {device!r},\n")
-        f.write(f"            modules_descr=[\n")
+        f.write(f"            *args\n,")
+        f.write(f"            device_name=device_name or {device!r},\n")
+        f.write(f"            **kwargs,\n")
+        f.write(f"        )\n\n")
         for section in sections:
-            f.write(f"                {section.capitalize()}Section,\n")
-        f.write(f"            ],\n")
-        f.write("            **kwargs,\n")
-        f.write("       )\n\n")
+            f.write(f"    @property\n")
+            f.write(f"    def {section}(self) -> {section.capitalize()}Section:\n")
+            f.write(f"        return self.modules.{section}\n\n")
 
 
 if __name__ == "__main__":

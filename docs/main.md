@@ -187,7 +187,9 @@ Midi devices are split in various modules, which are sections of the device. Eac
 ### Pre-defined MIDI Devices
 
 Nallely knows a first version of configuration for the Korg NTS-1, as well as a kind of dedicated configuration for the Akai MPD32.
-Those devices comes with a specific configuration. If your device is setup differently, it's necessary to change the configuration. Currently the only way to do it is to modifying it in Python, but a YAML-based configuration is planned, with preset-loading is planned (just a matter of work, nothing blocking beside time to do it right now).
+Those devices comes with a specific configuration. If your device is setup differently, it's necessary to change the configuration. Depending on how you declared your device in the first place:
+* if you wrote the configuration in pure Python, you need to modify the Python code directly to change the CC values and sections,
+* if you generated the Python API code for your device from a CSV or YAML configuration, you need to adapt the CSV/YAML configuration and generate the code again (see sections below).
 
 Here is how to start the NTS-1 device, or any `MidiDevice` based device:
 
@@ -201,20 +203,24 @@ try:
 finally:
     stop_all_connected_devices()
 ```
-We can access the internal sections/modules of the device programmatically by navigating in the attributes of the elements. We can also query those values:
+We can access the internal sections/modules of the device programmatically by navigating in the attributes of the elements. You can either access a parameter of a section by using: `<device>.modules.<section_name>.<parameter_name>` or, if you generated the Python API code: `<device>.<section_name>.<parameter_name>`. Accessing a parameter of a section returns its currently tracked value:
 
 ```python
-nts1.modules.filter.cutoff  # access the cutoff of the filter section of the NTS-1
-print("Cutoff", nts1.modules.filter.cutoff)
+nts1.filter.cutoff  # access the cutoff of the filter section of the NTS-1
+# or
+nts1.modules.filter.cutoff  # access the cutoff of the filter secton of the NTS-1
+print("Cutoff", nts1.filter.cutoff)
 
 input("Tweak the cutoff button on your NTS1 and press enter...")
 
-print("Cutoff", nts1.modules.filter.cutoff)  # the value is automatically updated
+print("Cutoff", nts1.filter.cutoff)  # the value is automatically updated
 ```
 
 You can send a specific value on a control simply by "setting" the value:
 
 ```python
+nts1.filter.cutoff = 45  # sets the value of the cutoff to 45
+# or
 nts1.modules.filter.cutoff = 45  # sets the value of the cutoff to 45
 ```
 
@@ -228,17 +234,21 @@ try:
     mpd32 = MPD32()  # loads this basic config, you might need to create your own for your device
 
     # We map the k1 button to the cutoff of the NTS1
-    nts1.modules.filter.cutoff = mpd32.modules.buttons.k1
+    nts1.filter.cutoff = mpd32.buttons.k1
 
     # We map also k2 to the cutoff (now k1 and k2 are mapped), but using a scaler
-    nts1.modules.filter.cutoff = mpd32.modules.buttons.k2.scale(min=20, max=100, method="log")
+    nts1.filter.cutoff = mpd32.buttons.k2.scale(min=20, max=100, method="log")
     input("Press enter to stop...")
 finally:
     stop_all_connected_devices()
 ```
 
-Some things to consider here: it's not mandatory that the CC value associated to `k1` and `cutoff` matches. Nallely does the translation when sending the value to the target control/device.
-Also, please note that for each device, `xxx.modules` is the only invariant part of the call (where in the code above `xxx` is the instance). The part `filter.cutoff` and `buttons.k1`, ... depends on how the device is declared. From a MIDI device, we access the internal modules using `.modules`, then we navigates to the section: e.g: `.filter` or `.buttons`, then we access the control: e.g: `.cutoff` or `.k1`, etc. For another device that would have other sections and controls, the only invariant part would be `xxx.modules`, the rest would depend on the declaration.
+Some things to consider here: it's **not mandatory** that the CC value associated to `k1` and `cutoff` matches. Nallely does the translation when sending the value to the target control/device.
+Also, please note that for each device, the part `filter.cutoff` and `buttons.k1`, ... depends on how the device is declared:
+
+* for a MIDI device declared on the fly (no generated code), we access the internal modules using `.modules`, then we navigates to the section: e.g: `.filter` or `.buttons`, then we access the control: e.g: `.cutoff` or `.k1`, etc. For another device that would have other sections and controls, the only invariant part would be `<device>.modules`, the rest would depend on the declaration.
+* for a MIDI device where you generated the code (or wrote the equivalent of the generated code, it's really simple to write), we access the internal section directly: `<device>.filter.cutoff` or `<device>.arp.length`. Obviously, the section and parameter part depends on the device you are using. When you are developping, if you use the generated Python API for a device, the auto-completion tells you the sections, then the parameters you can use.
+
 
 #### Map keys and pads
 
@@ -246,13 +256,16 @@ The support for keys and pads is quite simple at the moment, here is how it's im
 
 ```python
 # associate all the pads to all the notes of the NTS-1
+nts1.keys.notes = mpd32.pads[:]
+
+# or:
 nts1.modules.keys.notes = mpd32.modules.pads[:]
 
 # associate only the pad 36 to the notes of the NTS-1
-nts1.modules.keys.notes = mpd32.modules.pads[36]
+nts1.keys.notes = mpd32.pads[36]
 
 # associate only pads 36 to 44 to the notes of the NTS-1
-nts1.modules.keys.notes = mpd32.modules.pads[36:45]
+nts1.keys.notes = mpd32.pads[36:45]
 ```
 
 The way to assign a pad to something has slighly different syntax than for the controls. This time, we don't need to navigate until the underlying control of the section that owns the pads/keys, but we stop on the section, and we access the value of the pad/key that interests us.
@@ -260,21 +273,20 @@ The way to assign a pad to something has slighly different syntax than for the c
 It's also possible to map a pad to a control from another device:
 
 ```python
-nts1.modules.filter.cutoff = mpd32.modules.pads[36]
+nts1.filter.cutoff = mpd32.pads[36]
 ```
 
 In this case, the note of the pad/key will be sent as value for the control change to the target control. It's possible to map instead the velocity to the target control:
 
 ```python
-nts1.modules.filter.cutoff = mpd32.modules.pads[36].velocity
+nts1.filter.cutoff = mpd32.pads[36].velocity
 ```
 
 This will send the value of the velocity to the target control. When dealing with the velocity, you have acces to 2 extra controls: `hold` and `latch`.
 
 ```python
-nts1.modules.filter.cutoff = mpd32.modules.pads[36].velocity_hold
-
-nts1.modules.filter.cutoff = mpd32.modules.pads[36].velocity_latch
+nts1.filter.cutoff = mpd32.pads[36].velocity_hold
+nts1.filter.cutoff = mpd32.pads[36].velocity_latch
 ```
 
 In `hold` mode, only the `note_on` from the pads are considered, meaning that `note_off` with velocity 0 are not sent. When a pad/key is pressed, the value of the velocity is hold until the pad is hit again. After another press, the new velocity value is hold, etc.
@@ -349,6 +361,18 @@ Once you have your YAML configuration for your device, you can simply run (here 
 python generator.py NTS1.yaml KORG.py
 ```
 
+and you can directly use it:
+
+```python
+from KORG import NTS1
+
+nts1 = NTS1()  # here it supposes that the name of the port will contain "NTS-1"
+
+# you can target a specific device changing the name
+nts1 = NTS1(device_name="myname")  # it will look to map the device to a port that contains "myname"
+
+```
+
 ### Define a new configuration for a device programmatically
 
 Defining a new device and a configuration is done by subclassing `MidiDevice` and `Module`. The `MidiDevice` class is the base class that launch all the MIDI glue using `mido` and `rtmidi`. The `Module` base class lets you define the sections of your device, and then `ModuleParameter` and `ModulePadsOrKeys` are descriptors that lets you define the various controls of your device.
@@ -359,7 +383,7 @@ To help you building your configuration, you can start with this simple script:
 import nallely
 
 try:
-    device = nallely.MidiDevice("MyDevice", modules_descr=[], debug=True)
+    device = nallely.MidiDevice("MyDevice", debug=True)
 
     input()
 finally:
@@ -375,7 +399,6 @@ Once you have those informations, you can tell Nallely about your device. Here i
 
 @dataclass
 class FilterSection(Module):
-    state_name = "filter"
     type = ModuleParameter(42)
     cutoff = ModuleParameter(43)
     resonance = ModuleParameter(44)
@@ -384,40 +407,39 @@ class FilterSection(Module):
 
 @dataclass
 class ReverbSection(Module):
-    state_name = "reverb"
     type = ModuleParameter(90)
     time = ModuleParameter(34)
     depth = ModuleParameter(35)
     mix = ModuleParameter(36, init_value=128 // 2)
 
 @dataclass
-class KeySection(Module):
-    state_name = "keys"
+class KeysSection(Module):
     notes = ModulePadsOrKeys()
 
 class NTS1(MidiDevice):
+    osc: OSCSection
+    filter: FilterSection
+    eg: EGSection
+    mod: ModSection
+    delay: DelaySection
+    reverb: ReverbSection
+    arp: ArpSection
+    keys: KeysSection
+
     def __init__(self, device_name=None, *args, **kwargs):
-        super().__init__(
-            *args,
-            device_name=device_name or "NTS-1",
-            modules_descr=[
-                OSCSection,
-                FilterSection,
-                EGSection,
-                ModSection,
-                DelaySection,
-                ReverbSection,
-                ArpSection,
-                KeySection,
-            ],
-            **kwargs,
-        )
+        super().__init__(*args, device_name=device_name or "NTS-1", **kwargs)
 ```
 
-We can see that the `FilterSection` inherits from `Module`, and defines `filter`, which is the name of the section. Then, it defines a bunch of parameters, which are instances of `ModuleParameter` with the CC value associated. For example, in this configuration, we can see that `type` is the CC `43`.
-The key section is declared using an instance of `ModulePadsOrKeys`.
-Once you have all the section, you just put them in a list as value of the `module_descr` section of the `MidiDevice`. The name also is set to target this device all the time. If various devices contains `NTS-1` in the name, the first one will be selected. To target a specific one, the full name must be used.
-There is also a way to set a `init_value` for each parameter. This value is the one that is considered as initial value for the device. This value can be important depending on your MIDI device as it will consider it as the equivalent of the value that is supposed to be the one of the physical device when you power it. As Nallely is keeping track of the values for each parameter automatically, it needs to have a first value to consider that this is the "normal startup value" and to not impact preset when they are saved from a freshly powered MIDI device. The default value of the `init_value` parameter is `0`. In this example, for the `ReverbSection`, the `mix` is explicitally set to `64` as with the NTS-1, the mix for this section starts in the middle of the [0..127] CC MIDI range.
+We can see that the `FilterSection` inherits from `Module`, then, it defines a bunch of parameters, which are instances of `ModuleParameter` with the CC value associated. For example, in this configuration, we can see that `type` is the CC `43`.
+As you can see in the `ReverbSection`, there is a way to set a `init_value` for each parameter. This value is the one that is considered as initial value for the device. This value can be important depending on your MIDI device as it will consider it as the equivalent of the value that is supposed to be the one of the physical device when you power it. As Nallely is keeping track of the values for each parameter automatically, it needs to have a first value to consider that this is the "normal startup value" and to not impact preset when they are saved from a freshly powered MIDI device. The default value of the `init_value` parameter is `0`. In this example, for the `ReverbSection`, the `mix` is explicitally set to `64` as with the NTS-1, the mix for this section starts in the middle of the [0..127] CC MIDI range.
+In complement, there is two additional parameters that can be passed to a `ModulParameter`. They are optionals, so you don't have to deal with them directly. On, `range` gives the lower and the higher value that is accepted by the parameter. By default for `ModuleParameter` the value is `(0, 127)`. If you set values, the type of the values are important. If the min/low, max/high are `int`, then only integers are considered for the range.
+The other parameter is `description`, you can use this to give a textual description about the parameter, what are the interesting values (if there is some). This is not directly used by Nallely, but it can be used if you develop that uses Nallely as the underlying library.
+
+The keys section is declared using an instance of `ModulePadsOrKeys`.
+Once you have all the section, you just put them at the class level of your `MidiDevice` by associating a name to a type.
+
+You can also see that in the initializer of the class, the name of the device is passed to target explicitally the NTS-1 device all the time. If various devices contains `NTS-1` in the name, the first one will be selected. To target a specific one, the full name must be used.
+
 That's all. Following this configuration, we can now access the various sections and controls:
 
 ```python
@@ -430,8 +452,87 @@ l.start()
 nts1.modules.reverb.time = l  #  we map an LFO to the reverb time
 ```
 
-There is also two additional parameters that can be passed to a `ModulParameter`. They are optionals, so you don't have to deal with them directly. On, `range` gives the lower and the higher value that is accepted by the parameter. By default for `ModuleParameter` the value is `(0, 127)`. If you set values, the type of the values are important. If the min/low, max/high are `int`, then only integers are considered for the range.
-The other parameter is `description`, you can use this to give a textual description about the parameter, what are the interesting values (if there is some). This is not directly used by Nallely, but it can be used if you develop that uses Nallely as the underlying library.
+#### Going further with your device configuration
+
+This configuration we declared works, and lets you use your newly declarated device this way:
+
+```python
+nts1 = NTS1()
+nts1.modules.filter.cutoff = 15
+```
+
+but doesn't let you access the parameters using `<device>.<section>.<parameter>` nor enables auto-completion for your code editor. If you want to enables thoses, you need to add some `@property` on the class of your device, think them as "typed shortcuts" to access sections and parameters:
+
+```python
+...  # sections declared before, you need to have them declared
+
+class NTS1(MidiDevice):
+    osc: OSCSection        # type: ignore <- this is just so typecheckers don't complain
+    filter: FilterSection  # type: ignore
+    eg: EGSection          # type: ignore
+    mod: ModSection        # type: ignore
+    delay: DelaySection    # type: ignore
+    reverb: ReverbSection  # type: ignore
+    arp: ArpSection        # type: ignore
+    keys: KeysSection      # type: ignore
+
+    def __init__(self, device_name=None, *args, **kwargs):
+        super().__init__(*args, device_name=device_name or "NTS-1", **kwargs)
+
+    @property
+    def filter(self) -> FilterSection:
+        return self.modules.filter
+
+    ... # etc
+```
+
+By the way, you don't have to create a new class to define your device, you can also do it by creating a new instance of `MidiDevice` and gives the sections in a dict to the class initializer:
+
+```python
+...  # sections declared before, you need to have them declared
+
+nts1 = MidiDevice(device_name="NTS-1", modules_descr={
+    "osc": OSCSection,
+    "filter": FilterSection,
+    "eg": EGSection,
+    "mod": ModSection,
+    "delay": DelaySection,
+    "reverb": ReverbSection,
+    "arp": ArpSection,
+    "keys": KeySection
+})
+```
+
+You can also wrap this way of declaring the device in a class, and set `@property` if you want to have auto-completion in your code editor:
+
+```python
+# you can wrap it in a class also if you want and provide some @property if you want
+class NTS1(MidiDevice):
+    def __init__(self, device_name=None, *args, **kwargs):
+        super().__init__(
+            *args,
+            device_name=device_name or "NTS-1",
+            modules_descr={
+                "osc": OSCSection,
+                "filter": FilterSection,
+                "eg": EGSection,
+                "mod": ModSection,
+                "delay": DelaySection,
+                "reverb": ReverbSection,
+                "arp": ArpSection,
+                "keys": KeySection
+            }
+            **kwargs,
+        )
+
+    @property
+    def filter(self) -> FilterSection:
+        return self.modules.filter
+
+    ... # etc
+```
+
+Please note that while it's possible to write your device configuration in Python directly, it's more recommended to pass by the YAML configuration and the code generator which will generates the same code that you would wrote, unless you really want to modify the classes to introduce new features or facilities for the Python API code of your device. And even, you could generate the API code for your device, then modify the generated code by hand.
 
 ## How to map components together
 
@@ -446,24 +547,24 @@ l = LFO(waveform="triangle", min_value=1, max_value=10, speed=0.25)
 l.start()
 
 # We map the output of the LFO to the cutoff of the NTS-1
-nts1.modules.filter.cutoff = l
+nts1.filter.cutoff = l
 
 # We map the speed of the LFO to the cutoff of the NTS-1
-nts1.modules.filter.cutoff = l.speed_cv
+nts1.filter.cutoff = l.speed_cv
 ```
 
 Note that you can start the LFO before or after binding it to a target device. Also, the assignation is cumulative. Assigning two devices/controls to a control will not override it, it will add them. To remove a binding, you need to use the `-=` operation:
 
 ```python
 # We bind the speed
-nts1.modules.filter.cutoff = l.speed_cv
+nts1.filter.cutoff = l.speed_cv
 
 # We map the output of the LFO
-nts1.modules.filter.cutoff = l
+nts1.filter.cutoff = l
 
 # the cutoff is driven now by two "controls"
 # we remove one
-nts1.modules.filter.cutoff -= l.speed_cv
+nts1.filter.cutoff -= l.speed_cv
 ```
 
 ### Map physical devices to virtual devices
@@ -475,8 +576,8 @@ l = LFO(waveform="triangle", min_value=1, max_value=10, speed=0.25)
 l.start()
 
 mpd32 = MPD32()
-l.speed_cv = mpd32.modules.buttons.k1
-l.waveform_cv = mpd32.modules.buttons.k2
+l.speed_cv = mpd32.buttons.k1
+l.waveform_cv = mpd32.buttons.k2
 ```
 
 In this example, we map `k1` from the MPD32 to the speed of the LFO, and `k2` to the waveform.
@@ -488,21 +589,21 @@ Nallely lets you associate multiple sources to the same target, and the same sou
 You can associate multiple sources to a target simply by assigning it:
 
 ```python
-nts1.modules.filter.cutoff = mpd32.modules.buttons.k1
-nts1.modules.filter.cutoff = mpd32.modules.buttons.k2
+nts1.filter.cutoff = mpd32.buttons.k1
+nts1.filter.cutoff = mpd32.buttons.k2
 
 l = LFO(waveform="triangle", min_value=10, max_value=100, speed=0.25)
 l.start()
-nts1.modules.filter.cutoff = l
+nts1.filter.cutoff = l
 ```
 In this snipped the cutoff is associated to `k1`, `k2`, and to an LFO.
 
 You can also assign the same source to multiple target to change multiple CCs at the same time from the same control:
 
 ```python
-nts1.modules.filter.cutoff = mpd32.modules.buttons.k1
-nts1.modules.filter.resonance = mpd32.modules.buttons.k1
-nts1.modules.delay.time = mpd32.modules.buttons.k1.scale(min=10, max=50, method="log")
+nts1.filter.cutoff = mpd32.buttons.k1
+nts1.filter.resonance = mpd32.buttons.k1
+nts1.delay.time = mpd32.buttons.k1.scale(min=10, max=50, method="log")
 ```
 
 This snippet maps `k1` to the cutoff, the resonance, and the delay time. It also applies a scaler on `k1` to have a value for the delay that will be between `10` and `50`.
@@ -517,15 +618,15 @@ mpd32 = MPD32()
 
 # We map a function to k1
 foo = lambda value, ctx: print("Received", value, "with context", ctx)
-mpd32.modules.buttons.k1 = foo
+mpd32.buttons.k1 = foo
 # We map a function to pad 36
-mpd32.modules.pads[36] = foo
+mpd32.pads[36] = foo
 
 # We map a function to pad 36 velocity
-mpd32.modules.pads[36].velocity = foo
+mpd32.pads[36].velocity = foo
 
 # We map a function to pad 36 velocity in "hold" mode
-mpd32.modules.pads[36].velocity_hold = foo
+mpd32.pads[36].velocity_hold = foo
 ```
 
 The function that is passed as callback **must** have 2 parameters: the first parameter (here `value`) is the value that will be received by the function, while the second one (named `ctx` here), is a context with more informations. Basically for pads/keys, in note mode, you'll have the velocity inside the context, in velocity mode, you'll have the note.
@@ -533,10 +634,10 @@ The function that is passed as callback **must** have 2 parameters: the first pa
 To unmap the function, you can use then the `-=` operator, exactly the same way it's done in the previous sections:
 
 ```python
-mpd32.modules.buttons.k1 -= foo
-mpd32.modules.pads[36] -= foo
-mpd32.modules.pads[36].velocity -= foo  # removes the callback for "velocity"
-mpd32.modules.pads[36].velocity_hold -= foo  # removes the callback for "velocity hold"
+mpd32.buttons.k1 -= foo
+mpd32.pads[36] -= foo
+mpd32.pads[36].velocity -= foo  # removes the callback for "velocity"
+mpd32.pads[36].velocity_hold -= foo  # removes the callback for "velocity hold"
 ```
 
 Please note that when you attached a callback to the velocity, you need to explicitally express that you want to remove the function from `.velocity`. Otherwise, it will remove the callback for the `"note"` mode (normal non-velocity mode).
@@ -549,13 +650,13 @@ As seen in the previous section, to remove a mapping, you need to use the `-=` o
 l = LFO(waveform="triangle", min_value=1, max_value=10, speed=0.25)
 l.start()
 
-nts1.modules.filter.cutoff = mpd32.modules.buttons.k1
-l.waveform_cv = mpd32.modules.buttons.k2
+nts1.filter.cutoff = mpd32.buttons.k1
+l.waveform_cv = mpd32.buttons.k2
 
 input("Press enter to remove the bindings...")
 
-nts1.modules.filter.cutoff -= mpd32.modules.buttons.k1
-l.waveform_cv -= mpd32.modules.buttons.k2
+nts1.filter.cutoff -= mpd32.buttons.k1
+l.waveform_cv -= mpd32.buttons.k2
 ```
 
 ### Scalers
@@ -575,14 +676,14 @@ If the parameter you are binding to has a `range` specificed and that you want t
 
 ```python
 # Let's assume we have a virtual device with a virtual parameter declared as [0.0001, 1]
-vdevice.param_cv = mpd32.modules.buttons.k1.scale()
+vdevice.param_cv = mpd32.buttons.k1.scale()
 ```
 
 If the `min` and `max` are not set, the auto-scale is activated. By default, the method used is `"lin"`, if you want to use `"log"`, you can just pass it as parameter. Be careful that in this configuration, auto-scale with `"log"` only works if the target parameter defines a closed range, no open range is accepted:
 
 ```python
 # Let's assume we have a virtual device with a virtual parameter declared as [0.0001, 1]
-vdevice.param_cv = mpd32.modules.buttons.k1.scale(method="log")
+vdevice.param_cv = mpd32.buttons.k1.scale(method="log")
 ```
 
 ## Move computation to other process/machine using the websocket server
