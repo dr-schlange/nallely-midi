@@ -24,7 +24,6 @@ Planned:
   * arpegiator
   * sequencer
   * envelope generator
-* code generator to help your describe your MIDI device interface,
 * possibility to broadcast messages and information from the external services,
 * a TUI or web interface to help you create new virtual devices instances and map your MIDI/virtual devices together.
 
