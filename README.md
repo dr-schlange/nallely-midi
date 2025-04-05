@@ -29,7 +29,7 @@ Planned:
 * a TUI or web interface to help you create new virtual devices instances and map your MIDI/virtual devices together.
 
 
-## Quick example
+## Quick examples
 
 Here is a simple example about how to map the cutoff of the KORG NTS-1 with the cutoff of the KORG Minilogue, in an inverse fashion:
 
@@ -86,8 +86,8 @@ try:
             break
 
         # here is the important part
-        minilogue.keys[new_note] = minilogue.keys[note]  # we trigger the 3rd on the minilogue
-        nts1.keys[new_note] = minilogue.keys[note]  #  we trigger the 3rd on the NTS-1
+        minilogue.keys[new_note] = minilogue.keys[note]  # we map the key to the 3rd on the minilogue
+        nts1.keys[new_note] = minilogue.keys[note]  #  we map the key to the 3rd on the NTS-1
   input("Press enter to stop...")
 finally:
   nallely.stop_all_connected_devices()
