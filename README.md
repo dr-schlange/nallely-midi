@@ -5,6 +5,7 @@ Nallely (pronounced "Nayeli") is a MIDI companion to help you easily map MIDI co
 Features:
 * provides programmatic seemless interface to your MIDI Device,
 * provides virtual devices (LFOs for example) and let you connect them to your MIDI devices (as source or target),
+* let you generates the Python API for your device if it is listed [by the MIDI CC & NRPN database](https://github.com/pencilresearch/midi) project,
 * let you bind/unbing any Python function to any control/pad/key of your MIDI Device,
 * let you bind/unbing control/pad/key of your MIDI devices between each other or virtual devices, converting the CC between source and target,
 * let you bind/unbing the velocity of the pad/key of your MIDI devices to any CC control,
