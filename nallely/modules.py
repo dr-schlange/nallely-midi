@@ -570,6 +570,11 @@ class ModulePadsOrKeys:
                 pad: PadOrKey = e
                 assert isinstance(pad, PadOrKey)
                 self.__set__(instance, e)
+            return
+        # if isinstance(value, Scaler):
+        #     scaler = value
+        #     scaler.install_fun(instance.device, self)
+        #     return
 
     def basic_send(self, type, note, velocity): ...
 
@@ -639,20 +644,23 @@ class Module:
         match value:
             case FunctionType():
                 [p.bind_function(value) for p in pads]
+            case PadOrKey():
+                from_pad = value
+                from_module: MidiDevice = from_pad.device
+                for p in pads:
+                    from_module.bind(
+                        lambda value, ctx: p.device.note(
+                            ctx.type, p.cc_note, ctx.velocity
+                        ),
+                        type=from_pad.type,
+                        cc_note=from_pad.cc_note,
+                        to=p.device,
+                        param=self.meta.pads_or_keys,
+                        append=True,
+                    )
 
 
 class DeviceState:
-    # def __init__(self, device, modules: list[Type[Module]]):
-    #     init_modules = {}
-    #     for ModuleCls in modules:
-    #         moduleInstance = ModuleCls(device)
-    #         init_modules[ModuleCls.state_name] = moduleInstance
-    #         for param in moduleInstance.meta.parameters:
-    #             device.reverse_map[("cc", param.cc_note)] = param
-    #         if moduleInstance.meta.pads_or_keys:
-    #             device.reverse_map[("note", None)] = moduleInstance.meta.pads_or_keys
-    #     self.modules = init_modules
-
     def __init__(self, device, modules: dict[str, Type[Module]]):
         init_modules = {}
         for state_name, ModuleCls in modules.items():
