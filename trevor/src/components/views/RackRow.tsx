@@ -45,8 +45,8 @@ export const RackRow = ({
       }}
       onClick={(event) => {
         if (
-          !(event.target as HTMLElement).classList.contains('section-box') &&
-          !(event.target as HTMLElement).classList.contains('section-name')
+          !(event.target as HTMLElement).classList.contains('rack-section-box') &&
+          !(event.target as HTMLElement).classList.contains('rack-section-name')
         ) {
           onNonSectionClick(); // Trigger deselection if clicking outside sections
         }
@@ -55,7 +55,7 @@ export const RackRow = ({
       {devices.map((device) => (
         <div
           key={device.slot}
-          data-slot={device.slot}
+          data-rack-slot={device.slot}
           onDrop={(event) => handleDrop(event, device.slot)}
           onDragOver={handleDragOver}
           style={{
@@ -75,6 +75,7 @@ export const RackRow = ({
             onDragEnd={() => {}}
             onSectionClick={onSectionClick}
             selectedSections={selectedSections}
+            onNonSectionClick={onNonSectionClick} // Pass the function
           />
         </div>
       ))}

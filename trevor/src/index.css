@@ -180,25 +180,115 @@ input[type="text"]:disabled {
 }
 
 .instance-creation-midi-output,
-.instance-creation-midi-inputs {
-  flex: 1; /* 50% of the horizontal space */
+.instance-creation-midi-inputs,
+.instance-creation-info-panel {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  border-right: 2px solid #808080;
+  justify-content: flex-start;
   padding: 10px;
 }
 
+.instance-creation-midi-output {
+  flex: 4; /* 40% of the horizontal space */
+  border-right: 2px solid #808080;
+}
+
 .instance-creation-midi-inputs {
-  border-right: none; /* Remove border for the last panel */
+  flex: 4; /* 40% of the horizontal space */
+  border-right: 2px solid #808080;
+}
+
+.instance-creation-info-panel {
+  flex: 2; /* 20% of the horizontal space */
+}
+
+.info-content {
+  font-family: 'Amiga Forever', inherit;
+  font-size: 12px;
+  color: #000000;
+  text-align: center;
+  background-color: #f0f0f0;
+  padding: 10px;
+  border: 2px solid #808080;
+  box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
 }
 
 .instance-creation-bottom-panel {
-  flex: 1; /* 50% of the vertical space */
   display: flex;
+  flex-direction: row;
+  height: 100%;
   background-color: #e0e0e0;
   box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
+}
+
+.device-class-left-panel {
+  flex: 4; /* 80% of the horizontal space */
+  background-color: #d0d0d0;
+  border-right: 2px solid #808080;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
+.device-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px; /* Space between devices */
+  width: 100%;
+}
+
+.device-name {
+  font-size: 12px;
+  font-weight: bold;
+  color: #000000;
+  text-align: center;
+}
+
+.device-item {
+  font-size: 12px;
+  padding: 5px;
+  cursor: pointer;
+  background-color: #d0d0d0;
+  border: 1px solid #808080;
+  margin-bottom: 5px;
+  text-align: left;
+}
+
+.device-item:hover {
+  background-color: #e0e0e0;
+}
+
+.device-class-right-panel {
+  flex: 1; /* 20% of the horizontal space */
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 10px;
+}
+
+.device-class-list {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+}
+
+.device-class-item {
+  font-size: 12px;
+  padding: 5px;
+  cursor: pointer;
+  background-color: #d0d0d0;
+  border: 1px solid #808080;
+  margin-bottom: 5px;
+  text-align: left;
+}
+
+.device-class-item:hover {
+  background-color: #e0e0e0;
 }
 
 .device-patching {
@@ -276,17 +366,17 @@ input[type="text"]:disabled {
   border: 2px dashed #808080; /* Dashed border for drop area */
 }
 
-.device {
-  background-color: #e0e0e0; /* Light gray for Device */
-  border: 5px solid #808080; /* Border for Device */
-  box-sizing: border-box; /* Include border in width/height */
-  position: absolute; /* Ensure positioning works */
+.device-component {
+  background-color: #e0e0e0;
+  border: 5px solid #808080;
+  box-sizing: border-box;
+  position: absolute;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: space-between; /* Space sections on sides */
-  padding: 10px; /* Add padding for sections */
-  transform: translateY(-50%); /* Properly center vertically */
+  justify-content: space-between;
+  padding: 10px;
+  transform: translateY(-50%);
 }
 
 .device-name {
@@ -325,33 +415,33 @@ input[type="text"]:disabled {
   gap: 5px; /* Space between section box and name */
 }
 
-.device-section.selected .section-box {
+.device-section.selected .device-section-box {
   background-color: yellow;
 }
 
-.section-box {
+.device-section-box {
   width: 20px;
   height: 20px;
-  background-color: orange; /* Orange square for sections */
-  border-radius: 3px; /* Slightly rounded corners */
-  cursor: pointer; /* Indicate hoverable */
+  background-color: orange;
+  border-radius: 3px;
+  cursor: pointer;
 }
 
-.section-box:hover {
-  background-color: #ff9900; /* Slightly darker orange on hover */
+.device-section-box:hover {
+  background-color: #ff9900;
 }
 
-.section-name {
+.device-section-name {
   font-size: 10px;
   font-weight: bold;
-  color: #000000; /* Black text for the name */
+  color: #000000;
 }
 
-.section-name.left {
+.device-section-name.left {
   margin-left: 5px; /* Add space to the left of the section box */
 }
 
-.section-name.right {
+.device-section-name.right {
   margin-right: 5px; /* Add space to the right of the section box */
 }
 
@@ -667,6 +757,59 @@ input[type="text"]:disabled {
   height: 100%;
   pointer-events: none; /* Allow clicks to pass through the SVG */
   z-index: 1; /* Ensure arrows are drawn above other elements */
+}
+
+.midi-ports {
+  display: flex;
+  gap: 10px; /* Space between ports */
+  justify-content: center;
+  align-items: center;
+}
+
+.midi-ports-grid {
+  display: flex;
+  justify-content: space-between; /* Distribute ports evenly */
+  align-items: center;
+  width: 100%; /* Take full horizontal space */
+}
+
+.midi-port {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.midi-port-name {
+  font-size: 10px;
+  font-weight: bold;
+  color: #000000;
+  margin-bottom: 5px; /* Space between name and circle */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 50px; /* Limit the width for truncation */
+}
+
+.midi-port-name:hover {
+  overflow: visible;
+  white-space: normal;
+  background-color: #ffffff;
+  padding: 2px;
+  border: 1px solid #808080;
+  position: absolute;
+  top: -20px; /* Position above the name */
+  z-index: 1;
+}
+
+.midi-port-circle {
+  width: 30px;
+  height: 30px;
+  background-color: #d0d0d0;
+  border: 2px solid #808080;
+  border-radius: 50%;
+  box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
 }
 
 @media (prefers-color-scheme: light) {

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 const generateAcronym = (name: string): string => {
   // Generate an acronym by selecting consonants or meaningful letters
@@ -32,24 +32,31 @@ const Device = ({
   onDragEnd: () => void;
   onSectionClick: (sectionId: string) => void;
   selectedSections: string[];
-  onNonSectionClick: () => void;
+  onNonSectionClick?: () => void; // Make onNonSectionClick optional
 }) => {
+  const [isNameOnLeft, setIsNameOnLeft] = useState(true); // Track the side of the name
+
   const half = Math.ceil(sections.length / 2); // Split sections into left and right sides
   const leftSections = sections.slice(0, half);
   const rightSections = sections.slice(half);
 
+  useEffect(() => {
+    // Dynamically adjust the side of the name based on section positions
+    setIsNameOnLeft(leftSections.length > rightSections.length);
+  }, [leftSections, rightSections]);
+
   return (
     <div
-      className="device"
+      className="device-component"
       draggable
       onDragStart={(event) => onDragStart(event, slot)}
       onDragEnd={onDragEnd}
       onClick={(event) => {
         if (
-          !(event.target as HTMLElement).classList.contains("section-box") &&
-          !(event.target as HTMLElement).classList.contains("section-name")
+          !(event.target as HTMLElement).classList.contains("device-section-box") &&
+          !(event.target as HTMLElement).classList.contains("device-section-name")
         ) {
-          onNonSectionClick(); // Trigger deselection if clicking outside sections
+          onNonSectionClick?.(); // Safely call onNonSectionClick if provided
         }
       }}
       style={{
@@ -61,7 +68,7 @@ const Device = ({
         height: height - margin * 2,
       }}
     >
-      <div className="device-name">{name}</div>
+      <div className={`device-name ${isNameOnLeft ? "left" : "right"}`}>{name}</div>
       <div className="device-sections">
         {/* Left side sections */}
         <div className="device-side left">
@@ -71,10 +78,14 @@ const Device = ({
               <div
                 key={index}
                 className={`device-section ${selectedSections.includes(sectionId) ? 'selected' : ''}`}
-                onClick={() => onSectionClick(sectionId)}
+                data-dp-section-id={sectionId}
+                onClick={(event) => {
+                  event.stopPropagation(); // Prevent triggering onNonSectionClick
+                  onSectionClick(sectionId); // Call onSectionClick with the section ID
+                }}
               >
-                <div className="section-box" title={section}></div>
-                <span className="section-name left">{generateAcronym(section)}</span>
+                <div className="device-section-box" title={section}></div>
+                <span className="device-section-name left">{generateAcronym(section)}</span>
               </div>
             );
           })}
@@ -87,10 +98,14 @@ const Device = ({
               <div
                 key={index}
                 className={`device-section ${selectedSections.includes(sectionId) ? 'selected' : ''}`}
-                onClick={() => onSectionClick(sectionId)}
+                data-dp-section-id={sectionId}
+                onClick={(event) => {
+                  event.stopPropagation(); // Prevent triggering onNonSectionClick
+                  onSectionClick(sectionId); // Call onSectionClick with the section ID
+                }}
               >
-                <span className="section-name right">{generateAcronym(section)}</span>
-                <div className="section-box" title={section}></div>
+                <span className="device-section-name right">{generateAcronym(section)}</span>
+                <div className="device-section-box" title={section}></div>
               </div>
             );
           })}

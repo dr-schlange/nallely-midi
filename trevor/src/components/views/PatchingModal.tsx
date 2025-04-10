@@ -76,8 +76,8 @@ const PatchingModal = ({
     svg.innerHTML = ""; // Clear existing arrows
 
     connections.forEach((connection) => {
-      const fromElement = document.querySelector(`[data-param-id="${connection.from}"]`);
-      const toElement = document.querySelector(`[data-param-id="${connection.to}"]`);
+      const fromElement = document.querySelector(`[data-modal-param-id="${connection.from}"]`);
+      const toElement = document.querySelector(`[data-modal-param-id="${connection.to}"]`);
 
       if (fromElement && toElement) {
         const fromRect = fromElement.getBoundingClientRect();
@@ -85,28 +85,10 @@ const PatchingModal = ({
 
         const svgRect = svg.getBoundingClientRect();
 
-        let fromX, fromY, toX, toY;
-
-        if (fromRect.top === toRect.top) {
-          // Same panel, draw left to right or right to left
-          fromX = fromRect.right - svgRect.left; // Right side of the source
-          fromY = fromRect.top + fromRect.height / 2 - svgRect.top; // Center vertically
-          toX = toRect.left - svgRect.left; // Left side of the target
-          toY = toRect.top + toRect.height / 2 - svgRect.top; // Center vertically
-        } else {
-          // Different panels, draw bottom to top or top to bottom
-          fromX = fromRect.left + fromRect.width / 2 - svgRect.left; // Center horizontally
-          fromY =
-            fromRect.bottom < toRect.top
-              ? fromRect.bottom - svgRect.top // Bottom side of the source parameter
-              : fromRect.top - svgRect.top; // Top side of the source parameter
-
-          toX = toRect.left + toRect.width / 2 - svgRect.left; // Center horizontally
-          toY =
-            fromRect.bottom < toRect.top
-              ? toRect.top - svgRect.top // Top side of the target parameter
-              : toRect.bottom - svgRect.top; // Bottom side of the target parameter
-        }
+        const fromX = fromRect.right - svgRect.left;
+        const fromY = fromRect.top + fromRect.height / 2 - svgRect.top;
+        const toX = toRect.left - svgRect.left;
+        const toY = toRect.top + toRect.height / 2 - svgRect.top;
 
         const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
         line.setAttribute("x1", fromX.toString());
@@ -126,6 +108,21 @@ const PatchingModal = ({
   useEffect(() => {
     drawConnections();
   }, [connections]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      drawConnections(); // Redraw connections when the modal size changes
+    };
+
+    const observer = new ResizeObserver(handleResize);
+    if (svgRef.current) {
+      observer.observe(svgRef.current.parentElement as HTMLElement); // Observe the modal container
+    }
+
+    return () => {
+      observer.disconnect(); // Clean up the observer
+    };
+  }, [connections]); // Re-run when connections change
 
   return (
     <div className="patching-modal">
@@ -159,7 +156,7 @@ const PatchingModal = ({
                   className={`parameter ${
                     selectedParameters.includes(param) ? "selected" : ""
                   }`}
-                  data-param-id={param}
+                  data-modal-param-id={param}
                   onClick={() => handleParameterClick(param)}
                 >
                   <span className="parameter-name top">{param}</span>
@@ -177,7 +174,7 @@ const PatchingModal = ({
                   className={`parameter ${
                     selectedParameters.includes(param) ? "selected" : ""
                   }`}
-                  data-param-id={param}
+                  data-modal-param-id={param}
                   onClick={() => handleParameterClick(param)}
                 >
                   <div className="parameter-box"></div>
