@@ -64,6 +64,18 @@ button:focus, input:focus, textarea:focus, select:focus {
   border-color: #0000ff; /* Focus border color */
 }
 
+input:disabled,
+select:disabled,
+label input:disabled + span,
+label select:disabled + span {
+  color: #808080; /* Slightly greyish text for disabled fields */
+  background-color: #e0e0e0; /* Keep the Amiga-style background */
+}
+
+input[type="text"]:disabled {
+  color: #808080; /* Greyish text for disabled text inputs */
+}
+
 .three-panel-layout {
   display: flex;
   height: 100vh;
@@ -82,38 +94,114 @@ button:focus, input:focus, textarea:focus, select:focus {
 }
 
 .right-panel {
-  width: 20%; /* 20% of the horizontal space */
+  flex: 1; /* Fixed size for the right panel */
   display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: #d0d0d0;
-  border: 2px solid #808080;
-  box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
+  flex-direction: column;
+  background-color: #f0f0f0;
+  border-left: 2px solid #808080;
+}
+
+.top-right-panel,
+.bottom-right-panel {
+  flex: 1; /* Ensure both panels take equal space */
+  overflow-y: auto; /* Enable scrolling if content overflows */
+}
+
+.top-right-panel,
+.bottom-right-panel {
+  flex: 1; /* 50% of the vertical space */
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 10px;
+  border-bottom: 2px solid #808080;
+  overflow-y: auto; /* Enable scrolling for connections */
+  max-height: 100%; /* Prevent overflow */
+}
+
+.bottom-right-panel {
+  border-bottom: none; /* Remove border for the last panel */
 }
 
 .top-panel {
-  height: 50%; /* 50% of the vertical space within the left panel */
-  flex: 1;
-  border-bottom: 2px solid #808080;
+  flex: 1; /* 50% of the vertical space */
   display: flex;
+  background-color: #e0e0e0;
+  border-bottom: 2px solid #808080;
+  box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
+}
+
+.top-panel .midi-output,
+.top-panel .midi-inputs {
+  flex: 1; /* 50% of the horizontal space */
+  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  border-right: 2px solid #808080;
+  padding: 10px;
+}
+
+.top-panel .midi-inputs {
+  border-right: none; /* Remove border for the last panel */
+}
+
+.middle-panel {
+  flex: 1; /* 50% of the remaining space */
   background-color: #e0e0e0;
+  border-bottom: 2px solid #808080;
   box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
 }
 
 .bottom-panel {
-  height: 50%; /* 50% of the vertical space within the left panel */
-  flex: 1;
-  border-bottom: none;
+  flex: 1; /* 50% of the vertical space */
   display: flex;
-  align-items: center;
-  justify-content: center;
   background-color: #e0e0e0;
   box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
 }
 
-.instance-creation, .device-patching {
+.instance-creation {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  background-color: #d0d0d0; /* Amiga-style background */
+  border: 2px solid #808080;
+  box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
+}
+
+.instance-creation-top-panel {
+  flex: 1; /* 50% of the vertical space */
+  display: flex;
+  background-color: #e0e0e0;
+  border-bottom: 2px solid #808080;
+  box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
+}
+
+.instance-creation-midi-output,
+.instance-creation-midi-inputs {
+  flex: 1; /* 50% of the horizontal space */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-right: 2px solid #808080;
+  padding: 10px;
+}
+
+.instance-creation-midi-inputs {
+  border-right: none; /* Remove border for the last panel */
+}
+
+.instance-creation-bottom-panel {
+  flex: 1; /* 50% of the vertical space */
+  display: flex;
+  background-color: #e0e0e0;
+  box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
+}
+
+.device-patching {
   display: flex;
   width: 100%;
   height: 100%;
@@ -122,24 +210,434 @@ button:focus, input:focus, textarea:focus, select:focus {
   box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
 }
 
+.device-patching-main-section {
+  flex: 4; /* 80% of the horizontal space */
+  display: flex;
+  flex-direction: column;
+  border-right: 2px solid #808080;
+}
+
+.device-patching-side-section {
+  flex: 1; /* 20% of the horizontal space */
+  display: flex;
+  flex-direction: column;
+  background-color: #e0e0e0;
+  border-left: 2px solid #808080;
+}
+
+.device-patching-top-panel {
+  height: 40px; /* Fixed height for the Associate button */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #d0d0d0;
+  border-bottom: 2px solid #808080;
+  box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
+}
+
+.device-patching-middle-panel {
+  flex: 1; /* 50% of the remaining space */
+  background-color: #e0e0e0;
+  border-bottom: 2px solid #808080;
+  box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
+}
+
+.device-patching-bottom-panel {
+  flex: 1; /* 50% of the remaining space */
+  background-color: #e0e0e0;
+  box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
+}
+
 .main-section {
   width: 80%; /* 80% of the horizontal space */
   border-right: 2px solid #808080;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column; /* Stack RackRows vertically */
+  align-items: stretch; /* Ensure RackRows take full width */
+  justify-content: flex-start;
+  gap: 4px; /* Add gap between rows */
   background-color: #e0e0e0;
   box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
+}
+
+.rack-row {
+  position: relative;
+  background-color: #d0d0d0; /* Darker gray for RackRow */
+  border: 1px solid #aaa; /* Slightly darker border */
+  margin-bottom: 5px;
+  overflow: hidden; /* Ensure child elements like Device are visually contained */
+  width: 100%; /* Ensure rows take full width */
+  display: flex; /* Ensure proper layout for devices */
+  height: 130px; /* Default fixed height for rack rows */
+}
+
+.rack-row[data-slot]:hover {
+  background-color: #d0d0d0; /* Highlight slot during drag-over */
+  border: 2px dashed #808080; /* Dashed border for drop area */
+}
+
+.device {
+  background-color: #e0e0e0; /* Light gray for Device */
+  border: 5px solid #808080; /* Border for Device */
+  box-sizing: border-box; /* Include border in width/height */
+  position: absolute; /* Ensure positioning works */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between; /* Space sections on sides */
+  padding: 10px; /* Add padding for sections */
+  transform: translateY(-50%); /* Properly center vertically */
+}
+
+.device-name {
+  position: relative;
+  font-size: 12px;
+  font-weight: bold;
+  color: #000000; /* Black text for the name */
+  text-align: center;
+}
+
+.device-sections {
+  display: flex;
+  justify-content: space-between; /* Position sections on sides */
+  height: 100%;
+  width: 100%;
+}
+
+.device-side {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly; /* Distribute sections evenly */
+  height: 100%;
+}
+
+.device-side.left {
+  align-items: flex-start; /* Align sections to the left */
+}
+
+.device-side.right {
+  align-items: flex-end; /* Align sections to the right */
+}
+
+.device-section {
+  display: flex;
+  align-items: center;
+  gap: 5px; /* Space between section box and name */
+}
+
+.device-section.selected .section-box {
+  background-color: yellow;
+}
+
+.section-box {
+  width: 20px;
+  height: 20px;
+  background-color: orange; /* Orange square for sections */
+  border-radius: 3px; /* Slightly rounded corners */
+  cursor: pointer; /* Indicate hoverable */
+}
+
+.section-box:hover {
+  background-color: #ff9900; /* Slightly darker orange on hover */
+}
+
+.section-name {
+  font-size: 10px;
+  font-weight: bold;
+  color: #000000; /* Black text for the name */
+}
+
+.section-name.left {
+  margin-left: 5px; /* Add space to the left of the section box */
+}
+
+.section-name.right {
+  margin-right: 5px; /* Add space to the right of the section box */
 }
 
 .side-section {
   width: 20%; /* 20% of the horizontal space */
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
   background-color: #e0e0e0;
   border: 2px solid #808080;
   box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
+}
+
+.associate-button {
+  width: 100%;
+  height: 100%;
+  background-color: #d0d0d0;
+  border: 2px solid #808080;
+  font-size: 16px;
+  font-weight: bold;
+  font-family: 'Amiga Forever', system-ui, Avenir, Helvetica, Arial, sans-serif; /* Use the same font */
+  cursor: pointer;
+  box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000; /* Amiga-style 3D effect */
+}
+
+.associate-button:hover {
+  background-color: orange; /* Highlight in orange on hover */
+}
+
+.associate-button.active {
+  background-color: yellow;
+  box-shadow: inset 1px 1px 0px #808080, inset -1px -1px 0px #ffffff; /* Inverted 3D effect */
+}
+
+.patching-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 80%; /* Fixed width */
+  height: 60%; /* Fixed height */
+  background-color: white;
+  transform: translate(-50%, -50%); /* Center the modal */
+  display: flex;
+  flex-direction: column;
+  border: 2px solid #808080;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.modal-header {
+  height: 40px; /* Fixed height for the header */
+  display: flex;
+  align-items: center;
+  justify-content: flex-start; /* Align close button to the left */
+  background-color: #d0d0d0;
+  border-bottom: 2px solid #808080;
+  padding: 0 10px;
+}
+
+.close-button {
+  background-color: #d0d0d0;
+  border: 2px solid #808080;
+  padding: 5px 10px;
+  font-family: 'Amiga Forever', system-ui, Avenir, Helvetica, Arial, sans-serif; /* Use the same font */
+  cursor: pointer;
+  box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000; /* Amiga-style 3D effect */
+}
+
+.modal-body {
+  flex: 1; /* Take the remaining vertical space */
+  display: flex;
+  flex-direction: row;
+}
+
+.left-panel {
+  flex: 4; /* 80% of the horizontal space */
+  display: flex;
+  flex-direction: column;
+  border-right: 2px solid #808080;
+}
+
+.top-left-panel {
+  flex: 1; /* 50% of the vertical space */
+  background-color: #e0e0e0;
+  border-bottom: 2px solid #808080;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 10px;
+  overflow-y: auto; /* Allow scrolling if content overflows */
+}
+
+.top-left-panel h3 {
+  margin: 0 0 10px 0;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.top-left-panel ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+.top-left-panel li {
+  font-size: 12px;
+  margin-bottom: 5px;
+}
+
+.bottom-left-panel {
+  flex: 1; /* 50% of the vertical space */
+  background-color: #e0e0e0;
+  border-bottom: 2px solid #808080;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 10px;
+  overflow-y: auto; /* Allow scrolling if content overflows */
+}
+
+.bottom-left-panel h3 {
+  margin: 0 0 10px 0;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.bottom-left-panel ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+.bottom-left-panel li {
+  font-size: 12px;
+  margin-bottom: 5px;
+}
+
+.right-panel {
+  flex: 1; /* Fixed size for the right panel */
+  background-color: #f0f0f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-content {
+  background-color: white;
+  width: 90%; /* Adjust content width */
+  height: 80%; /* Adjust content height */
+  padding: 20px;
+  border: 2px solid #808080;
+  box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
+  overflow: auto; /* Allow scrolling if content overflows */
+}
+
+.parameters-grid {
+  display: flex;
+  justify-content: space-between; /* Distribute parameters evenly */
+  align-items: center; /* Center vertically */
+  width: 100%; /* Take full horizontal space */
+  height: 100%; /* Ensure the grid takes full height of the container */
+}
+
+.parameter {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.parameter-box {
+  width: 40px;
+  height: 40px;
+  background-color: #d0d0d0; /* Gray square for parameters */
+  border: 2px solid #808080; /* Amiga-style border */
+  box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000; /* Amiga-style 3D effect */
+  position: relative;
+}
+
+.parameter-name {
+  font-size: 10px;
+  font-weight: bold;
+  color: #000000; /* Black text for parameter names */
+  position: absolute;
+  text-align: center;
+  width: 100%;
+  left: 50%; /* Center horizontally */
+  transform: translateX(-50%); /* Adjust to align with the center of the parameter box */
+}
+
+.parameter-name.top {
+  top: -15px; /* Position above the square */
+}
+
+.parameter-name.bottom {
+  bottom: -15px; /* Position below the square */
+}
+
+.parameter:hover .parameter-box,
+.parameter.selected .parameter-box {
+  background-color: orange; /* Highlight parameter on hover or selection */
+}
+
+.parameter:not(.selected) .parameter-box {
+  background-color: #d0d0d0; /* Reset to original color when not selected */
+}
+
+.connection-setup {
+  font-family: 'Amiga Forever', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  color: #000000;
+  background-color: #e0e0e0;
+  padding: 10px;
+  border: 2px solid #808080;
+  box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
+}
+
+.connection-setup h3 {
+  margin: 0 0 10px 0;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.connection-setup label {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 12px;
+}
+
+.connection-setup input[type="checkbox"] {
+  margin-right: 5px;
+}
+
+.connection-setup .form-group {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.connection-setup input[type="text"] {
+  width: 45%;
+  padding: 5px;
+  font-family: 'Amiga Forever', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  border: 2px solid #808080;
+  box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
+  background-color: #d0d0d0;
+  color: #000000;
+}
+
+.connection-setup select {
+  width: 100%;
+  padding: 5px;
+  font-family: 'Amiga Forever', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  border: 2px solid #808080;
+  box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
+  background-color: #d0d0d0;
+  color: #000000;
+}
+
+.connection-item.selected {
+  background-color: orange;
+  font-weight: bold;
+}
+
+.parameter-info {
+  height: 100%; /* Ensure consistent height */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  padding: 10px;
+  background-color: #e0e0e0;
+  border: 2px solid #808080;
+  box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
+}
+
+.connections-list {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+.connections-list li {
+  font-size: 12px;
+  margin-bottom: 5px;
+  color: #000000;
 }
 
 .app-layout {
@@ -159,6 +657,16 @@ button:focus, input:focus, textarea:focus, select:focus {
 .bottom-section {
   flex: 6; /* 60% of the vertical space */
   display: flex;
+}
+
+.connection-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none; /* Allow clicks to pass through the SVG */
+  z-index: 1; /* Ensure arrows are drawn above other elements */
 }
 
 @media (prefers-color-scheme: light) {
