@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import type React from 'react';
+import { useState, useEffect } from 'react';
 
 const generateAcronym = (name: string): string => {
   // Generate an acronym by selecting consonants or meaningful letters
@@ -46,7 +47,8 @@ const Device = ({
   }, [leftSections, rightSections]);
 
   return (
-    <div
+    // biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
+<div
       className="device-component"
       draggable
       onDragStart={(event) => onDragStart(event, slot)}
@@ -75,8 +77,9 @@ const Device = ({
           {leftSections.map((section, index) => {
             const sectionId = `${name}-left-${index}`;
             return (
-              <div
-                key={index}
+              // biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
+<div
+                key={sectionId}
                 className={`device-section ${selectedSections.includes(sectionId) ? 'selected' : ''}`}
                 data-dp-section-id={sectionId}
                 onClick={(event) => {
@@ -84,7 +87,7 @@ const Device = ({
                   onSectionClick(sectionId); // Call onSectionClick with the section ID
                 }}
               >
-                <div className="device-section-box" title={section}></div>
+                <div className="device-section-box" title={section} />
                 <span className="device-section-name left">{generateAcronym(section)}</span>
               </div>
             );
@@ -95,8 +98,9 @@ const Device = ({
           {rightSections.map((section, index) => {
             const sectionId = `${name}-right-${index}`;
             return (
-              <div
-                key={index}
+              // biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
+<div
+                key={sectionId}
                 className={`device-section ${selectedSections.includes(sectionId) ? 'selected' : ''}`}
                 data-dp-section-id={sectionId}
                 onClick={(event) => {
@@ -105,7 +109,7 @@ const Device = ({
                 }}
               >
                 <span className="device-section-name right">{generateAcronym(section)}</span>
-                <div className="device-section-box" title={section}></div>
+                <div className="device-section-box" title={section} />
               </div>
             );
           })}
