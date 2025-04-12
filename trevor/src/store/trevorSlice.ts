@@ -1,15 +1,11 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type {
-	MidiDevice,
-	MidiDeviceSection,
-	MidiParameter,
-	NallelyState,
-} from "../model";
+import type { NallelyState } from "../model";
 
 const initialState: NallelyState = {
 	input_ports: [],
 	output_ports: [],
 	midi_devices: [],
+	connections: [],
 };
 
 const trevorSlice = createSlice({
@@ -20,6 +16,7 @@ const trevorSlice = createSlice({
 			state.input_ports = action.payload.input_ports;
 			state.output_ports = action.payload.output_ports;
 			state.midi_devices = action.payload.midi_devices;
+			state.connections = action.payload.connections;
 		},
 	},
 });

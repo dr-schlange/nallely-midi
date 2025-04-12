@@ -670,7 +670,7 @@ class DeviceState:
             moduleInstance = ModuleCls(device)
             init_modules[state_name] = moduleInstance
             for param in moduleInstance.meta.parameters:
-                device.reverse_map[("cc", param.cc_note)] = param
+                device.reverse_map[("control_change", param.cc_note)] = param
             if moduleInstance.meta.pads_or_keys:
                 device.reverse_map[("note", None)] = moduleInstance.meta.pads_or_keys
         self.modules = init_modules
@@ -678,15 +678,19 @@ class DeviceState:
     def __getattr__(self, name):
         return self.modules[name]
 
-    def as_dict_patch(self):
+    def as_dict_patch(self, with_meta=False):
         d = {}
         for name, module in self.modules.items():
             module_state = {}
             d[name] = module_state
             for parameter in module.meta.parameters:
-                module_state[parameter.name] = getattr(
-                    getattr(self, name), parameter.name
-                )
+                value = getattr(getattr(self, name), parameter.name)
+                module_state[parameter.name] = value
+                if with_meta:
+                    module_state[parameter.name] = {
+                        "module_state_name": parameter.module_state_name,
+                        "value": value,
+                    }
             if not module_state:
                 del d[name]
         return d
@@ -701,6 +705,7 @@ class DeviceState:
         for name, module in self.modules.items():
             module_state = {
                 "name": name,
+                "module_state_name": module.state_name,
                 "parameters": [
                     asdict(parameter) for parameter in module.meta.parameters
                 ],

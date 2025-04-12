@@ -1,5 +1,5 @@
-import DeviceComponent from "./Device";
-import type { MidiDevice } from "../../model";
+import DeviceComponent from "./DeviceComponent";
+import type { MidiDevice, MidiDeviceSection } from "../../model";
 
 export const RackRow = ({
 	height,
@@ -18,7 +18,7 @@ export const RackRow = ({
 		targetSlot: number,
 		targetRow: number,
 	) => void;
-	onSectionClick: (sectionId: string) => void;
+	onSectionClick: (device: MidiDevice, section: MidiDeviceSection) => void;
 	selectedSections: string[];
 	onNonSectionClick: () => void;
 }) => {
@@ -42,12 +42,15 @@ export const RackRow = ({
 
 	return (
 		// biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
-		<div
+<div
 			className="rack-row"
 			style={{
-				height,
+				height, // Fixed height for the RackRow
+				width: "100%", // Fill the parent container horizontally
 				position: "relative",
-				overflow: "hidden",
+				overflow: "visible", // Allow overflow to simulate additional rows
+				display: "flex",
+				flexWrap: "wrap", // Wrap devices to the next "row" when overflowing
 			}}
 			onClick={(event) => {
 				if (
@@ -67,10 +70,9 @@ export const RackRow = ({
 					onDrop={(event) => handleDrop(event, device.id)}
 					onDragOver={handleDragOver}
 					style={{
-						position: "absolute",
-						left: i * slotWidth,
-						width: slotWidth,
-						height: "100%",
+						width: slotWidth, // Fixed width for each device
+						height, // Fixed height for each device
+						boxSizing: "border-box",
 					}}
 				>
 					<DeviceComponent
@@ -81,7 +83,7 @@ export const RackRow = ({
 						sections={device.meta.sections}
 						onDragStart={(event) => handleDragStart(event, device)}
 						onDragEnd={() => {}}
-						onSectionClick={onSectionClick}
+						onSectionClick={(section) => onSectionClick(device, section)}
 						selectedSections={selectedSections}
 						onNonSectionClick={onNonSectionClick} // Pass the function
 					/>

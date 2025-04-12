@@ -1,4 +1,13 @@
-import React, { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
+import type {
+	MidiDeviceWithSection,
+	MidiParameter,
+} from "../../model";
+import { useTrevorSelector } from "../../store";
+
+const buildParameterId = (device: number, parameter: MidiParameter) => {
+	return `${device}-${parameter.module_state_name}-${parameter.name}`;
+};
 
 const PatchingModal = ({
 	onClose,
@@ -6,13 +15,26 @@ const PatchingModal = ({
 	secondSection,
 }: {
 	onClose: () => void;
-	firstSection: { name: string; parameters: string[] } | null;
-	secondSection: { name: string; parameters: string[] } | null;
+	firstSection: MidiDeviceWithSection | null;
+	secondSection: MidiDeviceWithSection | null;
 }) => {
 	const [selectedParameters, setSelectedParameters] = useState<string[]>([]);
-	const [connections, setConnections] = useState<
-		{ from: string; to: string }[]
-	>([]);
+	// const [connections, setConnections] = useState<
+	// 	{ from: string; to: string }[]
+	// >([]);
+	const allConnections = useTrevorSelector(
+		(state) => state.nallely.connections,
+	);
+	const connections = allConnections.filter(
+		(f) =>
+			f.src.device === firstSection?.device.id &&
+			f.src.parameter.module_state_name ===
+				firstSection?.section.parameters[0].module_state_name &&
+			f.dest.device === secondSection?.device.id &&
+			f.dest.parameter.module_state_name ===
+				secondSection?.section.parameters[0].module_state_name,
+	);
+
 	const [selectedConnection, setSelectedConnection] = useState<{
 		from: string;
 		to: string;
@@ -79,11 +101,19 @@ const PatchingModal = ({
 		svg.innerHTML = ""; // Clear existing arrows
 
 		for (const connection of connections) {
+			const srcId = buildParameterId(
+				connection.src.device,
+				connection.src.parameter,
+			);
+			const destId = buildParameterId(
+				connection.dest.device,
+				connection.dest.parameter,
+			);
 			const fromElement = document.querySelector(
-				`[data-modal-param-id="${connection.from}"]`,
+				`[data-modal-param-id="${srcId}"]`,
 			);
 			const toElement = document.querySelector(
-				`[data-modal-param-id="${connection.to}"]`,
+				`[data-modal-param-id="${destId}"]`,
 			);
 
 			if (fromElement && toElement) {
@@ -160,42 +190,48 @@ const PatchingModal = ({
 				</svg>
 				<div className="left-panel">
 					<div className="top-left-panel">
-						<h3>{firstSection?.name || "First Section"}</h3>
+						<h3>{firstSection?.section.name || "First Section"}</h3>
 						<div className="parameters-grid">
-							{firstSection?.parameters.map((param, index) => (
+							{firstSection?.section.parameters.map((param, index) => (
 								<div
-									key={param}
+									key={param.name}
 									className={`parameter ${
-										selectedParameters.includes(param) ? "selected" : ""
+										selectedParameters.includes(param.name) ? "selected" : ""
 									}`}
-									data-modal-param-id={param}
-									onClick={() => handleParameterClick(param)}
+									data-modal-param-id={buildParameterId(
+										firstSection.device.id,
+										param,
+									)}
+									onClick={() => handleParameterClick(param.name)}
 									onKeyDown={(e) => {
 										if (e.key === "Enter" || e.key === " ") {
-											handleParameterClick(param);
+											handleParameterClick(param.name);
 										}
 									}}
 								>
-									<span className="parameter-name top">{param}</span>
+									<span className="parameter-name top">{param.name}</span>
 									<div className="parameter-box" />
 								</div>
 							))}
 						</div>
 					</div>
 					<div className="bottom-left-panel">
-						<h3>{secondSection?.name || "Second Section"}</h3>
+						<h3>{secondSection?.section.name || "Second Section"}</h3>
 						<div className="parameters-grid">
-							{secondSection?.parameters.map((param, index) => (
+							{secondSection?.section.parameters.map((param, index) => (
 								<div
-									key={param}
+									key={param.name}
 									className={`parameter ${
-										selectedParameters.includes(param) ? "selected" : ""
+										selectedParameters.includes(param.name) ? "selected" : ""
 									}`}
-									data-modal-param-id={param}
-									onClick={() => handleParameterClick(param)}
+									data-modal-param-id={buildParameterId(
+										secondSection.device.id,
+										param,
+									)}
+									onClick={() => handleParameterClick(param.name)}
 									onKeyDown={(e) => {
 										if (e.key === "Enter" || e.key === " ") {
-											handleParameterClick(param);
+											handleParameterClick(param.name);
 										}
 									}}
 									onKeyUp={(e) => {
@@ -205,7 +241,7 @@ const PatchingModal = ({
 									}}
 								>
 									<div className="parameter-box" />
-									<span className="parameter-name bottom">{param}</span>
+									<span className="parameter-name bottom">{param.name}</span>
 								</div>
 							))}
 						</div>

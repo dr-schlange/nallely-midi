@@ -513,7 +513,7 @@ class MidiDevice:
                     callback(msg.value, ThreadContext({"debug": self.debug}))
             except:
                 traceback.print_exc()
-            control: ModuleParameter = self.reverse_map[("cc", msg.control)]
+            control: ModuleParameter = self.reverse_map[("control_change", msg.control)]
             control.basic_set(self, msg.value)
         if msg.type == "note_on" or msg.type == "note_off":
             try:
@@ -688,8 +688,9 @@ class MidiDevice:
                 "sections": [
                     asdict(module.meta) for module in self.modules.modules.values()
                 ],
+                # "sections": self.modules.to_list(),
             },
-            "config": self.modules.as_dict_patch(),
+            "config": self.modules.as_dict_patch(with_meta=False),
         }
         return d
 

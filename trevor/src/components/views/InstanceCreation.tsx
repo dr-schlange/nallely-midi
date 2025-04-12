@@ -1,6 +1,5 @@
-import React, { useState } from "react";
-import DeviceComponent from "./Device";
-import { useStore } from "react-redux";
+import { useState } from "react";
+import DeviceComponent from "./DeviceComponent";
 import { useTrevorSelector } from "../../store";
 
 const truncateName = (name: string, maxLength: number) => {

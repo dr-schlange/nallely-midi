@@ -1,44 +1,45 @@
-import React, { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, type ReactElement } from "react";
 import { RackRow } from "./RackRow";
 import PatchingModal from "./PatchingModal";
-import InstanceCreation from "./InstanceCreation";
 import { useTrevorSelector } from "../../store";
+import type {
+	MidiDevice,
+	MidiDeviceSection,
+	MidiDeviceWithSection,
+} from "../../model";
 
 const DevicePatching = () => {
 	const mainSectionRef = useRef(null);
-	const [numberOfRows, setNumberOfRows] = useState(1);
-	const [rackRowHeight, setRackRowHeight] = useState(130); // Default height
-	const [rackRows, setRackRows] = useState(Array.from({ length: 1 }, () => []));
+	const [rackRowHeight, setRackRowHeight] = useState(170); // Default height
 	const [associateMode, setAssociateMode] = useState(false);
-	const [selectedSections, setSelectedSections] = useState<string[]>([]);
+	const [selectedSections, setSelectedSections] = useState<
+		MidiDeviceWithSection[]
+	>([]);
 	const [isModalOpen, setIsModalOpen] = useState(false);
-	const [selectedSectionDetails, setSelectedSectionDetails] = useState<{
-		firstSection: { name: string; parameters: string[] } | null;
-		secondSection: { name: string; parameters: string[] } | null;
+	const [selectedSection, setSelectedSection] = useState<{
+		firstSection: MidiDeviceWithSection | null;
+		secondSection: MidiDeviceWithSection | null;
 	}>({ firstSection: null, secondSection: null });
 	const [connections, setConnections] = useState<
 		{ from: string; to: string }[]
 	>([]); // Store connections
 
-	const devices = useTrevorSelector(state => state.nallely.midi_devices);
+	const devices = useTrevorSelector((state) => state.nallely.midi_devices);
+	const [information, setInformation] = useState<ReactElement | null>(null);
 
 	useEffect(() => {
-		const updateRackRows = () => {
-			if (mainSectionRef.current) {
-				const mainSectionHeight = mainSectionRef.current.offsetHeight;
-				const maxRows = Math.floor(mainSectionHeight / 130); // Use default height for calculation
-				const adjustedHeight = mainSectionHeight / (maxRows > 0 ? maxRows : 1); // Adjust height to fit
-				setNumberOfRows(maxRows > 0 ? maxRows : 0);
-				setRackRowHeight(adjustedHeight);
-				setRackRows(Array.from({ length: maxRows }, () => [])); // Ensure rackRows is filled with rows
-			}
+		const updateRackRowHeight = () => {
+			// if (mainSectionRef.current) {
+			// 	const mainSectionHeight = mainSectionRef.current.offsetHeight;
+			// 	setRackRowHeight(mainSectionHeight); // Adjust height to fit
+			// }
 		};
 
-		updateRackRows();
+		// updateRackRowHeight();
 
-		window.addEventListener("resize", updateRackRows); // Recalculate on window resize
+		window.addEventListener("resize", updateRackRowHeight); // Recalculate on window resize
 		return () => {
-			window.removeEventListener("resize", updateRackRows);
+			window.removeEventListener("resize", updateRackRowHeight);
 		};
 	}, []); // Run only once on mount
 
@@ -65,28 +66,49 @@ const DevicePatching = () => {
 		setSelectedSections([]); // Reset selections when toggling mode
 	};
 
-	const handleSectionClick = (sectionId: string) => {
-		if (!associateMode) return;
+	const handleSectionClick = (
+		device: MidiDevice,
+		section: MidiDeviceSection,
+	) => {
+		if (!associateMode) {
+			setInformation(
+				<>
+					<p>
+						{device.meta.name} {section.name}
+					</p>
+					{section.parameters.map((param) => (
+						<p key={param.name}> - {param.name}</p>
+					))}
+				</>,
+			);
+			return;
+		}
 
 		setSelectedSections((prev) => {
-			if (prev.includes(sectionId)) {
+			if (
+				prev.find(
+					(e) => e.device.id === device.id && e.section.name === section.name,
+				)
+			) {
 				// Unselect if already selected
-				return prev.filter((id) => id !== sectionId);
+				return prev.filter(
+					(s) => s.device.id !== device.id || s.section.name !== section.name,
+				);
 			}
 			if (prev.length < 2) {
 				// Add to selection if less than 2 sections are selected
-				const newSelection = [...prev, sectionId];
+				const newSelection = [...prev, { device, section }];
 				if (newSelection.length === 2) {
-					// Open modal when 2 sections are selected
-					const firstSection = {
-						name: newSelection[0],
-						parameters: ["Param1", "Param2", "Param3"], // Replace with actual parameters
-					};
-					const secondSection = {
-						name: newSelection[1],
-						parameters: ["ParamA", "ParamB", "ParamC"], // Replace with actual parameters
-					};
-					setSelectedSectionDetails({ firstSection, secondSection });
+					setSelectedSection({
+						firstSection: newSelection[0],
+						secondSection: newSelection[1],
+					});
+					setInformation(
+						<p>
+							Associating {newSelection[0].section.name} with{" "}
+							{newSelection[1].section.name}
+						</p>,
+					);
 					setIsModalOpen(true);
 				}
 				return newSelection;
@@ -141,65 +163,19 @@ const DevicePatching = () => {
 
 	useEffect(() => {
 		updateConnections();
-	}, [connections, rackRows]); // Update lines when connections or rackRows change
+	}, [connections]); // Update lines when connections change
 
 	const handleDeviceDrop = (
 		draggedDevice: any,
 		targetSlot: number,
 		targetRow: number,
 	) => {
-		setRackRows((prevRackRows) => {
-			const updatedRackRows = [...prevRackRows];
-			const sourceRow = updatedRackRows[draggedDevice.rowIndex];
-			const targetRowDevices = updatedRackRows[targetRow];
-
-			// Remove the dragged device from its original row
-			updatedRackRows[draggedDevice.rowIndex] = sourceRow.filter(
-				(device: any) => device.slot !== draggedDevice.slot,
-			);
-
-			if (draggedDevice.rowIndex === targetRow) {
-				// Swap devices within the same row
-				const targetDevice = targetRowDevices.find(
-					(device: any) => device.slot === targetSlot,
-				);
-				if (targetDevice) {
-					targetDevice.slot = draggedDevice.slot;
-				}
-				draggedDevice.slot = targetSlot;
-				updatedRackRows[targetRow] = [...targetRowDevices];
-			} else {
-				// Move the dragged device to the right of the target device in a different row
-				draggedDevice.slot = targetRowDevices.length;
-				updatedRackRows[targetRow] = [...targetRowDevices, draggedDevice];
-			}
-
-			return updatedRackRows;
-		});
-
+		// Handle device drop logic
 		updateConnections(); // Update connections after device drop
 	};
 
 	const addDeviceToRack = (newDevice: any) => {
-		setRackRows((prevRackRows) => {
-			const updatedRackRows = [...prevRackRows];
-			for (let rowIndex = 0; rowIndex < updatedRackRows.length; rowIndex++) {
-				const row = updatedRackRows[rowIndex];
-				if (row.length < Math.floor(mainSectionRef.current.offsetWidth / 250)) {
-					// Add to the first row with available space
-					updatedRackRows[rowIndex] = [
-						...row,
-						{ ...newDevice, slot: row.length, rowIndex },
-					];
-					return updatedRackRows;
-				}
-			}
-			// If no space is available, add a new row
-			updatedRackRows.push([
-				{ ...newDevice, slot: 0, rowIndex: updatedRackRows.length },
-			]);
-			return updatedRackRows;
-		});
+		// Handle adding device to rack logic
 	};
 
 	const handleNonSectionClick = () => {
@@ -217,19 +193,20 @@ const DevicePatching = () => {
 					pointerEvents: "none",
 				}}
 			/>
-			<div className="device-patching-main-section" ref={mainSectionRef}>
-				{rackRows.map((_, index) => (
-					<RackRow
-						devices={devices}
-						key={index}
-						height={rackRowHeight}
-						rowIndex={index}
-						onDeviceDrop={handleDeviceDrop}
-						onSectionClick={handleSectionClick}
-						onNonSectionClick={handleNonSectionClick}
-						selectedSections={selectedSections}
-					/>
-				))}
+			<div
+				className="device-patching-main-section"
+				ref={mainSectionRef}
+				style={{ overflow: "hidden" }} // Prevent scrollbars
+			>
+				<RackRow
+					devices={devices}
+					height={rackRowHeight}
+					rowIndex={0}
+					onDeviceDrop={handleDeviceDrop}
+					onSectionClick={handleSectionClick}
+					onNonSectionClick={handleNonSectionClick}
+					selectedSections={selectedSections.map((d) => d.section.name)}
+				/>
 			</div>
 			<div className="device-patching-side-section">
 				<div className="device-patching-top-panel">
@@ -244,14 +221,10 @@ const DevicePatching = () => {
 				<div className="device-patching-middle-panel">
 					<div className="information-panel">
 						<h3>Information</h3>
-						{selectedSections.length === 1 ? (
-							<p>Details about {selectedSections[0]}</p>
-						) : selectedSections.length === 2 ? (
-							<p>
-								Associating {selectedSections[0]} with {selectedSections[1]}
-							</p>
+						{information ? (
+							information
 						) : (
-							<p>Select a section to view details or associate sections.</p>
+							<p>Select a section to view details or associate sections</p>
 						)}
 					</div>
 				</div>
@@ -260,8 +233,8 @@ const DevicePatching = () => {
 			{isModalOpen && (
 				<PatchingModal
 					onClose={closeModal}
-					firstSection={selectedSectionDetails.firstSection}
-					secondSection={selectedSectionDetails.secondSection}
+					firstSection={selectedSection.firstSection}
+					secondSection={selectedSection.secondSection}
 					onConnectionCreate={(newConnection) =>
 						setConnections((prev) => [...prev, newConnection])
 					}
