@@ -1,16 +1,11 @@
 import React, { useState } from "react";
-import Device from "./Device";
+import DeviceComponent from "./Device";
+import { useStore } from "react-redux";
+import { useTrevorSelector } from "../../store";
 
 const truncateName = (name: string, maxLength: number) => {
 	return name.length > maxLength ? `${name.slice(0, maxLength)}...` : name;
 };
-
-const midiPorts = [
-	{ id: "out1", name: "Output 1", info: "Details about Output 1" },
-	{ id: "out2", name: "Output 2", info: "Details about Output 2" },
-	{ id: "in1", name: "Input 1", info: "Details about Input 1" },
-	{ id: "in2", name: "Input 2", info: "Details about Input 2" },
-];
 
 const deviceClasses = [
 	{ name: "Synthesizer", info: "A device that generates audio signals." },
@@ -25,6 +20,8 @@ const InstanceCreation = ({
 }: {
 	onDeviceCreate?: (device: any) => void; // Make onDeviceCreate optional
 }) => {
+	const midiInPorts = useTrevorSelector((state) => state.nallely.input_ports);
+	const midiOutPorts = useTrevorSelector((state) => state.nallely.output_ports);
 	const [selectedInfo, setSelectedInfo] = useState<string | null>(null);
 	const [devices, setDevices] = useState<
 		{ id: string; name: string; channel: number; sections: string[] }[]
@@ -84,43 +81,35 @@ const InstanceCreation = ({
 				<div className="instance-creation-midi-output">
 					<h3>MIDI Output</h3>
 					<div className="midi-ports-grid">
-						{midiPorts
-							.filter((port) => port.id.startsWith("out"))
-							.map((port) => (
-								// biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
-								<div
-									key={port.id}
-									className="midi-port"
-									title={port.name}
-									onClick={() => handlePortClick(port.info)}
-								>
-									<span className="midi-port-name">
-										{truncateName(port.name, 8)}
-									</span>
-									<div className="midi-port-circle" />
-								</div>
-							))}
+						{midiInPorts.map((port) => (
+							// biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
+							<div
+								key={port}
+								className="midi-port"
+								title={port}
+								onClick={() => handlePortClick(port)}
+							>
+								<span className="midi-port-name">{truncateName(port, 8)}</span>
+								<div className="midi-port-circle" />
+							</div>
+						))}
 					</div>
 				</div>
 				<div className="instance-creation-midi-inputs">
 					<h3>MIDI Inputs</h3>
 					<div className="midi-ports-grid">
-						{midiPorts
-							.filter((port) => port.id.startsWith("in"))
-							.map((port) => (
-								// biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
-								<div
-									key={port.id}
-									className="midi-port"
-									title={port.name}
-									onClick={() => handlePortClick(port.info)}
-								>
-									<span className="midi-port-name">
-										{truncateName(port.name, 8)}
-									</span>
-									<div className="midi-port-circle" />
-								</div>
-							))}
+						{midiOutPorts.map((port) => (
+							// biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
+							<div
+								key={port}
+								className="midi-port"
+								title={port}
+								onClick={() => handlePortClick(port)}
+							>
+								<span className="midi-port-name">{truncateName(port, 8)}</span>
+								<div className="midi-port-circle" />
+							</div>
+						))}
 					</div>
 				</div>
 				<div className="instance-creation-info-panel">
@@ -163,7 +152,7 @@ const InstanceCreation = ({
 						}}
 					>
 						{devices.map((device) => (
-							<Device
+							<DeviceComponent
 								key={device.id}
 								slot={0} // Slot is irrelevant here
 								slotWidth={250}

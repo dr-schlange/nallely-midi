@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { RackRow } from "./RackRow";
 import PatchingModal from "./PatchingModal";
 import InstanceCreation from "./InstanceCreation";
+import { useTrevorSelector } from "../../store";
 
 const DevicePatching = () => {
 	const mainSectionRef = useRef(null);
@@ -18,6 +19,8 @@ const DevicePatching = () => {
 	const [connections, setConnections] = useState<
 		{ from: string; to: string }[]
 	>([]); // Store connections
+
+	const devices = useTrevorSelector(state => state.nallely.midi_devices);
 
 	useEffect(() => {
 		const updateRackRows = () => {
@@ -217,6 +220,7 @@ const DevicePatching = () => {
 			<div className="device-patching-main-section" ref={mainSectionRef}>
 				{rackRows.map((_, index) => (
 					<RackRow
+						devices={devices}
 						key={index}
 						height={rackRowHeight}
 						rowIndex={index}

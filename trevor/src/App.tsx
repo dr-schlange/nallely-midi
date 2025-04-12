@@ -1,18 +1,21 @@
-import React from 'react';
-import InstanceCreation from './components/views/InstanceCreation';
-import DevicePatching from './components/views/DevicePatching';
+import InstanceCreation from "./components/views/InstanceCreation";
+import DevicePatching from "./components/views/DevicePatching";
+import { Provider } from "react-redux";
+import { store } from "./store";
 
 const App = () => {
-  return (
-    <div className="app-layout">
-      <div className="top-section">
-        <InstanceCreation />
-      </div>
-      <div className="bottom-section">
-        <DevicePatching />
-      </div>
-    </div>
-  );
+	return (
+		<Provider store={store}>
+			<div className="app-layout">
+				<div className="top-section">
+					<InstanceCreation />
+				</div>
+				<div className="bottom-section">
+					<DevicePatching />
+				</div>
+			</div>
+		</Provider>
+	);
 };
 
 export default App;

@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import Device from "./Device";
+import DeviceComponent from "./Device";
+import type { MidiDevice } from "../../model";
 
 export const RackRow = ({
 	height,
@@ -8,9 +8,11 @@ export const RackRow = ({
 	onSectionClick,
 	selectedSections,
 	onNonSectionClick,
+	devices,
 }: {
 	height: number;
 	rowIndex: number;
+	devices: MidiDevice[];
 	onDeviceDrop: (
 		draggedDevice: any,
 		targetSlot: number,
@@ -21,18 +23,6 @@ export const RackRow = ({
 	onNonSectionClick: () => void;
 }) => {
 	const slotWidth = 250;
-	const [devices, setDevices] = useState([
-		{
-			slot: 0,
-			name: "Device 1",
-			sections: ["Power Supply", "Cooling Unit", "Processor"],
-		},
-		{
-			slot: 1,
-			name: "Device 2",
-			sections: ["Memory Module", "Network Adapter"],
-		},
-	]);
 
 	const handleDragStart = (event: React.DragEvent, device: any) => {
 		event.dataTransfer.setData(
@@ -52,7 +42,7 @@ export const RackRow = ({
 
 	return (
 		// biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
-<div
+		<div
 			className="rack-row"
 			style={{
 				height,
@@ -70,25 +60,25 @@ export const RackRow = ({
 				}
 			}}
 		>
-			{devices.map((device) => (
+			{devices.map((device, i) => (
 				<div
-					key={device.slot}
-					data-rack-slot={device.slot}
-					onDrop={(event) => handleDrop(event, device.slot)}
+					key={device.id}
+					data-rack-slot={i}
+					onDrop={(event) => handleDrop(event, device.id)}
 					onDragOver={handleDragOver}
 					style={{
 						position: "absolute",
-						left: device.slot * slotWidth,
+						left: i * slotWidth,
 						width: slotWidth,
 						height: "100%",
 					}}
 				>
-					<Device
-						slot={device.slot}
+					<DeviceComponent
+						slot={i}
 						slotWidth={slotWidth}
 						height={height}
-						name={device.name}
-						sections={device.sections}
+						name={device.meta.name}
+						sections={device.meta.sections}
 						onDragStart={(event) => handleDragStart(event, device)}
 						onDragEnd={() => {}}
 						onSectionClick={onSectionClick}
