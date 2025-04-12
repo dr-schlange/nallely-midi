@@ -101,11 +101,14 @@ class TrevorBus(VirtualDevice):
 
 
 try:
-    nts1 = NTS1()
+    # nts1 = NTS1()
     # mpd32 = MPD32()
     minilogue = Minilogue("Scarlett")
 
-    nts1.filter.cutoff = minilogue.delay.feedback
+    # nts1.filter.cutoff = minilogue.delay.feedback
+    minilogue.filter.cutoff = minilogue.delay.feedback
+    minilogue.delay.time = minilogue.delay.feedback
+    minilogue.filter.eg_intensity = minilogue.delay.feedback
 
     ws = TrevorBus()
     ws.start()

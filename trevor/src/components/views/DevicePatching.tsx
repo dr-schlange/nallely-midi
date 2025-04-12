@@ -7,6 +7,12 @@ import type {
 	MidiDeviceSection,
 	MidiDeviceWithSection,
 } from "../../model";
+import {
+	buildParameterId,
+	buildSectionId,
+	connectionsOfInterest,
+	drawConnection,
+} from "../../utils/svgUtils";
 
 const DevicePatching = () => {
 	const mainSectionRef = useRef(null);
@@ -20,9 +26,10 @@ const DevicePatching = () => {
 		firstSection: MidiDeviceWithSection | null;
 		secondSection: MidiDeviceWithSection | null;
 	}>({ firstSection: null, secondSection: null });
-	const [connections, setConnections] = useState<
-		{ from: string; to: string }[]
-	>([]); // Store connections
+	const allConnections = useTrevorSelector(
+		(state) => state.nallely.connections,
+	);
+	const svgRef = useRef<SVGSVGElement>(null);
 
 	const devices = useTrevorSelector((state) => state.nallely.midi_devices);
 	const [information, setInformation] = useState<ReactElement | null>(null);
@@ -119,51 +126,33 @@ const DevicePatching = () => {
 
 	const closeModal = () => {
 		setIsModalOpen(false);
-		setSelectedSections([]); // Reset selected sections, but keep associate mode active
+		setSelectedSections([]);
 	};
 
 	const updateConnections = () => {
-		const svg = document.querySelector(".device-patching-svg") as SVGSVGElement;
+		const svg = svgRef.current;
 		if (!svg) return;
 
 		svg.innerHTML = ""; // Clear existing lines
 
-		for (const connection of connections) {
-			const fromElement = document.querySelector(
-				`[data-dp-section-id="${connection.from}"]`,
+		for (const connection of allConnections) {
+			const srcId = buildSectionId(
+				connection.src.device,
+				connection.src.parameter.module_state_name,
 			);
-			const toElement = document.querySelector(
-				`[data-dp-section-id="${connection.to}"]`,
+			const destId = buildSectionId(
+				connection.dest.device,
+				connection.dest.parameter.module_state_name,
 			);
-
-			if (fromElement && toElement) {
-				const fromRect = fromElement.getBoundingClientRect();
-				const toRect = toElement.getBoundingClientRect();
-				const svgRect = svg.getBoundingClientRect();
-
-				const fromX = fromRect.right - svgRect.left; // Right side of the source
-				const fromY = fromRect.top + fromRect.height / 2 - svgRect.top; // Center vertically
-				const toX = toRect.left - svgRect.left; // Left side of the target
-				const toY = toRect.top + toRect.height / 2 - svgRect.top; // Center vertically
-
-				const line = document.createElementNS(
-					"http://www.w3.org/2000/svg",
-					"line",
-				);
-				line.setAttribute("x1", fromX.toString());
-				line.setAttribute("y1", fromY.toString());
-				line.setAttribute("x2", toX.toString());
-				line.setAttribute("y2", toY.toString());
-				line.setAttribute("stroke", "orange");
-				line.setAttribute("stroke-width", "2");
-				svg.appendChild(line);
-			}
+			const fromElement = document.querySelector(`[id="${srcId}"]`);
+			const toElement = document.querySelector(`[id="${destId}"]`);
+			drawConnection(svg, fromElement, toElement);
 		}
 	};
 
 	useEffect(() => {
 		updateConnections();
-	}, [connections]); // Update lines when connections change
+	}, [allConnections]); // Update lines when connections change
 
 	const handleDeviceDrop = (
 		draggedDevice: any,
@@ -184,15 +173,6 @@ const DevicePatching = () => {
 
 	return (
 		<div className="device-patching">
-			<svg
-				className="device-patching-svg"
-				style={{
-					position: "absolute",
-					width: "100%",
-					height: "100%",
-					pointerEvents: "none",
-				}}
-			/>
 			<div
 				className="device-patching-main-section"
 				ref={mainSectionRef}
@@ -207,6 +187,7 @@ const DevicePatching = () => {
 					onNonSectionClick={handleNonSectionClick}
 					selectedSections={selectedSections.map((d) => d.section.name)}
 				/>
+				<svg className="device-patching-svg" ref={svgRef} />
 			</div>
 			<div className="device-patching-side-section">
 				<div className="device-patching-top-panel">
@@ -235,9 +216,6 @@ const DevicePatching = () => {
 					onClose={closeModal}
 					firstSection={selectedSection.firstSection}
 					secondSection={selectedSection.secondSection}
-					onConnectionCreate={(newConnection) =>
-						setConnections((prev) => [...prev, newConnection])
-					}
 				/>
 			)}
 		</div>

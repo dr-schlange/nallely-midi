@@ -42,7 +42,7 @@ export const RackRow = ({
 
 	return (
 		// biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
-<div
+		<div
 			className="rack-row"
 			style={{
 				height, // Fixed height for the RackRow
@@ -70,8 +70,8 @@ export const RackRow = ({
 					onDrop={(event) => handleDrop(event, device.id)}
 					onDragOver={handleDragOver}
 					style={{
-						width: slotWidth, // Fixed width for each device
-						height, // Fixed height for each device
+						width: slotWidth,
+						height,
 						boxSizing: "border-box",
 					}}
 				>
@@ -79,8 +79,7 @@ export const RackRow = ({
 						slot={i}
 						slotWidth={slotWidth}
 						height={height}
-						name={device.meta.name}
-						sections={device.meta.sections}
+						device={device}
 						onDragStart={(event) => handleDragStart(event, device)}
 						onDragEnd={() => {}}
 						onSectionClick={(section) => onSectionClick(device, section)}

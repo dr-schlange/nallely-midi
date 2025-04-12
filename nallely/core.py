@@ -688,7 +688,6 @@ class MidiDevice:
                 "sections": [
                     asdict(module.meta) for module in self.modules.modules.values()
                 ],
-                # "sections": self.modules.to_list(),
             },
             "config": self.modules.as_dict_patch(with_meta=False),
         }

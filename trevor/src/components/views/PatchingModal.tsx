@@ -1,13 +1,15 @@
 import { useEffect, useState, useRef } from "react";
 import type {
+	MidiConnection,
 	MidiDeviceWithSection,
 	MidiParameter,
 } from "../../model";
 import { useTrevorSelector } from "../../store";
-
-const buildParameterId = (device: number, parameter: MidiParameter) => {
-	return `${device}-${parameter.module_state_name}-${parameter.name}`;
-};
+import {
+	buildParameterId,
+	connectionsOfInterest,
+	drawConnection,
+} from "../../utils/svgUtils";
 
 const PatchingModal = ({
 	onClose,
@@ -19,26 +21,25 @@ const PatchingModal = ({
 	secondSection: MidiDeviceWithSection | null;
 }) => {
 	const [selectedParameters, setSelectedParameters] = useState<string[]>([]);
-	// const [connections, setConnections] = useState<
-	// 	{ from: string; to: string }[]
-	// >([]);
 	const allConnections = useTrevorSelector(
 		(state) => state.nallely.connections,
 	);
 	const connections = allConnections.filter(
 		(f) =>
-			f.src.device === firstSection?.device.id &&
-			f.src.parameter.module_state_name ===
-				firstSection?.section.parameters[0].module_state_name &&
-			f.dest.device === secondSection?.device.id &&
-			f.dest.parameter.module_state_name ===
+			connectionsOfInterest(
+				f,
+				firstSection?.device.id,
+				firstSection?.section.parameters[0].module_state_name,
+			) ||
+			connectionsOfInterest(
+				f,
+				secondSection?.device.id,
 				secondSection?.section.parameters[0].module_state_name,
+			),
 	);
 
-	const [selectedConnection, setSelectedConnection] = useState<{
-		from: string;
-		to: string;
-	} | null>(null);
+	const [selectedConnection, setSelectedConnection] =
+		useState<MidiConnection | null>(null);
 	const [scalerEnabled, setScalerEnabled] = useState(false);
 	const [autoScaleEnabled, setAutoScaleEnabled] = useState(true);
 	const [minValue, setMinValue] = useState("");
@@ -88,7 +89,7 @@ const PatchingModal = ({
 		});
 	};
 
-	const handleConnectionClick = (connection: { from: string; to: string }) => {
+	const handleConnectionClick = (connection: MidiConnection) => {
 		setSelectedConnection(
 			(prev) => (prev === connection ? null : connection), // Deselect if the same connection is clicked again
 		);
@@ -109,39 +110,9 @@ const PatchingModal = ({
 				connection.dest.device,
 				connection.dest.parameter,
 			);
-			const fromElement = document.querySelector(
-				`[data-modal-param-id="${srcId}"]`,
-			);
-			const toElement = document.querySelector(
-				`[data-modal-param-id="${destId}"]`,
-			);
-
-			if (fromElement && toElement) {
-				const fromRect = fromElement.getBoundingClientRect();
-				const toRect = toElement.getBoundingClientRect();
-
-				const svgRect = svg.getBoundingClientRect();
-
-				const fromX = fromRect.right - svgRect.left;
-				const fromY = fromRect.top + fromRect.height / 2 - svgRect.top;
-				const toX = toRect.left - svgRect.left;
-				const toY = toRect.top + toRect.height / 2 - svgRect.top;
-
-				const line = document.createElementNS(
-					"http://www.w3.org/2000/svg",
-					"line",
-				);
-				line.setAttribute("x1", fromX.toString());
-				line.setAttribute("y1", fromY.toString());
-				line.setAttribute("x2", toX.toString());
-				line.setAttribute("y2", toY.toString());
-				line.setAttribute("stroke", "orange");
-				line.setAttribute("stroke-width", "2");
-				line.setAttribute("marker-end", "url(#retro-arrowhead)");
-				line.addEventListener("click", () => handleConnectionClick(connection)); // Add click event
-
-				svg.appendChild(line);
-			}
+			const fromElement = document.querySelector(`[id="${srcId}"]`);
+			const toElement = document.querySelector(`[id="${destId}"]`);
+			drawConnection(svg, fromElement, toElement);
 		}
 	};
 
@@ -198,10 +169,7 @@ const PatchingModal = ({
 									className={`parameter ${
 										selectedParameters.includes(param.name) ? "selected" : ""
 									}`}
-									data-modal-param-id={buildParameterId(
-										firstSection.device.id,
-										param,
-									)}
+									id={buildParameterId(firstSection.device.id, param)}
 									onClick={() => handleParameterClick(param.name)}
 									onKeyDown={(e) => {
 										if (e.key === "Enter" || e.key === " ") {
@@ -224,10 +192,7 @@ const PatchingModal = ({
 									className={`parameter ${
 										selectedParameters.includes(param.name) ? "selected" : ""
 									}`}
-									data-modal-param-id={buildParameterId(
-										secondSection.device.id,
-										param,
-									)}
+									id={buildParameterId(secondSection.device.id, param)}
 									onClick={() => handleParameterClick(param.name)}
 									onKeyDown={(e) => {
 										if (e.key === "Enter" || e.key === " ") {
@@ -320,7 +285,7 @@ const PatchingModal = ({
 						<ul className="connections-list">
 							{connections.map((connection, index) => (
 								<li
-									key={`${connection.from}-${connection.to}`}
+									key={`${connection.src.parameter.module_state_name}-${connection.src.parameter.name}-${connection.dest.parameter.module_state_name}-${connection.dest.parameter.name}`}
 									onClick={() => handleConnectionClick(connection)}
 									onKeyDown={(e) => {
 										if (e.key === "Enter" || e.key === " ") {
@@ -336,7 +301,7 @@ const PatchingModal = ({
 										selectedConnection === connection ? "selected" : ""
 									}`}
 								>
-									{connection.from} → {connection.to}
+									{`${connection.src.parameter.module_state_name}[${connection.src.parameter.name}] → ${connection.dest.parameter.module_state_name}[${connection.dest.parameter.name}]`}
 								</li>
 							))}
 						</ul>

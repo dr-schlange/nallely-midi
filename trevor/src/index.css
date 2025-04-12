@@ -707,6 +707,11 @@ input[type="text"]:disabled {
   font-weight: bold;
 }
 
+.connection-item:hover {
+  background-color: #c0c0c0;
+  font-weight: bold;
+}
+
 .parameter-info {
   height: 100%; /* Ensure consistent height */
   display: flex;
@@ -757,6 +762,15 @@ input[type="text"]:disabled {
   height: 100%;
   pointer-events: none; /* Allow clicks to pass through the SVG */
   z-index: 1; /* Ensure arrows are drawn above other elements */
+}
+
+.device-patching-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none; /* Allow clicks to pass through the SVG */
 }
 
 .midi-ports {
