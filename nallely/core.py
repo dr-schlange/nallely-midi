@@ -3,7 +3,7 @@ import threading
 import time
 import traceback
 from collections import defaultdict
-from dataclasses import InitVar, dataclass, field
+from dataclasses import InitVar, asdict, dataclass, field
 from decimal import Decimal
 from pathlib import Path
 from queue import Empty, Full, Queue
@@ -668,13 +668,30 @@ class MidiDevice:
             connected_devices.append(self)
 
     def save_preset(self, file: Path | str):
-        d = self.modules.as_dict()
+        d = self.modules.as_dict_patch()
         p = Path(file)
         p.write_text(json.dumps(d, indent=2, cls=DeviceSerializer))
 
     def load_preset(self, file: Path | str):
         p = Path(file)
-        self.modules.from_dict(json.loads(p.read_text()))
+        self.modules.from_dict_patch(json.loads(p.read_text()))
+
+    def to_dict(self):
+        d = {
+            "id": id(self),
+            "ports": {
+                "input": self.inport.name if self.inport else None,
+                "output": self.outport.name if self.outport else None,
+            },
+            "meta": {
+                "name": self.__class__.__name__,
+                "sections": [
+                    asdict(module.meta) for module in self.modules.modules.values()
+                ],
+            },
+            "config": self.modules.as_dict_patch(),
+        }
+        return d
 
 
 class DeviceSerializer(json.JSONEncoder):

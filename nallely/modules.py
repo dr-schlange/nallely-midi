@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from decimal import Decimal
 from inspect import isfunction
 from types import FunctionType
@@ -610,10 +610,12 @@ class Module:
     def __post_init__(self):
         self.meta = self.__class__.meta
         for param in self.meta.parameters:
+            param.module_state_name = self.__class__.state_name
             self.state[param.name] = Int.create(
                 param.init_value, parameter=param, device=self.device
             )
         if self.meta.pads_or_keys:
+            self.meta.pads_or_keys.module_state_name = self.__class__.state_name
             state_name = self.meta.pads_or_keys.module_state_name
             self.state[state_name] = self.device  # type: ignore (special key)
         self._keys_notes = {}
@@ -664,8 +666,8 @@ class DeviceState:
     def __init__(self, device, modules: dict[str, Type[Module]]):
         init_modules = {}
         for state_name, ModuleCls in modules.items():
-            moduleInstance = ModuleCls(device)
             ModuleCls.state_name = state_name
+            moduleInstance = ModuleCls(device)
             init_modules[state_name] = moduleInstance
             for param in moduleInstance.meta.parameters:
                 device.reverse_map[("cc", param.cc_note)] = param
@@ -676,7 +678,7 @@ class DeviceState:
     def __getattr__(self, name):
         return self.modules[name]
 
-    def as_dict(self):
+    def as_dict_patch(self):
         d = {}
         for name, module in self.modules.items():
             module_state = {}
@@ -689,7 +691,19 @@ class DeviceState:
                 del d[name]
         return d
 
-    def from_dict(self, d):
+    def from_dict_patch(self, d):
         for sec_name, section in d.items():
             for param, value in section.items():
                 setattr(self.modules[sec_name], param, value)
+
+    def to_list(self):
+        l = []
+        for name, module in self.modules.items():
+            module_state = {
+                "name": name,
+                "parameters": [
+                    asdict(parameter) for parameter in module.meta.parameters
+                ],
+            }
+            l.append(module_state)
+        return l
