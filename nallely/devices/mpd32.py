@@ -53,6 +53,9 @@ class MPD32(MidiDevice):
     pads: PadSection  # type: ignore
     sliders: SliderSection  # type: ignore
 
+    def __init__(self, device_name="MPD32", *args, **kwargs):
+        super().__init__(device_name=device_name, *args, **kwargs)
+
     @property
     def buttons(self) -> ButtonSection:
         return self.modules.buttons

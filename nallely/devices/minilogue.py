@@ -1,7 +1,9 @@
 """
 Generated configuration for the KORG - minilogue
 """
+
 import nallely
+
 
 class GeneralSection(nallely.Module):
     bank_select = nallely.ModuleParameter(0)
@@ -64,6 +66,11 @@ class FilterSection(nallely.Module):
     type = nallely.ModuleParameter(84)
 
 
+class KeysSection(nallely.Module):
+    state_name = "keys"
+    notes = nallely.ModulePadsOrKeys()
+
+
 class Minilogue(nallely.MidiDevice):
     general: GeneralSection  # type: ignore
     envelopes: EnvelopesSection  # type: ignore
@@ -72,11 +79,12 @@ class Minilogue(nallely.MidiDevice):
     vco: VcoSection  # type: ignore
     mix: MixSection  # type: ignore
     filter: FilterSection  # type: ignore
+    keys: KeysSection  # type: ignore
 
     def __init__(self, device_name=None, *args, **kwargs):
         super().__init__(
-            *args
-,            device_name=device_name or 'minilogue',
+            *args,
+            device_name=device_name or "minilogue",
             **kwargs,
         )
 
@@ -108,3 +116,6 @@ class Minilogue(nallely.MidiDevice):
     def filter(self) -> FilterSection:
         return self.modules.filter
 
+    @property
+    def keys(self) -> KeysSection:
+        return self.modules.keys
