@@ -1,4 +1,4 @@
-import DeviceComponent from "./DeviceComponent";
+import MidiDeviceComponent from "./DeviceComponent";
 import type { MidiDevice, MidiDeviceSection } from "../../model";
 
 export const RackRow = ({
@@ -75,7 +75,7 @@ export const RackRow = ({
 						boxSizing: "border-box",
 					}}
 				>
-					<DeviceComponent
+					<MidiDeviceComponent
 						slot={i}
 						slotWidth={slotWidth}
 						height={height}

@@ -1,18 +1,10 @@
 import { useState } from "react";
-import DeviceComponent from "./DeviceComponent";
+import MidiDeviceComponent from "./DeviceComponent";
 import { useTrevorSelector } from "../../store";
 
 const truncateName = (name: string, maxLength: number) => {
 	return name.length > maxLength ? `${name.slice(0, maxLength)}...` : name;
 };
-
-const deviceClasses = [
-	{ name: "Synthesizer", info: "A device that generates audio signals." },
-	{ name: "Drum Machine", info: "A device that produces drum sounds." },
-	{ name: "Sampler", info: "A device that plays back recorded audio." },
-	{ name: "Sequencer", info: "A device that sequences musical patterns." },
-	{ name: "Effect Processor", info: "A device that processes audio signals." },
-];
 
 const InstanceCreation = ({
 	onDeviceCreate = () => {}, // Provide a default no-op function
@@ -22,15 +14,21 @@ const InstanceCreation = ({
 	const midiInPorts = useTrevorSelector((state) => state.nallely.input_ports);
 	const midiOutPorts = useTrevorSelector((state) => state.nallely.output_ports);
 	const [selectedInfo, setSelectedInfo] = useState<string | null>(null);
-	const [devices, setDevices] = useState<
-		{ id: string; name: string; channel: number; sections: string[] }[]
-	>([]);
+	// const [devices, setDevices] = useState<
+	// 	{ id: string; name: string; channel: number; sections: string[] }[]
+	// >([]);
+	const devices = useTrevorSelector((state) => state.nallely.midi_devices);
 	const [selectedDevice, setSelectedDevice] = useState<{
 		id: string;
 		name: string;
 		channel: number;
 		sections: string[];
 	} | null>(null);
+
+	const deviceClasses = useTrevorSelector((state) => [
+		...state.nallely.classes.midi,
+		...state.nallely.classes.virtual,
+	]);
 
 	const handlePortClick = (info: string) => {
 		setSelectedInfo(info);
@@ -151,13 +149,13 @@ const InstanceCreation = ({
 						}}
 					>
 						{devices.map((device) => (
-							<DeviceComponent
+							<MidiDeviceComponent
+								classConnections
 								key={device.id}
 								slot={0} // Slot is irrelevant here
 								slotWidth={250}
 								height={100}
-								name={device.name}
-								sections={device.sections}
+								device={device}
 								onDragStart={() => {}} // No drag functionality here
 								onDragEnd={() => {}}
 								onSectionClick={() => setSelectedDevice(device)} // Select the device
@@ -173,11 +171,11 @@ const InstanceCreation = ({
 						{deviceClasses.map((deviceClass, index) => (
 							// biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
 							<li
-								key={deviceClass.name}
+								key={deviceClass}
 								className="device-class-item"
 								onClick={() => handleDeviceClassClick(deviceClass)}
 							>
-								{deviceClass.name}
+								{deviceClass}
 							</li>
 						))}
 					</ul>

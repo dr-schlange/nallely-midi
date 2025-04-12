@@ -1,9 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import type {
-	MidiConnection,
-	MidiDeviceWithSection,
-	MidiParameter,
-} from "../../model";
+import type { MidiConnection, MidiDeviceWithSection } from "../../model";
 import { useTrevorSelector } from "../../store";
 import {
 	buildParameterId,
@@ -29,12 +25,12 @@ const PatchingModal = ({
 			connectionsOfInterest(
 				f,
 				firstSection?.device.id,
-				firstSection?.section.parameters[0].module_state_name,
+				firstSection?.section.parameters[0]?.module_state_name,
 			) ||
 			connectionsOfInterest(
 				f,
 				secondSection?.device.id,
-				secondSection?.section.parameters[0].module_state_name,
+				secondSection?.section.parameters[0]?.module_state_name,
 			),
 	);
 
@@ -122,18 +118,18 @@ const PatchingModal = ({
 
 	useEffect(() => {
 		const handleResize = () => {
-			drawConnections(); // Redraw connections when the modal size changes
+			drawConnections();
 		};
 
 		const observer = new ResizeObserver(handleResize);
 		if (svgRef.current) {
-			observer.observe(svgRef.current.parentElement as HTMLElement); // Observe the modal container
+			observer.observe(svgRef.current.parentElement as HTMLElement);
 		}
 
 		return () => {
-			observer.disconnect(); // Clean up the observer
+			observer.disconnect();
 		};
-	}, [connections]); // Re-run when connections change
+	}, [connections]);
 
 	return (
 		<div className="patching-modal">
@@ -161,7 +157,9 @@ const PatchingModal = ({
 				</svg>
 				<div className="left-panel">
 					<div className="top-left-panel">
-						<h3>{firstSection?.section.name || "First Section"}</h3>
+						<h3>
+							{firstSection?.device.meta.name} {firstSection?.section.name}
+						</h3>
 						<div className="parameters-grid">
 							{firstSection?.section.parameters.map((param, index) => (
 								<div
@@ -184,7 +182,6 @@ const PatchingModal = ({
 						</div>
 					</div>
 					<div className="bottom-left-panel">
-						<h3>{secondSection?.section.name || "Second Section"}</h3>
 						<div className="parameters-grid">
 							{secondSection?.section.parameters.map((param, index) => (
 								<div
@@ -210,6 +207,9 @@ const PatchingModal = ({
 								</div>
 							))}
 						</div>
+						<h3>
+							{secondSection?.device.meta.name} {secondSection?.section.name}
+						</h3>
 					</div>
 				</div>
 				<div className="right-panel">

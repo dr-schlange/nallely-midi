@@ -23,6 +23,24 @@ from .modules import (
 
 virtual_devices = []
 connected_devices = []
+midi_device_classes = []
+virtual_device_classes = []
+
+
+def no_registration(cls):
+    try:
+        midi_device_classes.remove(cls)
+    except ValueError:
+        ...
+    try:
+        virtual_device_classes.remove(cls)
+    except ValueError:
+        ...
+    return cls
+
+
+def need_registration(cls):
+    return cls.__dict__.get("registrer", True)
 
 
 def stop_all_virtual_devices():
@@ -240,6 +258,10 @@ class VirtualDevice(threading.Thread):
         self.target_cycle_time = target_cycle_time
         self.ready_event = threading.Event()
 
+    def __init_subclass__(cls) -> None:
+        virtual_device_classes.append(cls)
+        super().__init_subclass__()
+
     def setup(self) -> ThreadContext:
         return ThreadContext()
 
@@ -455,6 +477,10 @@ class MidiDevice:
     inport: mido.ports.BaseInput | None = None
     debug: bool = False
     on_midi_message: Callable[["MidiDevice", mido.Message], None] | None = None
+
+    def __init_subclass__(cls) -> None:
+        midi_device_classes.append(cls)
+        return super().__init_subclass__()
 
     def __post_init__(self, autoconnect, read_input_only):
         self.reverse_map = {}
@@ -712,6 +738,7 @@ outputs: {mido.get_input_names()}"""
         )
 
 
+@no_registration
 class TimeBasedDevice(VirtualDevice):
     def __init__(
         self,

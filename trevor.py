@@ -11,6 +11,8 @@ from nallely.core import (
     ThreadContext,
     connected_devices,
     virtual_devices,
+    virtual_device_classes,
+    midi_device_classes,
 )
 from websockets.sync.server import serve
 import json
@@ -90,22 +92,26 @@ class TrevorBus(VirtualDevice):
             "output_ports": mido.get_output_names(),
             "midi_devices": [device.to_dict() for device in connected_devices],
             "connections": connections,
+            "classes": {
+                "virtual": [cls.__name__ for cls in virtual_device_classes],
+                "midi": [cls.__name__ for cls in midi_device_classes],
+            },
         }
         for device in virtual_devices:
             print(id(device), device)
 
         from pprint import pprint
 
-        pprint(d["connections"])
+        pprint(d["classes"])
         return d
 
 
 try:
-    # nts1 = NTS1()
+    nts1 = NTS1()
     # mpd32 = MPD32()
     minilogue = Minilogue("Scarlett")
 
-    # nts1.filter.cutoff = minilogue.delay.feedback
+    nts1.filter.cutoff = minilogue.delay.feedback
     minilogue.filter.cutoff = minilogue.delay.feedback
     minilogue.delay.time = minilogue.delay.feedback
     minilogue.filter.eg_intensity = minilogue.delay.feedback

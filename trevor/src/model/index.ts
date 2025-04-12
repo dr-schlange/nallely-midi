@@ -3,6 +3,7 @@ export interface NallelyState {
 	output_ports: string[];
 	midi_devices: MidiDevice[];
 	connections: MidiConnection[];
+	classes: NallelyClasses;
 }
 
 export interface MidiDevice {
@@ -54,3 +55,8 @@ export type MidiDeviceWithSection = {
 	device: MidiDevice;
 	section: MidiDeviceSection;
 };
+
+export interface NallelyClasses {
+	virtual: string[];
+	midi: string[];
+}

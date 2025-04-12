@@ -154,6 +154,21 @@ const DevicePatching = () => {
 		updateConnections();
 	}, [allConnections]); // Update lines when connections change
 
+	useEffect(() => {
+		const handleResize = () => {
+			updateConnections();
+		};
+
+		const observer = new ResizeObserver(handleResize);
+		if (svgRef.current) {
+			observer.observe(svgRef.current.parentElement as HTMLElement);
+		}
+
+		return () => {
+			observer.disconnect();
+		};
+	}, [allConnections]);
+
 	const handleDeviceDrop = (
 		draggedDevice: any,
 		targetSlot: number,

@@ -2,7 +2,7 @@ import math
 from decimal import Decimal
 from typing import Any, Literal
 
-from .core import TimeBasedDevice, VirtualParameter
+from .core import TimeBasedDevice, VirtualParameter, no_registration
 
 
 class LFO(TimeBasedDevice):
@@ -122,6 +122,7 @@ class LFO(TimeBasedDevice):
         return MinLFO(self, lfo)
 
 
+@no_registration
 class CombinedLFO(LFO):
     def __init__(self, lfo1: LFO, lfo2: LFO):
         self.lfo1 = lfo1
@@ -148,31 +149,37 @@ class CombinedLFO(LFO):
         return max(min(value, max_val), min_val)
 
 
+@no_registration
 class MaxLFO(CombinedLFO):
     def generate_value(self, t):
         return max(self.lfo1.generate_value(t), self.lfo2.generate_value(t))
 
 
+@no_registration
 class MinLFO(CombinedLFO):
     def generate_value(self, t):
         return min(self.lfo1.generate_value(t), self.lfo2.generate_value(t))
 
 
+@no_registration
 class AddLFO(CombinedLFO):
     def generate_value(self, t):
         return self.normalize(self.lfo1.generate_value(t) + self.lfo2.generate_value(t))
 
 
+@no_registration
 class SubLFO(CombinedLFO):
     def generate_value(self, t):
         return self.normalize(self.lfo1.generate_value(t) - self.lfo2.generate_value(t))
 
 
+@no_registration
 class MulLFO(CombinedLFO):
     def generate_value(self, t):
         return self.normalize(self.lfo1.generate_value(t) * self.lfo2.generate_value(t))
 
 
+@no_registration
 class DivLFO(CombinedLFO):
     def generate_value(self, t):
         value2 = self.lfo2.generate_value(t)
@@ -183,6 +190,7 @@ class DivLFO(CombinedLFO):
         return self.normalize(result)
 
 
+@no_registration
 class ConstLFO(LFO):
     def __init__(self, value):
         super().__init__(
@@ -196,6 +204,7 @@ class ConstLFO(LFO):
         return self.min_value
 
 
+@no_registration
 class Cycler(LFO):
     def __init__(self, values: list[Any], speed=10, waveform="triangle"):
         self.values = values

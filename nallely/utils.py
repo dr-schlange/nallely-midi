@@ -94,7 +94,7 @@ class WSWaitingRoom:
         return self
 
 
-class WebSocketSwitch(VirtualDevice):
+class WebSocketBus(VirtualDevice):
     variable_refresh = False
 
     def __init__(self, host="0.0.0.0", port=6789, **kwargs):
