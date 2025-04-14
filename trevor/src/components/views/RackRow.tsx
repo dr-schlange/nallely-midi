@@ -67,24 +67,18 @@ export const RackRow = ({
 				<div
 					key={device.id}
 					data-rack-slot={i}
-					onDrop={(event) => handleDrop(event, device.id)}
-					onDragOver={handleDragOver}
 					style={{
-						width: slotWidth,
-						height,
-						boxSizing: "border-box",
+						position: "absolute",
+						left: i * slotWidth + 5,
+						top: "50%", // Center vertically
+						transform: "translateY(-50%)", // Adjust to center the device properly
 					}}
 				>
 					<MidiDeviceComponent
-						slot={i}
-						slotWidth={slotWidth}
 						height={height}
 						device={device}
-						onDragStart={(event) => handleDragStart(event, device)}
-						onDragEnd={() => {}}
 						onSectionClick={(section) => onSectionClick(device, section)}
 						selectedSections={selectedSections}
-						onNonSectionClick={onNonSectionClick} // Pass the function
 					/>
 				</div>
 			))}

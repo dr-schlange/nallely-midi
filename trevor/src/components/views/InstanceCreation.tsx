@@ -138,7 +138,6 @@ const InstanceCreation = ({
 			<div className="instance-creation-bottom-panel">
 				<div className="device-class-left-panel">
 					<h3>Devices</h3>
-					{/* Center only the devices in the list, leaving the title at the top */}
 					<div
 						className="device-list"
 						style={{
@@ -148,20 +147,25 @@ const InstanceCreation = ({
 							height: "calc(100% - 40px)",
 						}}
 					>
-						{devices.map((device) => (
-							<MidiDeviceComponent
-								classConnections
+						{devices.map((device, i) => (
+							<div
 								key={device.id}
-								slot={0} // Slot is irrelevant here
-								slotWidth={250}
-								height={100}
-								device={device}
-								onDragStart={() => {}} // No drag functionality here
-								onDragEnd={() => {}}
-								onSectionClick={() => setSelectedDevice(device)} // Select the device
-								selectedSections={[]}
-								onNonSectionClick={() => {}}
-							/>
+								data-rack-slot={i}
+								style={{
+									position: "absolute",
+									left: i * 250 + 5,
+									transform: "translateY(-50%)", // Adjust to center the device properly
+								}}
+							>
+								<MidiDeviceComponent
+									classConnections
+									key={device.id}
+									slot={0} // Slot is irrelevant here
+									slotWidth={250}
+									height={170}
+									device={device}
+								/>
+							</div>
 						))}
 					</div>
 				</div>

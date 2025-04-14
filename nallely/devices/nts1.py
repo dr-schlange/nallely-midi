@@ -25,7 +25,7 @@ class OSCSection(Module):
     type = ModuleParameter(53)
     shape = ModuleParameter(54)
     alt = ModuleParameter(55)
-    lfo_date = ModuleParameter(24)
+    lfo_rate = ModuleParameter(24)
     lfo_depth = ModuleParameter(26)
 
 
