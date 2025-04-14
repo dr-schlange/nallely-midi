@@ -41,7 +41,7 @@ class Int(int):
     ):
         return Scaler(
             data=self,
-            device=self.device,
+            # device=self.device,
             to_min=min,
             to_max=max,
             from_min=self.parameter.range[0],
@@ -76,7 +76,7 @@ class Int(int):
 @dataclass
 class Scaler:
     data: Int | VirtualDevice | PadOrKey | ModuleParameter
-    device: Any
+    # device: Any
     to_min: int | float | None
     to_max: int | float | None
     method: str = "lin"
@@ -160,39 +160,11 @@ class Scaler:
         if isinstance(value, Int):
             value.update(res)
             return value
-        # print("Converting", value, res)
+        print("Converting", value, res)
         return res
 
-    def install_fun(self, to_device, to_parameter, append=True):
-        from .core import VirtualDevice
-
-        if isinstance(self.data, VirtualDevice):
-            if self.auto:
-                self.to_min, self.to_max = to_parameter.range
-                self.as_int = isinstance(self.to_min, int) and isinstance(
-                    self.to_max, int
-                )
-            fun = self.data.generate_fun(to_device, to_parameter)
-            self.data.bind(
-                lambda value, ctx: fun(self.convert(value), ctx),
-                to=to_device,
-                param=to_parameter,
-                append=append,
-            )
-            return
-        modparam: ModuleParameter | PadOrKey = self.data.parameter
-        if self.auto:
-            self.to_min, self.to_max = to_parameter.range
-            self.as_int = isinstance(self.to_min, int) and isinstance(self.to_max, int)
-        fun = modparam.generate_fun(to_device, to_parameter)
-        self.data.device.bind(
-            lambda value, ctx: fun(self.convert(value), ctx),
-            type=modparam.type,
-            cc_note=modparam.cc_note,  # equiv pad.note
-            to=to_device,
-            param=to_parameter,
-            append=append,
-        )
+    def __call__(self, value, *args, **kwargs):
+        return self.convert(value)
 
 
 @dataclass
@@ -244,22 +216,30 @@ class ModuleParameter:
         return self.generate_inner_fun_normal(to_device, to_param)
 
     def __set__(
-        self, to_module, feeder, send=True, debug=False, force=False, append=True
+        self,
+        to_module,
+        feeder,
+        send=True,
+        debug=False,
+        force=False,
+        append=True,
+        chain=None,
     ):
         if feeder is None:
             return
         if not force and isinstance(feeder, Int):
             device_value = feeder
-            from_module: MidiDevice = device_value.device
+            from_device: MidiDevice = device_value.device
             # we create a callback on from_module that will "set" the module parameter to value of to_module
             # finally triggering the code that sends the cc and sync the state lower in this class.
-            from_module.bind(
+            from_device.bind(
                 lambda value, ctx: setattr(to_module, self.name, value),
                 type=device_value.parameter.type,
                 cc_note=device_value.parameter.cc_note,
                 to=to_module.device,
                 param=self,
                 append=append,
+                transformer_chain=chain,
             )
             return
 
@@ -272,6 +252,7 @@ class ModuleParameter:
                 to=to_module.device,
                 param=self,
                 append=append,
+                transformer_chain=chain,
             )
             return
         if isfunction(feeder):
@@ -283,22 +264,36 @@ class ModuleParameter:
                 to=to_module.device,
                 append=append,
                 param=self,
+                transformer_chain=chain,
             )
             return
         if isinstance(feeder, Scaler):
             scaler = feeder
-            scaler.install_fun(to_device=to_module, to_parameter=self, append=append)
+            # scaler.install_fun(to_device=to_module, to_parameter=self, append=append)
+            # from_device = scaler.device
+            # import ipdb; ipdb.set_trace()  # fmt: skip
+
+            self.__set__(
+                to_module,
+                scaler.data,
+                send=False,
+                debug=debug,
+                force=force,
+                append=append,
+                chain=scaler,
+            )
             return
         if isinstance(feeder, PadOrKey):
             pad: PadOrKey = feeder
-            from_module: MidiDevice = pad.device
-            from_module.bind(
+            from_device: MidiDevice = pad.device
+            from_device.bind(
                 pad.generate_fun(to_module, self),
                 type=pad.type,
                 cc_note=pad.cc_note,
                 to=to_module.device,
                 param=self,
                 append=append,
+                transformer_chain=chain,
             )
             return
 
@@ -387,7 +382,7 @@ class PadOrKey:
     ):
         return Scaler(
             data=self,
-            device=self.device,
+            # device=self.device,
             to_min=min,
             to_max=max,
             from_min=self.range[0],

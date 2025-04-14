@@ -18,6 +18,7 @@ from websockets.sync.server import serve
 import json
 from minilab import Minilab
 
+
 class TrevorBus(VirtualDevice):
     variable_refresh = False
 
@@ -73,17 +74,17 @@ class TrevorBus(VirtualDevice):
         for device in connected_devices:
             for entry in device.callbacks_registry:
                 entry: CallbackRegistryEntry
-                if entry.type == "note":
+                if entry.type in ["note", "velocity"]:
                     cc_note = None
+                    cc_type = "note"
                 else:
                     cc_note = entry.cc_note
+                    cc_type = entry.type
                 connections.append(
                     {
                         "src": {
                             "device": id(device),
-                            "parameter": asdict(
-                                device.reverse_map[(entry.type, cc_note)]
-                            ),
+                            "parameter": asdict(device.reverse_map[(cc_type, cc_note)]),
                             "explicit": entry.cc_note,
                         },
                         "dest": {
@@ -113,24 +114,28 @@ class TrevorBus(VirtualDevice):
 
 
 try:
-    nts1 = NTS1(device_name="Scarlett")
-    mlab = Minilab(device_name="Scarlett", debug=True)
+    # nts1 = NTS1(device_name="Scarlett")
+    # mlab = Minilab(device_name="Scarlett", debug=True)
 
-    # nts1.filter.cutoff = mlab.set3.b9.scale(10, 127)
-    # nts1.filter.resonance = mlab.set3.b9.scale(127, 5)
+    nts1 = NTS1()
+    mlab = Minilab(debug=True)
+
+    nts1.filter.cutoff = mlab.set3.b9.scale(10, 127)
+    nts1.filter.resonance = mlab.set3.b9.scale(127, 5)
+    nts1.ocs.lfo_depth = mlab.set3.b10
     # nts1.filter.resonance = mlab.set3.b10
     # nts1.filter.cutoff = mlab.set3.b11.scale(10, 127)
     # nts1.filter.resonance = mlab.set3.b11
     # nts1.ocs.type = mlab.set1.b1
     # nts1.ocs.shape = mlab.set1.b2
     # # nts1.ocs.alt = mlab.set1.b2
-    # nts1.ocs.lfo_rate = mlab.set1.b3
     # nts1.ocs.lfo_depth = mlab.set1.b4
 
-    # nts1.keys.notes = mlab.keys[:]
+    nts1.keys.notes = mlab.keys[:]
     nts1.keys.notes = mlab.pads[:]
 
-    # nts1.ocs.lfo_rate = mlab.pads[36].velocity_hold
+    nts1.ocs.lfo_rate = mlab.pads[36].velocity.scale(0, 127)
+    nts1.ocs.lfo_depth = mlab.pads.p9.scale(10, 100)
 
     # mpd32 = MPD32()
     # minilogue = Minilogue("Scarlett")
@@ -138,9 +143,6 @@ try:
     # minilogue.filter.cutoff = minilogue.delay.feedback
     # minilogue.delay.time = minilogue.delay.feedback
     # minilogue.filter.eg_intensity = minilogue.delay.feedback
-
-
-
 
     ws = TrevorBus()
     ws.start()

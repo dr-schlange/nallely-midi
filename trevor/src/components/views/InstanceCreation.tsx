@@ -160,9 +160,6 @@ const InstanceCreation = ({
 								<MidiDeviceComponent
 									classConnections
 									key={device.id}
-									slot={0} // Slot is irrelevant here
-									slotWidth={250}
-									height={170}
 									device={device}
 								/>
 							</div>
