@@ -1,8 +1,16 @@
+import { useState } from "react";
+
 interface AboutModalProps {
 	onClose: () => void;
 }
 
 export const AboutModal = ({ onClose }: AboutModalProps) => {
+	const [trevor, setTrevor] = useState(2);
+
+	const changeTrevor = () => {
+		setTrevor((trevor % 2) + 1);
+	};
+
 	return (
 		<div className="about-modal">
 			<div className="modal-header">
@@ -11,10 +19,12 @@ export const AboutModal = ({ onClose }: AboutModalProps) => {
 				</button>
 			</div>
 			<div className="about-modal-body">
+				{/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
 				<img
-					src="/trevor2.svg"
+					src={`/trevor${trevor}.svg`}
 					alt="Trevor 0.0.1"
-					style={{ margin: 10, width: "50%" }}
+					style={{ width: "194px", height: "183px", margin: "10px" }}
+					onClick={changeTrevor}
 				/>
 				<p style={{ textAlign: "center" }}>Trevor 0.0.1</p>
 			</div>
