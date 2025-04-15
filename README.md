@@ -1,4 +1,4 @@
-# Nallely-midi, your Midi/NTS1 Companion
+# Nallely-midi, your Midi devices Companion: script your midi devices, connect anything with everything
 
 Nallely (pronounced "Nayeli") is a MIDI companion to help you easily map MIDI controllers/instruments together, as well as create virtual LFOs, compose them, and the possibility to expose/create remote services with parameters on which you can map your MIDI controllers/instruments.
 
