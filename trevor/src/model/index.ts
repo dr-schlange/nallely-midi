@@ -32,6 +32,7 @@ export interface MidiConnection {
 export interface MidiConnectionEnd {
 	device: number;
 	parameter: MidiParameter;
+	chain: MidiScaler | null;
 }
 
 export interface MidiDeviceSection {
@@ -59,4 +60,12 @@ export type MidiDeviceWithSection = {
 export interface NallelyClasses {
 	virtual: string[];
 	midi: string[];
+}
+
+export interface MidiScaler {
+	device: number;
+	min: number;
+	max: number;
+	auto: boolean;
+	method: string;
 }

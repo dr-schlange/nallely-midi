@@ -25,10 +25,37 @@ export const connectionsOfInterest = (
 	);
 };
 
+export const findConnectorElement = (connection: MidiConnection) => {
+	const srcId = buildParameterId(
+		connection.src.device,
+		connection.src.parameter,
+	);
+	const destId = buildParameterId(
+		connection.dest.device,
+		connection.dest.parameter,
+	);
+	const fromElement = document.querySelector(`[id="${srcId}"]`);
+	const toElement = document.querySelector(`[id="${destId}"]`);
+	return [fromElement, toElement];
+};
+
+export const findSvgConnection = (
+	connection: MidiConnection,
+): SVGElement | null => {
+	const [fromElement, toElement] = findConnectorElement(connection);
+	if (!fromElement || !toElement) {
+		return null;
+	}
+	return document.querySelector(
+		`[id="${fromElement.id}-${toElement.id}"]`,
+	) as SVGElement;
+};
+
 export const drawConnection = (
 	svg: SVGSVGElement,
 	fromElement: Element | null,
 	toElement: Element | null,
+	selected: boolean,
 	clickHandler?: (event: MouseEvent) => void,
 ) => {
 	if (fromElement && toElement) {
@@ -78,8 +105,8 @@ export const drawConnection = (
 		line.setAttribute("y1", fromY.toString());
 		line.setAttribute("x2", toX.toString());
 		line.setAttribute("y2", toY.toString());
-		line.setAttribute("stroke", "orange");
-		line.setAttribute("stroke-width", "2");
+		line.setAttribute("stroke", selected ? "orange" : "orange");
+		line.setAttribute("stroke-width", selected ? "6" : "2");
 		line.id = `${fromElement.id}-${toElement.id}`;
 		line.setAttribute("marker-end", "url(#retro-arrowhead)");
 		if (clickHandler) {

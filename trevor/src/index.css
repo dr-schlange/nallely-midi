@@ -479,8 +479,22 @@ input[type="text"]:disabled {
   position: fixed;
   top: 50%;
   left: 50%;
-  width: 80%; /* Fixed width */
-  height: 60%; /* Fixed height */
+  width: 80%;
+  height: 60%;
+  background-color: white;
+  transform: translate(-50%, -50%); /* Center the modal */
+  display: flex;
+  flex-direction: column;
+  border: 2px solid #808080;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.about-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 400px;
+  height: 250px;
   background-color: white;
   transform: translate(-50%, -50%); /* Center the modal */
   display: flex;
@@ -509,9 +523,17 @@ input[type="text"]:disabled {
 }
 
 .modal-body {
-  flex: 1; /* Take the remaining vertical space */
+  flex: 1;
   display: flex;
   flex-direction: row;
+}
+
+
+.about-modal-body {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
 }
 
 .left-panel {

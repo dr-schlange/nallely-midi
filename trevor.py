@@ -71,6 +71,18 @@ class TrevorBus(VirtualDevice):
 
     def connected_devices(self):
         connections = []
+
+        def scaler_as_dict(scaler):
+            if scaler is None:
+                return None
+            return {
+                "device": id(scaler.data.device),
+                "min": scaler.to_min,
+                "max": scaler.to_max,
+                "auto": scaler.auto,
+                "method": scaler.method,
+            }
+
         for device in connected_devices:
             for entry in device.callbacks_registry:
                 entry: CallbackRegistryEntry
@@ -86,6 +98,7 @@ class TrevorBus(VirtualDevice):
                             "device": id(device),
                             "parameter": asdict(device.reverse_map[(cc_type, cc_note)]),
                             "explicit": entry.cc_note,
+                            "chain": scaler_as_dict(entry.chain),
                         },
                         "dest": {
                             "device": id(entry.target),
@@ -114,11 +127,11 @@ class TrevorBus(VirtualDevice):
 
 
 try:
-    # nts1 = NTS1(device_name="Scarlett")
-    # mlab = Minilab(device_name="Scarlett", debug=True)
+    nts1 = NTS1(device_name="Scarlett")
+    mlab = Minilab(device_name="Scarlett", debug=True)
 
-    nts1 = NTS1()
-    mlab = Minilab(debug=True)
+    # nts1 = NTS1()
+    # mlab = Minilab(debug=True)
 
     nts1.filter.cutoff = mlab.set3.b9.scale(10, 127)
     nts1.filter.resonance = mlab.set3.b9.scale(127, 5)
@@ -131,11 +144,27 @@ try:
     # # nts1.ocs.alt = mlab.set1.b2
     # nts1.ocs.lfo_depth = mlab.set1.b4
 
-    nts1.keys.notes = mlab.keys[:]
-    nts1.keys.notes = mlab.pads[:]
+    # nts1.keys.notes = mlab.keys[:]
+    nts1.keys.notes = mlab.pads[37:]
 
-    nts1.ocs.lfo_rate = mlab.pads[36].velocity.scale(0, 127)
-    nts1.ocs.lfo_depth = mlab.pads.p9.scale(10, 100)
+    nts1.ocs.lfo_rate = mlab.pads[36].velocity_hold.scale(0, 127)
+    # nts1.ocs.lfo_depth = mlab.pads.p9.scale(10, 100)
+
+    # nts1.ocs.type = mlab.keys.mod
+    nts1.arp.length = mlab.set1.b1
+    # nts1.arp.intervals = mlab.pads[37].scale((127//6) * 1)
+    # nts1.arp.intervals = mlab.pads[38].scale((127//6) * 2)
+    # nts1.arp.intervals = mlab.pads[39].scale((127//6) * 3)
+    # nts1.arp.intervals = mlab.pads[40].scale((127//6) * 4)
+    # nts1.arp.intervals = mlab.pads[41].scale((127//6) * 5)
+    # nts1.arp.intervals = mlab.pads[42].scale((127//6) * 6)
+
+    nts1.arp.intervals = mlab.pads.p9.scale((127 // 6) * 0, (127 // 6) * 0)
+    nts1.arp.intervals = mlab.pads.p10.scale((127 // 6) * 1, (127 // 6) * 1)
+    nts1.arp.intervals = mlab.pads.p11.scale((127 // 6) * 2, (127 // 6) * 2)
+    nts1.arp.intervals = mlab.pads.p12.scale((127 // 6) * 3, (127 // 6) * 3)
+    nts1.arp.intervals = mlab.pads.p13.scale((127 // 6) * 4, (127 // 6) * 4)
+    nts1.arp.intervals = mlab.pads.p14.scale((127 // 6) * 5, (127 // 6) * 5)
 
     # mpd32 = MPD32()
     # minilogue = Minilogue("Scarlett")

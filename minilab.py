@@ -45,6 +45,7 @@ class PadSection(nallely.Module):
 class KeysSection(nallely.Module):
     state_name = "keys"
     notes = nallely.ModulePadsOrKeys()
+    mod = nallely.ModuleParameter(1)
 
 
 class Minilab(nallely.MidiDevice):

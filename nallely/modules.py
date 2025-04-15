@@ -75,7 +75,7 @@ class Int(int):
 
 @dataclass
 class Scaler:
-    data: Int | VirtualDevice | PadOrKey | ModuleParameter
+    data: Int | VirtualDevice | PadOrKey
     # device: Any
     to_min: int | float | None
     to_max: int | float | None
@@ -160,7 +160,7 @@ class Scaler:
         if isinstance(value, Int):
             value.update(res)
             return value
-        print("Converting", value, res)
+        # print("Converting", value, res)
         return res
 
     def __call__(self, value, *args, **kwargs):

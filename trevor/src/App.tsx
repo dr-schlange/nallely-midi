@@ -1,5 +1,5 @@
-import InstanceCreation from "./components/views/InstanceCreation";
-import DevicePatching from "./components/views/DevicePatching";
+import InstanceCreation from "./components/InstanceCreation";
+import DevicePatching from "./components/DevicePatching";
 import { Provider } from "react-redux";
 import { store } from "./store";
 
