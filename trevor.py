@@ -13,12 +13,15 @@ from nallely.core import (
     virtual_devices,
     virtual_device_classes,
     midi_device_classes,
+    no_registration,
+    all_devices,
 )
 from websockets.sync.server import serve
 import json
 from minilab import Minilab
 
 
+@no_registration
 class TrevorBus(VirtualDevice):
     variable_refresh = False
 
@@ -34,13 +37,14 @@ class TrevorBus(VirtualDevice):
         connected_devices = self.connected[service_name]
         connected_devices.append(client)
         try:
-            client.send(json.dumps(self.connected_devices()))
+            client.send(json.dumps(self.full_state()))
             for message in client:
                 # Sends message to other modules connected to this channel
-                for device in connected_devices:
-                    if device == client:
-                        continue
-                    device.send(message)
+                # for device in connected_devices:
+                #     if device == client:
+                #         continue
+                # device.send(message)
+                self.handleMessage(client, message)
         finally:
             connected_devices.remove(client)
 
@@ -69,7 +73,38 @@ class TrevorBus(VirtualDevice):
                 )
             )
 
-    def connected_devices(self):
+    def handleMessage(self, client, message):
+        message = json.loads(message)
+        cmd = message["command"]
+        del message["command"]
+        params = message
+        res = getattr(self, cmd)(**params)
+        if res:
+            print("Send details")
+            client.send(json.dumps(res))
+
+    def create_device(self, name):
+        cls = next((cls for cls in midi_device_classes if cls.__name__ == name), None)
+        if cls is None:
+            cls = next((cls for cls in virtual_device_classes if cls.__name__ == name))
+        cls(autoconnect=False)
+        return self.full_state()
+
+    def associate_parameters(self, from_parameter, to_parameter):
+        from_device, from_section, from_parameter = from_parameter.split("::")
+        to_device, to_section, to_parameter = to_parameter.split("::")
+        src_device = next(
+            (device for device in all_devices() if id(device) == int(from_device))
+        )
+        dst_device = next(
+            (device for device in all_devices() if id(device) == int(to_device))
+        )
+        dest = getattr(dst_device, to_section)
+        src = getattr(getattr(src_device, from_section), from_parameter)
+        setattr(dest, to_parameter, src)
+        return self.full_state()
+
+    def full_state(self):
         connections = []
 
         def scaler_as_dict(scaler):
@@ -122,49 +157,48 @@ class TrevorBus(VirtualDevice):
 
         from pprint import pprint
 
-        pprint(d["connections"])
         return d
 
 
 try:
-    nts1 = NTS1(device_name="Scarlett")
-    mlab = Minilab(device_name="Scarlett", debug=True)
+    # nts1 = NTS1(device_name="Scarlett")
+    # mlab = Minilab(device_name="Scarlett", debug=True)
 
-    # nts1 = NTS1()
-    # mlab = Minilab(debug=True)
+    # # nts1 = NTS1()
+    # # mlab = Minilab(debug=True)
 
-    nts1.filter.cutoff = mlab.set3.b9.scale(10, 127)
-    nts1.filter.resonance = mlab.set3.b9.scale(127, 5)
-    nts1.ocs.lfo_depth = mlab.set3.b10
-    # nts1.filter.resonance = mlab.set3.b10
-    # nts1.filter.cutoff = mlab.set3.b11.scale(10, 127)
-    # nts1.filter.resonance = mlab.set3.b11
-    # nts1.ocs.type = mlab.set1.b1
-    # nts1.ocs.shape = mlab.set1.b2
-    # # nts1.ocs.alt = mlab.set1.b2
-    # nts1.ocs.lfo_depth = mlab.set1.b4
+    # nts1.filter.cutoff = mlab.set3.b9.scale(10, 127)
+    # nts1.filter.resonance = mlab.set3.b9.scale(127, 5)
+    # nts1.ocs.lfo_depth = mlab.set3.b10
+    # # nts1.filter.resonance = mlab.set3.b10
+    # # nts1.filter.cutoff = mlab.set3.b11.scale(10, 127)
+    # # nts1.filter.resonance = mlab.set3.b11
+    # # nts1.ocs.type = mlab.set1.b1
+    # # nts1.ocs.shape = mlab.set1.b2
+    # # # nts1.ocs.alt = mlab.set1.b2
+    # # nts1.ocs.lfo_depth = mlab.set1.b4
 
-    # nts1.keys.notes = mlab.keys[:]
-    nts1.keys.notes = mlab.pads[37:]
+    # # nts1.keys.notes = mlab.keys[:]
+    # nts1.keys.notes = mlab.pads[37:]
 
-    nts1.ocs.lfo_rate = mlab.pads[36].velocity_hold.scale(0, 127)
-    # nts1.ocs.lfo_depth = mlab.pads.p9.scale(10, 100)
+    # nts1.ocs.lfo_rate = mlab.pads[36].velocity_hold.scale(0, 127)
+    # # nts1.ocs.lfo_depth = mlab.pads.p9.scale(10, 100)
 
-    # nts1.ocs.type = mlab.keys.mod
-    nts1.arp.length = mlab.set1.b1
-    # nts1.arp.intervals = mlab.pads[37].scale((127//6) * 1)
-    # nts1.arp.intervals = mlab.pads[38].scale((127//6) * 2)
-    # nts1.arp.intervals = mlab.pads[39].scale((127//6) * 3)
-    # nts1.arp.intervals = mlab.pads[40].scale((127//6) * 4)
-    # nts1.arp.intervals = mlab.pads[41].scale((127//6) * 5)
-    # nts1.arp.intervals = mlab.pads[42].scale((127//6) * 6)
+    # # nts1.ocs.type = mlab.keys.mod
+    # nts1.arp.length = mlab.set1.b1
+    # # nts1.arp.intervals = mlab.pads[37].scale((127//6) * 1)
+    # # nts1.arp.intervals = mlab.pads[38].scale((127//6) * 2)
+    # # nts1.arp.intervals = mlab.pads[39].scale((127//6) * 3)
+    # # nts1.arp.intervals = mlab.pads[40].scale((127//6) * 4)
+    # # nts1.arp.intervals = mlab.pads[41].scale((127//6) * 5)
+    # # nts1.arp.intervals = mlab.pads[42].scale((127//6) * 6)
 
-    nts1.arp.intervals = mlab.pads.p9.scale((127 // 6) * 0, (127 // 6) * 0)
-    nts1.arp.intervals = mlab.pads.p10.scale((127 // 6) * 1, (127 // 6) * 1)
-    nts1.arp.intervals = mlab.pads.p11.scale((127 // 6) * 2, (127 // 6) * 2)
-    nts1.arp.intervals = mlab.pads.p12.scale((127 // 6) * 3, (127 // 6) * 3)
-    nts1.arp.intervals = mlab.pads.p13.scale((127 // 6) * 4, (127 // 6) * 4)
-    nts1.arp.intervals = mlab.pads.p14.scale((127 // 6) * 5, (127 // 6) * 5)
+    # nts1.arp.intervals = mlab.pads.p9.scale((127 // 6) * 0, (127 // 6) * 0)
+    # nts1.arp.intervals = mlab.pads.p10.scale((127 // 6) * 1, (127 // 6) * 1)
+    # nts1.arp.intervals = mlab.pads.p11.scale((127 // 6) * 2, (127 // 6) * 2)
+    # nts1.arp.intervals = mlab.pads.p12.scale((127 // 6) * 3, (127 // 6) * 3)
+    # nts1.arp.intervals = mlab.pads.p13.scale((127 // 6) * 4, (127 // 6) * 4)
+    # nts1.arp.intervals = mlab.pads.p14.scale((127 // 6) * 5, (127 // 6) * 5)
 
     # mpd32 = MPD32()
     # minilogue = Minilogue("Scarlett")

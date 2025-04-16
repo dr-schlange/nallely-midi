@@ -504,6 +504,8 @@ class MidiDevice:
         return super().__init_subclass__()
 
     def __post_init__(self, autoconnect, read_input_only):
+        if self not in connected_devices:
+            connected_devices.append(self)
         self.reverse_map = {}
         # callbacks that are called when reacting to a value
         self.callbacks_registry: list[CallbackRegistryEntry] = []
@@ -538,8 +540,6 @@ class MidiDevice:
 
     def connect(self):
         self.outport = mido.open_output(self.outport_name, autoreset=True)
-        if self not in connected_devices:
-            connected_devices.append(self)
 
     def close(self):
         if self.inport:
@@ -737,8 +737,6 @@ class MidiDevice:
                 except StopIteration:
                     raise DeviceNotFound(self.device_name)
             self.inport.callback = self._sync_state
-        if self not in connected_devices:
-            connected_devices.append(self)
 
     def save_preset(self, file: Path | str):
         d = self.modules.as_dict_patch()

@@ -1,3 +1,4 @@
+import { MidiDevice, MidiParameter } from "./model";
 import { store } from "./store";
 import { setFullState } from "./store/trevorSlice";
 
@@ -5,7 +6,7 @@ const WEBSOCKET_URL = "ws://localhost:6788/trevor";
 
 class TrevorWebSocket {
 	private socket: WebSocket | null = null;
-	private reconnectInterval = 5000; // 5 seconds
+	private reconnectInterval = 1 * 1000;
 	private isConnected = false;
 
 	constructor(private url: string) {
@@ -54,12 +55,45 @@ class TrevorWebSocket {
 			console.error("Cannot send message. WebSocket is not connected.");
 		}
 	}
+
+	public createDevice(deviceClass: string) {
+		this.sendMessage(
+			JSON.stringify({
+				command: "create_device",
+				name: deviceClass,
+			}),
+		);
+	}
+
+	public associateParameters(
+		fromDevice: MidiDevice,
+		fromParameter: MidiParameter,
+		toDevice: MidiDevice,
+		toParameter: MidiParameter,
+	) {
+		this.sendMessage(
+			JSON.stringify({
+				command: "associate_parameters",
+				from_parameter: `${fromDevice.id}::${fromParameter.module_state_name}::${fromParameter.name}`,
+				to_parameter: `${toDevice.id}::${toParameter.module_state_name}::${toParameter.name}`,
+			}),
+		);
+	}
 }
 
-export const connectWebSocket = () => {
-	const websocket = new TrevorWebSocket(WEBSOCKET_URL);
+let websocket: TrevorWebSocket | null = null;
 
-	setTimeout(() => {
-		websocket.sendMessage("Hello, server!");
-	}, 10000);
+export const connectWebSocket = () => {
+	if (websocket) {
+		return;
+	}
+	websocket = new TrevorWebSocket(WEBSOCKET_URL);
+
+	// setTimeout(() => {
+	// 	websocket?.sendMessage("Hello, server!");
+	// }, 10000);
+};
+
+export const useTrevorWebSocket = () => {
+	return websocket;
 };
