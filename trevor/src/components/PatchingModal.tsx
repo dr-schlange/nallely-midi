@@ -15,6 +15,14 @@ import {
 import { ScalerForm } from "./ScalerForm";
 import { useTrevorWebSocket } from "../websocket";
 
+const parameterUUID = (
+	device: MidiDevice | number,
+	parameter: MidiParameter,
+) => {
+	const id = typeof device === "object" ? device.id : device;
+	return `${id}::${parameter.module_state_name}::${parameter.name}`;
+};
+
 const PatchingModal = ({
 	onClose,
 	firstSection,
@@ -63,24 +71,31 @@ const PatchingModal = ({
 
 	const handleParameterClick = (device: MidiDevice, param: MidiParameter) => {
 		setSelectedConnection(null); // Deselect the connection
-		setSelectedParameters((prev) => {
-			if (prev.length === 0) {
-				return [{ device, parameter: param }]; // Select the first parameter
-			}
-			if (prev.length === 1) {
-				if (prev[0].parameter === param) {
-					return []; // Deselect if the same parameter is clicked twice
-				}
-				websocket?.associateParameters(
-					prev[0].device,
-					prev[0].parameter,
-					device,
-					param,
-				);
-				return []; // Reset selection after creating the connection
-			}
-			return prev;
-		});
+		if (selectedParameters.length === 0) {
+			setSelectedParameters([{ device, parameter: param }]);
+			return;
+		}
+		if (selectedParameters[0].parameter === param) {
+			setSelectedParameters([]);
+			return; // Deselect if the same parameter is clicked twice
+		}
+		websocket?.associateParameters(
+			selectedParameters[0].device,
+			selectedParameters[0].parameter,
+			device,
+			param,
+			connections.find(
+				(c) =>
+					parameterUUID(c.src.device, c.src.parameter) ===
+						parameterUUID(
+							selectedParameters[0].device,
+							selectedParameters[0].parameter,
+						) &&
+					parameterUUID(c.dest.device, c.dest.parameter) ===
+						parameterUUID(device, param),
+			) !== undefined, // if a connection already exist, we remove it
+		);
+		setSelectedParameters([]);
 	};
 
 	const handleConnectionClick = (connection: MidiConnection) => {

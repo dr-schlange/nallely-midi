@@ -97,13 +97,16 @@ class TrevorBus(VirtualDevice):
             (device for device in all_devices() if id(device) == int(device_id))
         )
 
-    def associate_parameters(self, from_parameter, to_parameter):
+    def associate_parameters(self, from_parameter, to_parameter, unbind):
         from_device, from_section, from_parameter = from_parameter.split("::")
         to_device, to_section, to_parameter = to_parameter.split("::")
         src_device = self.get_device_instance(from_device)
         dst_device = self.get_device_instance(to_device)
         dest = getattr(dst_device, to_section)
         src = getattr(getattr(src_device, from_section), from_parameter)
+        if unbind:
+            getattr(dest, to_parameter).__isub__(src)
+            return self.full_state()
         setattr(dest, to_parameter, src)
         return self.full_state()
 
