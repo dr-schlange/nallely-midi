@@ -504,11 +504,25 @@ input[type="text"]:disabled {
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
 }
 
+.save-modal, .load-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 400px;
+  height: 250px;
+  background-color: white;
+  transform: translate(-50%, -50%); /* Center the modal */
+  display: flex;
+  flex-direction: column;
+  border: 2px solid #808080;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
 .modal-header {
   height: 40px; /* Fixed height for the header */
   display: flex;
   align-items: center;
-  justify-content: flex-start; /* Align close button to the left */
+  justify-content: space-between;
   background-color: #d0d0d0;
   border-bottom: 2px solid #808080;
   padding: 0 10px;
@@ -523,18 +537,24 @@ input[type="text"]:disabled {
   box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000; /* Amiga-style 3D effect */
 }
 
-.modal-body {
+.modal-body, .about-modal-body, .save-modal-body {
   flex: 1;
   display: flex;
   flex-direction: row;
 }
 
-
-.about-modal-body {
-  flex: 1;
-  display: flex;
-  flex-direction: row;
+.about-modal-body, .save-modal-body {
   align-items: center;
+}
+
+.save-modal-body input[type="text"] {
+  width: 45%;
+  padding: 5px;
+  font-family: 'Amiga Forever', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  border: 2px solid #808080;
+  box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
+  background-color: #d0d0d0;
+  color: #000000;
 }
 
 .left-panel {

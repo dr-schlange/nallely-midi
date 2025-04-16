@@ -1,6 +1,7 @@
 from collections import defaultdict
 from dataclasses import asdict
 from multiprocessing import connection
+from pathlib import Path
 
 import mido
 from nallely import VirtualDevice
@@ -122,6 +123,16 @@ class TrevorBus(VirtualDevice):
             device.listen()
         return self.full_state()
 
+    def save_all(self, name):
+        d = self.full_state()
+        del d["input_ports"]
+        del d["output_ports"]
+        del d["classes"]
+        for device in d["midi_devices"]:
+            device["class"] = device["meta"]["name"]
+            del device["meta"]
+        Path(f"{name}.nallely").write_text(json.dumps(d, indent=2))
+
     def full_state(self):
         connections = []
 
@@ -161,8 +172,12 @@ class TrevorBus(VirtualDevice):
                     }
                 )
         d = {
-            "input_ports": mido.get_input_names(),
-            "output_ports": mido.get_output_names(),
+            "input_ports": [
+                name for name in mido.get_input_names() if "RtMidi" not in name
+            ],
+            "output_ports": [
+                name for name in mido.get_output_names() if "RtMidi" not in name
+            ],
             "midi_devices": [device.to_dict() for device in connected_devices],
             "connections": connections,
             "classes": {
@@ -175,7 +190,7 @@ class TrevorBus(VirtualDevice):
 
         from pprint import pprint
 
-        pprint(d["input_ports"])
+        # pprint(d["input_ports"])
 
         return d
 

@@ -90,6 +90,15 @@ class TrevorWebSocket {
 			}),
 		);
 	}
+
+	public saveAll(name: string) {
+		this.sendMessage(
+			JSON.stringify({
+				command: "save_all",
+				name,
+			}),
+		);
+	}
 }
 
 let websocket: TrevorWebSocket | null = null;
@@ -99,10 +108,6 @@ export const connectWebSocket = () => {
 		return;
 	}
 	websocket = new TrevorWebSocket(WEBSOCKET_URL);
-
-	// setTimeout(() => {
-	// 	websocket?.sendMessage("Hello, server!");
-	// }, 10000);
 };
 
 export const useTrevorWebSocket = () => {
