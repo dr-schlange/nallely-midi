@@ -541,13 +541,46 @@ class MidiDevice:
     def connect(self):
         self.outport = mido.open_output(self.outport_name, autoreset=True)
 
-    def close(self):
-        if self.inport:
+    def listen(self, start=True):
+        if not start:
+            self.listening = False
             self.inport.callback = None
+            return
+        if not self.listening:
+            try:
+                self.inport = mido.open_input(self.inport_name)
+            except OSError:
+                try:
+                    self.inport_name = next(
+                        (
+                            dev_name
+                            for dev_name in mido.get_input_names()
+                            if self.device_name == dev_name
+                            or self.device_name in dev_name
+                        ),
+                    )
+                    self.inport = mido.open_input(self.inport_name)
+                except StopIteration:
+                    raise DeviceNotFound(self.device_name)
+            self.inport.callback = self._sync_state
+
+    def close_out(self):
         if self.outport:
             self.outport.close()
-            if self in connected_devices:
-                connected_devices.remove(self)
+            self.outport = None
+            self.outport_name = None
+
+    def close_in(self):
+        if self.inport:
+            self.listen(False)
+            self.inport = None
+            self.inport_name = None
+
+    def close(self, delete=False):
+        self.close_in()
+        self.close_out()
+        if delete and self in connected_devices:
+            connected_devices.remove(self)
 
     def _sync_state(self, msg):
         if msg.type == "clock":
@@ -714,29 +747,6 @@ class MidiDevice:
 
     # def bind_output(self, callback):
     #     self.output_callbacks.append(callback)
-
-    def listen(self, start=True):
-        if not start:
-            self.listening = False
-            self.inport.callback = None
-            return
-        if not self.listening:
-            try:
-                self.inport = mido.open_input(self.inport_name)
-            except OSError:
-                try:
-                    self.inport_name = next(
-                        (
-                            dev_name
-                            for dev_name in mido.get_input_names()
-                            if self.device_name == dev_name
-                            or self.device_name in dev_name
-                        ),
-                    )
-                    self.inport = mido.open_input(self.inport_name)
-                except StopIteration:
-                    raise DeviceNotFound(self.device_name)
-            self.inport.callback = self._sync_state
 
     def save_preset(self, file: Path | str):
         d = self.modules.as_dict_patch()

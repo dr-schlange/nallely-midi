@@ -90,18 +90,36 @@ class TrevorBus(VirtualDevice):
         cls(autoconnect=False)
         return self.full_state()
 
+    @staticmethod
+    def get_device_instance(device_id):
+        return next(
+            (device for device in all_devices() if id(device) == int(device_id))
+        )
+
     def associate_parameters(self, from_parameter, to_parameter):
         from_device, from_section, from_parameter = from_parameter.split("::")
         to_device, to_section, to_parameter = to_parameter.split("::")
-        src_device = next(
-            (device for device in all_devices() if id(device) == int(from_device))
-        )
-        dst_device = next(
-            (device for device in all_devices() if id(device) == int(to_device))
-        )
+        src_device = self.get_device_instance(from_device)
+        dst_device = self.get_device_instance(to_device)
         dest = getattr(dst_device, to_section)
         src = getattr(getattr(src_device, from_section), from_parameter)
         setattr(dest, to_parameter, src)
+        return self.full_state()
+
+    def associate_midi_port(self, device, port, direction):
+        device = self.get_device_instance(device)
+        if direction == "output":
+            if device.outport_name == port:
+                device.close_out()
+                return self.full_state()
+            device.outport_name = port
+            device.connect()
+        else:
+            if device.inport_name == port:
+                device.close_in()
+                return self.full_state()
+            device.inport_name = port
+            device.listen()
         return self.full_state()
 
     def full_state(self):
@@ -157,12 +175,14 @@ class TrevorBus(VirtualDevice):
 
         from pprint import pprint
 
+        pprint(d["input_ports"])
+
         return d
 
 
 try:
-    nts1 = NTS1(device_name="Scarlett")
-    mlab = Minilab(device_name="Scarlett", debug=True)
+    # nts1 = NTS1(device_name="Scarlett")
+    # mlab = Minilab(device_name="Scarlett", debug=True)
 
     # nts1 = NTS1()
     # mlab = Minilab(debug=True)

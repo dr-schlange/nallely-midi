@@ -79,6 +79,17 @@ class TrevorWebSocket {
 			}),
 		);
 	}
+
+	public associatePort(device: MidiDevice, port: string, direction: string) {
+		this.sendMessage(
+			JSON.stringify({
+				command: "associate_midi_port",
+				device: device.id,
+				port,
+				direction,
+			}),
+		);
+	}
 }
 
 let websocket: TrevorWebSocket | null = null;

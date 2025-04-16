@@ -148,14 +148,14 @@ input[type="text"]:disabled {
 }
 
 .middle-panel {
-  flex: 1; /* 50% of the remaining space */
+  flex: 1;
   background-color: #e0e0e0;
   border-bottom: 2px solid #808080;
   box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
 }
 
 .bottom-panel {
-  flex: 1; /* 50% of the vertical space */
+  flex: 1;
   display: flex;
   background-color: #e0e0e0;
   box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
@@ -173,7 +173,7 @@ input[type="text"]:disabled {
 }
 
 .instance-creation-top-panel {
-  flex: 1; /* 50% of the vertical space */
+  /* flex: 1;  */
   display: flex;
   background-color: #e0e0e0;
   border-bottom: 2px solid #808080;
