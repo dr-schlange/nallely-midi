@@ -80,8 +80,8 @@ class TrevorBus(VirtualDevice):
         params = message
         res = getattr(self, cmd)(**params)
         if res:
-            print("Send details")
-            client.send(json.dumps(res))
+            for client in self.connected["trevor"]:
+                client.send(json.dumps(res))
 
     def create_device(self, name):
         cls = next((cls for cls in midi_device_classes if cls.__name__ == name), None)
@@ -161,11 +161,12 @@ class TrevorBus(VirtualDevice):
 
 
 try:
-    # nts1 = NTS1(device_name="Scarlett")
-    # mlab = Minilab(device_name="Scarlett", debug=True)
+    nts1 = NTS1(device_name="Scarlett")
+    mlab = Minilab(device_name="Scarlett", debug=True)
 
-    # # nts1 = NTS1()
-    # # mlab = Minilab(debug=True)
+    # nts1 = NTS1()
+    # mlab = Minilab(debug=True)
+    # minilogue = Minilogue(device_name="Scarlett")
 
     # nts1.filter.cutoff = mlab.set3.b9.scale(10, 127)
     # nts1.filter.resonance = mlab.set3.b9.scale(127, 5)
@@ -178,7 +179,8 @@ try:
     # # # nts1.ocs.alt = mlab.set1.b2
     # # nts1.ocs.lfo_depth = mlab.set1.b4
 
-    # # nts1.keys.notes = mlab.keys[:]
+    # nts1.keys.notes = mlab.keys[:]
+    # minilogue.keys.notes = mlab.keys[:]
     # nts1.keys.notes = mlab.pads[37:]
 
     # nts1.ocs.lfo_rate = mlab.pads[36].velocity_hold.scale(0, 127)

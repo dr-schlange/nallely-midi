@@ -1,8 +1,8 @@
-import { MidiDevice, MidiParameter } from "./model";
+import type { MidiDevice, MidiParameter } from "./model";
 import { store } from "./store";
 import { setFullState } from "./store/trevorSlice";
 
-const WEBSOCKET_URL = "ws://localhost:6788/trevor";
+const WEBSOCKET_URL = `ws://${window.location.hostname}:6788/trevor`;
 
 class TrevorWebSocket {
 	private socket: WebSocket | null = null;
