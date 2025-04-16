@@ -55,7 +55,7 @@ export const drawConnection = (
 	svg: SVGSVGElement,
 	fromElement: Element | null,
 	toElement: Element | null,
-	selected: boolean,
+	selected = false,
 	clickHandler?: (event: MouseEvent) => void,
 ) => {
 	if (fromElement && toElement) {

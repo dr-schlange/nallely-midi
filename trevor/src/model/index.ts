@@ -16,6 +16,10 @@ export interface MidiDevice {
 		// [key: string]: Record<string, MidiConfigValue>;
 		[key: string]: Record<string, number>;
 	};
+	ports: {
+		input: string | null;
+		output: string | null;
+	};
 }
 
 // export interface MidiConfigValue {
