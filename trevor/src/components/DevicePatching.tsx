@@ -153,8 +153,22 @@ const DevicePatching = () => {
 			return (
 				<input
 					type="text"
-					value={device.config[parameter.name].toString() ?? ""}
+					value={currentValue}
 					onChange={(e) => {
+						// const newVal = e.target.value;
+						// trevorSocket?.setVirtualValue(device, parameter, newVal);
+						const val = e.target.value;
+
+						// Store user-typed value temporarily
+						setTempValues((prev) => ({
+							...prev,
+							[device.id]: {
+								...prev[device.id],
+								[parameter.name]: val, // Store the raw string input
+							},
+						}));
+					}}
+					onBlur={(e) => {
 						const newVal = e.target.value;
 						trevorSocket?.setVirtualValue(device, parameter, newVal);
 					}}

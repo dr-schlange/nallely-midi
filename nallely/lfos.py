@@ -68,7 +68,6 @@ class LFO(TimeBasedDevice):
         #     return randint(self.min_value, self.max_value)
         else:
             raise ValueError(f"Unsupported waveform type: {waveform}")
-        print("GENE", result)
         return int(result) if self.as_int else result
 
     @property
