@@ -5,6 +5,7 @@ const initialState: NallelyState = {
 	input_ports: [],
 	output_ports: [],
 	midi_devices: [],
+	virtual_devices: [],
 	connections: [],
 	classes: {
 		virtual: [],
@@ -20,6 +21,7 @@ const trevorSlice = createSlice({
 			state.input_ports = action.payload.input_ports;
 			state.output_ports = action.payload.output_ports;
 			state.midi_devices = action.payload.midi_devices;
+			state.virtual_devices = action.payload.virtual_devices;
 			state.connections = action.payload.connections;
 			state.classes = {
 				virtual: action.payload.classes.virtual,

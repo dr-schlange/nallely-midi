@@ -26,7 +26,7 @@ html, body, #root {
 }
 
 body {
-  font-family: 'Amiga Forever', inherit;
+  font-family: 'Amiga Forever', system-ui, Avenir, Helvetica, Arial, sans-serif;
   display: flex;
   flex-direction: column;
   background-color: #c0c0c0; /* Amiga Workbench background */
@@ -48,7 +48,7 @@ h1 {
 }
 
 button, input, textarea, select, checkbox {
-  font-family: 'Amiga Forever', inherit;
+  font-family: 'Amiga Forever', system-ui, Avenir, Helvetica, Arial, sans-serif;
   background-color: #d0d0d0; /* Amiga-style button background */
   border: 2px solid #808080; /* Amiga-style border */
   color: #000000;
@@ -879,4 +879,34 @@ input[type="text"]:disabled {
   button {
     background-color: #d0d0d0;
   }
+}
+
+.amiga-button {
+  font-family: 'Amiga Forever', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  background-color: #d0d0d0;
+  border: 2px solid #808080;
+  color: #000000;
+  font-size: 16px;
+  font-weight: bold;
+  padding: 5px 5px;
+  cursor: pointer;
+  box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
+  /* width: 40px; */
+  /* height: 40px; */
+}
+
+.amiga-button:hover {
+  background-color: #e0e0e0;
+}
+
+.play-pause-button {
+  width: 24px
+}
+
+
+.center-button {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }

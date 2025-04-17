@@ -21,10 +21,10 @@ from .modules import (
     Scaler,
 )
 
-virtual_devices = []
-connected_devices = []
-midi_device_classes = []
-virtual_device_classes = []
+virtual_devices: list["VirtualDevice"] = []
+connected_devices: list["MidiDevice"] = []
+midi_device_classes: list[Type] = []
+virtual_device_classes: list[Type] = []
 
 
 def no_registration(cls):
@@ -65,22 +65,6 @@ def get_virtual_devices():
 
 def all_devices():
     return get_connected_devices() + get_virtual_devices()
-
-
-def unbind_all(target=None, param=None):
-    for device in list(all_devices()):
-        if target == None:
-            device.unbind_all()
-        elif param == None:
-            device.unbind(target)
-        else:
-            if isinstance(param, Int):
-                param = param.parameter
-                device.unbind(target, param, type=param.type, cc_note=param.cc_note)
-            elif isinstance(param, ModuleParameter):
-                device.unbind(target, param, type=param.type, cc_note=param.cc_note)
-            else:
-                device.unbind(target, param)
 
 
 class ThreadContext(dict):
@@ -251,7 +235,7 @@ class VirtualParameter:
 class VirtualDevice(threading.Thread):
     variable_refresh: bool = True
 
-    def __init__(self, target_cycle_time: float = 0.005):
+    def __init__(self, target_cycle_time: float = 0.005, autoconnect: bool = False):
         super().__init__(daemon=True)
         virtual_devices.append(self)
         self.device = self  # to be polymorphic with Int
@@ -266,6 +250,8 @@ class VirtualDevice(threading.Thread):
         self.pause_event.set()
         self.target_cycle_time = target_cycle_time
         self.ready_event = threading.Event()
+        if autoconnect:
+            self.start()
 
     def __init_subclass__(cls) -> None:
         virtual_device_classes.append(cls)
@@ -381,10 +367,6 @@ class VirtualDevice(threading.Thread):
     def bind(
         self, callback, to, param, stream=False, append=True, transformer_chain=None
     ):
-        # if to:
-        #     scheduler.connections.append((self, to))
-        if not append:
-            unbind_all(to, param)
         if stream:
             self.stream_callbacks.append((callback, transformer_chain))
         else:
@@ -484,6 +466,27 @@ class VirtualDevice(threading.Thread):
                 return lambda value, ctx: to_device.set_parameter(to_param.name, value)
         else:
             return lambda value, ctx: setattr(to_device, to_param.name, value)
+
+    def to_dict(self):
+        virtual_parameters = {
+            k: p
+            for k, p in self.__class__.__dict__.items()
+            if isinstance(p, VirtualParameter)
+        }
+        print({p.name: getattr(self, p.name) for p in virtual_parameters.values()})
+        return {
+            "id": id(self),
+            "meta": {
+                "name": self.__class__.__name__,
+                "parameters": [
+                    {**asdict(p), "cv_name": n} for n, p in virtual_parameters.items()
+                ],
+            },
+            "paused": self.paused,
+            "config": {
+                p.name: getattr(self, p.name) for p in virtual_parameters.values()
+            },
+        }
 
 
 @dataclass
@@ -698,10 +701,6 @@ class MidiDevice:
         append=True,
         transformer_chain: Callable | None = None,
     ):
-        # if to:
-        #     scheduler.connections.append((self, to))
-        if not append:
-            unbind_all(to, param)
         self.input_callbacks[(type, cc_note)].append((callback, transformer_chain))
         self.callbacks_registry.append(
             CallbackRegistryEntry(

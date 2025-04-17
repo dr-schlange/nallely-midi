@@ -19,6 +19,7 @@ class LFO(TimeBasedDevice):
         max_value: int | float | Decimal = 128,
         speed: int | float = 10.0,
         sampling_rate: int | Literal["auto"] = "auto",
+        **kwargs,
     ):
         self.as_int = isinstance(min_value, int) and isinstance(max_value, int)
         self.waveform = waveform
@@ -28,7 +29,7 @@ class LFO(TimeBasedDevice):
         self.max_value: Decimal | int = (
             Decimal(max_value) if isinstance(max_value, float) else max_value
         )
-        super().__init__(speed=speed, sampling_rate=sampling_rate)
+        super().__init__(speed=speed, sampling_rate=sampling_rate, **kwargs)
 
     def generate_waveform(self, t):
         waveform = self.waveform
@@ -67,6 +68,7 @@ class LFO(TimeBasedDevice):
         #     return randint(self.min_value, self.max_value)
         else:
             raise ValueError(f"Unsupported waveform type: {waveform}")
+        print("GENE", result)
         return int(result) if self.as_int else result
 
     @property
@@ -206,10 +208,10 @@ class ConstLFO(LFO):
 
 @no_registration
 class Cycler(LFO):
-    def __init__(self, values: list[Any], speed=10, waveform="triangle"):
+    def __init__(self, values: list[Any], speed=10, waveform="triangle", **kwargs):
         self.values = values
         super().__init__(
-            waveform=waveform, speed=speed, min_value=0, max_value=len(values)
+            waveform=waveform, speed=speed, min_value=0, max_value=len(values), **kwargs
         )
 
     def generate_value(self, t) -> Any:

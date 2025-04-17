@@ -1,4 +1,9 @@
-import type { MidiDevice, MidiParameter } from "./model";
+import type {
+	MidiDevice,
+	MidiParameter,
+	VirtualDevice,
+	VirtualParameter,
+} from "./model";
 import { store } from "./store";
 import { setFullState } from "./store/trevorSlice";
 
@@ -101,6 +106,39 @@ class TrevorWebSocket {
 			}),
 		);
 	}
+
+	public toggle_device(device: VirtualDevice) {
+		if (device.paused) {
+			this.sendMessage(
+				JSON.stringify({
+					command: "resume_device",
+					device_id: device.id,
+				}),
+			);
+		} else {
+			this.sendMessage(
+				JSON.stringify({
+					command: "pause_device",
+					device_id: device.id,
+				}),
+			);
+		}
+	}
+
+	public setVirtualValue(
+		device: VirtualDevice,
+		parameter: VirtualParameter,
+		value: number | string | boolean,
+	) {
+		this.sendMessage(
+			JSON.stringify({
+				command: "set_virtual_value",
+				device_id: device.id,
+				parameter: parameter.name,
+				value,
+			}),
+		);
+	}
 }
 
 let websocket: TrevorWebSocket | null = null;
@@ -109,6 +147,7 @@ export const connectWebSocket = () => {
 	if (websocket) {
 		return;
 	}
+	console.log("Create new trevor");
 	websocket = new TrevorWebSocket(WEBSOCKET_URL);
 };
 

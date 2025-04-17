@@ -2,8 +2,30 @@ export interface NallelyState {
 	input_ports: string[];
 	output_ports: string[];
 	midi_devices: MidiDevice[];
+	virtual_devices: VirtualDevice[];
 	connections: MidiConnection[];
 	classes: NallelyClasses;
+}
+
+export interface VirtualDevice {
+	id: number;
+	meta: {
+		name: string;
+		parameters: VirtualParameter[];
+	};
+	config: {
+		[key: string]: string | number | boolean;
+	};
+	paused: boolean;
+}
+
+export interface VirtualParameter {
+	consummer: boolean;
+	description: string | null;
+	name: string;
+	cv_name: string;
+	range: [number, number];
+	stream: boolean;
 }
 
 export interface MidiDevice {

@@ -9,6 +9,7 @@ from nallely.devices import NTS1, Minilogue, MPD32, minilogue, mpd32
 import nallely
 from nallely.core import (
     CallbackRegistryEntry,
+    MidiDevice,
     ThreadContext,
     connected_devices,
     virtual_devices,
@@ -85,14 +86,16 @@ class TrevorBus(VirtualDevice):
                 client.send(json.dumps(res))
 
     def create_device(self, name):
+        autoconnect = False
         cls = next((cls for cls in midi_device_classes if cls.__name__ == name), None)
         if cls is None:
             cls = next((cls for cls in virtual_device_classes if cls.__name__ == name))
-        cls(autoconnect=False)
+            autoconnect = True  # we start the virtual device
+        cls(autoconnect=autoconnect)
         return self.full_state()
 
     @staticmethod
-    def get_device_instance(device_id):
+    def get_device_instance(device_id) -> VirtualDevice | MidiDevice:
         return next(
             (device for device in all_devices() if id(device) == int(device_id))
         )
@@ -111,19 +114,19 @@ class TrevorBus(VirtualDevice):
         return self.full_state()
 
     def associate_midi_port(self, device, port, direction):
-        device = self.get_device_instance(device)
+        dev: MidiDevice = self.get_device_instance(device)  # type:ignore
         if direction == "output":
-            if device.outport_name == port:
-                device.close_out()
+            if dev.outport_name == port:
+                dev.close_out()
                 return self.full_state()
-            device.outport_name = port
-            device.connect()
+            dev.outport_name = port
+            dev.connect()
         else:
-            if device.inport_name == port:
-                device.close_in()
+            if dev.inport_name == port:
+                dev.close_in()
                 return self.full_state()
-            device.inport_name = port
-            device.listen()
+            dev.inport_name = port
+            dev.listen()
         return self.full_state()
 
     def save_all(self, name):
@@ -134,7 +137,25 @@ class TrevorBus(VirtualDevice):
         for device in d["midi_devices"]:
             device["class"] = device["meta"]["name"]
             del device["meta"]
+        for device in d["virtual_devices"]:
+            device["class"] = device["meta"]["name"]
+            del device["meta"]
         Path(f"{name}.nallely").write_text(json.dumps(d, indent=2))
+
+    def resume_device(self, device_id):
+        device: VirtualDevice = self.get_device_instance(device_id)  # type: ignore
+        device.resume()
+        return self.full_state()
+
+    def pause_device(self, device_id):
+        device: VirtualDevice = self.get_device_instance(device_id)  # type: ignore
+        device.pause()
+        return self.full_state()
+
+    def set_virtual_value(self, device_id, parameter, value):
+        device: VirtualDevice = self.get_device_instance(device_id)  # type: ignore
+        device.process_input(parameter, value)
+        return self.full_state()
 
     def full_state(self):
         connections = []
@@ -182,71 +203,25 @@ class TrevorBus(VirtualDevice):
                 name for name in mido.get_output_names() if "RtMidi" not in name
             ],
             "midi_devices": [device.to_dict() for device in connected_devices],
+            "virtual_devices": [
+                device.to_dict()
+                for device in virtual_devices
+                if device.__class__ in virtual_device_classes
+            ],
             "connections": connections,
             "classes": {
                 "virtual": [cls.__name__ for cls in virtual_device_classes],
                 "midi": [cls.__name__ for cls in midi_device_classes],
             },
         }
-        for device in virtual_devices:
-            print(id(device), device)
-
         from pprint import pprint
 
-        # pprint(d["input_ports"])
+        pprint(d["virtual_devices"])
 
         return d
 
 
 try:
-    # nts1 = NTS1(device_name="Scarlett")
-    # mlab = Minilab(device_name="Scarlett", debug=True)
-
-    # nts1 = NTS1()
-    # mlab = Minilab(debug=True)
-    # minilogue = Minilogue(device_name="Scarlett")
-
-    # nts1.filter.cutoff = mlab.set3.b9.scale(10, 127)
-    # nts1.filter.resonance = mlab.set3.b9.scale(127, 5)
-    # nts1.ocs.lfo_depth = mlab.set3.b10
-    # # nts1.filter.resonance = mlab.set3.b10
-    # # nts1.filter.cutoff = mlab.set3.b11.scale(10, 127)
-    # # nts1.filter.resonance = mlab.set3.b11
-    # # nts1.ocs.type = mlab.set1.b1
-    # # nts1.ocs.shape = mlab.set1.b2
-    # # # nts1.ocs.alt = mlab.set1.b2
-    # # nts1.ocs.lfo_depth = mlab.set1.b4
-
-    # nts1.keys.notes = mlab.keys[:]
-    # minilogue.keys.notes = mlab.keys[:]
-    # nts1.keys.notes = mlab.pads[37:]
-
-    # nts1.ocs.lfo_rate = mlab.pads[36].velocity_hold.scale(0, 127)
-    # # nts1.ocs.lfo_depth = mlab.pads.p9.scale(10, 100)
-
-    # # nts1.ocs.type = mlab.keys.mod
-    # nts1.arp.length = mlab.set1.b1
-    # # nts1.arp.intervals = mlab.pads[37].scale((127//6) * 1)
-    # # nts1.arp.intervals = mlab.pads[38].scale((127//6) * 2)
-    # # nts1.arp.intervals = mlab.pads[39].scale((127//6) * 3)
-    # # nts1.arp.intervals = mlab.pads[40].scale((127//6) * 4)
-    # # nts1.arp.intervals = mlab.pads[41].scale((127//6) * 5)
-    # # nts1.arp.intervals = mlab.pads[42].scale((127//6) * 6)
-
-    # nts1.arp.intervals = mlab.pads.p9.scale((127 // 6) * 0, (127 // 6) * 0)
-    # nts1.arp.intervals = mlab.pads.p10.scale((127 // 6) * 1, (127 // 6) * 1)
-    # nts1.arp.intervals = mlab.pads.p11.scale((127 // 6) * 2, (127 // 6) * 2)
-    # nts1.arp.intervals = mlab.pads.p12.scale((127 // 6) * 3, (127 // 6) * 3)
-    # nts1.arp.intervals = mlab.pads.p13.scale((127 // 6) * 4, (127 // 6) * 4)
-    # nts1.arp.intervals = mlab.pads.p14.scale((127 // 6) * 5, (127 // 6) * 5)
-
-    # mpd32 = MPD32()
-    # minilogue = Minilogue("Scarlett")
-    # nts1.filter.cutoff = minilogue.delay.feedback
-    # minilogue.filter.cutoff = minilogue.delay.feedback
-    # minilogue.delay.time = minilogue.delay.feedback
-    # minilogue.filter.eg_intensity = minilogue.delay.feedback
-
     ws = TrevorBus()
     ws.start()
     # ws.connected_devices()
