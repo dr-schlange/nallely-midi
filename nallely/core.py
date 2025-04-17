@@ -7,7 +7,7 @@ from dataclasses import InitVar, asdict, dataclass, field
 from decimal import Decimal
 from pathlib import Path
 from queue import Empty, Full, Queue
-from typing import Any, Callable, Counter, Literal, Type
+from typing import Any, Callable, Counter, Iterable, Literal, Type
 
 import mido
 
@@ -132,6 +132,7 @@ class VirtualParameter:
     consummer: bool = False
     description: str | None = None
     range: tuple[int | float | None, int | float | None] = (None, None)
+    accepted_values: Iterable[Any] = ()
 
     def __get__(self, device: "VirtualDevice", owner=None):
         return ParameterInstance(parameter=self, device=device)

@@ -107,7 +107,22 @@ const DevicePatching = () => {
 	) => {
 		const tempDevice = tempValues[device.id] || {};
 		const tempValue = tempDevice[parameter.name];
-
+		if (parameter.accepted_values.length > 0) {
+			return (
+				<select
+					value={value.toString()}
+					onChange={(e) =>
+						trevorSocket?.setVirtualValue(device, parameter, e.target.value)
+					}
+				>
+					{parameter.accepted_values.map((v) => (
+						<option key={v.toString()} value={v.toString()}>
+							{v.toString()}
+						</option>
+					))}
+				</select>
+			);
+		}
 		const currentValue =
 			tempValue ?? device.config[parameter.name]?.toString() ?? "";
 		if (typeof value === "number") {

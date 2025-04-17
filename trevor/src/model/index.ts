@@ -26,6 +26,8 @@ export interface VirtualParameter {
 	cv_name: string;
 	range: [number, number];
 	stream: boolean;
+	// biome-ignore lint/suspicious/noExplicitAny: this might be any value really
+	accepted_values: any[];
 }
 
 export interface MidiDevice {

@@ -7,7 +7,17 @@ from .core import TimeBasedDevice, VirtualParameter, no_registration
 
 class LFO(TimeBasedDevice):
     speed_cv = VirtualParameter("speed", range=(0, None))
-    waveform_cv = VirtualParameter("waveform")
+    waveform_cv = VirtualParameter(
+        "waveform",
+        accepted_values=[
+            "sine",
+            "invert_sine",
+            "triangle",
+            "square",
+            "sawtooth",
+            "invert_sawtooth",
+        ],
+    )
     min_value_cv = VirtualParameter("min_value")
     max_value_cv = VirtualParameter("max_value")
     sampling_rate_cv = VirtualParameter("sampling_rate", range=(0, None))
