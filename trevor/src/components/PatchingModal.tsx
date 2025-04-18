@@ -14,6 +14,7 @@ import {
 	connectionsOfInterest,
 	drawConnection,
 	findConnectorElement,
+	isVirtualParameter,
 } from "../utils/svgUtils";
 import { ScalerForm } from "./ScalerForm";
 import { useTrevorWebSocket } from "../websocket";
@@ -23,7 +24,10 @@ const parameterUUID = (
 	parameter: MidiParameter | VirtualParameter,
 ) => {
 	const id = typeof device === "object" ? device.id : device;
-	return `${id}::${parameter.section_name}::${parameter.name}`;
+	const parameterName = isVirtualParameter(parameter)
+		? parameter.cv_name
+		: parameter.name;
+	return `${id}::${parameter.section_name}::${parameterName}`;
 };
 
 const PatchingModal = ({

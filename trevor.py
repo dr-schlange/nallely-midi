@@ -106,8 +106,15 @@ class TrevorBus(VirtualDevice):
         src_device = self.get_device_instance(from_device)
         dst_device = self.get_device_instance(to_device)
         dest = getattr(dst_device, to_section)
-        src = getattr(getattr(src_device, from_section), from_parameter)
+        if isinstance(src_device, VirtualDevice) and from_parameter in [
+            "output",
+            "output_cv",
+        ]:
+            src = getattr(src_device, from_section)
+        else:
+            src = getattr(getattr(src_device, from_section), from_parameter)
         if unbind:
+            print("unbind", from_parameter, "from", to_parameter)
             getattr(dest, to_parameter).__isub__(src)
             return self.full_state()
         setattr(dest, to_parameter, src)
@@ -243,7 +250,7 @@ class TrevorBus(VirtualDevice):
         }
         from pprint import pprint
 
-        pprint(d["virtual_devices"])
+        # pprint(d["virtual_devices"])
 
         return d
 

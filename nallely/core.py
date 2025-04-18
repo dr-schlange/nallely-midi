@@ -93,7 +93,6 @@ class ThreadContext(dict):
         self["parent"] = value
 
 
-@dataclass
 class CallbackRegistryEntry:
     def __init__(
         self,

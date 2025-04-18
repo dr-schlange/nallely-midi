@@ -1,4 +1,10 @@
-import type { MidiConnection, MidiParameter, VirtualParameter } from "../model";
+import type {
+	MidiConnection,
+	MidiDevice,
+	MidiParameter,
+	VirtualDevice,
+	VirtualParameter,
+} from "../model";
 
 export const buildParameterId = (
 	device: number,
@@ -13,6 +19,18 @@ export const buildParameterId = (
 
 export const buildSectionId = (device: number, section: string) => {
 	return `${device}-${section}`;
+};
+
+export const isVirtualDevice = (
+	device: VirtualDevice | MidiDevice,
+): device is VirtualDevice => {
+	return (device as VirtualDevice).paused !== undefined;
+};
+
+export const isVirtualParameter = (
+	parameter: MidiParameter | VirtualParameter,
+): parameter is VirtualParameter => {
+	return parameter.section_name === "__virtual__";
 };
 
 export const connectionsOfInterest = (

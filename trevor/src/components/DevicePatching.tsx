@@ -12,17 +12,13 @@ import type {
 	VirtualDeviceWithSection,
 	VirtualParameter,
 } from "../model";
-import { buildSectionId, drawConnection } from "../utils/svgUtils";
+import { buildSectionId, drawConnection, isVirtualDevice } from "../utils/svgUtils";
 import { AboutModal } from "./AboutModal";
 import { SaveModal } from "./SaveModal";
 import { RackRowVirtual } from "./RackRowVirtual";
 import { useTrevorWebSocket } from "../websocket";
 
-function isVirtualDevice(
-	device: VirtualDevice | MidiDevice,
-): device is VirtualDevice {
-	return (device as VirtualDevice).paused !== undefined;
-}
+
 
 const DevicePatching = () => {
 	const mainSectionRef = useRef(null);
@@ -280,12 +276,6 @@ const DevicePatching = () => {
 		}
 		if (selectedSections.length < 2) {
 			const virtualSection = {
-				// parameters: [
-				// 	{ name: "output", section_name: "__virtual__" },
-				// 	...device.meta.parameters.map((e) => {
-				// 		return { ...e, name: e.cv_name, section_name: "__virtual__" };
-				// 	}),
-				// ],
 				parameters: device.meta.parameters.map((e) => {
 					return { ...e, name: e.cv_name };
 				}),
