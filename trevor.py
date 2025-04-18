@@ -31,19 +31,7 @@ class StateEncoder(json.JSONEncoder):
         if isinstance(o, Decimal):
             return float(str(o))
         if isinstance(o, ParameterInstance):
-            cv_name = next(
-                (
-                    k
-                    for k, v in o.device.__class__.__dict__.items()
-                    if isinstance(v, VirtualParameter) and v.name == o.parameter.name
-                )
-            )
-            to_param = {
-                **asdict(o.parameter),
-                "cv_name": cv_name,
-                "module_state_name": "__virtual__",
-            }
-            return to_param
+            return asdict(o.parameter)
         return super().default(o)
 
 
@@ -117,17 +105,8 @@ class TrevorBus(VirtualDevice):
         to_device, to_section, to_parameter = to_parameter.split("::")
         src_device = self.get_device_instance(from_device)
         dst_device = self.get_device_instance(to_device)
-        if to_section == "__virtual__":
-            dest = dst_device
-        else:
-            dest = getattr(dst_device, to_section)
-        if from_section == "__virtual__":
-            if from_parameter == "output":
-                src = src_device
-            else:
-                src = getattr(src_device, from_parameter)
-        else:
-            src = getattr(getattr(src_device, from_section), from_parameter)
+        dest = getattr(dst_device, to_section)
+        src = getattr(getattr(src_device, from_section), from_parameter)
         if unbind:
             getattr(dest, to_parameter).__isub__(src)
             return self.full_state()
@@ -208,22 +187,6 @@ class TrevorBus(VirtualDevice):
                 else:
                     cc_note = entry.cc_note
                     cc_type = entry.type
-                if isinstance(entry.parameter, VirtualParameter):
-                    cv_name = next(
-                        (
-                            k
-                            for k, v in entry.target.__class__.__dict__.items()
-                            if isinstance(v, VirtualParameter)
-                            and v.name == entry.parameter.name
-                        )
-                    )
-                    to_param = {
-                        **asdict(entry.parameter),
-                        "cv_name": cv_name,
-                        "module_state_name": "__virtual__",
-                    }
-                else:
-                    to_param = asdict(entry.parameter)
                 connections.append(
                     {
                         "src": {
@@ -234,7 +197,7 @@ class TrevorBus(VirtualDevice):
                         },
                         "dest": {
                             "device": id(entry.target),
-                            "parameter": to_param,
+                            "parameter": asdict(entry.parameter),
                             "explicit": entry.cc_note,
                         },
                     }
@@ -247,12 +210,7 @@ class TrevorBus(VirtualDevice):
                     {
                         "src": {
                             "device": id(device),
-                            "parameter": {
-                                "name": "output",
-                                "cv_name": "output",
-                                "description": "Virtual device general output",
-                                "module_state_name": "__virtual__",
-                            },
+                            "parameter": asdict(VirtualDevice.output_cv),
                             "explicit": entry.cc_note,
                             "chain": scaler_as_dict(entry.chain),
                         },
@@ -285,7 +243,7 @@ class TrevorBus(VirtualDevice):
         }
         from pprint import pprint
 
-        pprint(d["connections"])
+        pprint(d["virtual_devices"])
 
         return d
 
@@ -294,7 +252,7 @@ try:
     ws = TrevorBus()
     ws.start()
 
-    # lfo = nallely.LFO(waveform="sine")
+    lfo = nallely.LFO(waveform="sine")
     # lfo.start()
 
     # nts1 = NTS1(device_name="Scarlett")

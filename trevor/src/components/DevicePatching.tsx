@@ -253,7 +253,7 @@ const DevicePatching = () => {
 							style={{ marginTop: 0, marginBottom: 0, marginLeft: "10px" }}
 						>
 							{""}
-							{param.name}: {device.config[param.module_state_name][param.name]}
+							{param.name}: {device.config[param.section_name][param.name]}
 						</p>
 					))}
 				</>,
@@ -280,12 +280,15 @@ const DevicePatching = () => {
 		}
 		if (selectedSections.length < 2) {
 			const virtualSection = {
-				parameters: [
-					{ name: "output", module_state_name: "__virtual__" },
-					...device.meta.parameters.map((e) => {
-						return { ...e, name: e.cv_name, module_state_name: "__virtual__" };
-					}),
-				],
+				// parameters: [
+				// 	{ name: "output", section_name: "__virtual__" },
+				// 	...device.meta.parameters.map((e) => {
+				// 		return { ...e, name: e.cv_name, section_name: "__virtual__" };
+				// 	}),
+				// ],
+				parameters: device.meta.parameters.map((e) => {
+					return { ...e, name: e.cv_name };
+				}),
 			} as VirtualDeviceSection;
 			const newSelection = [
 				...selectedSections,
@@ -366,9 +369,9 @@ const DevicePatching = () => {
 		for (const connection of allConnections) {
 			const srcId = buildSectionId(
 				connection.src.device,
-				connection.src.parameter.module_state_name,
+				connection.src.parameter.section_name,
 			);
-			const dstSection = connection.dest.parameter.module_state_name;
+			const dstSection = connection.dest.parameter.section_name;
 			const destId = buildSectionId(
 				connection.dest.device,
 				dstSection === "__virtual__"
@@ -432,8 +435,7 @@ const DevicePatching = () => {
 					onSectionClick={handleSectionClick}
 					onNonSectionClick={handleNonSectionClick}
 					selectedSections={selectedSections.map(
-						(d) =>
-							`${d.device.id}-${d.section.parameters[0]?.module_state_name}`,
+						(d) => `${d.device.id}-${d.section.parameters[0]?.section_name}`,
 					)}
 				/>
 				<RackRowVirtual
@@ -444,8 +446,7 @@ const DevicePatching = () => {
 					onParameterClick={handleParameterClick}
 					onNonSectionClick={handleNonSectionClick}
 					selectedSections={selectedSections.map(
-						(d) =>
-							`${d.device.id}-${d.section.parameters[0]?.module_state_name}`,
+						(d) => `${d.device.id}-${d.section.parameters[0]?.section_name}`,
 					)}
 				/>
 				<svg className="device-patching-svg" ref={svgRef} />

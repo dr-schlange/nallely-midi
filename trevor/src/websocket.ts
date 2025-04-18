@@ -80,8 +80,8 @@ class TrevorWebSocket {
 		this.sendMessage(
 			JSON.stringify({
 				command: "associate_parameters",
-				from_parameter: `${fromDevice.id}::${fromParameter.module_state_name}::${fromParameter.name}`,
-				to_parameter: `${toDevice.id}::${toParameter.module_state_name}::${toParameter.name}`,
+				from_parameter: `${fromDevice.id}::${fromParameter.section_name}::${fromParameter.name}`,
+				to_parameter: `${toDevice.id}::${toParameter.section_name}::${toParameter.name}`,
 				unbind,
 			}),
 		);

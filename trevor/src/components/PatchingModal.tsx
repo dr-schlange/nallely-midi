@@ -23,7 +23,7 @@ const parameterUUID = (
 	parameter: MidiParameter | VirtualParameter,
 ) => {
 	const id = typeof device === "object" ? device.id : device;
-	return `${id}::${parameter.module_state_name}::${parameter.name}`;
+	return `${id}::${parameter.section_name}::${parameter.name}`;
 };
 
 const PatchingModal = ({
@@ -50,12 +50,12 @@ const PatchingModal = ({
 			connectionsOfInterest(
 				f,
 				firstSection?.device.id,
-				firstSection?.section.parameters[0]?.module_state_name,
+				firstSection?.section.parameters[0]?.section_name,
 			) ||
 			connectionsOfInterest(
 				f,
 				secondSection?.device.id,
-				secondSection?.section.parameters[0]?.module_state_name,
+				secondSection?.section.parameters[0]?.section_name,
 			),
 	);
 
@@ -251,11 +251,11 @@ const PatchingModal = ({
 						<h3>Connections</h3>
 						<ul className="connections-list">
 							{connections.map((connection) => {
-								const srcSection = connection.src.parameter.module_state_name;
-								const dstSection = connection.dest.parameter.module_state_name;
+								const srcSection = connection.src.parameter.section_name;
+								const dstSection = connection.dest.parameter.section_name;
 								return (
 									<li
-										key={`${connection.src.parameter.module_state_name}-${connection.src.parameter.name}-${connection.dest.parameter.module_state_name}-${connection.dest.parameter.name}`}
+										key={`${connection.src.parameter.section_name}-${connection.src.parameter.name}-${connection.dest.parameter.section_name}-${connection.dest.parameter.name}`}
 										onClick={() => handleConnectionClick(connection)}
 										onKeyDown={(e) => {
 											if (e.key === "Enter" || e.key === " ") {

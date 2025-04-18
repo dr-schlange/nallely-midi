@@ -28,7 +28,7 @@ export interface VirtualParameter {
 	stream: boolean;
 	// biome-ignore lint/suspicious/noExplicitAny: this might be any value really
 	accepted_values: any[];
-	module_state_name: "__virtual__";
+	section_name: string;
 }
 
 export interface MidiDevice {
@@ -48,7 +48,7 @@ export interface MidiDevice {
 }
 
 // export interface MidiConfigValue {
-// 	module_state_name: string;
+// 	section_name: string;
 // 	value: number;
 // 	connections: MidiConnectionEnd[];
 // }
@@ -76,7 +76,7 @@ export interface MidiParameter {
 	channel: number;
 	description: string | null;
 	init_value: number;
-	module_state_name: string;
+	section_name: string;
 	name: string;
 	range: [number, number];
 	stream: boolean;

@@ -67,6 +67,16 @@ def all_devices():
     return get_connected_devices() + get_virtual_devices()
 
 
+def get_all_virtual_parameters(cls):
+    out = {}
+    for base in reversed(cls.__mro__):
+        for k, v in base.__dict__.items():
+            # if not k.startswith("__") and not callable(v):
+            if isinstance(v, VirtualParameter):
+                out[k] = v
+    return out
+
+
 class ThreadContext(dict):
     def __getattr__(self, key):
         return self[key]
@@ -133,8 +143,15 @@ class VirtualParameter:
     description: str | None = None
     range: tuple[int | float | None, int | float | None] = (None, None)
     accepted_values: Iterable[Any] = ()
+    cv_name: str | None = None
+    section_name: str = "__virtual__"
+
+    def __set_name__(self, owner, name):
+        self.cv_name = name
 
     def __get__(self, device: "VirtualDevice", owner=None):
+        if device is None:
+            return self
         return ParameterInstance(parameter=self, device=device)
 
     def __set__(self, device: "VirtualDevice", value, append=True, chain=None):
@@ -235,11 +252,13 @@ class VirtualParameter:
 
 class VirtualDevice(threading.Thread):
     variable_refresh: bool = True
+    output_cv = VirtualParameter(name="output")
 
     def __init__(self, target_cycle_time: float = 0.005, autoconnect: bool = False):
         super().__init__(daemon=True)
         virtual_devices.append(self)
         self.device = self  # to be polymorphic with Int
+        self.__virtual__ = self  # to have a fake section
         self.callbacks_registry: list[CallbackRegistryEntry] = []
         self.callbacks = []
         self.stream_callbacks = []
@@ -469,23 +488,18 @@ class VirtualDevice(threading.Thread):
             return lambda value, ctx: setattr(to_device, to_param.name, value)
 
     def to_dict(self):
-        virtual_parameters = {
-            k: p
-            for k, p in self.__class__.__dict__.items()
-            if isinstance(p, VirtualParameter)
-        }
-        print({p.name: getattr(self, p.name) for p in virtual_parameters.values()})
+        virtual_parameters = get_all_virtual_parameters(self.__class__)
         return {
             "id": id(self),
             "meta": {
                 "name": self.__class__.__name__,
-                "parameters": [
-                    {**asdict(p), "cv_name": n} for n, p in virtual_parameters.items()
-                ],
+                "parameters": [asdict(p) for p in virtual_parameters.values()],
             },
             "paused": self.paused,
             "config": {
-                p.name: getattr(self, p.name) for p in virtual_parameters.values()
+                p.name: getattr(self, p.name)
+                for p in virtual_parameters.values()
+                if p.name != "output"
             },
         }
 

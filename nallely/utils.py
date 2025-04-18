@@ -181,7 +181,9 @@ class WebSocketBus(VirtualDevice):
                 parameter, is_stream = parameter
             param_name = f"{name}_{parameter}"
             waiting_room = getattr(self, param_name, None)
-            vparam = VirtualParameter(f"{param_name}", consummer=True, stream=is_stream)
+            vparam = VirtualParameter(
+                f"{param_name}", consummer=True, stream=is_stream, cv_name=param_name
+            )
             virtual_parameters.append(vparam)
             setattr(self.__class__, param_name, vparam)
             if waiting_room and isinstance(waiting_room, WSWaitingRoom):

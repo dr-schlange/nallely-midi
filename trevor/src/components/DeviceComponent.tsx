@@ -70,7 +70,7 @@ const MidiDeviceComponent = ({
 					{leftSections.map((section) => {
 						const sectionId = buildSectionId(
 							device.id,
-							section.parameters[0]?.module_state_name,
+							section.parameters[0]?.section_name,
 						);
 						const paramId = classConnections ? `${sectionId}-class` : sectionId;
 						return (
@@ -100,7 +100,7 @@ const MidiDeviceComponent = ({
 					{rightSections.map((section) => {
 						const sectionId = buildSectionId(
 							device.id,
-							section.parameters[0]?.module_state_name,
+							section.parameters[0]?.section_name,
 						);
 						const paramId = classConnections ? `${sectionId}-class` : sectionId;
 						return (

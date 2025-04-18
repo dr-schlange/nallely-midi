@@ -8,7 +8,7 @@ export const buildParameterId = (
 	if (isVirtual) {
 		return `${device}-__virtual__-${(parameter as VirtualParameter).cv_name}`;
 	}
-	return `${device}-${(parameter as MidiParameter).module_state_name}-${parameter.name}`;
+	return `${device}-${(parameter as MidiParameter).section_name}-${parameter.name}`;
 };
 
 export const buildSectionId = (device: number, section: string) => {
@@ -22,9 +22,9 @@ export const connectionsOfInterest = (
 ) => {
 	return (
 		(connection.src.device === destDeviceId &&
-			connection.src.parameter.module_state_name === destParameter) ||
+			connection.src.parameter.section_name === destParameter) ||
 		(connection.dest.device === destDeviceId &&
-			connection.dest.parameter.module_state_name === destParameter)
+			connection.dest.parameter.section_name === destParameter)
 	);
 };
 

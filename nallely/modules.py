@@ -173,7 +173,7 @@ class ModuleParameter:
     cc_note: int
     channel: int = 0
     name: str = NOT_INIT
-    module_state_name: str = NOT_INIT
+    section_name: str = NOT_INIT
     stream: bool = False
     init_value: int = 0
     description: str | None = None
@@ -303,7 +303,7 @@ class ModuleParameter:
         to_module.state[self.name].update(feeder)
 
     def basic_set(self, device: MidiDevice, value):
-        getattr(device.modules, self.module_state_name).state[self.name].update(value)
+        getattr(device.modules, self.section_name).state[self.name].update(value)
 
 
 class padproperty(property):
@@ -539,12 +539,12 @@ class ModulePadsOrKeys:
     type = "note"
     channel: int = 0
     keys: dict[int, PadOrKey] = field(default_factory=dict)
-    module_state_name: str = NOT_INIT
+    section_name: str = NOT_INIT
 
     def __get__(self, instance, owner=None):
         # for i in range(127):
         #     setattr(instance.__class__, "note_"
-        return instance.state[self.module_state_name]
+        return instance.state[self.section_name]
 
     def __set__(self, instance, value, append=True):
         if isinstance(value, PadOrKey):
@@ -595,23 +595,23 @@ class Module:
         for name, value in vars(cls).items():
             if isinstance(value, ModuleParameter):
                 value.name = name
-                # value.module_state_name = cls.state_name
+                # value.section_name = cls.state_name
                 parameters.append(value)
             if isinstance(value, ModulePadsOrKeys):
                 pads = value
-                # pads.module_state_name = cls.state_name
+                # pads.section_name = cls.state_name
         cls.meta = MetaModule(cls.__name__, parameters, pads)
 
     def __post_init__(self):
         self.meta = self.__class__.meta
         for param in self.meta.parameters:
-            param.module_state_name = self.__class__.state_name
+            param.section_name = self.__class__.state_name
             self.state[param.name] = Int.create(
                 param.init_value, parameter=param, device=self.device
             )
         if self.meta.pads_or_keys:
-            self.meta.pads_or_keys.module_state_name = self.__class__.state_name
-            state_name = self.meta.pads_or_keys.module_state_name
+            self.meta.pads_or_keys.section_name = self.__class__.state_name
+            state_name = self.meta.pads_or_keys.section_name
             self.state[state_name] = self.device  # type: ignore (special key)
         self._keys_notes = {}
 
@@ -683,7 +683,7 @@ class DeviceState:
                 module_state[parameter.name] = value
                 if with_meta:
                     module_state[parameter.name] = {
-                        "module_state_name": parameter.module_state_name,
+                        "section_name": parameter.section_name,
                         "value": value,
                     }
             if not module_state:
@@ -700,7 +700,7 @@ class DeviceState:
         for name, module in self.modules.items():
             module_state = {
                 "name": name,
-                "module_state_name": module.state_name,
+                "section_name": module.state_name,
                 "parameters": [
                     asdict(parameter) for parameter in module.meta.parameters
                 ],
