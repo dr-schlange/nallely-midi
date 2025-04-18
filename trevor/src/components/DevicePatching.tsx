@@ -8,6 +8,8 @@ import type {
 	MidiDeviceSection,
 	MidiDeviceWithSection,
 	VirtualDevice,
+	VirtualDeviceSection,
+	VirtualDeviceWithSection,
 	VirtualParameter,
 } from "../model";
 import { buildSectionId, drawConnection } from "../utils/svgUtils";
@@ -34,8 +36,8 @@ const DevicePatching = () => {
 	const [isSaveOpen, setIsSaveOpen] = useState(false);
 
 	const [selectedSection, setSelectedSection] = useState<{
-		firstSection: MidiDeviceWithSection | null;
-		secondSection: MidiDeviceWithSection | null;
+		firstSection: MidiDeviceWithSection | VirtualDeviceWithSection | null;
+		secondSection: MidiDeviceWithSection | VirtualDeviceWithSection | null;
 	}>({ firstSection: null, secondSection: null });
 	const allConnections = useTrevorSelector(
 		(state) => state.nallely.connections,
@@ -131,35 +133,49 @@ const DevicePatching = () => {
 					type="text"
 					inputMode="decimal"
 					value={currentValue}
+					// onChange={(e) => {
+					// 	const val = e.target.value;
+
+					// 	setTempValues({
+					// 		...tempValues,
+					// 		[device.id]: {
+					// 			...tempValues[device.id],
+					// 			[parameter.name]: val,
+					// 		},
+					// 	});
+
+					// 	// If valid, send to backend and clear the temp state
+					// 	// const parsed = val.includes(".")
+					// 	// 	? Number.parseFloat(val)
+					// 	// 	: Number.parseInt(val);
+					// 	const parsed = Number.parseFloat(val);
+
+					// 	if (!Number.isNaN(parsed) && val.match(/^(\d+|\d*\.\d*)$/)) {
+					// 		trevorSocket?.setVirtualValue(device, parameter, val);
+
+					// 		// Clear temp value so Redux takes over rendering
+					// 		setTempValues({
+					// 			...tempValues,
+					// 			[device.id]: {
+					// 				...tempValues[device.id],
+					// 				[parameter.name]: undefined,
+					// 			},
+					// 		});
+					// 	}
+					// }}
 					onChange={(e) => {
 						const val = e.target.value;
-
-						// Store user-typed value temporarily
-						setTempValues((prev) => ({
-							...prev,
+						setTempValues({
+							...tempValues,
 							[device.id]: {
-								...prev[device.id],
-								[parameter.name]: val, // Store the raw string input
+								...tempValues[device.id],
+								[parameter.name]: val,
 							},
-						}));
-
-						// If valid, send to backend and clear the temp state
-						const parsed = val.includes(".")
-							? Number.parseFloat(val)
-							: Number.parseInt(val);
-
-						if (!Number.isNaN(parsed) && val.match(/^(\d+|\d*\.\d*[1-9])$/)) {
-							trevorSocket?.setVirtualValue(device, parameter, parsed);
-
-							// Clear temp value so Redux takes over rendering
-							setTempValues({
-								...tempValues,
-								[device.id]: {
-									...tempValues[device.id],
-									[parameter.name]: undefined,
-								},
-							});
-						}
+						});
+					}}
+					onBlur={(e) => {
+						const newVal = e.target.value;
+						trevorSocket?.setVirtualValue(device, parameter, newVal);
 					}}
 				/>
 			);
@@ -170,18 +186,14 @@ const DevicePatching = () => {
 					type="text"
 					value={currentValue}
 					onChange={(e) => {
-						// const newVal = e.target.value;
-						// trevorSocket?.setVirtualValue(device, parameter, newVal);
 						const val = e.target.value;
-
-						// Store user-typed value temporarily
-						setTempValues((prev) => ({
-							...prev,
+						setTempValues({
+							...tempValues,
 							[device.id]: {
-								...prev[device.id],
-								[parameter.name]: val, // Store the raw string input
+								...tempValues[device.id],
+								[parameter.name]: val,
 							},
-						}));
+						});
 					}}
 					onBlur={(e) => {
 						const newVal = e.target.value;
@@ -220,9 +232,11 @@ const DevicePatching = () => {
 							key={param.name}
 							style={{ marginTop: 0, marginBottom: 0, marginLeft: "10px" }}
 						>
-							{""}
-							{param.name}:{" "}
-							{createInput(device, param, device.config[param.name])}
+							{/* biome-ignore lint/a11y/noLabelWithoutControl: <explanation> */}
+							<label>
+								{param.name}{" "}
+								{createInput(device, param, device.config[param.name])}
+							</label>
 						</p>
 					))}
 				</>,
@@ -263,6 +277,35 @@ const DevicePatching = () => {
 			updateInfo(device);
 			setCurrentSelected(device.id);
 			return;
+		}
+		if (selectedSections.length < 2) {
+			const virtualSection = {
+				parameters: [
+					{ name: "output", module_state_name: "__virtual__" },
+					...device.meta.parameters.map((e) => {
+						return { ...e, name: e.cv_name, module_state_name: "__virtual__" };
+					}),
+				],
+			} as VirtualDeviceSection;
+			const newSelection = [
+				...selectedSections,
+				{ device, section: virtualSection },
+			];
+			if (newSelection.length === 2) {
+				setSelectedSection({
+					firstSection: newSelection[0],
+					secondSection: newSelection[1],
+				});
+				setInformation(
+					<p>
+						Associating {newSelection[0].section.name} with{" "}
+						{newSelection[1].section.name}
+					</p>,
+				);
+				setIsModalOpen(true);
+			}
+			// @ts-expect-error objects are not fully polymorphic, but that's ok here
+			setSelectedSections(newSelection);
 		}
 	};
 
@@ -325,9 +368,12 @@ const DevicePatching = () => {
 				connection.src.device,
 				connection.src.parameter.module_state_name,
 			);
+			const dstSection = connection.dest.parameter.module_state_name;
 			const destId = buildSectionId(
 				connection.dest.device,
-				connection.dest.parameter.module_state_name,
+				dstSection === "__virtual__"
+					? (connection.dest.parameter as VirtualParameter).cv_name
+					: dstSection,
 			);
 			const fromElement = document.querySelector(`[id="${srcId}"]`);
 			const toElement = document.querySelector(`[id="${destId}"]`);

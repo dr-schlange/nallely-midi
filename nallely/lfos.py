@@ -26,20 +26,42 @@ class LFO(TimeBasedDevice):
         self,
         waveform="sine",
         min_value: int | float | Decimal = 0,
-        max_value: int | float | Decimal = 128,
-        speed: int | float = 10.0,
+        max_value: int | float | Decimal = 127,
+        speed: int | float = 1.0,
         sampling_rate: int | Literal["auto"] = "auto",
         **kwargs,
     ):
         self.as_int = isinstance(min_value, int) and isinstance(max_value, int)
         self.waveform = waveform
-        self.min_value: Decimal | int = (
+        self._min_value: Decimal | int = (
             Decimal(min_value) if isinstance(min_value, float) else min_value
         )
-        self.max_value: Decimal | int = (
+        self._max_value: Decimal | int = (
             Decimal(max_value) if isinstance(max_value, float) else max_value
         )
         super().__init__(speed=speed, sampling_rate=sampling_rate, **kwargs)
+
+    @property
+    def min_value(self):
+        return self._min_value
+
+    @min_value.setter
+    def min_value(self, value):
+        self._min_value = Decimal(value) if isinstance(value, float) else value
+        self.as_int = isinstance(self._min_value, int) and isinstance(
+            self._max_value, int
+        )
+
+    @property
+    def max_value(self):
+        return self._max_value
+
+    @max_value.setter
+    def max_value(self, value):
+        self._max_value = Decimal(value) if isinstance(value, float) else value
+        self.as_int = isinstance(self._min_value, int) and isinstance(
+            self._max_value, int
+        )
 
     def generate_waveform(self, t):
         waveform = self.waveform

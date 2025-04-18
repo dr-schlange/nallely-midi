@@ -28,6 +28,7 @@ export interface VirtualParameter {
 	stream: boolean;
 	// biome-ignore lint/suspicious/noExplicitAny: this might be any value really
 	accepted_values: any[];
+	module_state_name: "__virtual__";
 }
 
 export interface MidiDevice {
@@ -59,7 +60,7 @@ export interface MidiConnection {
 
 export interface MidiConnectionEnd {
 	device: number;
-	parameter: MidiParameter;
+	parameter: MidiParameter | VirtualParameter;
 	chain: MidiScaler | null;
 }
 
@@ -67,6 +68,7 @@ export interface MidiDeviceSection {
 	name: string;
 	pads_or_keys: string | null;
 	parameters: MidiParameter[];
+	virtual: false;
 }
 
 export interface MidiParameter {
@@ -84,6 +86,17 @@ export type MidiDeviceWithSection = {
 	device: MidiDevice;
 	section: MidiDeviceSection;
 };
+
+export type VirtualDeviceWithSection = {
+	device: VirtualDevice;
+	section: VirtualDeviceSection;
+};
+
+export interface VirtualDeviceSection {
+	parameters: VirtualParameter[];
+	virtual: true;
+	name: "__virtual__";
+}
 
 export interface NallelyClasses {
 	virtual: string[];

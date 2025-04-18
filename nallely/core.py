@@ -174,7 +174,7 @@ class VirtualParameter:
                         ctx=ThreadContext({**ctx, "param": int_val.parameter.name}),
                     ),
                     to=device,
-                    param=value.parameter,
+                    param=self,
                     type=value.parameter.type,
                     cc_note=value.parameter.cc_note,
                     stream=self.stream,
@@ -185,7 +185,7 @@ class VirtualParameter:
                 value.device.bind(
                     lambda value, ctx: device.set_parameter(self.name, value),
                     to=device,
-                    param=value.parameter,
+                    param=self,
                     type=value.parameter.type,
                     cc_note=value.parameter.cc_note,
                     stream=self.stream,
@@ -797,7 +797,7 @@ outputs: {mido.get_input_names()}"""
 class TimeBasedDevice(VirtualDevice):
     def __init__(
         self,
-        speed: int | float = 10.0,
+        speed: int | float = 1.0,
         sampling_rate: int | Literal["auto"] = "auto",
         **kwargs,
     ):

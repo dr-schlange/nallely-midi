@@ -4,6 +4,9 @@ import type {
 	MidiDevice,
 	MidiDeviceWithSection,
 	MidiParameter,
+	VirtualDevice,
+	VirtualDeviceWithSection,
+	VirtualParameter,
 } from "../model";
 import { useTrevorSelector } from "../store";
 import {
@@ -16,8 +19,8 @@ import { ScalerForm } from "./ScalerForm";
 import { useTrevorWebSocket } from "../websocket";
 
 const parameterUUID = (
-	device: MidiDevice | number,
-	parameter: MidiParameter,
+	device: MidiDevice | number | VirtualDevice,
+	parameter: MidiParameter | VirtualParameter,
 ) => {
 	const id = typeof device === "object" ? device.id : device;
 	return `${id}::${parameter.module_state_name}::${parameter.name}`;
@@ -29,11 +32,14 @@ const PatchingModal = ({
 	secondSection,
 }: {
 	onClose: () => void;
-	firstSection: MidiDeviceWithSection | null;
-	secondSection: MidiDeviceWithSection | null;
+	firstSection: MidiDeviceWithSection | VirtualDeviceWithSection | null;
+	secondSection: MidiDeviceWithSection | VirtualDeviceWithSection | null;
 }) => {
 	const [selectedParameters, setSelectedParameters] = useState<
-		{ device: MidiDevice; parameter: MidiParameter }[]
+		{
+			device: MidiDevice | VirtualDevice;
+			parameter: MidiParameter | VirtualParameter;
+		}[]
 	>([]);
 	const websocket = useTrevorWebSocket();
 	const allConnections = useTrevorSelector(
@@ -69,7 +75,10 @@ const PatchingModal = ({
 		};
 	}, [onClose]);
 
-	const handleParameterClick = (device: MidiDevice, param: MidiParameter) => {
+	const handleParameterClick = (
+		device: MidiDevice | VirtualDevice,
+		param: MidiParameter | VirtualParameter,
+	) => {
 		setSelectedConnection(null); // Deselect the connection
 		if (selectedParameters.length === 0) {
 			setSelectedParameters([{ device, parameter: param }]);
@@ -233,7 +242,7 @@ const PatchingModal = ({
 							<div className="parameter-info">
 								<h3>Parameter Info</h3>
 								{selectedParameters.length === 1 && (
-									<p>Details about {selectedParameters[0].name}</p>
+									<p>Details about {selectedParameters[0].parameter.name}</p>
 								)}
 							</div>
 						)}
@@ -241,27 +250,31 @@ const PatchingModal = ({
 					<div className="bottom-right-panel">
 						<h3>Connections</h3>
 						<ul className="connections-list">
-							{connections.map((connection) => (
-								<li
-									key={`${connection.src.parameter.module_state_name}-${connection.src.parameter.name}-${connection.dest.parameter.module_state_name}-${connection.dest.parameter.name}`}
-									onClick={() => handleConnectionClick(connection)}
-									onKeyDown={(e) => {
-										if (e.key === "Enter" || e.key === " ") {
-											handleConnectionClick(connection);
-										}
-									}}
-									onKeyUp={(e) => {
-										if (e.key === "Enter" || e.key === " ") {
-											e.preventDefault();
-										}
-									}}
-									className={`connection-item ${
-										selectedConnection === connection ? "selected" : ""
-									}`}
-								>
-									{`${connection.src.parameter.module_state_name}[${connection.src.parameter.name}] → ${connection.dest.parameter.module_state_name}[${connection.dest.parameter.name}]`}
-								</li>
-							))}
+							{connections.map((connection) => {
+								const srcSection = connection.src.parameter.module_state_name;
+								const dstSection = connection.dest.parameter.module_state_name;
+								return (
+									<li
+										key={`${connection.src.parameter.module_state_name}-${connection.src.parameter.name}-${connection.dest.parameter.module_state_name}-${connection.dest.parameter.name}`}
+										onClick={() => handleConnectionClick(connection)}
+										onKeyDown={(e) => {
+											if (e.key === "Enter" || e.key === " ") {
+												handleConnectionClick(connection);
+											}
+										}}
+										onKeyUp={(e) => {
+											if (e.key === "Enter" || e.key === " ") {
+												e.preventDefault();
+											}
+										}}
+										className={`connection-item ${
+											selectedConnection === connection ? "selected" : ""
+										}`}
+									>
+										{`${srcSection === "__virtual__" ? "" : srcSection}[${connection.src.parameter.name}] → ${dstSection === "__virtual__" ? "" : dstSection}[${connection.dest.parameter.name}]`}
+									</li>
+								);
+							})}
 						</ul>
 					</div>
 				</div>

@@ -71,10 +71,10 @@ class TrevorWebSocket {
 	}
 
 	public associateParameters(
-		fromDevice: MidiDevice,
-		fromParameter: MidiParameter,
-		toDevice: MidiDevice,
-		toParameter: MidiParameter,
+		fromDevice: MidiDevice | VirtualDevice,
+		fromParameter: MidiParameter | VirtualParameter,
+		toDevice: MidiDevice | VirtualDevice,
+		toParameter: MidiParameter | VirtualParameter,
 		unbind: boolean,
 	) {
 		this.sendMessage(
