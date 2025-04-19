@@ -1,4 +1,6 @@
+import { useEffect, useState } from "react";
 import type { MidiConnection } from "../model";
+import { useTrevorWebSocket } from "../websocket";
 
 interface ScalerFormProps {
 	connection: MidiConnection;
@@ -6,69 +8,105 @@ interface ScalerFormProps {
 
 export const ScalerForm = ({ connection }: ScalerFormProps) => {
 	const scalerEnabled = Boolean(connection.src.chain);
-	const autoScaleEnabled = connection.src.chain?.auto;
-	const minValue = connection.src.chain?.min;
-	const maxValue = connection.src.chain?.max;
-	const method = connection.src.chain?.method;
+	const scalerId = scalerEnabled ? connection.src.chain?.id : 0;
+
+	const trevorSocket = useTrevorWebSocket();
+
+	const [min, setMin] = useState(connection.src.chain?.min ?? "");
+	const [max, setMax] = useState(connection.src.chain?.max ?? "");
+	const [method, setMethod] = useState(connection.src.chain?.method ?? "lin");
+	const [asInt, setAsInt] = useState(connection.src.chain?.as_int ?? false);
+
+	useEffect(() => {
+		setMin(connection.src.chain?.min ?? "");
+		setMax(connection.src.chain?.max ?? "");
+		setMethod(connection.src.chain?.method ?? "lin");
+		setAsInt(connection.src.chain?.as_int ?? false);
+	}, [connection]);
 
 	return (
-		<>
-			<div className="connection-setup">
-				<h3>Connection Setup</h3>
+		<div className="connection-setup">
+			<h3>Connection Setup</h3>
+			<label>
+				<input
+					type="checkbox"
+					checked={scalerEnabled}
+					onChange={(e) => {
+						const src = connection.src;
+						const dst = connection.dest;
+						trevorSocket?.createScaler(
+							src.device,
+							src.parameter,
+							dst.device,
+							dst.parameter,
+							e.target.checked,
+						);
+					}}
+				/>
+				Scaler
+			</label>
+			<div className="form-group">
 				<label>
+					Min:
 					<input
-						type="checkbox"
-						checked={scalerEnabled}
-						onChange={(e) => {
-							setScalerEnabled(e.target.checked);
-							if (!e.target.checked) {
-								setAutoScaleEnabled(true); // Reset auto-scale when scaler is disabled
-							}
-						}}
-					/>
-					Scaler
-				</label>
-				<label>
-					<input
-						type="checkbox"
-						checked={autoScaleEnabled}
+						type="text"
+						value={min}
 						disabled={!scalerEnabled}
-						onChange={(e) => setAutoScaleEnabled(e.target.checked)}
+						onChange={(e) => setMin(e.target.value)}
+						onBlur={() =>
+							trevorSocket?.setScalerValue(
+								scalerId!,
+								"to_min",
+								Number.parseFloat(min.toString()),
+							)
+						}
 					/>
-					Auto-Scale
 				</label>
-				<div className="form-group">
-					<label>
-						Min:
-						<input
-							type="text"
-							value={minValue}
-							disabled={!scalerEnabled || autoScaleEnabled}
-							onChange={(e) => setMinValue(e.target.value)}
-						/>
-					</label>
-					<label>
-						Max:
-						<input
-							type="text"
-							value={maxValue}
-							disabled={!scalerEnabled || autoScaleEnabled}
-							onChange={(e) => setMaxValue(e.target.value)}
-						/>
-					</label>
-				</div>
 				<label>
-					Method:
-					<select
-						value={method}
-						disabled={!scalerEnabled || autoScaleEnabled}
-						onChange={(e) => setMethod(e.target.value)}
-					>
-						<option value="lin">Lin</option>
-						<option value="log">Log</option>
-					</select>
+					Max:
+					<input
+						type="text"
+						value={max}
+						disabled={!scalerEnabled}
+						onChange={(e) => setMax(e.target.value)}
+						onBlur={() =>
+							trevorSocket?.setScalerValue(
+								scalerId!,
+								"to_max",
+								Number.parseFloat(max.toString()),
+							)
+						}
+					/>
 				</label>
 			</div>
-		</>
+			<label>
+				Method:
+				<select
+					value={method}
+					disabled={!scalerEnabled}
+					onChange={(e) => {
+						const val = e.target.value;
+						setMethod(val);
+						trevorSocket?.setScalerValue(scalerId!, "method", val);
+					}}
+				>
+					<option value="lin">Lin</option>
+					<option value="log">Log</option>
+				</select>
+			</label>
+			<label>
+				<input
+					type="checkbox"
+					checked={asInt}
+					disabled={!scalerEnabled}
+					onChange={(e) => {
+						const value = e.target.checked;
+						setAsInt(value);
+						trevorSocket?.setScalerValue(scalerId!, "as_int", value);
+					}}
+				/>
+				As integer
+			</label>
+		</div>
 	);
 };

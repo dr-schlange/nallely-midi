@@ -8,7 +8,7 @@ from types import FunctionType
 from typing import TYPE_CHECKING, Any, Literal, Type
 
 if TYPE_CHECKING:
-    from .core import MidiDevice, ThreadContext, VirtualDevice
+    from .core import MidiDevice, ParameterInstance, ThreadContext, VirtualDevice
 
 
 NOT_INIT = "uninitialized"
@@ -75,7 +75,7 @@ class Int(int):
 
 @dataclass
 class Scaler:
-    data: Int | VirtualDevice | PadOrKey
+    data: Int | VirtualDevice | PadOrKey | ParameterInstance
     # device: Any
     to_min: int | float | None
     to_max: int | float | None
@@ -91,26 +91,6 @@ class Scaler:
         self.as_int = (
             self.as_int or isinstance(self.to_min, int) and isinstance(self.to_max, int)
         )
-        if self.auto:
-            # self.adapt_range()
-            ...
-
-    def should_adapt_min(self):
-        return self.to_min is not None and self.from_min != self.to_min
-
-    def should_adapt_max(self):
-        return self.to_max is not None and self.to_max != self.from_max
-
-    # def adapt_range(self, target, source, source_device, min_range, max_range):
-    #     low, high = None, None
-    #     if self.should_adapt_max():
-    #         self.
-    #     if self.should_adapt_min():
-    #         low = low
-    #     if low is not None or high is not None:
-
-    #         return True
-    #     return False
 
     def convert_lin(self, value):
         match self.from_min, self.from_max, self.to_min, self.to_max:
@@ -133,14 +113,18 @@ class Scaler:
 
     def convert_log(self, value) -> int | float:
         if self.to_min is None or self.to_max is None:
-            raise ValueError(
-                "Logarithmic scaling requires both min and max to be defined."
-            )
+            # raise ValueError(
+            #     "Logarithmic scaling requires both min and max to be defined."
+            # )
+            print("Logarithmic scaling requires both min and max to be defined.")
+            return value
 
-        if value <= 0:
-            raise ValueError(
-                "Logarithmic scaling is undefined for non-positive values."
-            )
+        if value < 0:
+            # raise ValueError(
+            #     f"Logarithmic scaling is undefined for non-positive values {value}."
+            # )
+            print(f"Logarithmic scaling is undefined for non-positive values {value}.")
+            return value
 
         log_min = math.log(self.to_min)
         log_max = math.log(self.to_max)
@@ -187,7 +171,9 @@ class ModuleParameter:
     def max_range(self):
         return self.range[1]
 
-    def __get__(self, instance, owner=None) -> Int:
+    def __get__(self, instance, owner=None) -> Int | ModuleParameter:
+        if instance is None:
+            return self
         return instance.state[self.name]
 
     def install_fun(self, to_module, feeder, append=True):
@@ -542,8 +528,8 @@ class ModulePadsOrKeys:
     section_name: str = NOT_INIT
 
     def __get__(self, instance, owner=None):
-        # for i in range(127):
-        #     setattr(instance.__class__, "note_"
+        if instance is None:
+            return self
         return instance.state[self.section_name]
 
     def __set__(self, instance, value, append=True):

@@ -149,27 +149,27 @@ const DevicePatching = () => {
 					range={parameter.range}
 				/>
 			);
-			return (
-				<input
-					type="text"
-					inputMode="decimal"
-					value={currentValue}
-					onChange={(e) => {
-						const val = e.target.value;
-						setTempValues({
-							...tempValues,
-							[device.id]: {
-								...tempValues[device.id],
-								[parameter.name]: val,
-							},
-						});
-					}}
-					onBlur={(e) => {
-						const newVal = e.target.value;
-						trevorSocket?.setVirtualValue(device, parameter, newVal);
-					}}
-				/>
-			);
+			// return (
+			// 	<input
+			// 		type="text"
+			// 		inputMode="decimal"
+			// 		value={currentValue}
+			// 		onChange={(e) => {
+			// 			const val = e.target.value;
+			// 			setTempValues({
+			// 				...tempValues,
+			// 				[device.id]: {
+			// 					...tempValues[device.id],
+			// 					[parameter.name]: val,
+			// 				},
+			// 			});
+			// 		}}
+			// 		onBlur={(e) => {
+			// 			const newVal = e.target.value;
+			// 			trevorSocket?.setVirtualValue(device, parameter, newVal);
+			// 		}}
+			// 	/>
+			// );
 		}
 		if (typeof value === "string") {
 			return (

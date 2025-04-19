@@ -21,6 +21,18 @@ export const buildSectionId = (device: number, section: string) => {
 	return `${device}-${section}`;
 };
 
+export const connectionId = (connection: MidiConnection): string => {
+	const srcId = connection.src.device;
+	const dstId = connection.dest.device;
+	const fromP = isVirtualParameter(connection.src.parameter)
+		? connection.src.parameter.cv_name
+		: connection.src.parameter.name;
+	const toP = isVirtualParameter(connection.dest.parameter)
+		? connection.dest.parameter.cv_name
+		: connection.dest.parameter.name;
+	return `${srcId}::${connection.src.parameter.section_name}::${fromP}-${dstId}::${connection.dest.parameter.section_name}::${toP}`;
+};
+
 export const isVirtualDevice = (
 	device: VirtualDevice | MidiDevice,
 ): device is VirtualDevice => {

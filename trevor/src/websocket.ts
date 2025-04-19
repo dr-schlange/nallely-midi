@@ -6,6 +6,7 @@ import type {
 } from "./model";
 import { store } from "./store";
 import { setFullState } from "./store/trevorSlice";
+import { isVirtualParameter } from "./utils/svgUtils";
 
 const WEBSOCKET_URL = `ws://${window.location.hostname}:6788/trevor`;
 
@@ -77,12 +78,43 @@ class TrevorWebSocket {
 		toParameter: MidiParameter | VirtualParameter,
 		unbind: boolean,
 	) {
+		const fromP = isVirtualParameter(fromParameter)
+			? fromParameter.cv_name
+			: fromParameter.name;
+		const toP = isVirtualParameter(toParameter)
+			? toParameter.cv_name
+			: toParameter.name;
 		this.sendMessage(
 			JSON.stringify({
 				command: "associate_parameters",
-				from_parameter: `${fromDevice.id}::${fromParameter.section_name}::${fromParameter.name}`,
-				to_parameter: `${toDevice.id}::${toParameter.section_name}::${toParameter.name}`,
+				from_parameter: `${fromDevice.id}::${fromParameter.section_name}::${fromP}`,
+				to_parameter: `${toDevice.id}::${toParameter.section_name}::${toP}`,
 				unbind,
+			}),
+		);
+	}
+
+	public createScaler(
+		fromDevice: MidiDevice | VirtualDevice | number,
+		fromParameter: MidiParameter | VirtualParameter,
+		toDevice: MidiDevice | VirtualDevice | number,
+		toParameter: MidiParameter | VirtualParameter,
+		create: boolean,
+	) {
+		const srcId = typeof fromDevice === "number" ? fromDevice : fromDevice.id;
+		const dstId = typeof toDevice === "number" ? toDevice : toDevice.id;
+		const fromP = isVirtualParameter(fromParameter)
+			? fromParameter.cv_name
+			: fromParameter.name;
+		const toP = isVirtualParameter(toParameter)
+			? toParameter.cv_name
+			: toParameter.name;
+		this.sendMessage(
+			JSON.stringify({
+				command: "create_scaler",
+				from_parameter: `${srcId}::${fromParameter.section_name}::${fromP}`,
+				to_parameter: `${dstId}::${toParameter.section_name}::${toP}`,
+				create,
 			}),
 		);
 	}
@@ -135,6 +167,21 @@ class TrevorWebSocket {
 				command: "set_virtual_value",
 				device_id: device.id,
 				parameter: parameter.name,
+				value,
+			}),
+		);
+	}
+
+	public setScalerValue(
+		scalerId: number,
+		parameter: string,
+		value: number | string | boolean,
+	) {
+		this.sendMessage(
+			JSON.stringify({
+				command: "set_scaler_parameter",
+				scaler_id: scalerId,
+				parameter,
 				value,
 			}),
 		);

@@ -104,9 +104,11 @@ export interface NallelyClasses {
 }
 
 export interface MidiScaler {
+	id: number;
 	device: number;
 	min: number;
 	max: number;
 	auto: boolean;
 	method: string;
+	as_int: boolean;
 }

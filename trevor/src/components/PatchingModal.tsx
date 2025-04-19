@@ -11,6 +11,7 @@ import type {
 import { useTrevorSelector } from "../store";
 import {
 	buildParameterId,
+	connectionId,
 	connectionsOfInterest,
 	drawConnection,
 	findConnectorElement,
@@ -63,8 +64,9 @@ const PatchingModal = ({
 			),
 	);
 
-	const [selectedConnection, setSelectedConnection] =
-		useState<MidiConnection | null>(null);
+	const [selectedConnection, setSelectedConnection] = useState<string | null>(
+		null,
+	);
 	const svgRef = useRef<SVGSVGElement>(null);
 
 	useEffect(() => {
@@ -112,7 +114,11 @@ const PatchingModal = ({
 	};
 
 	const handleConnectionClick = (connection: MidiConnection) => {
-		setSelectedConnection((prev) => (prev === connection ? null : connection));
+		if (selectedConnection === connectionId(connection)) {
+			setSelectedConnection(null);
+			return;
+		}
+		setSelectedConnection(connectionId(connection));
 	};
 
 	const drawConnections = () => {
@@ -129,7 +135,7 @@ const PatchingModal = ({
 				svg,
 				fromElement,
 				toElement,
-				connection === selectedConnection,
+				connectionId(connection) === selectedConnection,
 			);
 		}
 	};
@@ -153,6 +159,9 @@ const PatchingModal = ({
 		};
 	}, [connections]);
 
+	const selectedConnectionInstance = allConnections.find(
+		(c) => connectionId(c) === selectedConnection,
+	);
 	return (
 		<div className="patching-modal">
 			<div className="modal-header">
@@ -240,8 +249,8 @@ const PatchingModal = ({
 				</div>
 				<div className="right-panel">
 					<div className="top-right-panel">
-						{selectedConnection ? (
-							<ScalerForm connection={selectedConnection} />
+						{selectedConnection && selectedConnectionInstance ? (
+							<ScalerForm connection={selectedConnectionInstance} />
 						) : (
 							<div className="parameter-info">
 								<h3>Parameter Info</h3>

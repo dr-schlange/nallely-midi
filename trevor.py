@@ -1,6 +1,7 @@
 from collections import defaultdict
 from dataclasses import asdict
 from decimal import Decimal
+from itertools import chain
 from multiprocessing import connection
 from pathlib import Path
 
@@ -24,6 +25,7 @@ from nallely.core import (
 from websockets.sync.server import serve
 import json
 from minilab import Minilab
+from nallely.modules import Scaler
 
 
 class StateEncoder(json.JSONEncoder):
@@ -100,6 +102,38 @@ class TrevorBus(VirtualDevice):
             (device for device in all_devices() if id(device) == int(device_id))
         )
 
+    def create_scaler(self, from_parameter, to_parameter, create):
+        from_device, from_section, from_parameter = from_parameter.split("::")
+        to_device, to_section, to_parameter = to_parameter.split("::")
+        src_device = self.get_device_instance(from_device)
+        dst_device = self.get_device_instance(to_device)
+        dest = getattr(dst_device, to_section)
+        if isinstance(src_device, VirtualDevice) and from_parameter in [
+            "output",
+            "output_cv",
+        ]:
+            src = getattr(src_device, from_section)
+        else:
+            src = getattr(getattr(src_device, from_section), from_parameter)
+        getattr(dest, to_parameter).__isub__(src)  # we unbind first
+        if create:
+            to_range = getattr(dest.__class__, to_parameter).range
+            scaler: Scaler = src.scale(to_range[0], to_range[1])
+            setattr(dest, to_parameter, scaler)
+            return self.full_state()
+        setattr(dest, to_parameter, src)
+        return self.full_state()
+
+    def set_scaler_parameter(self, scaler_id, parameter, value):
+        for device in chain(connected_devices, virtual_devices):
+            for entry in device.callbacks_registry:
+                if id(entry.chain) == scaler_id:
+                    scaler = entry.chain
+                    setattr(scaler, parameter, value)
+                    break
+
+        return self.full_state()
+
     def associate_parameters(self, from_parameter, to_parameter, unbind):
         from_device, from_section, from_parameter = from_parameter.split("::")
         to_device, to_section, to_parameter = to_parameter.split("::")
@@ -114,7 +148,6 @@ class TrevorBus(VirtualDevice):
         else:
             src = getattr(getattr(src_device, from_section), from_parameter)
         if unbind:
-            print("unbind", from_parameter, "from", to_parameter)
             getattr(dest, to_parameter).__isub__(src)
             return self.full_state()
         setattr(dest, to_parameter, src)
@@ -178,11 +211,13 @@ class TrevorBus(VirtualDevice):
             if scaler is None:
                 return None
             return {
+                "id": id(scaler),
                 "device": id(scaler.data.device),
                 "min": scaler.to_min,
                 "max": scaler.to_max,
                 "auto": scaler.auto,
                 "method": scaler.method,
+                "as_int": scaler.as_int,
             }
 
         for device in connected_devices:
@@ -250,7 +285,7 @@ class TrevorBus(VirtualDevice):
         }
         from pprint import pprint
 
-        # pprint(d["virtual_devices"])
+        # pprint(d["connections"])
 
         return d
 
@@ -259,8 +294,9 @@ try:
     ws = TrevorBus()
     ws.start()
 
-    lfo = nallely.LFO(waveform="sine")
+    lfo = nallely.LFO(waveform="sine", speed=0.5)
     lfo.start()
+    # lfo.speed_cv = lfo.scale(14, 44)
 
     # nts1 = NTS1(device_name="Scarlett")
     # # nts1.filter.cutoff = lfo
