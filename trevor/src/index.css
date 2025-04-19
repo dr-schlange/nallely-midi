@@ -38,7 +38,8 @@ a {
   text-decoration: none;
 }
 a:hover {
-  color: #0000ff; /* Hover color for links */
+  color: orange; /* Hover color for links */
+  /* color: #0000ff;  */
 }
 
 h1 {
@@ -61,7 +62,7 @@ button:hover, input:hover, textarea:hover, select:hover {
 }
 button:focus, input:focus, textarea:focus, select:focus {
   outline: none;
-  border-color: #0000ff; /* Focus border color */
+  border-color: #0000ff;
 }
 
 input:disabled,

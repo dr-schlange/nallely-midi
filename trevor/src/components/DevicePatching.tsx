@@ -12,13 +12,17 @@ import type {
 	VirtualDeviceWithSection,
 	VirtualParameter,
 } from "../model";
-import { buildSectionId, drawConnection, isVirtualDevice } from "../utils/svgUtils";
+import {
+	buildSectionId,
+	drawConnection,
+	isVirtualDevice,
+} from "../utils/svgUtils";
 import { AboutModal } from "./AboutModal";
 import { SaveModal } from "./SaveModal";
 import { RackRowVirtual } from "./RackRowVirtual";
 import { useTrevorWebSocket } from "../websocket";
-
-
+import SmartDragNumberInput from "./DragInputs";
+import DragNumberInput from "./DragInputs";
 
 const DevicePatching = () => {
 	const mainSectionRef = useRef(null);
@@ -125,40 +129,31 @@ const DevicePatching = () => {
 			tempValue ?? device.config[parameter.name]?.toString() ?? "";
 		if (typeof value === "number") {
 			return (
+				<DragNumberInput
+					value={currentValue}
+					onBlur={(value) => {
+						if (!Number.isNaN(Number.parseFloat(value))) {
+							console.log("SEND")
+							trevorSocket?.setVirtualValue(device, parameter, value);
+						}
+					}}
+					onChange={(value) => {
+						setTempValues({
+							...tempValues,
+							[device.id]: {
+								...tempValues[device.id],
+								[parameter.name]: value,
+							},
+						});
+					}}
+					range={parameter.range}
+				/>
+			);
+			return (
 				<input
 					type="text"
 					inputMode="decimal"
 					value={currentValue}
-					// onChange={(e) => {
-					// 	const val = e.target.value;
-
-					// 	setTempValues({
-					// 		...tempValues,
-					// 		[device.id]: {
-					// 			...tempValues[device.id],
-					// 			[parameter.name]: val,
-					// 		},
-					// 	});
-
-					// 	// If valid, send to backend and clear the temp state
-					// 	// const parsed = val.includes(".")
-					// 	// 	? Number.parseFloat(val)
-					// 	// 	: Number.parseInt(val);
-					// 	const parsed = Number.parseFloat(val);
-
-					// 	if (!Number.isNaN(parsed) && val.match(/^(\d+|\d*\.\d*)$/)) {
-					// 		trevorSocket?.setVirtualValue(device, parameter, val);
-
-					// 		// Clear temp value so Redux takes over rendering
-					// 		setTempValues({
-					// 			...tempValues,
-					// 			[device.id]: {
-					// 				...tempValues[device.id],
-					// 				[parameter.name]: undefined,
-					// 			},
-					// 		});
-					// 	}
-					// }}
 					onChange={(e) => {
 						const val = e.target.value;
 						setTempValues({

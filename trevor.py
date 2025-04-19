@@ -260,7 +260,7 @@ try:
     ws.start()
 
     lfo = nallely.LFO(waveform="sine")
-    # lfo.start()
+    lfo.start()
 
     # nts1 = NTS1(device_name="Scarlett")
     # # nts1.filter.cutoff = lfo
