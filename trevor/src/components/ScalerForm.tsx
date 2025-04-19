@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { MidiConnection } from "../model";
 import { useTrevorWebSocket } from "../websocket";
+import DragNumberInput from "./DragInputs";
 
 interface ScalerFormProps {
 	connection: MidiConnection;
@@ -46,34 +47,36 @@ export const ScalerForm = ({ connection }: ScalerFormProps) => {
 				Scaler
 			</label>
 			<div className="form-group">
+				{/* biome-ignore lint/a11y/noLabelWithoutControl: <explanation> */}
 				<label>
 					Min:
-					<input
-						type="text"
-						value={min}
+					<DragNumberInput
 						disabled={!scalerEnabled}
-						onChange={(e) => setMin(e.target.value)}
-						onBlur={() =>
+						value={min.toString()}
+						range={[null, null]} // or set appropriate bounds
+						onChange={(val) => setMin(val)}
+						onBlur={(val) =>
 							trevorSocket?.setScalerValue(
 								scalerId!,
 								"to_min",
-								Number.parseFloat(min.toString()),
+								Number.parseFloat(val),
 							)
 						}
 					/>
 				</label>
+				{/* biome-ignore lint/a11y/noLabelWithoutControl: <explanation> */}
 				<label>
 					Max:
-					<input
-						type="text"
-						value={max}
+					<DragNumberInput
 						disabled={!scalerEnabled}
-						onChange={(e) => setMax(e.target.value)}
-						onBlur={() =>
+						value={max.toString()}
+						range={[null, null]} // or set appropriate bounds
+						onChange={(val) => setMax(val)}
+						onBlur={(val) =>
 							trevorSocket?.setScalerValue(
 								scalerId!,
 								"to_max",
-								Number.parseFloat(max.toString()),
+								Number.parseFloat(val),
 							)
 						}
 					/>

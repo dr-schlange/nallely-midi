@@ -5,6 +5,7 @@ interface DragNumberInputProps {
 	onBlur?: (value: string) => void;
 	range: [number | null, number | null];
 	value: string;
+	disabled?: boolean;
 }
 
 export default function DragNumberInput({
@@ -12,6 +13,7 @@ export default function DragNumberInput({
 	onBlur,
 	range,
 	value,
+	disabled,
 }: DragNumberInputProps) {
 	const [isDragging, setIsDragging] = useState(false);
 	const inputElement = useRef<HTMLInputElement>(null);
@@ -121,22 +123,22 @@ export default function DragNumberInput({
 		}
 	};
 
-	useEffect(() => {
-		// Ensure to rebind the touch events correctly after input value change
-		computeDecimalPrecisionStep(value);
-		const inputElt = inputElement.current;
-		if (inputElt) {
-			inputElt.addEventListener("touchstart", handleTouchStart);
-			inputElt.addEventListener("touchmove", handleTouchMove);
-			inputElt.addEventListener("touchend", handleTouchEnd);
+	// useEffect(() => {
+	// 	// Ensure to rebind the touch events correctly after input value change
+	// 	computeDecimalPrecisionStep(value);
+	// 	const inputElt = inputElement.current;
+	// 	if (inputElt) {
+	// 		inputElt.addEventListener("touchstart", handleTouchStart);
+	// 		inputElt.addEventListener("touchmove", handleTouchMove);
+	// 		inputElt.addEventListener("touchend", handleTouchEnd);
 
-			return () => {
-				inputElt.removeEventListener("touchstart", handleTouchStart);
-				inputElt.removeEventListener("touchmove", handleTouchMove);
-				inputElt.removeEventListener("touchend", handleTouchEnd);
-			};
-		}
-	}, [value]);
+	// 		return () => {
+	// 			inputElt.removeEventListener("touchstart", handleTouchStart);
+	// 			inputElt.removeEventListener("touchmove", handleTouchMove);
+	// 			inputElt.removeEventListener("touchend", handleTouchEnd);
+	// 		};
+	// 	}
+	// }, [value]);
 
 	return (
 		<input
@@ -149,6 +151,7 @@ export default function DragNumberInput({
 			onTouchMove={handleTouchMove}
 			onTouchEnd={handleTouchEnd}
 			onBlur={() => onBlur?.(value.replace(",", "."))}
+			disabled={disabled}
 			style={{
 				touchAction: "none",
 				userSelect: "none",
