@@ -252,6 +252,10 @@ const DevicePatching = () => {
 		}
 	};
 
+	const resetAll = () => {
+		trevorSocket.resetAll()
+	}
+
 	useEffect(() => {
 		updateInfo(
 			[...midi_devices, ...virtual_devices].find(
@@ -472,6 +476,15 @@ const DevicePatching = () => {
 						onClick={openSaveModal}
 					>
 						Save
+					</button>
+				</div>
+				<div className="device-patching-top-panel">
+					<button
+						type="button"
+						className={"associate-button"}
+						onClick={resetAll}
+					>
+						Reset All
 					</button>
 				</div>
 				<div className="device-patching-top-panel">

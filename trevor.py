@@ -134,6 +134,10 @@ class TrevorBus(VirtualDevice):
 
         return self.full_state()
 
+    def reset_all(self):
+        nallely.stop_all_connected_devices()
+        return self.full_state()
+
     def associate_parameters(self, from_parameter, to_parameter, unbind):
         from_device, from_section, from_parameter = from_parameter.split("::")
         to_device, to_section, to_parameter = to_parameter.split("::")
@@ -150,7 +154,8 @@ class TrevorBus(VirtualDevice):
         if unbind:
             getattr(dest, to_parameter).__isub__(src)
             return self.full_state()
-        setattr(dest, to_parameter, src)
+        to_range = getattr(dest.__class__, to_parameter).range
+        setattr(dest, to_parameter, src.scale(to_range[0], to_range[1]))
         return self.full_state()
 
     def associate_midi_port(self, device, port, direction):
@@ -294,8 +299,8 @@ try:
     ws = TrevorBus()
     ws.start()
 
-    lfo = nallely.LFO(waveform="sine", speed=0.5)
-    lfo.start()
+    # lfo = nallely.LFO(waveform="sine", speed=0.5)
+    # lfo.start()
     # lfo.speed_cv = lfo.scale(14, 44)
 
     # nts1 = NTS1(device_name="Scarlett")

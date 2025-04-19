@@ -186,6 +186,14 @@ class TrevorWebSocket {
 			}),
 		);
 	}
+
+	public resetAll() {
+		this.sendMessage(
+			JSON.stringify({
+				command: "reset_all",
+			}),
+		);
+	}
 }
 
 let websocket: TrevorWebSocket | null = null;

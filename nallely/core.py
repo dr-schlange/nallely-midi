@@ -596,6 +596,10 @@ class MidiDevice:
     def close(self, delete=False):
         self.close_in()
         self.close_out()
+        # flush all callbacks and registry
+        self.callbacks_registry.clear()
+        self.input_callbacks.clear()
+        self.output_callbacks.clear()
         if delete and self in connected_devices:
             connected_devices.remove(self)
 
