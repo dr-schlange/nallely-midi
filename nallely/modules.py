@@ -44,8 +44,8 @@ class Int(int):
             # device=self.device,
             to_min=min,
             to_max=max,
-            from_min=self.parameter.range[0],
-            from_max=self.parameter.range[1],
+            # from_min=self.parameter.range[0],
+            # from_max=self.parameter.range[1],
             method=method,
             as_int=as_int,
             auto=min is None and max is None,
@@ -81,8 +81,8 @@ class Scaler:
     to_max: int | float | None
     method: str = "lin"
     as_int: bool = False
-    from_min: int | float | None = None
-    from_max: int | float | None = None
+    # from_min: int | float | None = None
+    # from_max: int | float | None = None
     auto: bool = False
 
     def __post_init__(self):
@@ -92,26 +92,30 @@ class Scaler:
             self.as_int or isinstance(self.to_min, int) and isinstance(self.to_max, int)
         )
 
-    def convert_lin(self, value):
-        match self.from_min, self.from_max, self.to_min, self.to_max:
+    def convert_lin(self, value, from_min, from_max):
+        match from_min, from_max, self.to_min, self.to_max:
             case _, _, None, None:
                 return value
-            case None, None, to_min, None:
-                return value - abs(value - to_min)
+            case None, from_max, to_min, None:
+                offset = to_min
+                v = value + offset
+                return min(v, from_max + offset) if from_max is not None else v
             case None, None, to_min, to_max:
                 print(f"Problem converting from -inf, +inf to {to_min}..{to_max}")
                 return value
             case from_min, _, to_min, None:
                 return value + abs(from_min - to_min)
             case from_min, from_max, to_min, to_max:
-                scaled_value = (value - self.from_min) / (from_max - from_min)
-                return self.to_min + scaled_value * (to_max - to_min)
+                scaled_value = (value - from_min) / (from_max - from_min)
+                return to_min + scaled_value * (to_max - to_min)
+
             case _:
                 print(
                     f"No match: {self.from_min}, {self.from_max}, {self.to_min}, {self.to_max}"
                 )
+                return float(value)
 
-    def convert_log(self, value) -> int | float:
+    def convert_log(self, value, from_max) -> int | float:
         if self.to_min is None or self.to_max is None:
             # raise ValueError(
             #     "Logarithmic scaling requires both min and max to be defined."
@@ -129,22 +133,29 @@ class Scaler:
         log_min = math.log(self.to_min)
         log_max = math.log(self.to_max)
 
-        return math.exp(log_min + (value / self.from_max) * (log_max - log_min))
+        return math.exp(log_min + (value / from_max) * (log_max - log_min))
 
     def convert(self, value):
+        from .core import VirtualDevice
+
+        from_min, from_max = (
+            self.data.range
+            if isinstance(self.data, VirtualDevice)
+            else self.data.parameter.range
+        )
         if isinstance(value, Decimal):
             value = float(value)
         if self.method == "lin":
-            res = self.convert_lin(value)
+            res = self.convert_lin(value, from_min=from_min, from_max=from_max)
         elif self.method == "log":
-            res = self.convert_log(value)
+            res = self.convert_log(value, from_max=from_max)
         else:
             raise Exception("Unknown conversion method")
         res = int(res) if self.as_int else res
         if isinstance(value, Int):
             value.update(res)
             return value
-        # print("Converting", value, res)
+        # print("Converting", value, res, "from", self.from_min, self.from_max, "to", self.to_min, self.to_max)
         return res
 
     def __call__(self, value, *args, **kwargs):
@@ -371,8 +382,8 @@ class PadOrKey:
             # device=self.device,
             to_min=min,
             to_max=max,
-            from_min=self.range[0],
-            from_max=self.range[1],
+            # from_min=self.range[0],
+            # from_max=self.range[1],
             method=method,
             as_int=as_int,
             auto=min is None and max is None,
@@ -552,12 +563,37 @@ class ModulePadsOrKeys:
                 assert isinstance(pad, PadOrKey)
                 self.__set__(instance, e)
             return
+        from .core import VirtualDevice
+
+        if isinstance(value, VirtualDevice):
+            feeder = value
+
+            def foo(value, ctx):
+                if value == 0:
+                    instance.device.all_notes_off()
+                    return
+                instance.device.note(
+                    note=value,
+                    velocity=127,
+                    type="note_off" if value == 0 else "note_on",
+                )
+
+            feeder.bind(
+                debug(foo),
+                to=instance.device,
+                param=self,
+                append=append,
+            )
         # if isinstance(value, Scaler):
         #     scaler = value
         #     scaler.install_fun(instance.device, self)
         #     return
 
     def basic_send(self, type, note, velocity): ...
+
+
+def debug(l):
+    return lambda value, ctx: (print("->", value, ctx), l(value, ctx))
 
 
 @dataclass

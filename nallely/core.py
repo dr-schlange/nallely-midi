@@ -139,6 +139,25 @@ class ParameterInstance:
                 # device.unbind(self.device, self, port.type, port.cc_note)
                 device.unbind(self.device, self, parameter.type, parameter.cc_note)
 
+    def scale(
+        self,
+        min: int | float | None = None,
+        max: int | float | None = None,
+        method: Literal["lin"] | Literal["log"] = "lin",
+        as_int: bool = False,
+    ):
+        return Scaler(
+            data=self,
+            # device=self.device,
+            to_min=min,
+            to_max=max,
+            from_min=self.parameter.range[0],
+            from_max=self.parameter.range[1],
+            method=method,
+            as_int=as_int,
+            auto=min is None and max is None,
+        )
+
 
 @dataclass
 class VirtualParameter:
@@ -392,13 +411,17 @@ class VirtualDevice(threading.Thread):
     def bind(
         self, callback, to, param, stream=False, append=True, transformer_chain=None
     ):
-        if stream:
-            self.stream_callbacks.append((callback, transformer_chain))
+        if transformer_chain:
+            _callback = lambda value, ctx: callback(transformer_chain(value, ctx), ctx)
         else:
-            self.callbacks.append((callback, transformer_chain))
+            _callback = callback
+        if stream:
+            self.stream_callbacks.append((_callback, param, transformer_chain))
+        else:
+            self.callbacks.append((_callback, param, transformer_chain))
         self.callbacks_registry.append(
             CallbackRegistryEntry(
-                target=to, parameter=param, callback=callback, chain=transformer_chain
+                target=to, parameter=param, callback=_callback, chain=transformer_chain
             )
         )
 
@@ -418,15 +441,16 @@ class VirtualDevice(threading.Thread):
                 callback = entry.callback
                 self.callbacks_registry.remove(entry)
                 try:
-                    for c, chain in list(self.stream_callbacks):
+                    for c, parameter, chain in list(self.stream_callbacks):
                         if c is callback:
-                            self.stream_callbacks.remove((callback, chain))
+                            self.stream_callbacks.remove((callback, parameter, chain))
+                            return
                 except ValueError:
                     ...
                 try:
-                    for c, chain in list(self.callbacks):
+                    for c, parameter, chain in list(self.callbacks):
                         if c is callback:
-                            self.callbacks.remove((callback, chain))
+                            self.callbacks.remove((callback, parameter, chain))
                 except ValueError:
                     ...
 
@@ -434,25 +458,22 @@ class VirtualDevice(threading.Thread):
         setattr(self, param, value)
 
     def process_output(self, value, ctx):
-        if value is not None:
+        if value is None:
+            return
+        try:
+            self.output_queue.put_nowait((value, ctx))
+        except Full:
+            pass  # Drop if full
+        for callback, _, _ in self.stream_callbacks:
             try:
-                self.output_queue.put_nowait((value, ctx))
-            except Full:
-                pass  # Drop if full
-        for callback, chain in self.stream_callbacks:
-            try:
-                if chain:
-                    value = chain(value, ctx)
                 callback(value, ctx)
             except Exception as e:
                 traceback.print_exc()
                 raise e
         if value != ctx.last_value:
             ctx.last_value = value
-            for callback, chain in self.callbacks:
+            for callback, _, _ in self.callbacks:
                 try:
-                    if chain:
-                        value = chain(value, ctx)
                     callback(value, ctx)
                 except Exception as e:
                     traceback.print_exc()
@@ -466,8 +487,8 @@ class VirtualDevice(threading.Thread):
             max,
             method,
             as_int,
-            from_min=self.min_range,
-            from_max=self.max_range,
+            # from_min=self.min_range,
+            # from_max=self.max_range,
             auto=min is None and max is None,
         )
 
@@ -478,6 +499,10 @@ class VirtualDevice(threading.Thread):
     @property
     def min_range(self) -> float | int | None:
         return None
+
+    @property
+    def range(self):
+        return (self.min_range, self.max_range)
 
     def generate_fun(self, to_device, to_param):
         if isinstance(to_param, VirtualParameter):
@@ -818,6 +843,9 @@ outputs: {mido.get_input_names()}"""
 
 @no_registration
 class TimeBasedDevice(VirtualDevice):
+    speed_cv = VirtualParameter("speed", range=(0, None))
+    sampling_rate_cv = VirtualParameter("sampling_rate", range=(0, None))
+
     def __init__(
         self,
         speed: int | float = 1.0,
