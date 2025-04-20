@@ -491,6 +491,15 @@ const DevicePatching = () => {
 					<button
 						type="button"
 						className={"associate-button"}
+						onClick={() => trevorSocket?.pullFullState()}
+					>
+						Full State
+					</button>
+				</div>
+				<div className="device-patching-top-panel">
+					<button
+						type="button"
+						className={"associate-button"}
 						onClick={openAboutModal}
 					>
 						About

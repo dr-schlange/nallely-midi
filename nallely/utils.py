@@ -104,7 +104,7 @@ class WebSocketBus(VirtualDevice):
         self.connected = defaultdict(list)
         self.known_services = {}
         self.to_update = None
-        super().__init__(target_cycle_time=0.5, **kwargs)
+        super().__init__(target_cycle_time=10, **kwargs)
 
         def __setattr__(self, key, value):
             if isinstance(getattr(self, key, None), WSWaitingRoom):

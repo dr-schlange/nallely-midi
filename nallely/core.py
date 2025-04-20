@@ -43,15 +43,21 @@ def need_registration(cls):
     return cls.__dict__.get("registrer", True)
 
 
-def stop_all_virtual_devices():
+def stop_all_virtual_devices(skip_unregistered=False):
     for device in list(virtual_devices):
+        if skip_unregistered and device.__class__ not in virtual_device_classes:
+            print("Skipping", device)
+            continue
         device.stop()
     # scheduler.stop()
 
 
-def stop_all_connected_devices():
-    stop_all_virtual_devices()
+def stop_all_connected_devices(skip_unregistered=False):
+    stop_all_virtual_devices(skip_unregistered)
     for device in list(connected_devices):
+        if skip_unregistered and device.__class__ not in midi_device_classes:
+            print("Skipping", device)
+            continue
         device.close()
 
 

@@ -84,11 +84,16 @@ class TrevorBus(VirtualDevice):
 
     def create_device(self, name):
         autoconnect = False
+        debug = True
         cls = next((cls for cls in midi_device_classes if cls.__name__ == name), None)
         if cls is None:
             cls = next((cls for cls in virtual_device_classes if cls.__name__ == name))
             autoconnect = True  # we start the virtual device
-        instance = cls(autoconnect=autoconnect)
+            debug = False
+        if debug:
+            instance = cls(autoconnect=autoconnect, debug=debug)
+        else:
+            instance = cls(autoconnect=autoconnect)
         instance.to_update = self
         return self.full_state()
 
@@ -135,7 +140,7 @@ class TrevorBus(VirtualDevice):
         return self.full_state()
 
     def reset_all(self):
-        nallely.stop_all_connected_devices()
+        nallely.stop_all_connected_devices(skip_unregistered=True)
         return self.full_state()
 
     def associate_parameters(self, from_parameter, to_parameter, unbind):

@@ -194,6 +194,12 @@ class TrevorWebSocket {
 			}),
 		);
 	}
+
+	public pullFullState() {
+		this.sendMessage(JSON.stringify({
+			command: "full_state"
+		}))
+	}
 }
 
 let websocket: TrevorWebSocket | null = null;
