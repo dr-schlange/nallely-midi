@@ -15,7 +15,9 @@ Features:
 * auto-scaling: if you want the source to adapt to the range of the target without setting the range yourself,
 * websocket-based bus on which external services can auto-register and expose parameters to which you can bind your MIDI/virtual devices in a seemless way,
 * LFOs composition with mathematical expressions,
-* save/reload patch for any MIDI device.
+* Envelope Generator,
+* a web interface relying on a websocket protocol (named Trevor) which allows you to do graphically what you would ask Nallely to do in normal time (map devices, parameters, scalers),
+* save/reload patch for any MIDI device
 
 Planned:
 * handle multiple banks per device/per section,
@@ -24,9 +26,7 @@ Planned:
 * some new virtual devices:
   * arpegiator
   * sequencer
-  * envelope generator
 * possibility to broadcast messages and information from the external services,
-* a TUI or web interface to help you create new virtual devices instances and map your MIDI/virtual devices together.
 
 
 ## Quick examples

@@ -1,3 +1,7 @@
+from typing import Any
+
+from nallely.core import ThreadContext
+
 from .core import VirtualDevice, VirtualParameter
 
 
@@ -14,7 +18,12 @@ class ADSREnvelope(VirtualDevice):
         self.sustain = sustain
         self.release = release
         self.gate = 0  # False
-        super().__init__(target_cycle_time=1/20, **kwargs)
+        super().__init__(target_cycle_time=1 / 50, **kwargs)
+
+    def process_input(self, param, value):
+        if param == "gate":
+            return super().process_input(param, 1 if value != 0 else 0)
+        super().process_input(param, value)
 
     def setup(self):
         ctx = super().setup()
@@ -31,7 +40,8 @@ class ADSREnvelope(VirtualDevice):
             if ctx.phase in ["idle", "release"]:
                 ctx.phase = "attack"
                 ctx.time_in_phase = 0.0
-        elif ctx.phase not in ["release", "idle"]:
+        else:
+            if ctx.phase not in ["release", "idle"]:
                 ctx.phase = "release"
                 ctx.time_in_phase = 0.0
                 ctx.release_start_level = ctx.level
@@ -75,7 +85,6 @@ class ADSREnvelope(VirtualDevice):
             ctx.level = 0.0
 
         return ctx.level
-
 
     @property
     def range(self):

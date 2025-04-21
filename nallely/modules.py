@@ -464,19 +464,7 @@ class PadOrKey:
             )
         if self.mode == "latch":
             ...
-        from .core import ThreadContext
-
-        return lambda value, ctx: to_device.receiving(
-            value,
-            on=to_param.name,
-            ctx=ThreadContext(
-                {
-                    **ctx,
-                    "param": f"key/pad #{self.cc_note}",
-                    "mode": self.mode,
-                }
-            ),
-        )
+        return lambda value, ctx: to_device.set_parameter(to_param.name, value)
 
     def generate_inner_fun_midiparam(self, to_module, to_param):
         if self.mode == "latch":

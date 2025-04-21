@@ -25,7 +25,9 @@ from nallely.core import (
 from websockets.sync.server import serve
 import json
 from minilab import Minilab
+from nallely.eg import ADSREnvelope
 from nallely.modules import Scaler
+from nallely.utils import WebSocketBus
 
 
 class StateEncoder(json.JSONEncoder):
@@ -300,20 +302,41 @@ class TrevorBus(VirtualDevice):
         return d
 
 
+nts1 = NTS1()
 try:
-    ws = TrevorBus()
-    ws.start()
+    # ws = TrevorBus()
+    # ws.start()
 
-    # lfo = nallely.LFO(waveform="sine", speed=0.5)
-    # lfo.start()
-    # lfo.speed_cv = lfo.scale(14, 44)
+    # # lfo = nallely.LFO(waveform="sine", speed=0.5)
+    # # lfo.start()
+    # # lfo.speed_cv = lfo.scale(14, 44)
 
-    # nts1 = NTS1(device_name="Scarlett")
-    # # nts1.filter.cutoff = lfo
-    # lfo.speed_cv = nts1.filter.cutoff
+    # minilab = Minilab()
+    # adsr = ADSREnvelope(autoconnect=True, release=0.5, attack=0.0, decay=1, sustain=0)
+
+    # input()
+    # nts1.keys.notes = minilab.keys[:]
+    # for key in minilab.keys[:]:
+    #     adsr.gate_cv = key.velocity
+
+    # adsr.attack_cv = minilab.set3.b9.scale(0.0, 1.0)
+    # adsr.decay_cv = minilab.set3.b10.scale(0.0, 1.0)
+    # adsr.sustain_cv = minilab.set3.b11.scale(0.0, 1.0)
+    # adsr.release_cv = minilab.set3.b12.scale(0.0, 1.0)
+
+    # # nts1.filter.cutoff = adsr.scale(0, 127)
+    # # nts1.filter.cutoff = adsr.scale(0, 127)
+    # # nts1.filter.resonance = adsr.scale(127, 0)
+
+    # wss = WebSocketBus()
+    # wss.to_update = ws
+    # wss.start()
+    # wss.scope_data = adsr
+    # wss.scope_data2 = adsr.scale(0, 127)
 
     # ws.full_state()
 
     input("Stop server...")
 finally:
+    nts1.force_all_notes_off()
     nallely.stop_all_connected_devices()
