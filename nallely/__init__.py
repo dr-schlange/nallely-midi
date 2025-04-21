@@ -9,6 +9,7 @@ from .core import (
 from .lfos import LFO, Cycler
 from .modules import Module, ModulePadsOrKeys, ModuleParameter, PadOrKey
 from .utils import TerminalOscilloscope, WebSocketBus
+from .eg import ADSREnvelope
 
 __all__ = [
     "stop_all_connected_devices",
@@ -25,4 +26,5 @@ __all__ = [
     "TerminalOscilloscope",
     "LFO",
     "Cycler",
+    "ADSREnvelope",
 ]
