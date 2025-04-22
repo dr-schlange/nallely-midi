@@ -904,7 +904,7 @@ class TimeBasedDevice(VirtualDevice):
 
     def compute_sampling_rate(self):
         if self.speed <= 1:
-            return 20  # we sample 20 point, enough as it's slow
+            return 50  # we sample 50 point, enough as it's slow
         return int(self.speed * 20)  # we sample 20 times faster than the speed
 
     def generate_value(self, t) -> Any: ...

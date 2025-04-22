@@ -48,7 +48,7 @@ async def websocket_handler():
                 plt.theme("dark")
                 plt.xticks([])
                 plt.yticks([])
-                # plt.scatter([0, 127], marker=" ")
+                plt.scatter([0, 127], marker=" ")
                 # plt.scatter([0, 2], marker=" ")
                 plt.title(f"Receiving from {msg['sender']} [{value}]")
                 for channel, channel_data in data.items():
