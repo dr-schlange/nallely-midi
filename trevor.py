@@ -2,7 +2,6 @@ from collections import defaultdict
 from dataclasses import asdict
 from decimal import Decimal
 from itertools import chain
-from multiprocessing import connection
 from pathlib import Path
 
 import mido
@@ -13,9 +12,8 @@ from nallely.core import (
     CallbackRegistryEntry,
     MidiDevice,
     ParameterInstance,
-    ThreadContext,
-    VirtualParameter,
     connected_devices,
+    unbind_all,
     virtual_devices,
     virtual_device_classes,
     midi_device_classes,
@@ -216,7 +214,11 @@ class TrevorBus(VirtualDevice):
         device.process_input(parameter, value)
         return self.full_state()
 
-    def full_state(self):
+    def delete_all_connections(self):
+        unbind_all()
+        return self.full_state()
+
+    def all_connections(self):
         connections = []
 
         def scaler_as_dict(scaler):
@@ -245,12 +247,14 @@ class TrevorBus(VirtualDevice):
                     {
                         "src": {
                             "device": id(device),
+                            "repr": device.uid(),
                             "parameter": asdict(device.reverse_map[(cc_type, cc_note)]),
                             "explicit": entry.cc_note,
                             "chain": scaler_as_dict(entry.chain),
                         },
                         "dest": {
                             "device": id(entry.target),
+                            "repr": entry.target.uid(),
                             "parameter": asdict(entry.parameter),
                             "explicit": entry.cc_note,
                         },
@@ -264,17 +268,22 @@ class TrevorBus(VirtualDevice):
                     {
                         "src": {
                             "device": id(device),
+                            "repr": device.uid(),
                             "parameter": asdict(VirtualDevice.output_cv),
                             "explicit": entry.cc_note,
                             "chain": scaler_as_dict(entry.chain),
                         },
                         "dest": {
                             "device": id(entry.target),
+                            "repr": entry.target.uid(),
                             "parameter": asdict(entry.parameter),
                             "explicit": entry.cc_note,
                         },
                     }
                 )
+        return connections
+
+    def full_state(self):
 
         d = {
             "input_ports": [
@@ -289,7 +298,7 @@ class TrevorBus(VirtualDevice):
                 for device in virtual_devices
                 if device.__class__ in virtual_device_classes
             ],
-            "connections": connections,
+            "connections": self.all_connections(),
             "classes": {
                 "virtual": [cls.__name__ for cls in virtual_device_classes],
                 "midi": [cls.__name__ for cls in midi_device_classes],
@@ -302,10 +311,10 @@ class TrevorBus(VirtualDevice):
         return d
 
 
-nts1 = NTS1()
+# nts1 = NTS1()
 try:
-    # ws = TrevorBus()
-    # ws.start()
+    ws = TrevorBus()
+    ws.start()
 
     # # lfo = nallely.LFO(waveform="sine", speed=0.5)
     # # lfo.start()
@@ -338,5 +347,5 @@ try:
 
     input("Stop server...")
 finally:
-    nts1.force_all_notes_off()
+    # nts1.force_all_notes_off()
     nallely.stop_all_connected_devices()

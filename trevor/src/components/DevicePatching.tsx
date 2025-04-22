@@ -4,6 +4,7 @@ import PatchingModal from "./PatchingModal";
 import { useTrevorSelector } from "../store";
 
 import type {
+	MidiConnection,
 	MidiDevice,
 	MidiDeviceSection,
 	MidiDeviceWithSection,
@@ -12,17 +13,14 @@ import type {
 	VirtualDeviceWithSection,
 	VirtualParameter,
 } from "../model";
-import {
-	buildSectionId,
-	drawConnection,
-	isVirtualDevice,
-} from "../utils/svgUtils";
+import { drawConnection } from "../utils/svgUtils";
 import { AboutModal } from "./AboutModal";
 import { SaveModal } from "./SaveModal";
 import { RackRowVirtual } from "./RackRowVirtual";
 import { useTrevorWebSocket } from "../websocket";
-import SmartDragNumberInput from "./DragInputs";
 import DragNumberInput from "./DragInputs";
+import { buildSectionId, connectionId, isVirtualDevice } from "../utils/utils";
+import { ScalerForm } from "./ScalerForm";
 
 const DevicePatching = () => {
 	const mainSectionRef = useRef(null);
@@ -49,8 +47,9 @@ const DevicePatching = () => {
 		(state) => state.nallely.virtual_devices,
 	);
 	const trevorSocket = useTrevorWebSocket();
-	const [information, setInformation] = useState<ReactElement | null>(null);
+	const [information, setInformation] = useState<ReactElement>();
 	const [currentSelected, setCurrentSelected] = useState<number>();
+	const [selectedConnection, setSelectedConnection] = useState<string>();
 	const [tempValues, setTempValues] = useState<
 		Record<number, Record<string, string | undefined>>
 	>({});
@@ -133,7 +132,7 @@ const DevicePatching = () => {
 					value={currentValue}
 					onBlur={(value) => {
 						if (!Number.isNaN(Number.parseFloat(value))) {
-							console.log("SEND")
+							console.log("SEND");
 							trevorSocket?.setVirtualValue(device, parameter, value);
 						}
 					}}
@@ -212,12 +211,13 @@ const DevicePatching = () => {
 		section: MidiDeviceSection | undefined = undefined,
 	) => {
 		if (device === undefined) {
+			setInformation(undefined);
 			return;
 		}
 		if (isVirtualDevice(device)) {
 			setInformation(
 				<>
-					<p style={{ marginLeft: "5px" }}>{device.meta.name}</p>
+					<p style={{ marginLeft: "5px" }}>{device.repr}</p>
 					{device.meta.parameters.map((param) => (
 						<p
 							key={param.name}
@@ -232,11 +232,13 @@ const DevicePatching = () => {
 					))}
 				</>,
 			);
-		} else {
+			return;
+		}
+		if (section) {
 			setInformation(
 				<>
 					<p style={{ marginLeft: "5px" }}>
-						{device.meta.name} {section?.name}
+						{device.repr} {section?.name}
 					</p>
 					{section?.parameters.map((param) => (
 						<p
@@ -249,12 +251,28 @@ const DevicePatching = () => {
 					))}
 				</>,
 			);
+			return;
 		}
+		setInformation(
+			<>
+				<p style={{ marginLeft: "5px" }}>{device.repr}</p>
+				{device.meta.sections?.map((section) => (
+					<button
+						key={section.name}
+						type="button"
+						className={"associate-button"}
+						onClick={() => updateInfo(device, section)}
+					>
+						{section.name}
+					</button>
+				))}
+			</>,
+		);
 	};
 
 	const resetAll = () => {
-		trevorSocket.resetAll()
-	}
+		trevorSocket?.resetAll();
+	};
 
 	useEffect(() => {
 		updateInfo(
@@ -268,6 +286,7 @@ const DevicePatching = () => {
 		device: VirtualDevice,
 		// parameter: VirtualParameter,
 	) => {
+		setSelectedConnection(undefined);
 		if (!associateMode) {
 			updateInfo(device);
 			setCurrentSelected(device.id);
@@ -283,6 +302,9 @@ const DevicePatching = () => {
 				...selectedSections,
 				{ device, section: virtualSection },
 			];
+			// @ts-expect-error objects are not fully polymorphic, but that's ok here
+			setSelectedSections(newSelection);
+
 			if (newSelection.length === 2) {
 				setSelectedSection({
 					firstSection: newSelection[0],
@@ -295,9 +317,10 @@ const DevicePatching = () => {
 					</p>,
 				);
 				setIsModalOpen(true);
+			} else {
+				updateInfo(device);
+				setCurrentSelected(device.id);
 			}
-			// @ts-expect-error objects are not fully polymorphic, but that's ok here
-			setSelectedSections(newSelection);
 		}
 	};
 
@@ -305,6 +328,7 @@ const DevicePatching = () => {
 		device: MidiDevice,
 		section: MidiDeviceSection,
 	) => {
+		setSelectedConnection(undefined);
 		if (!associateMode) {
 			updateInfo(device, section);
 			setCurrentSelected(device.id);
@@ -323,6 +347,7 @@ const DevicePatching = () => {
 		}
 		if (selectedSections.length < 2) {
 			const newSelection = [...selectedSections, { device, section }];
+			setSelectedSections(newSelection);
 			if (newSelection.length === 2) {
 				setSelectedSection({
 					firstSection: newSelection[0],
@@ -335,8 +360,10 @@ const DevicePatching = () => {
 					</p>,
 				);
 				setIsModalOpen(true);
+			} else {
+				updateInfo(device, section);
+				setCurrentSelected(device.id);
 			}
-			setSelectedSections(newSelection);
 		}
 	};
 
@@ -345,6 +372,7 @@ const DevicePatching = () => {
 		setIsAboutOpen(false);
 		setSelectedSections([]);
 		setIsSaveOpen(false);
+		// setAssociateMode(false);
 	};
 
 	const updateConnections = () => {
@@ -356,9 +384,12 @@ const DevicePatching = () => {
 		}
 
 		for (const connection of allConnections) {
+			const srcSection = connection.src.parameter.section_name;
 			const srcId = buildSectionId(
 				connection.src.device,
-				connection.src.parameter.section_name,
+				srcSection === "__virtual__"
+					? (connection.src.parameter as VirtualParameter).cv_name
+					: srcSection,
 			);
 			const dstSection = connection.dest.parameter.section_name;
 			const destId = buildSectionId(
@@ -369,13 +400,18 @@ const DevicePatching = () => {
 			);
 			const fromElement = document.querySelector(`[id="${srcId}"]`);
 			const toElement = document.querySelector(`[id="${destId}"]`);
-			drawConnection(svg, fromElement, toElement, false);
+			drawConnection(
+				svg,
+				fromElement,
+				toElement,
+				connectionId(connection) === selectedConnection,
+			);
 		}
 	};
 
 	useEffect(() => {
 		updateConnections();
-	}, [allConnections]); // Update lines when connections change
+	}, [allConnections, selectedConnection]); // Update lines when connections change
 
 	useEffect(() => {
 		const handleResize = () => {
@@ -390,7 +426,7 @@ const DevicePatching = () => {
 		return () => {
 			observer.disconnect();
 		};
-	}, [allConnections]);
+	}, [allConnections, selectedConnection]);
 
 	const handleDeviceDrop = (
 		draggedDevice: any,
@@ -407,6 +443,72 @@ const DevicePatching = () => {
 
 	const handleNonSectionClick = () => {
 		setSelectedSections([]); // Deselect sections
+	};
+
+	const handleMidiDeviceClick = (device: MidiDevice) => {
+		updateInfo(device);
+	};
+
+	const findDevice = (deviceId: number) => {
+		return [...midi_devices, ...virtual_devices].find((d) => d.id === deviceId);
+	};
+
+	const handleConnectionClick = (connection: MidiConnection) => {
+		const coId = connectionId(connection);
+		if (selectedConnection === coId) {
+			setSelectedConnection(undefined);
+			setInformation(undefined);
+
+			return;
+		}
+		setSelectedConnection(connectionId(connection));
+		const srcDevice = findDevice(connection.src.device);
+		const destDevice = findDevice(connection.dest.device);
+		setInformation(
+			<>
+				<ScalerForm connection={connection} />
+				<div
+					style={{
+						display: "flex",
+						flexDirection: "column",
+						justifyContent: "space-evenly",
+					}}
+				>
+					{/* <button
+						type="button"
+						className={"associate-button}"}
+						onClick={() => {
+							// setSelectedSections()
+							setIsModalOpen(true);
+						}}
+					>
+						Open
+					</button> */}
+					{srcDevice && destDevice && (
+						<button
+							type="button"
+							className={"associate-button}"}
+							onClick={() => {
+								setSelectedConnection(undefined);
+								trevorSocket?.associateParameters(
+									srcDevice,
+									connection.src.parameter,
+									destDevice,
+									connection.dest.parameter,
+									true,
+								);
+							}}
+						>
+							Delete
+						</button>
+					)}
+				</div>
+			</>,
+		);
+	};
+
+	const deleteAllConnections = () => {
+		trevorSocket?.deleteAllConnections();
 	};
 
 	return (
@@ -426,6 +528,8 @@ const DevicePatching = () => {
 					selectedSections={selectedSections.map(
 						(d) => `${d.device.id}-${d.section.parameters[0]?.section_name}`,
 					)}
+					onSectionScroll={updateConnections}
+					onDeviceClick={handleMidiDeviceClick}
 				/>
 				<RackRowVirtual
 					devices={virtual_devices}
@@ -437,6 +541,7 @@ const DevicePatching = () => {
 					selectedSections={selectedSections.map(
 						(d) => `${d.device.id}-${d.section.parameters[0]?.section_name}`,
 					)}
+					onSectionScroll={updateConnections}
 				/>
 				<svg className="device-patching-svg" ref={svgRef} />
 			</div>
@@ -459,13 +564,66 @@ const DevicePatching = () => {
 						Load
 					</button>
 				</div>
-				<div className="device-patching-middle-panel">
-					<div className="information-panel">
-						<h3>Information</h3>
-						{information ? (
-							information
-						) : (
-							<p>Select a section to view details or associate sections</p>
+				<div>
+					<div className="device-patching-middle-panel">
+						<div className="information-panel">
+							{information ? (
+								information
+							) : (
+								<>
+									<h3>Information</h3>
+									<p>Select a section to view details or associate sections</p>
+								</>
+							)}
+						</div>
+					</div>
+					<div className="bottom-right-panel">
+						<h3>Connections</h3>
+						<div
+							className="connection-setup"
+							style={{
+								height: "150px",
+								position: "relative",
+								overflowY: "scroll",
+							}}
+						>
+							<ul className="connections-list">
+								{allConnections.map((connection) => {
+									const srcSection = connection.src.parameter.section_name;
+									const dstSection = connection.dest.parameter.section_name;
+									return (
+										<li
+											key={`${connection.src.parameter.section_name}-${connection.src.parameter.name}-${connection.dest.parameter.section_name}-${connection.dest.parameter.name}`}
+											onClick={() => handleConnectionClick(connection)}
+											onKeyDown={(e) => {
+												if (e.key === "Enter" || e.key === " ") {
+													handleConnectionClick(connection);
+												}
+											}}
+											onKeyUp={(e) => {
+												if (e.key === "Enter" || e.key === " ") {
+													e.preventDefault();
+												}
+											}}
+											className={`connection-item ${selectedConnection === connectionId(connection) ? "selected" : ""}`}
+										>
+											{`${srcSection === "__virtual__" ? connection.src.repr : srcSection}[${connection.src.parameter.name}] → ${dstSection === "__virtual__" ? connection.dest.repr : dstSection}[${connection.dest.parameter.name}]`}
+										</li>
+									);
+								})}
+							</ul>
+						</div>
+						{allConnections?.length > 0 && (
+							<button
+								type="button"
+								className={"associate-button"}
+								onClick={deleteAllConnections}
+								style={{
+									height: "auto",
+								}}
+							>
+								Delete All
+							</button>
 						)}
 					</div>
 				</div>

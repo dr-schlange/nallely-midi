@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import type { MidiDevice, MidiDeviceSection } from "../model";
-import { buildSectionId } from "../utils/svgUtils";
+import { buildSectionId } from "../utils/utils";
 
 const generateAcronym = (name: string): string => {
 	return name
@@ -20,23 +20,27 @@ const generateAcronym = (name: string): string => {
 };
 
 const MidiDeviceComponent = ({
-	width = 200,
+	width = 220,
 	margin = 5,
 	height = 150,
 	device,
 	selected = false,
 	onSectionClick,
+	onDeviceClick,
 	selectedSections,
 	classConnections = false,
+	onSectionScroll,
 }: {
 	width?: number;
 	height?: number;
 	margin?: number;
 	device: MidiDevice;
 	onSectionClick?: (section: MidiDeviceSection) => void;
+	onDeviceClick?: (device: MidiDevice) => void;
 	selectedSections?: string[];
 	classConnections?: boolean;
 	selected?: boolean;
+	onSectionScroll?: () => void;
 }) => {
 	const [isNameOnLeft, setIsNameOnLeft] = useState(true); // Track the side of the name
 	// const sections = Object.keys(device.config);
@@ -51,20 +55,22 @@ const MidiDeviceComponent = ({
 	}, [leftSections, rightSections]);
 
 	return (
+		// biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
 		<div
 			className="device-component"
 			style={{
-				width: width - margin * 2,
-				height: height - margin * 2,
+				width: width - margin * 3,
+				height: height - margin * 3,
 				boxSizing: "border-box",
-				borderColor: selected ? "yellow": ""
+				borderColor: selected ? "yellow" : "",
 			}}
 			id={`${device.id}`}
+			onClick={() => onDeviceClick?.(device)}
 		>
 			<div className={`device-name ${isNameOnLeft ? "left" : "right"}`}>
-				{device.meta.name}
+				{device.repr}
 			</div>
-			<div className="device-sections">
+			<div className="device-sections" onScroll={onSectionScroll}>
 				{/* Left side sections */}
 				<div className="device-side left">
 					{leftSections.map((section) => {

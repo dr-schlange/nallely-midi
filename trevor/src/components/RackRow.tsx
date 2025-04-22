@@ -9,6 +9,8 @@ export const RackRow = ({
 	selectedSections,
 	onNonSectionClick,
 	devices,
+	onSectionScroll,
+	onDeviceClick,
 }: {
 	height: number;
 	rowIndex: number;
@@ -21,6 +23,8 @@ export const RackRow = ({
 	onSectionClick: (device: MidiDevice, section: MidiDeviceSection) => void;
 	selectedSections: string[];
 	onNonSectionClick: () => void;
+	onSectionScroll?: () => void;
+	onDeviceClick?: (device: MidiDevice) => void;
 }) => {
 	const slotWidth = 210;
 
@@ -79,6 +83,7 @@ export const RackRow = ({
 						device={device}
 						onSectionClick={(section) => onSectionClick(device, section)}
 						selectedSections={selectedSections}
+						onDeviceClick={onDeviceClick}
 					/>
 				</div>
 			))}

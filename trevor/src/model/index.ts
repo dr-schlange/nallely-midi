@@ -9,6 +9,7 @@ export interface NallelyState {
 
 export interface VirtualDevice {
 	id: number;
+	repr: string;
 	meta: {
 		name: string;
 		parameters: VirtualParameter[];
@@ -33,6 +34,7 @@ export interface VirtualParameter {
 
 export interface MidiDevice {
 	id: number;
+	repr: string;
 	meta: {
 		name: string;
 		sections: MidiDeviceSection[];
@@ -60,6 +62,7 @@ export interface MidiConnection {
 
 export interface MidiConnectionEnd {
 	device: number;
+	repr: string;
 	parameter: MidiParameter | VirtualParameter;
 	chain: MidiScaler | null;
 }

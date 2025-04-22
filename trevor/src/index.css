@@ -394,6 +394,8 @@ input[type="text"]:disabled {
   justify-content: space-between; /* Position sections on sides */
   height: 100%;
   width: 100%;
+  max-height: 100px; /* ou autre valeur selon ton besoin */
+  overflow-y: auto;
 }
 
 .device-side {
@@ -561,7 +563,7 @@ input[type="text"]:disabled {
 .left-panel {
   flex: 4; /* 80% of the horizontal space */
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   border-right: 2px solid #808080;
 }
 
@@ -575,6 +577,8 @@ input[type="text"]:disabled {
   justify-content: flex-start;
   padding: 10px;
   overflow-y: auto; /* Allow scrolling if content overflows */
+  border: 2px solid #808080;
+  box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
 }
 
 .top-left-panel h3 {
@@ -604,6 +608,8 @@ input[type="text"]:disabled {
   justify-content: flex-start;
   padding: 10px;
   overflow-y: auto; /* Allow scrolling if content overflows */
+  border: 2px solid #808080;
+  box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
 }
 
 .bottom-left-panel h3 {
@@ -643,10 +649,22 @@ input[type="text"]:disabled {
 
 .parameters-grid {
   display: flex;
-  justify-content: space-between; /* Distribute parameters evenly */
-  align-items: center; /* Center vertically */
+  justify-content: space-evenly;
+  flex-direction: column;
+  align-items: center;
   width: 100%; /* Take full horizontal space */
   height: 100%; /* Ensure the grid takes full height of the container */
+  flex-wrap: wrap;
+}
+
+.parameters-grid.right {
+  align-items: flex-start;
+  transform: translateX(20%)
+}
+
+.parameters-grid.left {
+  align-items: flex-end;
+  transform: translateX(-20%)
 }
 
 .parameter {
@@ -672,18 +690,24 @@ input[type="text"]:disabled {
   font-weight: bold;
   color: #000000; /* Black text for parameter names */
   position: absolute;
-  text-align: center;
-  width: 100%;
-  left: 50%; /* Center horizontally */
-  transform: translateX(-50%); /* Adjust to align with the center of the parameter box */
+  text-align: left; /* Align the text to the left */
+  white-space: nowrap;  /* Adjust to align with the center of the parameter box */
 }
 
-.parameter-name.top {
-  top: -15px; /* Position above the square */
+.parameter-name.left {
+  top: 50%;
+  right: 110%; /* Moves the text to the left of the box */
+  transform: translateY(-50%);
+  white-space: nowrap;
+  text-align: left;
 }
 
-.parameter-name.bottom {
-  bottom: -15px; /* Position below the square */
+.parameter-name.right {
+  top: 50%;
+  left: 110%; /* Juste à droite du carré */
+  transform: translateY(-50%);
+  white-space: nowrap;
+  text-align: left;
 }
 
 .parameter:hover .parameter-box,
@@ -788,13 +812,13 @@ input[type="text"]:disabled {
 }
 
 .top-section {
-  flex: 4; /* 40% of the vertical space */
+  flex: 2;
   display: flex;
   border-bottom: 2px solid #808080;
 }
 
 .bottom-section {
-  flex: 6; /* 60% of the vertical space */
+  flex: 8; /* 60% of the vertical space */
   display: flex;
 }
 

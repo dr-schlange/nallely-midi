@@ -7,7 +7,7 @@ from dataclasses import InitVar, asdict, dataclass, field
 from decimal import Decimal
 from pathlib import Path
 from queue import Empty, Full, Queue
-from typing import Any, Callable, Counter, Iterable, Literal, Type
+from typing import Any, Callable, Counter, Iterable, Literal, Self, Type
 
 import mido
 
@@ -71,6 +71,11 @@ def get_virtual_devices():
 
 def all_devices():
     return get_connected_devices() + get_virtual_devices()
+
+
+def unbind_all():
+    for device in all_devices():
+        device.unbind_all()
 
 
 def get_all_virtual_parameters(cls):
@@ -151,8 +156,8 @@ class ParameterInstance:
             # device=self.device,
             to_min=min,
             to_max=max,
-            from_min=self.parameter.range[0],
-            from_max=self.parameter.range[1],
+            # from_min=self.parameter.range[0],
+            # from_max=self.parameter.range[1],
             method=method,
             as_int=as_int,
             auto=min is None and max is None,
@@ -275,8 +280,15 @@ class VirtualParameter:
 
 
 class VirtualDevice(threading.Thread):
+    _id: dict[Type, int] = defaultdict(int)
     variable_refresh: bool = True
     output_cv = VirtualParameter(name="output")
+
+    def __new__(cls, *args, **kwargs) -> Self:
+        instance = super().__new__(cls)
+        instance._id[cls] += 1
+        instance._number = instance._id[cls]  # type: ignore
+        return instance
 
     def __init__(self, target_cycle_time: float = 0.005, autoconnect: bool = False):
         super().__init__(daemon=True)
@@ -521,6 +533,7 @@ class VirtualDevice(threading.Thread):
         virtual_parameters = get_all_virtual_parameters(self.__class__)
         return {
             "id": id(self),
+            "repr": self.uid(),
             "meta": {
                 "name": self.__class__.__name__,
                 "parameters": [asdict(p) for p in virtual_parameters.values()],
@@ -532,6 +545,9 @@ class VirtualDevice(threading.Thread):
                 if p.name != "output"
             },
         }
+
+    def uid(self):
+        return f"{self.__class__.__name__}{self._number}"
 
 
 @dataclass
@@ -624,7 +640,7 @@ class MidiDevice:
             self.inport = None
             self.inport_name = None
 
-    def close(self, delete=False):
+    def close(self, delete=True):
         self.close_in()
         self.close_out()
         # flush all callbacks and registry
@@ -808,6 +824,7 @@ class MidiDevice:
     def to_dict(self):
         d = {
             "id": id(self),
+            "repr": self.uid(),
             "ports": {
                 "input": self.inport.name if self.inport else None,
                 "output": self.outport.name if self.outport else None,
@@ -821,6 +838,9 @@ class MidiDevice:
             "config": self.modules.as_dict_patch(with_meta=False),
         }
         return d
+
+    def uid(self):
+        return f"{self.__class__.__name__}"
 
 
 class DeviceSerializer(json.JSONEncoder):

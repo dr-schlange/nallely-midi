@@ -3,7 +3,7 @@ import MidiDeviceComponent from "./DeviceComponent";
 import { useTrevorSelector } from "../store";
 import { drawConnection } from "../utils/svgUtils";
 import { useTrevorWebSocket } from "../websocket";
-import { MidiDevice } from "../model";
+import type { MidiDevice } from "../model";
 
 const truncateName = (name: string, maxLength: number) => {
 	return name.length > maxLength ? `${name.slice(0, maxLength)}...` : name;

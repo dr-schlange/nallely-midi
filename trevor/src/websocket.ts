@@ -6,7 +6,7 @@ import type {
 } from "./model";
 import { store } from "./store";
 import { setFullState } from "./store/trevorSlice";
-import { isVirtualParameter } from "./utils/svgUtils";
+import { isVirtualParameter } from "./utils/utils";
 
 const WEBSOCKET_URL = `ws://${window.location.hostname}:6788/trevor`;
 
@@ -196,9 +196,19 @@ class TrevorWebSocket {
 	}
 
 	public pullFullState() {
-		this.sendMessage(JSON.stringify({
-			command: "full_state"
-		}))
+		this.sendMessage(
+			JSON.stringify({
+				command: "full_state",
+			}),
+		);
+	}
+
+	public deleteAllConnections() {
+		this.sendMessage(
+			JSON.stringify({
+				command: "delete_all_connections",
+			}),
+		);
 	}
 }
 

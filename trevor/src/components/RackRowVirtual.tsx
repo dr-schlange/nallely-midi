@@ -9,6 +9,7 @@ export const RackRowVirtual = ({
 	selectedSections,
 	onNonSectionClick,
 	devices,
+	onSectionScroll,
 }: {
 	height: number;
 	rowIndex: number;
@@ -21,6 +22,7 @@ export const RackRowVirtual = ({
 	onParameterClick: (device: VirtualDevice, section?: VirtualParameter) => void;
 	selectedSections: string[];
 	onNonSectionClick: () => void;
+	onSectionScroll?: () => void;
 }) => {
 	const slotWidth = 210;
 
@@ -82,6 +84,7 @@ export const RackRowVirtual = ({
 						}
 						onDeviceClick={(device) => onParameterClick(device)}
 						selectedSections={selectedSections}
+						onSectionScroll={onSectionScroll}
 					/>
 				</div>
 			))}

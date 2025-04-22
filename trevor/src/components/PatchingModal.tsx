@@ -9,16 +9,15 @@ import type {
 	VirtualParameter,
 } from "../model";
 import { useTrevorSelector } from "../store";
+import { drawConnection, findConnectorElement } from "../utils/svgUtils";
+import { ScalerForm } from "./ScalerForm";
+import { useTrevorWebSocket } from "../websocket";
 import {
 	buildParameterId,
 	connectionId,
 	connectionsOfInterest,
-	drawConnection,
-	findConnectorElement,
 	isVirtualParameter,
-} from "../utils/svgUtils";
-import { ScalerForm } from "./ScalerForm";
-import { useTrevorWebSocket } from "../websocket";
+} from "../utils/utils";
 
 const parameterUUID = (
 	device: MidiDevice | number | VirtualDevice,
@@ -191,7 +190,7 @@ const PatchingModal = ({
 						<h3>
 							{firstSection?.device.meta.name} {firstSection?.section.name}
 						</h3>
-						<div className="parameters-grid">
+						<div className="parameters-grid left">
 							{firstSection?.section.parameters.map((param) => (
 								<div
 									key={param.name}
@@ -208,14 +207,17 @@ const PatchingModal = ({
 										}
 									}}
 								>
-									<span className="parameter-name top">{param.name}</span>
 									<div className="parameter-box" />
+									<span className="parameter-name left">{param.name}</span>
 								</div>
 							))}
 						</div>
 					</div>
 					<div className="bottom-left-panel">
-						<div className="parameters-grid">
+						<h3>
+							{secondSection?.device.meta.name} {secondSection?.section.name}
+						</h3>
+						<div className="parameters-grid right">
 							{secondSection?.section.parameters.map((param) => (
 								<div
 									key={param.name}
@@ -238,13 +240,10 @@ const PatchingModal = ({
 									}}
 								>
 									<div className="parameter-box" />
-									<span className="parameter-name bottom">{param.name}</span>
+									<span className="parameter-name right">{param.name}</span>
 								</div>
 							))}
 						</div>
-						<h3>
-							{secondSection?.device.meta.name} {secondSection?.section.name}
-						</h3>
 					</div>
 				</div>
 				<div className="right-panel">
@@ -281,7 +280,9 @@ const PatchingModal = ({
 											}
 										}}
 										className={`connection-item ${
-											selectedConnection === connection ? "selected" : ""
+											selectedConnection === connectionId(connection)
+												? "selected"
+												: ""
 										}`}
 									>
 										{`${srcSection === "__virtual__" ? "" : srcSection}[${connection.src.parameter.name}] → ${dstSection === "__virtual__" ? "" : dstSection}[${connection.dest.parameter.name}]`}
