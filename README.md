@@ -126,3 +126,29 @@ This repo comes with one example of a spiral that is controlled by LFOs created 
 The screenshot below shows you what the result looks like with everything launched
 
 ![shot](https://github.com/user-attachments/assets/0fc1a194-5281-4cbc-9ce9-bc2fc86e7342)
+
+
+## Trevor, Nallely's companion
+
+Trevor is a communication protocol made to communicate with Nallely through websocket and ask Nallely to create device instance, map devices together or apply scaler. Trevor also proposes a web UI that lets you bind everything at run time, without any need for stopping/starting again scripts. Trevor is still experimental at the moment.
+
+### Installation & how to launch it
+
+Trevor runs in two parts: the python script (the backend in a way), and the frontend. At the moment, this is the way to launch it, but in the future, it will be integrated in a more seemless way. The web UI is built with vite, react, and uses yarn. We consider here that you have all of this installed already. To install Trevor:
+
+```
+cd trevor
+yarn install
+```
+
+Then to launch everything:
+
+```
+# in 1 terminal, inside of the "trevor" directory
+yarn dev
+
+# in another terminal
+python trevor.py
+```
+
+### Screenshots of Trevor
