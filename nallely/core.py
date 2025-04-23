@@ -3,11 +3,11 @@ import threading
 import time
 import traceback
 from collections import defaultdict
-from dataclasses import InitVar, dataclass, field
+from dataclasses import InitVar, asdict, dataclass, field
 from decimal import Decimal
 from pathlib import Path
 from queue import Empty, Full, Queue
-from typing import Any, Callable, Counter, Literal, Type
+from typing import Any, Callable, Counter, Iterable, Literal, Self, Type
 
 import mido
 
@@ -21,19 +21,43 @@ from .modules import (
     Scaler,
 )
 
-virtual_devices = []
-connected_devices = []
+virtual_devices: list["VirtualDevice"] = []
+connected_devices: list["MidiDevice"] = []
+midi_device_classes: list[Type] = []
+virtual_device_classes: list[Type] = []
 
 
-def stop_all_virtual_devices():
+def no_registration(cls):
+    try:
+        midi_device_classes.remove(cls)
+    except ValueError:
+        ...
+    try:
+        virtual_device_classes.remove(cls)
+    except ValueError:
+        ...
+    return cls
+
+
+def need_registration(cls):
+    return cls.__dict__.get("registrer", True)
+
+
+def stop_all_virtual_devices(skip_unregistered=False):
     for device in list(virtual_devices):
+        if skip_unregistered and device.__class__ not in virtual_device_classes:
+            print("Skipping", device)
+            continue
         device.stop()
     # scheduler.stop()
 
 
-def stop_all_connected_devices():
-    stop_all_virtual_devices()
+def stop_all_connected_devices(skip_unregistered=False):
+    stop_all_virtual_devices(skip_unregistered)
     for device in list(connected_devices):
+        if skip_unregistered and device.__class__ not in midi_device_classes:
+            print("Skipping", device)
+            continue
         device.close()
 
 
@@ -49,20 +73,19 @@ def all_devices():
     return get_connected_devices() + get_virtual_devices()
 
 
-def unbind_all(target=None, param=None):
-    for device in list(all_devices()):
-        if target == None:
-            device.unbind_all()
-        elif param == None:
-            device.unbind(target)
-        else:
-            if isinstance(param, Int):
-                param = param.parameter
-                device.unbind(target, param, type=param.type, cc_note=param.cc_note)
-            elif isinstance(param, ModuleParameter):
-                device.unbind(target, param, type=param.type, cc_note=param.cc_note)
-            else:
-                device.unbind(target, param)
+def unbind_all():
+    for device in all_devices():
+        device.unbind_all()
+
+
+def get_all_virtual_parameters(cls):
+    out = {}
+    for base in reversed(cls.__mro__):
+        for k, v in base.__dict__.items():
+            # if not k.startswith("__") and not callable(v):
+            if isinstance(v, VirtualParameter):
+                out[k] = v
+    return out
 
 
 class ThreadContext(dict):
@@ -81,13 +104,13 @@ class ThreadContext(dict):
         self["parent"] = value
 
 
-@dataclass
 class CallbackRegistryEntry:
     def __init__(
         self,
         target: "VirtualDevice | MidiDevice",
         parameter: "VirtualParameter | ModuleParameter | ModulePadsOrKeys | PadOrKey | ParameterInstance",
         callback: Callable[[Any, ThreadContext], Any],
+        chain: Callable | None,
         cc_note: int | None = None,
         type: str | None = None,
     ):
@@ -96,6 +119,7 @@ class CallbackRegistryEntry:
         self.callback = callback
         self.cc_note = cc_note
         self.type = type
+        self.chain = chain
 
 
 class ParameterInstance:
@@ -120,6 +144,25 @@ class ParameterInstance:
                 # device.unbind(self.device, self, port.type, port.cc_note)
                 device.unbind(self.device, self, parameter.type, parameter.cc_note)
 
+    def scale(
+        self,
+        min: int | float | None = None,
+        max: int | float | None = None,
+        method: Literal["lin"] | Literal["log"] = "lin",
+        as_int: bool = False,
+    ):
+        return Scaler(
+            data=self,
+            # device=self.device,
+            to_min=min,
+            to_max=max,
+            # from_min=self.parameter.range[0],
+            # from_max=self.parameter.range[1],
+            method=method,
+            as_int=as_int,
+            auto=min is None and max is None,
+        )
+
 
 @dataclass
 class VirtualParameter:
@@ -128,11 +171,19 @@ class VirtualParameter:
     consummer: bool = False
     description: str | None = None
     range: tuple[int | float | None, int | float | None] = (None, None)
+    accepted_values: Iterable[Any] = ()
+    cv_name: str | None = None
+    section_name: str = "__virtual__"
+
+    def __set_name__(self, owner, name):
+        self.cv_name = name
 
     def __get__(self, device: "VirtualDevice", owner=None):
+        if device is None:
+            return self
         return ParameterInstance(parameter=self, device=device)
 
-    def __set__(self, device: "VirtualDevice", value, append=True):
+    def __set__(self, device: "VirtualDevice", value, append=True, chain=None):
         if isinstance(value, VirtualDevice):
             if self.consummer:
                 virtual_device = value
@@ -148,6 +199,7 @@ class VirtualParameter:
                     param=self,
                     stream=self.stream,
                     append=append,
+                    transformer_chain=chain,
                 )
             else:
                 value.device.bind(
@@ -156,6 +208,7 @@ class VirtualParameter:
                     param=self,
                     stream=self.stream,
                     append=append,
+                    transformer_chain=chain,
                 )
         elif isinstance(value, Int):
             if self.consummer:
@@ -167,21 +220,23 @@ class VirtualParameter:
                         ctx=ThreadContext({**ctx, "param": int_val.parameter.name}),
                     ),
                     to=device,
-                    param=value.parameter,
+                    param=self,
                     type=value.parameter.type,
                     cc_note=value.parameter.cc_note,
                     stream=self.stream,
                     append=append,
+                    transformer_chain=chain,
                 )
             else:
                 value.device.bind(
                     lambda value, ctx: device.set_parameter(self.name, value),
                     to=device,
-                    param=value.parameter,
+                    param=self,
                     type=value.parameter.type,
                     cc_note=value.parameter.cc_note,
                     stream=self.stream,
                     append=append,
+                    transformer_chain=chain,
                 )
         elif isinstance(value, ParameterInstance):
             if self.consummer:
@@ -194,6 +249,7 @@ class VirtualParameter:
                     to=device,
                     param=self,
                     append=append,
+                    transformer_chain=chain,
                 )
             else:
                 value.device.bind(
@@ -204,10 +260,11 @@ class VirtualParameter:
                     param=self,
                     stream=self.stream,
                     append=append,
+                    transformer_chain=chain,
                 )
         elif isinstance(value, Scaler):
             scaler = value
-            scaler.install_fun(device, self, append=append)
+            self.__set__(device, scaler.data, append=append, chain=scaler)
         elif isinstance(value, PadOrKey):
             pad = value
             foo = pad.generate_fun(device, self)
@@ -218,16 +275,26 @@ class VirtualParameter:
                 to=device,
                 param=self,
                 append=append,
+                transformer_chain=chain,
             )
 
 
 class VirtualDevice(threading.Thread):
+    _id: dict[Type, int] = defaultdict(int)
     variable_refresh: bool = True
+    output_cv = VirtualParameter(name="output")
 
-    def __init__(self, target_cycle_time: float = 0.005):
+    def __new__(cls, *args, **kwargs) -> Self:
+        instance = super().__new__(cls)
+        instance._id[cls] += 1
+        instance._number = instance._id[cls]  # type: ignore
+        return instance
+
+    def __init__(self, target_cycle_time: float = 0.005, autoconnect: bool = False):
         super().__init__(daemon=True)
         virtual_devices.append(self)
         self.device = self  # to be polymorphic with Int
+        self.__virtual__ = self  # to have a fake section
         self.callbacks_registry: list[CallbackRegistryEntry] = []
         self.callbacks = []
         self.stream_callbacks = []
@@ -239,6 +306,12 @@ class VirtualDevice(threading.Thread):
         self.pause_event.set()
         self.target_cycle_time = target_cycle_time
         self.ready_event = threading.Event()
+        if autoconnect:
+            self.start()
+
+    def __init_subclass__(cls) -> None:
+        virtual_device_classes.append(cls)
+        super().__init_subclass__()
 
     def setup(self) -> ThreadContext:
         return ThreadContext()
@@ -347,17 +420,21 @@ class VirtualDevice(threading.Thread):
         self.stream_callbacks.clear()
         self.callbacks.clear()
 
-    def bind(self, callback, to, param, stream=False, append=True):
-        # if to:
-        #     scheduler.connections.append((self, to))
-        if not append:
-            unbind_all(to, param)
-        if stream:
-            self.stream_callbacks.append(callback)
+    def bind(
+        self, callback, to, param, stream=False, append=True, transformer_chain=None
+    ):
+        if transformer_chain:
+            _callback = lambda value, ctx: callback(transformer_chain(value, ctx), ctx)
         else:
-            self.callbacks.append(callback)
+            _callback = callback
+        if stream:
+            self.stream_callbacks.append((_callback, param, transformer_chain))
+        else:
+            self.callbacks.append((_callback, param, transformer_chain))
         self.callbacks_registry.append(
-            CallbackRegistryEntry(target=to, parameter=param, callback=callback)
+            CallbackRegistryEntry(
+                target=to, parameter=param, callback=_callback, chain=transformer_chain
+            )
         )
 
     # def bind_to(self, other: "VirtualDevice", stream=False):
@@ -376,11 +453,16 @@ class VirtualDevice(threading.Thread):
                 callback = entry.callback
                 self.callbacks_registry.remove(entry)
                 try:
-                    self.stream_callbacks.remove(callback)
+                    for c, parameter, chain in list(self.stream_callbacks):
+                        if c is callback:
+                            self.stream_callbacks.remove((callback, parameter, chain))
+                            return
                 except ValueError:
                     ...
                 try:
-                    self.callbacks.remove(callback)
+                    for c, parameter, chain in list(self.callbacks):
+                        if c is callback:
+                            self.callbacks.remove((callback, parameter, chain))
                 except ValueError:
                     ...
 
@@ -388,12 +470,13 @@ class VirtualDevice(threading.Thread):
         setattr(self, param, value)
 
     def process_output(self, value, ctx):
-        if value is not None:
-            try:
-                self.output_queue.put_nowait((value, ctx))
-            except Full:
-                pass  # Drop if full
-        for callback in self.stream_callbacks:
+        if value is None:
+            return
+        try:
+            self.output_queue.put_nowait((value, ctx))
+        except Full:
+            pass  # Drop if full
+        for callback, _, _ in self.stream_callbacks:
             try:
                 callback(value, ctx)
             except Exception as e:
@@ -401,7 +484,7 @@ class VirtualDevice(threading.Thread):
                 raise e
         if value != ctx.last_value:
             ctx.last_value = value
-            for callback in self.callbacks:
+            for callback, _, _ in self.callbacks:
                 try:
                     callback(value, ctx)
                 except Exception as e:
@@ -411,13 +494,13 @@ class VirtualDevice(threading.Thread):
     def scale(self, min=None, max=None, method="lin", as_int=False):
         return Scaler(
             self,
-            self,
+            # self,
             min,
             max,
             method,
             as_int,
-            from_min=self.min_range,
-            from_max=self.max_range,
+            # from_min=self.min_range,
+            # from_max=self.max_range,
             auto=min is None and max is None,
         )
 
@@ -428,6 +511,10 @@ class VirtualDevice(threading.Thread):
     @property
     def min_range(self) -> float | int | None:
         return None
+
+    @property
+    def range(self):
+        return (self.min_range, self.max_range)
 
     def generate_fun(self, to_device, to_param):
         if isinstance(to_param, VirtualParameter):
@@ -441,6 +528,26 @@ class VirtualDevice(threading.Thread):
                 return lambda value, ctx: to_device.set_parameter(to_param.name, value)
         else:
             return lambda value, ctx: setattr(to_device, to_param.name, value)
+
+    def to_dict(self):
+        virtual_parameters = get_all_virtual_parameters(self.__class__)
+        return {
+            "id": id(self),
+            "repr": self.uid(),
+            "meta": {
+                "name": self.__class__.__name__,
+                "parameters": [asdict(p) for p in virtual_parameters.values()],
+            },
+            "paused": self.paused,
+            "config": {
+                p.name: getattr(self, p.name)
+                for p in virtual_parameters.values()
+                if p.name != "output"
+            },
+        }
+
+    def uid(self):
+        return f"{self.__class__.__name__}{self._number}"
 
 
 @dataclass
@@ -456,13 +563,19 @@ class MidiDevice:
     debug: bool = False
     on_midi_message: Callable[["MidiDevice", mido.Message], None] | None = None
 
+    def __init_subclass__(cls) -> None:
+        midi_device_classes.append(cls)
+        return super().__init_subclass__()
+
     def __post_init__(self, autoconnect, read_input_only):
+        if self not in connected_devices:
+            connected_devices.append(self)
         self.reverse_map = {}
         # callbacks that are called when reacting to a value
         self.callbacks_registry: list[CallbackRegistryEntry] = []
-        self.input_callbacks: defaultdict[tuple[str, int], list[Any]] = defaultdict(
-            list
-        )
+        self.input_callbacks: defaultdict[
+            tuple[str, int], list[tuple[Callable, Callable | None]]
+        ] = defaultdict(list)
         self.output_callbacks = []  # callbacks that are classed when sending a value
         if self.modules_descr is None:
             self.modules_descr = {
@@ -472,9 +585,11 @@ class MidiDevice:
             }
         self.modules = DeviceState(self, self.modules_descr)
         self.listening = False
+        self.outport_name = self.device_name
+        self.inport_name = self.device_name
         if autoconnect:
             try:
-                self.device_name = next(
+                self.outport_name = next(
                     (
                         dev_name
                         for dev_name in mido.get_output_names()
@@ -488,17 +603,52 @@ class MidiDevice:
             self.listen()
 
     def connect(self):
-        self.outport = mido.open_output(self.device_name, autoreset=True)
-        if self not in connected_devices:
-            connected_devices.append(self)
+        self.outport = mido.open_output(self.outport_name, autoreset=True)
 
-    def close(self):
-        if self.inport:
+    def listen(self, start=True):
+        if not start:
+            self.listening = False
             self.inport.callback = None
+            return
+        if not self.listening:
+            try:
+                self.inport = mido.open_input(self.inport_name)
+            except OSError:
+                try:
+                    self.inport_name = next(
+                        (
+                            dev_name
+                            for dev_name in mido.get_input_names()
+                            if self.device_name == dev_name
+                            or self.device_name in dev_name
+                        ),
+                    )
+                    self.inport = mido.open_input(self.inport_name)
+                except StopIteration:
+                    raise DeviceNotFound(self.device_name)
+            self.inport.callback = self._sync_state
+
+    def close_out(self):
         if self.outport:
             self.outport.close()
-            if self in connected_devices:
-                connected_devices.remove(self)
+            self.outport = None
+            self.outport_name = None
+
+    def close_in(self):
+        if self.inport:
+            self.listen(False)
+            self.inport = None
+            self.inport_name = None
+
+    def close(self, delete=True):
+        self.close_in()
+        self.close_out()
+        # flush all callbacks and registry
+        self.callbacks_registry.clear()
+        self.input_callbacks.clear()
+        self.output_callbacks.clear()
+        if delete and self in connected_devices:
+            connected_devices.remove(self)
 
     def _sync_state(self, msg):
         if msg.type == "clock":
@@ -509,36 +659,46 @@ class MidiDevice:
             print(msg)
         if msg.type == "control_change":
             try:
-                for callback in self.input_callbacks.get((msg.type, msg.control), []):
-                    callback(msg.value, ThreadContext({"debug": self.debug}))
+                for callback, chain in self.input_callbacks.get(
+                    (msg.type, msg.control), []
+                ):
+                    value = msg.value
+                    ctx = ThreadContext({"debug": self.debug})
+                    if chain:
+                        value = chain(value, ctx)
+                    callback(value, ctx)
             except:
                 traceback.print_exc()
-            control: ModuleParameter = self.reverse_map[("cc", msg.control)]
+            control: ModuleParameter = self.reverse_map[("control_change", msg.control)]
             control.basic_set(self, msg.value)
         if msg.type == "note_on" or msg.type == "note_off":
             try:
-                for callback in self.input_callbacks.get(("note", msg.note), []):
-                    callback(
-                        msg.note,
-                        ThreadContext(
-                            {
-                                "debug": self.debug,
-                                "type": msg.type,
-                                "velocity": msg.velocity,
-                            }
-                        ),
+                for callback, chain in self.input_callbacks.get(("note", msg.note), []):
+                    value = msg.note
+                    ctx = ThreadContext(
+                        {
+                            "debug": self.debug,
+                            "type": msg.type,
+                            "velocity": msg.velocity,
+                        }
                     )
-                for callback in self.input_callbacks.get(("velocity", msg.note), []):
-                    callback(
-                        msg.velocity,
-                        ThreadContext(
-                            {
-                                "debug": self.debug,
-                                "type": msg.type,
-                                "note": msg.note,
-                            }
-                        ),
+                    if chain:
+                        value = chain(value, ctx)
+                    callback(value, ctx)
+                for callback, chain in self.input_callbacks.get(
+                    ("velocity", msg.note), []
+                ):
+                    value = msg.velocity
+                    ctx = ThreadContext(
+                        {
+                            "debug": self.debug,
+                            "type": msg.type,
+                            "note": msg.note,
+                        }
                     )
+                    if chain:
+                        value = chain(value, ctx)
+                    callback(value, ctx)
             except:
                 traceback.print_exc()
             pads: ModulePadsOrKeys = self.reverse_map[("note", None)]
@@ -595,12 +755,18 @@ class MidiDevice:
         self.callbacks_registry.clear()
         self.input_callbacks.clear()
 
-    def bind(self, callback, type, cc_note, to, param, stream=False, append=True):
-        # if to:
-        #     scheduler.connections.append((self, to))
-        if not append:
-            unbind_all(to, param)
-        self.input_callbacks[(type, cc_note)].append(callback)
+    def bind(
+        self,
+        callback,
+        type,
+        cc_note,
+        to,
+        param,
+        stream=False,
+        append=True,
+        transformer_chain: Callable | None = None,
+    ):
+        self.input_callbacks[(type, cc_note)].append((callback, transformer_chain))
         self.callbacks_registry.append(
             CallbackRegistryEntry(
                 target=to,
@@ -608,6 +774,7 @@ class MidiDevice:
                 callback=callback,
                 type=type,
                 cc_note=cc_note,
+                chain=transformer_chain,
             )
         )
 
@@ -626,7 +793,10 @@ class MidiDevice:
                 callback = entry.callback
                 self.callbacks_registry.remove(entry)
                 try:
-                    self.input_callbacks[(type, cc_note)].remove(callback)  # type: ignore
+                    for c, chain in list(self.input_callbacks[(type, cc_note)]):  # type: ignore
+                        if callback is c:
+                            self.input_callbacks[(type, cc_note)].remove((callback, chain))  # type: ignore
+                    # self.input_callbacks[(type, cc_note)].remove(callback)  # type: ignore
                 except ValueError:
                     ...
 
@@ -642,39 +812,35 @@ class MidiDevice:
     # def bind_output(self, callback):
     #     self.output_callbacks.append(callback)
 
-    def listen(self, start=True):
-        if not start:
-            self.listening = False
-            self.inport.callback = None
-            return
-        if not self.listening:
-            try:
-                self.inport = mido.open_input(self.device_name)
-            except OSError:
-                try:
-                    self.device_name = next(
-                        (
-                            dev_name
-                            for dev_name in mido.get_input_names()
-                            if self.device_name == dev_name
-                            or self.device_name in dev_name
-                        ),
-                    )
-                    self.inport = mido.open_input(self.device_name)
-                except StopIteration:
-                    raise DeviceNotFound(self.device_name)
-            self.inport.callback = self._sync_state
-        if self not in connected_devices:
-            connected_devices.append(self)
-
     def save_preset(self, file: Path | str):
-        d = self.modules.as_dict()
+        d = self.modules.as_dict_patch()
         p = Path(file)
         p.write_text(json.dumps(d, indent=2, cls=DeviceSerializer))
 
     def load_preset(self, file: Path | str):
         p = Path(file)
-        self.modules.from_dict(json.loads(p.read_text()))
+        self.modules.from_dict_patch(json.loads(p.read_text()))
+
+    def to_dict(self):
+        d = {
+            "id": id(self),
+            "repr": self.uid(),
+            "ports": {
+                "input": self.inport.name if self.inport else None,
+                "output": self.outport.name if self.outport else None,
+            },
+            "meta": {
+                "name": self.__class__.__name__,
+                "sections": [
+                    asdict(module.meta) for module in self.modules.modules.values()
+                ],
+            },
+            "config": self.modules.as_dict_patch(with_meta=False),
+        }
+        return d
+
+    def uid(self):
+        return f"{self.__class__.__name__}"
 
 
 class DeviceSerializer(json.JSONEncoder):
@@ -689,16 +855,20 @@ class DeviceSerializer(json.JSONEncoder):
 class DeviceNotFound(Exception):
     def __init__(self, device_name):
         super().__init__(
-            f"""Device {device_name!r} couldn't be found, known devices are:
+            f"""MIDI port {device_name!r} couldn't be found, known devices are:
 input: {mido.get_output_names()}
 outputs: {mido.get_input_names()}"""
         )
 
 
+@no_registration
 class TimeBasedDevice(VirtualDevice):
+    speed_cv = VirtualParameter("speed", range=(0, None))
+    sampling_rate_cv = VirtualParameter("sampling_rate", range=(0, None))
+
     def __init__(
         self,
-        speed: int | float = 10.0,
+        speed: int | float = 1.0,
         sampling_rate: int | Literal["auto"] = "auto",
         **kwargs,
     ):
@@ -734,7 +904,7 @@ class TimeBasedDevice(VirtualDevice):
 
     def compute_sampling_rate(self):
         if self.speed <= 1:
-            return 20  # we sample 20 point, enough as it's slow
+            return 50  # we sample 50 point, enough as it's slow
         return int(self.speed * 20)  # we sample 20 times faster than the speed
 
     def generate_value(self, t) -> Any: ...

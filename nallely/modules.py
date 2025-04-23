@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from decimal import Decimal
 from inspect import isfunction
 from types import FunctionType
 from typing import TYPE_CHECKING, Any, Literal, Type
 
 if TYPE_CHECKING:
-    from .core import MidiDevice, ThreadContext, VirtualDevice
+    from .core import MidiDevice, ParameterInstance, ThreadContext, VirtualDevice
 
 
 NOT_INIT = "uninitialized"
@@ -41,11 +41,11 @@ class Int(int):
     ):
         return Scaler(
             data=self,
-            device=self.device,
+            # device=self.device,
             to_min=min,
             to_max=max,
-            from_min=self.parameter.range[0],
-            from_max=self.parameter.range[1],
+            # from_min=self.parameter.range[0],
+            # from_max=self.parameter.range[1],
             method=method,
             as_int=as_int,
             auto=min is None and max is None,
@@ -75,14 +75,14 @@ class Int(int):
 
 @dataclass
 class Scaler:
-    data: Int | VirtualDevice | PadOrKey | ModuleParameter
-    device: Any
+    data: Int | VirtualDevice | PadOrKey | ParameterInstance
+    # device: Any
     to_min: int | float | None
     to_max: int | float | None
     method: str = "lin"
     as_int: bool = False
-    from_min: int | float | None = None
-    from_max: int | float | None = None
+    # from_min: int | float | None = None
+    # from_max: int | float | None = None
     auto: bool = False
 
     def __post_init__(self):
@@ -91,108 +91,75 @@ class Scaler:
         self.as_int = (
             self.as_int or isinstance(self.to_min, int) and isinstance(self.to_max, int)
         )
-        if self.auto:
-            # self.adapt_range()
-            ...
 
-    def should_adapt_min(self):
-        return self.to_min is not None and self.from_min != self.to_min
-
-    def should_adapt_max(self):
-        return self.to_max is not None and self.to_max != self.from_max
-
-    # def adapt_range(self, target, source, source_device, min_range, max_range):
-    #     low, high = None, None
-    #     if self.should_adapt_max():
-    #         self.
-    #     if self.should_adapt_min():
-    #         low = low
-    #     if low is not None or high is not None:
-
-    #         return True
-    #     return False
-
-    def convert_lin(self, value):
-        match self.from_min, self.from_max, self.to_min, self.to_max:
+    def convert_lin(self, value, from_min, from_max):
+        match from_min, from_max, self.to_min, self.to_max:
             case _, _, None, None:
                 return value
-            case None, None, to_min, None:
-                return value - abs(value - to_min)
+            case None, from_max, to_min, None:
+                offset = to_min
+                v = value + offset
+                return min(v, from_max + offset) if from_max is not None else v
             case None, None, to_min, to_max:
                 print(f"Problem converting from -inf, +inf to {to_min}..{to_max}")
                 return value
             case from_min, _, to_min, None:
                 return value + abs(from_min - to_min)
             case from_min, from_max, to_min, to_max:
-                scaled_value = (value - self.from_min) / (from_max - from_min)
-                return self.to_min + scaled_value * (to_max - to_min)
+                scaled_value = (value - from_min) / (from_max - from_min)
+                return to_min + scaled_value * (to_max - to_min)
+
             case _:
                 print(
                     f"No match: {self.from_min}, {self.from_max}, {self.to_min}, {self.to_max}"
                 )
+                return float(value)
 
-    def convert_log(self, value) -> int | float:
+    def convert_log(self, value, from_max) -> int | float:
         if self.to_min is None or self.to_max is None:
-            raise ValueError(
-                "Logarithmic scaling requires both min and max to be defined."
-            )
+            # raise ValueError(
+            #     "Logarithmic scaling requires both min and max to be defined."
+            # )
+            print("Logarithmic scaling requires both min and max to be defined.")
+            return value
 
-        if value <= 0:
-            raise ValueError(
-                "Logarithmic scaling is undefined for non-positive values."
-            )
+        if value < 0:
+            # raise ValueError(
+            #     f"Logarithmic scaling is undefined for non-positive values {value}."
+            # )
+            print(f"Logarithmic scaling is undefined for non-positive values {value}.")
+            return value
 
         log_min = math.log(self.to_min)
         log_max = math.log(self.to_max)
 
-        return math.exp(log_min + (value / self.from_max) * (log_max - log_min))
+        return math.exp(log_min + (value / from_max) * (log_max - log_min))
 
     def convert(self, value):
+        from .core import VirtualDevice
+
+        from_min, from_max = (
+            self.data.range
+            if isinstance(self.data, VirtualDevice)
+            else self.data.parameter.range
+        )
         if isinstance(value, Decimal):
             value = float(value)
         if self.method == "lin":
-            res = self.convert_lin(value)
+            res = self.convert_lin(value, from_min=from_min, from_max=from_max)
         elif self.method == "log":
-            res = self.convert_log(value)
+            res = self.convert_log(value, from_max=from_max)
         else:
             raise Exception("Unknown conversion method")
         res = int(res) if self.as_int else res
         if isinstance(value, Int):
             value.update(res)
             return value
-        # print("Converting", value, res)
+        # print("Converting", value, res, "from", self.from_min, self.from_max, "to", self.to_min, self.to_max)
         return res
 
-    def install_fun(self, to_device, to_parameter, append=True):
-        from .core import VirtualDevice
-
-        if isinstance(self.data, VirtualDevice):
-            if self.auto:
-                self.to_min, self.to_max = to_parameter.range
-                self.as_int = isinstance(self.to_min, int) and isinstance(
-                    self.to_max, int
-                )
-            fun = self.data.generate_fun(to_device, to_parameter)
-            self.data.bind(
-                lambda value, ctx: fun(self.convert(value), ctx),
-                to=to_device,
-                param=to_parameter,
-                append=append,
-            )
-            return
-        modparam: ModuleParameter | PadOrKey = self.data.parameter
-        if self.auto:
-            self.to_min, self.to_max = to_parameter.range
-            self.as_int = isinstance(self.to_min, int) and isinstance(self.to_max, int)
-        fun = modparam.generate_fun(to_device, to_parameter)
-        self.data.device.bind(
-            lambda value, ctx: fun(self.convert(value), ctx),
-            type=modparam.type,
-            cc_note=modparam.cc_note,  # equiv pad.note
-            to=to_device,
-            param=to_parameter,
-            append=append,
-        )
+    def __call__(self, value, *args, **kwargs):
+        return self.convert(value)
 
 
 @dataclass
@@ -201,7 +168,7 @@ class ModuleParameter:
     cc_note: int
     channel: int = 0
     name: str = NOT_INIT
-    module_state_name: str = NOT_INIT
+    section_name: str = NOT_INIT
     stream: bool = False
     init_value: int = 0
     description: str | None = None
@@ -215,7 +182,9 @@ class ModuleParameter:
     def max_range(self):
         return self.range[1]
 
-    def __get__(self, instance, owner=None) -> Int:
+    def __get__(self, instance, owner=None) -> Int | ModuleParameter:
+        if instance is None:
+            return self
         return instance.state[self.name]
 
     def install_fun(self, to_module, feeder, append=True):
@@ -244,22 +213,30 @@ class ModuleParameter:
         return self.generate_inner_fun_normal(to_device, to_param)
 
     def __set__(
-        self, to_module, feeder, send=True, debug=False, force=False, append=True
+        self,
+        to_module,
+        feeder,
+        send=True,
+        debug=False,
+        force=False,
+        append=True,
+        chain=None,
     ):
         if feeder is None:
             return
         if not force and isinstance(feeder, Int):
             device_value = feeder
-            from_module: MidiDevice = device_value.device
+            from_device: MidiDevice = device_value.device
             # we create a callback on from_module that will "set" the module parameter to value of to_module
             # finally triggering the code that sends the cc and sync the state lower in this class.
-            from_module.bind(
+            from_device.bind(
                 lambda value, ctx: setattr(to_module, self.name, value),
                 type=device_value.parameter.type,
                 cc_note=device_value.parameter.cc_note,
                 to=to_module.device,
                 param=self,
                 append=append,
+                transformer_chain=chain,
             )
             return
 
@@ -272,6 +249,7 @@ class ModuleParameter:
                 to=to_module.device,
                 param=self,
                 append=append,
+                transformer_chain=chain,
             )
             return
         if isfunction(feeder):
@@ -283,22 +261,36 @@ class ModuleParameter:
                 to=to_module.device,
                 append=append,
                 param=self,
+                transformer_chain=chain,
             )
             return
         if isinstance(feeder, Scaler):
             scaler = feeder
-            scaler.install_fun(to_device=to_module, to_parameter=self, append=append)
+            # scaler.install_fun(to_device=to_module, to_parameter=self, append=append)
+            # from_device = scaler.device
+            # import ipdb; ipdb.set_trace()  # fmt: skip
+
+            self.__set__(
+                to_module,
+                scaler.data,
+                send=False,
+                debug=debug,
+                force=force,
+                append=append,
+                chain=scaler,
+            )
             return
         if isinstance(feeder, PadOrKey):
             pad: PadOrKey = feeder
-            from_module: MidiDevice = pad.device
-            from_module.bind(
+            from_device: MidiDevice = pad.device
+            from_device.bind(
                 pad.generate_fun(to_module, self),
                 type=pad.type,
                 cc_note=pad.cc_note,
                 to=to_module.device,
                 param=self,
                 append=append,
+                transformer_chain=chain,
             )
             return
 
@@ -308,7 +300,7 @@ class ModuleParameter:
         to_module.state[self.name].update(feeder)
 
     def basic_set(self, device: MidiDevice, value):
-        getattr(device.modules, self.module_state_name).state[self.name].update(value)
+        getattr(device.modules, self.section_name).state[self.name].update(value)
 
 
 class padproperty(property):
@@ -387,11 +379,11 @@ class PadOrKey:
     ):
         return Scaler(
             data=self,
-            device=self.device,
+            # device=self.device,
             to_min=min,
             to_max=max,
-            from_min=self.range[0],
-            from_max=self.range[1],
+            # from_min=self.range[0],
+            # from_max=self.range[1],
             method=method,
             as_int=as_int,
             auto=min is None and max is None,
@@ -472,10 +464,7 @@ class PadOrKey:
             )
         if self.mode == "latch":
             ...
-        return lambda value, ctx: to_device.set_parameter(
-            to_param.name,
-            value if ctx.type == "note_on" else 0,
-        )
+        return lambda value, ctx: to_device.set_parameter(to_param.name, value)
 
     def generate_inner_fun_midiparam(self, to_module, to_param):
         if self.mode == "latch":
@@ -535,12 +524,12 @@ class ModulePadsOrKeys:
     type = "note"
     channel: int = 0
     keys: dict[int, PadOrKey] = field(default_factory=dict)
-    module_state_name: str = NOT_INIT
+    section_name: str = NOT_INIT
 
     def __get__(self, instance, owner=None):
-        # for i in range(127):
-        #     setattr(instance.__class__, "note_"
-        return instance.state[self.module_state_name]
+        if instance is None:
+            return self
+        return instance.state[self.section_name]
 
     def __set__(self, instance, value, append=True):
         if isinstance(value, PadOrKey):
@@ -562,12 +551,37 @@ class ModulePadsOrKeys:
                 assert isinstance(pad, PadOrKey)
                 self.__set__(instance, e)
             return
+        from .core import VirtualDevice
+
+        if isinstance(value, VirtualDevice):
+            feeder = value
+
+            def foo(value, ctx):
+                if value == 0:
+                    instance.device.all_notes_off()
+                    return
+                instance.device.note(
+                    note=value,
+                    velocity=127,
+                    type="note_off" if value == 0 else "note_on",
+                )
+
+            feeder.bind(
+                debug(foo),
+                to=instance.device,
+                param=self,
+                append=append,
+            )
         # if isinstance(value, Scaler):
         #     scaler = value
         #     scaler.install_fun(instance.device, self)
         #     return
 
     def basic_send(self, type, note, velocity): ...
+
+
+def debug(l):
+    return lambda value, ctx: (print("->", value, ctx), l(value, ctx))
 
 
 @dataclass
@@ -591,21 +605,23 @@ class Module:
         for name, value in vars(cls).items():
             if isinstance(value, ModuleParameter):
                 value.name = name
-                # value.module_state_name = cls.state_name
+                # value.section_name = cls.state_name
                 parameters.append(value)
             if isinstance(value, ModulePadsOrKeys):
                 pads = value
-                # pads.module_state_name = cls.state_name
+                # pads.section_name = cls.state_name
         cls.meta = MetaModule(cls.__name__, parameters, pads)
 
     def __post_init__(self):
         self.meta = self.__class__.meta
         for param in self.meta.parameters:
+            param.section_name = self.__class__.state_name
             self.state[param.name] = Int.create(
                 param.init_value, parameter=param, device=self.device
             )
         if self.meta.pads_or_keys:
-            state_name = self.meta.pads_or_keys.module_state_name
+            self.meta.pads_or_keys.section_name = self.__class__.state_name
+            state_name = self.meta.pads_or_keys.section_name
             self.state[state_name] = self.device  # type: ignore (special key)
         self._keys_notes = {}
 
@@ -655,11 +671,11 @@ class DeviceState:
     def __init__(self, device, modules: dict[str, Type[Module]]):
         init_modules = {}
         for state_name, ModuleCls in modules.items():
-            moduleInstance = ModuleCls(device)
             ModuleCls.state_name = state_name
+            moduleInstance = ModuleCls(device)
             init_modules[state_name] = moduleInstance
             for param in moduleInstance.meta.parameters:
-                device.reverse_map[("cc", param.cc_note)] = param
+                device.reverse_map[("control_change", param.cc_note)] = param
             if moduleInstance.meta.pads_or_keys:
                 device.reverse_map[("note", None)] = moduleInstance.meta.pads_or_keys
         self.modules = init_modules
@@ -667,20 +683,37 @@ class DeviceState:
     def __getattr__(self, name):
         return self.modules[name]
 
-    def as_dict(self):
+    def as_dict_patch(self, with_meta=False):
         d = {}
         for name, module in self.modules.items():
             module_state = {}
             d[name] = module_state
             for parameter in module.meta.parameters:
-                module_state[parameter.name] = getattr(
-                    getattr(self, name), parameter.name
-                )
+                value = getattr(getattr(self, name), parameter.name)
+                module_state[parameter.name] = value
+                if with_meta:
+                    module_state[parameter.name] = {
+                        "section_name": parameter.section_name,
+                        "value": value,
+                    }
             if not module_state:
                 del d[name]
         return d
 
-    def from_dict(self, d):
+    def from_dict_patch(self, d):
         for sec_name, section in d.items():
             for param, value in section.items():
                 setattr(self.modules[sec_name], param, value)
+
+    def to_list(self):
+        l = []
+        for name, module in self.modules.items():
+            module_state = {
+                "name": name,
+                "section_name": module.state_name,
+                "parameters": [
+                    asdict(parameter) for parameter in module.meta.parameters
+                ],
+            }
+            l.append(module_state)
+        return l

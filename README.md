@@ -15,7 +15,9 @@ Features:
 * auto-scaling: if you want the source to adapt to the range of the target without setting the range yourself,
 * websocket-based bus on which external services can auto-register and expose parameters to which you can bind your MIDI/virtual devices in a seemless way,
 * LFOs composition with mathematical expressions,
-* save/reload patch for any MIDI device.
+* Envelope Generator,
+* a web interface relying on a websocket protocol (named Trevor) which allows you to do graphically what you would ask Nallely to do in normal time (map devices, parameters, scalers),
+* save/reload patch for any MIDI device
 
 Planned:
 * handle multiple banks per device/per section,
@@ -24,9 +26,7 @@ Planned:
 * some new virtual devices:
   * arpegiator
   * sequencer
-  * envelope generator
 * possibility to broadcast messages and information from the external services,
-* a TUI or web interface to help you create new virtual devices instances and map your MIDI/virtual devices together.
 
 
 ## Quick examples
@@ -126,3 +126,29 @@ This repo comes with one example of a spiral that is controlled by LFOs created 
 The screenshot below shows you what the result looks like with everything launched
 
 ![shot](https://github.com/user-attachments/assets/0fc1a194-5281-4cbc-9ce9-bc2fc86e7342)
+
+
+## Trevor, Nallely's companion
+
+Trevor is a communication protocol made to communicate with Nallely through websocket and ask Nallely to create device instance, map devices together or apply scaler. Trevor also proposes a web UI that lets you bind everything at run time, without any need for stopping/starting again scripts. Trevor is still experimental at the moment.
+
+### Installation & how to launch it
+
+Trevor runs in two parts: the python script (the backend in a way), and the frontend. At the moment, this is the way to launch it, but in the future, it will be integrated in a more seemless way. The web UI is built with vite, react, and uses yarn. We consider here that you have all of this installed already. To install Trevor:
+
+```
+cd trevor
+yarn install
+```
+
+Then to launch everything:
+
+```
+# in 1 terminal, inside of the "trevor" directory
+yarn dev
+
+# in another terminal
+python trevor.py
+```
+
+### Screenshots of Trevor

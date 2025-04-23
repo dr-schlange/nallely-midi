@@ -3,25 +3,27 @@ import threading
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
 from traceback import print_stack
+from typing import Any
 
 import plotext as plt
 from websockets.sync.server import serve
 
-from .core import ThreadContext, VirtualDevice, VirtualParameter
+from .core import ThreadContext, VirtualDevice, VirtualParameter, no_registration
 
 
+@no_registration
 class TerminalOscilloscope(VirtualDevice):
     data = VirtualParameter("data", stream=True, consummer=True)
     data2 = VirtualParameter("data2", stream=True, consummer=True)
 
-    def __init__(self, enable_display=True, buffer_size=100, refresh_rate: float = 60):
+    def __init__(
+        self, enable_display=True, buffer_size=100, refresh_rate: float = 60, **kwargs
+    ):
         self.buffer_size = buffer_size
-        # self.visu_data = deque([], maxlen=self.buffer_size)
-        # self.all = defaultdict(lambda: deque([], maxlen=self.buffer_size))
         self.flows = defaultdict(
             lambda: defaultdict(lambda: deque([], maxlen=self.buffer_size))
         )
-        super().__init__(target_cycle_time=1 / refresh_rate)
+        super().__init__(target_cycle_time=1 / refresh_rate, **kwargs)
         self.display = enable_display
         self.lock = threading.Lock()
         self.start()
@@ -94,14 +96,15 @@ class WSWaitingRoom:
         return self
 
 
-class WebSocketSwitch(VirtualDevice):
+class WebSocketBus(VirtualDevice):
     variable_refresh = False
 
     def __init__(self, host="0.0.0.0", port=6789, **kwargs):
-        super().__init__(target_cycle_time=10, **kwargs)
+        self.server = serve(self.handler, host=host, port=port)
         self.connected = defaultdict(list)
         self.known_services = {}
-        self.server = serve(self.handler, host=host, port=port)
+        self.to_update = None
+        super().__init__(target_cycle_time=10, **kwargs)
 
         def __setattr__(self, key, value):
             if isinstance(getattr(self, key, None), WSWaitingRoom):
@@ -122,12 +125,8 @@ class WebSocketSwitch(VirtualDevice):
         if path.endswith("/autoconfig") and service_name not in self.connected:
             print(f"Autoconfig for {service_name}")
             message = json.loads(client.recv())
-            parameters = [
-                (str(p["name"]), bool(p.get("stream", False)))
-                for p in message["parameters"]
-            ]
             print(f"Parameters: {message['parameters']}")
-            self.configure_remote_device(service_name, parameters=parameters)  # type: ignore
+            self.configure_remote_device(service_name, parameters=message["parameters"])  # type: ignore
         elif service_name not in self.known_services:
             print(
                 f"Service {service_name} is not yet configured, you cannot subscribe to it yet"
@@ -171,17 +170,31 @@ class WebSocketSwitch(VirtualDevice):
                 )
             )
 
-    def configure_remote_device(self, name, parameters: list[str | tuple[str, bool]]):
+    def configure_remote_device(self, name, parameters: list[str | dict[str, Any]]):
         virtual_parameters = []
         for parameter in parameters:
             is_stream = False
-            if isinstance(parameter, tuple):
-                parameter, is_stream = parameter
-            param_name = f"{name}_{parameter}"
+            range = (None, None)
+            pname = parameter
+            print(parameter)
+            if isinstance(parameter, dict):
+                pname = parameter.get("name", None)
+                range = parameter.get("range", range)
+                is_stream = parameter.get("stream", False)
+            param_name = f"{name}_{pname}"
             waiting_room = getattr(self, param_name, None)
-            vparam = VirtualParameter(f"{param_name}", consummer=True, stream=is_stream)
+            vparam = VirtualParameter(
+                f"{param_name}",
+                consummer=True,
+                stream=is_stream,
+                cv_name=param_name,
+                range=range,
+            )
+            print("Registering", param_name, "range", range, "stream", is_stream)
             virtual_parameters.append(vparam)
             setattr(self.__class__, param_name, vparam)
             if waiting_room and isinstance(waiting_room, WSWaitingRoom):
                 waiting_room.rebind(self)
         self.known_services[name] = virtual_parameters
+        if self.to_update:
+            self.to_update.update(self)

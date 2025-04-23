@@ -40,7 +40,6 @@ def let_time_to_react(t=0.01):
 
 @dataclass
 class SenderModule(nallely.Module):
-    state_name = "main"
     button1 = nallely.ModuleParameter(45, channel=0)
     button2 = nallely.ModuleParameter(20, channel=0)
 
@@ -51,7 +50,7 @@ class MidiSender(nallely.MidiDevice):
             device_name="sender",
             read_input_only=True,
             autoconnect=False,
-            modules_descr=[SenderModule],
+            modules_descr={"main": SenderModule},
         )
 
     def __getattr__(self, key):
@@ -60,7 +59,6 @@ class MidiSender(nallely.MidiDevice):
 
 @dataclass
 class ReceiverModule(nallely.Module):
-    state_name = "main"
     sink1 = nallely.ModuleParameter(99, channel=0)
     sink2 = nallely.ModuleParameter(110, channel=0)
 
@@ -70,7 +68,7 @@ class MidiReceiver(nallely.MidiDevice):
         super().__init__(
             device_name="receiver",
             autoconnect=False,
-            modules_descr=[ReceiverModule],
+            modules_descr={"main": ReceiverModule},
             debug=True,
         )
 

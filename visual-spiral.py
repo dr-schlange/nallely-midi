@@ -6,12 +6,12 @@ from nallely.core import (
 
 # from nallely.devices import MPD32
 from nallely.lfos import LFO
-from nallely.utils import WebSocketSwitch
+from nallely.utils import WebSocketBus
 
 
 try:
     # Creates the ws server that will send values to the module that registers on it
-    ws = WebSocketSwitch()
+    ws = WebSocketBus()
     ws.start()
 
     # Creates various LFOs

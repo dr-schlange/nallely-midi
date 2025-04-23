@@ -6,7 +6,6 @@ from ..modules import Module, ModulePadsOrKeys, ModuleParameter
 
 @dataclass
 class ModSection(Module):
-    state_name = "mod"
     type = ModuleParameter(88)
     time = ModuleParameter(28)
     depth = ModuleParameter(29)
@@ -14,7 +13,6 @@ class ModSection(Module):
 
 @dataclass
 class EGSection(Module):
-    state_name = "eg"
     type = ModuleParameter(14)
     attack = ModuleParameter(16)
     release = ModuleParameter(19)
@@ -24,17 +22,15 @@ class EGSection(Module):
 
 @dataclass
 class OSCSection(Module):
-    state_name = "osc"
     type = ModuleParameter(53)
     shape = ModuleParameter(54)
     alt = ModuleParameter(55)
-    lfo_date = ModuleParameter(24)
+    lfo_rate = ModuleParameter(24)
     lfo_depth = ModuleParameter(26)
 
 
 @dataclass
 class FilterSection(Module):
-    state_name = "filter"
     type = ModuleParameter(42)
     cutoff = ModuleParameter(43)
     resonance = ModuleParameter(44)
@@ -44,7 +40,6 @@ class FilterSection(Module):
 
 @dataclass
 class DelaySection(Module):
-    state_name = "delay"
     type = ModuleParameter(89)
     time = ModuleParameter(30)
     depth = ModuleParameter(31)
@@ -53,7 +48,6 @@ class DelaySection(Module):
 
 @dataclass
 class ReverbSection(Module):
-    state_name = "reverb"
     type = ModuleParameter(90)
     time = ModuleParameter(34)
     depth = ModuleParameter(35)
@@ -62,7 +56,6 @@ class ReverbSection(Module):
 
 @dataclass
 class ArpSection(Module):
-    state_name = "arp"
     pattern = ModuleParameter(117)
     intervals = ModuleParameter(118)
     length = ModuleParameter(119)
@@ -70,7 +63,6 @@ class ArpSection(Module):
 
 @dataclass
 class KeysSection(Module):
-    state_name = "keys"
     notes = ModulePadsOrKeys()
 
 

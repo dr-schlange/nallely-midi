@@ -2,33 +2,64 @@ import math
 from decimal import Decimal
 from typing import Any, Literal
 
-from .core import TimeBasedDevice, VirtualParameter
+from .core import TimeBasedDevice, VirtualParameter, no_registration
 
 
 class LFO(TimeBasedDevice):
-    speed_cv = VirtualParameter("speed", range=(0, None))
-    waveform_cv = VirtualParameter("waveform")
+    waveform_cv = VirtualParameter(
+        "waveform",
+        accepted_values=[
+            "sine",
+            "invert_sine",
+            "triangle",
+            "square",
+            "sawtooth",
+            "invert_sawtooth",
+        ],
+    )
     min_value_cv = VirtualParameter("min_value")
     max_value_cv = VirtualParameter("max_value")
-    sampling_rate_cv = VirtualParameter("sampling_rate", range=(0, None))
 
     def __init__(
         self,
         waveform="sine",
         min_value: int | float | Decimal = 0,
-        max_value: int | float | Decimal = 128,
-        speed: int | float = 10.0,
+        max_value: int | float | Decimal = 127.0,
+        speed: int | float = 0.01,
         sampling_rate: int | Literal["auto"] = "auto",
+        **kwargs,
     ):
         self.as_int = isinstance(min_value, int) and isinstance(max_value, int)
         self.waveform = waveform
-        self.min_value: Decimal | int = (
+        self._min_value: Decimal | int = (
             Decimal(min_value) if isinstance(min_value, float) else min_value
         )
-        self.max_value: Decimal | int = (
+        self._max_value: Decimal | int = (
             Decimal(max_value) if isinstance(max_value, float) else max_value
         )
-        super().__init__(speed=speed, sampling_rate=sampling_rate)
+        super().__init__(speed=speed, sampling_rate=sampling_rate, **kwargs)
+
+    @property
+    def min_value(self):
+        return self._min_value
+
+    @min_value.setter
+    def min_value(self, value):
+        self._min_value = Decimal(value) if isinstance(value, float) else value
+        self.as_int = isinstance(self._min_value, int) and isinstance(
+            self._max_value, int
+        )
+
+    @property
+    def max_value(self):
+        return self._max_value
+
+    @max_value.setter
+    def max_value(self, value):
+        self._max_value = Decimal(value) if isinstance(value, float) else value
+        self.as_int = isinstance(self._min_value, int) and isinstance(
+            self._max_value, int
+        )
 
     def generate_waveform(self, t):
         waveform = self.waveform
@@ -122,6 +153,7 @@ class LFO(TimeBasedDevice):
         return MinLFO(self, lfo)
 
 
+@no_registration
 class CombinedLFO(LFO):
     def __init__(self, lfo1: LFO, lfo2: LFO):
         self.lfo1 = lfo1
@@ -148,31 +180,37 @@ class CombinedLFO(LFO):
         return max(min(value, max_val), min_val)
 
 
+@no_registration
 class MaxLFO(CombinedLFO):
     def generate_value(self, t):
         return max(self.lfo1.generate_value(t), self.lfo2.generate_value(t))
 
 
+@no_registration
 class MinLFO(CombinedLFO):
     def generate_value(self, t):
         return min(self.lfo1.generate_value(t), self.lfo2.generate_value(t))
 
 
+@no_registration
 class AddLFO(CombinedLFO):
     def generate_value(self, t):
         return self.normalize(self.lfo1.generate_value(t) + self.lfo2.generate_value(t))
 
 
+@no_registration
 class SubLFO(CombinedLFO):
     def generate_value(self, t):
         return self.normalize(self.lfo1.generate_value(t) - self.lfo2.generate_value(t))
 
 
+@no_registration
 class MulLFO(CombinedLFO):
     def generate_value(self, t):
         return self.normalize(self.lfo1.generate_value(t) * self.lfo2.generate_value(t))
 
 
+@no_registration
 class DivLFO(CombinedLFO):
     def generate_value(self, t):
         value2 = self.lfo2.generate_value(t)
@@ -183,6 +221,7 @@ class DivLFO(CombinedLFO):
         return self.normalize(result)
 
 
+@no_registration
 class ConstLFO(LFO):
     def __init__(self, value):
         super().__init__(
@@ -196,11 +235,12 @@ class ConstLFO(LFO):
         return self.min_value
 
 
+@no_registration
 class Cycler(LFO):
-    def __init__(self, values: list[Any], speed=10, waveform="triangle"):
+    def __init__(self, values: list[Any], speed=10, waveform="triangle", **kwargs):
         self.values = values
         super().__init__(
-            waveform=waveform, speed=speed, min_value=0, max_value=len(values)
+            waveform=waveform, speed=speed, min_value=0, max_value=len(values), **kwargs
         )
 
     def generate_value(self, t) -> Any:

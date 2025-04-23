@@ -6,9 +6,10 @@ from .core import (
     stop_all_connected_devices,
     stop_all_virtual_devices,
 )
+from .eg import ADSREnvelope
 from .lfos import LFO, Cycler
 from .modules import Module, ModulePadsOrKeys, ModuleParameter, PadOrKey
-from .utils import TerminalOscilloscope, WebSocketSwitch
+from .utils import TerminalOscilloscope, WebSocketBus
 
 __all__ = [
     "stop_all_connected_devices",
@@ -21,8 +22,9 @@ __all__ = [
     "PadOrKey",
     "ModulePadsOrKeys",
     "Module",
-    "WebSocketSwitch",
+    "WebSocketBus",
     "TerminalOscilloscope",
     "LFO",
     "Cycler",
+    "ADSREnvelope",
 ]
