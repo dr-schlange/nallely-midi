@@ -89,6 +89,10 @@ def get_all_virtual_parameters(cls):
 
 
 class ThreadContext(dict):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self["last_value"] = None
+
     def __getattr__(self, key):
         return self[key]
 
@@ -109,6 +113,7 @@ class CallbackRegistryEntry:
         self,
         target: "VirtualDevice | MidiDevice",
         parameter: "VirtualParameter | ModuleParameter | ModulePadsOrKeys | PadOrKey | ParameterInstance",
+        from_: "VirtualParameter | ModuleParameter | ModulePadsOrKeys | PadOrKey | ParameterInstance",
         callback: Callable[[Any, ThreadContext], Any],
         chain: Callable | None,
         cc_note: int | None = None,
@@ -120,10 +125,11 @@ class CallbackRegistryEntry:
         self.cc_note = cc_note
         self.type = type
         self.chain = chain
+        self.from_ = from_
 
 
 class ParameterInstance:
-    def __init__(self, parameter, device):
+    def __init__(self, parameter: "VirtualParameter", device: "VirtualDevice"):
         self.parameter = parameter
         self.device = device
 
@@ -200,6 +206,7 @@ class VirtualParameter:
                     stream=self.stream,
                     append=append,
                     transformer_chain=chain,
+                    from_=value.output_cv,
                 )
             else:
                 value.device.bind(
@@ -209,6 +216,7 @@ class VirtualParameter:
                     stream=self.stream,
                     append=append,
                     transformer_chain=chain,
+                    from_=value.output_cv,
                 )
         elif isinstance(value, Int):
             if self.consummer:
@@ -250,6 +258,7 @@ class VirtualParameter:
                     param=self,
                     append=append,
                     transformer_chain=chain,
+                    from_=value,
                 )
             else:
                 value.device.bind(
@@ -261,6 +270,7 @@ class VirtualParameter:
                     stream=self.stream,
                     append=append,
                     transformer_chain=chain,
+                    from_=value,
                 )
         elif isinstance(value, Scaler):
             scaler = value
@@ -296,8 +306,10 @@ class VirtualDevice(threading.Thread):
         self.device = self  # to be polymorphic with Int
         self.__virtual__ = self  # to have a fake section
         self.callbacks_registry: list[CallbackRegistryEntry] = []
-        self.callbacks = []
-        self.stream_callbacks = []
+        # self.callbacks = []
+        # self.stream_callbacks = []
+        self.callbacks = defaultdict(list)
+        self.stream_callbacks = defaultdict(list)
         self.input_queue = Queue(maxsize=200)
         self.output_queue = Queue(maxsize=2000)
         self.pause_event = threading.Event()
@@ -342,13 +354,13 @@ class VirtualDevice(threading.Thread):
                 pass
 
             # Consume from output_queue
-            while not self.output_queue.empty():
-                try:
-                    value, output_ctx = self.output_queue.get_nowait()
-                    self.receiving(value, "output_queue", output_ctx)
-                    self.output_queue.task_done()
-                except Empty:
-                    break
+            # while not self.output_queue.empty():
+            #     try:
+            #         value, output_ctx = self.output_queue.get_nowait()
+            #         self.receiving(value, "output_queue", output_ctx)
+            #         self.output_queue.task_done()
+            #     except Empty:
+            #         break
 
             value = self.main(ctx)
             self.process_output(value, ctx)
@@ -392,12 +404,12 @@ class VirtualDevice(threading.Thread):
                 except Empty:
                     break
             # Clear output_queue
-            while not self.output_queue.empty():
-                try:
-                    self.output_queue.get_nowait()
-                    self.output_queue.task_done()
-                except Empty:
-                    break
+            # while not self.output_queue.empty():
+            #     try:
+            #         self.output_queue.get_nowait()
+            #         self.output_queue.task_done()
+            #     except Empty:
+            #         break
         if self in virtual_devices:
             virtual_devices.remove(self)
 
@@ -421,19 +433,32 @@ class VirtualDevice(threading.Thread):
         self.callbacks.clear()
 
     def bind(
-        self, callback, to, param, stream=False, append=True, transformer_chain=None
+        self,
+        callback,
+        to,
+        param,
+        from_,
+        stream=False,
+        append=True,
+        transformer_chain=None,
     ):
         if transformer_chain:
             _callback = lambda value, ctx: callback(transformer_chain(value, ctx), ctx)
         else:
             _callback = callback
         if stream:
-            self.stream_callbacks.append((_callback, param, transformer_chain))
+            self.stream_callbacks[from_.name].append(
+                (_callback, param, transformer_chain)
+            )
         else:
-            self.callbacks.append((_callback, param, transformer_chain))
+            self.callbacks[from_.name].append((_callback, param, transformer_chain))
         self.callbacks_registry.append(
             CallbackRegistryEntry(
-                target=to, parameter=param, callback=_callback, chain=transformer_chain
+                target=to,
+                parameter=param,
+                from_=from_,
+                callback=_callback,
+                chain=transformer_chain,
             )
         )
 
@@ -453,43 +478,56 @@ class VirtualDevice(threading.Thread):
                 callback = entry.callback
                 self.callbacks_registry.remove(entry)
                 try:
-                    for c, parameter, chain in list(self.stream_callbacks):
+                    for from_, (c, parameter, chain) in list(
+                        self.stream_callbacks.items()
+                    ):
                         if c is callback:
-                            self.stream_callbacks.remove((callback, parameter, chain))
+                            # self.stream_callbacks.remove((callback, parameter, chain))
+                            self.stream_callbacks[from_].remove(
+                                (callback, parameter, chain)
+                            )
                             return
                 except ValueError:
                     ...
                 try:
-                    for c, parameter, chain in list(self.callbacks):
+                    for from_, (c, parameter, chain) in list(
+                        self.stream_callbacks.items()
+                    ):
                         if c is callback:
-                            self.callbacks.remove((callback, parameter, chain))
+                            # self.callbacks.remove((callback, parameter, chain))
+                            self.callbacks[from_].remove((callback, parameter, chain))
+
                 except ValueError:
                     ...
 
     def process_input(self, param, value):
         setattr(self, param, value)
 
-    def process_output(self, value, ctx):
+    def process_output(self, value, ctx, selected_outputs=None):
         if value is None:
             return
-        try:
-            self.output_queue.put_nowait((value, ctx))
-        except Full:
-            pass  # Drop if full
-        for callback, _, _ in self.stream_callbacks:
-            try:
-                callback(value, ctx)
-            except Exception as e:
-                traceback.print_exc()
-                raise e
-        if value != ctx.last_value:
-            ctx.last_value = value
-            for callback, _, _ in self.callbacks:
+        # try:
+        #     self.output_queue.put_nowait((value, ctx))
+        # except Full:
+        #     pass  # Drop if full
+        for output in selected_outputs or self.stream_callbacks.keys():
+            callbacks = self.stream_callbacks.get(output, [])
+            for callback, param, _ in callbacks:
                 try:
                     callback(value, ctx)
                 except Exception as e:
                     traceback.print_exc()
                     raise e
+        if value != ctx.last_value:
+            for output in selected_outputs or self.callbacks.keys():
+                callbacks = self.callbacks.get(output, [])
+                for callback, param, _ in callbacks:
+                    try:
+                        callback(value, ctx)
+                    except Exception as e:
+                        traceback.print_exc()
+                        raise e
+            ctx.last_value = value
 
     def scale(self, min=None, max=None, method="lin", as_int=False):
         return Scaler(
@@ -775,6 +813,7 @@ class MidiDevice:
                 type=type,
                 cc_note=cc_note,
                 chain=transformer_chain,
+                from_=None,  # TODO
             )
         )
 

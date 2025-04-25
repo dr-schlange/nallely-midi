@@ -250,6 +250,7 @@ class ModuleParameter:
                 param=self,
                 append=append,
                 transformer_chain=chain,
+                from_=device.output_cv,
             )
             return
         if isfunction(feeder):
@@ -551,7 +552,7 @@ class ModulePadsOrKeys:
                 assert isinstance(pad, PadOrKey)
                 self.__set__(instance, e)
             return
-        from .core import VirtualDevice
+        from .core import ParameterInstance, VirtualDevice
 
         if isinstance(value, VirtualDevice):
             feeder = value
@@ -567,15 +568,29 @@ class ModulePadsOrKeys:
                 )
 
             feeder.bind(
-                debug(foo),
+                foo,
                 to=instance.device,
                 param=self,
                 append=append,
+                from_=value.output_cv,
             )
-        # if isinstance(value, Scaler):
-        #     scaler = value
-        #     scaler.install_fun(instance.device, self)
-        #     return
+            return
+        if isinstance(value, ParameterInstance):
+            feeder = value
+
+            def foo(value, ctx):
+                if value == 0:
+                    instance.device.all_notes_off()
+                    return
+                instance.device.note(
+                    note=value,
+                    velocity=127,
+                    type=ctx.type,
+                )
+
+            feeder.device.bind(
+                foo, to=instance.device, param=self, append=append, from_=value
+            )
 
     def basic_send(self, type, note, velocity): ...
 
