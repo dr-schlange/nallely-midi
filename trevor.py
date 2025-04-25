@@ -6,12 +6,14 @@ from pathlib import Path
 
 import mido
 from nallely import VirtualDevice
-from nallely.devices import NTS1, Minilogue, MPD32, minilogue, mpd32
+from nallely.devices import NTS1, Minilogue, MPD32, mpd32
 import nallely
 from nallely.core import (
     CallbackRegistryEntry,
     MidiDevice,
     ParameterInstance,
+    ThreadContext,
+    VirtualParameter,
     connected_devices,
     unbind_all,
     virtual_devices,
@@ -24,8 +26,9 @@ from websockets.sync.server import serve
 import json
 from minilab import Minilab
 from nallely.eg import ADSREnvelope
+from nallely.lfos import LFO
 from nallely.modules import Scaler
-from nallely.utils import WebSocketBus
+from nallely.utils import TerminalOscilloscope, WebSocketBus
 
 
 class StateEncoder(json.JSONEncoder):
@@ -269,7 +272,7 @@ class TrevorBus(VirtualDevice):
                         "src": {
                             "device": id(device),
                             "repr": device.uid(),
-                            "parameter": asdict(VirtualDevice.output_cv),
+                            "parameter": asdict(entry.from_.parameter),
                             "explicit": entry.cc_note,
                             "chain": scaler_as_dict(entry.chain),
                         },
@@ -311,41 +314,14 @@ class TrevorBus(VirtualDevice):
         return d
 
 
-# nts1 = NTS1()
+minilogue = Minilogue(device_name="Scarlett")
 try:
     ws = TrevorBus()
+
     ws.start()
-
-    # # lfo = nallely.LFO(waveform="sine", speed=0.5)
-    # # lfo.start()
-    # # lfo.speed_cv = lfo.scale(14, 44)
-
-    # minilab = Minilab()
-    # adsr = ADSREnvelope(autoconnect=True, release=0.5, attack=0.0, decay=1, sustain=0)
-
-    # input()
-    # nts1.keys.notes = minilab.keys[:]
-    # for key in minilab.keys[:]:
-    #     adsr.gate_cv = key.velocity
-
-    # adsr.attack_cv = minilab.set3.b9.scale(0.0, 1.0)
-    # adsr.decay_cv = minilab.set3.b10.scale(0.0, 1.0)
-    # adsr.sustain_cv = minilab.set3.b11.scale(0.0, 1.0)
-    # adsr.release_cv = minilab.set3.b12.scale(0.0, 1.0)
-
-    # # nts1.filter.cutoff = adsr.scale(0, 127)
-    # # nts1.filter.cutoff = adsr.scale(0, 127)
-    # # nts1.filter.resonance = adsr.scale(127, 0)
-
-    # wss = WebSocketBus()
-    # wss.to_update = ws
-    # wss.start()
-    # wss.scope_data = adsr
-    # wss.scope_data2 = adsr.scale(0, 127)
-
-    # ws.full_state()
-
     input("Stop server...")
 finally:
-    # nts1.force_all_notes_off()
+    # print("Cleaning residual notes")
+    # nts1.force_all_notes_off(times=10)
+    # minilogue.force_all_notes_off(times=10)
     nallely.stop_all_connected_devices()
