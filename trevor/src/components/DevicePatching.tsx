@@ -1,6 +1,5 @@
 import { useEffect, useState, useRef, type ReactElement } from "react";
 import { RackRow } from "./RackRow";
-import PatchingModal from "./PatchingModal";
 import { useTrevorSelector } from "../store";
 
 import type {
@@ -14,13 +13,14 @@ import type {
 	VirtualParameter,
 } from "../model";
 import { drawConnection } from "../utils/svgUtils";
-import { AboutModal } from "./AboutModal";
-import { SaveModal } from "./SaveModal";
 import { RackRowVirtual } from "./RackRowVirtual";
 import { useTrevorWebSocket } from "../websocket";
 import DragNumberInput from "./DragInputs";
 import { buildSectionId, connectionId, isVirtualDevice } from "../utils/utils";
 import { ScalerForm } from "./ScalerForm";
+import PatchingModal from "./modals/PatchingModal";
+import { AboutModal } from "./modals/AboutModal";
+import { SaveModal } from "./modals/SaveModal";
 
 const DevicePatching = () => {
 	const mainSectionRef = useRef(null);

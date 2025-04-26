@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useTrevorWebSocket } from "../websocket";
+import { useTrevorWebSocket } from "../../websocket";
 
 interface SaveModalProps {
 	onClose: () => void;

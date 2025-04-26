@@ -10,7 +10,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@codemirror/lang-python": "^6.2.0",
     "@reduxjs/toolkit": "^2.6.1",
+    "@uiw/react-codemirror": "^4.23.10",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-redux": "^9.2.0"

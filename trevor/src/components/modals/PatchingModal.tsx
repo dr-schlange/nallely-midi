@@ -7,17 +7,17 @@ import type {
 	VirtualDevice,
 	VirtualDeviceWithSection,
 	VirtualParameter,
-} from "../model";
-import { useTrevorSelector } from "../store";
-import { drawConnection, findConnectorElement } from "../utils/svgUtils";
-import { ScalerForm } from "./ScalerForm";
-import { useTrevorWebSocket } from "../websocket";
+} from "../../model";
+import { useTrevorSelector } from "../../store";
+import { drawConnection, findConnectorElement } from "../../utils/svgUtils";
+import { ScalerForm } from "../ScalerForm";
+import { useTrevorWebSocket } from "../../websocket";
 import {
 	buildParameterId,
 	connectionId,
 	connectionsOfInterest,
 	isVirtualParameter,
-} from "../utils/utils";
+} from "../../utils/utils";
 
 const parameterUUID = (
 	device: MidiDevice | number | VirtualDevice,
