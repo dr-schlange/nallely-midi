@@ -34,6 +34,11 @@ html, body, #root {
   height: 100%;
 }
 
+pre {
+  font-family: 'Amiga Forever', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-size: 12px;
+}
+
 body {
   font-family: 'Amiga Forever', system-ui, Avenir, Helvetica, Arial, sans-serif;
   display: flex;
@@ -553,6 +558,7 @@ input[type="text"]:disabled {
   flex: 1;
   display: flex;
   flex-direction: row;
+  height: 100%;
 }
 
 .about-modal-body, .save-modal-body {
@@ -937,10 +943,70 @@ input[type="text"]:disabled {
   width: 24px
 }
 
-
 .center-button {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+}
+
+
+/* UI for CodeMirror */
+[class^="cm-theme"] {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.cm-editor
+.cm-scroller,
+.cm-content {
+  box-sizing: border-box;
+  font-family: 'Amiga Forever', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-size: 14px;
+}
+
+.cm-gutters {
+  font-size: 12px; /* tu peux réduire ici si tu veux */
+}
+
+.cm-tooltip {
+  background: #f0f0f0; /* Couleur de fond clair comme les vieilles interfaces */
+  color: #000; /* Texte noir */
+  border: 2px solid #000; /* Bordure noire épaisse */
+  border-radius: 4px;
+  font-family: 'Amiga Forever', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  box-shadow: 4px 4px 0px #ccc; /* effet de profondeur rétro */
+}
+
+.cm-tooltip-autocomplete {
+  background: #e0e0e0; /* un peu plus gris clair pour l'autocompletion */
+}
+
+.cm-tooltip-autocomplete ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.cm-tooltip-autocomplete li {
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+.cm-tooltip-autocomplete li[aria-selected] {
+  background: #000;
+  color: #fff;
+}
+
+.cm-tooltip, .cm-tooltip-autocomplete, .cm-tooltip-autocomplete ul, .cm-tooltip-autocomplete li {
+  font-family: 'Amiga Forever', system-ui, Avenir, Helvetica, Arial, sans-serif !important;
+  font-size: 12px;
+}
+
+.cm-lintRange-error {
+  background-color: rgba(255, 0, 0, 0.1);
+  background-image: none !important;
+  border-bottom: 2px dotted red;
 }

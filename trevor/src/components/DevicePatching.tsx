@@ -21,6 +21,7 @@ import { ScalerForm } from "./ScalerForm";
 import PatchingModal from "./modals/PatchingModal";
 import { AboutModal } from "./modals/AboutModal";
 import { SaveModal } from "./modals/SaveModal";
+import { Playground } from "./modals/Playground";
 
 const DevicePatching = () => {
 	const mainSectionRef = useRef(null);
@@ -32,6 +33,7 @@ const DevicePatching = () => {
 	const [isModalOpen, setIsModalOpen] = useState(false);
 	const [isAboutOpen, setIsAboutOpen] = useState(false);
 	const [isSaveOpen, setIsSaveOpen] = useState(false);
+	const [isPlaygroundOpen, setIsPlagroundOpen] = useState(false);
 
 	const [selectedSection, setSelectedSection] = useState<{
 		firstSection: MidiDeviceWithSection | VirtualDeviceWithSection | null;
@@ -46,6 +48,7 @@ const DevicePatching = () => {
 	const virtual_devices = useTrevorSelector(
 		(state) => state.nallely.virtual_devices,
 	);
+	const device_classes = useTrevorSelector((state) => state.nallely.classes);
 	const trevorSocket = useTrevorWebSocket();
 	const [information, setInformation] = useState<ReactElement>();
 	const [currentSelected, setCurrentSelected] = useState<number>();
@@ -99,6 +102,10 @@ const DevicePatching = () => {
 
 	const openSaveModal = () => {
 		setIsSaveOpen(true);
+	};
+
+	const openPlayground = () => {
+		setIsPlagroundOpen(true);
 	};
 
 	const createInput = (
@@ -372,6 +379,7 @@ const DevicePatching = () => {
 		setIsAboutOpen(false);
 		setSelectedSections([]);
 		setIsSaveOpen(false);
+		setIsPlagroundOpen(false);
 		// setAssociateMode(false);
 	};
 
@@ -532,7 +540,7 @@ const DevicePatching = () => {
 					onDeviceClick={handleMidiDeviceClick}
 				/>
 				<RackRowVirtual
-					devices={virtual_devices}
+					devices={virtual_devices.filter((device) => device_classes.virtual.includes(device.meta.name))}
 					height={rackRowHeight}
 					rowIndex={0}
 					onDeviceDrop={handleDeviceDrop}
@@ -658,6 +666,15 @@ const DevicePatching = () => {
 					<button
 						type="button"
 						className={"associate-button"}
+						onClick={openPlayground}
+					>
+						Playground
+					</button>
+				</div>
+				<div className="device-patching-top-panel">
+					<button
+						type="button"
+						className={"associate-button"}
 						onClick={openAboutModal}
 					>
 						About
@@ -673,6 +690,7 @@ const DevicePatching = () => {
 			)}
 			{isAboutOpen && <AboutModal onClose={closeModal} />}
 			{isSaveOpen && <SaveModal onClose={closeModal} />}
+			{isPlaygroundOpen && <Playground onClose={closeModal} />}
 		</div>
 	);
 };

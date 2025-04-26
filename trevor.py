@@ -1,8 +1,12 @@
 from collections import defaultdict
+from contextlib import contextmanager
 from dataclasses import asdict
 from decimal import Decimal
+import io
 from itertools import chain
 from pathlib import Path
+import sys
+from time import sleep
 
 import mido
 from nallely import VirtualDevice
@@ -40,6 +44,36 @@ class StateEncoder(json.JSONEncoder):
         return super().default(o)
 
 
+class StdoutCapture(io.StringIO):
+    def __init__(self, sendMessage, requestId):
+        super().__init__()
+        self.sendMessage = sendMessage
+        self.requestId = requestId
+
+    def write(self, data):
+        self.send_line_to_websocket(data)
+        return super().write(data)
+
+    def send_line_to_websocket(self, line):
+        self.sendMessage(
+            {"command": "stdout", "requestId": self.requestId, "line": line}
+        )
+
+    @contextmanager
+    def capture(self):
+        old_stdout = sys.stdout
+        old_stderr = sys.stderr
+
+        sys.stdout = self
+        sys.stderr = io.StringIO()
+
+        try:
+            yield self
+        finally:
+            sys.stdout = old_stdout
+            sys.stderr = old_stderr
+
+
 @no_registration
 class TrevorBus(VirtualDevice):
     variable_refresh = False
@@ -48,6 +82,7 @@ class TrevorBus(VirtualDevice):
         super().__init__(target_cycle_time=10, **kwargs)
         self.connected = defaultdict(list)
         self.server = serve(self.handler, host=host, port=port)
+        self.code = ""
 
     @staticmethod
     def to_json(obj, **kwargs):
@@ -82,8 +117,72 @@ class TrevorBus(VirtualDevice):
         params = message
         res = getattr(self, cmd)(**params)
         if res:
-            for client in self.connected["trevor"]:
-                client.send(self.to_json(res))
+            self.sendMessage(res)
+
+    def sendMessage(self, message):
+        for client in self.connected["trevor"]:
+            client.send(self.to_json(message))
+
+    def completion_request(self, requestId, expression):
+        if "." in expression:
+            try:
+                expression = ".".join(expression.split(".")[:-1])
+                print("Expression", expression)
+                print(dir(globals()[expression]))
+            except Exception:
+                ...
+
+        return {
+            "command": "completion",
+            "requestId": requestId,
+            "options": [
+                {
+                    "label": "foo",
+                    "detail": "Type: function",
+                    "kind": "function",
+                    "insertText": "foo()",
+                    "documentation": "This is a function that does something...",
+                },
+            ],
+        }
+
+    def save_code(self, code):
+        self.code = code
+        return self.full_state()
+
+    def execute_code(self, requestId, code):
+        try:
+            with StdoutCapture(self.sendMessage, requestId).capture() as c:
+                exec(code, globals(), globals())
+        except Exception as e:
+            print(e)
+            import sys, traceback
+
+            exc_type, exc_value, exc_tb = sys.exc_info()
+
+            tb_entry = traceback.extract_tb(exc_tb)[-2]
+
+            filename, line_number, func_name, text = tb_entry
+            print(f"Error in {filename}, line {line_number}: {text}")
+
+            start_col = text.find("^")
+            end_col = (
+                start_col + len(text.split("^")[1]) if start_col != -1 else start_col
+            )
+
+            self.sendMessage(
+                {
+                    "command": "error",
+                    "requestId": requestId,
+                    "details": {
+                        "line": line_number,
+                        "start_col": start_col,
+                        "end_col": end_col,
+                        "message": str(e),
+                    },
+                }
+            )
+        return self.full_state()
 
     def create_device(self, name):
         autoconnect = False
@@ -296,16 +395,18 @@ class TrevorBus(VirtualDevice):
                 name for name in mido.get_output_names() if "RtMidi" not in name
             ],
             "midi_devices": [device.to_dict() for device in connected_devices],
-            "virtual_devices": [
-                device.to_dict()
-                for device in virtual_devices
-                if device.__class__ in virtual_device_classes
-            ],
+            # "virtual_devices": [
+            #     device.to_dict()
+            #     for device in virtual_devices
+            #     if device.__class__ in virtual_device_classes
+            # ],
+            "virtual_devices": [device.to_dict() for device in virtual_devices],
             "connections": self.all_connections(),
             "classes": {
                 "virtual": [cls.__name__ for cls in virtual_device_classes],
                 "midi": [cls.__name__ for cls in midi_device_classes],
             },
+            "playground_code": self.code,
         }
         from pprint import pprint
 
@@ -314,13 +415,79 @@ class TrevorBus(VirtualDevice):
         return d
 
 
-minilogue = Minilogue(device_name="Scarlett")
+# import threading
+# import code
+# import socket
+# import sys
+
+# class REPLServer:
+#     def __init__(self, host='127.0.0.1', port=4444, local=None):
+#         self.host = host
+#         self.port = port
+#         self.local = local or globals()
+#         self._stop_event = threading.Event()
+#         self._thread = threading.Thread(target=self._run, daemon=True)
+#         self._server_sock = None
+
+#     def start(self):
+#         self._thread.start()
+
+#     def stop(self):
+#         self._stop_event.set()
+#         if self._server_sock:
+#             try:
+#                 self._server_sock.close()
+#             except:
+#                 pass
+#         self._thread.join()
+
+#     def _run(self):
+#         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_sock:
+#             self._server_sock = server_sock
+#             server_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+#             server_sock.bind((self.host, self.port))
+#             server_sock.listen(1)
+#             server_sock.settimeout(1.0)  # Pour vérifier régulièrement stop_event
+#             print(f"[REPL] En attente de connexion sur {self.host}:{self.port}")
+#             while not self._stop_event.is_set():
+#                 try:
+#                     conn, addr = server_sock.accept()
+#                 except socket.timeout:
+#                     continue
+#                 print(f"[REPL] Connexion de {addr}")
+#                 with conn:
+#                     sockfile_r = conn.makefile('r')
+#                     sockfile_w = conn.makefile('w')
+#                     old_stdin, old_stdout, old_stderr = sys.stdin, sys.stdout, sys.stderr
+#                     try:
+#                         sys.stdin = sockfile_r
+#                         sys.stdout = sockfile_w
+#                         sys.stderr = sockfile_w
+#                         code.interact(banner="== Remote Python Console ==", local=self.local)
+#                     finally:
+#                         sys.stdin = old_stdin
+#                         sys.stdout = old_stdout
+#                         sys.stderr = old_stderr
+#                     print("[REPL] Déconnexion")
+
+
+# repl = REPLServer(local=globals())
+# repl.start()
 try:
     ws = TrevorBus()
 
     ws.start()
-    input("Stop server...")
+
+    while (q := input("Stop server...")) != "q":
+        import psutil
+        import os
+
+        process = psutil.Process(os.getpid())
+
+        mem_info = process.memory_info()
+        print(f"Memory: {mem_info.rss / (1024 * 1024)} Mo")
 finally:
+    # repl.stop()
     # print("Cleaning residual notes")
     # nts1.force_all_notes_off(times=10)
     # minilogue.force_all_notes_off(times=10)

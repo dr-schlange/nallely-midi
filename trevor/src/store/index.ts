@@ -19,7 +19,11 @@ export type AppDispatch = typeof store.dispatch;
  *   const dispatch = useAppDispatch();
  *   const devices = useAppSelector((state) => state.midi.devices);
  */
-import { useDispatch, useSelector, type TypedUseSelectorHook } from "react-redux";
+import {
+	useDispatch,
+	useSelector,
+	type TypedUseSelectorHook,
+} from "react-redux";
 
 export const useTrevorDispatch = () => useDispatch<AppDispatch>();
 export const useTrevorSelector: TypedUseSelectorHook<RootState> = useSelector;

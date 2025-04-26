@@ -11,12 +11,48 @@ import { isVirtualParameter } from "./utils/utils";
 const WEBSOCKET_URL = `ws://${window.location.hostname}:6788/trevor`;
 
 class TrevorWebSocket {
-	private socket: WebSocket | null = null;
+	public socket: WebSocket | null = null;
 	private reconnectInterval = 1 * 1000;
 	private isConnected = false;
+	private pendingRequests = new Map<string, (response: any) => void>();
 
 	constructor(private url: string) {
 		this.connect();
+	}
+
+	private generateRequestId(): string {
+		return Math.random().toString(36).substr(2, 9);
+	}
+
+	public requestWithAnswer(
+		command: string,
+		args: Record<string, any>,
+	): Promise<any> {
+		if (!this.socket || !this.isConnected) {
+			return Promise.reject(new Error("WebSocket is not connected"));
+		}
+
+		const requestId = this.generateRequestId();
+
+		return new Promise((resolve) => {
+			this.pendingRequests.set(requestId, resolve);
+
+			this.sendMessage(
+				JSON.stringify({
+					command,
+					requestId,
+					...args,
+				}),
+			);
+		});
+	}
+
+	public requestCompletion(expression: string) {
+		return this.requestWithAnswer("completion_request", { expression });
+	}
+
+	public executeCode(code: string) {
+		return this.requestWithAnswer("execute_code", { code });
 	}
 
 	private connect() {
@@ -30,6 +66,23 @@ class TrevorWebSocket {
 		this.socket.onmessage = (event) => {
 			console.debug("Message received:", event.data);
 			store.dispatch(setFullState(JSON.parse(event.data)));
+		};
+
+		this.socket.onmessage = (event) => {
+			console.debug("Message received:", event.data);
+			const message = JSON.parse(event.data);
+
+			if ((message.command === "completion") && message.requestId) {
+				const resolve = this.pendingRequests.get(message.requestId);
+				if (resolve) {
+					this.pendingRequests.delete(message.requestId);
+					resolve(message.options);
+				}
+				return;
+			}
+			if (message.command === undefined) {
+				store.dispatch(setFullState(message));
+			}
 		};
 
 		this.socket.onclose = () => {
@@ -207,6 +260,15 @@ class TrevorWebSocket {
 		this.sendMessage(
 			JSON.stringify({
 				command: "delete_all_connections",
+			}),
+		);
+	}
+
+	public saveCode(code: string) {
+		this.sendMessage(
+			JSON.stringify({
+				command: "save_code",
+				code,
 			}),
 		);
 	}

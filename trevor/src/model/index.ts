@@ -5,6 +5,7 @@ export interface NallelyState {
 	virtual_devices: VirtualDevice[];
 	connections: MidiConnection[];
 	classes: NallelyClasses;
+	playground_code: string;
 }
 
 export interface VirtualDevice {

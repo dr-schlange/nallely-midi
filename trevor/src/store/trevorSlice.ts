@@ -11,6 +11,7 @@ const initialState: NallelyState = {
 		virtual: [],
 		midi: [],
 	},
+	playground_code: "",
 };
 
 const trevorSlice = createSlice({
@@ -27,6 +28,7 @@ const trevorSlice = createSlice({
 				virtual: action.payload.classes.virtual,
 				midi: action.payload.classes.midi,
 			};
+			state.playground_code = action.payload.playground_code;
 		},
 	},
 });
