@@ -1,17 +1,11 @@
-import {
-	KeyboardEventHandler,
-	useEffect,
-	useMemo,
-	useRef,
-	useState,
-} from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import CodeMirror from "@uiw/react-codemirror";
 import { python } from "@codemirror/lang-python";
 import {
 	autocompletion,
 	type CompletionContext,
 } from "@codemirror/autocomplete";
-import { Decoration, EditorView, keymap, WidgetType } from "@codemirror/view";
+import { type EditorView, keymap } from "@codemirror/view";
 import { useTrevorWebSocket } from "../../websocket";
 import { useTrevorSelector } from "../../store";
 import { Prec } from "@codemirror/state";
@@ -88,50 +82,36 @@ function displayError(
 	view.dispatch(setDiagnostics(view.state, diagnostics));
 }
 
-// class ResultWidget extends WidgetType {
-// 	constructor(private message: any) {
-// 		super();
-// 	}
+const execute = (
+	view: EditorView,
+	executeFun: (code: string) => void,
+	print = false,
+) => {
+	const { state } = view;
+	const selection = state.selection.main;
 
-// 	toDOM() {
-// 		const widget = document.createElement("div");
-// 		widget.style.position = "absolute";
-// 		widget.style.backgroundColor = "rgba(255, 0, 0, 0.2)";
-// 		widget.style.padding = "5px";
-// 		widget.style.border = "1px solid red";
-// 		widget.textContent = this.message.toString(); // Message personnalisé
-// 		return widget;
-// 	}
-// }
+	if (selection.empty) {
+		const line = state.doc.lineAt(selection.from);
 
-// function showWidget(view: EditorView | undefined, message: any) {
-// 	if (!view) {
-// 		return;
-// 	}
-// 	const { state } = view;
-// 	const selection = state.selection.main;
-// 	const { from, to } = selection;
+		const transaction = state.update({
+			selection: { anchor: line.from, head: line.to },
+			scrollIntoView: true,
+		});
 
-// 	// Crée un widget à placer à la droite de la sélection
-// 	const widgetElement = new ResultWidget(message); // Par exemple, utilise message.details pour personnaliser le widget
+		view.dispatch(transaction);
 
-// 	// Place le widget à la bonne position (droit de la sélection)
-// 	const widgetPosition = { from: to }; // La position où tu veux afficher le widget
+		const selectedText = state.sliceDoc(line.from, line.to);
+		const code = print ? `print(${selectedText})` : selectedText;
 
-// 	const widgetDecoration = Decoration.widget({
-// 		widget: widgetElement,
-// 		side: 1,
-// 		pos: widgetPosition,
-// 	});
+		executeFun(code);
+	} else {
+		const selectedText = state.sliceDoc(selection.from, selection.to);
+		const code = print ? `print(${selectedText})` : selectedText;
+		executeFun(code);
+	}
 
-// 	// Applique la decoration à la position désirée
-// 	const transaction = state.update({
-// 		effects: Decoration.set([widgetDecoration.range(from)]), // Ajoute la decoration
-// 	});
-
-// 	// Met à jour l'état de l'éditeur avec la decoration
-// 	view.dispatch(transaction);
-// }
+	return true;
+};
 
 export function Playground({ onClose }: PlaygroundProps) {
 	const editorRef = useRef<EditorView | undefined>(undefined);
@@ -146,7 +126,7 @@ export function Playground({ onClose }: PlaygroundProps) {
 	const [stdout, setStdout] = useState("");
 	const trevorSocket = useTrevorWebSocket();
 
-	const executeCode = (code: string, action) => {
+	const executeCode = (code: string) => {
 		trevorSocket?.executeCode(code);
 	};
 
@@ -154,15 +134,15 @@ export function Playground({ onClose }: PlaygroundProps) {
 		const onMessageHandler = (event) => {
 			const message = JSON.parse(event.data);
 
-			if (message.command === "error" && message.requestId) {
+			if (message.command === "error") {
 				const error = message.details;
 				displayError(editorRef.current, {
 					line: error.line,
 					message: error.message,
 				});
 			}
-			if (message.command === "stdout" && message.requestId) {
-				setStdout((prev) => prev + message.line);
+			if (message.command === "stdout") {
+				setStdout((prev) => `${prev}${message.line}`);
 			}
 		};
 
@@ -183,34 +163,14 @@ export function Playground({ onClose }: PlaygroundProps) {
 				key: "Mod-d",
 				preventDefault: true,
 				run: (view) => {
-					const { state } = view;
-					const selection = state.selection.main;
-
-					if (selection.empty) {
-						const line = state.doc.lineAt(selection.from);
-
-						const transaction = state.update({
-							selection: { anchor: line.from, head: line.to },
-							scrollIntoView: true,
-						});
-
-						view.dispatch(transaction);
-
-						const selectedText = state.sliceDoc(line.from, line.to);
-
-						executeCode(selectedText, { printResult: false });
-					} else {
-						const selectedText = state.sliceDoc(selection.from, selection.to);
-						executeCode(selectedText, { printResult: false });
-					}
-
+					execute(view, executeCode);
 					return true;
 				},
 			},
 			{
 				key: "Mod-s",
 				preventDefault: true,
-				run: (view) => {
+				run: () => {
 					trevorSocket?.saveCode(code);
 					return true;
 				},
@@ -219,34 +179,14 @@ export function Playground({ onClose }: PlaygroundProps) {
 				key: "Mod-p",
 				preventDefault: true,
 				run: (view) => {
-					const { state } = view;
-					const selection = state.selection.main;
-
-					if (selection.empty) {
-						const line = state.doc.lineAt(selection.from);
-
-						const transaction = state.update({
-							selection: { anchor: line.from, head: line.to },
-							scrollIntoView: true,
-						});
-
-						view.dispatch(transaction);
-
-						const selectedText = state.sliceDoc(line.from, line.to);
-
-						executeCode(`print(${selectedText})`, { printResult: false });
-					} else {
-						const selectedText = state.sliceDoc(selection.from, selection.to);
-						executeCode(`print(${selectedText})`, { printResult: false });
-					}
-
+					execute(view, executeCode, true);
 					return true;
 				},
 			},
 			{
 				key: "Mod-l",
 				preventDefault: true,
-				run: (view) => {
+				run: () => {
 					setStdout("");
 					return true;
 				},
@@ -254,7 +194,7 @@ export function Playground({ onClose }: PlaygroundProps) {
 			{
 				key: "Mod-?",
 				preventDefault: true,
-				run: (view) => {
+				run: () => {
 					setStdout(`${stdout}
 Shortcuts:
 mod-d: execute the current line or the selection
@@ -381,18 +321,11 @@ mod-?: displays this entry
 					/>
 				</div>
 				<div
-					tabIndex={0}
 					style={{
 						flex: 0.4,
 						overflowY: "auto",
 						padding: "10px",
 						background: "black",
-					}}
-					onKeyDown={(e) => {
-						if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "l") {
-							e.preventDefault();
-							setStdout("");
-						}
 					}}
 				>
 					<pre style={{ color: "white", whiteSpace: "pre-wrap" }}>{stdout}</pre>

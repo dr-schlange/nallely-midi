@@ -52,7 +52,12 @@ class TrevorWebSocket {
 	}
 
 	public executeCode(code: string) {
-		return this.requestWithAnswer("execute_code", { code });
+		return this.sendMessage(
+			JSON.stringify({
+				command: "execute_code",
+				code,
+			}),
+		);
 	}
 
 	private connect() {
@@ -72,7 +77,7 @@ class TrevorWebSocket {
 			console.debug("Message received:", event.data);
 			const message = JSON.parse(event.data);
 
-			if ((message.command === "completion") && message.requestId) {
+			if (message.command === "completion" && message.requestId) {
 				const resolve = this.pendingRequests.get(message.requestId);
 				if (resolve) {
 					this.pendingRequests.delete(message.requestId);

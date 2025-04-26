@@ -45,19 +45,16 @@ class StateEncoder(json.JSONEncoder):
 
 
 class StdoutCapture(io.StringIO):
-    def __init__(self, sendMessage, requestId):
+    def __init__(self, sendMessage):
         super().__init__()
         self.sendMessage = sendMessage
-        self.requestId = requestId
 
     def write(self, data):
         self.send_line_to_websocket(data)
         return super().write(data)
 
     def send_line_to_websocket(self, line):
-        self.sendMessage(
-            {"command": "stdout", "requestId": self.requestId, "line": line}
-        )
+        self.sendMessage({"command": "stdout", "line": line})
 
     @contextmanager
     def capture(self):
@@ -150,9 +147,10 @@ class TrevorBus(VirtualDevice):
         self.code = code
         return self.full_state()
 
-    def execute_code(self, requestId, code):
+    def execute_code(self, code):
         try:
-            with StdoutCapture(self.sendMessage, requestId).capture() as c:
+            with StdoutCapture(self.sendMessage).capture() as c:
+                print(">>>", code)
                 exec(code, globals(), globals())
         except Exception as e:
             print(e)
@@ -160,7 +158,7 @@ class TrevorBus(VirtualDevice):
 
             exc_type, exc_value, exc_tb = sys.exc_info()
 
-            tb_entry = traceback.extract_tb(exc_tb)[-2]
+            tb_entry = traceback.extract_tb(exc_tb)[-1]
 
             filename, line_number, func_name, text = tb_entry
             print(f"Error in {filename}, line {line_number}: {text}")
@@ -173,7 +171,6 @@ class TrevorBus(VirtualDevice):
             self.sendMessage(
                 {
                     "command": "error",
-                    "requestId": requestId,
                     "details": {
                         "line": line_number,
                         "start_col": start_col,
