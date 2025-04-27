@@ -1,12 +1,14 @@
-from collections import defaultdict
+from collections import ChainMap, defaultdict
 from contextlib import contextmanager
 from dataclasses import asdict
 from decimal import Decimal
+from inspect import isfunction
 import io
 from itertools import chain
 from pathlib import Path
 import sys
 from time import sleep
+import traceback
 
 import mido
 from nallely import VirtualDevice
@@ -31,7 +33,7 @@ import json
 from minilab import Minilab
 from nallely.eg import ADSREnvelope
 from nallely.lfos import LFO
-from nallely.modules import Scaler
+from nallely.modules import Int, Module, ModuleParameter, Scaler
 from nallely.utils import TerminalOscilloscope, WebSocketBus
 
 
@@ -44,7 +46,7 @@ class StateEncoder(json.JSONEncoder):
         return super().default(o)
 
 
-class StdoutCapture(io.StringIO):
+class OutputCapture(io.StringIO):
     def __init__(self, sendMessage):
         super().__init__()
         self.sendMessage = sendMessage
@@ -62,7 +64,7 @@ class StdoutCapture(io.StringIO):
         old_stderr = sys.stderr
 
         sys.stdout = self
-        sys.stderr = io.StringIO()
+        sys.stderr = self
 
         try:
             yield self
@@ -80,6 +82,7 @@ class TrevorBus(VirtualDevice):
         self.connected = defaultdict(list)
         self.server = serve(self.handler, host=host, port=port)
         self.code = ""
+        self.exec_context = ChainMap(globals())
 
     @staticmethod
     def to_json(obj, **kwargs):
@@ -121,64 +124,85 @@ class TrevorBus(VirtualDevice):
             client.send(self.to_json(message))
 
     def completion_request(self, requestId, expression):
+        options = []
         if "." in expression:
             try:
                 expression = ".".join(expression.split(".")[:-1])
-                print("Expression", expression)
-                print(dir(globals()[expression]))
-            except Exception:
-                ...
+                obj = eval(expression, globals(), self.exec_context)
+                for var_name in dir(obj):
+                    if var_name.startswith("_"):
+                        continue
+                    value = getattr(obj, var_name)
+                    if isfunction(value):
+                        kind = "function"
+                    elif isinstance(value, type):
+                        kind = "class"
+                    else:
+                        kind = "property"
+                    boost = (
+                        10
+                        if isinstance(
+                            obj,
+                            (Int, ParameterInstance),
+                        )
+                        or issubclass(type(value), (Module,))
+                        else 0
+                    )
+                    options.append(
+                        {
+                            "label": var_name,
+                            "detail": f"({type(value).__name__})",
+                            "type": kind,
+                            "insertText": var_name,
+                            "boost": boost,
+                            # "documentation": "",
+                        }
+                    )
 
-        return {
-            "command": "completion",
-            "requestId": requestId,
-            "options": [
-                {
-                    "label": "foo",
-                    "detail": "Type: function",
-                    "kind": "function",
-                    "insertText": "foo()",
-                    "documentation": "This is a function that does something...",
-                },
-            ],
-        }
+            except Exception as e:
+                print(e)
+                traceback.print_exc()
+
+        return {"command": "completion", "requestId": requestId, "options": options}
 
     def save_code(self, code):
         self.code = code
         return self.full_state()
 
     def execute_code(self, code):
-        try:
-            with StdoutCapture(self.sendMessage).capture() as c:
+        with OutputCapture(self.sendMessage).capture():
+            try:
                 print(">>>", code)
-                exec(code, globals(), globals())
-        except Exception as e:
-            print(e)
-            import sys, traceback
-
-            exc_type, exc_value, exc_tb = sys.exc_info()
-
-            tb_entry = traceback.extract_tb(exc_tb)[-1]
-
-            filename, line_number, func_name, text = tb_entry
-            print(f"Error in {filename}, line {line_number}: {text}")
-
-            start_col = text.find("^")
-            end_col = (
-                start_col + len(text.split("^")[1]) if start_col != -1 else start_col
-            )
-
-            self.sendMessage(
-                {
-                    "command": "error",
-                    "details": {
-                        "line": line_number,
-                        "start_col": start_col,
-                        "end_col": end_col,
-                        "message": str(e),
-                    },
-                }
-            )
+                bytecode = compile(source=code, filename="<string>", mode="exec")
+                exec(bytecode, globals(), self.exec_context)
+            except SyntaxError as err:
+                print(err, file=sys.stderr)
+                self.sendMessage(
+                    {
+                        "command": "error",
+                        "details": {
+                            "line": err.lineno,
+                            "start_col": err.offset,
+                            "end_col": err.end_offset,
+                            "message": err.msg,
+                        },
+                    }
+                )
+            except Exception as err:
+                print(err, file=sys.stderr)
+                _, _, tb = sys.exc_info()
+                exc_info = traceback.extract_tb(tb)[-1]
+                self.sendMessage(
+                    {
+                        "command": "error",
+                        "details": {
+                            "line": exc_info.lineno,
+                            "start_col": exc_info.colno,
+                            "end_col": exc_info.end_colno,
+                            "message": str(err),
+                        },
+                    }
+                )
         return self.full_state()
 
     def create_device(self, name):

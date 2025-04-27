@@ -9,9 +9,10 @@ import { type EditorView, keymap } from "@codemirror/view";
 import { useTrevorWebSocket } from "../../websocket";
 import { useTrevorSelector } from "../../store";
 import { Prec } from "@codemirror/state";
-import { type Diagnostic, setDiagnostics } from "@codemirror/lint";
+import { type Diagnostic, setDiagnostics, linter } from "@codemirror/lint";
 
 const AUTO_SAVE_DELAY = 2000;
+const ERROR_DELAY = 3000;
 
 interface PlaygroundProps {
 	onExecute?: (code: string, action: string) => void;
@@ -51,35 +52,6 @@ async function askCompletion(context: CompletionContext) {
 		options,
 		validFor: /^\w*$/,
 	};
-}
-
-function displayError(
-	view: EditorView | undefined,
-	error: { line: number; message: string },
-) {
-	if (!view) return;
-
-	console.log("Error at line:", error.line);
-
-	const selectionStartLine = view.state.doc.lineAt(
-		view.state.selection.main.from,
-	).number;
-	const realErrorLineNumber = selectionStartLine + (error.line - 1);
-
-	console.log("Real Error at line:", realErrorLineNumber);
-
-	const errorLine = view.state.doc.line(realErrorLineNumber);
-
-	const diagnostics = [
-		{
-			from: errorLine.from,
-			to: errorLine.to,
-			severity: "error",
-			message: error.message,
-		} as Diagnostic,
-	];
-
-	view.dispatch(setDiagnostics(view.state, diagnostics));
 }
 
 const execute = (
@@ -124,22 +96,51 @@ export function Playground({ onClose }: PlaygroundProps) {
 	);
 	const [code, setCode] = useState(playgroundCode);
 	const [stdout, setStdout] = useState("");
+	const [errors, setErrors] = useState<Diagnostic[]>([]);
 	const trevorSocket = useTrevorWebSocket();
 
 	const executeCode = (code: string) => {
 		trevorSocket?.executeCode(code);
 	};
 
+	const customLinter = () => {
+		return errors;
+	};
+
+	function displayError(
+		view: EditorView | undefined,
+		error: { line: number; message: string, start_col: number},
+	) {
+		if (!view) return;
+
+		const selectionStartLine = view.state.doc.lineAt(
+			view.state.selection.main.from,
+		).number;
+		const realErrorLineNumber = selectionStartLine + (error.line - 1);
+		const errorLine = view.state.doc.line(realErrorLineNumber);
+
+		const diagnostics = [
+			{
+				from: errorLine.from + error.start_col,
+				to: errorLine.to,
+				severity: "error",
+				message: error.message,
+			} as Diagnostic,
+		];
+
+		// view.dispatch(setDiagnostics(view.state, diagnostics));
+		setErrors(diagnostics);
+		setTimeout(() => {
+			setErrors([]);
+		}, ERROR_DELAY);
+	}
+
 	useEffect(() => {
 		const onMessageHandler = (event) => {
 			const message = JSON.parse(event.data);
 
 			if (message.command === "error") {
-				const error = message.details;
-				displayError(editorRef.current, {
-					line: error.line,
-					message: error.message,
-				});
+				displayError(editorRef.current, message.details);
 			}
 			if (message.command === "stdout") {
 				setStdout((prev) => `${prev}${message.line}`);
@@ -313,6 +314,7 @@ mod-?: displays this entry
 						height="100%"
 						extensions={[
 							python(),
+							linter(customLinter),
 							myCustomKeymap,
 							autocompletion({
 								override: [askCompletion],
