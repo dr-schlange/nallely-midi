@@ -15,6 +15,7 @@ class TrevorWebSocket {
 	private reconnectInterval = 1 * 1000;
 	private isConnected = false;
 	private pendingRequests = new Map<string, (response: any) => void>();
+	private retryTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
 	constructor(private url: string) {
 		this.connect();
@@ -87,7 +88,7 @@ class TrevorWebSocket {
 
 		this.socket.onclose = () => {
 			console.error("WebSocket disconnected. Attempting to reconnect...");
-			this.disconnect()
+			this.disconnect();
 			this.reconnect();
 		};
 
@@ -97,15 +98,40 @@ class TrevorWebSocket {
 		};
 	}
 
-	public disconnect() {
+	public disconnect(timeoutMs = 500) {
 		this.isConnected = false;
-		this.socket?.close();
+
+		if (this.retryTimeoutId !== null) {
+			clearTimeout(this.retryTimeoutId);
+			this.retryTimeoutId = null;
+		}
+
+		if (!this.socket) {
+			return;
+		}
+
+		const forceCloseTimeout = setTimeout(() => {
+			if (
+				this.socket &&
+				(this.socket.readyState === WebSocket.CONNECTING ||
+					this.socket.readyState === WebSocket.OPEN)
+			) {
+				console.warn("Forcing WebSocket closure after timeout");
+				this.socket.close();
+			}
+		}, timeoutMs);
+
+		this.socket.close();
+
+		this.socket.onclose = () => {
+			clearTimeout(forceCloseTimeout);
+			this.socket = null;
+		};
 	}
 
 	private reconnect() {
-		setTimeout(() => {
+		this.retryTimeoutId = setTimeout(() => {
 			if (!this.isConnected) {
-				this.disconnect();
 				console.log("Reconnecting...");
 				this.connect();
 			}
@@ -282,13 +308,27 @@ class TrevorWebSocket {
 }
 
 let websocket: TrevorWebSocket | null = null;
+let unloadHandler: (() => void) | null = null;
 
 export const connectWebSocket = () => {
-	if (websocket) {
-		return;
+	if (unloadHandler) {
+		window.removeEventListener("beforeunload", unloadHandler);
+		unloadHandler = null;
 	}
-	console.log("Create new trevor");
+
+	if (websocket) {
+		console.log("Already connected, disconnecting first...");
+		websocket.disconnect();
+		websocket = null;
+	}
+
+	console.log("Create new Trevor websocket");
 	websocket = new TrevorWebSocket(WEBSOCKET_URL);
+
+	unloadHandler = () => {
+		websocket?.disconnect();
+	};
+	window.addEventListener("beforeunload", unloadHandler);
 };
 
 export const useTrevorWebSocket = () => {

@@ -7,6 +7,7 @@ import io
 from itertools import chain
 from pathlib import Path
 import sys
+from textwrap import indent
 from time import sleep
 import traceback
 
@@ -91,14 +92,15 @@ class TrevorBus(VirtualDevice):
     def handler(self, client):
         path = client.request.path
         service_name = path.split("/")[1]
-        print("Connected on", service_name)
         connected_devices = self.connected[service_name]
         connected_devices.append(client)
+        print(f"Connected on {service_name} [{len(connected_devices)} clients]")
         try:
             client.send(self.to_json(self.full_state()))
             for message in client:
                 self.handleMessage(client, message)
         finally:
+            print("Disconnecting", client)
             connected_devices.remove(client)
 
     def setup(self):
@@ -172,7 +174,7 @@ class TrevorBus(VirtualDevice):
     def execute_code(self, code):
         with OutputCapture(self.sendMessage).capture():
             try:
-                print(">>>", code)
+                print(">>>", indent(code, "... ")[4:])
                 bytecode = compile(source=code, filename="<string>", mode="exec")
                 exec(bytecode, globals(), self.exec_context)
             except SyntaxError as err:
