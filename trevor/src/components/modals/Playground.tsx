@@ -109,7 +109,7 @@ export function Playground({ onClose }: PlaygroundProps) {
 
 	function displayError(
 		view: EditorView | undefined,
-		error: { line: number; message: string, start_col: number},
+		error: { line: number; message: string; start_col: number },
 	) {
 		if (!view) return;
 
@@ -239,12 +239,11 @@ mod-?: displays this entry
 		saveCodeDebounced(fullText);
 	}
 
-	const saveCodeDebounced = useMemo(() => {
-		if (!trevorSocket) return () => {};
+	const saveCodeDebounced = () => {
 		return debounce((newCode: string) => {
-			trevorSocket.saveCode(newCode);
+			trevorSocket?.saveCode(newCode);
 		}, AUTO_SAVE_DELAY);
-	}, [trevorSocket]);
+	};
 
 	return (
 		<div className="patching-modal">
