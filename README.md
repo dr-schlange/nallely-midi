@@ -153,7 +153,11 @@ yarn dev
 python trevor.py
 ```
 
-### Screenshots of Trevor
+### Screenshots of Trevor UI
+![trevor1](https://github.com/user-attachments/assets/aa611b38-4e12-4437-a0d3-d6079966dc7a)
+![trevor2](https://github.com/user-attachments/assets/9baa2a96-5359-458b-abdd-7bf6f13e7eb6)
+
+### Screenshots of Trevor UI (old)
 
 ![trevor-shot1](https://github.com/user-attachments/assets/011adf5c-47d4-4786-9375-bb337008b3cd)
 ![trevor-shot2](https://github.com/user-attachments/assets/e2955fd9-9ab4-4e6a-876b-aa6e9e1f2280)
