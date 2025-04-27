@@ -310,13 +310,17 @@ class TrevorBus(VirtualDevice):
             del device["meta"]
         Path(f"{name}.nallely").write_text(self.to_json(d, indent=2))
 
-    def resume_device(self, device_id):
+    def resume_device(self, device_id, start):
         device: VirtualDevice = self.get_device_instance(device_id)  # type: ignore
+        if start:
+            device.start()
         device.resume()
         return self.full_state()
 
-    def pause_device(self, device_id):
+    def pause_device(self, device_id, start):
         device: VirtualDevice = self.get_device_instance(device_id)  # type: ignore
+        if start:
+            device.start()
         device.pause()
         return self.full_state()
 

@@ -19,6 +19,7 @@ export interface VirtualDevice {
 		[key: string]: string | number | boolean;
 	};
 	paused: boolean;
+	running: boolean;
 }
 
 export interface VirtualParameter {

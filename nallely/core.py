@@ -577,6 +577,7 @@ class VirtualDevice(threading.Thread):
                 "parameters": [asdict(p) for p in virtual_parameters.values()],
             },
             "paused": self.paused,
+            "running": self.running,
             "config": {
                 p.name: getattr(self, p.name)
                 for p in virtual_parameters.values()

@@ -57,7 +57,8 @@ const VirtualDeviceComponent = ({
 	}, [leftSections, rightSections]);
 
 	const pauseResume = (device: VirtualDevice) => {
-		trevorSocket?.toggle_device(device);
+		// We start the device if it wasn't
+		trevorSocket?.toggle_device(device, /* start= */ !device.running);
 	};
 
 	return (
@@ -82,7 +83,7 @@ const VirtualDeviceComponent = ({
 					className="amiga-button play-pause-button center-button"
 					onClick={() => pauseResume(device)}
 				>
-					{device.paused ? "▶" : "⏸"}
+					{!device.running || device.paused ? "▶" : "⏸"}
 				</button>
 			</div>
 

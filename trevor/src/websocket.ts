@@ -197,12 +197,13 @@ class TrevorWebSocket {
 		);
 	}
 
-	public toggle_device(device: VirtualDevice) {
-		if (device.paused) {
+	public toggle_device(device: VirtualDevice, start = false) {
+		if (!device.running || device.paused) {
 			this.sendMessage(
 				JSON.stringify({
 					command: "resume_device",
 					device_id: device.id,
+					start,
 				}),
 			);
 		} else {
@@ -210,6 +211,7 @@ class TrevorWebSocket {
 				JSON.stringify({
 					command: "pause_device",
 					device_id: device.id,
+					start,
 				}),
 			);
 		}
