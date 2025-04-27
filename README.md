@@ -17,6 +17,8 @@ Features:
 * LFOs composition with mathematical expressions,
 * Envelope Generator,
 * a web interface relying on a websocket protocol (named Trevor) which allows you to do graphically what you would ask Nallely to do in normal time (map devices, parameters, scalers),
+* interactive code playground in the browser (through Trevor UI),
+* small web-based widget oscilloscope integrated in the web interface,
 * save/reload patch for any MIDI device
 
 Planned:
