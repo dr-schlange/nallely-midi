@@ -191,7 +191,7 @@ class ModuleParameter:
         self.__set__(to_module, feeder, send=False, append=append)
 
     def generate_inner_fun_virtual(self, to_device, to_param):
-        if to_param.consummer:
+        if to_param.consumer:
             from .core import ThreadContext
 
             return lambda value, ctx: to_device.receiving(
@@ -390,7 +390,7 @@ class PadOrKey:
             auto=min is None and max is None,
         )
 
-    def generate_inner_fun_virtual_consummer(self, to_device, to_param):
+    def generate_inner_fun_virtual_consumer(self, to_device, to_param):
         from .core import ThreadContext
 
         if self.mode == "hold":
@@ -492,8 +492,8 @@ class PadOrKey:
         from .core import VirtualParameter
 
         if isinstance(to_param, VirtualParameter):
-            if to_param.consummer:
-                return self.generate_inner_fun_virtual_consummer(to_device, to_param)
+            if to_param.consumer:
+                return self.generate_inner_fun_virtual_consumer(to_device, to_param)
             else:
                 return self.generate_inner_fun_virtual_normal(to_device, to_param)
         else:

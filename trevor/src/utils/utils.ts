@@ -37,7 +37,7 @@ export const buildParameterId = (
 	device: number,
 	parameter: MidiParameter | VirtualParameter,
 ) => {
-	const isVirtual = (parameter as VirtualParameter).consummer !== undefined;
+	const isVirtual = (parameter as VirtualParameter).consumer !== undefined;
 	if (isVirtual) {
 		return `${device}-__virtual__-${(parameter as VirtualParameter).cv_name}`;
 	}

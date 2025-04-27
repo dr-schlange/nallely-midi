@@ -11,7 +11,7 @@ import type {
 import { useTrevorSelector } from "../../store";
 import { drawConnection, findConnectorElement } from "../../utils/svgUtils";
 import { ScalerForm } from "../ScalerForm";
-import { useTrevorWebSocket } from "../../websocket";
+import { useTrevorWebSocket } from "../../websockets/websocket";
 import {
 	buildParameterId,
 	connectionId,

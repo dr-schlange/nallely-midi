@@ -2,7 +2,7 @@ import InstanceCreation from "./components/InstanceCreation";
 import DevicePatching from "./components/DevicePatching";
 import { Provider } from "react-redux";
 import { store } from "./store";
-import { connectWebSocket } from "./websocket";
+import { connectWebSocket } from "./websockets/websocket";
 
 const App = () => {
 	connectWebSocket();

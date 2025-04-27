@@ -13,8 +13,8 @@ from .core import ThreadContext, VirtualDevice, VirtualParameter, no_registratio
 
 @no_registration
 class TerminalOscilloscope(VirtualDevice):
-    data = VirtualParameter("data", stream=True, consummer=True)
-    data2 = VirtualParameter("data2", stream=True, consummer=True)
+    data = VirtualParameter("data", stream=True, consumer=True)
+    data2 = VirtualParameter("data2", stream=True, consumer=True)
 
     def __init__(
         self, enable_display=True, buffer_size=100, refresh_rate: float = 60, **kwargs
@@ -132,9 +132,9 @@ class WebSocketBus(VirtualDevice):
                 f"Service {service_name} is not yet configured, you cannot subscribe to it yet"
             )
             return
-        print("Connecting on", service_name)
         connected_devices = self.connected[service_name]
         connected_devices.append(client)
+        print(f"Connecting on {service_name} [{len(connected_devices)} clients]")
         try:
             for message in client:
                 # Sends message to other modules connected to this channel
@@ -143,6 +143,7 @@ class WebSocketBus(VirtualDevice):
                         continue
                     device.send(message)
         finally:
+            print("Remove", client)
             connected_devices.remove(client)
 
     def setup(self):
@@ -185,7 +186,7 @@ class WebSocketBus(VirtualDevice):
             waiting_room = getattr(self, param_name, None)
             vparam = VirtualParameter(
                 f"{param_name}",
-                consummer=True,
+                consumer=True,
                 stream=is_stream,
                 cv_name=param_name,
                 range=range,

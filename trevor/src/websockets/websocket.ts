@@ -3,10 +3,10 @@ import type {
 	MidiParameter,
 	VirtualDevice,
 	VirtualParameter,
-} from "./model";
-import { store } from "./store";
-import { setFullState } from "./store/trevorSlice";
-import { isVirtualParameter } from "./utils/utils";
+} from "../model";
+import { store } from "../store";
+import { setFullState } from "../store/trevorSlice";
+import { isVirtualParameter } from "../utils/utils";
 
 const WEBSOCKET_URL = `ws://${window.location.hostname}:6788/trevor`;
 
@@ -64,19 +64,16 @@ class TrevorWebSocket {
 		this.socket = new WebSocket(this.url);
 
 		this.socket.onopen = () => {
-			console.debug("WebSocket connected");
+			console.debug("Connected to Trevor");
 			this.isConnected = true;
 		};
 
 		this.socket.onmessage = (event) => {
-			console.debug("Message received:", event.data);
-			store.dispatch(setFullState(JSON.parse(event.data)));
-		};
-
-		this.socket.onmessage = (event) => {
-			console.debug("Message received:", event.data);
 			const message = JSON.parse(event.data);
-
+			if (message.command === undefined) {
+				store.dispatch(setFullState(message));
+				return;
+			}
 			if (message.command === "completion" && message.requestId) {
 				const resolve = this.pendingRequests.get(message.requestId);
 				if (resolve) {
@@ -85,27 +82,30 @@ class TrevorWebSocket {
 				}
 				return;
 			}
-			if (message.command === undefined) {
-				store.dispatch(setFullState(message));
-			}
+			console.debug("Message received:", event.data);
 		};
 
 		this.socket.onclose = () => {
 			console.error("WebSocket disconnected. Attempting to reconnect...");
-			this.isConnected = false;
+			this.disconnect()
 			this.reconnect();
 		};
 
 		this.socket.onerror = (error) => {
 			console.error("WebSocket error:", error);
-			this.isConnected = false;
-			this.socket?.close();
+			this.disconnect();
 		};
+	}
+
+	public disconnect() {
+		this.isConnected = false;
+		this.socket?.close();
 	}
 
 	private reconnect() {
 		setTimeout(() => {
 			if (!this.isConnected) {
+				this.disconnect();
 				console.log("Reconnecting...");
 				this.connect();
 			}

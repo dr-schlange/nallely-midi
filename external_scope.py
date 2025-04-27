@@ -27,7 +27,7 @@ async def websocket_handler():
         await websocket.send(
             json.dumps(
                 {
-                    "kind": "consummer",  # this entry is purely for decoration atm
+                    "kind": "consumer",  # this entry is purely for decoration atm
                     "parameters": [
                         {"name": "data", "stream": True},
                         {"name": "data2", "stream": True},

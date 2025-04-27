@@ -14,7 +14,7 @@ import type {
 } from "../model";
 import { drawConnection } from "../utils/svgUtils";
 import { RackRowVirtual } from "./RackRowVirtual";
-import { useTrevorWebSocket } from "../websocket";
+import { useTrevorWebSocket } from "../websockets/websocket";
 import DragNumberInput from "./DragInputs";
 import { buildSectionId, connectionId, isVirtualDevice } from "../utils/utils";
 import { ScalerForm } from "./ScalerForm";
@@ -22,6 +22,8 @@ import PatchingModal from "./modals/PatchingModal";
 import { AboutModal } from "./modals/AboutModal";
 import { SaveModal } from "./modals/SaveModal";
 import { Playground } from "./modals/Playground";
+import { Scope } from "./Oscilloscope";
+import { RackRowWidgets, RackRowWidgetRef } from "./RackRowWidgets";
 
 const DevicePatching = () => {
 	const mainSectionRef = useRef(null);
@@ -56,6 +58,7 @@ const DevicePatching = () => {
 	const [tempValues, setTempValues] = useState<
 		Record<number, Record<string, string | undefined>>
 	>({});
+	const widgetRack = useRef<RackRowWidgetRef>(null);
 
 	useEffect(() => {
 		const updateRackRowHeight = () => {
@@ -279,6 +282,7 @@ const DevicePatching = () => {
 
 	const resetAll = () => {
 		trevorSocket?.resetAll();
+		widgetRack.current?.resetAll();
 	};
 
 	useEffect(() => {
@@ -526,33 +530,46 @@ const DevicePatching = () => {
 				ref={mainSectionRef}
 				style={{ overflow: "hidden" }} // Prevent scrollbars
 			>
-				<RackRow
-					devices={midi_devices}
-					height={rackRowHeight}
-					rowIndex={0}
-					onDeviceDrop={handleDeviceDrop}
-					onSectionClick={handleSectionClick}
-					onNonSectionClick={handleNonSectionClick}
-					selectedSections={selectedSections.map(
-						(d) => `${d.device.id}-${d.section.parameters[0]?.section_name}`,
-					)}
-					onSectionScroll={updateConnections}
-					onDeviceClick={handleMidiDeviceClick}
-				/>
-				<RackRowVirtual
-					devices={virtual_devices.filter((device) => device_classes.virtual.includes(device.meta.name))}
-					height={rackRowHeight}
-					rowIndex={0}
-					onDeviceDrop={handleDeviceDrop}
-					onParameterClick={handleParameterClick}
-					onNonSectionClick={handleNonSectionClick}
-					selectedSections={selectedSections.map(
-						(d) => `${d.device.id}-${d.section.parameters[0]?.section_name}`,
-					)}
-					onSectionScroll={updateConnections}
-				/>
-				<svg className="device-patching-svg" ref={svgRef} />
+				<div>
+					<RackRow
+						devices={midi_devices}
+						height={rackRowHeight}
+						rowIndex={0}
+						onDeviceDrop={handleDeviceDrop}
+						onSectionClick={handleSectionClick}
+						onNonSectionClick={handleNonSectionClick}
+						selectedSections={selectedSections.map(
+							(d) => `${d.device.id}-${d.section.parameters[0]?.section_name}`,
+						)}
+						onSectionScroll={updateConnections}
+						onDeviceClick={handleMidiDeviceClick}
+					/>
+					<RackRowVirtual
+						devices={virtual_devices.filter((device) =>
+							device_classes.virtual.includes(device.meta.name),
+						)}
+						height={rackRowHeight}
+						rowIndex={0}
+						onDeviceDrop={handleDeviceDrop}
+						onParameterClick={handleParameterClick}
+						onNonSectionClick={handleNonSectionClick}
+						selectedSections={selectedSections.map(
+							(d) => `${d.device.id}-${d.section.parameters[0]?.section_name}`,
+						)}
+						onSectionScroll={updateConnections}
+					/>
+					<svg className="device-patching-svg" ref={svgRef} />
+				</div>
+				<div>
+					<div
+						className="device-patching-main-section"
+						style={{ overflowX: "hidden" }} // Prevent scrollbars
+					>
+						<RackRowWidgets height={rackRowHeight} ref={widgetRack} />
+					</div>
+				</div>
 			</div>
+
 			<div className="device-patching-side-section">
 				<div className="device-patching-top-panel">
 					<button

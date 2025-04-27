@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { MidiConnection } from "../model";
-import { useTrevorWebSocket } from "../websocket";
+import { useTrevorWebSocket } from "../websockets/websocket";
 import DragNumberInput from "./DragInputs";
 
 interface ScalerFormProps {

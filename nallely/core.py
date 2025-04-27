@@ -174,7 +174,7 @@ class ParameterInstance:
 class VirtualParameter:
     name: str
     stream: bool = False
-    consummer: bool = False
+    consumer: bool = False
     description: str | None = None
     range: tuple[int | float | None, int | float | None] = (None, None)
     accepted_values: Iterable[Any] = ()
@@ -191,7 +191,7 @@ class VirtualParameter:
 
     def __set__(self, device: "VirtualDevice", value, append=True, chain=None):
         if isinstance(value, VirtualDevice):
-            if self.consummer:
+            if self.consumer:
                 virtual_device = value
                 value.device.bind(
                     lambda value, ctx: device.receiving(
@@ -219,7 +219,7 @@ class VirtualParameter:
                     from_=value.output_cv,
                 )
         elif isinstance(value, Int):
-            if self.consummer:
+            if self.consumer:
                 int_val = value
                 int_val.device.bind(
                     lambda value, ctx: device.receiving(
@@ -247,7 +247,7 @@ class VirtualParameter:
                     transformer_chain=chain,
                 )
         elif isinstance(value, ParameterInstance):
-            if self.consummer:
+            if self.consumer:
                 value.device.bind(
                     lambda _, ctx: device.receiving(
                         getattr(value.device, value.parameter.name),
@@ -556,7 +556,7 @@ class VirtualDevice(threading.Thread):
 
     def generate_fun(self, to_device, to_param):
         if isinstance(to_param, VirtualParameter):
-            if to_param.consummer:
+            if to_param.consumer:
                 return lambda value, ctx: to_device.receiving(
                     value,
                     on=to_param.name,
@@ -754,6 +754,7 @@ class MidiDevice:
     def note_on(self, note, velocity=127 // 2, channel=0):
         if not self.outport:
             return
+        note = int(note)
         self.played_notes[note] += 1
         self.outport.send(
             mido.Message("note_on", channel=channel, note=note, velocity=velocity)
@@ -765,6 +766,7 @@ class MidiDevice:
     def note_off(self, note, velocity=127 // 2, channel=0):
         if not self.outport:
             return
+        note = int(note)
         self.outport.send(
             mido.Message("note_off", channel=channel, note=note, velocity=velocity)
         )
@@ -784,6 +786,7 @@ class MidiDevice:
     def control_change(self, control, value=0, channel=0):
         if not self.outport:
             return
+        value = int(value)
         self.outport.send(
             mido.Message(
                 "control_change", channel=channel, control=control, value=value

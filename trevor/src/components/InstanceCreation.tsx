@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import MidiDeviceComponent from "./DeviceComponent";
 import { useTrevorSelector } from "../store";
 import { drawConnection } from "../utils/svgUtils";
-import { useTrevorWebSocket } from "../websocket";
+import { useTrevorWebSocket } from "../websockets/websocket";
 import type { MidiDevice } from "../model";
 
 const truncateName = (name: string, maxLength: number) => {
@@ -248,8 +248,8 @@ const InstanceCreation = () => {
 							points="0,0 5,3 0,6"
 							fill="orange"
 							stroke="white"
-							stroke-width="1"
-							stroke-opacity="0.3"
+							strokeWidth="1"
+							strokeOpacity="0.3"
 						/>
 					</marker>
 				</defs>

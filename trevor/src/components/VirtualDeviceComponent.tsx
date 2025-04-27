@@ -1,6 +1,6 @@
 import { useState, useEffect, useId } from "react";
 import type { VirtualDevice, VirtualParameter } from "../model";
-import { useTrevorWebSocket } from "../websocket";
+import { useTrevorWebSocket } from "../websockets/websocket";
 import { buildSectionId } from "../utils/utils";
 
 const generateAcronym = (name: string): string => {

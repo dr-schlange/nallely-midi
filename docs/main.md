@@ -165,16 +165,16 @@ class LFO(TimeBasedDevice):
 ```
 
 For example, this is how the LFO defines the speed control. It explicitly says that when this attribute will be controled, it will impact the `speed` attribute of the device.
-There is some options that can be passed to the `VirtualParamter`. If your parameter is supposed to be only an attribute that will "receive" information, but that will never be used as source of other controls/parameters, you have to tag it as `consummer`. It's also possible to state that the parameter will be used in a `stream` fashion. When information is produced by a virtual device, the information is sent to all the device mapped to the virtual device only if the new value computed is different from the old one. However, if the virtual parameter is set as "steam", it means that the devices mapped to this parameter needs to send the computed information every tick, even if the computed value is not different from the old one. This is handy when information needs to be visualized depending on the time.
+There is some options that can be passed to the `VirtualParamter`. If your parameter is supposed to be only an attribute that will "receive" information, but that will never be used as source of other controls/parameters, you have to tag it as `consumer`. It's also possible to state that the parameter will be used in a `stream` fashion. When information is produced by a virtual device, the information is sent to all the device mapped to the virtual device only if the new value computed is different from the old one. However, if the virtual parameter is set as "steam", it means that the devices mapped to this parameter needs to send the computed information every tick, even if the computed value is not different from the old one. This is handy when information needs to be visualized depending on the time.
 Here is how the `TerminalOscilloscope` defines a channel that will receive information to display later:
 
 ```python
 class TerminalOscilloscope(VirtualDevice):
-    data = VirtualParameter("data", stream=True, consummer=True)
+    data = VirtualParameter("data", stream=True, consumer=True)
     ...  # rest of the code
 ```
 
-The virtual device channel `data` is declared as `consummer`, meaning that it will only consume data, not produce any from this attribute, and it requires all the values when they are produced (`stream=True`) even if it is not different from the previously computed one.
+The virtual device channel `data` is declared as `consumer`, meaning that it will only consume data, not produce any from this attribute, and it requires all the values when they are produced (`stream=True`) even if it is not different from the previously computed one.
 There is also two additional optinal parameters for `VirtualParameter`: `range` and `description`. `range` is used to give the lower and higher value that are accepted by this parameter. By default, the range is defined as `(None, None)`, which means that there is no limit for the min and the max. If you set values, the type of the values are important. If the min/low, max/high are `int`, then only integers are considered for the range.
 The second optional parameter you can use is `description`, it's a textual description of the parameter. It's not directly used by Nallely, but it can be used by any app built using Nallely to help you give more information to the final user.
 

@@ -16,7 +16,10 @@
     "@uiw/react-codemirror": "^4.23.10",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-redux": "^9.2.0"
+    "react-redux": "^9.2.0",
+    "react-uplot": "^0.0.9",
+    "uplot": "^1.6.32",
+    "uplot-react": "^1.2.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",

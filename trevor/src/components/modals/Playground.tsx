@@ -6,7 +6,7 @@ import {
 	type CompletionContext,
 } from "@codemirror/autocomplete";
 import { type EditorView, keymap } from "@codemirror/view";
-import { useTrevorWebSocket } from "../../websocket";
+import { useTrevorWebSocket } from "../../websockets/websocket";
 import { useTrevorSelector } from "../../store";
 import { Prec } from "@codemirror/state";
 import { type Diagnostic, setDiagnostics, linter } from "@codemirror/lint";

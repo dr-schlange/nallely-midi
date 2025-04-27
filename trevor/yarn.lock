@@ -1610,6 +1610,11 @@ react-refresh@^0.14.2:
   resolved "https://registry.yarnpkg.com/react-refresh/-/react-refresh-0.14.2.tgz#3833da01ce32da470f1f936b9d477da5c7028bf9"
   integrity sha512-jCvmsr+1IUSMUyzOkRcvnVbX3ZYC6g9TDrDbFuFmRDq7PD4yaGbLKNQL6k2jnArV8hjYxh7hVhAZB6s9HDGpZA==
 
+react-uplot@^0.0.9:
+  version "0.0.9"
+  resolved "https://registry.yarnpkg.com/react-uplot/-/react-uplot-0.0.9.tgz#6d53cc9e3360e7a68a9b4d8a82e1e5e93d39d7a6"
+  integrity sha512-DrRhVjGgmFesP57ZfDf8tTNBW3zvYa3gzp8sdIiCsQCCgSLsaa2jDpN9jqcrUqTUsiOHP6OMNbEfGyVQD6Ouuw==
+
 react@^19.0.0:
   version "19.1.0"
   resolved "https://registry.yarnpkg.com/react/-/react-19.1.0.tgz#926864b6c48da7627f004795d6cce50e90793b75"
@@ -1900,6 +1905,16 @@ update-browserslist-db@^1.1.1:
   dependencies:
     escalade "^3.2.0"
     picocolors "^1.1.1"
+
+uplot-react@^1.2.2:
+  version "1.2.2"
+  resolved "https://registry.yarnpkg.com/uplot-react/-/uplot-react-1.2.2.tgz#b5d10abb77b442f634f2967f7a232056120eba81"
+  integrity sha512-fCe48HsE0sJmHVUs4TC49roTK3FYNXfCxA44g8pe20TMZ8GD3OT/mtXN/S0gJ8bYVOUcheOZ5u7f1Vw09JbTrw==
+
+uplot@^1.6.32:
+  version "1.6.32"
+  resolved "https://registry.yarnpkg.com/uplot/-/uplot-1.6.32.tgz#c800a63b432bad692d6d746f44f0882aa73a49ae"
+  integrity sha512-KIMVnG68zvu5XXUbC4LQEPnhwOxBuLyW1AHtpm6IKTXImkbLgkMy+jabjLgSLMasNuGGzQm/ep3tOkyTxpiQIw==
 
 uri-js@^4.2.2:
   version "4.4.1"

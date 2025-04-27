@@ -1010,3 +1010,14 @@ input[type="text"]:disabled {
   background-image: none !important;
   border-bottom: 2px dotted red;
 }
+
+.scope {
+  background-color: #e0e0e0;
+  border: 5px solid #808080;
+  box-sizing: border-box;
+  position: inherit;
+  align-items: center;
+  padding: 10px;
+  height: 135px;
+  width: 205px;
+}

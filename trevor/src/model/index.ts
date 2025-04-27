@@ -23,7 +23,7 @@ export interface VirtualDevice {
 }
 
 export interface VirtualParameter {
-	consummer: boolean;
+	consumer: boolean;
 	description: string | null;
 	name: string;
 	cv_name: string;

@@ -10,8 +10,8 @@ class NoteAllocator(VirtualDevice):
     When a "note_off" is received, the allocator frees the previously allocated output.
     """
 
-    # we create the input and mark it as "consummer", meaning it receives values and does something with them in "receiving", having a context for the value received
-    gate_cv = VirtualParameter(name="gate", consummer=True)
+    # we create the input and mark it as "consumer", meaning it receives values and does something with them in "receiving", having a context for the value received
+    gate_cv = VirtualParameter(name="gate", consumer=True)
 
     def __init__(self, outport_number=2, **kwargs):
         super().__init__(target_cycle_time=1 / 50, **kwargs)
