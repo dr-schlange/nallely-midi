@@ -478,24 +478,23 @@ class VirtualDevice(threading.Thread):
                 callback = entry.callback
                 self.callbacks_registry.remove(entry)
                 try:
-                    for from_, (c, parameter, chain) in list(
-                        self.stream_callbacks.items()
-                    ):
-                        if c is callback:
-                            # self.stream_callbacks.remove((callback, parameter, chain))
-                            self.stream_callbacks[from_].remove(
-                                (callback, parameter, chain)
-                            )
-                            return
+                    for from_, callbacks in self.stream_callbacks.items():
+                        for c, parameter, chain in callbacks:
+                            if c is callback:
+                                self.stream_callbacks[from_].remove(
+                                    (callback, parameter, chain)
+                                )
+                                return
                 except ValueError:
                     ...
                 try:
-                    for from_, (c, parameter, chain) in list(
-                        self.stream_callbacks.items()
-                    ):
-                        if c is callback:
-                            # self.callbacks.remove((callback, parameter, chain))
-                            self.callbacks[from_].remove((callback, parameter, chain))
+                    for from_, callbacks in self.callbacks.items():
+                        for c, parameter, chain in callbacks:
+                            if c is callback:
+                                self.callbacks[from_].remove(
+                                    (callback, parameter, chain)
+                                )
+                                return
 
                 except ValueError:
                     ...
@@ -610,12 +609,12 @@ class MidiDevice:
         if self not in connected_devices:
             connected_devices.append(self)
         self.reverse_map = {}
-        # callbacks that are called when reacting to a value
         self.callbacks_registry: list[CallbackRegistryEntry] = []
+        # callbacks that are called when reacting to a value
         self.input_callbacks: defaultdict[
             tuple[str, int], list[tuple[Callable, Callable | None]]
         ] = defaultdict(list)
-        self.output_callbacks = []  # callbacks that are classed when sending a value
+        self.output_callbacks = []  # callbacks that are called when sending a value
         if self.modules_descr is None:
             self.modules_descr = {
                 k: v

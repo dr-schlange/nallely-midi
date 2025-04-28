@@ -102,14 +102,117 @@ def test__mapping_sender_virtual(sender):
 
 
 def test__mapping_virtual_virtual(sender):
-    simu, sender = sender
+    _, sender = sender
     lfo = LFO(waveform="square", min_value=5, max_value=10, speed=1000)
     lfo2 = LFO(waveform="square", min_value=5, max_value=10, speed=1000)
     lfo.start()
     lfo2.start()
 
-    lfo2.max_value_cv = lfo2
+    lfo2.max_value_cv = lfo
 
     let_time_to_react()
 
     assert lfo2.max_value == 5 or lfo2.max_value == 10
+
+
+def test__remove_mapping_virtual_virtual(sender):
+    _, sender = sender
+    lfo = LFO(waveform="square", min_value=5, max_value=10, speed=1000)
+    lfo2 = LFO(waveform="square", min_value=5, max_value=10, speed=1000)
+
+    assert len(lfo.callbacks_registry) == 0
+    assert len(lfo2.callbacks_registry) == 0
+
+    lfo2.max_value_cv = lfo
+
+    assert len(lfo.callbacks_registry) == 1
+    assert len(lfo.callbacks) == 1
+
+    lfo2.max_value_cv -= lfo
+
+    assert len(lfo.callbacks_registry) == 0
+    assert (
+        len(lfo.callbacks) == 1
+    )  # there is still the key in the map, but no callbacks
+    assert len(lfo.callbacks["output"]) == 0
+
+
+def test__remove_mapping_sender_receiver(sender, receiver):
+    _, sender = sender
+    _, receiver = receiver
+
+    assert len(sender.output_callbacks) == 0
+    assert len(sender.input_callbacks) == 0
+    assert len(receiver.output_callbacks) == 0
+    assert len(receiver.input_callbacks) == 0
+
+    receiver.modules.main.sink1 = sender.modules.main.button1
+
+    assert len(sender.output_callbacks) == 0
+    assert len(sender.input_callbacks) == 1
+    assert len(receiver.output_callbacks) == 0
+    assert len(receiver.input_callbacks) == 0
+
+    receiver.modules.main.sink1 -= sender.modules.main.button1
+
+    assert len(sender.output_callbacks) == 0
+    assert (
+        len(sender.input_callbacks) == 1
+    )  # there is still the key in the map, but no callbacks
+    assert len(sender.input_callbacks[("control_change", 45)]) == 0
+    assert len(receiver.output_callbacks) == 0
+    assert len(receiver.input_callbacks) == 0
+
+
+def test__remove_mapping_sender_virtual(sender):
+    _, sender = sender
+    lfo = LFO(waveform="square", min_value=5, max_value=10, speed=1000)
+
+    assert len(sender.output_callbacks) == 0
+    assert len(sender.input_callbacks) == 0
+    assert len(lfo.stream_callbacks) == 0
+    assert len(lfo.callbacks) == 0
+
+    lfo.speed_cv = sender.modules.main.button1
+
+    assert len(sender.output_callbacks) == 0
+    assert len(sender.input_callbacks) == 1
+    assert len(lfo.stream_callbacks) == 0
+    assert len(lfo.callbacks) == 0
+
+    lfo.speed_cv -= sender.modules.main.button1
+
+    assert len(sender.output_callbacks) == 0
+    assert (
+        len(sender.input_callbacks) == 1
+    )  # there is still the key in the map, but no callbacks
+    assert len(sender.input_callbacks[("control_change", 45)]) == 0
+    assert len(lfo.stream_callbacks) == 0
+    assert len(lfo.callbacks) == 0
+
+
+def test__remove_mapping_virtual_receiver(receiver):
+    _, receiver = receiver
+    lfo = LFO(waveform="square", min_value=5, max_value=10, speed=1000)
+
+    assert len(lfo.stream_callbacks) == 0
+    assert len(lfo.callbacks) == 0
+    assert len(receiver.output_callbacks) == 0
+    assert len(receiver.input_callbacks) == 0
+
+    receiver.modules.main.sink1 = lfo
+
+    assert len(lfo.stream_callbacks) == 0
+    assert len(lfo.callbacks) == 1
+    assert len(receiver.output_callbacks) == 0
+    assert len(receiver.input_callbacks) == 0
+
+    receiver.modules.main.sink1 -= lfo
+
+    assert len(lfo.stream_callbacks) == 0
+    assert (
+        len(lfo.callbacks) == 1
+    )  # there is still the key in the map, but no callbacks
+    assert len(lfo.callbacks["output"]) == 0
+    assert len(receiver.output_callbacks) == 0
+    assert len(receiver.input_callbacks) == 0

@@ -520,8 +520,8 @@ const DevicePatching = () => {
 						onDeviceClick={handleMidiDeviceClick}
 					/>
 					<RackRowVirtual
-						devices={virtual_devices.filter((device) =>
-							device_classes.virtual.includes(device.meta.name),
+						devices={virtual_devices.filter(
+							(device) => !device.meta.name.includes("TrevorBus"),
 						)}
 						height={rackRowHeight}
 						rowIndex={0}
