@@ -16,11 +16,11 @@ class Audio2Midi(nallely.VirtualDevice):
 
     @property
     def min_range(self):
-        return 0 # The lowest note you can reach, usefull to scale later
+        return 0  # The lowest note you can reach, usefull to scale later
 
     @property
     def max_range(self):
-        return 88  # The max note you can reach, usefull to scale later properly
+        return 88  # The max note you can reach, usefull to scale later properly
 
     def __init__(
         self,
