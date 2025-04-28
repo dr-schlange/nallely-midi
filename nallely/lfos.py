@@ -45,7 +45,7 @@ class LFO(TimeBasedDevice):
 
     @min_value.setter
     def min_value(self, value):
-        self._min_value = Decimal(value) if isinstance(value, float) else value
+        self._min_value = Decimal(value) if isinstance(value, (float, str)) else value
         self.as_int = isinstance(self._min_value, int) and isinstance(
             self._max_value, int
         )
@@ -56,7 +56,7 @@ class LFO(TimeBasedDevice):
 
     @max_value.setter
     def max_value(self, value):
-        self._max_value = Decimal(value) if isinstance(value, float) else value
+        self._max_value = Decimal(value) if isinstance(value, (float, str)) else value
         self.as_int = isinstance(self._min_value, int) and isinstance(
             self._max_value, int
         )

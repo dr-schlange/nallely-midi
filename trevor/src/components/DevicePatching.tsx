@@ -22,8 +22,7 @@ import PatchingModal from "./modals/PatchingModal";
 import { AboutModal } from "./modals/AboutModal";
 import { SaveModal } from "./modals/SaveModal";
 import { Playground } from "./modals/Playground";
-import { Scope } from "./Oscilloscope";
-import { RackRowWidgets, RackRowWidgetRef } from "./RackRowWidgets";
+import { RackRowWidgets, type RackRowWidgetRef } from "./RackRowWidgets";
 
 const DevicePatching = () => {
 	const mainSectionRef = useRef(null);
@@ -35,7 +34,7 @@ const DevicePatching = () => {
 	const [isModalOpen, setIsModalOpen] = useState(false);
 	const [isAboutOpen, setIsAboutOpen] = useState(false);
 	const [isSaveOpen, setIsSaveOpen] = useState(false);
-	const [isPlaygroundOpen, setIsPlagroundOpen] = useState(false);
+	const [isPlaygroundOpen, setIsPlaygroundOpen] = useState(false);
 
 	const [selectedSection, setSelectedSection] = useState<{
 		firstSection: MidiDeviceWithSection | VirtualDeviceWithSection | null;
@@ -61,20 +60,18 @@ const DevicePatching = () => {
 	const widgetRack = useRef<RackRowWidgetRef>(null);
 
 	useEffect(() => {
-		const updateRackRowHeight = () => {
-			// if (mainSectionRef.current) {
-			// 	const mainSectionHeight = mainSectionRef.current.offsetHeight;
-			// 	setRackRowHeight(mainSectionHeight); // Adjust height to fit
-			// }
-		};
-
-		// updateRackRowHeight();
-
-		window.addEventListener("resize", updateRackRowHeight); // Recalculate on window resize
+		window.addEventListener("keydown", handleKeyDown);
 		return () => {
-			window.removeEventListener("resize", updateRackRowHeight);
+			window.removeEventListener("keydown", handleKeyDown);
 		};
-	}, []); // Run only once on mount
+	}, []);
+
+	function handleKeyDown(event: KeyboardEvent) {
+		if (event.altKey && event.code === "Space") {
+			event.preventDefault();
+			setIsPlaygroundOpen((prev) => !prev);
+		}
+	}
 
 	useEffect(() => {
 		const handleClickOutside = (event: MouseEvent) => {
@@ -108,7 +105,7 @@ const DevicePatching = () => {
 	};
 
 	const openPlayground = () => {
-		setIsPlagroundOpen(true);
+		setIsPlaygroundOpen(true);
 	};
 
 	const createInput = (
@@ -142,7 +139,6 @@ const DevicePatching = () => {
 					value={currentValue}
 					onBlur={(value) => {
 						if (!Number.isNaN(Number.parseFloat(value))) {
-							console.log("SEND");
 							trevorSocket?.setVirtualValue(device, parameter, value);
 						}
 					}}
@@ -158,27 +154,6 @@ const DevicePatching = () => {
 					range={parameter.range}
 				/>
 			);
-			// return (
-			// 	<input
-			// 		type="text"
-			// 		inputMode="decimal"
-			// 		value={currentValue}
-			// 		onChange={(e) => {
-			// 			const val = e.target.value;
-			// 			setTempValues({
-			// 				...tempValues,
-			// 				[device.id]: {
-			// 					...tempValues[device.id],
-			// 					[parameter.name]: val,
-			// 				},
-			// 			});
-			// 		}}
-			// 		onBlur={(e) => {
-			// 			const newVal = e.target.value;
-			// 			trevorSocket?.setVirtualValue(device, parameter, newVal);
-			// 		}}
-			// 	/>
-			// );
 		}
 		if (typeof value === "string") {
 			return (
@@ -383,7 +358,7 @@ const DevicePatching = () => {
 		setIsAboutOpen(false);
 		setSelectedSections([]);
 		setIsSaveOpen(false);
-		setIsPlagroundOpen(false);
+		setIsPlaygroundOpen(false);
 		// setAssociateMode(false);
 	};
 

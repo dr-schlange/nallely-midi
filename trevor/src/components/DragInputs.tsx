@@ -16,82 +16,70 @@ export default function DragNumberInput({
 	disabled,
 }: DragNumberInputProps) {
 	const [isDragging, setIsDragging] = useState(false);
-	const inputElement = useRef<HTMLInputElement>(null);
+	const inputRef = useRef<HTMLInputElement>(null);
 	const startY = useRef(0);
 	const startValue = useRef(0);
-	const direction = useRef<string | null>(null); // 'up' or 'down'
 	const [precision, setPrecision] = useState(0);
 
-	const computeDecimalPrecisionStep = (inputValue: string) => {
-		const normalized = inputValue.replace(",", ".").trim();
+	// Update precision dynamically based on input
+	useEffect(() => {
+		computeDecimalPrecision(value);
+	}, [value]);
 
+	const computeDecimalPrecision = (inputValue: string) => {
+		const normalized = inputValue.replace(",", ".").trim();
 		const parts = normalized.split(".");
 		if (parts.length === 2) {
-			const decimals = parts[1];
-			const precision = decimals.length;
-			setPrecision(precision);
-			return 10 ** -precision;
+			setPrecision(parts[1].length);
+		} else {
+			setPrecision(0);
 		}
-		return 1;
 	};
 
-	useEffect(() => {
-		computeDecimalPrecisionStep(value);
-	}, []);
-
 	const parseInput = (val: string) => {
-		return Number.parseFloat(val.replace(",", "."));
+		const parsed = Number.parseFloat(val.replace(",", "."));
+		return Number.isNaN(parsed) ? null : parsed;
 	};
 
 	const formatDisplay = (val: number) => {
 		return val.toFixed(precision).replace(".", ",");
 	};
 
-	const beginDrag = (y, rawValue: string) => {
-		const floatVal = parseInput(rawValue);
-		if (Number.isNaN(floatVal)) return;
+	const beginDrag = (y: number) => {
+		const parsed = parseInput(value);
+		if (parsed === null) return;
 
 		startY.current = y;
-		startValue.current = floatVal;
-		direction.current = null;
+		startValue.current = parsed;
 		setIsDragging(true);
 	};
 
-	const updateDrag = (y) => {
+	const updateDrag = (y: number) => {
 		if (!isDragging) return;
 
 		const deltaY = startY.current - y;
-
-		if (!direction.current) {
-			direction.current = deltaY > 0 ? "up" : "down";
-		}
+		const sensitivity = 10 ** -precision;
+		let newValue = startValue.current + deltaY * sensitivity;
 
 		const [lower, upper] = range;
-		const sensitivity = computeDecimalPrecisionStep(value);
-		const deltaValue = deltaY * sensitivity;
-
-		let newValue = startValue.current + deltaValue;
-
 		if (lower != null) newValue = Math.max(newValue, lower);
 		if (upper != null) newValue = Math.min(newValue, upper);
 
-		const display = formatDisplay(newValue);
-		onChange?.(display);
+		onChange?.(formatDisplay(newValue));
 	};
 
 	const endDrag = () => {
 		setIsDragging(false);
-		direction.current = null;
 	};
 
-	// Mouse handlers
-	const handleMouseDown = (e) => {
-		beginDrag(e.clientY, value);
+	const handleMouseDown = (e: React.MouseEvent) => {
+		if (disabled) return;
+		beginDrag(e.clientY);
 		window.addEventListener("mousemove", handleMouseMove);
 		window.addEventListener("mouseup", handleMouseUp);
 	};
 
-	const handleMouseMove = (e) => {
+	const handleMouseMove = (e: MouseEvent) => {
 		updateDrag(e.clientY);
 	};
 
@@ -101,56 +89,49 @@ export default function DragNumberInput({
 		window.removeEventListener("mouseup", handleMouseUp);
 	};
 
-	// Touch handlers
-	const handleTouchStart = (e) => {
-		beginDrag(e.touches[0].clientY, value);
+	const handleTouchStart = (e: React.TouchEvent) => {
+		if (disabled) return;
+		beginDrag(e.touches[0].clientY);
 	};
 
-	const handleTouchMove = (e) => {
+	const handleTouchMove = (e: React.TouchEvent) => {
 		updateDrag(e.touches[0].clientY);
 	};
 
 	const handleTouchEnd = () => {
 		endDrag();
-		onBlur?.(value.replace(",", "."));
 	};
 
-	const handleInputChange = (e) => {
+	const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const val = e.target.value;
-		const parsed = parseInput(val);
-		if (!Number.isNaN(parsed)) {
-			onChange?.(val);
-		}
+		onChange?.(val); // Toujours accepter ce que tape l'utilisateur
 	};
 
-	// useEffect(() => {
-	// 	// Ensure to rebind the touch events correctly after input value change
-	// 	computeDecimalPrecisionStep(value);
-	// 	const inputElt = inputElement.current;
-	// 	if (inputElt) {
-	// 		inputElt.addEventListener("touchstart", handleTouchStart);
-	// 		inputElt.addEventListener("touchmove", handleTouchMove);
-	// 		inputElt.addEventListener("touchend", handleTouchEnd);
+	const handleBlur = () => {
+		const val = value.trim().replace(",", ".");
+		const parsed = parseInput(val);
+		let finalValue = val;
 
-	// 		return () => {
-	// 			inputElt.removeEventListener("touchstart", handleTouchStart);
-	// 			inputElt.removeEventListener("touchmove", handleTouchMove);
-	// 			inputElt.removeEventListener("touchend", handleTouchEnd);
-	// 		};
-	// 	}
-	// }, [value]);
+		if (val === "" || parsed === null) {
+			finalValue = "0"; // valeur par défaut si vide ou invalide
+		} else {
+			finalValue = parsed.toFixed(precision).replace(",", ".");
+		}
+
+		onBlur?.(finalValue);
+	};
 
 	return (
 		<input
-			ref={inputElement}
+			ref={inputRef}
 			type="text"
 			value={value}
 			onChange={handleInputChange}
+			onBlur={handleBlur}
 			onMouseDown={handleMouseDown}
 			onTouchStart={handleTouchStart}
 			onTouchMove={handleTouchMove}
 			onTouchEnd={handleTouchEnd}
-			onBlur={() => onBlur?.(value.replace(",", "."))}
 			disabled={disabled}
 			style={{
 				touchAction: "none",

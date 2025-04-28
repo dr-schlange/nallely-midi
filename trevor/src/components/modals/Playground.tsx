@@ -5,7 +5,7 @@ import {
 	autocompletion,
 	type CompletionContext,
 } from "@codemirror/autocomplete";
-import { type EditorView, keymap } from "@codemirror/view";
+import { EditorView, keymap } from "@codemirror/view";
 import { useTrevorWebSocket } from "../../websockets/websocket";
 import { useTrevorSelector } from "../../store";
 import { Prec } from "@codemirror/state";
@@ -198,10 +198,11 @@ export function Playground({ onClose }: PlaygroundProps) {
 				run: () => {
 					setStdout(`${stdout}
 Shortcuts:
-mod-d: execute the current line or the selection
-mod-p: execute the current line or the selection in a print
-mod-l: clear the terminal
-mod-?: displays this entry
+mod-d:     execute the current line or the selection
+mod-p:     execute the current line or the selection in a print
+mod-l:     clear the terminal
+alt-space: close/open the playground
+mod-?:     displays this entry
 						`);
 					return true;
 				},
@@ -302,12 +303,14 @@ mod-?: displays this entry
 				<div style={{ flex: 0.6, overflowY: "auto" }}>
 					<CodeMirror
 						ref={(view) => {
-							if (view) editorRef.current = view.view;
+							if (view) {
+								editorRef.current = view.view;
+							}
 						}}
 						value={code}
 						onChange={(value) => {
 							setCode(value);
-							saveCodeDebounced(value);
+							saveCodeDebounced();
 						}}
 						maxHeight="100%"
 						height="100%"

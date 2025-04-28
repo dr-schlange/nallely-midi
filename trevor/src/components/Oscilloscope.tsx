@@ -12,27 +12,28 @@ interface ScopeProps {
 
 export const Scope = ({ id }: ScopeProps) => {
 	const [plotData, setPlotData] = useState<[number[], number[]]>([[], []]);
-	const bufferRef = useRef<{ x: number[]; y: number[] }>({
-		x: [],
-		y: [],
-	});
+	const bufferRef = useRef<{ x: number[]; y: number[] }>({ x: [], y: [] });
 	const startTimeRef = useRef<number>(Date.now());
-	const divRef = useRef<HTMLDivElement>(undefined);
+	const divRef = useRef<HTMLDivElement>(null);
 	const [upperBound, setUpperBound] = useState(0);
 	const [label, setLabel] = useState("");
 
-	useEffect(() => {
-		let websocket: WebSocket;
-		let retry = true;
+	const wsRef = useRef<WebSocket | null>(null);
+	const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const isUnmounted = useRef(false);
 
-		const connect = () => {
-			websocket = new WebSocket(
+	useEffect(() => {
+		function connect() {
+			if (isUnmounted.current) return;
+
+			const ws = new WebSocket(
 				`ws://${window.location.hostname}:6789/scope${id}/autoconfig`,
 			);
+			wsRef.current = ws;
 
-			websocket.onopen = () => {
+			ws.onopen = () => {
 				console.log("Connected");
-				websocket.send(
+				ws.send(
 					JSON.stringify({
 						kind: "consumer",
 						parameters: [{ name: "data", stream: true }],
@@ -40,14 +41,14 @@ export const Scope = ({ id }: ScopeProps) => {
 				);
 			};
 
-			websocket.onmessage = (event) => {
+			ws.onmessage = (event) => {
 				const data = JSON.parse(event.data);
 				const newValue = Number.parseFloat(data.value);
-				if (Number.isNaN(newValue)) {
-					return;
-				}
+				if (Number.isNaN(newValue)) return;
+
 				setUpperBound((prev) => (newValue > prev ? newValue : prev));
-				const elapsed = (Date.now() - startTimeRef.current) / 1000; // time in seconds
+
+				const elapsed = (Date.now() - startTimeRef.current) / 1000;
 				const buf = bufferRef.current;
 
 				buf.x.push(elapsed);
@@ -62,52 +63,48 @@ export const Scope = ({ id }: ScopeProps) => {
 				setLabel(data.on);
 			};
 
-			websocket.onclose = () => {
-				setTimeout(() => {
-					websocket?.close();
-					if (retry) {
-						connect();
-					}
-				}, RECO_DELAY);
+			ws.onclose = () => {
+				console.warn("WebSocket closed, scheduling reconnect...");
+				if (!isUnmounted.current) {
+					retryTimeoutRef.current = setTimeout(connect, RECO_DELAY);
+				}
 			};
 
-			websocket.onerror = (err) => {
-				console.error("Socket encountered error: ", err);
-				websocket.close();
+			ws.onerror = (err) => {
+				console.error("WebSocket error: ", err);
+				ws.close();
 			};
-		};
+		}
 
 		connect();
 
 		return () => {
-			console.log("disconnect");
-			websocket?.close();
-			retry = false
-		};
-	}, []);
+			console.log("Cleaning WebSocket and cancelling retries");
+			isUnmounted.current = true;
 
-	// uPlot options
+			if (retryTimeoutRef.current !== null) {
+				clearTimeout(retryTimeoutRef.current);
+			}
+
+			if (wsRef.current) {
+				wsRef.current.close();
+				wsRef.current = null;
+			}
+		};
+	}, [id]);
+
 	const options: uPlot.Options = {
 		height: divRef.current
 			? divRef.current.getBoundingClientRect().height - 25
-			: 0,
+			: 300, // fallback height
 		width: divRef.current
 			? divRef.current.getBoundingClientRect().width - 25
-			: 0,
+			: 600, // fallback width
 		cursor: {
-			drag: {
-				setScale: false,
-			},
+			drag: { setScale: false },
 		},
-		axes: [
-			{ show: false },
-			{
-				show: false,
-			},
-		],
-		legend: {
-			show: false,
-		},
+		axes: [{ show: false }, { show: false }],
+		legend: { show: false },
 		series: [
 			{ show: false },
 			{
@@ -117,9 +114,7 @@ export const Scope = ({ id }: ScopeProps) => {
 			},
 		],
 		scales: {
-			x: {
-				time: false,
-			},
+			x: { time: false },
 			y: {
 				auto: false,
 				range: [0, upperBound],
@@ -128,7 +123,7 @@ export const Scope = ({ id }: ScopeProps) => {
 	};
 
 	return (
-		<div ref={divRef} className={"scope"}>
+		<div ref={divRef} className="scope">
 			<UplotReact options={options} data={plotData} target={divRef.current} />
 		</div>
 	);
