@@ -535,13 +535,8 @@ const DevicePatching = () => {
 					/>
 					<svg className="device-patching-svg" ref={svgRef} />
 				</div>
-				<div>
-					<div
-						className="device-patching-main-section"
-						style={{ overflowX: "hidden" }} // Prevent scrollbars
-					>
-						<RackRowWidgets height={rackRowHeight} ref={widgetRack} />
-					</div>
+				<div style={{ marginTop: "auto" }}>
+					<RackRowWidgets height={rackRowHeight} ref={widgetRack} />
 				</div>
 			</div>
 

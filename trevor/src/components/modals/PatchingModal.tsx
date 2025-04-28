@@ -188,7 +188,7 @@ const PatchingModal = ({
 				<div className="left-panel">
 					<div className="top-left-panel">
 						<h3>
-							{firstSection?.device.meta.name} {firstSection?.section.name}
+							{firstSection?.device.repr} {firstSection?.section.name}
 						</h3>
 						<div className="parameters-grid left">
 							{firstSection?.section.parameters.map((param) => (
@@ -215,7 +215,7 @@ const PatchingModal = ({
 					</div>
 					<div className="bottom-left-panel">
 						<h3>
-							{secondSection?.device.meta.name} {secondSection?.section.name}
+							{secondSection?.device.repr} {secondSection?.section.name}
 						</h3>
 						<div className="parameters-grid right">
 							{secondSection?.section.parameters.map((param) => (
