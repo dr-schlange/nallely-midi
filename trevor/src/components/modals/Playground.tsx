@@ -237,7 +237,7 @@ mod-?:     displays this entry
 		const fullText =
 			state.sliceDoc(0, insertPos) + insertText + state.sliceDoc(insertPos);
 		setCode(fullText);
-		saveCodeDebounced(fullText);
+		saveCodeDebounced();
 	}
 
 	const saveCodeDebounced = () => {
@@ -259,10 +259,12 @@ mod-?:     displays this entry
 				>
 					Close
 				</button>
+
 				<label>
 					MIDI:
 					<select
-						value={"method"}
+						value={""}
+						title="Select midi device"
 						onChange={(e) => {
 							const index = e.target.selectedIndex - 1;
 							const val = e.target.value;
@@ -281,6 +283,7 @@ mod-?:     displays this entry
 					Virtual:
 					<select
 						value={""}
+						title="Select virtual device"
 						onChange={(e) => {
 							const index = e.target.selectedIndex - 1;
 							const val = e.target.value;
@@ -295,6 +298,32 @@ mod-?:     displays this entry
 						))}
 					</select>
 				</label>
+				<button
+					type="button"
+					title="Execute line or selection (ctrl/cmd-d)"
+					className="close-button"
+					onClick={() => {
+						trevorSocket?.saveCode(code);
+						if (editorRef.current) {
+							execute(editorRef.current, executeCode, false);
+						}
+					}}
+				>
+					run
+				</button>
+				<button
+					type="button"
+					title="Execute and print line or selection (ctrl/cmd-p)"
+					className="close-button"
+					onClick={() => {
+						trevorSocket?.saveCode(code);
+						if (editorRef.current) {
+							execute(editorRef.current, executeCode, true);
+						}
+					}}
+				>
+					print
+				</button>
 			</div>
 			<div
 				className="modal-body"
