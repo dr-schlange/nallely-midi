@@ -2,13 +2,19 @@ import json
 import threading
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
-from traceback import print_stack
 from typing import Any
 
 import plotext as plt
 from websockets.sync.server import serve
 
-from .core import ThreadContext, VirtualDevice, VirtualParameter, no_registration
+from .core import (
+    ParameterInstance,
+    ThreadContext,
+    VirtualDevice,
+    VirtualParameter,
+    no_registration,
+)
+from .modules import Int, ModulePadsOrKeys, PadOrKey
 
 
 @no_registration
@@ -86,18 +92,12 @@ class WSWaitingRoom:
         for element in self.queue:
             setattr(target, self.name, element)
 
-    # def __iadd__(self, value):
-    #     if value not in self.queue:
-    #         self.queue.append(value)
-    #     return value
-
     def flush(self):
         self.queue.clear()
         return self
 
 
 class WebSocketBus(VirtualDevice):
-    variable_refresh = False
 
     def __init__(self, host="0.0.0.0", port=6789, **kwargs):
         self.server = serve(self.handler, host=host, port=port)
@@ -110,12 +110,22 @@ class WebSocketBus(VirtualDevice):
             if isinstance(getattr(self, key, None), WSWaitingRoom):
                 getattr(self, key).append(value)
                 return
-            if key in self.__dict__ or key in self.__class__.__dict__:
-                object.__setattr__(self, key, value)
+            if (
+                isinstance(value, (Int, ParameterInstance, PadOrKey, ModulePadsOrKeys))
+                and key in self.__dict__
+                and key in self.__class__.__dict__
+            ):
+                waiting_room = WSWaitingRoom(key)
+                waiting_room.append(value)
+                object.__setattr__(self, key, waiting_room)
                 return
-            waiting_room = WSWaitingRoom(key)
-            waiting_room.append(value)
-            object.__setattr__(self, key, waiting_room)
+            object.__setattr__(self, key, value)
+            # if key in self.__dict__ or key in self.__class__.__dict__:
+            #     object.__setattr__(self, key, value)
+            #     return
+            # waiting_room = WSWaitingRoom(key)
+            # waiting_room.append(value)
+            # object.__setattr__(self, key, waiting_room)
 
         self.__class__.__setattr__ = __setattr__
 
@@ -153,6 +163,9 @@ class WebSocketBus(VirtualDevice):
     def stop(self, clear_queues=False):
         if self.running and self.server:
             self.server.shutdown()
+        for key, value in list(self.__class__.__dict__.items()):
+            if isinstance(value, VirtualParameter):
+                delattr(self.__class__, key)
         super().stop(clear_queues)
 
     def receiving(self, value, on, ctx: ThreadContext):

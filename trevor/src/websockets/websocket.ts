@@ -102,31 +102,28 @@ class TrevorWebSocket {
 		this.isConnected = false;
 
 		if (this.retryTimeoutId !== null) {
+			console.log("Clear retry...");
 			clearTimeout(this.retryTimeoutId);
 			this.retryTimeoutId = null;
 		}
 
-		if (!this.socket) {
-			return;
-		}
+		// const forceCloseTimeout = setTimeout(() => {
+		// 	if (
+		// 		this.socket &&
+		// 		(this.socket.readyState === WebSocket.CONNECTING ||
+		// 			this.socket.readyState === WebSocket.OPEN)
+		// 	) {
+		// 		console.warn("Forcing WebSocket closure after timeout");
+		// 		this.socket.close();
+		// 	}
+		// }, timeoutMs);
 
-		const forceCloseTimeout = setTimeout(() => {
-			if (
-				this.socket &&
-				(this.socket.readyState === WebSocket.CONNECTING ||
-					this.socket.readyState === WebSocket.OPEN)
-			) {
-				console.warn("Forcing WebSocket closure after timeout");
-				this.socket.close();
-			}
-		}, timeoutMs);
+		this.socket?.close();
 
-		this.socket.close();
-
-		this.socket.onclose = () => {
-			clearTimeout(forceCloseTimeout);
-			this.socket = null;
-		};
+		// this.socket.onclose = () => {
+		// 	// clearTimeout(forceCloseTimeout);
+		// 	this.socket = null;
+		// };
 	}
 
 	private reconnect() {

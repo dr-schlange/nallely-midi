@@ -3,7 +3,7 @@ import "uplot/dist/uPlot.min.css";
 import type uPlot from "uplot";
 import UplotReact from "uplot-react";
 
-const RECO_DELAY = 1000;
+const RECO_DELAY = 5000;
 const BUFFER_SIZE = 200;
 
 interface ScopeProps {
@@ -25,6 +25,7 @@ export const Scope = ({ id }: ScopeProps) => {
 	useEffect(() => {
 		function connect() {
 			if (isUnmounted.current) return;
+			console.log("TRY TO CONNECT...")
 
 			const ws = new WebSocket(
 				`ws://${window.location.hostname}:6789/scope${id}/autoconfig`,
@@ -64,8 +65,8 @@ export const Scope = ({ id }: ScopeProps) => {
 			};
 
 			ws.onclose = () => {
-				console.warn("WebSocket closed, scheduling reconnect...");
 				if (!isUnmounted.current) {
+					console.warn("WebSocket closed, scheduling reconnect...");
 					retryTimeoutRef.current = setTimeout(connect, RECO_DELAY);
 				}
 			};
@@ -83,6 +84,7 @@ export const Scope = ({ id }: ScopeProps) => {
 			isUnmounted.current = true;
 
 			if (retryTimeoutRef.current !== null) {
+				console.log("Clearing")
 				clearTimeout(retryTimeoutRef.current);
 			}
 

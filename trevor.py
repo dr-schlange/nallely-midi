@@ -76,7 +76,7 @@ class OutputCapture(io.StringIO):
 
 @no_registration
 class TrevorBus(VirtualDevice):
-    variable_refresh = False
+    forever = True
 
     def __init__(self, host="0.0.0.0", port=6788, **kwargs):
         super().__init__(target_cycle_time=10, **kwargs)

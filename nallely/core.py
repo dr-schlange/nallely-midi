@@ -45,7 +45,8 @@ def need_registration(cls):
 
 def stop_all_virtual_devices(skip_unregistered=False):
     for device in list(virtual_devices):
-        if skip_unregistered and device.__class__ not in virtual_device_classes:
+        # if skip_unregistered and device.__class__ not in virtual_device_classes:
+        if skip_unregistered and getattr(device, "forever", False):
             print("Skipping", device)
             continue
         device.stop()
@@ -55,7 +56,8 @@ def stop_all_virtual_devices(skip_unregistered=False):
 def stop_all_connected_devices(skip_unregistered=False):
     stop_all_virtual_devices(skip_unregistered)
     for device in list(connected_devices):
-        if skip_unregistered and device.__class__ not in midi_device_classes:
+        # if skip_unregistered and device.__class__ not in midi_device_classes:
+        if skip_unregistered and getattr(device, "forever", False):
             print("Skipping", device)
             continue
         device.close()
@@ -291,7 +293,6 @@ class VirtualParameter:
 
 class VirtualDevice(threading.Thread):
     _id: dict[Type, int] = defaultdict(int)
-    variable_refresh: bool = True
     output_cv = VirtualParameter(name="output")
 
     def __new__(cls, *args, **kwargs) -> Self:
@@ -306,8 +307,6 @@ class VirtualDevice(threading.Thread):
         self.device = self  # to be polymorphic with Int
         self.__virtual__ = self  # to have a fake section
         self.callbacks_registry: list[CallbackRegistryEntry] = []
-        # self.callbacks = []
-        # self.stream_callbacks = []
         self.callbacks = defaultdict(list)
         self.stream_callbacks = defaultdict(list)
         self.input_queue = Queue(maxsize=200)
@@ -389,6 +388,8 @@ class VirtualDevice(threading.Thread):
 
     def stop(self, clear_queues=True):
         """Stop the LFO thread."""
+        if self in virtual_devices:
+            virtual_devices.remove(self)
         if not self.running:
             return
         self.running = False
@@ -410,8 +411,6 @@ class VirtualDevice(threading.Thread):
             #         self.output_queue.task_done()
             #     except Empty:
             #         break
-        if self in virtual_devices:
-            virtual_devices.remove(self)
 
     def pause(self, duration=None):
         """Pause the LFO, optionally for a specific duration."""
@@ -590,7 +589,6 @@ class VirtualDevice(threading.Thread):
 
 @dataclass
 class MidiDevice:
-    variable_refresh = False
     device_name: str
     modules_descr: dict[str, Type[Module]] | None = None
     autoconnect: InitVar[bool] = True
