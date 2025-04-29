@@ -102,6 +102,7 @@ class TrevorBus(VirtualDevice):
         finally:
             print("Disconnecting", client)
             connected_devices.remove(client)
+            print(f"Connected on {service_name} [{len(connected_devices)} clients]")
 
     def setup(self):
         self.server.serve_forever()

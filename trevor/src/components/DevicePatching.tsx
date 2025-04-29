@@ -535,7 +535,8 @@ const DevicePatching = () => {
 					/>
 					<svg className="device-patching-svg" ref={svgRef} />
 				</div>
-				<div style={{ marginTop: "auto" }}>
+				{/* <div style={{ marginTop: "auto" }}> */}
+				<div>
 					<RackRowWidgets height={rackRowHeight} ref={widgetRack} />
 				</div>
 			</div>
@@ -588,7 +589,7 @@ const DevicePatching = () => {
 									const dstSection = connection.dest.parameter.section_name;
 									return (
 										<li
-											key={`${connection.src.parameter.section_name}-${connection.src.parameter.name}-${connection.dest.parameter.section_name}-${connection.dest.parameter.name}`}
+											key={`${connection.src.repr}-${connection.src.parameter.section_name}-${connection.src.parameter.name}-${connection.dest.repr}-${connection.dest.parameter.section_name}-${connection.dest.parameter.name}`}
 											onClick={() => handleConnectionClick(connection)}
 											onKeyDown={(e) => {
 												if (e.key === "Enter" || e.key === " ") {
@@ -602,7 +603,7 @@ const DevicePatching = () => {
 											}}
 											className={`connection-item ${selectedConnection === connectionId(connection) ? "selected" : ""}`}
 										>
-											{`${srcSection === "__virtual__" ? connection.src.repr : srcSection}[${connection.src.parameter.name}] → ${dstSection === "__virtual__" ? connection.dest.repr : dstSection}[${connection.dest.parameter.name}]`}
+											{`${connection.src.repr}${srcSection === "__virtual__" ? "" : `.${srcSection}`}[${connection.src.parameter.name}] → ${connection.dest.repr}${dstSection === "__virtual__" ? "" : `.${dstSection}`}[${connection.dest.parameter.name}]`}
 										</li>
 									);
 								})}

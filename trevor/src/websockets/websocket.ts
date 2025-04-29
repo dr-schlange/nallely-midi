@@ -14,6 +14,7 @@ class TrevorWebSocket {
 	public socket: WebSocket | null = null;
 	private reconnectInterval = 1 * 1000;
 	private isConnected = false;
+	private manualClose = false;
 	private pendingRequests = new Map<string, (response: any) => void>();
 	private retryTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
@@ -34,7 +35,6 @@ class TrevorWebSocket {
 		}
 
 		const requestId = this.generateRequestId();
-
 		return new Promise((resolve) => {
 			this.pendingRequests.set(requestId, resolve);
 
@@ -62,6 +62,7 @@ class TrevorWebSocket {
 	}
 
 	private connect() {
+		this.manualClose = false;
 		this.socket = new WebSocket(this.url);
 
 		this.socket.onopen = () => {
@@ -83,55 +84,50 @@ class TrevorWebSocket {
 				}
 				return;
 			}
-			console.debug("Message received:", event.data);
-		};
-
-		this.socket.onclose = () => {
-			console.error("WebSocket disconnected. Attempting to reconnect...");
-			this.disconnect();
-			this.reconnect();
 		};
 
 		this.socket.onerror = (error) => {
 			console.error("WebSocket error:", error);
-			this.disconnect();
+			// Just close; onclose will handle reconnection
+			if (this.socket) {
+				this.socket.close();
+			}
+		};
+
+		this.socket.onclose = () => {
+			console.warn("WebSocket closed");
+			this.isConnected = false;
+			this.socket = null;
+
+			if (!this.manualClose) {
+				this.reconnect();
+			}
 		};
 	}
 
-	public disconnect(timeoutMs = 500) {
+	public disconnect() {
 		this.isConnected = false;
+		this.manualClose = true;
 
 		if (this.retryTimeoutId !== null) {
-			console.log("Clear retry...");
+			console.log("Clearing retry timeout...");
 			clearTimeout(this.retryTimeoutId);
 			this.retryTimeoutId = null;
 		}
 
-		// const forceCloseTimeout = setTimeout(() => {
-		// 	if (
-		// 		this.socket &&
-		// 		(this.socket.readyState === WebSocket.CONNECTING ||
-		// 			this.socket.readyState === WebSocket.OPEN)
-		// 	) {
-		// 		console.warn("Forcing WebSocket closure after timeout");
-		// 		this.socket.close();
-		// 	}
-		// }, timeoutMs);
-
-		this.socket?.close();
-
-		// this.socket.onclose = () => {
-		// 	// clearTimeout(forceCloseTimeout);
-		// 	this.socket = null;
-		// };
+		if (this.socket) {
+			this.socket.close();
+			this.socket = null;
+		}
 	}
 
 	private reconnect() {
+		if (this.retryTimeoutId !== null) {
+			clearTimeout(this.retryTimeoutId);
+		}
 		this.retryTimeoutId = setTimeout(() => {
-			if (!this.isConnected) {
-				console.log("Reconnecting...");
-				this.connect();
-			}
+			console.log("Reconnecting...");
+			this.connect();
 		}, this.reconnectInterval);
 	}
 

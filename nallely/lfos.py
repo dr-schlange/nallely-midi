@@ -1,4 +1,5 @@
 import math
+import traceback
 from decimal import Decimal
 from typing import Any, Literal
 
@@ -111,7 +112,7 @@ class LFO(TimeBasedDevice):
     generate_value = generate_waveform
 
     def process_input(self, param, value):
-        if param == "waveform" and isinstance(value, (int, float)):
+        if param == "waveform" and isinstance(value, (int, float, Decimal)):
             value = [
                 "sine",
                 "invert_sine",
@@ -119,7 +120,7 @@ class LFO(TimeBasedDevice):
                 "square",
                 "sawtooth",
                 "invert_sawtooth",
-            ][min(int(value // 6), 5)]
+            ][int(value % 6)]
         super().process_input(param, value)
 
     def __add__(self, lfo):

@@ -25,7 +25,6 @@ export const Scope = ({ id }: ScopeProps) => {
 	useEffect(() => {
 		function connect() {
 			if (isUnmounted.current) return;
-			console.log("TRY TO CONNECT...")
 
 			const ws = new WebSocket(
 				`ws://${window.location.hostname}:6789/scope${id}/autoconfig`,
@@ -33,7 +32,6 @@ export const Scope = ({ id }: ScopeProps) => {
 			wsRef.current = ws;
 
 			ws.onopen = () => {
-				console.log("Connected");
 				ws.send(
 					JSON.stringify({
 						kind: "consumer",
@@ -80,18 +78,19 @@ export const Scope = ({ id }: ScopeProps) => {
 		connect();
 
 		return () => {
-			console.log("Cleaning WebSocket and cancelling retries");
-			isUnmounted.current = true;
+			setTimeout(() => {
+				console.log("Cleaning WebSocket and cancelling retries");
+				isUnmounted.current = true;
 
-			if (retryTimeoutRef.current !== null) {
-				console.log("Clearing")
-				clearTimeout(retryTimeoutRef.current);
-			}
+				if (retryTimeoutRef.current !== null) {
+					clearTimeout(retryTimeoutRef.current);
+				}
 
-			if (wsRef.current) {
-				wsRef.current.close();
-				wsRef.current = null;
-			}
+				if (wsRef.current) {
+					wsRef.current.close();
+					wsRef.current = null;
+				}
+			}, 1000);
 		};
 	}, [id]);
 

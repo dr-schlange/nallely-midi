@@ -1,6 +1,7 @@
 import json
 import threading
 import time
+import trace
 import traceback
 from collections import defaultdict
 from dataclasses import InitVar, asdict, dataclass, field
@@ -309,8 +310,8 @@ class VirtualDevice(threading.Thread):
         self.callbacks_registry: list[CallbackRegistryEntry] = []
         self.callbacks = defaultdict(list)
         self.stream_callbacks = defaultdict(list)
-        self.input_queue = Queue(maxsize=200)
-        self.output_queue = Queue(maxsize=2000)
+        self.input_queue = Queue(maxsize=2000)
+        # self.output_queue = Queue(maxsize=2000)
         self.pause_event = threading.Event()
         self.paused = False
         self.running = False
@@ -332,47 +333,61 @@ class VirtualDevice(threading.Thread):
     def receiving(self, value, on: str, ctx: ThreadContext): ...
 
     def set_parameter(self, param: str, value: Any):
-        self.input_queue.put((param, value))
+        try:
+            self.input_queue.put_nowait((param, value))
+        except Full:
+            print(
+                f"Warning: input_queue full for {self.uid()} — dropping message {param}={value}"
+            )
+            self.target_cycle_time = 0.001
 
     def run(self):
         self.ready_event.set()
         ctx = self.setup()
         ctx.parent = self
         ctx.last_value = None
+
         while self.running:
             start_time = time.perf_counter()
-            self.pause_event.wait()
+            self.pause_event.wait()  # Block if paused
+
             if not self.running:
                 break
-            # Check input queue
-            try:
-                param, value = self.input_queue.get_nowait()
-                self.process_input(param, value)
-                self.input_queue.task_done()
-            except Empty:
-                pass
 
-            # Consume from output_queue
-            # while not self.output_queue.empty():
-            #     try:
-            #         value, output_ctx = self.output_queue.get_nowait()
-            #         self.receiving(value, "output_queue", output_ctx)
-            #         self.output_queue.task_done()
-            #     except Empty:
-            #         break
+            # Process a batch of inputs per cycle (to avoid backlog)
+            max_batch_size = 10  # Maximum number of items to process per cycle
+            queue_level = self.input_queue.qsize()
+            # We adjust the batch size dynamically based on queue pressure
+            batch_size = min(max_batch_size, max(1, int(queue_level / 100)))
+            for _ in range(batch_size):
+                try:
+                    param, value = self.input_queue.get_nowait()
+                    self.process_input(param, value)
+                    self.input_queue.task_done()
+                except Empty:
+                    break
 
+            # Optional: Log queue pressure
+            queue_level = self.input_queue.qsize()
+            if queue_level > self.input_queue.maxsize * 0.8:
+                print(
+                    f"[{self.uid()}] Queue usage: {queue_level}/{self.input_queue.maxsize}"
+                )
+
+            # Run main processing and output
             value = self.main(ctx)
             self.process_output(value, ctx)
 
-            # Adaptive sleep to try to maintain constant cycle time
-            elapsed_time = time.perf_counter() - start_time
-            sleep_time = max(0, self.target_cycle_time - elapsed_time)
-            if sleep_time == 0:
-                # print(
-                #     f"Warning: Cycle time exceeded for {self}: {elapsed_time:.6f}s > {target_cycle_time:.6f}s"
-                # )
-                ...
-            time.sleep(sleep_time)
+            if queue_level > self.input_queue.maxsize * 0.8:
+                # Skip sleep to catch up faster
+                print(
+                    f"[{self.uid()}] High queue pressure, skipping sleep for this cycle."
+                )
+            else:
+                # Adaptive sleep
+                elapsed_time = time.perf_counter() - start_time
+                sleep_time = max(0, self.target_cycle_time - elapsed_time)
+                time.sleep(sleep_time)
 
     def start(self):
         """Start the LFO thread."""
@@ -703,10 +718,12 @@ class MidiDevice:
                     if chain:
                         value = chain(value, ctx)
                     callback(value, ctx)
+                control: ModuleParameter = self.reverse_map[
+                    ("control_change", msg.control)
+                ]
+                control.basic_set(self, msg.value)
             except:
                 traceback.print_exc()
-            control: ModuleParameter = self.reverse_map[("control_change", msg.control)]
-            control.basic_set(self, msg.value)
         if msg.type == "note_on" or msg.type == "note_off":
             try:
                 for callback, chain in self.input_callbacks.get(("note", msg.note), []):
@@ -735,10 +752,10 @@ class MidiDevice:
                     if chain:
                         value = chain(value, ctx)
                     callback(value, ctx)
+                pads: ModulePadsOrKeys = self.reverse_map[("note", None)]
+                pads.basic_send(msg.type, msg.note, msg.velocity)
             except:
                 traceback.print_exc()
-            pads: ModulePadsOrKeys = self.reverse_map[("note", None)]
-            pads.basic_send(msg.type, msg.note, msg.velocity)
 
     def send(self, msg):
         if not self.outport:
@@ -903,7 +920,7 @@ outputs: {mido.get_input_names()}"""
 
 @no_registration
 class TimeBasedDevice(VirtualDevice):
-    speed_cv = VirtualParameter("speed", range=(0, None))
+    speed_cv = VirtualParameter("speed", range=(0, 50))
     sampling_rate_cv = VirtualParameter("sampling_rate", range=(0, None))
 
     def __init__(
