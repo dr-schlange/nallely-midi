@@ -920,7 +920,7 @@ outputs: {mido.get_input_names()}"""
 
 @no_registration
 class TimeBasedDevice(VirtualDevice):
-    speed_cv = VirtualParameter("speed", range=(0, 50))
+    speed_cv = VirtualParameter("speed", range=(0, 10.0))
     sampling_rate_cv = VirtualParameter("sampling_rate", range=(0, None))
 
     def __init__(
@@ -964,14 +964,15 @@ class TimeBasedDevice(VirtualDevice):
             return 50  # we sample 50 point, enough as it's slow
         return int(self.speed * 20)  # we sample 20 times faster than the speed
 
-    def generate_value(self, t) -> Any: ...
+    def generate_value(self, t, ticks) -> Any: ...
 
     def setup(self):
         return ThreadContext({"t": Decimal(0), "ticks": 0})
 
     def main(self, ctx: ThreadContext):
         t = ctx.t
-        generated_value = self.generate_value(t)
+        ticks = ctx.ticks
+        generated_value = self.generate_value(t, ticks)
         t += self.time_step
         ctx.t = t % 1
         ctx.ticks += 1

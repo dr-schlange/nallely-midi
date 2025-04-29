@@ -1,4 +1,5 @@
 import math
+import random
 import traceback
 from decimal import Decimal
 from typing import Any, Literal
@@ -16,10 +17,21 @@ class LFO(TimeBasedDevice):
             "square",
             "sawtooth",
             "invert_sawtooth",
+            "random",
+            "pulse",
+            "exponential",
+            "logarithmic",
+            "ramp_down",
+            "step",
+            "white_noise",
+            "half_wave_rectified_sine",
+            "tent_map",
         ],
     )
     min_value_cv = VirtualParameter("min_value")
     max_value_cv = VirtualParameter("max_value")
+    pulse_width_cv = VirtualParameter("pulse_width", range=(0.0, 1.0))
+    step_size_cv = VirtualParameter("step_size", range=(0.0, 5.0))
 
     def __init__(
         self,
@@ -38,6 +50,9 @@ class LFO(TimeBasedDevice):
         self._max_value: Decimal | int = (
             Decimal(max_value) if isinstance(max_value, float) else max_value
         )
+        self.pulse_width = 0.3
+        self.step_size = 0.2
+        self._random_value = 0
         super().__init__(speed=speed, sampling_rate=sampling_rate, **kwargs)
 
     @property
@@ -62,7 +77,7 @@ class LFO(TimeBasedDevice):
             self._max_value, int
         )
 
-    def generate_waveform(self, t):
+    def generate_waveform(self, t, ticks):
         waveform = self.waveform
         if waveform == "sine":
             result = (
@@ -95,8 +110,45 @@ class LFO(TimeBasedDevice):
             result = self.min_value + (self.max_value - self.min_value) * t
         elif waveform == "invert_sawtooth":
             result = self.min_value + (self.max_value - self.min_value) * (1 - t)
-        # elif waveform == "random":
-        #     return randint(self.min_value, self.max_value)
+        elif waveform == "random":
+            ticks_per_cycle = int(self.sampling_rate / Decimal(self.speed))
+            if ticks % ticks_per_cycle == 0:
+                self._random_value = random.uniform(
+                    float(self.min_value), float(self.max_value)
+                )
+            result = self._random_value
+        elif waveform == "pulse":
+            result = self.min_value + (self.max_value - self.min_value) * (
+                1 if t < self.pulse_width else 0
+            )
+        elif waveform == "exponential":
+            result = self.min_value + (self.max_value - self.min_value) * (
+                Decimal(2) ** t - 1
+            )
+        elif waveform == "logarithmic":
+            result = self.min_value + (self.max_value - self.min_value) * (
+                Decimal(t + 1) ** -1
+            )
+        elif waveform == "ramp_down":
+            result = self.max_value - (self.max_value - self.min_value) * t
+        elif waveform == "step":
+            step_size = Decimal(self.step_size)
+            result = (
+                self.min_value
+                + (self.max_value - self.min_value)
+                * (Decimal(t) // step_size)
+                * step_size
+            )
+        elif waveform == "white_noise":
+            result = random.uniform(float(self.min_value), float(self.max_value))
+        elif waveform == "half_wave_rectified_sine":
+            result = self.min_value + (self.max_value - self.min_value) * max(
+                0, Decimal(math.sin(2 * Decimal(math.pi) * t))
+            )
+        elif waveform == "tent_map":
+            result = self.min_value + (self.max_value - self.min_value) * abs(
+                (2 * t) % 2 - 1
+            )
         else:
             raise ValueError(f"Unsupported waveform type: {waveform}")
         return int(result) if self.as_int else result
@@ -113,14 +165,8 @@ class LFO(TimeBasedDevice):
 
     def process_input(self, param, value):
         if param == "waveform" and isinstance(value, (int, float, Decimal)):
-            value = [
-                "sine",
-                "invert_sine",
-                "triangle",
-                "square",
-                "sawtooth",
-                "invert_sawtooth",
-            ][int(value % 6)]
+            accepted_values = getattr(self.__class__, "waveform_cv").accepted_values
+            value = accepted_values[int(value % len(accepted_values))]
         super().process_input(param, value)
 
     def __add__(self, lfo):
@@ -174,51 +220,59 @@ class CombinedLFO(LFO):
         )
 
     def normalize(self, value):
-        max_val = self.max_value
         min_val = self.min_value
-        # max_val = 127
-        # min_val = 0
+        max_val = self.max_value
         return max(min(value, max_val), min_val)
 
 
 @no_registration
 class MaxLFO(CombinedLFO):
-    def generate_value(self, t):
-        return max(self.lfo1.generate_value(t), self.lfo2.generate_value(t))
+    def generate_value(self, t, ticks):
+        return max(
+            self.lfo1.generate_value(t, ticks), self.lfo2.generate_value(t, ticks)
+        )
 
 
 @no_registration
 class MinLFO(CombinedLFO):
-    def generate_value(self, t):
-        return min(self.lfo1.generate_value(t), self.lfo2.generate_value(t))
+    def generate_value(self, t, ticks):
+        return min(
+            self.lfo1.generate_value(t, ticks), self.lfo2.generate_value(t, ticks)
+        )
 
 
 @no_registration
 class AddLFO(CombinedLFO):
-    def generate_value(self, t):
-        return self.normalize(self.lfo1.generate_value(t) + self.lfo2.generate_value(t))
+    def generate_value(self, t, ticks):
+        return self.normalize(
+            self.lfo1.generate_value(t, ticks) + self.lfo2.generate_value(t, ticks)
+        )
 
 
 @no_registration
 class SubLFO(CombinedLFO):
-    def generate_value(self, t):
-        return self.normalize(self.lfo1.generate_value(t) - self.lfo2.generate_value(t))
+    def generate_value(self, t, ticks):
+        return self.normalize(
+            self.lfo1.generate_value(t, ticks) - self.lfo2.generate_value(t, ticks)
+        )
 
 
 @no_registration
 class MulLFO(CombinedLFO):
-    def generate_value(self, t):
-        return self.normalize(self.lfo1.generate_value(t) * self.lfo2.generate_value(t))
+    def generate_value(self, t, ticks):
+        return self.normalize(
+            self.lfo1.generate_value(t, ticks) * self.lfo2.generate_value(t, ticks)
+        )
 
 
 @no_registration
 class DivLFO(CombinedLFO):
-    def generate_value(self, t):
-        value2 = self.lfo2.generate_value(t)
+    def generate_value(self, t, ticks):
+        value2 = self.lfo2.generate_value(t, ticks)
         if value2 == 0:
             return self.min_value
 
-        result = self.lfo1.generate_value(t) // value2
+        result = self.lfo1.generate_value(t, ticks) // value2
         return self.normalize(result)
 
 
@@ -232,7 +286,7 @@ class ConstLFO(LFO):
             speed=1,
         )
 
-    def generate_value(self, t):
+    def generate_value(self, t, ticks):
         return self.min_value
 
 
@@ -244,6 +298,6 @@ class Cycler(LFO):
             waveform=waveform, speed=speed, min_value=0, max_value=len(values), **kwargs
         )
 
-    def generate_value(self, t) -> Any:
-        idx = super().generate_value(t)
+    def generate_value(self, t, ticks) -> Any:
+        idx = super().generate_value(t, ticks)
         return self.values[idx]
