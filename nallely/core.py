@@ -769,6 +769,10 @@ class MidiDevice:
         if not self.outport:
             return
         note = int(note)
+        if note > 127:
+            note = 127
+        elif note < 0:
+            note = 0
         self.played_notes[note] += 1
         self.outport.send(
             mido.Message("note_on", channel=channel, note=note, velocity=velocity)
@@ -781,6 +785,10 @@ class MidiDevice:
         if not self.outport:
             return
         note = int(note)
+        if note > 127:
+            note = 127
+        elif note < 0:
+            note = 0
         self.outport.send(
             mido.Message("note_off", channel=channel, note=note, velocity=velocity)
         )
@@ -801,6 +809,10 @@ class MidiDevice:
         if not self.outport:
             return
         value = int(value)
+        if value > 127:
+            value = 127
+        elif value < 0:
+            value = 0
         self.outport.send(
             mido.Message(
                 "control_change", channel=channel, control=control, value=value
