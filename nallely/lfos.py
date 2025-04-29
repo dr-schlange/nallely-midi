@@ -18,6 +18,9 @@ class LFO(TimeBasedDevice):
             "sawtooth",
             "invert_sawtooth",
             "random",
+            "smooth_random",
+            "smooth_random_exp",
+            "smooth_random_cosine",
             "pulse",
             "exponential",
             "logarithmic",
@@ -53,6 +56,8 @@ class LFO(TimeBasedDevice):
         self.pulse_width = 0.3
         self.step_size = 0.2
         self._random_value = 0
+        self._previous_value = 0
+        self._current_value = 0
         super().__init__(speed=speed, sampling_rate=sampling_rate, **kwargs)
 
     @property
@@ -111,12 +116,65 @@ class LFO(TimeBasedDevice):
         elif waveform == "invert_sawtooth":
             result = self.min_value + (self.max_value - self.min_value) * (1 - t)
         elif waveform == "random":
-            ticks_per_cycle = int(self.sampling_rate / Decimal(self.speed))
+            ticks_per_cycle = int(self.sampling_rate / Decimal(max(0.0001, self.speed)))
             if ticks % ticks_per_cycle == 0:
                 self._random_value = random.uniform(
                     float(self.min_value), float(self.max_value)
                 )
             result = self._random_value
+        elif waveform == "smooth_random":
+            ticks_per_cycle = int(self.sampling_rate / Decimal(max(0.0001, self.speed)))
+            if ticks % ticks_per_cycle == 0:
+                self._previous_value = getattr(
+                    self, "_current_value", Decimal(self.min_value)
+                )
+                self._current_value = Decimal(
+                    random.uniform(float(self.min_value), float(self.max_value))
+                )
+
+            cycle_pos = Decimal(ticks % ticks_per_cycle) / Decimal(ticks_per_cycle)
+            result = (
+                self._previous_value
+                + (self._current_value - self._previous_value) * cycle_pos
+            )
+        elif waveform == "smooth_random_exp":
+            ticks_per_cycle = int(self.sampling_rate / Decimal(max(0.0001, self.speed)))
+
+            if ticks % ticks_per_cycle == 0:
+                self._previous_value = getattr(
+                    self, "_current_value", Decimal(self.min_value)
+                )
+                self._current_value = Decimal(
+                    random.uniform(float(self.min_value), float(self.max_value))
+                )
+
+            cycle_pos = Decimal(ticks % ticks_per_cycle) / Decimal(ticks_per_cycle)
+            curve = Decimal("2.0")  # TODO pass as parameter
+
+            eased_pos = cycle_pos**curve  # Ease-in
+            # eased_pos = 1 - (1 - cycle_pos) ** curve  # Uncomment for ease-out
+
+            result = (
+                self._previous_value
+                + (self._current_value - self._previous_value) * eased_pos
+            )
+        elif waveform == "smooth_random_cosine":
+            ticks_per_cycle = int(self.sampling_rate / Decimal(max(0.0001, self.speed)))
+
+            if ticks % ticks_per_cycle == 0:
+                self._previous_value = getattr(
+                    self, "_current_value", Decimal(self.min_value)
+                )
+                self._current_value = Decimal(
+                    random.uniform(float(self.min_value), float(self.max_value))
+                )
+
+            cycle_pos = float(ticks % ticks_per_cycle) / float(ticks_per_cycle)
+            mu2 = (1 - math.cos(math.pi * cycle_pos)) / 2
+
+            result = self._previous_value * Decimal(
+                1 - mu2
+            ) + self._current_value * Decimal(mu2)
         elif waveform == "pulse":
             result = self.min_value + (self.max_value - self.min_value) * (
                 1 if t < self.pulse_width else 0
