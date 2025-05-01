@@ -701,6 +701,8 @@ class MidiDevice:
         if delete and self in connected_devices:
             connected_devices.remove(self)
 
+    stop = close
+
     def _sync_state(self, msg):
         if msg.type == "clock":
             return

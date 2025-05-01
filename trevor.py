@@ -212,12 +212,16 @@ class TrevorBus(VirtualDevice):
         cls = next((cls for cls in midi_device_classes if cls.__name__ == name), None)
         if cls is None:
             cls = next((cls for cls in virtual_device_classes if cls.__name__ == name))
+        devices = all_devices()
         try:
             # We auto-connect the virtual device,
             # or try to auto-connect the midi device to the right midi ports
             instance = cls(autoconnect=True)
         except Exception:
             # If there is a problem we remove the auto-connection
+            diff = next((item for item in all_devices() if item not in devices), None)
+            if diff:
+                diff.stop()
             instance = cls(autoconnect=False)
         instance.to_update = self
         return self.full_state()
