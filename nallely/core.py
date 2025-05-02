@@ -116,7 +116,7 @@ class CallbackRegistryEntry:
         self,
         target: "VirtualDevice | MidiDevice",
         parameter: "VirtualParameter | ModuleParameter | ModulePadsOrKeys | PadOrKey | ParameterInstance",
-        from_: "VirtualParameter | ModuleParameter | ModulePadsOrKeys | PadOrKey | ParameterInstance",
+        from_: "VirtualParameter | ModuleParameter | ModulePadsOrKeys | PadOrKey",
         callback: Callable[[Any, ThreadContext], Any],
         chain: Callable | None,
         cc_note: int | None = None,
@@ -209,7 +209,7 @@ class VirtualParameter:
                     stream=self.stream,
                     append=append,
                     transformer_chain=chain,
-                    from_=value.output_cv,
+                    from_=value.output_cv.parameter,
                 )
             else:
                 value.device.bind(
@@ -219,7 +219,7 @@ class VirtualParameter:
                     stream=self.stream,
                     append=append,
                     transformer_chain=chain,
-                    from_=value.output_cv,
+                    from_=value.output_cv.parameter,
                 )
         elif isinstance(value, Int):
             if self.consumer:
@@ -237,6 +237,7 @@ class VirtualParameter:
                     stream=self.stream,
                     append=append,
                     transformer_chain=chain,
+                    from_=value.parameter,
                 )
             else:
                 value.device.bind(
@@ -248,6 +249,7 @@ class VirtualParameter:
                     stream=self.stream,
                     append=append,
                     transformer_chain=chain,
+                    from_=value.parameter,
                 )
         elif isinstance(value, ParameterInstance):
             if self.consumer:
@@ -261,7 +263,7 @@ class VirtualParameter:
                     param=self,
                     append=append,
                     transformer_chain=chain,
-                    from_=value,
+                    from_=value.parameter,
                 )
             else:
                 value.device.bind(
@@ -273,7 +275,7 @@ class VirtualParameter:
                     stream=self.stream,
                     append=append,
                     transformer_chain=chain,
-                    from_=value,
+                    from_=value.parameter,
                 )
         elif isinstance(value, Scaler):
             scaler = value
@@ -289,6 +291,7 @@ class VirtualParameter:
                 param=self,
                 append=append,
                 transformer_chain=chain,
+                from_=pad,
             )
 
 
@@ -599,7 +602,7 @@ class VirtualDevice(threading.Thread):
         }
 
     def uid(self):
-        return f"{self.__class__.__name__}{self._number}"
+        return f"{self.__class__.__name__}{self._number}"  # type: ignore
 
 
 @dataclass
@@ -643,7 +646,7 @@ class MidiDevice:
                 self.outport_name = next(
                     (
                         dev_name
-                        for dev_name in mido.get_output_names()
+                        for dev_name in mido.get_output_names()  # type: ignore
                         if self.device_name == dev_name or self.device_name in dev_name
                     ),
                 )
@@ -654,30 +657,30 @@ class MidiDevice:
             self.listen()
 
     def connect(self):
-        self.outport = mido.open_output(self.outport_name, autoreset=True)
+        self.outport = mido.open_output(self.outport_name, autoreset=True)  # type: ignore
 
     def listen(self, start=True):
         if not start:
             self.listening = False
-            self.inport.callback = None
+            self.inport.callback = None  # type: ignore
             return
         if not self.listening:
             try:
-                self.inport = mido.open_input(self.inport_name)
+                self.inport = mido.open_input(self.inport_name)  # type: ignore
             except OSError:
                 try:
                     self.inport_name = next(
                         (
                             dev_name
-                            for dev_name in mido.get_input_names()
+                            for dev_name in mido.get_input_names()  # type: ignore
                             if self.device_name == dev_name
                             or self.device_name in dev_name
                         ),
                     )
-                    self.inport = mido.open_input(self.inport_name)
+                    self.inport = mido.open_input(self.inport_name)  # type: ignore
                 except StopIteration:
                     raise DeviceNotFound(self.device_name)
-            self.inport.callback = self._sync_state
+            self.inport.callback = self._sync_state  # type: ignore
 
     def close_out(self):
         if self.outport:
@@ -832,6 +835,7 @@ class MidiDevice:
         cc_note,
         to,
         param,
+        from_,
         stream=False,
         append=True,
         transformer_chain: Callable | None = None,
@@ -845,7 +849,7 @@ class MidiDevice:
                 type=type,
                 cc_note=cc_note,
                 chain=transformer_chain,
-                from_=None,  # TODO
+                from_=from_,
             )
         )
 
@@ -926,9 +930,9 @@ class DeviceSerializer(json.JSONEncoder):
 class DeviceNotFound(Exception):
     def __init__(self, device_name):
         super().__init__(
-            f"""MIDI port {device_name!r} couldn't be found, known devices are:
-input: {mido.get_output_names()}
-outputs: {mido.get_input_names()}"""
+            f"MIDI port {device_name!r} couldn't be found, known devices are:\n"
+            f"  input: {mido.get_output_names()}\n"  # type: ignore
+            f"  outputs: {mido.get_input_names()}"  # type: ignore
         )
 
 

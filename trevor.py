@@ -5,6 +5,7 @@ from decimal import Decimal
 from inspect import isfunction
 import io
 from itertools import chain
+import math
 from pathlib import Path
 import sys
 from textwrap import indent
@@ -13,7 +14,7 @@ import traceback
 
 import mido
 from nallely import VirtualDevice
-from nallely.devices import NTS1, Minilogue, MPD32, mpd32
+from nallely.devices import NTS1, Minilogue, MPD32, minilogue, mpd32
 import nallely
 from nallely.core import (
     CallbackRegistryEntry,
@@ -34,7 +35,7 @@ import json
 from minilab import Minilab
 from nallely.eg import ADSREnvelope
 from nallely.lfos import LFO
-from nallely.modules import Int, Module, ModuleParameter, Scaler
+from nallely.modules import Int, Module, ModuleParameter, PadOrKey, Scaler
 from nallely.utils import TerminalOscilloscope, WebSocketBus
 
 
@@ -45,6 +46,28 @@ class StateEncoder(json.JSONEncoder):
         if isinstance(o, ParameterInstance):
             return asdict(o.parameter)
         return super().default(o)
+
+
+NOTE_NAMES = [
+    "C",
+    "C#",
+    "D",
+    "D#",
+    "E",
+    "F",
+    "F#",
+    "G",
+    "G#",
+    "A",
+    "A#",
+    "B",
+]
+
+
+def get_note_name(midi_note):
+    note = NOTE_NAMES[midi_note % 12]
+    octave = midi_note // 12
+    return f"{note}{octave}"
 
 
 class OutputCapture(io.StringIO):
@@ -283,13 +306,29 @@ class TrevorBus(VirtualDevice):
             "output_cv",
         ]:
             src = getattr(src_device, from_section)
+        elif from_parameter.isdecimal():
+            # We know it's a key/pad we are binding
+            src = getattr(src_device, from_section)[int(from_parameter)]
+        elif from_parameter == "all_keys_or_pads":
+            # We know we want to bind all the notes/pads [0..127]
+            src = getattr(src_device, from_section)[:]
         else:
             src = getattr(getattr(src_device, from_section), from_parameter)
         if unbind:
-            getattr(dest, to_parameter).__isub__(src)
+            dest_parameter = getattr(dest, to_parameter)
+            if isinstance(src, list):
+                for e in src:
+                    dest_parameter.__isub__(src)
+            else:
+                dest_parameter.__isub__(src)
             return self.full_state()
-        to_range = getattr(dest.__class__, to_parameter).range
-        setattr(dest, to_parameter, src.scale(to_range[0], to_range[1]))
+        if to_parameter == "all_keys_or_pads":
+            to_parameter = dest.meta.pads_or_keys.name
+        if isinstance(src, list):
+            setattr(dest, to_parameter, src)
+        else:
+            to_range = getattr(dest.__class__, to_parameter).range
+            setattr(dest, to_parameter, src.scale(to_range[0], to_range[1]))
         return self.full_state()
 
     def associate_midi_port(self, device, port, direction):
@@ -367,53 +406,45 @@ class TrevorBus(VirtualDevice):
                 "as_int": scaler.as_int,
             }
 
-        for device in connected_devices:
+        for device in all_devices():
             for entry in device.callbacks_registry:
                 entry: CallbackRegistryEntry
-                if entry.type in ["note", "velocity"]:
-                    cc_note = None
-                    cc_type = "note"
+                if isinstance(entry.from_, PadOrKey):
+                    from_ = {
+                        "note": entry.from_.cc_note,
+                        "type": entry.from_.type,
+                        "note_name": get_note_name(entry.from_.cc_note),
+                    }
                 else:
-                    cc_note = entry.cc_note
-                    cc_type = entry.type
+                    from_ = asdict(entry.from_)
+                if isinstance(entry.parameter, PadOrKey):
+                    to_ = {
+                        "note": entry.parameter.cc_note,
+                        "type": entry.parameter.type,
+                        "note_name": get_note_name(entry.parameter.cc_note),
+                    }
+                else:
+                    to_ = asdict(entry.parameter)
                 connections.append(
                     {
                         "src": {
                             "device": id(device),
                             "repr": device.uid(),
-                            "parameter": asdict(device.reverse_map[(cc_type, cc_note)]),
-                            "explicit": entry.cc_note,
+                            "parameter": from_,
+                            "explicit": entry.from_.cc_note,
                             "chain": scaler_as_dict(entry.chain),
+                            "type": entry.type,
                         },
                         "dest": {
                             "device": id(entry.target),
                             "repr": entry.target.uid(),
-                            "parameter": asdict(entry.parameter),
+                            "parameter": to_,
                             "explicit": entry.cc_note,
+                            "type": entry.type,
                         },
                     }
                 )
 
-        for device in virtual_devices:
-            for entry in device.callbacks_registry:
-                entry: CallbackRegistryEntry
-                connections.append(
-                    {
-                        "src": {
-                            "device": id(device),
-                            "repr": device.uid(),
-                            "parameter": asdict(entry.from_.parameter),
-                            "explicit": entry.cc_note,
-                            "chain": scaler_as_dict(entry.chain),
-                        },
-                        "dest": {
-                            "device": id(entry.target),
-                            "repr": entry.target.uid(),
-                            "parameter": asdict(entry.parameter),
-                            "explicit": entry.cc_note,
-                        },
-                    }
-                )
         return connections
 
     def full_state(self):
@@ -446,70 +477,22 @@ class TrevorBus(VirtualDevice):
         return d
 
 
-# import threading
-# import code
-# import socket
-# import sys
-
-# class REPLServer:
-#     def __init__(self, host='127.0.0.1', port=4444, local=None):
-#         self.host = host
-#         self.port = port
-#         self.local = local or globals()
-#         self._stop_event = threading.Event()
-#         self._thread = threading.Thread(target=self._run, daemon=True)
-#         self._server_sock = None
-
-#     def start(self):
-#         self._thread.start()
-
-#     def stop(self):
-#         self._stop_event.set()
-#         if self._server_sock:
-#             try:
-#                 self._server_sock.close()
-#             except:
-#                 pass
-#         self._thread.join()
-
-#     def _run(self):
-#         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_sock:
-#             self._server_sock = server_sock
-#             server_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-#             server_sock.bind((self.host, self.port))
-#             server_sock.listen(1)
-#             server_sock.settimeout(1.0)  # Pour vérifier régulièrement stop_event
-#             print(f"[REPL] En attente de connexion sur {self.host}:{self.port}")
-#             while not self._stop_event.is_set():
-#                 try:
-#                     conn, addr = server_sock.accept()
-#                 except socket.timeout:
-#                     continue
-#                 print(f"[REPL] Connexion de {addr}")
-#                 with conn:
-#                     sockfile_r = conn.makefile('r')
-#                     sockfile_w = conn.makefile('w')
-#                     old_stdin, old_stdout, old_stderr = sys.stdin, sys.stdout, sys.stderr
-#                     try:
-#                         sys.stdin = sockfile_r
-#                         sys.stdout = sockfile_w
-#                         sys.stderr = sockfile_w
-#                         code.interact(banner="== Remote Python Console ==", local=self.local)
-#                     finally:
-#                         sys.stdin = old_stdin
-#                         sys.stdout = old_stdout
-#                         sys.stderr = old_stderr
-#                     print("[REPL] Déconnexion")
-
-
-# repl = REPLServer(local=globals())
-# repl.start()
+# nts1 = NTS1(autoconnect=False)
+# minilogue = Minilogue(autoconnect=False)
 try:
     ws = TrevorBus()
 
     ws.start()
 
-    while (q := input("Stop server...")) != "q":
+    # lfo = LFO()
+
+    # nts1.filter.cutoff = lfo
+
+    # nts1.keys[0] = minilogue.keys[1]
+
+    # json.dumps(ws.full_state(), cls=StateEncoder)
+
+    while (q := input("Press 'q' to stop Trevor...")) != "q":
         import psutil
         import os
 

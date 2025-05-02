@@ -694,6 +694,7 @@ input[type="text"]:disabled {
 .parameter-box {
   width: 40px;
   height: 40px;
+  border-radius: 4px;
   background-color: #d0d0d0; /* Gray square for parameters */
   border: 2px solid #808080; /* Amiga-style border */
   box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000; /* Amiga-style 3D effect */
@@ -726,13 +727,15 @@ input[type="text"]:disabled {
 }
 
 .parameter:hover .parameter-box,
-.parameter.selected .parameter-box {
-  background-color: orange; /* Highlight parameter on hover or selection */
+.parameter.selected .parameter-box,
+.midi-icon.selected,  .note-box.selected,
+.midi-icon.selected:hover,  .note-box.selected:hover {
+  background-color: orange;
 }
 
-.parameter:not(.selected) .parameter-box {
-  background-color: #d0d0d0; /* Reset to original color when not selected */
-}
+/* .parameter:not(.selected) .parameter-box {
+  background-color: #d0d0d0;
+} */
 
 .connection-setup {
   font-family: 'Amiga Forever', system-ui, Avenir, Helvetica, Arial, sans-serif;
@@ -1020,4 +1023,73 @@ input[type="text"]:disabled {
   padding: 10px;
   height: 135px;
   width: 205px;
+}
+
+.midi-container {
+  width: fit-content;
+  background-color: #f9f9f9;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.midi-container.open {
+  padding-bottom: 12px;
+}
+
+.midi-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  background-color: #e0e0e0;
+  user-select: none;
+}
+
+.midi-icon {
+  font-size: 18px;
+  padding: 4px 6px;
+  border: 2px solid #808080;
+  border-radius: 4px;
+  box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.midi-toggle-icon {
+  font-size: 14px;
+}
+
+.midi-container.open .midi-header {
+  justify-content: center;
+}
+
+.midi-grid-octaves {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 12px;
+}
+
+.octave-column {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.note-box {
+  background-color: #eee;
+  border: 1px solid #bbb;
+  padding: 6px;
+  font-size: 11px;
+  text-align: center;
+  border-radius: 3px;
+  cursor: default;
+}
+
+.note-box:hover {
+  background-color: #ccc;
 }

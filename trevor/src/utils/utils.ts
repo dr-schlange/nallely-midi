@@ -3,6 +3,8 @@ import type {
 	MidiConnection,
 	MidiDevice,
 	MidiParameter,
+	PadOrKey,
+	PadsOrKeys,
 	VirtualDevice,
 	VirtualParameter,
 } from "../model";
@@ -67,9 +69,21 @@ export const isVirtualDevice = (
 };
 
 export const isVirtualParameter = (
-	parameter: MidiParameter | VirtualParameter,
+	parameter: MidiParameter | VirtualParameter | PadOrKey | PadsOrKeys,
 ): parameter is VirtualParameter => {
 	return parameter.section_name === "__virtual__";
+};
+
+export const isPadOrdKey = (
+	parameter: MidiParameter | VirtualParameter | PadOrKey | PadsOrKeys,
+): parameter is PadOrKey => {
+	return (parameter as PadOrKey).note !== undefined;
+};
+
+export const isPadsOrdKeys = (
+	parameter: MidiParameter | VirtualParameter | PadOrKey | PadsOrKeys,
+): parameter is PadsOrKeys => {
+	return (parameter as PadsOrKeys).keys !== undefined;
 };
 
 export const connectionsOfInterest = (

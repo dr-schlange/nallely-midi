@@ -4,6 +4,8 @@ import type {
 	MidiDevice,
 	MidiDeviceWithSection,
 	MidiParameter,
+	PadOrKey,
+	PadsOrKeys,
 	VirtualDevice,
 	VirtualDeviceWithSection,
 	VirtualParameter,
@@ -16,17 +18,27 @@ import {
 	buildParameterId,
 	connectionId,
 	connectionsOfInterest,
+	isPadOrdKey,
+	isPadsOrdKeys,
 	isVirtualParameter,
 } from "../../utils/utils";
+import { MidiGrid } from "../MidiGrid";
 
 const parameterUUID = (
 	device: MidiDevice | number | VirtualDevice,
-	parameter: MidiParameter | VirtualParameter,
+	parameter: MidiParameter | VirtualParameter | PadsOrKeys | PadOrKey,
 ) => {
 	const id = typeof device === "object" ? device.id : device;
-	const parameterName = isVirtualParameter(parameter)
-		? parameter.cv_name
-		: parameter.name;
+	let parameterName = undefined;
+	if (isVirtualParameter(parameter)) {
+		parameterName = parameter.cv_name;
+	} else if (isPadsOrdKeys(parameter)) {
+		parameterName = "all_keys_or_pads";
+	} else if (isPadOrdKey(parameter)) {
+		parameterName = parameter.note;
+	} else {
+		parameterName = parameter.name;
+	}
 	return `${id}::${parameter.section_name}::${parameterName}`;
 };
 
@@ -42,7 +54,7 @@ const PatchingModal = ({
 	const [selectedParameters, setSelectedParameters] = useState<
 		{
 			device: MidiDevice | VirtualDevice;
-			parameter: MidiParameter | VirtualParameter;
+			parameter: MidiParameter | VirtualParameter | PadsOrKeys | PadOrKey;
 		}[]
 	>([]);
 	const websocket = useTrevorWebSocket();
@@ -93,18 +105,19 @@ const PatchingModal = ({
 			setSelectedParameters([]);
 			return; // Deselect if the same parameter is clicked twice
 		}
+		const firstParameter = selectedParameters[0];
+		const firstParameterUUID = parameterUUID(
+			firstParameter.device,
+			firstParameter.parameter,
+		);
 		websocket?.associateParameters(
-			selectedParameters[0].device,
-			selectedParameters[0].parameter,
+			firstParameter.device,
+			firstParameter.parameter,
 			device,
 			param,
 			connections.find(
 				(c) =>
-					parameterUUID(c.src.device, c.src.parameter) ===
-						parameterUUID(
-							selectedParameters[0].device,
-							selectedParameters[0].parameter,
-						) &&
+					parameterUUID(c.src.device, c.src.parameter) === firstParameterUUID &&
 					parameterUUID(c.dest.device, c.dest.parameter) ===
 						parameterUUID(device, param),
 			) !== undefined, // if a connection already exist, we remove it
@@ -118,6 +131,79 @@ const PatchingModal = ({
 			return;
 		}
 		setSelectedConnection(connectionId(connection));
+	};
+
+	const handleKeySectionClick = (
+		device: MidiDevice | VirtualDevice,
+		keys: PadsOrKeys,
+	) => {
+		setSelectedConnection(null); // Deselect the connection
+		if (selectedParameters.length === 0) {
+			setSelectedParameters([{ device, parameter: keys }]);
+			return;
+		}
+		const firstParameter = selectedParameters[0];
+		if (
+			firstParameter.device === device &&
+			firstParameter.parameter.section_name === keys.section_name
+		) {
+			setSelectedParameters([]);
+			return; // Deselect if the same parameter is clicked twice
+		}
+		const firstParameterUUID = parameterUUID(
+			firstParameter.device,
+			firstParameter.parameter,
+		);
+		websocket?.associateParameters(
+			firstParameter.device,
+			firstParameter.parameter,
+			device,
+			keys,
+			connections.find(
+				(c) =>
+					parameterUUID(c.src.device, c.src.parameter) === firstParameterUUID &&
+					parameterUUID(c.dest.device, c.dest.parameter) ===
+						parameterUUID(device, keys),
+			) !== undefined, // if a connection already exist, we remove it
+		);
+		setSelectedParameters([]);
+	};
+
+	const handleKeyClick = (
+		device: MidiDevice | VirtualDevice,
+		key: PadOrKey,
+	) => {
+		setSelectedConnection(null); // Deselect the connection
+		if (selectedParameters.length === 0) {
+			setSelectedParameters([{ device, parameter: key }]);
+			return;
+		}
+		const firstParameter = selectedParameters[0];
+		if (
+			firstParameter.device === device &&
+			firstParameter.parameter.section_name === key.section_name &&
+			(firstParameter.parameter as PadOrKey).note === key.note
+		) {
+			setSelectedParameters([]);
+			return; // Deselect if the same parameter is clicked twice
+		}
+		const firstParameterUUID = parameterUUID(
+			firstParameter.device,
+			firstParameter.parameter,
+		);
+		websocket?.associateParameters(
+			firstParameter.device,
+			firstParameter.parameter,
+			device,
+			key,
+			connections.find(
+				(c) =>
+					parameterUUID(c.src.device, c.src.parameter) === firstParameterUUID &&
+					parameterUUID(c.dest.device, c.dest.parameter) ===
+						parameterUUID(device, key),
+			) !== undefined, // if a connection already exist, we remove it
+		);
+		setSelectedParameters([]);
 	};
 
 	const drawConnections = () => {
@@ -191,6 +277,18 @@ const PatchingModal = ({
 							{firstSection?.device.repr} {firstSection?.section.name}
 						</h3>
 						<div className="parameters-grid left">
+							{firstSection?.section.pads_or_keys && (
+								<MidiGrid
+									device={firstSection.device}
+									section={firstSection.section}
+									onKeysClick={handleKeySectionClick}
+									onNoteClick={handleKeyClick}
+									highlight={
+										(selectedParameters[0]?.parameter as PadOrKey)?.note ||
+										selectedParameters[0]?.parameter.section_name
+									}
+								/>
+							)}
 							{firstSection?.section.parameters.map((param) => (
 								<div
 									key={param.name}
@@ -218,6 +316,19 @@ const PatchingModal = ({
 							{secondSection?.device.repr} {secondSection?.section.name}
 						</h3>
 						<div className="parameters-grid right">
+							{secondSection?.section.pads_or_keys && (
+								<MidiGrid
+									device={secondSection.device}
+									section={secondSection.section}
+									onKeysClick={handleKeySectionClick}
+									onNoteClick={handleKeyClick}
+									highlight={
+										(selectedParameters[0]?.parameter as PadOrKey)?.note ||
+										selectedParameters[0]?.parameter.section_name
+									}
+								/>
+							)}
+
 							{secondSection?.section.parameters.map((param) => (
 								<div
 									key={param.name}
@@ -254,7 +365,12 @@ const PatchingModal = ({
 							<div className="parameter-info">
 								<h3>Parameter Info</h3>
 								{selectedParameters.length === 1 && (
-									<p>Details about {selectedParameters[0].parameter.name}</p>
+									<p>
+										{(selectedParameters[0].parameter as MidiParameter)?.name ||
+											(isPadsOrdKeys(selectedParameters[0].parameter) &&
+												`Section ${(selectedParameters[0].parameter as PadsOrKeys).section_name}`) ||
+											`Key/Pad ${(selectedParameters[0].parameter as PadOrKey).note}`}
+									</p>
 								)}
 							</div>
 						)}

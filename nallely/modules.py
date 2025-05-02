@@ -237,6 +237,7 @@ class ModuleParameter:
                 param=self,
                 append=append,
                 transformer_chain=chain,
+                from_=device_value.parameter,
             )
             return
 
@@ -250,7 +251,7 @@ class ModuleParameter:
                 param=self,
                 append=append,
                 transformer_chain=chain,
-                from_=device.output_cv,
+                from_=device.output_cv.parameter,
             )
             return
         if isfunction(feeder):
@@ -263,14 +264,11 @@ class ModuleParameter:
                 append=append,
                 param=self,
                 transformer_chain=chain,
+                from_=None,
             )
             return
         if isinstance(feeder, Scaler):
             scaler = feeder
-            # scaler.install_fun(to_device=to_module, to_parameter=self, append=append)
-            # from_device = scaler.device
-            # import ipdb; ipdb.set_trace()  # fmt: skip
-
             self.__set__(
                 to_module,
                 scaler.data,
@@ -292,6 +290,7 @@ class ModuleParameter:
                 param=self,
                 append=append,
                 transformer_chain=chain,
+                from_=pad,
             )
             return
 
@@ -323,6 +322,7 @@ class padproperty(property):
                 cc_note=pad.cc_note,
                 param=pad,
                 to=pad.device,
+                from_=pad,
             )
 
 
@@ -499,13 +499,14 @@ class PadOrKey:
         else:
             return self.generate_inner_fun_midiparam(to_device, to_param)
 
-    def bind_function(self, fun):
+    def bind_function(self, fun, pad):
         self.device.bind(
             fun,
             type=self.type,
             cc_note=self.cc_note,
             to=self.device,
             param=self,
+            from_=pad,
         )
 
     def __isub__(self, other):
@@ -521,11 +522,11 @@ class PadOrKey:
 
 @dataclass
 class ModulePadsOrKeys:
-    name = "all_pads"
     type = "note"
     channel: int = 0
     keys: dict[int, PadOrKey] = field(default_factory=dict)
     section_name: str = NOT_INIT
+    name: str = NOT_INIT
 
     def __get__(self, instance, owner=None):
         if instance is None:
@@ -544,6 +545,7 @@ class ModulePadsOrKeys:
                 to=instance.device,
                 param=self,
                 append=append,
+                from_=pad,
             )
             return
         if isinstance(value, list):
@@ -572,7 +574,7 @@ class ModulePadsOrKeys:
                 to=instance.device,
                 param=self,
                 append=append,
-                from_=value.output_cv,
+                from_=value.output_cv.parameter,
             )
             return
         if isinstance(value, ParameterInstance):
@@ -589,7 +591,11 @@ class ModulePadsOrKeys:
                 )
 
             feeder.device.bind(
-                foo, to=instance.device, param=self, append=append, from_=value
+                foo,
+                to=instance.device,
+                param=self,
+                append=append,
+                from_=value.parameter,
             )
 
     def basic_send(self, type, note, velocity): ...
@@ -624,6 +630,7 @@ class Module:
                 parameters.append(value)
             if isinstance(value, ModulePadsOrKeys):
                 pads = value
+                value.name = name
                 # pads.section_name = cls.state_name
         cls.meta = MetaModule(cls.__name__, parameters, pads)
 
@@ -665,7 +672,7 @@ class Module:
             pads = [pads]
         match value:
             case FunctionType():
-                [p.bind_function(value) for p in pads]
+                [p.bind_function(value, p) for p in pads]
             case PadOrKey():
                 from_pad = value
                 from_module: MidiDevice = from_pad.device
@@ -677,8 +684,9 @@ class Module:
                         type=from_pad.type,
                         cc_note=from_pad.cc_note,
                         to=p.device,
-                        param=self.meta.pads_or_keys,
+                        param=p,
                         append=True,
+                        from_=from_pad,
                     )
 
 

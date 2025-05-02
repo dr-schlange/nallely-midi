@@ -1,12 +1,14 @@
 import type {
 	MidiDevice,
 	MidiParameter,
+	PadOrKey,
+	PadsOrKeys,
 	VirtualDevice,
 	VirtualParameter,
 } from "../model";
 import { store } from "../store";
 import { setFullState } from "../store/trevorSlice";
-import { isVirtualParameter } from "../utils/utils";
+import { isPadOrdKey, isPadsOrdKeys, isVirtualParameter } from "../utils/utils";
 
 const WEBSOCKET_URL = `ws://${window.location.hostname}:6788/trevor`;
 
@@ -150,17 +152,31 @@ class TrevorWebSocket {
 
 	public associateParameters(
 		fromDevice: MidiDevice | VirtualDevice,
-		fromParameter: MidiParameter | VirtualParameter,
+		fromParameter: MidiParameter | VirtualParameter | PadsOrKeys | PadOrKey,
 		toDevice: MidiDevice | VirtualDevice,
-		toParameter: MidiParameter | VirtualParameter,
+		toParameter: MidiParameter | VirtualParameter | PadsOrKeys | PadOrKey,
 		unbind: boolean,
 	) {
-		const fromP = isVirtualParameter(fromParameter)
-			? fromParameter.cv_name
-			: fromParameter.name;
-		const toP = isVirtualParameter(toParameter)
-			? toParameter.cv_name
-			: toParameter.name;
+		let fromP: string | number;
+		if (isVirtualParameter(fromParameter)) {
+			fromP = fromParameter.cv_name;
+		} else if (isPadsOrdKeys(fromParameter)) {
+			fromP = "all_keys_or_pads";
+		} else if (isPadOrdKey(fromParameter)) {
+			fromP = fromParameter.note;
+		} else {
+			fromP = fromParameter.name;
+		}
+		let toP: string | number;
+		if (isVirtualParameter(toParameter)) {
+			toP = toParameter.cv_name;
+		} else if (isPadsOrdKeys(toParameter)) {
+			toP = "all_keys_or_pads";
+		} else if (isPadOrdKey(toParameter)) {
+			toP = toParameter.note;
+		} else {
+			toP = toParameter.name;
+		}
 		this.sendMessage(
 			JSON.stringify({
 				command: "associate_parameters",

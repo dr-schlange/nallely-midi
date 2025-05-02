@@ -67,13 +67,29 @@ export interface MidiConnectionEnd {
 	repr: string;
 	parameter: MidiParameter | VirtualParameter;
 	chain: MidiScaler | null;
+	explicit: number;
+	type: string;
 }
 
 export interface MidiDeviceSection {
 	name: string;
-	pads_or_keys: string | null;
+	pads_or_keys: PadsOrKeys | null;
 	parameters: MidiParameter[];
 	virtual: false;
+}
+
+export interface PadsOrKeys {
+	channel: number;
+	keys: Record<any, any>;
+	section_name: string;
+}
+
+export interface PadOrKey {
+	section_name: string;
+	note: number;
+	note_name: string;
+	type: string;
+	mode: string;
 }
 
 export interface MidiParameter {
@@ -101,6 +117,7 @@ export interface VirtualDeviceSection {
 	parameters: VirtualParameter[];
 	virtual: true;
 	name: "__virtual__";
+	pads_or_keys: null;
 }
 
 export interface NallelyClasses {
