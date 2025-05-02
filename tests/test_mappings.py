@@ -216,3 +216,133 @@ def test__remove_mapping_virtual_receiver(receiver):
     assert len(lfo.callbacks["output"]) == 0
     assert len(receiver.output_callbacks) == 0
     assert len(receiver.input_callbacks) == 0
+
+
+def test__remove_keys_midi_midi(sender, receiver):
+    _, receiver = receiver
+    _, sender = sender
+
+    assert len(sender.output_callbacks) == 0
+    assert len(sender.input_callbacks) == 0
+    assert len(receiver.output_callbacks) == 0
+    assert len(receiver.input_callbacks) == 0
+
+    receiver.modules.main[0] = sender.modules.main[1]
+
+    assert len(sender.output_callbacks) == 0
+    assert len(sender.input_callbacks) == 1
+    assert len(receiver.output_callbacks) == 0
+    assert len(receiver.input_callbacks) == 0
+
+
+    receiver.modules.main[0] -= sender.modules.main[1]
+
+    assert len(sender.output_callbacks) == 0
+    assert (
+        len(sender.input_callbacks) == 1
+    )  # there is still the key in the map, but no callbacks
+    assert len(sender.input_callbacks[("note", 1)]) == 0
+    assert len(receiver.output_callbacks) == 0
+    assert len(receiver.input_callbacks) == 0
+
+
+def test__remove_keys_from_full_section_midi_midi(sender, receiver):
+    _, receiver = receiver
+    _, sender = sender
+
+    assert len(sender.output_callbacks) == 0
+    assert len(sender.input_callbacks) == 0
+    assert len(receiver.output_callbacks) == 0
+    assert len(receiver.input_callbacks) == 0
+
+    receiver.modules.main[0] = sender.modules.main[1]
+
+    assert len(sender.output_callbacks) == 0
+    assert len(sender.input_callbacks) == 1
+    assert len(receiver.output_callbacks) == 0
+    assert len(receiver.input_callbacks) == 0
+
+    receiver.modules.main -= sender.modules.main[1]
+
+    assert len(sender.output_callbacks) == 0
+    assert (
+        len(sender.input_callbacks) == 1
+    )  # there is still the key in the map, but no callbacks
+    assert len(sender.input_callbacks[("note", 1)]) == 0
+    assert len(receiver.output_callbacks) == 0
+    assert len(receiver.input_callbacks) == 0
+
+
+def test__remove_keys_from_one_to_full_section_midi_midi(sender, receiver):
+    _, receiver = receiver
+    _, sender = sender
+
+    assert len(sender.output_callbacks) == 0
+    assert len(sender.input_callbacks) == 0
+    assert len(receiver.output_callbacks) == 0
+    assert len(receiver.input_callbacks) == 0
+
+    receiver.modules.main[:] = sender.modules.main[1]
+    receiver.modules.main[:] = sender.modules.main[2]
+
+    assert len(sender.output_callbacks) == 0
+    assert len(sender.input_callbacks) == 2
+    assert len(sender.input_callbacks[("note", 1)]) == 128
+    assert len(sender.input_callbacks[("note", 2)]) == 128
+    assert len(receiver.output_callbacks) == 0
+    assert len(receiver.input_callbacks) == 0
+
+    receiver.modules.main -= sender.modules.main[1]
+
+    assert len(sender.output_callbacks) == 0
+    assert (
+        len(sender.input_callbacks) == 2
+    )  # there is still the key in the map, but no callbacks
+    assert len(sender.input_callbacks[("note", 1)]) == 0
+    assert len(sender.input_callbacks[("note", 2)]) == 128
+    assert len(receiver.output_callbacks) == 0
+    assert len(receiver.input_callbacks) == 0
+
+
+def test__remove_keys_from_all_to_all_section_midi_midi(sender, receiver):
+    _, receiver = receiver
+    _, sender = sender
+
+    assert len(sender.output_callbacks) == 0
+    assert len(sender.input_callbacks) == 0
+    assert len(receiver.output_callbacks) == 0
+    assert len(receiver.input_callbacks) == 0
+
+    receiver.modules.main[:] = sender.modules.main[:]
+
+    assert len(sender.output_callbacks) == 0
+    assert len(sender.input_callbacks) == 128
+    assert len(sender.input_callbacks[("note", 0)]) == 128
+    assert len(sender.input_callbacks[("note", 1)]) == 128
+    assert len(sender.input_callbacks[("note", 2)]) == 128
+    assert len(sender.input_callbacks[("note", 126)]) == 128
+    assert len(sender.input_callbacks[("note", 127)]) == 128
+    assert len(receiver.output_callbacks) == 0
+    assert len(receiver.input_callbacks) == 0
+
+    receiver.modules.main -= sender.modules.main[1]
+
+    assert len(sender.output_callbacks) == 0
+    assert (
+        len(sender.input_callbacks) == 128
+    )  # there is still the key in the map, but no callbacks
+    assert len(sender.input_callbacks[("note", 1)]) == 0
+    assert len(sender.input_callbacks[("note", 2)]) == 128
+    assert len(receiver.output_callbacks) == 0
+    assert len(receiver.input_callbacks) == 0
+
+    receiver.modules.main -= sender.modules.main[:]
+
+    assert len(sender.output_callbacks) == 0
+    assert (
+        len(sender.input_callbacks) == 128
+    )  # there is still the key in the map, but no callbacks
+    assert len(sender.input_callbacks[("note", 1)]) == 0
+    assert len(sender.input_callbacks[("note", 2)]) == 0
+    assert len(receiver.output_callbacks) == 0
+    assert len(receiver.input_callbacks) == 0

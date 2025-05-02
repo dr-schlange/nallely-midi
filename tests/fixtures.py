@@ -42,6 +42,7 @@ def let_time_to_react(t=0.01):
 class SenderModule(nallely.Module):
     button1 = nallely.ModuleParameter(45, channel=0)
     button2 = nallely.ModuleParameter(20, channel=0)
+    keys = nallely.ModulePadsOrKeys(channel=0)
 
 
 class MidiSender(nallely.MidiDevice):
@@ -61,6 +62,7 @@ class MidiSender(nallely.MidiDevice):
 class ReceiverModule(nallely.Module):
     sink1 = nallely.ModuleParameter(99, channel=0)
     sink2 = nallely.ModuleParameter(110, channel=0)
+    keys_sink = nallely.ModulePadsOrKeys(channel=0)
 
 
 class MidiReceiver(nallely.MidiDevice):

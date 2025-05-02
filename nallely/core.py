@@ -152,6 +152,7 @@ class ParameterInstance:
                 parameter = port.parameter
                 # device.unbind(self.device, self, port.type, port.cc_note)
                 device.unbind(self.device, self, parameter.type, parameter.cc_note)
+        return None  #  we need to return None to avoid to trigger the __set__ again
 
     def scale(
         self,
@@ -880,9 +881,8 @@ class MidiDevice:
         # The only way to be here is from a callback removal on the key/pad section
         match other:
             case PadOrKey():
-                mm = self.reverse_map[("note", None)]
+                mm = self.reverse_map[("note", other.cc_note)]
                 other.device.unbind(self, mm, other.type, other.cc_note)
-                return
         raise Exception(f"Unbinding {other.__class__.__name__} not yet supported")
 
     # def bind_output(self, callback):

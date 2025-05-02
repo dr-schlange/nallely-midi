@@ -69,6 +69,8 @@ class Int(int):
             case VirtualDevice():
                 other.unbind(self.device, self.parameter)
 
+        return None  # we need to return None to avoid to trigger the __set__
+
     def install_fun(self, to_module, to_param):
         self.parameter.install_fun(to_module, to_param)
 
@@ -523,6 +525,9 @@ class PadOrKey:
 
     def __isub__(self, other):
         match other:
+            case PadOrKey():
+                other.device.unbind(self.device, self, other.type, other.cc_note)
+
             case FunctionType():
                 self.device.unbind(
                     self.device,
@@ -530,6 +535,9 @@ class PadOrKey:
                     cc_note=self.cc_note,
                     type=self.type,
                 )
+        return (
+            None  # we need to return None here, otherwise we trigger again the __set__
+        )
 
 
 @dataclass
@@ -703,6 +711,36 @@ class Module:
                         append=True,
                         from_=from_pad,
                     )
+            case list():
+                from_pads = value
+                from_module: MidiDevice = from_pads[0].device
+                for from_pad in from_pads:
+                    for p in pads:
+                        from_module.bind(
+                            lambda value, ctx: p.device.note(
+                                ctx.type, p.cc_note, ctx.velocity
+                            ),
+                            type=from_pad.type,
+                            cc_note=from_pad.cc_note,
+                            to=p.device,
+                            param=p,
+                            append=True,
+                            from_=from_pad,
+                        )
+
+    def __isub__(self, other):
+        # The only way to be here is from a callback removal on the key/pad section
+        match other:
+            case PadOrKey():
+                # We remove in a general way all the entries of this (type, cc/note)
+                other.device.unbind(self.device, None, other.type, other.cc_note)
+                return self
+            case list():
+                from_pads = other
+                for other in from_pads:
+                    other.device.unbind(self.device, None, other.type, other.cc_note)
+                return self
+        raise Exception(f"Unbinding {other.__class__.__name__} not yet supported")
 
 
 class DeviceState:
