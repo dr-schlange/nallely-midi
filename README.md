@@ -80,6 +80,7 @@ minilogue = Minilogue()
 
 try:
   for root_note in range(0, 127, 12):  # We start on lower C key and iterate on each octaves
+    note = root_note
     for config in zip(scale, intervals):
         offset, interval = config
         note += offset  # we compute the next note of the scale from the root
