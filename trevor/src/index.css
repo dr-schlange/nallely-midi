@@ -847,6 +847,7 @@ input[type="text"]:disabled {
   width: 100%;
   height: 100%;
   pointer-events: none; /* Allow clicks to pass through the SVG */
+  z-index: 1;
 }
 
 .device-patching-svg {
@@ -1032,8 +1033,12 @@ input[type="text"]:disabled {
   transition: all 0.3s ease;
 }
 
-.midi-container.open {
-  padding-bottom: 12px;
+.left-midi {
+  transform: translateX(20%);
+}
+
+.right-midi {
+  transform: translateX(-20%);
 }
 
 .midi-header {
@@ -1068,7 +1073,7 @@ input[type="text"]:disabled {
 
 .midi-grid-octaves {
   display: flex;
-  gap: 10px;
+  gap: 2px;
   align-items: flex-start;
   justify-content: center;
   padding: 12px;

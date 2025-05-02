@@ -183,6 +183,7 @@ class VirtualParameter:
     accepted_values: Iterable[Any] = ()
     cv_name: str | None = None
     section_name: str = "__virtual__"
+    cc_note: int = -1
 
     def __set_name__(self, owner, name):
         self.cv_name = name

@@ -76,7 +76,9 @@ const MidiDeviceComponent = ({
 					{leftSections.map((section) => {
 						const sectionId = buildSectionId(
 							device.id,
-							section.parameters[0]?.section_name,
+							section.parameters[0]?.section_name ||
+								section.pads_or_keys?.section_name ||
+								"unknown",
 						);
 						const paramId = classConnections ? `${sectionId}-class` : sectionId;
 						return (
@@ -106,7 +108,9 @@ const MidiDeviceComponent = ({
 					{rightSections.map((section) => {
 						const sectionId = buildSectionId(
 							device.id,
-							section.parameters[0]?.section_name,
+							section.parameters[0]?.section_name ||
+								section.pads_or_keys?.section_name ||
+								"unknown",
 						);
 						const paramId = classConnections ? `${sectionId}-class` : sectionId;
 						return (

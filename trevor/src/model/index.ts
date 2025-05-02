@@ -87,7 +87,7 @@ export interface PadsOrKeys {
 export interface PadOrKey {
 	section_name: string;
 	note: number;
-	note_name: string;
+	name: string;
 	type: string;
 	mode: string;
 }

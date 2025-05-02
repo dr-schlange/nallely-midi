@@ -37,13 +37,15 @@ export const useGlobalShortcut = (
 
 export const buildParameterId = (
 	device: number,
-	parameter: MidiParameter | VirtualParameter,
+	parameter: MidiParameter | VirtualParameter | PadOrKey,
+	forceParameterName: string | undefined = undefined,
 ) => {
 	const isVirtual = (parameter as VirtualParameter).consumer !== undefined;
 	if (isVirtual) {
 		return `${device}-__virtual__-${(parameter as VirtualParameter).cv_name}`;
 	}
-	return `${device}-${(parameter as MidiParameter).section_name}-${parameter.name}`;
+	const paramName = forceParameterName || parameter.name;
+	return `${device}-${(parameter as MidiParameter).section_name}-${paramName}`;
 };
 
 export const buildSectionId = (device: number, section: string) => {
@@ -97,4 +99,27 @@ export const connectionsOfInterest = (
 		(connection.dest.device === destDeviceId &&
 			connection.dest.parameter.section_name === destParameter)
 	);
+};
+
+export const buildConnectionName = (connection: MidiConnection) => {
+	const srcParam = connection.src.parameter;
+	let srcSection = "";
+	if (!isVirtualParameter(srcParam)) {
+		srcSection = `.${srcParam.section_name}`;
+	}
+	let srcParamName = srcParam.name;
+	if (isPadOrdKey(srcParam)) {
+		srcParamName = srcParam.name;
+	}
+	const dstParam = connection.dest.parameter;
+	let dstSection = "";
+	if (!isVirtualParameter(dstParam)) {
+		dstSection = `.${dstParam.section_name}`;
+	}
+	let dstParamName = dstParam.name;
+	if (isPadOrdKey(dstParam)) {
+		dstParamName = dstParam.name;
+	}
+
+	return `${connection.src.repr}${srcSection}[${srcParamName}] → ${connection.dest.repr}${dstSection}[${dstParamName}]`;
 };

@@ -16,7 +16,14 @@ import { drawConnection } from "../utils/svgUtils";
 import { RackRowVirtual } from "./RackRowVirtual";
 import { useTrevorWebSocket } from "../websockets/websocket";
 import DragNumberInput from "./DragInputs";
-import { buildSectionId, connectionId, isVirtualDevice } from "../utils/utils";
+import {
+	buildConnectionName,
+	buildSectionId,
+	connectionId,
+	isPadOrdKey,
+	isVirtualDevice,
+	isVirtualParameter,
+} from "../utils/utils";
 import { ScalerForm } from "./ScalerForm";
 import PatchingModal from "./modals/PatchingModal";
 import { AboutModal } from "./modals/AboutModal";
@@ -49,7 +56,7 @@ const DevicePatching = () => {
 	const virtual_devices = useTrevorSelector(
 		(state) => state.nallely.virtual_devices,
 	);
-	const device_classes = useTrevorSelector((state) => state.nallely.classes);
+	// const device_classes = useTrevorSelector((state) => state.nallely.classes);
 	const trevorSocket = useTrevorWebSocket();
 	const [information, setInformation] = useState<ReactElement>();
 	const [currentSelected, setCurrentSelected] = useState<number>();
@@ -585,11 +592,9 @@ const DevicePatching = () => {
 						>
 							<ul className="connections-list">
 								{allConnections.map((connection) => {
-									const srcSection = connection.src.parameter.section_name;
-									const dstSection = connection.dest.parameter.section_name;
 									return (
 										<li
-											key={`${connection.src.repr}-${connection.src.parameter.section_name}-${connection.src.parameter.name}-${connection.dest.repr}-${connection.dest.parameter.section_name}-${connection.dest.parameter.name}`}
+											key={buildConnectionName(connection)}
 											onClick={() => handleConnectionClick(connection)}
 											onKeyDown={(e) => {
 												if (e.key === "Enter" || e.key === " ") {
@@ -603,7 +608,7 @@ const DevicePatching = () => {
 											}}
 											className={`connection-item ${selectedConnection === connectionId(connection) ? "selected" : ""}`}
 										>
-											{`${connection.src.repr}${srcSection === "__virtual__" ? "" : `.${srcSection}`}[${connection.src.parameter.name}] → ${connection.dest.repr}${dstSection === "__virtual__" ? "" : `.${dstSection}`}[${connection.dest.parameter.name}]`}
+											{buildConnectionName(connection)}
 										</li>
 									);
 								})}

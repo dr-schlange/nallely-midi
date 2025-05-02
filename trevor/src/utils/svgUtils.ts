@@ -2,16 +2,29 @@ import type { MidiConnection } from "../model";
 import { buildParameterId } from "./utils";
 
 export const findConnectorElement = (connection: MidiConnection) => {
-	const srcId = buildParameterId(
-		connection.src.device,
-		connection.src.parameter,
-	);
-	const destId = buildParameterId(
+	let srcId = buildParameterId(connection.src.device, connection.src.parameter);
+	let destId = buildParameterId(
 		connection.dest.device,
 		connection.dest.parameter,
 	);
-	const fromElement = document.querySelector(`[id="${srcId}"]`);
-	const toElement = document.querySelector(`[id="${destId}"]`);
+	let fromElement = document.querySelector(`[id="${srcId}"]`);
+	let toElement = document.querySelector(`[id="${destId}"]`);
+	if (!fromElement) {
+		srcId = buildParameterId(
+			connection.src.device,
+			connection.src.parameter,
+			"closed",
+		);
+		fromElement = document.querySelector(`[id="${srcId}"]`);
+	}
+	if (!toElement) {
+		destId = buildParameterId(
+			connection.dest.device,
+			connection.dest.parameter,
+			"closed",
+		);
+		toElement = document.querySelector(`[id="${destId}"]`);
+	}
 	return [fromElement, toElement];
 };
 

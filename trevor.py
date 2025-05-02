@@ -307,7 +307,7 @@ class TrevorBus(VirtualDevice):
         ]:
             src = getattr(src_device, from_section)
         elif from_parameter.isdecimal():
-            # We know it's a key/pad we are binding
+            # We know it's a key/pad we are binding (src)
             src = getattr(src_device, from_section)[int(from_parameter)]
         elif from_parameter == "all_keys_or_pads":
             # We know we want to bind all the notes/pads [0..127]
@@ -315,7 +315,11 @@ class TrevorBus(VirtualDevice):
         else:
             src = getattr(getattr(src_device, from_section), from_parameter)
         if unbind:
-            dest_parameter = getattr(dest, to_parameter)
+            if to_parameter.isdecimal():
+                # We know it's a key/pad we are unbinding to (target)
+                dest_parameter = dest[int(to_parameter)]
+            else:
+                dest_parameter = getattr(dest, to_parameter)
             if isinstance(src, list):
                 for e in src:
                     dest_parameter.__isub__(src)
@@ -326,6 +330,9 @@ class TrevorBus(VirtualDevice):
             to_parameter = dest.meta.pads_or_keys.name
         if isinstance(src, list):
             setattr(dest, to_parameter, src)
+        elif to_parameter.isdecimal():
+            # We know it's a key/pad we are binding to (target)
+            dest[int(to_parameter)] = src
         else:
             to_range = getattr(dest.__class__, to_parameter).range
             setattr(dest, to_parameter, src.scale(to_range[0], to_range[1]))
@@ -413,7 +420,9 @@ class TrevorBus(VirtualDevice):
                     from_ = {
                         "note": entry.from_.cc_note,
                         "type": entry.from_.type,
-                        "note_name": get_note_name(entry.from_.cc_note),
+                        "name": get_note_name(entry.from_.cc_note),
+                        "section_name": entry.from_.pads_or_keys.section_name,
+                        "mode": entry.from_.mode,
                     }
                 else:
                     from_ = asdict(entry.from_)
@@ -421,7 +430,9 @@ class TrevorBus(VirtualDevice):
                     to_ = {
                         "note": entry.parameter.cc_note,
                         "type": entry.parameter.type,
-                        "note_name": get_note_name(entry.parameter.cc_note),
+                        "name": get_note_name(entry.parameter.cc_note),
+                        "section_name": entry.parameter.pads_or_keys.section_name,
+                        "mode": entry.parameter.mode,
                     }
                 else:
                     to_ = asdict(entry.parameter)
@@ -477,20 +488,20 @@ class TrevorBus(VirtualDevice):
         return d
 
 
-# nts1 = NTS1(autoconnect=False)
-# minilogue = Minilogue(autoconnect=False)
+nts1 = NTS1(autoconnect=False)
+minilogue = Minilogue(autoconnect=False)
 try:
     ws = TrevorBus()
 
     ws.start()
 
-    # lfo = LFO()
+    lfo = LFO()
 
     # nts1.filter.cutoff = lfo
 
-    # nts1.keys[0] = minilogue.keys[1]
+    nts1.keys[0] = minilogue.keys[1]
 
-    # json.dumps(ws.full_state(), cls=StateEncoder)
+    json.dumps(ws.full_state(), cls=StateEncoder)
 
     while (q := input("Press 'q' to stop Trevor...")) != "q":
         import psutil
@@ -503,6 +514,6 @@ try:
 finally:
     # repl.stop()
     # print("Cleaning residual notes")
-    # nts1.force_all_notes_off(times=10)
+    nts1.force_all_notes_off(times=10)
     # minilogue.force_all_notes_off(times=10)
     nallely.stop_all_connected_devices()

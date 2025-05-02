@@ -329,6 +329,7 @@ class padproperty(property):
 @dataclass
 class PadOrKey:
     device: MidiDevice
+    pads_or_keys: "ModulePadsOrKeys"
     type: str = "note"
     cc_note: int = -1
     mode: str = "note"
@@ -349,19 +350,30 @@ class PadOrKey:
         self.parameter = self
         self.name = f"#{self.cc_note}"
 
+    def copy(self, device, cc_note, type, mode="note"):
+        return self.__class__(
+            device=device,
+            cc_note=cc_note,
+            type=type,
+            mode=mode,
+            pads_or_keys=self.pads_or_keys,
+        )
+
     @padproperty
     def velocity(self):
-        return PadOrKey(self.device, cc_note=self.cc_note, type="velocity")
+        return self.copy(self.device, cc_note=self.cc_note, type="velocity")
 
     @padproperty
     def velocity_latch(self):
-        return PadOrKey(
+        return self.copy(
             self.device, cc_note=self.cc_note, type="velocity", mode="latch"
         )
 
     @padproperty
     def velocity_hold(self):
-        return PadOrKey(self.device, cc_note=self.cc_note, type="velocity", mode="hold")
+        return self.copy(
+            self.device, cc_note=self.cc_note, type="velocity", mode="hold"
+        )
 
     def set_last(self, value):
         self.last_value = value
@@ -527,6 +539,7 @@ class ModulePadsOrKeys:
     keys: dict[int, PadOrKey] = field(default_factory=dict)
     section_name: str = NOT_INIT
     name: str = NOT_INIT
+    cc_note: int = -1
 
     def __get__(self, instance, owner=None):
         if instance is None:
@@ -659,7 +672,9 @@ class Module:
             raise Exception("Your device doesn't have a key/pad section")
         if isinstance(key, int):
             if key not in self._keys_notes:
-                self._keys_notes[key] = PadOrKey(device=self.device, cc_note=key)
+                self._keys_notes[key] = PadOrKey(
+                    device=self.device, cc_note=key, pads_or_keys=self.meta.pads_or_keys
+                )
             return self._keys_notes[key]
         if isinstance(key, slice):
             indices = key.indices(128)

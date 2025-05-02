@@ -15,6 +15,7 @@ import { drawConnection, findConnectorElement } from "../../utils/svgUtils";
 import { ScalerForm } from "../ScalerForm";
 import { useTrevorWebSocket } from "../../websockets/websocket";
 import {
+	buildConnectionName,
 	buildParameterId,
 	connectionId,
 	connectionsOfInterest,
@@ -51,6 +52,7 @@ const PatchingModal = ({
 	firstSection: MidiDeviceWithSection | VirtualDeviceWithSection | null;
 	secondSection: MidiDeviceWithSection | VirtualDeviceWithSection | null;
 }) => {
+	const [refresh, setRefresh] = useState(0);
 	const [selectedParameters, setSelectedParameters] = useState<
 		{
 			device: MidiDevice | VirtualDevice;
@@ -66,12 +68,14 @@ const PatchingModal = ({
 			connectionsOfInterest(
 				f,
 				firstSection?.device.id,
-				firstSection?.section.parameters[0]?.section_name,
+				firstSection?.section.parameters[0]?.section_name ||
+					firstSection?.section.pads_or_keys?.section_name,
 			) ||
 			connectionsOfInterest(
 				f,
 				secondSection?.device.id,
-				secondSection?.section.parameters[0]?.section_name,
+				secondSection?.section.parameters[0]?.section_name ||
+					secondSection?.section.pads_or_keys?.section_name,
 			),
 	);
 
@@ -227,7 +231,7 @@ const PatchingModal = ({
 
 	useEffect(() => {
 		drawConnections();
-	}, [connections]);
+	}, [connections, refresh]);
 
 	useEffect(() => {
 		const handleResize = () => {
@@ -244,9 +248,28 @@ const PatchingModal = ({
 		};
 	}, [connections]);
 
+	const handleGridOpen = () => {
+		// drawConnections();
+		setRefresh((refresh + 1) % 2);
+	};
+
 	const selectedConnectionInstance = allConnections.find(
 		(c) => connectionId(c) === selectedConnection,
 	);
+
+	const shouldHighlight = (device: MidiDevice | VirtualDevice) => {
+		if (selectedParameters.length === 0) {
+			return "";
+		}
+		const param = selectedParameters[0];
+		if (device.id === param.device.id) {
+			return (
+				(param?.parameter as PadOrKey)?.note || param?.parameter.section_name
+			);
+		}
+		return "";
+	};
+
 	return (
 		<div className="patching-modal">
 			<div className="modal-header">
@@ -272,22 +295,22 @@ const PatchingModal = ({
 					</defs>
 				</svg>
 				<div className="left-panel">
-					<div className="top-left-panel">
+					<div className="top-left-panel" onScroll={drawConnections}>
 						<h3>
 							{firstSection?.device.repr} {firstSection?.section.name}
 						</h3>
 						<div className="parameters-grid left">
 							{firstSection?.section.pads_or_keys && (
-								<MidiGrid
-									device={firstSection.device}
-									section={firstSection.section}
-									onKeysClick={handleKeySectionClick}
-									onNoteClick={handleKeyClick}
-									highlight={
-										(selectedParameters[0]?.parameter as PadOrKey)?.note ||
-										selectedParameters[0]?.parameter.section_name
-									}
-								/>
+								<div className="left-midi">
+									<MidiGrid
+										device={firstSection.device}
+										section={firstSection.section}
+										onKeysClick={handleKeySectionClick}
+										onNoteClick={handleKeyClick}
+										onGridOpen={handleGridOpen}
+										highlight={shouldHighlight(firstSection.device)}
+									/>
+								</div>
 							)}
 							{firstSection?.section.parameters.map((param) => (
 								<div
@@ -311,22 +334,22 @@ const PatchingModal = ({
 							))}
 						</div>
 					</div>
-					<div className="bottom-left-panel">
+					<div className="bottom-left-panel" onScroll={drawConnections}>
 						<h3>
 							{secondSection?.device.repr} {secondSection?.section.name}
 						</h3>
 						<div className="parameters-grid right">
 							{secondSection?.section.pads_or_keys && (
-								<MidiGrid
-									device={secondSection.device}
-									section={secondSection.section}
-									onKeysClick={handleKeySectionClick}
-									onNoteClick={handleKeyClick}
-									highlight={
-										(selectedParameters[0]?.parameter as PadOrKey)?.note ||
-										selectedParameters[0]?.parameter.section_name
-									}
-								/>
+								<div className="right-midi">
+									<MidiGrid
+										device={secondSection.device}
+										section={secondSection.section}
+										onKeysClick={handleKeySectionClick}
+										onNoteClick={handleKeyClick}
+										onGridOpen={handleGridOpen}
+										highlight={shouldHighlight(secondSection.device)}
+									/>
+								</div>
 							)}
 
 							{secondSection?.section.parameters.map((param) => (
@@ -379,11 +402,9 @@ const PatchingModal = ({
 						<h3>Connections</h3>
 						<ul className="connections-list">
 							{connections.map((connection) => {
-								const srcSection = connection.src.parameter.section_name;
-								const dstSection = connection.dest.parameter.section_name;
 								return (
 									<li
-										key={`${connection.src.repr}-${connection.src.parameter.section_name}-${connection.src.parameter.name}-${connection.dest.repr}-${connection.dest.parameter.section_name}-${connection.dest.parameter.name}`}
+										key={buildConnectionName(connection)}
 										onClick={() => handleConnectionClick(connection)}
 										onKeyDown={(e) => {
 											if (e.key === "Enter" || e.key === " ") {
@@ -401,7 +422,7 @@ const PatchingModal = ({
 												: ""
 										}`}
 									>
-										{`${connection.src.repr}${srcSection === "__virtual__" ? "" : `.${srcSection}`}[${connection.src.parameter.name}] → ${connection.dest.repr}${dstSection === "__virtual__" ? "" : `.${dstSection}`}[${connection.dest.parameter.name}]`}
+										{buildConnectionName(connection)}
 									</li>
 								);
 							})}

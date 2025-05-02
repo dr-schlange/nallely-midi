@@ -13,6 +13,7 @@ interface MidiGridProps {
 	section: MidiDeviceSection | VirtualDeviceSection;
 	onKeysClick?: (device: MidiDevice | VirtualDevice, keys: PadsOrKeys) => void;
 	onNoteClick?: (device: MidiDevice | VirtualDevice, key: PadOrKey) => void;
+	onGridOpen?: (device: MidiDevice | VirtualDevice, keys: PadsOrKeys) => void;
 	highlight?: string | number | undefined;
 }
 
@@ -41,10 +42,16 @@ export const MidiGrid = ({
 	device,
 	onKeysClick,
 	onNoteClick,
+	onGridOpen,
 	section,
 	highlight,
 }: MidiGridProps) => {
 	const [isOpen, setIsOpen] = useState(false);
+	const keySection = {
+		channel: 0,
+		section_name: section.pads_or_keys?.section_name || "unknown",
+		keys: {},
+	};
 
 	const midiNotes = Array.from({ length: 128 }, (_, i) => ({
 		number: i,
@@ -56,9 +63,17 @@ export const MidiGrid = ({
 		octaves.push(midiNotes.slice(i, i + 12));
 	}
 
+	const handleOpen = () => {
+		setIsOpen(!isOpen);
+		onGridOpen?.(device, keySection);
+	};
+
 	return (
 		<div className={`midi-container ${isOpen ? "open" : ""}`}>
-			<div className="midi-header" id={`${device.id}-keys`}>
+			<div
+				className="midi-header"
+				id={`${device.id}-${section.pads_or_keys?.section_name}-closed`}
+			>
 				{isOpen ? (
 					<>
 						{/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
@@ -66,15 +81,12 @@ export const MidiGrid = ({
 							className="midi-icon"
 							role="img"
 							aria-label="piano"
-							onClick={() => setIsOpen(!isOpen)}
+							onClick={handleOpen}
 						>
 							🎹
 						</span>
 						{/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
-						<span
-							className="midi-toggle-icon"
-							onClick={() => setIsOpen(!isOpen)}
-						>
+						<span className="midi-toggle-icon" onClick={handleOpen}>
 							▲
 						</span>
 					</>
@@ -86,21 +98,13 @@ export const MidiGrid = ({
 							role="img"
 							aria-label="piano"
 							onClick={() =>
-								section.pads_or_keys &&
-								onKeysClick?.(device, {
-									channel: 0,
-									section_name: section.pads_or_keys.section_name,
-									keys: {},
-								})
+								section.pads_or_keys && onKeysClick?.(device, keySection)
 							}
 						>
 							🎹
 						</span>
 						{/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
-						<span
-							className="midi-toggle-icon"
-							onClick={() => setIsOpen(!isOpen)}
-						>
+						<span className="midi-toggle-icon" onClick={handleOpen}>
 							▼
 						</span>
 					</>
@@ -114,7 +118,7 @@ export const MidiGrid = ({
 							{octaveNotes.map((note) => (
 								// biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
 								<div
-									id={`${device.id}::keys::${note.number}`}
+									id={`${device.id}-${section.pads_or_keys?.section_name}-${note.name}`}
 									key={note.name}
 									className={`note-box ${highlight === note.number ? "selected" : ""}`}
 									title={`${note.name} - MIDI ${note.number}`}
@@ -123,7 +127,9 @@ export const MidiGrid = ({
 										onNoteClick?.(device, {
 											section_name: section.pads_or_keys.section_name,
 											note: note.number,
-											note_name: note.name,
+											name: note.name,
+											mode: "note",
+											type: "note",
 										})
 									}
 								>
