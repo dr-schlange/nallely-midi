@@ -1,6 +1,6 @@
 # Nallely-midi, your Midi devices companion: connect anything with everything
 
-Nallely (pronounced "Nayeli") is a MIDI companion to help you easily map MIDI controllers/instruments together, as well as create virtual LFOs, compose them, and the possibility to expose/create remote services with parameters on which you can map your MIDI controllers/instruments.
+Nallely (pronounced "Nayeli") is an organic platform for experimentation around the idea of MIDI meta-synth for live coding, generative music, and multimodal art, built for hacker/musicians. Nallely is a MIDI companion to help you easily map MIDI controllers/instruments together, as well as create/use virtual devices (LFOs, EGs), compose them, and the possibility to expose/create remote services with parameters on which you can map your MIDI controllers/instruments or virtual devices.
 
 Features:
 * programmatic seemless API to your MIDI Device,
