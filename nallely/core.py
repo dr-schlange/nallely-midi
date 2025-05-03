@@ -8,7 +8,7 @@ from dataclasses import InitVar, asdict, dataclass, field
 from decimal import Decimal
 from pathlib import Path
 from queue import Empty, Full, Queue
-from typing import Any, Callable, Counter, Iterable, Literal, Self, Type
+from typing import Any, Callable, Counter, Iterable, Literal, Type
 
 import mido
 
@@ -301,7 +301,7 @@ class VirtualDevice(threading.Thread):
     _id: dict[Type, int] = defaultdict(int)
     output_cv = VirtualParameter(name="output")
 
-    def __new__(cls, *args, **kwargs) -> Self:
+    def __new__(cls, *args, **kwargs):
         instance = super().__new__(cls)
         instance._id[cls] += 1
         instance._number = instance._id[cls]  # type: ignore
