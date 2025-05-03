@@ -1,4 +1,5 @@
 from nallely import VirtualDevice, VirtualParameter
+from collections import deque
 
 
 class NoteAllocator(VirtualDevice):
@@ -11,7 +12,7 @@ class NoteAllocator(VirtualDevice):
     """
 
     # we create the input and mark it as "consumer", meaning it receives values and does something with them in "receiving", having a context for the value received
-    gate_cv = VirtualParameter(name="gate", consumer=True)
+    gate_cv = VirtualParameter(name="gate", consumer=True, range=(0, None))
 
     def __init__(self, outport_number=2, **kwargs):
         super().__init__(target_cycle_time=1 / 50, **kwargs)
@@ -29,25 +30,36 @@ class NoteAllocator(VirtualDevice):
                 self.__class__, cv_name, VirtualParameter(name=name, cv_name=cv_name)
             )
             setattr(self, name, 0)
+        self.queue = deque(self.outputs)
+
+    def _next(self):
+        item = self.queue[0]
+        self.queue.rotate(-1)
+        return item
 
     def receiving(self, value, on: str, ctx):
         mode = ctx.get("mode", None)
-        if mode == "note":
+        if mode is None and value > 0:
+            output = self._next()
+            setattr(self, output, value)
+            ctx.type = "note_on"
+            ctx.mode = "note"
+            # we send the value on this output, i.e: we trigger the right callbacks (the one associated to this output)
+            self.process_output(value, ctx, selected_outputs=[output])
+
+        elif mode == "note":
             type = ctx.type
             # When we release a note
             if type == "note_off":
                 try:
                     idx = self.allocator.index(value)
                     self.allocator[idx] = None
-                    output = self.outputs[
-                        idx
-                    ]  # we get the name of the corresponding output
-                    setattr(
-                        self, output, value
-                    )  # we route the value to this output, i.e: we write a value to a variable that will be read later by the callback that will be triggered
-                    self.process_output(
-                        value, ctx, selected_outputs=[output]
-                    )  # we send the value on this output, i.e: we trigger the right callbacks (the one associated to this output)
+                    # we get the name of the corresponding output
+                    output = self.outputs[idx]
+                    # we route the value to this output, i.e: we write a value to a variable that will be read later by the callback that will be triggered
+                    setattr(self, output, value)
+                    # we send the value on this output, i.e: we trigger the right callbacks (the one associated to this output)
+                    self.process_output(value, ctx, selected_outputs=[output])
                 except ValueError:
                     ...  # if there is no note allocated with this value, we do nothing
                 return

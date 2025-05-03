@@ -577,4 +577,6 @@ def launch_standalone_script(loaded_paths=None, init_script=None):
         ) != "q":
             trevor_infos("[INFO]", loaded_paths, init_script)
     finally:
+        for device in connected_devices:
+            device.force_all_notes_off(times=10)
         stop_all_connected_devices()
