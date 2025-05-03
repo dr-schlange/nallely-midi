@@ -2,13 +2,15 @@ import importlib.util
 import io
 import json
 import sys
+import textwrap
 import traceback
 from collections import ChainMap, defaultdict
 from contextlib import contextmanager
+from ctypes.wintypes import PINT
 from dataclasses import asdict
 from decimal import Decimal
 from inspect import isfunction
-from itertools import chain
+from itertools import chain, zip_longest
 from pathlib import Path
 from textwrap import indent
 
@@ -271,7 +273,7 @@ class TrevorBus(VirtualDevice):
         instance.to_update = self
         return self.full_state()
 
-    def update(self, device):
+    def send_update(self, device=None):
         for client in self.connected["trevor"]:
             client.send(self.to_json(self.full_state()))
 
@@ -503,19 +505,20 @@ class TrevorBus(VirtualDevice):
 
 
 def trevor_infos(header, loaded_paths, init_script):
-    print(header)
-    print(
-        f"  * init script = {init_script.resolve().absolute() if init_script else None}"
-    )
-    print("  * Loaded paths")
+    info = f"{header}\n"
+    info += f"  * init script = {init_script.resolve().absolute() if init_script else None}\n"
+    info += "  * Loaded paths\n"
     for p in loaded_paths:
-        print(f"    - {p.resolve().absolute()}")
-    print("  * Known device classes")
+        info += f"    - {p.resolve().absolute()}\n"
+    info += "  * Known device classes\n"
     for device in [*midi_device_classes, *virtual_device_classes]:
-        print(f"    - {device.__name__}")
-    print("  * Connected/existing devices")
-    for device in all_devices():
-        print(f"    - {device.uid()} <{device.__class__.__name__}>")
+        info += f"    - {device.__name__}\n"
+    devices = all_devices()
+    info += f"  * Connected/existing devices [{len(devices)}]\n"
+    if devices:
+        for device in all_devices():
+            info += f"    - {device.uid()} <{device.__class__.__name__}>\n"
+    return info
 
 
 def _load_modules(loaded_paths):
@@ -544,21 +547,22 @@ def start_trevor(include_builtins, loaded_paths=None, init_script=None):
             code = init_script.read_text(encoding="utf-8")
             exec(code)
 
-        trevor_infos("[TREVOR INFO]", loaded_paths, init_script)
+        # print(trevor_infos("[TREVOR INFO]", loaded_paths, init_script))
 
-        ws = TrevorBus()
-        ws.start()
-        while (
-            q := input("Press 'q' to stop Trevor, press enter to display infos...")
-        ) != "q":
-            trevor_infos("[TREVOR INFO]", loaded_paths, init_script)
-            # import os
-            # import psutil
-            # process = psutil.Process(os.getpid())
-            # mem_info = process.memory_info()
-            # print(f"Memory: {mem_info.rss / (1024 * 1024)} Mo")
-            # cpu_usage = process.cpu_percent(interval=1)
-            # print(f"CPU: {cpu_usage}%")
+        trevor = TrevorBus()
+        trevor.start()
+        # while (
+        #     q := input("Press 'q' to stop Trevor, press enter to display infos...")
+        # ) != "q":
+        #     trevor_infos("[TREVOR INFO]", loaded_paths, init_script)
+        #     # import os
+        #     # import psutil
+        #     # process = psutil.Process(os.getpid())
+        #     # mem_info = process.memory_info()
+        #     # print(f"Memory: {mem_info.rss / (1024 * 1024)} Mo")
+        #     # cpu_usage = process.cpu_percent(interval=1)
+        #     # print(f"CPU: {cpu_usage}%")
+        _trevor_menu(loaded_paths, init_script, trevor)
     finally:
         stop_all_connected_devices()
 
@@ -572,11 +576,77 @@ def launch_standalone_script(loaded_paths=None, init_script=None):
             code = init_script.read_text(encoding="utf-8")
             exec(code)
 
-        while (
-            q := input("Press 'q' to stop the script, press enter to display infos...")
-        ) != "q":
-            trevor_infos("[INFO]", loaded_paths, init_script)
+        # while (
+        #     q := input("Press 'q' to stop the script, press enter to display infos...")
+        # ) != "q":
+        #     trevor_infos("[INFO]", loaded_paths, init_script)
+        _trevor_menu(loaded_paths, init_script)
     finally:
         for device in connected_devices:
             device.force_all_notes_off(times=10)
         stop_all_connected_devices()
+
+
+def _trevor_menu(loaded_paths, init_script, trevor_bus=None):
+    elprint = _print_with_trevor if trevor_bus else print
+    while (
+        q := input(
+            "Press 'q' to stop the script, press enter to display infos, press ? to display menu...\n> "
+        )
+    ) != "q":
+        if not q:
+            elprint(
+                trevor_infos(
+                    "[TREVOR]" if trevor_bus else "[INFO]", loaded_paths, init_script
+                )
+            )
+        elif q == "?":
+            menu = (
+                "[MENU]\n"
+                "   s: stop a device (virtual or midi)\n"
+                "   q: stop the script\n"
+            )
+            elprint(menu)
+        elif q == "s":
+            menu = "[STOP DEVICE]\n"
+            devices = [d for d in all_devices() if not isinstance(d, TrevorBus)]
+            for num, device in enumerate(devices):
+                menu += f"   {num} - {device.uid()}"
+            menu += "  enter - exit menu"
+            elprint(menu)
+            num = input("> ")
+            if num != "":
+                num = int(num)
+                print(f"Stopping {devices[num]}")
+                devices[num].stop()
+                if trevor_bus:
+                    trevor_bus.send_update()
+
+
+def _print_with_trevor(text):
+    # visiously copied from the internet https://www.asciiartcopy.com/ascii-dog.html
+    trevor = (
+        "╱▏┈┈┈┈┈┈▕╲▕╲┈┈┈\n"
+        "▏▏┈┈┈┈┈┈▕▏▔▔╲┈┈\n"
+        "▏╲┈┈┈┈┈┈╱┈▔┈▔╲┈\n"
+        "╲▏▔▔▔▔▔▔╯╯╰┳━━▀\n"
+        "┈▏╯╯╯╯╯╯╯╯╱┃┈┈┈\n"
+        "┈┃┏┳┳━━━┫┣┳┃┈┈┈\n"
+        "┈┃┃┃┃┈┈┈┃┃┃┃┈┈┈\n"
+        "┈┗┛┗┛┈┈┈┗┛┗┛┈┈┈"
+    )
+    split_trevor = trevor.split()
+    size = len(split_trevor[0])
+    indent = " " * size
+    text = textwrap.indent(text, indent)
+    split_text = text.split("\n")
+    final = ""
+    for t, m in zip_longest(split_trevor, split_text):
+        if m and t:
+            final += f"{t}  {m[size:]}\n"
+        elif t:
+            final += f"{t}\n"
+        else:
+            final += f"{indent}  {m[size:]}\n"
+    print('  "Today I went for a long walk in the moutain"')
+    print(final[:-3])

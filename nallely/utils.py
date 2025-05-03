@@ -207,4 +207,4 @@ class WebSocketBus(VirtualDevice):
                 waiting_room.rebind(self)
         self.known_services[name] = virtual_parameters
         if self.to_update:
-            self.to_update.update(self)
+            self.to_update.send_update(self)
