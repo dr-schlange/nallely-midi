@@ -73,7 +73,7 @@ def main():
         if args.libs:
             include_lib_paths(args.libs)
         if args.with_trevor:
-            from .trevor import start_trevor
+            from nallely.trevor import start_trevor
 
             start_trevor(
                 args.builtin_devices,
@@ -81,13 +81,13 @@ def main():
                 init_script=args.init_script,
             )
         elif args.init_script:
-            from .trevor import launch_standalone_script
+            from nallely.trevor import launch_standalone_script
 
             launch_standalone_script(
                 loaded_paths=args.libs, init_script=args.init_script
             )
     elif args.command == "generate":
-        from .generator import generate_api
+        from nallely.generator import generate_api
 
         generate_api(args.input, args.output)
 
