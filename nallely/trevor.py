@@ -547,8 +547,6 @@ def start_trevor(include_builtins, loaded_paths=None, init_script=None):
             code = init_script.read_text(encoding="utf-8")
             exec(code)
 
-        # print(trevor_infos("[TREVOR INFO]", loaded_paths, init_script))
-
         trevor = TrevorBus()
         trevor.start()
         # while (
@@ -576,10 +574,6 @@ def launch_standalone_script(loaded_paths=None, init_script=None):
             code = init_script.read_text(encoding="utf-8")
             exec(code)
 
-        # while (
-        #     q := input("Press 'q' to stop the script, press enter to display infos...")
-        # ) != "q":
-        #     trevor_infos("[INFO]", loaded_paths, init_script)
         _trevor_menu(loaded_paths, init_script)
     finally:
         for device in connected_devices:
@@ -617,10 +611,13 @@ def _trevor_menu(loaded_paths, init_script, trevor_bus=None):
             num = input("> ")
             if num != "":
                 num = int(num)
-                print(f"Stopping {devices[num]}")
-                devices[num].stop()
-                if trevor_bus:
-                    trevor_bus.send_update()
+                try:
+                    print(f"Stopping {devices[num]}")
+                    devices[num].stop()
+                    if trevor_bus:
+                        trevor_bus.send_update()
+                except IndexError:
+                    print(f"There is no device {num}")
 
 
 def _print_with_trevor(text):
@@ -642,11 +639,8 @@ def _print_with_trevor(text):
     split_text = text.split("\n")
     final = ""
     for t, m in zip_longest(split_trevor, split_text):
-        if m and t:
-            final += f"{t}  {m[size:]}\n"
-        elif t:
-            final += f"{t}\n"
-        else:
-            final += f"{indent}  {m[size:]}\n"
+        t = t if t else f"{indent}"
+        m = m[size:] if m else ""
+        final += f"{t}  {m}\n"
     print('  "Today I went for a long walk in the moutain"')
     print(final[:-3])
