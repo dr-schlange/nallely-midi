@@ -37,3 +37,6 @@ include-package-data = true
 
 [tool.setuptools.package-data]
 nallely = ["README.md", "LICENSE", "CHANGELOG.md"]
+
+[project.scripts]
+nallely = "nallely.cli:main"
