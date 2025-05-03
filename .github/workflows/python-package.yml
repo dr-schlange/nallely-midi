@@ -17,7 +17,7 @@ jobs:
 
     steps:
     - name: Install RT-midi
-      run: sudo apt install -y librtmidi7 librtmidi-dev
+      run: sudo apt install -y librtmidi librtmidi-dev
     - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v3
