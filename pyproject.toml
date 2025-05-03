@@ -26,7 +26,7 @@ classifiers = [
     "Topic :: Software Development :: Libraries",
 ]
 requires-python = ">=3.10"
-dependencies = ["mido", "websockets", "plotext", "python-rtmidi", "ruamel.yaml"]
+dependencies = ["mido", "websockets", "python-rtmidi", "ruamel.yaml"]
 
 [project.optional-dependencies]
 dev = ["pytest", "build", "pytest-asyncio"]

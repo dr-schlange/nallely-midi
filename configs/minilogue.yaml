@@ -1,0 +1,51 @@
+KORG:
+  minilogue:
+    delay:
+      feedback: {cc: 31, description: '', init: 0, max: 127, min: 0}
+      hipass: {cc: 29, description: '', init: 0, max: 127, min: 0}
+      output_routing: {cc: 88, description: '', init: 0, max: 127, min: 0}
+      time: {cc: 30, description: '', init: 0, max: 127, min: 0}
+    envelopes:
+      amp_eg_attack: {cc: 16, description: '', init: 0, max: 127, min: 0}
+      amp_eg_decay: {cc: 17, description: '', init: 0, max: 127, min: 0}
+      amp_eg_release: {cc: 19, description: '', init: 0, max: 127, min: 0}
+      amp_eg_sustain: {cc: 18, description: '', init: 0, max: 127, min: 0}
+      eg_attack: {cc: 20, description: '', init: 0, max: 127, min: 0}
+      eg_decay: {cc: 21, description: '', init: 0, max: 127, min: 0}
+      eg_release: {cc: 23, description: '', init: 0, max: 127, min: 0}
+      eg_sustain: {cc: 22, description: '', init: 0, max: 127, min: 0}
+    filter:
+      cutoff: {cc: 43, description: '', init: 0, max: 127, min: 0}
+      eg_intensity: {cc: 45, description: '', init: 0, max: 127, min: 0}
+      resonance: {cc: 44, description: '', init: 0, max: 127, min: 0}
+      type: {cc: 84, description: '', init: 0, max: 127, min: 0}
+    general:
+      bank_select: {cc: 0, description: '', init: 0, max: 127, min: 0}
+      cross_mod_depth: {cc: 41, description: '', init: 0, max: 127, min: 0}
+      keyboard_track: {cc: 83, description: '', init: 0, max: 127, min: 0}
+      pitch_eg_intensity: {cc: 42, description: '', init: 0, max: 127, min: 0}
+      ring: {cc: 81, description: '', init: 0, max: 127, min: 0}
+      sync: {cc: 80, description: '', init: 0, max: 127, min: 0}
+      velocity_key_track: {cc: 82, description: '', init: 0, max: 127, min: 0}
+      voice_depth: {cc: 27, description: '', init: 0, max: 127, min: 0}
+    lfo:
+      depth: {cc: 26, description: '', init: 0, max: 127, min: 0}
+      eg_mod: {cc: 57, description: '', init: 0, max: 127, min: 0}
+      rate: {cc: 24, description: '', init: 0, max: 127, min: 0}
+      target: {cc: 56, description: '', init: 0, max: 127, min: 0}
+      wave: {cc: 58, description: '', init: 0, max: 127, min: 0}
+    mix:
+      noise_level: {cc: 33, description: '', init: 0, max: 127, min: 0}
+      vco_1_level: {cc: 39, description: '', init: 0, max: 127, min: 0}
+      vco_2_level: {cc: 40, description: '', init: 0, max: 127, min: 0}
+    vco:
+      vco_1_octave: {cc: 48, description: '', init: 0, max: 127, min: 0}
+      vco_1_pitch: {cc: 34, description: '', init: 0, max: 127, min: 0}
+      vco_1_shape: {cc: 36, description: '', init: 0, max: 127, min: 0}
+      vco_1_wave: {cc: 50, description: '', init: 0, max: 127, min: 0}
+      vco_2_octave: {cc: 49, description: '', init: 0, max: 127, min: 0}
+      vco_2_pitch: {cc: 35, description: '', init: 0, max: 127, min: 0}
+      vco_2_shape: {cc: 37, description: '', init: 0, max: 127, min: 0}
+      vco_2_wave: {cc: 51, description: '', init: 0, max: 127, min: 0}
+    keys:
+      notes: 'keys_or_pads'

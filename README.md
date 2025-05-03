@@ -108,6 +108,76 @@ There is currently no pypi package for it, so the easiest way to install the lib
 1. create a virtual env
 2. `pip install git+https://github.com/dr-schlange/nallely-midi.git`
 
+### Usage
+
+Nallely's scripts are pure Python script and can be launched on their own, but to simplify the integration with Trevor (protocol/UI), or to avoid to have to write the `try/finally/input`, or to generate the Python API from a CSV or a YAML file configuration, there is a convenient command line interface.
+
+```
+$ nallely -h
+usage: nallely [-h] {run,generate} ...
+
+Playground for MIDI instruments that let's you focus on your device, not the exchanged MIDI messages
+
+positional arguments:
+  {run,generate}
+    run           Run scripts and Trevor (protocol for remote control)
+    generate      Generate a Python API for a MIDI device
+
+options:
+  -h, --help      show this help message and exit
+```
+
+#### Run a script or Trevor
+
+The command line let's you either run a simple script (an "init scrip"), launch Trevor websocket server to connect later Trevor's UI, to include paths where you might have API for devices, or include the builtins device config (Korg NTS-1, Korg Minilogue).
+
+```
+$ nallely run -h
+usage: nallely run [-h] [-l [LIBS ...]] [--with-trevor] [-b] [-i INIT_SCRIPT]
+
+options:
+  -h, --help            show this help message and exit
+  -l, --libs [LIBS ...]
+                        Includes one or more paths (file or directory) where to look for MIDI devices API (includes those paths to Python's lib paths).
+                        The current working directory is always added, even if this option is not used. The paths that are Python files will be
+                        automatically imported.
+  --with-trevor         Launches the Trevor protocol/websocket server
+  -b, --builtin-devices
+                        Loads builtin MIDI devices (Korg NTS1, Korg Minilogue)
+  -i, --init INIT_SCRIPT
+                        Path towards an init script to launch. If used with "--with-trevor", the script will be launched *before* Trevor is started.
+```
+
+#### Generates a Python API for a MIDI device from a CSV or YAML configuration
+
+If you have your MIDI device [listed in this repository](https://github.com/pencilresearch/midi) as CSV, or a YAML description of your MIDI device, you can generate the Python API for it to be integrable with Nallely.
+
+```
+$ nallely generate -h
+usage: nallely generate [-h] -i INPUT -o OUTPUT
+
+options:
+  -h, --help           show this help message and exit
+  -i, --input INPUT    Path to input CSV or YAML file
+  -o, --output OUTPUT  Path to the file that will be generated
+```
+
+NOTE: If a CSV configuration is given as input, the equivalent YAML configuration will be generated at the same time.
+Also, as you can see, there is no special mention of key/pads section in the CSV configuration available in the https://github.com/pencilresearch/midi repository.
+If you want to generate a key section for your device, you can modify the YAML configuration by adding a `xxx: 'keys_or_pads'` entry. Here is how it's done for the Korg NTS-1:
+
+```
+KORG:
+  NTS-1:
+    # ... Other sections here
+    keys:
+      notes: 'keys_or_pads'
+```
+
+The `xxx: 'keys_or_pads'` entry doesn't have to be in an isolated section, it can be set with other sections, but it's only possible to have one `key_or_pads` entry by section.
+
+
+
 ## Documentation
 
 A first draft about how Nallely can help you declare your devices and map them using the current API can be find in the [documentation](./docs/main.md).
@@ -133,11 +203,11 @@ The screenshot below shows you what the result looks like with everything launch
 
 ## Trevor, Nallely's companion
 
-Trevor is a communication protocol made to communicate with Nallely through websocket and ask Nallely to create device instance, map devices together or apply scaler. Trevor also proposes a web UI that lets you bind everything at run time, without any need for stopping/starting again scripts. Trevor is still experimental at the moment.
+Trevor is a communication protocol and a UI made to communicate with Nallely through websocket and ask Nallely to create device instance, map devices together or apply scaler. Trevor proposes a web UI that lets you bind everything at run time, without any need for stopping/starting again scripts, as well as an interactive code playground inspired by Smalltalk playgrounds that let's you code/script on the fly.
 
 ### Installation & how to launch it
 
-Trevor runs in two parts: the python script (the backend in a way), and the frontend. At the moment, this is the way to launch it, but in the future, it will be integrated in a more seemless way. The web UI is built with vite, react, and uses yarn. We consider here that you have all of this installed already. To install Trevor:
+Trevor runs in two parts: the websocket server (the backend), and the frontend. At the moment, this is the way to launch it, but in the future, it will be integrated in a more seemless way. The web UI is built with vite, react, and uses yarn. We consider here that you have all of this installed already. To install Trevor:
 
 ```
 cd trevor
@@ -150,8 +220,8 @@ Then to launch everything:
 # in 1 terminal, inside of the "trevor" directory
 yarn dev
 
-# in another terminal
-python trevor.py
+# in another terminal, there is various other options you can pass, try --help to see all of them
+nallely run --with-trevor
 ```
 
 ### Screenshots of Trevor UI

@@ -1,6 +1,8 @@
-from collections import defaultdict
 import csv
+import sys
+from collections import defaultdict
 from pathlib import Path
+
 from ruamel.yaml import YAML
 
 
@@ -77,20 +79,25 @@ Generated configuration for the {brand} - {device}
         for section, parameters in sections.items():
             f.write(f"class {section.capitalize()}Section(nallely.Module):\n")
             for parameter_name, config in parameters.items():
-                cc = config["cc"]
-                min, max = config["min"], config["max"]
-                init = config["init"]
-                if init == 0:
-                    init = ""
+                if config == "keys_or_pads":
+                    parameter_code = (
+                        f"    {parameter_name} = nallely.ModulePadsOrKeys()\n"
+                    )
                 else:
-                    init = f", init_value={init}"
-                if min == 0 and max == 127:
-                    range = ""
-                else:
-                    range = f", range=({min}, {max})"
-                descr = config["description"]
-                descr = f", description={descr!r}" if descr else ""
-                parameter_code = f"    {parameter_name} = nallely.ModuleParameter({cc}{range}{init}{descr})\n"
+                    cc = config["cc"]
+                    min, max = config["min"], config["max"]
+                    init = config["init"]
+                    if init == 0:
+                        init = ""
+                    else:
+                        init = f", init_value={init}"
+                    if min == 0 and max == 127:
+                        range = ""
+                    else:
+                        range = f", range=({min}, {max})"
+                    descr = config["description"]
+                    descr = f", description={descr!r}" if descr else ""
+                    parameter_code = f"    {parameter_name} = nallely.ModuleParameter({cc}{range}{init}{descr})\n"
                 f.write(parameter_code)
             f.write("\n\n")
         device_name = device.replace("-", "")
@@ -110,19 +117,19 @@ Generated configuration for the {brand} - {device}
             f.write(f"        return self.modules.{section}\n\n")
 
 
-if __name__ == "__main__":
-    import sys
-
-    file = Path(sys.argv[1])
+def generate_api(input_path, output_path):
     yaml = YAML(typ="safe")
-    if file.suffix == ".csv":
-        d = convert(file)
-        yaml.dump(d, file.with_suffix(".yaml"))
-    elif file.suffix == ".yaml":
-        d = yaml.load(file)
+    if input_path.suffix == ".csv":
+        device_config = convert(input_path)
+        yaml.dump(device_config, input_path.with_suffix(".yaml"))
+    elif input_path.suffix == ".yaml":
+        device_config = yaml.load(input_path)
     else:
-        print(f"File format {file.suffix} not supported")
+        print(f"File format {input_path.suffix} not supported")
         sys.exit(1)
 
-    out_code = Path(sys.argv[2])
-    generate_code(d, out_code)
+    generate_code(device_config, output_path)
+
+
+if __name__ == "__main__":
+    generate_api(Path(sys.argv[1]), Path(sys.argv[2]))

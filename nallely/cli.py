@@ -9,7 +9,12 @@ def parse_args(argv):
         description="""Playground for MIDI instruments that let's you focus on your device, not the exchanged MIDI messages""",
         epilog="Current phase: Ipomoea Tricolor",
     )
-    parser.add_argument(
+    subparsers = parser.add_subparsers(dest="command", required=False)
+    run_parser = subparsers.add_parser(
+        "run",
+        help="Run scripts and Trevor (protocol for remote control)",
+    )
+    run_parser.add_argument(
         "-l",
         "--libs",
         nargs="*",
@@ -17,23 +22,42 @@ def parse_args(argv):
         type=Path,
         help="""Includes one or more paths (file or directory) where to look for MIDI devices API (includes those paths to Python's lib paths). The current working directory is always added, even if this option is not used. The paths that are Python files will be automatically imported.""",
     )
-    parser.add_argument(
+    run_parser.add_argument(
         "--with-trevor",
         action="store_true",
-        help="Activates Trevor protocol/websocket server",
+        help="Launches the Trevor protocol/websocket server",
     )
-    parser.add_argument(
+    run_parser.add_argument(
         "-b",
         "--builtin-devices",
         action="store_true",
         help=f"Loads builtin MIDI devices (Korg NTS1, Korg Minilogue)",
     )
-    parser.add_argument(
+    run_parser.add_argument(
         "-i",
         "--init",
         type=Path,
         dest="init_script",
         help="""Path towards an init script to launch. If used with "--with-trevor", the script will be launched *before* Trevor is started.""",
+    )
+
+    generate_parser = subparsers.add_parser(
+        "generate",
+        help="Generate a Python API for a MIDI device",
+    )
+    generate_parser.add_argument(
+        "-i",
+        "--input",
+        required=True,
+        type=Path,
+        help="Path to input CSV or YAML file",
+    )
+    generate_parser.add_argument(
+        "-o",
+        "--output",
+        required=True,
+        type=Path,
+        help="Path to the file that will be generated",
     )
 
     return parser.parse_args(argv)
@@ -45,12 +69,27 @@ def include_lib_paths(paths):
 
 def main():
     args = parse_args(sys.argv[1:])
-    if args.libs:
-        include_lib_paths(args.libs)
-    if args.with_trevor:
-        from .trevor import start_trevor
+    if args.command == "run":
+        if args.libs:
+            include_lib_paths(args.libs)
+        if args.with_trevor:
+            from .trevor import start_trevor
 
-        start_trevor(args.builtin_devices, args.libs, args.init_script)
+            start_trevor(
+                args.builtin_devices,
+                loaded_paths=args.libs,
+                init_script=args.init_script,
+            )
+        elif args.init_script:
+            from .trevor import launch_standalone_script
+
+            launch_standalone_script(
+                loaded_paths=args.libs, init_script=args.init_script
+            )
+    elif args.command == "generate":
+        from .generator import generate_api
+
+        generate_api(args.input, args.output)
 
 
 if __name__ == "__main__":

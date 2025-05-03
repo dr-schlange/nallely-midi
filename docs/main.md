@@ -261,6 +261,9 @@ nts1.keys.notes = mpd32.pads[:]
 # or:
 nts1.modules.keys.notes = mpd32.modules.pads[:]
 
+# or
+nts1.keys[:] = mpd32.modules.pads[:]
+
 # associate only the pad 36 to the notes of the NTS-1
 nts1.keys.notes = mpd32.pads[36]
 
@@ -302,7 +305,7 @@ If your device is listed by the [MIDI CC & NRPN database](https://github.com/pen
 The script takes 2 parameters: the path towards the CSV file that contains the device MIDI config, and a name of a file where the Python code will be written:
 
 ```bash
-python generator.py NTS1.csv KORG.py
+nallely generate -i NTS1.csv -o KORG.py
 ```
 
 This command line will read `NTS1.csv` and generates the Python API code for the NTS-1 device in the `KORG.py` file, and it will also generate a `NTS1.yaml` file which is the YAML representation of the transformed CSV.
@@ -323,6 +326,7 @@ manufacturer:
                 min: int
                 max: int
                 init: int
+            parameter_2: 'keys_or_pads'
 ```
 
 The different parts of the YAML are:
@@ -334,6 +338,7 @@ The different parts of the YAML are:
 * `max`: the max value of this parameter (usually 127)
 * `description`: the description of the parameter
 * `init`: the initial value of the parameter when you power the device
+* if a `parameter` has `keys_or_pads` as value, the generator will include in the Python API a key/pad section.
 
 Here is an excerpt about how the NTS-1 configuration is described in YAML:
 
@@ -352,13 +357,15 @@ KORG:
       attack: {cc: 16, description: Sets the time required for the EG to reach its
           maximum level once a note is played, max: 127, min: 0}
       release: {cc: 19, description: Sets the time required, max: 127, min: 0}
+    keys:
+      notes: 'keys_or_pads'
     # ...
 ```
 
 Once you have your YAML configuration for your device, you can simply run (here for the NTS-1):
 
 ```bash
-python generator.py NTS1.yaml KORG.py
+nallely generate -i NTS1.yaml -o KORG.py
 ```
 
 and you can directly use it:
@@ -370,7 +377,12 @@ nts1 = NTS1()  # here it supposes that the name of the port will contain "NTS-1"
 
 # you can target a specific device changing the name
 nts1 = NTS1(device_name="myname")  # it will look to map the device to a port that contains "myname"
+```
 
+Then to run the script, you can pass again by `nallely` cli:
+
+```bash
+nallely run -i myscript.py
 ```
 
 ### Define a new configuration for a device programmatically

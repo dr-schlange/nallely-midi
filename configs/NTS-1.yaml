@@ -1,0 +1,50 @@
+KORG:
+  NTS-1:
+    arpeggiator:
+      intervals: {cc: 118, description: '', init: 0, max: 127, min: 0}
+      length: {cc: 119, description: '', init: 0, max: 127, min: 0}
+      pattern: {cc: 117, description: ARP pattern length, init: 0, max: 127, min: 0}
+    delay:
+      depth: {cc: 31, description: '', init: 0, max: 127, min: 0}
+      mix: {cc: 33, description: '', init: 0, max: 127, min: 0}
+      time: {cc: 30, description: '', init: 0, max: 127, min: 0}
+    envelope_generator:
+      attack: {cc: 16, description: Sets the time required for the EG to reach its
+          maximum level once a note is played, init: 0, max: 127, min: 0}
+      release: {cc: 19, description: Sets the time required for the EG to reach 0
+          once a note has ended, init: 0, max: 127, min: 0}
+      type: {cc: 14, description: Selects the amplitude EG type, init: 0, max: 127,
+        min: 0}
+    filter:
+      cutoff: {cc: 43, description: Sets the cutoff frequency altering the brightness
+          of the sound, init: 0, max: 127, min: 0}
+      resonance: {cc: 44, description: Adds emphasis to the overtones occurring at
+          the cutoff frequency, init: 0, max: 127, min: 0}
+      sweep_depth: {cc: 45, description: '', init: -64, max: 127, min: 0}
+      sweep_rate: {cc: 46, description: 'Sweep rate: F0.0–F30.0; Sets the cutoff sweep
+          frequency', init: 0, max: 127, min: 0}
+      type: {cc: 42, description: Selects the filter type, init: 0, max: 127, min: 0}
+    fx:
+      delay_type: {cc: 89, description: '', init: 0, max: 127, min: 0}
+      modulation_type: {cc: 88, description: '', init: 0, max: 127, min: 0}
+      reverb_type: {cc: 90, description: '', init: 0, max: 127, min: 0}
+    modulation:
+      depth: {cc: 29, description: '', init: 0, max: 127, min: 0}
+      time: {cc: 28, description: '', init: 0, max: 127, min: 0}
+    oscillator:
+      alt: {cc: 55, description: '', init: 0, max: 127, min: 0}
+      lfo_depth: {cc: 26, description: '', init: 0, max: 127, min: 0}
+      lfo_rate: {cc: 24, description: '', init: 0, max: 127, min: 0}
+      shape: {cc: 54, description: Amount of wave-shaping applied, init: 0, max: 127,
+        min: 0}
+      type: {cc: 53, description: '', init: 0, max: 127, min: 0}
+    reverb:
+      depth: {cc: 35, description: '', init: 0, max: 127, min: 0}
+      mix: {cc: 36, description: Sets the dry/wet balance of the effect, init: -64,
+        max: 127, min: 0}
+      time: {cc: 34, description: '', init: 0, max: 127, min: 0}
+    tremolo:
+      depth: {cc: 20, description: '', init: 0, max: 127, min: 0}
+      rate: {cc: 21, description: '', init: 0, max: 127, min: 0}
+    keys:
+      notes: 'keys_or_pads'
