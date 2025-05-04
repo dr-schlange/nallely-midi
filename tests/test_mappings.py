@@ -1,7 +1,9 @@
 import pytest
-from nallely import LFO
+
 import nallely
-from .fixtures import DeviceSimulator, new_receiver, new_sender, let_time_to_react, CTX
+from nallely import LFO
+
+from .fixtures import CTX, DeviceSimulator, let_time_to_react, new_receiver, new_sender
 
 
 def midi_sender():
@@ -233,7 +235,6 @@ def test__remove_keys_midi_midi(sender, receiver):
     assert len(sender.input_callbacks) == 1
     assert len(receiver.output_callbacks) == 0
     assert len(receiver.input_callbacks) == 0
-
 
     receiver.modules.main[0] -= sender.modules.main[1]
 

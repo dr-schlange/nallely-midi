@@ -1,5 +1,6 @@
-from nallely import VirtualDevice, VirtualParameter
 from collections import deque
+
+from nallely import VirtualDevice, VirtualParameter
 
 
 class NoteAllocator(VirtualDevice):

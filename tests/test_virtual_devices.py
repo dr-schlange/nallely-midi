@@ -1,11 +1,11 @@
 import asyncio
 import json
-from nallely import WebSocketBus
-import websockets
+
 import pytest
+import websockets
 
 import nallely
-
+from nallely import WebSocketBus
 
 # pytest_plugins = ('pytest_asyncio',)
 

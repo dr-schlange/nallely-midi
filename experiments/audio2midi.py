@@ -1,11 +1,12 @@
+import math
 from typing import Any
-import nallely
+
 import numpy as np
 import sounddevice as sd
-from scipy.signal import find_peaks
 from scipy.fftpack import fft
-import math
+from scipy.signal import find_peaks
 
+import nallely
 from nallely.core import ThreadContext
 
 

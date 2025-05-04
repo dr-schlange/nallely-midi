@@ -435,7 +435,10 @@ class TrevorBus(VirtualDevice):
                 cls = find_class(device_class_name)
                 devices = all_devices()
                 try:
-                    mididev: MidiDevice = cls(device_name=common_port, autoconnect=True)
+                    autoconnect = common_port or False
+                    mididev: MidiDevice = cls(
+                        device_name=common_port, autoconnect=autoconnect
+                    )
                 except DeviceNotFound:
                     # If there is a problem we remove the auto-connection
                     diff = next(
@@ -485,16 +488,22 @@ class TrevorBus(VirtualDevice):
             dest = link["dest"]
             src_param = src["parameter"]
             dest_param = dest["parameter"]
-            src_param_name = (
-                src_param["cv_name"]
-                if src_param["section_name"] == VirtualParameter.section_name
-                else src_param["name"]
-            )
-            dest_param_name = (
-                dest_param["cv_name"]
-                if dest_param["section_name"] == VirtualParameter.section_name
-                else dest_param["name"]
-            )
+            if src_param.get("mode") == "note":
+                src_param_name = src_param["note"]
+            else:
+                src_param_name = (
+                    src_param["cv_name"]
+                    if src_param["section_name"] == VirtualParameter.section_name
+                    else src_param["name"]
+                )
+            if dest_param.get("mode") == "note":
+                dest_param_name = dest_param["note"]
+            else:
+                dest_param_name = (
+                    dest_param["cv_name"]
+                    if dest_param["section_name"] == VirtualParameter.section_name
+                    else dest_param["name"]
+                )
             src_path = f"{device_map[src['device']]}::{src_param['section_name']}::{src_param_name}"
             dest_path = f"{device_map[dest['device']]}::{dest_param['section_name']}::{dest_param_name}"
             with_chain = src.get("chain", None)
