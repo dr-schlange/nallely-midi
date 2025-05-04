@@ -433,6 +433,8 @@ class VirtualDevice(threading.Thread):
             #         self.output_queue.task_done()
             #     except Empty:
             #         break
+        for device in all_devices():
+            device.unbind(self, None)
 
     def pause(self, duration=None):
         """Pause the LFO, optionally for a specific duration."""
@@ -513,7 +515,8 @@ class VirtualDevice(threading.Thread):
                                 self.stream_callbacks[from_].remove(
                                     (callback, parameter, chain)
                                 )
-                                return
+                                if param is not None:
+                                    return
                 except ValueError:
                     ...
                 try:
@@ -523,8 +526,8 @@ class VirtualDevice(threading.Thread):
                                 self.callbacks[from_].remove(
                                     (callback, parameter, chain)
                                 )
-                                return
-
+                                if param is not None:
+                                    return
                 except ValueError:
                     ...
 

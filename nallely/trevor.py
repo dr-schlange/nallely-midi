@@ -374,8 +374,12 @@ class TrevorBus(VirtualDevice):
             # We know it's a key/pad we are binding to (target)
             dest[int(to_parameter)] = src
         elif with_scaler:
-            to_range = getattr(dest.__class__, to_parameter).range
-            chain = src.scale(to_range[0], to_range[1])
+            target = getattr(dest.__class__, to_parameter, None)
+            if target:
+                to_range = getattr(dest.__class__, to_parameter).range
+                chain = src.scale(to_range[0], to_range[1])
+            else:
+                chain = src.scale(None, None)
             setattr(dest, to_parameter, chain)
         else:
             setattr(dest, to_parameter, src)
@@ -493,7 +497,7 @@ class TrevorBus(VirtualDevice):
             )
             src_path = f"{device_map[src['device']]}::{src_param['section_name']}::{src_param_name}"
             dest_path = f"{device_map[dest['device']]}::{dest_param['section_name']}::{dest_param_name}"
-            with_chain = link.get("chain", None)
+            with_chain = src.get("chain", None)
             result_chain = self._associate_parameters(
                 src_path, dest_path, with_scaler=with_chain
             )
