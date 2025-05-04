@@ -11,7 +11,7 @@ from .core import (
     VirtualDevice,
     VirtualParameter,
 )
-from .modules import Int, ModulePadsOrKeys, PadOrKey
+from .modules import Int, ModulePadsOrKeys, PadOrKey, Scaler
 
 # @no_registration
 # class TerminalOscilloscope(VirtualDevice):
@@ -107,21 +107,17 @@ class WebSocketBus(VirtualDevice):
                 getattr(self, key).append(value)
                 return
             if (
-                isinstance(value, (Int, ParameterInstance, PadOrKey, ModulePadsOrKeys))
-                and key in self.__dict__
-                and key in self.__class__.__dict__
+                isinstance(
+                    value, (Int, ParameterInstance, PadOrKey, ModulePadsOrKeys, Scaler)
+                )
+                and key not in self.__dict__
+                and key not in self.__class__.__dict__
             ):
                 waiting_room = WSWaitingRoom(key)
                 waiting_room.append(value)
                 object.__setattr__(self, key, waiting_room)
                 return
             object.__setattr__(self, key, value)
-            # if key in self.__dict__ or key in self.__class__.__dict__:
-            #     object.__setattr__(self, key, value)
-            #     return
-            # waiting_room = WSWaitingRoom(key)
-            # waiting_room.append(value)
-            # object.__setattr__(self, key, waiting_room)
 
         self.__class__.__setattr__ = __setattr__
 

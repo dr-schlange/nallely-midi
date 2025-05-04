@@ -7,7 +7,7 @@ interface LoadModalProps {
 	onOk?: () => void;
 }
 
-export const LoadModal = ({ onClose }: LoadModalProps) => {
+export const LoadModal = ({ onClose, onOk }: LoadModalProps) => {
 	const [selectedFile, setSelectedFile] = useState("");
 	const files = useTrevorSelector((state) => state.general.knownPatches);
 	const trevorWebSocket = useTrevorWebSocket();
@@ -19,6 +19,7 @@ export const LoadModal = ({ onClose }: LoadModalProps) => {
 	const loadConfig = () => {
 		trevorWebSocket?.loadAll(selectedFile);
 		onClose?.();
+		onOk?.();
 	};
 
 	const handleFileClick = (file: string) => {

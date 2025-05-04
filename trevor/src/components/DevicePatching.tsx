@@ -510,6 +510,10 @@ const DevicePatching = () => {
 		setIsLoadOpen(true);
 	};
 
+	const handleLoadOk = () => {
+		widgetRack.current?.resetAll();
+	};
+
 	return (
 		<div className="device-patching">
 			<div
@@ -688,7 +692,7 @@ const DevicePatching = () => {
 			)}
 			{isAboutOpen && <AboutModal onClose={closeModal} />}
 			{isSaveOpen && <SaveModal onClose={closeModal} />}
-			{isLoadOpen && <LoadModal onClose={closeModal} />}
+			{isLoadOpen && <LoadModal onClose={closeModal} onOk={handleLoadOk} />}
 			{isPlaygroundOpen && <Playground onClose={closeModal} />}
 		</div>
 	);
