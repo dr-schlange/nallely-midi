@@ -505,6 +505,10 @@ const DevicePatching = () => {
 		trevorSocket?.deleteAllConnections();
 	};
 
+	const handleLoadPatch = () => {
+		trevorSocket?.loadAll("patch3.nallely")
+	}
+
 	return (
 		<div className="device-patching">
 			<div
@@ -562,7 +566,7 @@ const DevicePatching = () => {
 					<button
 						type="button"
 						className={"associate-button"}
-						onClick={openAboutModal}
+						onClick={handleLoadPatch}
 					>
 						Load
 					</button>

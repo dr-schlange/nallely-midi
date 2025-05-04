@@ -232,6 +232,15 @@ class TrevorWebSocket {
 		);
 	}
 
+	public loadAll(name: string) {
+		this.sendMessage(
+			JSON.stringify({
+				command: "load_all",
+				name,
+			}),
+		);
+	}
+
 	public toggle_device(device: VirtualDevice, start = false) {
 		if (!device.running || device.paused) {
 			this.sendMessage(

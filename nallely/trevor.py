@@ -15,6 +15,7 @@ from pathlib import Path
 from textwrap import indent
 
 import mido
+from requests import get
 from websockets.sync.server import serve
 
 from .core import (
@@ -22,6 +23,7 @@ from .core import (
     MidiDevice,
     ParameterInstance,
     VirtualDevice,
+    VirtualParameter,
     all_devices,
     connected_devices,
     midi_device_classes,
@@ -61,6 +63,14 @@ def longest_common_substring(s1: str, s2: str) -> str:
         curr_row, prev_row = prev_row, curr_row
 
     return s1[end_index - max_length : end_index]
+
+
+def find_class(name):
+    for module in list(sys.modules.values()):
+        if module:
+            cls = getattr(module, name, None)
+            if isinstance(cls, type):
+                return cls
 
 
 class StateEncoder(json.JSONEncoder):
@@ -319,7 +329,9 @@ class TrevorBus(VirtualDevice):
         stop_all_connected_devices(skip_unregistered=True)
         return self.full_state()
 
-    def associate_parameters(self, from_parameter, to_parameter, unbind):
+    def _associate_parameters(
+        self, from_parameter, to_parameter, unbind=False, with_scaler=True
+    ):
         from_device, from_section, from_parameter = from_parameter.split("::")
         to_device, to_section, to_parameter = to_parameter.split("::")
         src_device = self.get_device_instance(from_device)
@@ -352,14 +364,24 @@ class TrevorBus(VirtualDevice):
             return self.full_state()
         if to_parameter == "all_keys_or_pads":
             to_parameter = dest.meta.pads_or_keys.name
+        chain = None
         if isinstance(src, list):
             setattr(dest, to_parameter, src)
         elif to_parameter.isdecimal():
             # We know it's a key/pad we are binding to (target)
             dest[int(to_parameter)] = src
-        else:
+        elif with_scaler:
             to_range = getattr(dest.__class__, to_parameter).range
-            setattr(dest, to_parameter, src.scale(to_range[0], to_range[1]))
+            chain = src.scale(to_range[0], to_range[1])
+            setattr(dest, to_parameter, chain)
+        else:
+            setattr(dest, to_parameter, src)
+        return chain
+
+    def associate_parameters(
+        self, from_parameter, to_parameter, unbind, with_scaler=True
+    ):
+        self._associate_parameters(from_parameter, to_parameter, unbind, with_scaler)
         return self.full_state()
 
     def associate_midi_port(self, device, port, direction):
@@ -376,6 +398,83 @@ class TrevorBus(VirtualDevice):
                 return self.full_state()
             dev.inport_name = port
             dev.listen()
+        return self.full_state()
+
+    def load_all(self, name):
+        file = Path(name)
+        content = None
+        with file.open("r", encoding="utf-8") as f:
+            content = json.load(f)
+        if not content:
+            return self.full_state()
+
+        self.code = content.get("playground_code")
+
+        # loads the midi and virtual devices
+        device_map = {}
+        for device in content.get("midi_devices", []):
+            cls = find_class(device["class"])
+            assert cls
+            common_port = longest_common_substring(
+                device["ports"]["input"], device["ports"]["output"]
+            )
+            mididev: MidiDevice = cls(device_name=common_port, autoconnect=False)
+            device_map[device["id"]] = id(mididev)
+            mididev.load_preset(dct=device["config"])
+
+        vdev_to_resume = []
+        for device in content.get("virtual_devices", []):
+            cls_name = device["class"]
+            if cls_name == TrevorBus.__name__:
+                continue
+            cls = find_class(cls_name)
+            assert cls
+            vdev: VirtualDevice = cls()
+            vdev.to_update = self  # type: ignore
+            device_map[device["id"]] = id(vdev)
+            if device.get("running", False):
+                vdev.start()  # We start the device
+                vdev.pause()  # We pause it right away before we do the patch
+                if not device.get("paused", True):
+                    vdev_to_resume.append(vdev)
+            if cls_name == WebSocketBus.__name__:
+                continue
+            for key, value in device["config"].items():
+                setattr(vdev, key, value)
+
+        # loads patchs
+        for link in content.get("connections"):
+            src = link["src"]
+            dest = link["dest"]
+            src_param = src["parameter"]
+            dest_param = dest["parameter"]
+            src_param_name = (
+                src_param["cv_name"]
+                if src_param["section_name"] == VirtualParameter.section_name
+                else src_param["name"]
+            )
+            dest_param_name = (
+                dest_param["cv_name"]
+                if dest_param["section_name"] == VirtualParameter.section_name
+                else dest_param["name"]
+            )
+            src_path = f"{device_map[src['device']]}::{src_param['section_name']}::{src_param_name}"
+            dest_path = f"{device_map[dest['device']]}::{dest_param['section_name']}::{dest_param_name}"
+            with_chain = link.get("chain", None)
+            result_chain = self._associate_parameters(
+                src_path, dest_path, with_scaler=with_chain
+            )
+            if result_chain and with_chain:
+                del with_chain["id"]
+                del with_chain["device"]
+                for key, value in with_chain.items():
+                    setattr(result_chain, key, value)
+
+        # restart the paused vdev
+        for vdev in vdev_to_resume:
+            vdev.start()
+            vdev.resume()
+
         return self.full_state()
 
     def save_all(self, name):
@@ -518,6 +617,16 @@ def trevor_infos(header, loaded_paths, init_script):
     if devices:
         for device in all_devices():
             info += f"    - {device.uid()} <{device.__class__.__name__}>\n"
+
+    import os
+
+    import psutil
+
+    process = psutil.Process(os.getpid())
+    mem_info = process.memory_info()
+    info += f"Memory: {mem_info.rss / (1024 * 1024)} Mo\n"
+    cpu_usage = process.cpu_percent(interval=None)
+    info += f"CPU: {cpu_usage}%\n"
     return info
 
 
@@ -561,12 +670,16 @@ def start_trevor(include_builtins, loaded_paths=None, init_script=None):
         #     # cpu_usage = process.cpu_percent(interval=1)
         #     # print(f"CPU: {cpu_usage}%")
         _trevor_menu(loaded_paths, init_script, trevor)
+        print("Shutting down...")
     finally:
         stop_all_connected_devices()
 
 
-def launch_standalone_script(loaded_paths=None, init_script=None):
+def launch_standalone_script(include_builtins, loaded_paths=None, init_script=None):
     try:
+        if include_builtins:
+            from .devices import NTS1, Minilogue
+
         loaded_paths = loaded_paths or []
         _load_modules(loaded_paths)
 
@@ -605,8 +718,8 @@ def _trevor_menu(loaded_paths, init_script, trevor_bus=None):
             menu = "[STOP DEVICE]\n"
             devices = [d for d in all_devices() if not isinstance(d, TrevorBus)]
             for num, device in enumerate(devices):
-                menu += f"   {num} - {device.uid()}"
-            menu += "  enter - exit menu"
+                menu += f"   {num} - {device.uid()}\n"
+            menu += "  enter - exit menu\n"
             elprint(menu)
             num = input("> ")
             if num != "":
@@ -642,5 +755,5 @@ def _print_with_trevor(text):
         t = t if t else f"{indent}"
         m = m[size:] if m else ""
         final += f"{t}  {m}\n"
-    print('  "Today I went for a long walk in the moutain"')
+    print('  "Today I overslept because I went to bed late last night"')
     print(final[:-3])

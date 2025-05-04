@@ -20,6 +20,7 @@ Features:
 * interactive code playground in the browser (through Trevor UI),
 * small web-based widget oscilloscope integrated in the web interface,
 * save/reload patch for any MIDI device
+* save/reload patch for full MIDI connection made with Nallely using Trevor
 
 Planned:
 * handle multiple banks per device/per section,

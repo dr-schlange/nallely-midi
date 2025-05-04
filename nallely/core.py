@@ -360,10 +360,12 @@ class VirtualDevice(threading.Thread):
                 break
 
             # Process a batch of inputs per cycle (to avoid backlog)
-            max_batch_size = 10  # Maximum number of items to process per cycle
+            max_batch_size = 20  # Maximum number of items to process per cycle
             queue_level = self.input_queue.qsize()
             # We adjust the batch size dynamically based on queue pressure
             batch_size = min(max_batch_size, max(1, int(queue_level / 100)))
+            if batch_size > 5:
+                print(f"Batch for {self.uid()}: {batch_size}")
             for _ in range(batch_size):
                 try:
                     param, value = self.input_queue.get_nowait()
@@ -893,9 +895,16 @@ class MidiDevice:
         p = Path(file)
         p.write_text(json.dumps(d, indent=2, cls=DeviceSerializer))
 
-    def load_preset(self, file: Path | str):
-        p = Path(file)
-        self.modules.from_dict_patch(json.loads(p.read_text()))
+    def load_preset(
+        self,
+        file: Path | str | None = None,
+        dct: dict[str, dict[str, int]] | None = None,
+    ):
+        if file:
+            p = Path(file)
+            self.modules.from_dict_patch(json.loads(p.read_text()))
+        if dct:
+            self.modules.from_dict_patch(dct)
 
     def to_dict(self):
         d = {

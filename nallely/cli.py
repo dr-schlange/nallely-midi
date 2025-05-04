@@ -84,7 +84,9 @@ def main():
             from nallely.trevor import launch_standalone_script
 
             launch_standalone_script(
-                loaded_paths=args.libs, init_script=args.init_script
+                args.builtin_devices,
+                loaded_paths=args.libs,
+                init_script=args.init_script,
             )
     elif args.command == "generate":
         from nallely.generator import generate_api
