@@ -666,15 +666,6 @@ def trevor_infos(header, loaded_paths, init_script):
         for device in all_devices():
             info += f"    - {device.uid()} <{device.__class__.__name__}>\n"
 
-    import os
-
-    import psutil
-
-    process = psutil.Process(os.getpid())
-    mem_info = process.memory_info()
-    info += f"Memory: {mem_info.rss / (1024 * 1024)} Mo\n"
-    cpu_usage = process.cpu_percent(interval=None)
-    info += f"CPU: {cpu_usage}%\n"
     return info
 
 
@@ -791,16 +782,28 @@ def _print_with_trevor(text):
         "┈▏╯╯╯╯╯╯╯╯╱┃┈┈┈\n"
         "┈┃┏┳┳━━━┫┣┳┃┈┈┈\n"
         "┈┃┃┃┃┈┈┈┃┃┃┃┈┈┈\n"
-        "┈┗┛┗┛┈┈┈┗┛┗┛┈┈┈"
+        "┈┗┛┗┛┈┈┈┗┛┗┛┈┈┈\n"
     )
-    split_trevor = trevor.split()
-    size = len(split_trevor[0])
+    try:
+        import os
+
+        import psutil
+
+        process = psutil.Process(os.getpid())
+        mem_info = process.memory_info()
+
+        trevor += f"Mem: {mem_info.rss / (1024 * 1024):.2f}Mo\n"
+    except ModuleNotFoundError:
+        ...
+
+    split_trevor = trevor.split("\n")
+    size = max(len(line) for line in split_trevor)
     indent = " " * size
     text = textwrap.indent(text, indent)
     split_text = text.split("\n")
     final = ""
     for t, m in zip_longest(split_trevor, split_text):
-        t = t if t else f"{indent}"
+        t = t.ljust(size) if t else f"{indent}"
         m = m[size:] if m else ""
         final += f"{t}  {m}\n"
     print('  "Today I overslept because I went to bed late last night"')
