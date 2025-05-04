@@ -1,22 +1,31 @@
 import InstanceCreation from "./components/InstanceCreation";
 import DevicePatching from "./components/DevicePatching";
 import { Provider } from "react-redux";
-import { store } from "./store";
+import { store, useTrevorSelector } from "./store";
 import { connectWebSocket } from "./websockets/websocket";
+import { ErrorModal } from "./components/modals/ErrorModal";
 
 const App = () => {
 	connectWebSocket();
 	return (
 		<Provider store={store}>
-			<div className="app-layout">
-				<div className="top-section">
-					<InstanceCreation />
-				</div>
-				<div className="bottom-section">
-					<DevicePatching />
-				</div>
-			</div>
+			<Main />
 		</Provider>
+	);
+};
+
+const Main = () => {
+	const errors = useTrevorSelector((state) => state.general.errors);
+	return (
+		<div className="app-layout">
+			<div className="top-section">
+				<InstanceCreation />
+			</div>
+			<div className="bottom-section">
+				<DevicePatching />
+			</div>
+			{errors && errors.length > 0 && <ErrorModal errors={errors} />}
+		</div>
 	);
 };
 

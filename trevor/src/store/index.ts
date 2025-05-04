@@ -1,9 +1,11 @@
 import { configureStore } from "@reduxjs/toolkit";
 import trevorSlice from "./trevorSlice";
+import generalSlice from "./generalSlice";
 
 export const store = configureStore({
 	reducer: {
 		nallely: trevorSlice,
+		general: generalSlice,
 	},
 });
 

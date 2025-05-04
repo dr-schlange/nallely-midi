@@ -316,7 +316,6 @@ class VirtualDevice(threading.Thread):
         self.callbacks = defaultdict(list)
         self.stream_callbacks = defaultdict(list)
         self.input_queue = Queue(maxsize=2000)
-        # self.output_queue = Queue(maxsize=2000)
         self.pause_event = threading.Event()
         self.paused = False
         self.running = False
@@ -338,13 +337,15 @@ class VirtualDevice(threading.Thread):
     def receiving(self, value, on: str, ctx: ThreadContext): ...
 
     def set_parameter(self, param: str, value: Any):
+        if self.paused:
+            return
         try:
             self.input_queue.put_nowait((param, value))
         except Full:
             print(
                 f"Warning: input_queue full for {self.uid()} — dropping message {param}={value}"
             )
-            self.target_cycle_time = 0.001
+            # self.target_cycle_time = 0.001
 
     def run(self):
         self.ready_event.set()
@@ -360,12 +361,10 @@ class VirtualDevice(threading.Thread):
                 break
 
             # Process a batch of inputs per cycle (to avoid backlog)
-            max_batch_size = 20  # Maximum number of items to process per cycle
+            max_batch_size = 10  # Maximum number of items to process per cycle
             queue_level = self.input_queue.qsize()
             # We adjust the batch size dynamically based on queue pressure
             batch_size = min(max_batch_size, max(1, int(queue_level / 100)))
-            if batch_size > 5:
-                print(f"Batch for {self.uid()}: {batch_size}")
             for _ in range(batch_size):
                 try:
                     param, value = self.input_queue.get_nowait()
@@ -420,10 +419,11 @@ class VirtualDevice(threading.Thread):
             self.join()  # Wait for the thread to finish
         if clear_queues:
             # Clear input_queue
-            while not self.input_queue.empty():
+            inqueue = self.input_queue
+            while not inqueue.empty():
                 try:
-                    self.input_queue.get_nowait()
-                    self.input_queue.task_done()
+                    inqueue.get_nowait()
+                    inqueue.task_done()
                 except Empty:
                     break
             # Clear output_queue
@@ -439,6 +439,14 @@ class VirtualDevice(threading.Thread):
         if self.running and not self.paused:
             self.paused = True
             self.pause_event.clear()
+            inqueue = self.input_queue
+            inqueue = self.input_queue
+            while not inqueue.empty():
+                try:
+                    inqueue.get_nowait()
+                    inqueue.task_done()
+                except Empty:
+                    break
             if duration:
                 time.sleep(duration)
                 self.resume()

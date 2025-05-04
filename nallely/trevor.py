@@ -20,6 +20,7 @@ from websockets.sync.server import serve
 
 from .core import (
     CallbackRegistryEntry,
+    DeviceNotFound,
     MidiDevice,
     ParameterInstance,
     VirtualDevice,
@@ -71,6 +72,7 @@ def find_class(name):
             cls = getattr(module, name, None)
             if isinstance(cls, type):
                 return cls
+    raise ValueError(f"Class {name} couldn't be found")
 
 
 class StateEncoder(json.JSONEncoder):
@@ -105,16 +107,16 @@ def get_note_name(midi_note):
 
 
 class OutputCapture(io.StringIO):
-    def __init__(self, sendMessage):
+    def __init__(self, send_message):
         super().__init__()
-        self.sendMessage = sendMessage
+        self.send_message = send_message
 
     def write(self, data):
         self.send_line_to_websocket(data)
         return super().write(data)
 
     def send_line_to_websocket(self, line):
-        self.sendMessage({"command": "stdout", "line": line})
+        self.send_message({"command": "stdout", "line": line})
 
     @contextmanager
     def capture(self):
@@ -177,9 +179,9 @@ class TrevorBus(VirtualDevice):
         params = message
         res = getattr(self, cmd)(**params)
         if res:
-            self.sendMessage(res)
+            self.send_message(res)
 
-    def sendMessage(self, message):
+    def send_message(self, message):
         for client in self.connected["trevor"]:
             client.send(self.to_json(message))
 
@@ -230,14 +232,14 @@ class TrevorBus(VirtualDevice):
         return self.full_state()
 
     def execute_code(self, code):
-        with OutputCapture(self.sendMessage).capture():
+        with OutputCapture(self.send_message).capture():
             try:
                 print(">>>", indent(code, "... ")[4:])
                 bytecode = compile(source=code, filename="<string>", mode="exec")
                 exec(bytecode, globals(), self.exec_context)
             except SyntaxError as err:
                 print(err, file=sys.stderr)
-                self.sendMessage(
+                self.send_message(
                     {
                         "command": "error",
                         "details": {
@@ -252,7 +254,7 @@ class TrevorBus(VirtualDevice):
                 print(err, file=sys.stderr)
                 _, _, tb = sys.exc_info()
                 exc_info = traceback.extract_tb(tb)[-1]
-                self.sendMessage(
+                self.send_message(
                     {
                         "command": "error",
                         "details": {
@@ -408,39 +410,65 @@ class TrevorBus(VirtualDevice):
         if not content:
             return self.full_state()
 
+        self.reset_all()
+
         self.code = content.get("playground_code")
 
         # loads the midi and virtual devices
         device_map = {}
+        errors = []
         for device in content.get("midi_devices", []):
-            cls = find_class(device["class"])
-            assert cls
             common_port = longest_common_substring(
                 device["ports"]["input"], device["ports"]["output"]
             )
-            mididev: MidiDevice = cls(device_name=common_port, autoconnect=False)
-            device_map[device["id"]] = id(mididev)
-            mididev.load_preset(dct=device["config"])
+            device_class_name = device["class"]
+            try:
+                cls = find_class(device_class_name)
+                devices = all_devices()
+                try:
+                    mididev: MidiDevice = cls(device_name=common_port, autoconnect=True)
+                except DeviceNotFound:
+                    # If there is a problem we remove the auto-connection
+                    diff = next(
+                        (item for item in all_devices() if item not in devices),
+                        None,
+                    )
+                    if diff:
+                        diff.stop()
+                    mididev = cls(autoconnect=False)
+                    errors.append(
+                        f'MIDI device ports "{common_port}" for {device_class_name} could not be found. Is your device connected or MIDI ports existing? Your device was still created, but it was not connected to any MIDI port.'
+                    )
+                device_map[device["id"]] = id(mididev)
+                mididev.load_preset(dct=device["config"])
+            except ValueError:
+                errors.append(
+                    f"No MIDI API found for {device_class_name}, a library path is probably missing on the command line."
+                )
 
         vdev_to_resume = []
         for device in content.get("virtual_devices", []):
             cls_name = device["class"]
             if cls_name == TrevorBus.__name__:
                 continue
-            cls = find_class(cls_name)
-            assert cls
-            vdev: VirtualDevice = cls()
-            vdev.to_update = self  # type: ignore
-            device_map[device["id"]] = id(vdev)
-            if device.get("running", False):
-                vdev.start()  # We start the device
-                vdev.pause()  # We pause it right away before we do the patch
-                if not device.get("paused", True):
-                    vdev_to_resume.append(vdev)
-            if cls_name == WebSocketBus.__name__:
-                continue
-            for key, value in device["config"].items():
-                setattr(vdev, key, value)
+            try:
+                cls = find_class(cls_name)
+                vdev: VirtualDevice = cls()
+                vdev.to_update = self  # type: ignore
+                device_map[device["id"]] = id(vdev)
+                if device.get("running", False):
+                    vdev.start()  # We start the device
+                    vdev.pause()  # We pause it right away before we do the patch
+                    if not device.get("paused", True):
+                        vdev_to_resume.append(vdev)
+                if cls_name == WebSocketBus.__name__:
+                    continue
+                for key, value in device["config"].items():
+                    setattr(vdev, key, value)
+            except ValueError:
+                errors.append(
+                    f"No virtual device found for {cls_name}, a library path is probably missing on the command line."
+                )
 
         # loads patchs
         for link in content.get("connections"):
@@ -475,6 +503,8 @@ class TrevorBus(VirtualDevice):
             vdev.start()
             vdev.resume()
 
+        if errors:
+            self.send_message({"errors": errors})
         return self.full_state()
 
     def save_all(self, name):

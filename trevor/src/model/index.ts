@@ -134,3 +134,8 @@ export interface MidiScaler {
 	method: string;
 	as_int: boolean;
 }
+
+export interface GeneralState {
+	errors: string[];
+	trevorWebsocketURL: string;
+}

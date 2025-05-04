@@ -7,6 +7,7 @@ import type {
 	VirtualParameter,
 } from "../model";
 import { store } from "../store";
+import { setErrors } from "../store/generalSlice";
 import { setFullState } from "../store/trevorSlice";
 import { isPadOrdKey, isPadsOrdKeys, isVirtualParameter } from "../utils/utils";
 
@@ -74,6 +75,10 @@ class TrevorWebSocket {
 
 		this.socket.onmessage = (event) => {
 			const message = JSON.parse(event.data);
+			if (message.errors) {
+				store.dispatch(setErrors(message.errors));
+				return;
+			}
 			if (message.command === undefined) {
 				store.dispatch(setFullState(message));
 				return;

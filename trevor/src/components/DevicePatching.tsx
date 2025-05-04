@@ -20,9 +20,7 @@ import {
 	buildConnectionName,
 	buildSectionId,
 	connectionId,
-	isPadOrdKey,
 	isVirtualDevice,
-	isVirtualParameter,
 } from "../utils/utils";
 import { ScalerForm } from "./ScalerForm";
 import PatchingModal from "./modals/PatchingModal";
