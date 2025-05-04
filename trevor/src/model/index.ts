@@ -137,5 +137,6 @@ export interface MidiScaler {
 
 export interface GeneralState {
 	errors: string[];
+	knownPatches: string[];
 	trevorWebsocketURL: string;
 }

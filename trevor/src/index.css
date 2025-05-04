@@ -507,6 +507,8 @@ input[type="text"]:disabled {
 
 .patching-modal,
 .about-modal,
+.save-modal,
+.load-modal,
 .error-modal {
 	position: fixed;
 	top: 50%;
@@ -532,12 +534,19 @@ input[type="text"]:disabled {
 .error-modal {
 	width: 80%;
 	height: auto;
+	max-height: 60%;
 }
 
-.save-modal,
-.load-modal {
+.save-modal {
 	width: 400px;
 	height: 250px;
+}
+
+.load-modal {
+	width: auto;
+	height: auto;
+	max-height: 60%;
+	max-width: 80%;
 }
 
 .modal-header {
@@ -561,7 +570,8 @@ input[type="text"]:disabled {
 
 .modal-body,
 .about-modal-body,
-.save-modal-body {
+.save-modal-body,
+.load-modal-body {
 	flex: 1;
 	display: flex;
 	flex-direction: row;
@@ -573,8 +583,15 @@ input[type="text"]:disabled {
 	align-items: center;
 }
 
-.error-modal-body {
-  margin-left: 10px;
+.error-modal-body,
+.load-modal-body {
+	margin-left: 10px;
+	overflow-y: auto;
+	overflow-x: auto;
+}
+
+.load-modal-body {
+	margin-right: 20px;
 }
 
 .save-modal-body input[type="text"] {
@@ -742,6 +759,8 @@ input[type="text"]:disabled {
 .parameter.selected .parameter-box,
 .midi-icon.selected,
 .note-box.selected,
+.patch.selected,
+.patch.selected:hover,
 .midi-icon.selected:hover,
 .note-box.selected:hover {
 	background-color: orange;
@@ -861,6 +880,9 @@ input[type="text"]:disabled {
 	width: 100%;
 	height: 100%;
 	pointer-events: none; /* Allow clicks to pass through the SVG */
+}
+
+.connection-svg.modal {
 	z-index: 1;
 }
 

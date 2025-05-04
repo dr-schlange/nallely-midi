@@ -28,6 +28,7 @@ import { AboutModal } from "./modals/AboutModal";
 import { SaveModal } from "./modals/SaveModal";
 import { Playground } from "./modals/Playground";
 import { RackRowWidgets, type RackRowWidgetRef } from "./RackRowWidgets";
+import { LoadModal } from "./modals/LoadModal";
 
 const DevicePatching = () => {
 	const mainSectionRef = useRef(null);
@@ -39,6 +40,7 @@ const DevicePatching = () => {
 	const [isModalOpen, setIsModalOpen] = useState(false);
 	const [isAboutOpen, setIsAboutOpen] = useState(false);
 	const [isSaveOpen, setIsSaveOpen] = useState(false);
+	const [isLoadOpen, setIsLoadOpen] = useState(false);
 	const [isPlaygroundOpen, setIsPlaygroundOpen] = useState(false);
 
 	const [selectedSection, setSelectedSection] = useState<{
@@ -364,6 +366,7 @@ const DevicePatching = () => {
 		setSelectedSections([]);
 		setIsSaveOpen(false);
 		setIsPlaygroundOpen(false);
+		setIsLoadOpen(false);
 		// setAssociateMode(false);
 	};
 
@@ -504,8 +507,8 @@ const DevicePatching = () => {
 	};
 
 	const handleLoadPatch = () => {
-		trevorSocket?.loadAll("patch3.nallely")
-	}
+		setIsLoadOpen(true);
+	};
 
 	return (
 		<div className="device-patching">
@@ -685,6 +688,7 @@ const DevicePatching = () => {
 			)}
 			{isAboutOpen && <AboutModal onClose={closeModal} />}
 			{isSaveOpen && <SaveModal onClose={closeModal} />}
+			{isLoadOpen && <LoadModal onClose={closeModal} />}
 			{isPlaygroundOpen && <Playground onClose={closeModal} />}
 		</div>
 	);

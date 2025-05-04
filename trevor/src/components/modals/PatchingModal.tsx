@@ -278,7 +278,7 @@ const PatchingModal = ({
 				</button>
 			</div>
 			<div className="modal-body">
-				<svg className="connection-svg" ref={svgRef}>
+				<svg className="connection-svg modal" ref={svgRef}>
 					<title>Connection diagram</title>
 					<defs>
 						<marker

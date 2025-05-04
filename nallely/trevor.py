@@ -1,6 +1,7 @@
 import importlib.util
 import io
 import json
+import os
 import sys
 import textwrap
 import traceback
@@ -402,6 +403,10 @@ class TrevorBus(VirtualDevice):
             dev.listen()
         return self.full_state()
 
+    def list_patches(self):
+        cwd = Path.cwd()
+        return {"knownPatches": [f"{file}" for file in cwd.rglob("*.nly")]}
+
     def load_all(self, name):
         file = Path(name)
         content = None
@@ -518,7 +523,7 @@ class TrevorBus(VirtualDevice):
         for device in d["virtual_devices"]:
             device["class"] = device["meta"]["name"]
             del device["meta"]
-        Path(f"{name}.nallely").write_text(self.to_json(d, indent=2))
+        Path(f"{name}.nly").write_text(self.to_json(d, indent=2))
 
     def resume_device(self, device_id, start):
         device: VirtualDevice = self.get_device_instance(device_id)  # type: ignore

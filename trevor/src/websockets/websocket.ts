@@ -7,7 +7,7 @@ import type {
 	VirtualParameter,
 } from "../model";
 import { store } from "../store";
-import { setErrors } from "../store/generalSlice";
+import { setErrors, setKnownPatches } from "../store/generalSlice";
 import { setFullState } from "../store/trevorSlice";
 import { isPadOrdKey, isPadsOrdKeys, isVirtualParameter } from "../utils/utils";
 
@@ -77,6 +77,10 @@ class TrevorWebSocket {
 			const message = JSON.parse(event.data);
 			if (message.errors) {
 				store.dispatch(setErrors(message.errors));
+				return;
+			}
+			if (message.knownPatches) {
+				store.dispatch(setKnownPatches(message.knownPatches));
 				return;
 			}
 			if (message.command === undefined) {
@@ -325,6 +329,14 @@ class TrevorWebSocket {
 			JSON.stringify({
 				command: "save_code",
 				code,
+			}),
+		);
+	}
+
+	public listPatches() {
+		this.sendMessage(
+			JSON.stringify({
+				command: "list_patches",
 			}),
 		);
 	}
