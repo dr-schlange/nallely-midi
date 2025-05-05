@@ -13,14 +13,14 @@ export const ScalerForm = ({ connection }: ScalerFormProps) => {
 
 	const trevorSocket = useTrevorWebSocket();
 
-	const [min, setMin] = useState(connection.src.chain?.min ?? "");
-	const [max, setMax] = useState(connection.src.chain?.max ?? "");
+	const [min, setMin] = useState(connection.src.chain?.to_min ?? "");
+	const [max, setMax] = useState(connection.src.chain?.to_max ?? "");
 	const [method, setMethod] = useState(connection.src.chain?.method ?? "lin");
 	const [asInt, setAsInt] = useState(connection.src.chain?.as_int ?? false);
 
 	useEffect(() => {
-		setMin(connection.src.chain?.min ?? "");
-		setMax(connection.src.chain?.max ?? "");
+		setMin(connection.src.chain?.to_min ?? "");
+		setMax(connection.src.chain?.to_max ?? "");
 		setMethod(connection.src.chain?.method ?? "lin");
 		setAsInt(connection.src.chain?.as_int ?? false);
 	}, [connection]);

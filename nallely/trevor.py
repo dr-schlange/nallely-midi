@@ -577,8 +577,8 @@ class TrevorBus(VirtualDevice):
             return {
                 "id": id(scaler),
                 "device": id(scaler.data.device),
-                "min": scaler.to_min,
-                "max": scaler.to_max,
+                "to_min": scaler.to_min,
+                "to_max": scaler.to_max,
                 "auto": scaler.auto,
                 "method": scaler.method,
                 "as_int": scaler.as_int,
