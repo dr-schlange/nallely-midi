@@ -108,7 +108,15 @@ class WebSocketBus(VirtualDevice):
                 return
             if (
                 isinstance(
-                    value, (Int, ParameterInstance, PadOrKey, ModulePadsOrKeys, Scaler)
+                    value,
+                    (
+                        Int,
+                        ParameterInstance,
+                        PadOrKey,
+                        ModulePadsOrKeys,
+                        Scaler,
+                        VirtualDevice,
+                    ),
                 )
                 and key not in self.__dict__
                 and key not in self.__class__.__dict__
