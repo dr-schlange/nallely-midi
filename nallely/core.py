@@ -599,25 +599,73 @@ class VirtualDevice(threading.Thread):
             return lambda value, ctx: setattr(to_device, to_param.name, value)
 
     def to_dict(self):
-        virtual_parameters = get_all_virtual_parameters(self.__class__)
+        virtual_parameters = self.all_parameters()
+        config = self.current_preset()
+        del config["output"]
         return {
             "id": id(self),
             "repr": self.uid(),
             "meta": {
                 "name": self.__class__.__name__,
-                "parameters": [asdict(p) for p in virtual_parameters.values()],
+                "parameters": [asdict(p) for p in virtual_parameters],
             },
             "paused": self.paused,
             "running": self.running,
-            "config": {
-                p.name: getattr(self, p.name)
-                for p in virtual_parameters.values()
-                if p.name != "output"
-            },
+            "config": config,
         }
 
     def uid(self):
         return f"{self.__class__.__name__}{self._number}"  # type: ignore
+
+    def all_sections(self):
+        return [self]
+
+    @classmethod
+    def all_parameters(cls) -> list[VirtualParameter]:
+        attrs = []
+        for base in cls.__mro__:
+            attrs.extend(
+                v for v in base.__dict__.values() if isinstance(v, VirtualParameter)
+            )
+        return attrs
+
+    def current_preset(self):
+        d = {}
+        for parameter in self.all_parameters():
+            d[parameter.name] = getattr(self, parameter.name, None)
+        return d
+
+    def save_preset(self, file: Path | str):
+        Path(file).write_text(
+            json.dumps(self.current_preset(), indent=2, cls=DeviceSerializer)
+        )
+
+    def load_preset(
+        self,
+        file: Path | str | None = None,
+        dct: dict[str, dict[str, int]] | None = None,
+    ):
+        d = dct or {}
+        if file:
+            p = Path(file)
+            d = json.loads(p.read_text())
+        for k, v in d.items():
+            setattr(self, k, v)
+
+    def random_preset(self):
+        import random
+
+        for parameter in self.all_parameters():
+            min, max = parameter.range
+            min = min or 127
+            max = max or 0
+            as_int = isinstance(min, int) and isinstance(max, int)
+            rand = random.randint if as_int else random.uniform
+            setattr(
+                getattr(self, parameter.section_name),
+                parameter.name,
+                rand(min, max),  # type: ignore
+            )
 
 
 @dataclass
@@ -903,10 +951,13 @@ class MidiDevice:
     # def bind_output(self, callback):
     #     self.output_callbacks.append(callback)
 
+    def current_preset(self):
+        return self.modules.as_dict_patch()
+
     def save_preset(self, file: Path | str):
-        d = self.modules.as_dict_patch()
-        p = Path(file)
-        p.write_text(json.dumps(d, indent=2, cls=DeviceSerializer))
+        Path(file).write_text(
+            json.dumps(self.current_preset(), indent=2, cls=DeviceSerializer)
+        )
 
     def load_preset(
         self,
