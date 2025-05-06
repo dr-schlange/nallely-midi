@@ -74,6 +74,15 @@ class Int(int):
     def install_fun(self, to_module, to_param):
         self.parameter.install_fun(to_module, to_param)
 
+    def __int__(self):
+        return int(self.__wrapped__)
+
+    def __bool__(self):
+        return bool(self.__wrapped__)
+
+    def __float__(self):
+        return float(self.__wrapped__)
+
 
 @dataclass
 class Scaler:
@@ -742,6 +751,9 @@ class Module:
                 return self
         raise Exception(f"Unbinding {other.__class__.__name__} not yet supported")
 
+    def all_parameters(self):
+        return self.meta.parameters
+
 
 class DeviceState:
     def __init__(self, device, modules: dict[str, Type[Module]]):
@@ -766,11 +778,11 @@ class DeviceState:
             d[name] = module_state
             for parameter in module.meta.parameters:
                 value = getattr(getattr(self, name), parameter.name)
-                module_state[parameter.name] = value
+                module_state[parameter.name] = int(value)
                 if with_meta:
                     module_state[parameter.name] = {
                         "section_name": parameter.section_name,
-                        "value": value,
+                        "value": int(value),
                     }
             if not module_state:
                 del d[name]

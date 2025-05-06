@@ -721,6 +721,10 @@ class MidiDevice:
 
     stop = close
 
+    def _update_state(self, cc, value):
+        control: ModuleParameter = self.reverse_map[("control_change", cc)]
+        control.basic_set(self, value)
+
     def _sync_state(self, msg):
         if msg.type == "clock":
             return
@@ -738,10 +742,7 @@ class MidiDevice:
                     if chain:
                         value = chain(value, ctx)
                     callback(value, ctx)
-                control: ModuleParameter = self.reverse_map[
-                    ("control_change", msg.control)
-                ]
-                control.basic_set(self, msg.value)
+                self._update_state(msg.control, msg.value)
             except:
                 traceback.print_exc()
         if msg.type == "note_on" or msg.type == "note_off":
@@ -833,6 +834,7 @@ class MidiDevice:
             value = 127
         elif value < 0:
             value = 0
+        self._update_state(control, value)
         self.outport.send(
             mido.Message(
                 "control_change", channel=channel, control=control, value=value
@@ -938,9 +940,18 @@ class MidiDevice:
     def uid(self):
         return f"{self.__class__.__name__}"
 
+    def all_sections(self):
+        return self.modules.modules.values()
+
+    def all_parameters(self):
+        parameters = []
+        for section in self.all_sections():
+            parameters.extend(section.all_parameters())
+
 
 class DeviceSerializer(json.JSONEncoder):
     def default(self, o):
+        print("DS Int")
         if isinstance(o, Decimal):
             return float(o)
         if isinstance(o, Int):

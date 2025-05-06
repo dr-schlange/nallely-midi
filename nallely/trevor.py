@@ -724,7 +724,7 @@ def launch_standalone_script(include_builtins, loaded_paths=None, init_script=No
 
         if init_script:
             code = init_script.read_text(encoding="utf-8")
-            exec(code)
+            exec(code, globals(), globals())
 
         _trevor_menu(loaded_paths, init_script)
     finally:
@@ -806,5 +806,5 @@ def _print_with_trevor(text):
         t = t.ljust(size) if t else f"{indent}"
         m = m[size:] if m else ""
         final += f"{t}  {m}\n"
-    print('  "Today I overslept because I went to bed late last night"')
+    print('  "Today I took a long nap because it\'s really hot outside."')
     print(final[:-3])
