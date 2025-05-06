@@ -947,6 +947,23 @@ class MidiDevice:
         parameters = []
         for section in self.all_sections():
             parameters.extend(section.all_parameters())
+        return parameters
+
+    def pads_or_keys(self):
+        for section in self.all_sections():
+            if section.meta.pads_or_keys:
+                return section.meta.pads_or_keys
+        return None
+
+    def random_preset(self):
+        import random
+
+        for parameter in self.all_parameters():
+            setattr(
+                getattr(self, parameter.section_name),
+                parameter.name,
+                random.randint(0, 127),
+            )
 
 
 class DeviceSerializer(json.JSONEncoder):
