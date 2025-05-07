@@ -134,6 +134,168 @@ class OutputCapture(io.StringIO):
             sys.stderr = old_stderr
 
 
+class TrevorAPI:
+    def __init__(self):
+        self.exec_context = ChainMap(globals())
+
+    @staticmethod
+    def get_device_instance(device_id) -> VirtualDevice | MidiDevice:
+        return next(
+            (device for device in all_devices() if id(device) == int(device_id))
+        )
+
+    def execute_code(self, code):
+        bytecode = compile(source=code, filename="<string>", mode="exec")
+        exec(bytecode, globals(), self.exec_context)
+
+    def create_device(self, name):
+        cls = next((cls for cls in midi_device_classes if cls.__name__ == name), None)
+        if cls is None:
+            cls = next((cls for cls in virtual_device_classes if cls.__name__ == name))
+        devices = all_devices()
+        try:
+            # We auto-connect the virtual device,
+            # or try to auto-connect the midi device to the right midi ports
+            instance = cls(autoconnect=True)
+        except Exception:
+            # If there is a problem we remove the auto-connection
+            diff = next((item for item in all_devices() if item not in devices), None)
+            if diff:
+                diff.stop()
+            instance = cls(autoconnect=False)
+        instance.to_update = self
+        return instance
+
+    def manage_scaler(self, from_parameter, to_parameter, create):
+        from_device, from_section, from_parameter = from_parameter.split("::")
+        to_device, to_section, to_parameter = to_parameter.split("::")
+        src_device = self.get_device_instance(from_device)
+        dst_device = self.get_device_instance(to_device)
+        dest = getattr(dst_device, to_section)
+        if isinstance(src_device, VirtualDevice) and from_parameter in [
+            "output",
+            "output_cv",
+        ]:
+            src = getattr(src_device, from_section)
+        else:
+            src = getattr(getattr(src_device, from_section), from_parameter)
+        getattr(dest, to_parameter).__isub__(src)  # we unbind first
+        if create:
+            to_range = getattr(dest.__class__, to_parameter).range
+            scaler: Scaler = src.scale(to_range[0], to_range[1])
+            setattr(dest, to_parameter, scaler)
+            return scaler
+        setattr(dest, to_parameter, src)
+        return None
+
+    def set_scaler_parameter(self, scaler_id, parameter, value):
+        for device in chain(connected_devices, virtual_devices):
+            for entry in device.callbacks_registry:
+                if id(entry.chain) == scaler_id:
+                    scaler = entry.chain
+                    setattr(scaler, parameter, value)
+                    return scaler
+        return None
+
+    def reset_all(self, skip_unregistered=True):
+        stop_all_connected_devices(skip_unregistered)
+
+    def associate_parameters(
+        self, from_parameter, to_parameter, unbind=False, with_scaler=True
+    ):
+        from_device, from_section, from_parameter = from_parameter.split("::")
+        to_device, to_section, to_parameter = to_parameter.split("::")
+        src_device = self.get_device_instance(from_device)
+        dst_device = self.get_device_instance(to_device)
+        dest = getattr(dst_device, to_section)
+        if isinstance(src_device, VirtualDevice) and from_parameter in [
+            "output",
+            "output_cv",
+        ]:
+            src = getattr(src_device, from_section)
+        elif from_parameter.isdecimal():
+            # We know it's a key/pad we are binding (src)
+            src = getattr(src_device, from_section)[int(from_parameter)]
+        elif from_parameter == "all_keys_or_pads":
+            # We know we want to bind all the notes/pads [0..127]
+            src = getattr(src_device, from_section)[:]
+        else:
+            src = getattr(getattr(src_device, from_section), from_parameter)
+        if unbind:
+            if to_parameter.isdecimal():
+                # We know it's a key/pad we are unbinding to (target)
+                dest_parameter = dest[int(to_parameter)]
+            else:
+                dest_parameter = getattr(dest, to_parameter)
+            if isinstance(src, list):
+                for e in src:
+                    dest_parameter.__isub__(src)
+            else:
+                dest_parameter.__isub__(src)
+            return None
+        if to_parameter == "all_keys_or_pads":
+            to_parameter = dest.meta.pads_or_keys.name
+        chain = None
+        if isinstance(src, list):
+            setattr(dest, to_parameter, src)
+        elif to_parameter.isdecimal():
+            # We know it's a key/pad we are binding to (target)
+            dest[int(to_parameter)] = src
+        elif with_scaler:
+            target = getattr(dest.__class__, to_parameter, None)
+            if target:
+                to_range = getattr(dest.__class__, to_parameter).range
+                chain = src.scale(to_range[0], to_range[1])
+            else:
+                chain = src.scale(None, None)
+            setattr(dest, to_parameter, chain)
+        else:
+            setattr(dest, to_parameter, src)
+        return chain
+
+    def associate_midi_port(self, device, port, direction):
+        dev: MidiDevice = self.get_device_instance(device)  # type:ignore
+        if direction == "output":
+            if dev.outport_name == port:
+                dev.close_out()
+                return
+            dev.outport_name = port
+            dev.connect()
+        else:
+            if dev.inport_name == port:
+                dev.close_in()
+                return
+            dev.inport_name = port
+            dev.listen()
+        return
+
+    def resume_device(self, device_id, start):
+        device: VirtualDevice = self.get_device_instance(device_id)  # type: ignore
+        if start:
+            device.start()
+        device.resume()
+
+    def pause_device(self, device_id, start):
+        device: VirtualDevice = self.get_device_instance(device_id)  # type: ignore
+        if start:
+            device.start()
+        device.pause()
+
+    def set_virtual_value(self, device_id, parameter, value):
+        device: VirtualDevice = self.get_device_instance(device_id)  # type: ignore
+        if "." in str(value):
+            value = float(value)
+        else:
+            try:
+                value = int(value)
+            except:
+                ...
+        device.process_input(parameter, value)
+
+    def delete_all_connections(self):
+        unbind_all()
+
+
 @no_registration
 class TrevorBus(VirtualDevice):
     forever = True
@@ -144,6 +306,7 @@ class TrevorBus(VirtualDevice):
         self.server = serve(self.handler, host=host, port=port)
         self.code = ""
         self.exec_context = ChainMap(globals())
+        self.trevor = TrevorAPI()
 
     @staticmethod
     def to_json(obj, **kwargs):
@@ -236,8 +399,7 @@ class TrevorBus(VirtualDevice):
         with OutputCapture(self.send_message).capture():
             try:
                 print(">>>", indent(code, "... ")[4:])
-                bytecode = compile(source=code, filename="<string>", mode="exec")
-                exec(bytecode, globals(), self.exec_context)
+                self.trevor.execute_code(code)
             except SyntaxError as err:
                 print(err, file=sys.stderr)
                 self.send_message(
@@ -269,21 +431,7 @@ class TrevorBus(VirtualDevice):
         return self.full_state()
 
     def create_device(self, name):
-        cls = next((cls for cls in midi_device_classes if cls.__name__ == name), None)
-        if cls is None:
-            cls = next((cls for cls in virtual_device_classes if cls.__name__ == name))
-        devices = all_devices()
-        try:
-            # We auto-connect the virtual device,
-            # or try to auto-connect the midi device to the right midi ports
-            instance = cls(autoconnect=True)
-        except Exception:
-            # If there is a problem we remove the auto-connection
-            diff = next((item for item in all_devices() if item not in devices), None)
-            if diff:
-                diff.stop()
-            instance = cls(autoconnect=False)
-        instance.to_update = self
+        self.trevor.create_device(name)
         return self.full_state()
 
     def send_update(self, device=None):
@@ -297,114 +445,27 @@ class TrevorBus(VirtualDevice):
         )
 
     def create_scaler(self, from_parameter, to_parameter, create):
-        from_device, from_section, from_parameter = from_parameter.split("::")
-        to_device, to_section, to_parameter = to_parameter.split("::")
-        src_device = self.get_device_instance(from_device)
-        dst_device = self.get_device_instance(to_device)
-        dest = getattr(dst_device, to_section)
-        if isinstance(src_device, VirtualDevice) and from_parameter in [
-            "output",
-            "output_cv",
-        ]:
-            src = getattr(src_device, from_section)
-        else:
-            src = getattr(getattr(src_device, from_section), from_parameter)
-        getattr(dest, to_parameter).__isub__(src)  # we unbind first
-        if create:
-            to_range = getattr(dest.__class__, to_parameter).range
-            scaler: Scaler = src.scale(to_range[0], to_range[1])
-            setattr(dest, to_parameter, scaler)
-            return self.full_state()
-        setattr(dest, to_parameter, src)
+        self.trevor.manage_scaler(from_parameter, to_parameter, create)
         return self.full_state()
 
     def set_scaler_parameter(self, scaler_id, parameter, value):
-        for device in chain(connected_devices, virtual_devices):
-            for entry in device.callbacks_registry:
-                if id(entry.chain) == scaler_id:
-                    scaler = entry.chain
-                    setattr(scaler, parameter, value)
-                    break
-
+        self.trevor.set_scaler_parameter(scaler_id, parameter, value)
         return self.full_state()
 
     def reset_all(self):
-        stop_all_connected_devices(skip_unregistered=True)
+        self.trevor.reset_all()
         return self.full_state()
-
-    def _associate_parameters(
-        self, from_parameter, to_parameter, unbind=False, with_scaler=True
-    ):
-        from_device, from_section, from_parameter = from_parameter.split("::")
-        to_device, to_section, to_parameter = to_parameter.split("::")
-        src_device = self.get_device_instance(from_device)
-        dst_device = self.get_device_instance(to_device)
-        dest = getattr(dst_device, to_section)
-        if isinstance(src_device, VirtualDevice) and from_parameter in [
-            "output",
-            "output_cv",
-        ]:
-            src = getattr(src_device, from_section)
-        elif from_parameter.isdecimal():
-            # We know it's a key/pad we are binding (src)
-            src = getattr(src_device, from_section)[int(from_parameter)]
-        elif from_parameter == "all_keys_or_pads":
-            # We know we want to bind all the notes/pads [0..127]
-            src = getattr(src_device, from_section)[:]
-        else:
-            src = getattr(getattr(src_device, from_section), from_parameter)
-        if unbind:
-            if to_parameter.isdecimal():
-                # We know it's a key/pad we are unbinding to (target)
-                dest_parameter = dest[int(to_parameter)]
-            else:
-                dest_parameter = getattr(dest, to_parameter)
-            if isinstance(src, list):
-                for e in src:
-                    dest_parameter.__isub__(src)
-            else:
-                dest_parameter.__isub__(src)
-            return self.full_state()
-        if to_parameter == "all_keys_or_pads":
-            to_parameter = dest.meta.pads_or_keys.name
-        chain = None
-        if isinstance(src, list):
-            setattr(dest, to_parameter, src)
-        elif to_parameter.isdecimal():
-            # We know it's a key/pad we are binding to (target)
-            dest[int(to_parameter)] = src
-        elif with_scaler:
-            target = getattr(dest.__class__, to_parameter, None)
-            if target:
-                to_range = getattr(dest.__class__, to_parameter).range
-                chain = src.scale(to_range[0], to_range[1])
-            else:
-                chain = src.scale(None, None)
-            setattr(dest, to_parameter, chain)
-        else:
-            setattr(dest, to_parameter, src)
-        return chain
 
     def associate_parameters(
         self, from_parameter, to_parameter, unbind, with_scaler=True
     ):
-        self._associate_parameters(from_parameter, to_parameter, unbind, with_scaler)
+        self.trevor.associate_parameters(
+            from_parameter, to_parameter, unbind, with_scaler
+        )
         return self.full_state()
 
     def associate_midi_port(self, device, port, direction):
-        dev: MidiDevice = self.get_device_instance(device)  # type:ignore
-        if direction == "output":
-            if dev.outport_name == port:
-                dev.close_out()
-                return self.full_state()
-            dev.outport_name = port
-            dev.connect()
-        else:
-            if dev.inport_name == port:
-                dev.close_in()
-                return self.full_state()
-            dev.inport_name = port
-            dev.listen()
+        self.trevor.associate_midi_port(device, port, direction)
         return self.full_state()
 
     def list_patches(self):
@@ -507,7 +568,7 @@ class TrevorBus(VirtualDevice):
             src_path = f"{device_map[src['device']]}::{src_param['section_name']}::{src_param_name}"
             dest_path = f"{device_map[dest['device']]}::{dest_param['section_name']}::{dest_param_name}"
             with_chain = src.get("chain", None)
-            result_chain = self._associate_parameters(
+            result_chain = self.trevor.associate_parameters(
                 src_path, dest_path, with_scaler=with_chain
             )
             if result_chain and with_chain:
@@ -539,33 +600,19 @@ class TrevorBus(VirtualDevice):
         Path(f"{name}.nly").write_text(self.to_json(d, indent=2))
 
     def resume_device(self, device_id, start):
-        device: VirtualDevice = self.get_device_instance(device_id)  # type: ignore
-        if start:
-            device.start()
-        device.resume()
+        self.trevor.resume_device(device_id, start)
         return self.full_state()
 
     def pause_device(self, device_id, start):
-        device: VirtualDevice = self.get_device_instance(device_id)  # type: ignore
-        if start:
-            device.start()
-        device.pause()
+        self.trevor.pause_device(device_id, start)
         return self.full_state()
 
     def set_virtual_value(self, device_id, parameter, value):
-        device: VirtualDevice = self.get_device_instance(device_id)  # type: ignore
-        if "." in str(value):
-            value = float(value)
-        else:
-            try:
-                value = int(value)
-            except:
-                ...
-        device.process_input(parameter, value)
+        self.trevor.set_virtual_value(device_id, parameter, value)
         return self.full_state()
 
     def delete_all_connections(self):
-        unbind_all()
+        self.trevor.delete_all_connections()
         return self.full_state()
 
     def all_connections(self):
@@ -749,11 +796,11 @@ def _trevor_menu(loaded_paths, init_script, trevor_bus=None):
         elif q == "?":
             menu = (
                 "[MENU]\n"
-                "   s: stop a device (virtual or midi)\n"
+                "   k: stop (kill) a virtual or midi device\n"
                 "   q: stop the script\n"
             )
             elprint(menu)
-        elif q == "s":
+        elif q == "k":
             menu = "[STOP DEVICE]\n"
             devices = [d for d in all_devices() if not isinstance(d, TrevorBus)]
             for num, device in enumerate(devices):
