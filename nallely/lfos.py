@@ -116,6 +116,7 @@ class LFO(TimeBasedDevice):
             result = self.min_value + (self.max_value - self.min_value) * (1 - t)
         elif waveform == "random":
             ticks_per_cycle = int(self.sampling_rate / Decimal(max(0.0001, self.speed)))
+            ticks_per_cycle = max(ticks_per_cycle, 1)
             if ticks % ticks_per_cycle == 0:
                 self._random_value = random.uniform(
                     float(self.min_value), float(self.max_value)
@@ -123,6 +124,7 @@ class LFO(TimeBasedDevice):
             result = self._random_value
         elif waveform == "smooth_random":
             ticks_per_cycle = int(self.sampling_rate / Decimal(max(0.0001, self.speed)))
+            ticks_per_cycle = max(ticks_per_cycle, 1)
             if ticks % ticks_per_cycle == 0:
                 self._previous_value = getattr(
                     self, "_current_value", Decimal(self.min_value)
@@ -138,7 +140,7 @@ class LFO(TimeBasedDevice):
             )
         elif waveform == "smooth_random_exp":
             ticks_per_cycle = int(self.sampling_rate / Decimal(max(0.0001, self.speed)))
-
+            ticks_per_cycle = max(ticks_per_cycle, 1)
             if ticks % ticks_per_cycle == 0:
                 self._previous_value = getattr(
                     self, "_current_value", Decimal(self.min_value)
@@ -159,7 +161,7 @@ class LFO(TimeBasedDevice):
             )
         elif waveform == "smooth_random_cosine":
             ticks_per_cycle = int(self.sampling_rate / Decimal(max(0.0001, self.speed)))
-
+            ticks_per_cycle = max(ticks_per_cycle, 1)
             if ticks % ticks_per_cycle == 0:
                 self._previous_value = getattr(
                     self, "_current_value", Decimal(self.min_value)

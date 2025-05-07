@@ -1,10 +1,16 @@
 from .core import (
     DeviceNotFound,
     MidiDevice,
+    ThreadContext,
     VirtualDevice,
     VirtualParameter,
+    all_devices,
+    connected_devices,
+    midi_device_classes,
     stop_all_connected_devices,
     stop_all_virtual_devices,
+    virtual_device_classes,
+    virtual_devices,
 )
 from .eg import ADSREnvelope
 from .lfos import LFO, Cycler
@@ -26,4 +32,10 @@ __all__ = [
     "LFO",
     "Cycler",
     "ADSREnvelope",
+    "virtual_device_classes",
+    "virtual_devices",
+    "all_devices",
+    "connected_devices",
+    "midi_device_classes",
+    "ThreadContext",
 ]

@@ -107,14 +107,14 @@ class Scaler:
         match from_min, from_max, self.to_min, self.to_max:
             case _, _, None, None:
                 return value
+            case None, None, to_min, to_max:
+                # print(f"Problem converting from -inf, +inf to {to_min}..{to_max}")
+                return value
             case None, from_max, to_min, None:
                 offset = to_min
                 v = value + offset
                 return min(v, from_max + offset) if from_max is not None else v
-            case None, None, to_min, to_max:
-                print(f"Problem converting from -inf, +inf to {to_min}..{to_max}")
-                return value
-            case from_min, _, to_min, None:
+            case from_min, x, to_min, y:
                 return value + abs(from_min - to_min)
             case from_min, from_max, to_min, to_max:
                 scaled_value = (value - from_min) / (from_max - from_min)
@@ -252,7 +252,7 @@ class ModuleParameter:
             )
             return
 
-        from .core import VirtualDevice
+        from .core import ParameterInstance, VirtualDevice
 
         if isinstance(feeder, VirtualDevice):
             device = feeder
@@ -302,6 +302,17 @@ class ModuleParameter:
                 append=append,
                 transformer_chain=chain,
                 from_=pad,
+            )
+            return
+        if isinstance(feeder, ParameterInstance):
+            device = feeder.device
+            device.bind(
+                lambda value, ctx: setattr(to_module, self.name, value),
+                to=to_module.device,
+                param=self,
+                append=append,
+                transformer_chain=chain,
+                from_=feeder.parameter,
             )
             return
 

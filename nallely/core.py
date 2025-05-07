@@ -541,7 +541,7 @@ class VirtualDevice(threading.Thread):
         #     self.output_queue.put_nowait((value, ctx))
         # except Full:
         #     pass  # Drop if full
-        for output in selected_outputs or self.stream_callbacks.keys():
+        for output in selected_outputs or list(self.stream_callbacks.keys()):
             callbacks = self.stream_callbacks.get(output, [])
             for callback, param, _ in callbacks:
                 try:
@@ -550,7 +550,7 @@ class VirtualDevice(threading.Thread):
                     traceback.print_exc()
                     raise e
         if value != ctx.last_value:
-            for output in selected_outputs or self.callbacks.keys():
+            for output in selected_outputs or list(self.callbacks.keys()):
                 callbacks = self.callbacks.get(output, [])
                 for callback, param, _ in callbacks:
                     try:
@@ -623,7 +623,7 @@ class VirtualDevice(threading.Thread):
     @classmethod
     def all_parameters(cls) -> list[VirtualParameter]:
         attrs = []
-        for base in cls.__mro__:
+        for base in reversed(cls.__mro__):
             attrs.extend(
                 v for v in base.__dict__.values() if isinstance(v, VirtualParameter)
             )
@@ -657,15 +657,11 @@ class VirtualDevice(threading.Thread):
 
         for parameter in self.all_parameters():
             min, max = parameter.range
-            min = min or 127
-            max = max or 0
+            min = min or 0
+            max = max or 127
             as_int = isinstance(min, int) and isinstance(max, int)
             rand = random.randint if as_int else random.uniform
-            setattr(
-                getattr(self, parameter.section_name),
-                parameter.name,
-                rand(min, max),  # type: ignore
-            )
+            self.process_input(parameter.name, rand(min, max))  # type: ignore
 
 
 @dataclass
@@ -1039,7 +1035,7 @@ class DeviceNotFound(Exception):
 @no_registration
 class TimeBasedDevice(VirtualDevice):
     speed_cv = VirtualParameter("speed", range=(0, 10.0))
-    sampling_rate_cv = VirtualParameter("sampling_rate", range=(0, None))
+    sampling_rate_cv = VirtualParameter("sampling_rate", range=(0.001, None))
 
     def __init__(
         self,

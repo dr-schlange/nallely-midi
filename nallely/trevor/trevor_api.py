@@ -42,7 +42,6 @@ class TrevorAPI:
             if diff:
                 diff.stop()
             instance = cls(autoconnect=False)
-        instance.to_update = self
         return instance
 
     def manage_scaler(self, from_parameter, to_parameter, create):

@@ -5,39 +5,25 @@ import textwrap
 import traceback
 from collections import ChainMap, defaultdict
 from contextlib import contextmanager
-from dataclasses import asdict
 from inspect import isfunction
 from itertools import zip_longest
 from pathlib import Path
 from textwrap import indent
 
-import mido
 from websockets.sync.server import serve
 
 from ..core import (
-    CallbackRegistryEntry,
-    DeviceNotFound,
-    MidiDevice,
     ParameterInstance,
     VirtualDevice,
-    VirtualParameter,
     all_devices,
     connected_devices,
     midi_device_classes,
     no_registration,
     stop_all_connected_devices,
     virtual_device_classes,
-    virtual_devices,
 )
-from ..modules import Int, Module, PadOrKey
-from ..session import Session
-from ..utils import (
-    StateEncoder,
-    find_class,
-    get_note_name,
-    load_modules,
-    longest_common_substring,
-)
+from ..modules import Int, Module
+from ..utils import StateEncoder, load_modules
 from ..websocket_bus import (  # noqa, we keep it so it's loaded in this namespace
     WebSocketBus,
 )
@@ -76,6 +62,8 @@ class TrevorBus(VirtualDevice):
     forever = True
 
     def __init__(self, host="0.0.0.0", port=6788, **kwargs):
+        from ..session import Session
+
         super().__init__(target_cycle_time=10, **kwargs)
         self.connected = defaultdict(list)
         self.server = serve(self.handler, host=host, port=port)
@@ -209,18 +197,13 @@ class TrevorBus(VirtualDevice):
         return self.full_state()
 
     def create_device(self, name):
-        self.trevor.create_device(name)
+        instance = self.trevor.create_device(name)
+        instance.to_update = self
         return self.full_state()
 
     def send_update(self, device=None):
         for client in self.connected["trevor"]:
             client.send(self.to_json(self.full_state()))
-
-    @staticmethod
-    def get_device_instance(device_id) -> VirtualDevice | MidiDevice:
-        return next(
-            (device for device in all_devices() if id(device) == int(device_id))
-        )
 
     def create_scaler(self, from_parameter, to_parameter, create):
         self.trevor.manage_scaler(from_parameter, to_parameter, create)
@@ -274,67 +257,6 @@ class TrevorBus(VirtualDevice):
     def delete_all_connections(self):
         self.trevor.delete_all_connections()
         return self.full_state()
-
-    def all_connections(self):
-        connections = []
-
-        def scaler_as_dict(scaler):
-            if scaler is None:
-                return None
-            return {
-                "id": id(scaler),
-                "device": id(scaler.data.device),
-                "to_min": scaler.to_min,
-                "to_max": scaler.to_max,
-                "auto": scaler.auto,
-                "method": scaler.method,
-                "as_int": scaler.as_int,
-            }
-
-        for device in all_devices():
-            for entry in device.callbacks_registry:
-                entry: CallbackRegistryEntry
-                if isinstance(entry.from_, PadOrKey):
-                    from_ = {
-                        "note": entry.from_.cc_note,
-                        "type": entry.from_.type,
-                        "name": get_note_name(entry.from_.cc_note),
-                        "section_name": entry.from_.pads_or_keys.section_name,
-                        "mode": entry.from_.mode,
-                    }
-                else:
-                    from_ = asdict(entry.from_)
-                if isinstance(entry.parameter, PadOrKey):
-                    to_ = {
-                        "note": entry.parameter.cc_note,
-                        "type": entry.parameter.type,
-                        "name": get_note_name(entry.parameter.cc_note),
-                        "section_name": entry.parameter.pads_or_keys.section_name,
-                        "mode": entry.parameter.mode,
-                    }
-                else:
-                    to_ = asdict(entry.parameter)
-                connections.append(
-                    {
-                        "src": {
-                            "device": id(device),
-                            "repr": device.uid(),
-                            "parameter": from_,
-                            "explicit": entry.from_.cc_note,
-                            "chain": scaler_as_dict(entry.chain),
-                            "type": entry.type,
-                        },
-                        "dest": {
-                            "device": id(entry.target),
-                            "repr": entry.target.uid(),
-                            "parameter": to_,
-                            "explicit": entry.cc_note,
-                            "type": entry.type,
-                        },
-                    }
-                )
-
-        return connections
 
 
 def trevor_infos(header, loaded_paths, init_script):
@@ -477,5 +399,7 @@ def _print_with_trevor(text):
         t = t.ljust(size) if t else f"{indent}"
         m = m[size:] if m else ""
         final += f"{t}  {m}\n"
-    print('  "Today I defended the house against an evil cat."')
+    print(
+        '  "Today I asked for extra belly rubs before my afternoon nap because I deserved them."'
+    )
     print(final[:-3])
