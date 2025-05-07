@@ -6,7 +6,7 @@ from nallely.core import (
 
 # from nallely.devices import MPD32
 from nallely.lfos import LFO
-from nallely.utils import WebSocketBus
+from nallely.websocket_bus import WebSocketBus
 
 
 try:

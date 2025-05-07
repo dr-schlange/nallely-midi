@@ -2,9 +2,9 @@ import random
 from typing import Any
 
 import nallely
+from nallely import WebSocketBus
 from nallely.core import ThreadContext, virtual_device_classes, virtual_devices
 from nallely.trevor import TrevorBus
-from nallely.utils import WebSocketBus
 
 
 class InstanceCreator(nallely.VirtualDevice):
