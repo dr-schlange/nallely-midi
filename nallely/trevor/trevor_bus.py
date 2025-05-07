@@ -30,6 +30,7 @@ from ..core import (
     virtual_devices,
 )
 from ..modules import Int, Module, PadOrKey
+from ..session import Session
 from ..utils import (
     StateEncoder,
     find_class,
@@ -78,9 +79,9 @@ class TrevorBus(VirtualDevice):
         super().__init__(target_cycle_time=10, **kwargs)
         self.connected = defaultdict(list)
         self.server = serve(self.handler, host=host, port=port)
-        self.code = ""
         self.exec_context = ChainMap(globals())
         self.trevor = TrevorAPI()
+        self.session = Session(self)
 
     @staticmethod
     def to_json(obj, **kwargs):
@@ -89,17 +90,17 @@ class TrevorBus(VirtualDevice):
     def handler(self, client):
         path = client.request.path
         service_name = path.split("/")[1]
-        connected_devices = self.connected[service_name]
-        connected_devices.append(client)
-        print(f"Connected on {service_name} [{len(connected_devices)} clients]")
+        connected_clients = self.connected[service_name]
+        connected_clients.append(client)
+        print(f"Connected on {service_name} [{len(connected_clients)} clients]")
         try:
             client.send(self.to_json(self.full_state()))
             for message in client:
                 self.handleMessage(client, message)
         finally:
             print("Disconnecting", client)
-            connected_devices.remove(client)
-            print(f"Connected on {service_name} [{len(connected_devices)} clients]")
+            connected_clients.remove(client)
+            print(f"Connected on {service_name} [{len(connected_clients)} clients]")
 
     def setup(self):
         self.server.serve_forever()
@@ -122,6 +123,9 @@ class TrevorBus(VirtualDevice):
     def send_message(self, message):
         for client in self.connected["trevor"]:
             client.send(self.to_json(message))
+
+    def full_state(self):
+        return self.session.snapshot()
 
     def completion_request(self, requestId, expression):
         options = []
@@ -166,7 +170,7 @@ class TrevorBus(VirtualDevice):
         return {"command": "completion", "requestId": requestId, "options": options}
 
     def save_code(self, code):
-        self.code = code
+        self.session.save_code(code)
         return self.full_state()
 
     def execute_code(self, code):
@@ -247,131 +251,13 @@ class TrevorBus(VirtualDevice):
         return {"knownPatches": [f"{file}" for file in cwd.rglob("*.nly")]}
 
     def load_all(self, name):
-        file = Path(name)
-        content = None
-        with file.open("r", encoding="utf-8") as f:
-            content = json.load(f)
-        if not content:
-            return self.full_state()
-
-        self.reset_all()
-
-        self.code = content.get("playground_code")
-
-        # loads the midi and virtual devices
-        device_map = {}
-        errors = []
-        for device in content.get("midi_devices", []):
-            common_port = longest_common_substring(
-                device["ports"]["input"], device["ports"]["output"]
-            )
-            device_class_name = device["class"]
-            try:
-                cls = find_class(device_class_name)
-                devices = all_devices()
-                try:
-                    autoconnect = common_port or False
-                    mididev: MidiDevice = cls(
-                        device_name=common_port, autoconnect=autoconnect
-                    )
-                except DeviceNotFound:
-                    # If there is a problem we remove the auto-connection
-                    diff = next(
-                        (item for item in all_devices() if item not in devices),
-                        None,
-                    )
-                    if diff:
-                        diff.stop()
-                    mididev = cls(autoconnect=False)
-                    errors.append(
-                        f'MIDI device ports "{common_port}" for {device_class_name} could not be found. Is your device connected or MIDI ports existing? Your device was still created, but it was not connected to any MIDI port.'
-                    )
-                device_map[device["id"]] = id(mididev)
-                mididev.load_preset(dct=device["config"])
-            except ValueError:
-                errors.append(
-                    f"No MIDI API found for {device_class_name}, a library path is probably missing on the command line."
-                )
-
-        vdev_to_resume = []
-        for device in content.get("virtual_devices", []):
-            cls_name = device["class"]
-            if cls_name == TrevorBus.__name__:
-                continue
-            try:
-                cls = find_class(cls_name)
-                vdev: VirtualDevice = cls()
-                vdev.to_update = self  # type: ignore
-                device_map[device["id"]] = id(vdev)
-                if device.get("running", False):
-                    vdev.start()  # We start the device
-                    vdev.pause()  # We pause it right away before we do the patch
-                    if not device.get("paused", True):
-                        vdev_to_resume.append(vdev)
-                if cls_name == WebSocketBus.__name__:
-                    continue
-                for key, value in device["config"].items():
-                    setattr(vdev, key, value)
-            except ValueError:
-                errors.append(
-                    f"No virtual device found for {cls_name}, a library path is probably missing on the command line."
-                )
-
-        # loads patchs
-        for link in content.get("connections"):
-            src = link["src"]
-            dest = link["dest"]
-            src_param = src["parameter"]
-            dest_param = dest["parameter"]
-            if src_param.get("mode") == "note":
-                src_param_name = src_param["note"]
-            else:
-                src_param_name = (
-                    src_param["cv_name"]
-                    if src_param["section_name"] == VirtualParameter.section_name
-                    else src_param["name"]
-                )
-            if dest_param.get("mode") == "note":
-                dest_param_name = dest_param["note"]
-            else:
-                dest_param_name = (
-                    dest_param["cv_name"]
-                    if dest_param["section_name"] == VirtualParameter.section_name
-                    else dest_param["name"]
-                )
-            src_path = f"{device_map[src['device']]}::{src_param['section_name']}::{src_param_name}"
-            dest_path = f"{device_map[dest['device']]}::{dest_param['section_name']}::{dest_param_name}"
-            with_chain = src.get("chain", None)
-            result_chain = self.trevor.associate_parameters(
-                src_path, dest_path, with_scaler=with_chain
-            )
-            if result_chain and with_chain:
-                del with_chain["id"]
-                del with_chain["device"]
-                for key, value in with_chain.items():
-                    setattr(result_chain, key, value)
-
-        # restart the paused vdev
-        for vdev in vdev_to_resume:
-            vdev.start()
-            vdev.resume()
-
+        errors = self.session.load_all(name)
         if errors:
             self.send_message({"errors": errors})
         return self.full_state()
 
     def save_all(self, name):
-        d = self.full_state()
-        del d["input_ports"]
-        del d["output_ports"]
-        del d["classes"]
-        for device in d["midi_devices"]:
-            device["class"] = device["meta"]["name"]
-            del device["meta"]
-        for device in d["virtual_devices"]:
-            device["class"] = device["meta"]["name"]
-            del device["meta"]
-        Path(f"{name}.nly").write_text(self.to_json(d, indent=2))
+        self.session.save_all(name)
 
     def resume_device(self, device_id, start):
         self.trevor.resume_device(device_id, start)
@@ -449,27 +335,6 @@ class TrevorBus(VirtualDevice):
                 )
 
         return connections
-
-    def full_state(self):
-
-        d = {
-            "input_ports": [
-                name for name in mido.get_input_names() if "RtMidi" not in name
-            ],
-            "output_ports": [
-                name for name in mido.get_output_names() if "RtMidi" not in name
-            ],
-            "midi_devices": [device.to_dict() for device in connected_devices],
-            "virtual_devices": [device.to_dict() for device in virtual_devices],
-            "connections": self.all_connections(),
-            "classes": {
-                "virtual": [cls.__name__ for cls in virtual_device_classes],
-                "midi": [cls.__name__ for cls in midi_device_classes],
-            },
-            "playground_code": self.code,
-        }
-
-        return d
 
 
 def trevor_infos(header, loaded_paths, init_script):
