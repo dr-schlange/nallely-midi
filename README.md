@@ -213,6 +213,10 @@ The screenshot below shows you what the result looks like with everything launch
 
 
 
+https://github.com/user-attachments/assets/94ee2c22-8dfc-4b36-a475-d468b09d6202
+
+
+
 
 ## Trevor, Nallely's companion
 
