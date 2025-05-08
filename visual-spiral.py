@@ -5,8 +5,8 @@ from nallely.core import (
 )
 
 # from nallely.devices import MPD32
-from nallely.lfos import LFO
-from nallely.websocket_bus import WebSocketBus
+from nallely import LFO, WebSocketBus
+from nallely.session import Session
 
 
 try:
@@ -66,5 +66,6 @@ try:
         print("Registered devices/services from the WS server")
         for service, parameters in ws.known_services.items():
             print(" * ", service, tuple(p.name for p in parameters))
+    Session().save_all("visual-spiral")
 finally:
     stop_all_connected_devices()

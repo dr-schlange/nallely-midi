@@ -1,6 +1,6 @@
-# Nallely-midi, your Midi devices companion: connect anything with everything
+# Nallely-midi, an organic platform for experimentations around MIDI
 
-Nallely (pronounced "Nayeli") is an organic platform for experimentation around the idea of MIDI meta-synth for live coding, generative music, and multimodal art, built for hacker/musicians. Nallely is a MIDI companion to help you easily map MIDI controllers/instruments together, as well as create/use virtual devices (LFOs, EGs), compose them, and the possibility to expose/create remote services with parameters on which you can map your MIDI controllers/instruments or virtual devices.
+Nallely (pronounced "Nayeli") is an organic platform for experimentation around the idea of MIDI meta-synth for live coding, generative music, and multimodal art, built for hacker/musicians, inspired by Smalltalk. Nallely is a MIDI companion to help you easily map MIDI controllers/instruments together, as well as create/use virtual devices (LFOs, EGs), compose them, and the possibility to expose/create remote services with parameters on which you can map your MIDI controllers/instruments or virtual devices.
 
 Features:
 * programmatic seemless API to your MIDI Device,
@@ -19,8 +19,11 @@ Features:
 * a web interface relying on a websocket protocol (named Trevor) which allows you to do graphically what you would ask Nallely to do in normal time (map devices, parameters, scalers),
 * interactive code playground in the browser (through Trevor UI),
 * small web-based widget oscilloscope integrated in the web interface,
-* save/reload patch for any MIDI device
-* save/reload patch for full MIDI connection made with Nallely using Trevor
+* save/reload preset for any MIDI device,
+* save/reload patch for full connection between MIDI devices and virtual devices,
+* random preset generator for MIDI devices and virtual devices,
+* full random patch generator (basic at the moment) with auto-generative capacity,
+* introspective API for auto-adaptive virtual modules (still unstable at the moment).
 
 Planned:
 * handle multiple banks per device/per section,
@@ -185,13 +188,17 @@ A first draft about how Nallely can help you declare your devices and map them u
 
 ## Launch the example
 
-This repo comes with one example of a spiral that is controlled by LFOs created by Nallely. To launch it, once you have installed the library:
+This repo comes with one example of a spiral that is controlled by LFOs created by Nallely. To launch it, once you have installed the library (obviously).
+
+There is 3 ways of launching the demo, either launching the `visual-spiral.py` script, or loading the `visual-spiral.nly` patch through the UI, or loading by a script the `visual-spiral.nly` patch. We will demonstrate here the two first ways: using the `visual-spiral.py` script, and using the UI.
+
+### Using the python script
 
 1. Simply copy those file from this repository:
    * `visual-spiral.py` => core system for this small example, creates 2 LFOs, waits for external modules (spiral and possibly terminal-based oscilloscope) to connect and maps all together,
    * `spiral.hml` => simple three.js spiral controlled by some parameters,
    * `external_scope.py` => simple terminal-based oscilloscope relying on `plotext`.
-2. Open `spiral.html` in your browser (chrome/chromium/brave or firefox),
+2. Launch `python -m http.server 8000` in the project repository and go with your browser to [http://localhost:8000/spiral.html](http://localhost:8000/spiral.html),
 3. Launch `visual-spiral.py`
 4. ...
 5. Profit
@@ -200,6 +207,11 @@ This repo comes with one example of a spiral that is controlled by LFOs created 
 The screenshot below shows you what the result looks like with everything launched
 
 ![shot](https://github.com/user-attachments/assets/0fc1a194-5281-4cbc-9ce9-bc2fc86e7342)
+
+
+### Using Trevor UI
+
+
 
 
 ## Trevor, Nallely's companion
