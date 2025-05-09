@@ -23,6 +23,11 @@ class TrevorAPI:
             (device for device in all_devices() if id(device) == int(device_id))
         )
 
+    @classmethod
+    def random_preset(cls, device_id):
+        device = cls.get_device_instance(device_id)
+        device.random_preset()
+
     def execute_code(self, code, exec_context):
         bytecode = compile(source=code, filename="<string>", mode="exec")
         exec(bytecode, globals(), exec_context)

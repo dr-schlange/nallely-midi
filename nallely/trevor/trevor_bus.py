@@ -115,6 +115,10 @@ class TrevorBus(VirtualDevice):
     def full_state(self):
         return self.session.snapshot()
 
+    def random_preset(self, device_id):  # type: ignore
+        self.trevor.random_preset(device_id)
+        return self.full_state()
+
     def completion_request(self, requestId, expression):
         options = []
         if "." in expression:
@@ -399,7 +403,5 @@ def _print_with_trevor(text):
         t = t.ljust(size) if t else f"{indent}"
         m = m[size:] if m else ""
         final += f"{t}  {m}\n"
-    print(
-        '  "Today I asked for extra belly rubs before my afternoon nap because I deserved them."'
-    )
+    print('  "Today I slept on the floor tiles because it\'s too hot."')
     print(final[:-3])

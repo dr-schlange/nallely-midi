@@ -258,6 +258,13 @@ const DevicePatching = () => {
 						{section.name}
 					</button>
 				))}
+				<button
+					type="button"
+					className={"associate-button"}
+					onClick={() => trevorSocket?.randomPreset(device.id)}
+				>
+					random preset
+				</button>
 			</>,
 		);
 	};

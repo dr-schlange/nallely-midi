@@ -340,6 +340,15 @@ class TrevorWebSocket {
 			}),
 		);
 	}
+
+	public randomPreset(device_id: number) {
+		this.sendMessage(
+			JSON.stringify({
+				command: "random_preset",
+				device_id,
+			}),
+		);
+	}
 }
 
 let websocket: TrevorWebSocket | null = null;

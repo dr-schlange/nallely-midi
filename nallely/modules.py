@@ -104,6 +104,10 @@ class Scaler:
         )
 
     def convert_lin(self, value, from_min, from_max):
+        if from_min is not None and value < from_min:
+            value = from_min
+        elif from_max is not None and value > from_max:
+            value = from_max
         match from_min, from_max, self.to_min, self.to_max:
             case _, _, None, None:
                 return value
@@ -112,10 +116,26 @@ class Scaler:
                 v = value + offset
                 return min(v, from_max + offset) if from_max is not None else v
             case None, None, to_min, to_max:
-                print(f"Problem converting from -inf, +inf to {to_min}..{to_max}")
+                # print(f"Problem converting from -inf, +inf to {to_min}..{to_max}")
                 return value
             case from_min, _, to_min, None:
-                return value + abs(from_min - to_min)
+                diff = abs(from_min - to_min)
+                return value - diff if value > to_min else to_min
+            case from_min, None, None, to_max:
+                return value + from_min if value < to_max else to_max
+            case from_min, None, to_min, to_max:
+                return value if value < to_max else to_max
+            case None, from_max, None, to_max:
+                diff = abs(to_max - from_max)
+                return value + diff if value + diff < to_max else to_max
+            case from_min, from_max, None, to_max:
+                return value - abs(to_max - from_min)
+            case None, from_max, to_min, to_max:
+                return (
+                    to_max - (from_max - value)
+                    if abs(value + to_min) < to_max
+                    else to_max
+                )
             case from_min, from_max, to_min, to_max:
                 scaled_value = (value - from_min) / (from_max - from_min)
                 return to_min + scaled_value * (to_max - to_min)
