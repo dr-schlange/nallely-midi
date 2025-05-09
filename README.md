@@ -211,12 +211,7 @@ The screenshot below shows you what the result looks like with everything launch
 
 ### Using Trevor UI
 
-
-
-https://github.com/user-attachments/assets/94ee2c22-8dfc-4b36-a475-d468b09d6202
-
-
-
+https://github.com/user-attachments/assets/6913a9be-e4d8-4bb6-b604-5734ce9b6d15
 
 ## Trevor, Nallely's companion
 
