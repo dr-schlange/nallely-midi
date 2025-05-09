@@ -137,7 +137,8 @@ class Scaler:
                     else to_max
                 )
             case from_min, from_max, to_min, to_max:
-                scaled_value = (value - from_min) / (from_max - from_min)
+                from_div = (from_max - from_min) if from_max != from_min else 1
+                scaled_value = (value - from_min) / from_div
                 return to_min + scaled_value * (to_max - to_min)
 
             case _:

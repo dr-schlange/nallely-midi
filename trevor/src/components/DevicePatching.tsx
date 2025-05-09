@@ -210,6 +210,14 @@ const DevicePatching = () => {
 			setInformation(
 				<>
 					<p style={{ marginLeft: "5px" }}>{device.repr}</p>
+					<button
+						type="button"
+						className={"associate-button"}
+						onClick={() => trevorSocket?.randomPreset(device.id)}
+					>
+						random preset
+					</button>
+					<hr />
 					{device.meta.parameters.map((param) => (
 						<p
 							key={param.name}
@@ -222,6 +230,14 @@ const DevicePatching = () => {
 							</label>
 						</p>
 					))}
+					<hr />
+					<button
+						type="button"
+						className={"associate-button"}
+						onClick={() => trevorSocket?.killDevice(device.id)}
+					>
+						Kill device
+					</button>
 				</>,
 			);
 			return;
@@ -248,6 +264,14 @@ const DevicePatching = () => {
 		setInformation(
 			<>
 				<p style={{ marginLeft: "5px" }}>{device.repr}</p>
+				<button
+					type="button"
+					className={"associate-button"}
+					onClick={() => trevorSocket?.randomPreset(device.id)}
+				>
+					random preset
+				</button>
+				<hr />
 				{device.meta.sections?.map((section) => (
 					<button
 						key={section.name}
@@ -258,12 +282,13 @@ const DevicePatching = () => {
 						{section.name}
 					</button>
 				))}
+				<hr />
 				<button
 					type="button"
 					className={"associate-button"}
-					onClick={() => trevorSocket?.randomPreset(device.id)}
+					onClick={() => trevorSocket?.killDevice(device.id)}
 				>
-					random preset
+					Kill device
 				</button>
 			</>,
 		);

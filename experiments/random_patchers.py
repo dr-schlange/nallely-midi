@@ -66,8 +66,11 @@ class RandomPatcher(VirtualDevice):
     def main(self, ctx: ThreadContext) -> Any:
         parameters = []
         if self.trigger == 1:
+            self.trigger = 0
             parameters = self.all_system_parameters()
             self.random_patch(parameters)
+            if self.trevor_bus:
+                self.trevor_bus.send_update()
 
         return len(all_devices()) + len(parameters)
 
@@ -97,6 +100,3 @@ class RandomPatcher(VirtualDevice):
 
         for src, dst in selected_combinations:
             self.trevor_api.associate_parameters(src, dst)
-
-        if self.trevor_bus:
-            self.trevor_bus.send_update()

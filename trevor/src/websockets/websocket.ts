@@ -40,14 +40,11 @@ class TrevorWebSocket {
 		const requestId = this.generateRequestId();
 		return new Promise((resolve) => {
 			this.pendingRequests.set(requestId, resolve);
-
-			this.sendMessage(
-				JSON.stringify({
-					command,
-					requestId,
-					...args,
-				}),
-			);
+			this.sendJsonMessage({
+				command,
+				requestId,
+				...args,
+			});
 		});
 	}
 
@@ -56,12 +53,10 @@ class TrevorWebSocket {
 	}
 
 	public executeCode(code: string) {
-		return this.sendMessage(
-			JSON.stringify({
-				command: "execute_code",
-				code,
-			}),
-		);
+		return this.sendJsonMessage({
+			command: "execute_code",
+			code,
+		});
 	}
 
 	private connect() {
@@ -150,13 +145,15 @@ class TrevorWebSocket {
 		}
 	}
 
+	public sendJsonMessage(message: object) {
+		this.sendMessage(JSON.stringify(message));
+	}
+
 	public createDevice(deviceClass: string) {
-		this.sendMessage(
-			JSON.stringify({
-				command: "create_device",
-				name: deviceClass,
-			}),
-		);
+		this.sendJsonMessage({
+			command: "create_device",
+			name: deviceClass,
+		});
 	}
 
 	public associateParameters(
@@ -186,14 +183,12 @@ class TrevorWebSocket {
 		} else {
 			toP = toParameter.name;
 		}
-		this.sendMessage(
-			JSON.stringify({
-				command: "associate_parameters",
-				from_parameter: `${fromDevice.id}::${fromParameter.section_name}::${fromP}`,
-				to_parameter: `${toDevice.id}::${toParameter.section_name}::${toP}`,
-				unbind,
-			}),
-		);
+		this.sendJsonMessage({
+			command: "associate_parameters",
+			from_parameter: `${fromDevice.id}::${fromParameter.section_name}::${fromP}`,
+			to_parameter: `${toDevice.id}::${toParameter.section_name}::${toP}`,
+			unbind,
+		});
 	}
 
 	public createScaler(
@@ -211,62 +206,50 @@ class TrevorWebSocket {
 		const toP = isVirtualParameter(toParameter)
 			? toParameter.cv_name
 			: toParameter.name;
-		this.sendMessage(
-			JSON.stringify({
-				command: "create_scaler",
-				from_parameter: `${srcId}::${fromParameter.section_name}::${fromP}`,
-				to_parameter: `${dstId}::${toParameter.section_name}::${toP}`,
-				create,
-			}),
-		);
+		this.sendJsonMessage({
+			command: "create_scaler",
+			from_parameter: `${srcId}::${fromParameter.section_name}::${fromP}`,
+			to_parameter: `${dstId}::${toParameter.section_name}::${toP}`,
+			create,
+		});
 	}
 
 	public associatePort(device: MidiDevice, port: string, direction: string) {
-		this.sendMessage(
-			JSON.stringify({
-				command: "associate_midi_port",
-				device: device.id,
-				port,
-				direction,
-			}),
-		);
+		this.sendJsonMessage({
+			command: "associate_midi_port",
+			device: device.id,
+			port,
+			direction,
+		});
 	}
 
 	public saveAll(name: string) {
-		this.sendMessage(
-			JSON.stringify({
-				command: "save_all",
-				name,
-			}),
-		);
+		this.sendJsonMessage({
+			command: "save_all",
+			name,
+		});
 	}
 
 	public loadAll(name: string) {
-		this.sendMessage(
-			JSON.stringify({
-				command: "load_all",
-				name,
-			}),
-		);
+		this.sendJsonMessage({
+			command: "load_all",
+			name,
+		});
 	}
 
 	public toggle_device(device: VirtualDevice, start = false) {
 		if (!device.running || device.paused) {
-			this.sendMessage(
-				JSON.stringify({
-					command: "resume_device",
-					device_id: device.id,
-					start,
-				}),
-			);
+			this.sendJsonMessage({
+				command: "resume_device",
+				device_id: device.id,
+				start,
+			});
 		} else {
-			this.sendMessage(
-				JSON.stringify({
-					command: "pause_device",
-					device_id: device.id,
-					start,
-				}),
-			);
+			this.sendJsonMessage({
+				command: "pause_device",
+				device_id: device.id,
+				start,
+			});
 		}
 	}
 
@@ -275,14 +258,12 @@ class TrevorWebSocket {
 		parameter: VirtualParameter,
 		value: number | string | boolean,
 	) {
-		this.sendMessage(
-			JSON.stringify({
-				command: "set_virtual_value",
-				device_id: device.id,
-				parameter: parameter.name,
-				value,
-			}),
-		);
+		this.sendJsonMessage({
+			command: "set_virtual_value",
+			device_id: device.id,
+			parameter: parameter.name,
+			value,
+		});
 	}
 
 	public setScalerValue(
@@ -290,64 +271,57 @@ class TrevorWebSocket {
 		parameter: string,
 		value: number | string | boolean,
 	) {
-		this.sendMessage(
-			JSON.stringify({
-				command: "set_scaler_parameter",
-				scaler_id: scalerId,
-				parameter,
-				value,
-			}),
-		);
+		this.sendJsonMessage({
+			command: "set_scaler_parameter",
+			scaler_id: scalerId,
+			parameter,
+			value,
+		});
 	}
 
 	public resetAll() {
-		this.sendMessage(
-			JSON.stringify({
-				command: "reset_all",
-			}),
-		);
+		this.sendJsonMessage({
+			command: "reset_all",
+		});
 	}
 
 	public pullFullState() {
-		this.sendMessage(
-			JSON.stringify({
-				command: "full_state",
-			}),
-		);
+		this.sendJsonMessage({
+			command: "full_state",
+		});
 	}
 
 	public deleteAllConnections() {
-		this.sendMessage(
-			JSON.stringify({
-				command: "delete_all_connections",
-			}),
-		);
+		this.sendJsonMessage({
+			command: "delete_all_connections",
+		});
 	}
 
 	public saveCode(code: string) {
-		this.sendMessage(
-			JSON.stringify({
-				command: "save_code",
-				code,
-			}),
-		);
+		this.sendJsonMessage({
+			command: "save_code",
+			code,
+		});
 	}
 
 	public listPatches() {
-		this.sendMessage(
-			JSON.stringify({
-				command: "list_patches",
-			}),
-		);
+		this.sendJsonMessage({
+			command: "list_patches",
+		});
 	}
 
 	public randomPreset(device_id: number) {
-		this.sendMessage(
-			JSON.stringify({
-				command: "random_preset",
-				device_id,
-			}),
-		);
+		this.sendJsonMessage({
+			command: "random_preset",
+			device_id,
+		});
+	}
+
+	public killDevice(device_id: number) {
+		this.sendJsonMessage({
+			command: "kill_device",
+			device_id,
+		});
 	}
 }
 

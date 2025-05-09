@@ -177,3 +177,7 @@ class TrevorAPI:
 
     def delete_all_connections(self):
         unbind_all()
+
+    def kill_device(self, device_id):
+        dev = self.get_device_instance(device_id)
+        dev.stop()

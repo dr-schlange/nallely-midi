@@ -262,6 +262,10 @@ class TrevorBus(VirtualDevice):
         self.trevor.delete_all_connections()
         return self.full_state()
 
+    def kill_device(self, device_id):
+        self.trevor.kill_device(device_id)
+        return self.full_state()
+
 
 def trevor_infos(header, loaded_paths, init_script):
     info = f"{header}\n"

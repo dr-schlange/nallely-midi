@@ -192,6 +192,8 @@ class LFO(TimeBasedDevice):
             result = self.max_value - (self.max_value - self.min_value) * t
         elif waveform == "step":
             step_size = Decimal(self.step_size)
+            if step_size == 0:
+                step_size = Decimal(0.001)
             result = (
                 self.min_value
                 + (self.max_value - self.min_value)
