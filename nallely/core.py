@@ -11,6 +11,7 @@ from queue import Empty, Full, Queue
 from typing import Any, Callable, Counter, Iterable, Literal, Type
 
 import mido
+from requests import get
 
 from .modules import (
     DeviceState,
@@ -46,20 +47,17 @@ def need_registration(cls):
 
 def stop_all_virtual_devices(skip_unregistered=False):
     for device in list(virtual_devices):
-        # if skip_unregistered and device.__class__ not in virtual_device_classes:
         if skip_unregistered and getattr(device, "forever", False):
-            print("Skipping", device)
             continue
         device.stop()
-    # scheduler.stop()
 
 
-def stop_all_connected_devices(skip_unregistered=False):
+def stop_all_connected_devices(skip_unregistered=False, force_note_off=True):
     stop_all_virtual_devices(skip_unregistered)
     for device in list(connected_devices):
-        # if skip_unregistered and device.__class__ not in midi_device_classes:
+        if force_note_off:
+            device.force_all_notes_off()
         if skip_unregistered and getattr(device, "forever", False):
-            print("Skipping", device)
             continue
         device.close()
 
@@ -531,7 +529,7 @@ class VirtualDevice(threading.Thread):
                 except ValueError:
                     ...
 
-    def process_input(self, param, value):
+    def process_input(self, param: str, value):
         setattr(self, param, value)
 
     def process_output(self, value, ctx, selected_outputs=None):
@@ -932,7 +930,6 @@ class MidiDevice:
                     for c, chain in list(self.input_callbacks[(type, cc_note)]):  # type: ignore
                         if callback is c:
                             self.input_callbacks[(type, cc_note)].remove((callback, chain))  # type: ignore
-                    # self.input_callbacks[(type, cc_note)].remove(callback)  # type: ignore
                 except ValueError:
                     ...
 
@@ -940,9 +937,27 @@ class MidiDevice:
         # The only way to be here is from a callback removal on the key/pad section
         match other:
             case PadOrKey():
-                mm = self.reverse_map[("note", other.cc_note)]
+                mm = (
+                    self.reverse_map.get(("note", other.cc_note))
+                    or self.reverse_map[("note", None)]
+                )
                 other.device.unbind(self, mm, other.type, other.cc_note)
-        raise Exception(f"Unbinding {other.__class__.__name__} not yet supported")
+            case ParameterInstance():
+                other.device.unbind(self, other.parameter)
+            case Int():
+                mm = (
+                    self.reverse_map.get(("note", other.parameter.cc_note))
+                    or self.reverse_map[("note", None)]
+                )
+                other.device.unbind(
+                    self, mm, other.parameter.type, other.parameter.cc_note
+                )
+                self.force_all_notes_off()
+            case _:
+                raise Exception(
+                    f"Unbinding {other.__class__.__name__} not yet supported"
+                )
+        return self
 
     # def bind_output(self, callback):
     #     self.output_callbacks.append(callback)

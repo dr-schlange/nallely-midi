@@ -125,7 +125,7 @@ const DevicePatching = () => {
 		if (parameter.accepted_values.length > 0) {
 			return (
 				<select
-					value={value.toString()}
+					value={value ? value.toString() : "--"}
 					onChange={(e) =>
 						trevorSocket?.setVirtualValue(device, parameter, e.target.value)
 					}

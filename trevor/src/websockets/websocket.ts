@@ -188,6 +188,7 @@ class TrevorWebSocket {
 			from_parameter: `${fromDevice.id}::${fromParameter.section_name}::${fromP}`,
 			to_parameter: `${toDevice.id}::${toParameter.section_name}::${toP}`,
 			unbind,
+			with_scaler: true,
 		});
 	}
 

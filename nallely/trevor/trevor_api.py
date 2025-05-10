@@ -107,14 +107,16 @@ class TrevorAPI:
         if unbind:
             if to_parameter.isdecimal():
                 # We know it's a key/pad we are unbinding to (target)
-                dest_parameter = dest[int(to_parameter)]
+                to_parameter = dest[int(to_parameter)]
+            elif to_parameter == "all_keys_or_pads":
+                to_parameter = getattr(dest, dest.meta.pads_or_keys.name)
             else:
-                dest_parameter = getattr(dest, to_parameter)
+                to_parameter = getattr(dest, to_parameter)
             if isinstance(src, list):
                 for e in src:
-                    dest_parameter.__isub__(src)
+                    to_parameter.__isub__(src)
             else:
-                dest_parameter.__isub__(src)
+                to_parameter.__isub__(src)
             return None
         if to_parameter == "all_keys_or_pads":
             to_parameter = dest.meta.pads_or_keys.name

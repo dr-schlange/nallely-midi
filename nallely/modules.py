@@ -162,6 +162,9 @@ class Scaler:
             print(f"Logarithmic scaling is undefined for non-positive values {value}.")
             return value
 
+        if self.to_min == 0:
+            self.to_min = 0.001
+
         log_min = math.log(self.to_min)
         log_max = math.log(self.to_max)
 
@@ -589,76 +592,103 @@ class ModulePadsOrKeys:
     section_name: str = NOT_INIT
     name: str = NOT_INIT
     cc_note: int = -1
+    range: tuple[int, int] = (0, 127)
 
     def __get__(self, instance, owner=None):
         if instance is None:
             return self
         return instance.state[self.section_name]
 
-    def __set__(self, instance, value, append=True):
-        if isinstance(value, PadOrKey):
-            pad: PadOrKey = value
-            pad.device.bind(
-                lambda value, ctx: instance.device.note(
-                    note=value, velocity=ctx.velocity, type=ctx.type
-                ),
-                type=self.type,
-                cc_note=pad.cc_note,
-                to=instance.device,
-                param=self,
-                append=append,
-                from_=pad,
-            )
-            return
-        if isinstance(value, list):
-            for e in value:
-                pad: PadOrKey = e
-                assert isinstance(pad, PadOrKey)
-                self.__set__(instance, e)
-            return
+    def __set__(self, instance, value, append=True, chain=None):
         from .core import ParameterInstance, VirtualDevice
 
-        if isinstance(value, VirtualDevice):
-            feeder = value
-
-            def foo(value, ctx):
-                if value == 0:
-                    instance.device.all_notes_off()
-                    return
-                instance.device.note(
-                    note=value,
-                    velocity=127,
-                    type="note_off" if value == 0 else "note_on",
+        match value:
+            case Scaler():
+                self.__set__(instance, value.data, chain=value)
+            case PadOrKey():
+                pad: PadOrKey = value
+                pad.device.bind(
+                    lambda value, ctx: instance.device.note(
+                        note=value, velocity=ctx.velocity, type=ctx.type
+                    ),
+                    type=self.type,
+                    cc_note=pad.cc_note,
+                    to=instance.device,
+                    param=self,
+                    append=append,
+                    from_=pad,
+                    transformer_chain=chain,
                 )
+            case list():
+                for e in value:
+                    pad: PadOrKey = e
+                    assert isinstance(pad, PadOrKey)
+                    self.__set__(instance, e)
+            case VirtualDevice():
+                feeder = value
 
-            feeder.bind(
-                foo,
-                to=instance.device,
-                param=self,
-                append=append,
-                from_=value.output_cv.parameter,
-            )
-            return
-        if isinstance(value, ParameterInstance):
-            feeder = value
+                def foo(value, ctx):
+                    if value == 0:
+                        instance.device.all_notes_off()
+                        return
+                    instance.device.note(
+                        note=value,
+                        velocity=127,
+                        type="note_off" if value == 0 else "note_on",
+                    )
 
-            def foo(value, ctx):
-                if value == 0:
-                    instance.device.all_notes_off()
-                    return
-                instance.device.note(
-                    note=value,
-                    velocity=127,
-                    type=ctx.type,
+                feeder.bind(
+                    foo,
+                    to=instance.device,
+                    param=self,
+                    append=append,
+                    from_=value.output_cv.parameter,
+                    transformer_chain=chain,
                 )
+            case ParameterInstance():
+                feeder = value
 
-            feeder.device.bind(
-                foo,
-                to=instance.device,
-                param=self,
-                append=append,
-                from_=value.parameter,
-            )
+                def foo(value, ctx):
+                    if value == 0:
+                        instance.device.all_notes_off()
+                        return
+                    instance.device.note(
+                        note=value,
+                        velocity=127,
+                        type="note_off" if value == 0 else "note_on",
+                    )
+
+                feeder.device.bind(
+                    foo,
+                    to=instance.device,
+                    param=self,
+                    append=append,
+                    from_=value.parameter,
+                    transformer_chain=chain,
+                )
+            case Int():
+                feeder = value
+
+                def foo(value, ctx):
+                    if value == 0:
+                        instance.device.all_notes_off()
+                        return
+                    instance.device.note(
+                        note=value,
+                        velocity=127,
+                        type="note_off" if value == 0 else "note_on",
+                    )
+
+                feeder.device.bind(
+                    foo,
+                    type=feeder.parameter.type,
+                    cc_note=feeder.parameter.cc_note,
+                    to=instance.device,
+                    param=self,
+                    append=append,
+                    from_=feeder.parameter,
+                    transformer_chain=chain,
+                )
 
     def basic_send(self, type, note, velocity): ...
 
@@ -780,6 +810,9 @@ class Module:
                 from_pads = other
                 for other in from_pads:
                     other.device.unbind(self.device, None, other.type, other.cc_note)
+                return self
+            case ParameterInstance():
+                other.device.unbind(self.device, other.parameter)
                 return self
         raise Exception(f"Unbinding {other.__class__.__name__} not yet supported")
 

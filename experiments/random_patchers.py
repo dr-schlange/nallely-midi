@@ -51,11 +51,13 @@ class InstanceCreator(VirtualDevice):
 class RandomPatcher(VirtualDevice):
     trigger_cv = VirtualParameter("trigger", range=(0, 1))
     max_patch_cv = VirtualParameter("max_patch", range=(2, 20))
+    exclude_device_cv = VirtualParameter("exclude_device", accepted_values=[])
 
     def __init__(self, *args, **kwargs):
         self.trigger = 0
         self.max_patch = 5
         self.trevor_bus = None
+        self.exclude_device = None
         for device in virtual_devices:
             if isinstance(device, TrevorBus):
                 self.trevor_bus = device
@@ -65,6 +67,13 @@ class RandomPatcher(VirtualDevice):
 
     def main(self, ctx: ThreadContext) -> Any:
         parameters = []
+        accepted_values = [
+            "--",
+            *(list(d.__class__.__name__ for d in all_devices())),
+        ]
+        self.__class__.exclude_device_cv.accepted_values = accepted_values
+        self.__class__.exclude_device_cv.range = (0, len(accepted_values))
+
         if self.trigger == 1:
             self.trigger = 0
             parameters = self.all_system_parameters()
@@ -100,3 +109,10 @@ class RandomPatcher(VirtualDevice):
 
         for src, dst in selected_combinations:
             self.trevor_api.associate_parameters(src, dst)
+
+    def process_input(self, param, value):
+        if param == "exclude_device":
+            if value == "--":
+                return
+
+        return super().process_input(param, value)
