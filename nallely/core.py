@@ -56,7 +56,7 @@ def stop_all_connected_devices(skip_unregistered=False, force_note_off=True):
     stop_all_virtual_devices(skip_unregistered)
     for device in list(connected_devices):
         if force_note_off:
-            device.force_all_notes_off()
+            device.all_notes_off()
         if skip_unregistered and getattr(device, "forever", False):
             continue
         device.close()
@@ -752,6 +752,7 @@ class MidiDevice:
             self.inport_name = None
 
     def close(self, delete=True):
+        self.all_notes_off()
         self.close_in()
         self.close_out()
         # flush all callbacks and registry
@@ -840,8 +841,8 @@ class MidiDevice:
         self.outport.send(
             mido.Message("note_on", channel=channel, note=note, velocity=velocity)
         )
-        if self.played_notes[note] > 100:
-            for _ in range(50):
+        if self.played_notes[note] > 40:
+            for _ in range(20):
                 self.note_off(note, velocity=0)
 
     def note_off(self, note, velocity=127 // 2, channel=0):
@@ -862,6 +863,7 @@ class MidiDevice:
         for note, occurence in self.played_notes.items():
             for _ in range(occurence):
                 self.note_off(note, velocity=0)
+        self.played_notes.clear()
 
     def force_all_notes_off(self, times=1):
         for _ in range(times + 1):
@@ -943,7 +945,11 @@ class MidiDevice:
                 )
                 other.device.unbind(self, mm, other.type, other.cc_note)
             case ParameterInstance():
-                other.device.unbind(self, other.parameter)
+                mm = self.reverse_map[("note", None)]
+                other.device.unbind(self, mm)
+            case VirtualDevice():
+                mm = self.reverse_map[("note", None)]
+                other.unbind(self, mm)
             case Int():
                 mm = (
                     self.reverse_map.get(("note", other.parameter.cc_note))
@@ -952,11 +958,11 @@ class MidiDevice:
                 other.device.unbind(
                     self, mm, other.parameter.type, other.parameter.cc_note
                 )
-                self.force_all_notes_off()
             case _:
                 raise Exception(
                     f"Unbinding {other.__class__.__name__} not yet supported"
                 )
+        self.all_notes_off()
         return self
 
     # def bind_output(self, callback):

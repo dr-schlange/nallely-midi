@@ -312,6 +312,9 @@ def start_trevor(include_builtins, loaded_paths=None, init_script=None):
         _trevor_menu(loaded_paths, init_script, trevor)
         print("Shutting down...")
     finally:
+        for device in connected_devices:
+            device.all_notes_off()
+            device.force_all_notes_off(10)
         stop_all_connected_devices()
 
 
@@ -330,7 +333,7 @@ def launch_standalone_script(include_builtins, loaded_paths=None, init_script=No
         _trevor_menu(loaded_paths, init_script)
     finally:
         for device in connected_devices:
-            device.force_all_notes_off(times=10)
+            device.all_notes_off()
         stop_all_connected_devices()
 
 
@@ -350,10 +353,14 @@ def _trevor_menu(loaded_paths, init_script, trevor_bus=None):
         elif q == "?":
             menu = (
                 "[MENU]\n"
-                "   k: stop (kill) a virtual or midi device\n"
+                "   k: stop (kill) a virtual or MIDI device\n"
                 "   q: stop the script\n"
+                "   f: force all notes off on connected all MIDI devices\n"
             )
             elprint(menu)
+        elif q == "f":
+            for device in connected_devices:
+                device.force_all_notes_off(10)
         elif q == "k":
             menu = "[STOP DEVICE]\n"
             devices = [d for d in all_devices() if not isinstance(d, TrevorBus)]
