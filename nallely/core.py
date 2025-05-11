@@ -1,7 +1,6 @@
 import json
 import threading
 import time
-import trace
 import traceback
 from collections import defaultdict
 from dataclasses import InitVar, asdict, dataclass, field
@@ -11,7 +10,6 @@ from queue import Empty, Full, Queue
 from typing import Any, Callable, Counter, Iterable, Literal, Type
 
 import mido
-from requests import get
 
 from .modules import (
     DeviceState,

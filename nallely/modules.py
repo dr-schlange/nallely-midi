@@ -8,7 +8,7 @@ from types import FunctionType
 from typing import TYPE_CHECKING, Any, Literal, Type
 
 if TYPE_CHECKING:
-    from .core import MidiDevice, ParameterInstance, ThreadContext, VirtualDevice
+    from .core import MidiDevice, ParameterInstance, VirtualDevice
 
 
 NOT_INIT = "uninitialized"
