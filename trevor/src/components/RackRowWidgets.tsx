@@ -25,23 +25,14 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 		}));
 
 		return (
-			<div
-				className="rack-row"
-			>
-				<div
-					className="rack-row"
-					style={{
-						maxWidth: "85%",
-					}}
-				>
-					{widgetIds.map((id) => (
-						<Scope key={id} id={id} />
-					))}
-				</div>
+			<div className="rack-row" style={{ width: "250px" }}>
+				{widgetIds.map((id) => (
+					<Scope key={id} id={id} />
+				))}
 				<div
 					style={{
 						height: "100%",
-						width: "15%",
+						width: "100%",
 						display: "flex",
 						flexDirection: "column",
 						alignItems: "center",

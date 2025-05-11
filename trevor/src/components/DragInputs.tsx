@@ -136,6 +136,7 @@ export default function DragNumberInput({
 			style={{
 				touchAction: "none",
 				userSelect: "none",
+				width: "94%"
 			}}
 		/>
 	);

@@ -9,7 +9,6 @@
 	font-style: normal;
 }
 
-
 :root {
 	font-family: "Amiga Forever", system-ui, Avenir, Helvetica, Arial, sans-serif; /* Use the Amiga font */
 	line-height: 1.5;
@@ -345,7 +344,7 @@ input[type="text"]:disabled {
 
 .device-patching-main-section {
 	display: flex;
-	flex-direction: column;
+	flex-direction: row;
 	border-right: 2px solid #808080;
 	width: 100%;
 }
@@ -399,13 +398,14 @@ input[type="text"]:disabled {
 	background-color: #d0d0d0; /* Darker gray for RackRow */
 	border: 1px solid #aaa; /* Slightly darker border */
 	margin-bottom: 5px;
-	width: 100%; /* Ensure rows take full width */
-	display: flex; /* Ensure proper layout for devices */
-	height: 180px; /* Default fixed height for rack rows */
+	width: 250px;
+	display: flex;
+	height: 100%;
 	align-items: center;
 	justify-content: flex-start;
 	overflow-x: auto;
 	gap: 5px;
+	flex-direction: column;
 }
 
 .rack-row[data-slot]:hover {
@@ -1081,7 +1081,7 @@ input[type="text"]:disabled {
 	position: inherit;
 	align-items: center;
 	padding: 10px;
-	height: 135px;
+	height: 140px;
 	width: 205px;
 }
 

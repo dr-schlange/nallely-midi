@@ -95,12 +95,8 @@ export const Scope = ({ id }: ScopeProps) => {
 	}, [id]);
 
 	const options: uPlot.Options = {
-		height: divRef.current
-			? divRef.current.getBoundingClientRect().height - 25
-			: 300, // fallback height
-		width: divRef.current
-			? divRef.current.getBoundingClientRect().width - 25
-			: 600, // fallback width
+		height: 115,
+		width: 180,
 		cursor: {
 			drag: { setScale: false },
 		},

@@ -125,6 +125,9 @@ const DevicePatching = () => {
 		if (parameter.accepted_values.length > 0) {
 			return (
 				<select
+					style={{
+						width: "98.5%",
+					}}
 					value={value ? value.toString() : "--"}
 					onChange={(e) =>
 						trevorSocket?.setVirtualValue(device, parameter, e.target.value)
@@ -221,7 +224,12 @@ const DevicePatching = () => {
 					{device.meta.parameters.map((param) => (
 						<p
 							key={param.name}
-							style={{ marginTop: 0, marginBottom: 0, marginLeft: "10px" }}
+							style={{
+								marginTop: 0,
+								marginBottom: 0,
+								marginLeft: "10px",
+								marginRight: "5px",
+							}}
 						>
 							{/* biome-ignore lint/a11y/noLabelWithoutControl: <explanation> */}
 							<label>
@@ -553,39 +561,34 @@ const DevicePatching = () => {
 				ref={mainSectionRef}
 				style={{ overflow: "hidden" }} // Prevent scrollbars
 			>
-				<div>
-					<RackRow
-						devices={midi_devices}
-						rowIndex={0}
-						onDeviceDrop={handleDeviceDrop}
-						onSectionClick={handleSectionClick}
-						onNonSectionClick={handleNonSectionClick}
-						selectedSections={selectedSections.map(
-							(d) => `${d.device.id}-${d.section.parameters[0]?.section_name}`,
-						)}
-						onSectionScroll={updateConnections}
-						onDeviceClick={handleMidiDeviceClick}
-					/>
-					<RackRowVirtual
-						devices={virtual_devices.filter(
-							(device) => !device.meta.name.includes("TrevorBus"),
-						)}
-						height={rackRowHeight}
-						rowIndex={0}
-						onDeviceDrop={handleDeviceDrop}
-						onParameterClick={handleParameterClick}
-						onNonSectionClick={handleNonSectionClick}
-						selectedSections={selectedSections.map(
-							(d) => `${d.device.id}-${d.section.parameters[0]?.section_name}`,
-						)}
-						onSectionScroll={updateConnections}
-					/>
-					<svg className="device-patching-svg" ref={svgRef} />
-				</div>
-				{/* <div style={{ marginTop: "auto" }}> */}
-				<div>
-					<RackRowWidgets ref={widgetRack} />
-				</div>
+				<RackRow
+					devices={midi_devices}
+					rowIndex={0}
+					onDeviceDrop={handleDeviceDrop}
+					onSectionClick={handleSectionClick}
+					onNonSectionClick={handleNonSectionClick}
+					selectedSections={selectedSections.map(
+						(d) => `${d.device.id}-${d.section.parameters[0]?.section_name}`,
+					)}
+					onSectionScroll={updateConnections}
+					onDeviceClick={handleMidiDeviceClick}
+				/>
+				<RackRowVirtual
+					devices={virtual_devices.filter(
+						(device) => !device.meta.name.includes("TrevorBus"),
+					)}
+					height={rackRowHeight}
+					rowIndex={0}
+					onDeviceDrop={handleDeviceDrop}
+					onParameterClick={handleParameterClick}
+					onNonSectionClick={handleNonSectionClick}
+					selectedSections={selectedSections.map(
+						(d) => `${d.device.id}-${d.section.parameters[0]?.section_name}`,
+					)}
+					onSectionScroll={updateConnections}
+				/>
+				<svg className="device-patching-svg" ref={svgRef} />
+				<RackRowWidgets ref={widgetRack} />
 			</div>
 
 			<div className="device-patching-side-section">
