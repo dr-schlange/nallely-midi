@@ -21,9 +21,9 @@ const generateAcronym = (name: string): string => {
 };
 
 const VirtualDeviceComponent = ({
-	width = 220,
+	// width = 220,
 	margin = 5,
-	height = 150,
+	// height = 150,
 	device,
 	selected = false,
 	onParameterClick,
@@ -32,8 +32,8 @@ const VirtualDeviceComponent = ({
 	classConnections = false,
 	onSectionScroll,
 }: {
-	width?: number;
-	height?: number;
+	// width?: number;
+	// height?: number;
 	margin?: number;
 	device: VirtualDevice;
 	onParameterClick?: (parameter: VirtualParameter) => void;
@@ -66,8 +66,8 @@ const VirtualDeviceComponent = ({
 		<div
 			className="device-component"
 			style={{
-				width: width - margin * 3,
-				height: height - margin * 3,
+				// width: width - margin * 3,
+				// height: height - margin * 3,
 				boxSizing: "border-box",
 				borderColor: selected ? "yellow" : "",
 			}}

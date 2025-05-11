@@ -20,9 +20,9 @@ const generateAcronym = (name: string): string => {
 };
 
 const MidiDeviceComponent = ({
-	width = 220,
+	// width = 220,
 	margin = 5,
-	height = 150,
+	// height = 150,
 	device,
 	selected = false,
 	onSectionClick,
@@ -31,8 +31,8 @@ const MidiDeviceComponent = ({
 	classConnections = false,
 	onSectionScroll,
 }: {
-	width?: number;
-	height?: number;
+	// width?: number;
+	// height?: number;
 	margin?: number;
 	device: MidiDevice;
 	onSectionClick?: (section: MidiDeviceSection) => void;
@@ -59,10 +59,11 @@ const MidiDeviceComponent = ({
 		<div
 			className="device-component"
 			style={{
-				width: width - margin * 3,
-				height: height - margin * 3,
+				// width: width - margin * 3,
+				// height: height - margin * 3,
 				boxSizing: "border-box",
 				borderColor: selected ? "yellow" : "",
+				position: "relative",
 			}}
 			id={`${device.id}`}
 			onClick={() => onDeviceClick?.(device)}

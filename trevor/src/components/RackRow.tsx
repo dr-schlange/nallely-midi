@@ -2,7 +2,6 @@ import MidiDeviceComponent from "./DeviceComponent";
 import type { MidiDevice, MidiDeviceSection } from "../model";
 
 export const RackRow = ({
-	height,
 	rowIndex,
 	onDeviceDrop,
 	onSectionClick,
@@ -12,7 +11,6 @@ export const RackRow = ({
 	onSectionScroll,
 	onDeviceClick,
 }: {
-	height: number;
 	rowIndex: number;
 	devices: MidiDevice[];
 	onDeviceDrop: (
@@ -48,14 +46,6 @@ export const RackRow = ({
 		// biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
 		<div
 			className="rack-row"
-			style={{
-				height, // Fixed height for the RackRow
-				width: "100%", // Fill the parent container horizontally
-				position: "relative",
-				overflow: "visible", // Allow overflow to simulate additional rows
-				display: "flex",
-				flexWrap: "wrap", // Wrap devices to the next "row" when overflowing
-			}}
 			onClick={(event) => {
 				if (
 					!(event.target as HTMLElement).classList.contains(
@@ -68,24 +58,14 @@ export const RackRow = ({
 			}}
 		>
 			{devices.map((device, i) => (
-				<div
+				<MidiDeviceComponent
 					key={device.id}
-					data-rack-slot={i}
-					style={{
-						position: "absolute",
-						left: i * slotWidth + 5,
-						top: "50%", // Center vertically
-						transform: "translateY(-50%)", // Adjust to center the device properly
-					}}
-				>
-					<MidiDeviceComponent
-						height={height}
-						device={device}
-						onSectionClick={(section) => onSectionClick(device, section)}
-						selectedSections={selectedSections}
-						onDeviceClick={onDeviceClick}
-					/>
-				</div>
+					// height={height}
+					device={device}
+					onSectionClick={(section) => onSectionClick(device, section)}
+					selectedSections={selectedSections}
+					onDeviceClick={onDeviceClick}
+				/>
 			))}
 		</div>
 	);

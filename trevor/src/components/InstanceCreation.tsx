@@ -113,109 +113,82 @@ const InstanceCreation = () => {
 
 	return (
 		<div className="instance-creation">
-			<div className="instance-creation-top-panel">
-				<div className="instance-creation-midi-output">
-					<h3>MIDI Output</h3>
-					<div className="midi-ports-grid">
-						{midiInPorts.map((port) => (
-							// biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
-							<div
-								key={port}
-								className="midi-port"
-								title={port}
-								onClick={() => handlePortClick(port, "output")}
-							>
-								<span className="midi-port-name">{truncateName(port, 8)}</span>
+			<div className="instance-creation-left-panel">
+				<div style={{ display: "flex", flexDirection: "row" }}>
+					<div className="instance-creation-midi-output">
+						<h3>MIDI Output</h3>
+						<div className="midi-ports-grid">
+							{midiInPorts.map((port) => (
+								// biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
 								<div
-									className="midi-port-circle"
-									id={`output-${port}`}
-									style={{
-										borderColor:
-											selectedPort?.name === port && selectedPort?.direction
-												? "yellow"
-												: "",
-									}}
-								/>
-							</div>
-						))}
+									key={port}
+									className="midi-port"
+									title={port}
+									onClick={() => handlePortClick(port, "output")}
+								>
+									<span className="midi-port-name">
+										{truncateName(port, 8)}
+									</span>
+									<div
+										className="midi-port-circle"
+										id={`output-${port}`}
+										style={{
+											borderColor:
+												selectedPort?.name === port && selectedPort?.direction
+													? "yellow"
+													: "",
+										}}
+									/>
+								</div>
+							))}
+						</div>
+					</div>
+					<div className="instance-creation-midi-inputs">
+						<h3>MIDI Inputs</h3>
+						<div className="midi-ports-grid">
+							{midiOutPorts.map((port) => (
+								// biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
+								<div
+									key={port}
+									className="midi-port"
+									title={port}
+									onClick={() => handlePortClick(port, "input")}
+								>
+									<span className="midi-port-name">
+										{truncateName(port, 8)}
+									</span>
+									<div
+										className="midi-port-circle"
+										id={`input-${port}`}
+										style={{
+											borderColor:
+												selectedPort?.name === port && selectedPort?.direction
+													? "yellow"
+													: "",
+										}}
+									/>
+								</div>
+							))}
+						</div>
 					</div>
 				</div>
-				<div className="instance-creation-midi-inputs">
-					<h3>MIDI Inputs</h3>
-					<div className="midi-ports-grid">
-						{midiOutPorts.map((port) => (
-							// biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
-							<div
-								key={port}
-								className="midi-port"
-								title={port}
-								onClick={() => handlePortClick(port, "input")}
-							>
-								<span className="midi-port-name">{truncateName(port, 8)}</span>
-								<div
-									className="midi-port-circle"
-									id={`input-${port}`}
-									style={{
-										borderColor:
-											selectedPort?.name === port && selectedPort?.direction
-												? "yellow"
-												: "",
-									}}
-								/>
-							</div>
-						))}
-					</div>
+
+				<div
+					className="device-class-left-panel device-list"
+					onScroll={() => updateConnections()}
+				>
+					{devices.map((device, i) => (
+						<MidiDeviceComponent
+							classConnections
+							key={device.id}
+							device={device}
+							selected={selectedDevice === device}
+							onDeviceClick={() => selectDevice(device)}
+						/>
+					))}
 				</div>
-				{/* <div className="instance-creation-info-panel">
-					<h3>Info</h3>
-					<div className="info-content">
-						{selectedDevice ? (
-							<div>
-								<p>Device: {selectedDevice.meta.name}</p>
-								<p>Sections:</p>
-								{selectedDevice.meta.sections.map((section) => (
-									<p key={section.name}>{section.name}</p>
-								))}
-							</div>
-						) : (
-							<p>Select a device to see its details.</p>
-						)}
-					</div>
-				</div> */}
 			</div>
-			<div className="instance-creation-bottom-panel">
-				<div className="device-class-left-panel">
-					<h3>Devices</h3>
-					<div
-						className="device-list"
-						style={{
-							display: "flex",
-							justifyContent: "center",
-							alignItems: "center",
-							height: "calc(100% - 40px)",
-						}}
-					>
-						{devices.map((device, i) => (
-							// biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
-							<div
-								key={device.id}
-								style={{
-									position: "absolute",
-									left: i * 210 + 5,
-									transform: "translateY(-50%)", // Adjust to center the device properly
-								}}
-								onClick={() => selectDevice(device)}
-							>
-								<MidiDeviceComponent
-									classConnections
-									key={device.id}
-									device={device}
-									selected={selectedDevice === device}
-								/>
-							</div>
-						))}
-					</div>
-				</div>
+			<div className="instance-creation-right-panel">
 				<div className="device-class-right-panel">
 					<h3>Device Classes</h3>
 					<ul className="device-class-list">

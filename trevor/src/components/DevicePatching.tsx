@@ -556,7 +556,6 @@ const DevicePatching = () => {
 				<div>
 					<RackRow
 						devices={midi_devices}
-						height={rackRowHeight}
 						rowIndex={0}
 						onDeviceDrop={handleDeviceDrop}
 						onSectionClick={handleSectionClick}
@@ -585,7 +584,7 @@ const DevicePatching = () => {
 				</div>
 				{/* <div style={{ marginTop: "auto" }}> */}
 				<div>
-					<RackRowWidgets height={rackRowHeight} ref={widgetRack} />
+					<RackRowWidgets ref={widgetRack} />
 				</div>
 			</div>
 

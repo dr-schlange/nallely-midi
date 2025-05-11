@@ -9,6 +9,7 @@
 	font-style: normal;
 }
 
+
 :root {
 	font-family: "Amiga Forever", system-ui, Avenir, Helvetica, Arial, sans-serif; /* Use the Amiga font */
 	line-height: 1.5;
@@ -62,6 +63,11 @@ h1 {
 	font-size: 1.5em;
 	line-height: 1.2;
 	color: #000000;
+}
+
+h3 {
+	margin-top: 0px;
+	margin-bottom: 2px;
 }
 
 button,
@@ -191,7 +197,7 @@ input[type="text"]:disabled {
 .instance-creation {
 	position: relative;
 	display: flex;
-	flex-direction: column;
+	flex-direction: row;
 	width: 100%;
 	height: 100%;
 	background-color: #d0d0d0; /* Amiga-style background */
@@ -199,12 +205,28 @@ input[type="text"]:disabled {
 	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
 }
 
-.instance-creation-top-panel {
-	/* flex: 1;  */
+.instance-creation-left-panel {
 	display: flex;
+	/* flex: 10; */
+	min-width: 70%;
+	max-width: 90%;
+	width: 90%;
+	flex-direction: column;
 	background-color: #e0e0e0;
 	border-bottom: 2px solid #808080;
 	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
+}
+
+.instance-creation-right-panel {
+	display: flex;
+	flex: 2;
+	flex-direction: column;
+	height: 100%;
+	background-color: #e0e0e0;
+	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
+	max-width: 260px;
+	width: 260px;
+	min-width: 260px;
 }
 
 .instance-creation-midi-output,
@@ -223,12 +245,12 @@ input[type="text"]:disabled {
 }
 
 .instance-creation-midi-inputs {
-	flex: 4; /* 40% of the horizontal space */
+	flex: 4;
 	border-right: 2px solid #808080;
 }
 
 .instance-creation-info-panel {
-	flex: 2; /* 20% of the horizontal space */
+	flex: 2;
 }
 
 .info-content {
@@ -242,30 +264,21 @@ input[type="text"]:disabled {
 	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
 }
 
-.instance-creation-bottom-panel {
-	display: flex;
-	flex-direction: row;
-	height: 100%;
-	background-color: #e0e0e0;
-	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
-}
-
 .device-class-left-panel {
-	flex: 4; /* 80% of the horizontal space */
+	flex: 4;
 	background-color: #d0d0d0;
 	border-right: 2px solid #808080;
-	padding: 10px;
-	display: flex;
-	flex-direction: column;
-	align-items: flex-start;
-	justify-content: flex-start;
 }
 
 .device-list {
 	display: flex;
-	flex-direction: column;
-	gap: 10px; /* Space between devices */
+	flex-direction: row;
+	gap: 10px;
 	width: 100%;
+	justify-content: flex-start;
+	align-items: center;
+	height: 100%;
+	overflow-x: auto;
 }
 
 .device-name {
@@ -290,12 +303,14 @@ input[type="text"]:disabled {
 }
 
 .device-class-right-panel {
-	flex: 1; /* 20% of the horizontal space */
+	flex: 1;
 	display: flex;
 	flex-direction: column;
-	align-items: flex-start;
+	align-items: center;
 	justify-content: flex-start;
 	padding: 10px;
+	overflow-y: auto;
+	overflow-x: hidden;
 }
 
 .device-class-list {
@@ -329,18 +344,19 @@ input[type="text"]:disabled {
 }
 
 .device-patching-main-section {
-	flex: 4; /* 80% of the horizontal space */
 	display: flex;
 	flex-direction: column;
 	border-right: 2px solid #808080;
+	width: 100%;
 }
 
 .device-patching-side-section {
-	flex: 1; /* 20% of the horizontal space */
 	display: flex;
 	flex-direction: column;
 	background-color: #e0e0e0;
 	border-left: 2px solid #808080;
+	width: 260px;
+	flex: 1;
 }
 
 .device-patching-top-panel {
@@ -383,10 +399,13 @@ input[type="text"]:disabled {
 	background-color: #d0d0d0; /* Darker gray for RackRow */
 	border: 1px solid #aaa; /* Slightly darker border */
 	margin-bottom: 5px;
-	overflow: hidden; /* Ensure child elements like Device are visually contained */
 	width: 100%; /* Ensure rows take full width */
 	display: flex; /* Ensure proper layout for devices */
-	height: 130px; /* Default fixed height for rack rows */
+	height: 180px; /* Default fixed height for rack rows */
+	align-items: center;
+	justify-content: flex-start;
+	overflow-x: auto;
+	gap: 5px;
 }
 
 .rack-row[data-slot]:hover {
@@ -398,13 +417,14 @@ input[type="text"]:disabled {
 	background-color: #e0e0e0;
 	border: 5px solid #808080;
 	box-sizing: border-box;
-	position: absolute;
 	display: flex;
 	flex-direction: column;
 	align-items: center;
 	justify-content: space-between;
 	padding: 10px;
-	transform: translateY(-50%);
+	width: 190px;
+	min-width: 190px;
+	height: 140px;
 }
 
 .device-name {
@@ -863,13 +883,15 @@ input[type="text"]:disabled {
 }
 
 .top-section {
-	flex: 2;
+	flex: auto;
+	max-height: 20%;
 	display: flex;
 	border-bottom: 2px solid #808080;
 }
 
 .bottom-section {
-	flex: 8; /* 60% of the vertical space */
+	flex: auto;
+	min-height: 80%;
 	display: flex;
 }
 
@@ -985,9 +1007,9 @@ input[type="text"]:disabled {
 
 .center-button {
 	position: absolute;
-	top: 50%;
-	left: 50%;
-	transform: translate(-50%, -50%);
+	/* top: 50%; */
+	/* left: 50%; */
+	transform: translate(-50%, 60%);
 }
 
 /* UI for CodeMirror */
@@ -1134,4 +1156,14 @@ input[type="text"]:disabled {
 
 .note-box:hover {
 	background-color: #ccc;
+}
+
+@media (max-height: 450px) {
+	.rack-row {
+		align-items: flex-start;
+	}
+
+	.top-section {
+		max-height: 63%;
+	}
 }
