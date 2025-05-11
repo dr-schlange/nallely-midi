@@ -1,15 +1,15 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import CodeMirror from "@uiw/react-codemirror";
 import { python } from "@codemirror/lang-python";
 import {
 	autocompletion,
 	type CompletionContext,
 } from "@codemirror/autocomplete";
-import { EditorView, keymap } from "@codemirror/view";
+import { type EditorView, keymap } from "@codemirror/view";
 import { useTrevorWebSocket } from "../../websockets/websocket";
 import { useTrevorSelector } from "../../store";
 import { Prec } from "@codemirror/state";
-import { type Diagnostic, setDiagnostics, linter } from "@codemirror/lint";
+import { type Diagnostic, linter } from "@codemirror/lint";
 
 const AUTO_SAVE_DELAY = 2000;
 const ERROR_DELAY = 3000;

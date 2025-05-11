@@ -30,7 +30,7 @@ const parameterUUID = (
 	parameter: MidiParameter | VirtualParameter | PadsOrKeys | PadOrKey,
 ) => {
 	const id = typeof device === "object" ? device.id : device;
-	let parameterName = undefined;
+	let parameterName: string | number;
 	if (isVirtualParameter(parameter)) {
 		parameterName = parameter.cv_name;
 	} else if (isPadsOrdKeys(parameter)) {
