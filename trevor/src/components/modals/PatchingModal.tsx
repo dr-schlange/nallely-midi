@@ -106,7 +106,7 @@ const PatchingModal = ({
 			return;
 		}
 		if (selectedParameters[0].parameter === param) {
-			setSelectedParameters([]);
+			setSelectedParameters(() => []);
 			return; // Deselect if the same parameter is clicked twice
 		}
 		const firstParameter = selectedParameters[0];
@@ -126,7 +126,7 @@ const PatchingModal = ({
 						parameterUUID(device, param),
 			) !== undefined, // if a connection already exist, we remove it
 		);
-		setSelectedParameters([]);
+		setSelectedParameters(() => []);
 	};
 
 	const handleConnectionClick = (connection: MidiConnection) => {
@@ -151,7 +151,7 @@ const PatchingModal = ({
 			firstParameter.device === device &&
 			firstParameter.parameter.section_name === keys.section_name
 		) {
-			setSelectedParameters([]);
+			setSelectedParameters(() => []);
 			return; // Deselect if the same parameter is clicked twice
 		}
 		const firstParameterUUID = parameterUUID(
@@ -170,7 +170,7 @@ const PatchingModal = ({
 						parameterUUID(device, keys),
 			) !== undefined, // if a connection already exist, we remove it
 		);
-		setSelectedParameters([]);
+		setSelectedParameters(() => []);
 	};
 
 	const handleKeyClick = (

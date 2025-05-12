@@ -479,7 +479,7 @@ input[type="text"]:disabled {
 }
 
 .device-section-box:hover {
-	background-color: #ff9900;
+	background-color: yellow;
 }
 
 .device-section-name {
@@ -787,9 +787,9 @@ input[type="text"]:disabled {
 	background-color: orange;
 }
 
-/* .parameter:not(.selected) .parameter-box {
+.parameter:not(.selected) .parameter-box {
   background-color: #d0d0d0;
-} */
+}
 
 .connection-setup {
 	font-family: "Amiga Forever", system-ui, Avenir, Helvetica, Arial, sans-serif;
@@ -1166,5 +1166,9 @@ input[type="text"]:disabled {
 
 	.top-section {
 		max-height: 90%;
+	}
+
+	.parameters-grid {
+		flex-wrap: nowrap;
 	}
 }
