@@ -46,6 +46,7 @@ export const RackRow = ({
 		// biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
 		<div
 			className="rack-row"
+			onScroll={() => onSectionScroll?.()}
 			onClick={(event) => {
 				if (
 					!(event.target as HTMLElement).classList.contains(

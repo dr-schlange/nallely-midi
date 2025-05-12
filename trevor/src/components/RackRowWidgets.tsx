@@ -2,7 +2,7 @@ import { forwardRef, useImperativeHandle, useState } from "react";
 import { Scope } from "./Oscilloscope";
 
 interface WidgetRackProps {
-	height?: number;
+	onRackScroll?: () => void;
 }
 
 export interface RackRowWidgetRef {
@@ -10,7 +10,7 @@ export interface RackRowWidgetRef {
 }
 
 export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
-	({ height }: WidgetRackProps, ref) => {
+	({ onRackScroll }: WidgetRackProps, ref) => {
 		// const slotWidth = 210;
 		const [widgetIds, setWidgetIds] = useState<number[]>([]);
 
@@ -25,7 +25,11 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 		}));
 
 		return (
-			<div className="rack-row" style={{ width: "250px" }}>
+			<div
+				className="rack-row"
+				style={{ width: "250px" }}
+				onScroll={() => onRackScroll?.()}
+			>
 				{widgetIds.map((id) => (
 					<Scope key={id} id={id} />
 				))}

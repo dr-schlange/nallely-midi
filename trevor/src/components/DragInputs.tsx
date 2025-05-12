@@ -100,11 +100,12 @@ export default function DragNumberInput({
 
 	const handleTouchEnd = () => {
 		endDrag();
+		handleBlur();
 	};
 
 	const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const val = e.target.value;
-		onChange?.(val); // Toujours accepter ce que tape l'utilisateur
+		onChange?.(val);
 	};
 
 	const handleBlur = () => {
@@ -113,7 +114,7 @@ export default function DragNumberInput({
 		let finalValue = val;
 
 		if (val === "" || parsed === null) {
-			finalValue = "0"; // valeur par défaut si vide ou invalide
+			finalValue = "0";
 		} else {
 			finalValue = parsed.toFixed(precision).replace(",", ".");
 		}
@@ -136,7 +137,7 @@ export default function DragNumberInput({
 			style={{
 				touchAction: "none",
 				userSelect: "none",
-				width: "94%"
+				width: "94%",
 			}}
 		/>
 	);
