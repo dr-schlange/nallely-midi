@@ -3,7 +3,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Any
 
-from websockets import ConnectionClosed, ConnectionClosedError, ConnectionClosedOK
+from websockets import ConnectionClosed, ConnectionClosedError
 from websockets.sync.server import serve
 
 from .core import (
@@ -93,7 +93,7 @@ class WebSocketBus(VirtualDevice):
                         continue
                     try:
                         device.send(message)
-                    except ConnectionClosedOK | ConnectionClosedError as e:
+                    except ConnectionClosed as e:
                         try:
                             connected_devices.remove(device)
                             kind = (
@@ -102,13 +102,13 @@ class WebSocketBus(VirtualDevice):
                                 else "disconnected"
                             )
                             print(
-                                f"One of the clients on {service_name} {kind} [{len(connected_devices)} clients]"
+                                f"Client {device} on {service_name} {kind} [{len(connected_devices)} clients]"
                             )
                         except Exception:
                             ...
         except ConnectionClosed:
             print(
-                f"One of the clients on {service_name} disconnected unexpectedly [{len(connected_devices)} clients]"
+                f"Client {client} on {service_name} disconnected unexpectedly [{len(connected_devices)} clients]"
             )
         finally:
             print("Remove", client)
@@ -143,7 +143,7 @@ class WebSocketBus(VirtualDevice):
                         }
                     )
                 )
-            except ConnectionClosedOK | ConnectionClosedError as e:
+            except ConnectionClosed as e:
                 try:
                     devices.remove(device)
                     kind = (

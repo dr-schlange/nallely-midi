@@ -10,7 +10,7 @@ from itertools import zip_longest
 from pathlib import Path
 from textwrap import indent
 
-from websockets import ConnectionClosedError, ConnectionClosedOK
+from websockets import ConnectionClosed, ConnectionClosedError
 from websockets.sync.server import serve
 
 from ..core import (
@@ -114,7 +114,7 @@ class TrevorBus(VirtualDevice):
         for client in list(connected_devices):
             try:
                 client.send(self.to_json(message))
-            except ConnectionClosedOK | ConnectionClosedError as e:
+            except ConnectionClosed as e:
                 try:
                     connected_devices.remove(client)
                     kind = (
@@ -123,7 +123,7 @@ class TrevorBus(VirtualDevice):
                         else "disconnected"
                     )
                     print(
-                        f"One of the clients on trevor {kind} [{len(connected_devices)} clients]"
+                        f"Client {client} on trevor {kind} [{len(connected_devices)} clients]"
                     )
                 except Exception:
                     ...
@@ -226,7 +226,7 @@ class TrevorBus(VirtualDevice):
         for client in list(connected_devices):
             try:
                 client.send(self.to_json(self.full_state()))
-            except ConnectionClosedOK | ConnectionClosedError as e:
+            except ConnectionClosed as e:
                 try:
                     connected_devices.remove(client)
                     kind = (
@@ -235,7 +235,7 @@ class TrevorBus(VirtualDevice):
                         else "disconnected"
                     )
                     print(
-                        f"One of the clients on trevor {kind} [{len(connected_devices)} clients]"
+                        f"Client {client} on trevor {kind} [{len(connected_devices)} clients]"
                     )
                 except Exception:
                     ...
