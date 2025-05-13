@@ -3,6 +3,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Any
 
+from websockets import ConnectionClosed, ConnectionClosedError, ConnectionClosedOK
 from websockets.sync.server import serve
 
 from .core import (
@@ -87,10 +88,28 @@ class WebSocketBus(VirtualDevice):
         try:
             for message in client:
                 # Sends message to other modules connected to this channel
-                for device in connected_devices:
+                for device in list(connected_devices):
                     if device == client:
                         continue
-                    device.send(message)
+                    try:
+                        device.send(message)
+                    except ConnectionClosedOK | ConnectionClosedError as e:
+                        try:
+                            connected_devices.remove(device)
+                            kind = (
+                                "crashed"
+                                if isinstance(e, ConnectionClosedError)
+                                else "disconnected"
+                            )
+                            print(
+                                f"One of the clients on {service_name} {kind} [{len(connected_devices)} clients]"
+                            )
+                        except Exception:
+                            ...
+        except ConnectionClosed:
+            print(
+                f"One of the clients on {service_name} disconnected unexpectedly [{len(connected_devices)} clients]"
+            )
         finally:
             print("Remove", client)
             connected_devices.remove(client)
@@ -111,17 +130,32 @@ class WebSocketBus(VirtualDevice):
         device, *parameter = on.split("_")
         parameter = "_".join(parameter)
 
-        for connected in self.connected[device]:
-            connected.send(
-                json.dumps(
-                    {
-                        "value": float(value),
-                        "device": device,
-                        "on": parameter,
-                        "sender": ctx.param,
-                    }
+        devices = self.connected[device]
+        for connected in list(devices):
+            try:
+                connected.send(
+                    json.dumps(
+                        {
+                            "value": float(value),
+                            "device": device,
+                            "on": parameter,
+                            "sender": ctx.param,
+                        }
+                    )
                 )
-            )
+            except ConnectionClosedOK | ConnectionClosedError as e:
+                try:
+                    devices.remove(device)
+                    kind = (
+                        "crashed"
+                        if isinstance(e, ConnectionClosedError)
+                        else "disconnected"
+                    )
+                    print(
+                        f"Cannot send information on {parameter} for {connected}, it probably {kind} [{len(devices)} clients]"
+                    )
+                except Exception:
+                    ...
 
     def configure_remote_device(self, name, parameters: list[str | dict[str, Any]]):
         virtual_parameters = []

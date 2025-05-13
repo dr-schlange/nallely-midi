@@ -10,6 +10,7 @@ from itertools import zip_longest
 from pathlib import Path
 from textwrap import indent
 
+from websockets import ConnectionClosedError, ConnectionClosedOK
 from websockets.sync.server import serve
 
 from ..core import (
@@ -109,8 +110,23 @@ class TrevorBus(VirtualDevice):
             self.send_message(res)
 
     def send_message(self, message):
-        for client in self.connected["trevor"]:
-            client.send(self.to_json(message))
+        connected_devices = self.connected["trevor"]
+        for client in list(connected_devices):
+            try:
+                client.send(self.to_json(message))
+            except ConnectionClosedOK | ConnectionClosedError as e:
+                try:
+                    connected_devices.remove(client)
+                    kind = (
+                        "crashed"
+                        if isinstance(e, ConnectionClosedError)
+                        else "disconnected"
+                    )
+                    print(
+                        f"One of the clients on trevor {kind} [{len(connected_devices)} clients]"
+                    )
+                except Exception:
+                    ...
 
     def full_state(self):
         return self.session.snapshot()
@@ -206,8 +222,23 @@ class TrevorBus(VirtualDevice):
         return self.full_state()
 
     def send_update(self, device=None):
-        for client in self.connected["trevor"]:
-            client.send(self.to_json(self.full_state()))
+        connected_devices = self.connected["trevor"]
+        for client in list(connected_devices):
+            try:
+                client.send(self.to_json(self.full_state()))
+            except ConnectionClosedOK | ConnectionClosedError as e:
+                try:
+                    connected_devices.remove(client)
+                    kind = (
+                        "crashed"
+                        if isinstance(e, ConnectionClosedError)
+                        else "disconnected"
+                    )
+                    print(
+                        f"One of the clients on trevor {kind} [{len(connected_devices)} clients]"
+                    )
+                except Exception:
+                    ...
 
     def create_scaler(self, from_parameter, to_parameter, create):
         self.trevor.manage_scaler(from_parameter, to_parameter, create)
