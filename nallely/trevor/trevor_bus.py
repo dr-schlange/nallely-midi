@@ -445,5 +445,7 @@ def _print_with_trevor(text):
         t = t.ljust(size) if t else f"{indent}"
         m = m[size:] if m else ""
         final += f"{t}  {m}\n"
-    print('  "Today I slept on the floor tiles because it\'s too hot."')
+    print(
+        '  "Today I went to dig my fresher bone, I did it secretly so Lisa didn\'t see it."'
+    )
     print(final[:-3])

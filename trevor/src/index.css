@@ -125,31 +125,24 @@ input[type="text"]:disabled {
 	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
 }
 
-.right-panel {
-	flex: 1; /* Fixed size for the right panel */
+/* .right-panel {
+	flex: 1;
 	display: flex;
 	flex-direction: column;
 	background-color: #f0f0f0;
 	border-left: 2px solid #808080;
-}
+} */
 
 .top-right-panel,
 .bottom-right-panel {
-	flex: 1; /* Ensure both panels take equal space */
-	overflow-y: auto; /* Enable scrolling if content overflows */
-}
-
-.top-right-panel,
-.bottom-right-panel {
-	flex: 1; /* 50% of the vertical space */
+	flex: 1;
 	display: flex;
 	flex-direction: column;
 	align-items: flex-start;
 	justify-content: flex-start;
 	padding: 10px;
 	border-bottom: 2px solid #808080;
-	overflow-y: auto; /* Enable scrolling for connections */
-	max-height: 100%; /* Prevent overflow */
+	overflow-y: auto;
 }
 
 .bottom-right-panel {
@@ -633,7 +626,7 @@ input[type="text"]:disabled {
 }
 
 .top-left-panel {
-	flex: 1; /* 50% of the vertical space */
+	flex: 1;
 	background-color: #e0e0e0;
 	border-bottom: 2px solid #808080;
 	display: flex;
@@ -641,9 +634,10 @@ input[type="text"]:disabled {
 	align-items: flex-start;
 	justify-content: flex-start;
 	padding: 10px;
-	overflow-y: auto; /* Allow scrolling if content overflows */
+	overflow-y: auto;
 	border: 2px solid #808080;
 	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
+	overflow-x: auto;
 }
 
 .top-left-panel h3 {
@@ -695,11 +689,12 @@ input[type="text"]:disabled {
 }
 
 .right-panel {
-	flex: 1; /* Fixed size for the right panel */
-	background-color: #f0f0f0;
+	flex: 1;
 	display: flex;
-	align-items: center;
-	justify-content: center;
+	flex-direction: column; /* nécessaire pour empiler top et bottom */
+	background-color: #f0f0f0;
+	border-left: 2px solid #808080;
+	max-width: 340px;
 }
 
 .modal-content {
@@ -728,8 +723,13 @@ input[type="text"]:disabled {
 }
 
 .parameters-grid.left {
+	display: flex;
+	flex-wrap: nowrap;
+	flex-direction: column;
 	align-items: flex-end;
-	transform: translateX(-20%);
+	position: relative;
+	padding-left: 20px;
+	width: 100%;
 }
 
 .parameter {
@@ -739,6 +739,7 @@ input[type="text"]:disabled {
 	align-items: center;
 	justify-content: center;
 	cursor: pointer;
+	overflow: visible;
 }
 
 .parameter-box {
@@ -762,10 +763,11 @@ input[type="text"]:disabled {
 
 .parameter-name.left {
 	top: 50%;
-	right: 110%; /* Moves the text to the left of the box */
+	right: 100%; /* place à gauche du carré */
 	transform: translateY(-50%);
 	white-space: nowrap;
-	text-align: left;
+	text-align: right;
+	padding-right: 4px; /* colle le texte au carré */
 }
 
 .parameter-name.right {
@@ -788,7 +790,7 @@ input[type="text"]:disabled {
 }
 
 .parameter:not(.selected) .parameter-box {
-  background-color: #d0d0d0;
+	background-color: #d0d0d0;
 }
 
 .connection-setup {
@@ -898,7 +900,7 @@ input[type="text"]:disabled {
 
 .connection-svg {
 	position: absolute;
-	top: 0;
+	top: 30px;
 	left: 0;
 	width: 100%;
 	height: 100%;
@@ -1170,5 +1172,13 @@ input[type="text"]:disabled {
 
 	.parameters-grid {
 		flex-wrap: nowrap;
+	}
+
+	.right-panel {
+		max-width: 35%;
+	}
+
+	.connection-svg {
+		top: 30px;
 	}
 }
