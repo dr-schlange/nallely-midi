@@ -814,8 +814,9 @@ class MidiDevice:
                     if chain:
                         value = chain(value, ctx)
                     callback(value, ctx)
-                pads: ModulePadsOrKeys = self.reverse_map[("note", None)]
-                pads.basic_send(msg.type, msg.note, msg.velocity)
+                pads: ModulePadsOrKeys | None = self.reverse_map.get(("note", None))
+                if pads:
+                    pads.basic_send(msg.type, msg.note, msg.velocity)
             except:
                 traceback.print_exc()
 
