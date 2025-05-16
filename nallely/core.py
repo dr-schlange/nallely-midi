@@ -763,8 +763,9 @@ class MidiDevice:
     stop = close
 
     def _update_state(self, cc, value):
-        control: ModuleParameter = self.reverse_map[("control_change", cc)]
-        control.basic_set(self, value)
+        control: ModuleParameter | None = self.reverse_map.get(("control_change", cc))
+        if control:
+            control.basic_set(self, value)
 
     def _sync_state(self, msg):
         if msg.type == "clock":
