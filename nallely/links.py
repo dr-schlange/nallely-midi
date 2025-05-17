@@ -43,7 +43,7 @@ class Link:
             value = self.chain(value, ctx)
         result = self.callback(value, ctx)
         if self.bouncy:
-            self.dest.device.bounce_link(self.dest.parameter, value, ctx)
+            self.dest.device.bounce_link(self.dest, value, ctx)
         return result
 
     def src_repr(self):
