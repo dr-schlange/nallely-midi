@@ -724,6 +724,17 @@ class MidiDevice:
                 traceback.print_exc()
         if msg.type == "note_on" or msg.type == "note_off":
             try:
+                # We look first if there are links at the "global level" for keys
+                for link in self.links.get(("note", -1), []):
+                    value = msg.note
+                    ctx = ThreadContext(
+                        {
+                            "debug": self.debug,
+                            "type": msg.type,
+                            "velocity": msg.velocity,
+                        }
+                    )
+                    link.trigger(value, ctx)
                 for link in self.links.get(("note", msg.note), []):
                     value = msg.note
                     ctx = ThreadContext(

@@ -11,7 +11,7 @@ class Link:
         Int | PadOrKey | PadsOrKeysInstance | ParameterInstance | Scaler | VirtualDevice
     )
     dest: Int | PadOrKey | PadsOrKeysInstance | ParameterInstance
-    bouncy: bool = False
+    bouncy: bool = True
 
     @classmethod
     def create(cls, src_feeder, dest):
@@ -42,8 +42,8 @@ class Link:
         if self.chain:
             value = self.chain(value, ctx)
         result = self.callback(value, ctx)
-        # if self.bouncy:
-        #     self.dest.device.bounce_link(self.dest.parameter, value, ctx)
+        if self.bouncy:
+            self.dest.device.bounce_link(self.dest.parameter, value, ctx)
         return result
 
     def src_repr(self):
