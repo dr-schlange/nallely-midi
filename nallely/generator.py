@@ -95,7 +95,7 @@ Generated configuration for the {brand} - {device}
                         range = ""
                     else:
                         range = f", range=({min}, {max})"
-                    descr = config["description"]
+                    descr = config.get("description")
                     descr = f", description={descr!r}" if descr else ""
                     parameter_code = f"    {parameter_name} = nallely.ModuleParameter({cc}{range}{init}{descr})\n"
                 f.write(parameter_code)
