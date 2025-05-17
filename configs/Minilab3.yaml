@@ -1,0 +1,28 @@
+Arturia:
+  Minilab3 MIDI :
+    general:
+      shift: {cc: 9, description: 'Shift button', init: 0, min: 0, max: 127}
+      # selector: {cc: 114, init: 0, min: 0, max:127}
+    keys:
+      notes: 'keys_or_pads'
+      mod: {cc: 1, description: '', init: 0, min: 0, max: 127}
+    pads:
+      notes: 'keys_or_pads'
+      p4: {cc: 105, description: '', init: 0, min: 0, max: 127}
+      p5: {cc: 106, description: '', init: 0, min: 0, max: 127}
+      p6: {cc: 107, description: '', init: 0, min: 0, max: 127}
+      p7: {cc: 108, description: '', init: 0, min: 0, max: 127}
+    buttons:
+      b1: {cc: 74, description: '', init: 0, min: 0, max: 127}
+      b2: {cc: 71, description: '', init: 0, min: 0, max: 127}
+      b3: {cc: 76, description: '', init: 0, min: 0, max: 127}
+      b4: {cc: 77, description: '', init: 0, min: 0, max: 127}
+      b5: {cc: 93, description: '', init: 0, min: 0, max: 127}
+      b6: {cc: 18, description: '', init: 0, min: 0, max: 127}
+      b7: {cc: 19, description: '', init: 0, min: 0, max: 127}
+      b8: {cc: 16, description: '', init: 0, min: 0, max: 127}
+    sliders:
+      s1: {cc: 82, description: '', init: 0, min: 0, max: 127}
+      s2: {cc: 83, description: '', init: 0, min: 0, max: 127}
+      s3: {cc: 85, description: '', init: 0, min: 0, max: 127}
+      s4: {cc: 17, description: '', init: 0, min: 0, max: 127}
