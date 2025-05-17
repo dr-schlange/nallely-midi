@@ -426,3 +426,26 @@ def test__mapping_cc_to_all(sender, receiver):
     assert len(sender.links) == 1  # there is still the key in the map, but no callbacks
     assert len(sender.links[("control_change", 45)]) == 0
     assert len(receiver.links) == 0
+
+
+def test__mapping_pad_to_virtual(sender):
+    _, sender = sender
+    lfo = LFO()
+
+    assert len(sender.links) == 0
+    assert len(lfo.nonstream_links) == 0
+    assert len(lfo.stream_links) == 0
+
+    lfo.speed_cv = sender.modules.main[1]
+
+    assert len(sender.links) == 1
+    assert len(sender.links[("note", 1)]) == 1
+    assert len(lfo.nonstream_links) == 0
+    assert len(lfo.stream_links) == 0
+
+    lfo.speed_cv -= sender.modules.main[1]
+
+    assert len(sender.links) == 1  # there is still the key in the map, but no callbacks
+    assert len(sender.links[("note", 1)]) == 0
+    assert len(lfo.nonstream_links) == 0
+    assert len(lfo.stream_links) == 0

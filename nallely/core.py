@@ -206,20 +206,6 @@ class VirtualParameter:
         ):
             assert self.cv_name
             value.bind(getattr(device, self.cv_name))
-            return
-        elif isinstance(value, PadOrKey):
-            pad = value
-            foo = pad.generate_fun(device, self)
-            pad.device.bind(
-                lambda value, ctx: foo(value, ctx),
-                type=pad.type,
-                cc_note=pad.cc_note,
-                to=device,
-                param=self,
-                append=append,
-                transformer_chain=chain,
-                from_=pad,
-            )
 
 
 class VirtualDevice(threading.Thread):

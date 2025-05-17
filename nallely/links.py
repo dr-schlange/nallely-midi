@@ -267,3 +267,21 @@ class Link:
             )
 
         return foo
+
+    # MIDI pad/key -> Virtual device input
+    def _install_PadOrKey__ParameterInstance(self):
+        src = cast(PadOrKey, self.src)
+        dest = cast(ParameterInstance, self.dest)
+
+        self.callback = self._compile_PadOrKey__ParameterInstance()
+        src.device.bind_link(self)
+
+    def _compile_PadOrKey__ParameterInstance(self):
+        src = cast(PadOrKey, self.src)
+        dest = cast(ParameterInstance, self.dest)
+
+        is_blocking_consummer = dest.parameter.consumer
+        if is_blocking_consummer:
+            return src.generate_inner_fun_virtual_consumer(dest.device, dest.parameter)
+        else:
+            return src.generate_inner_fun_virtual_normal(dest.device, dest.parameter)

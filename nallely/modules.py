@@ -277,26 +277,27 @@ class ModuleParameter:
 
 class padproperty(property):
     def __set__(self, instance, inner_function, owner=""):
-        # pad: PadOrKey = getattr(instance, self.__name__)  # only works on python >= 3.13
-        pad: PadOrKey = getattr(instance, self.fget.__name__)  # type: ignore
-        if pad.mode == "latch":
-            # raise Exception(
-            #     "Latch mode is not supported when binding a pad/key to a function"
-            # )
-            print("Latch mode is not supported when binding a pad/key to a function")
-        elif pad.mode == "hold":
-            from .core import ThreadContext
+        ...  # This would be called if function binding is reactivated (currently removed)
+        # # pad: PadOrKey = getattr(instance, self.__name__)  # only works on python >= 3.13
+        # pad: PadOrKey = getattr(instance, self.fget.__name__)  # type: ignore
+        # if pad.mode == "latch":
+        #     # raise Exception(
+        #     #     "Latch mode is not supported when binding a pad/key to a function"
+        #     # )
+        #     print("Latch mode is not supported when binding a pad/key to a function")
+        # elif pad.mode == "hold":
+        #     from .core import ThreadContext
 
-            pad.device.bind(
-                lambda value, ctx: (
-                    inner_function(value, ctx) if ctx.type == "note_on" else ...
-                ),
-                type=pad.type,
-                cc_note=pad.cc_note,
-                param=pad,
-                to=pad.device,
-                from_=pad,
-            )
+        #     pad.device.bind(
+        #         lambda value, ctx: (
+        #             inner_function(value, ctx) if ctx.type == "note_on" else ...
+        #         ),
+        #         type=pad.type,
+        #         cc_note=pad.cc_note,
+        #         param=pad,
+        #         to=pad.device,
+        #         from_=pad,
+        #     )
 
 
 @dataclass
