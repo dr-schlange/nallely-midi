@@ -215,6 +215,29 @@ class TrevorWebSocket {
 		});
 	}
 
+	public makeLinkBouncy(
+		fromDevice: MidiDevice | VirtualDevice | number,
+		fromParameter: MidiParameter | VirtualParameter,
+		toDevice: MidiDevice | VirtualDevice | number,
+		toParameter: MidiParameter | VirtualParameter,
+		bouncy: boolean,
+	) {
+		const srcId = typeof fromDevice === "number" ? fromDevice : fromDevice.id;
+		const dstId = typeof toDevice === "number" ? toDevice : toDevice.id;
+		const fromP = isVirtualParameter(fromParameter)
+			? fromParameter.cv_name
+			: fromParameter.name;
+		const toP = isVirtualParameter(toParameter)
+			? toParameter.cv_name
+			: toParameter.name;
+		this.sendJsonMessage({
+			command: "make_link_bouncy",
+			from_parameter: `${srcId}::${fromParameter.section_name}::${fromP}`,
+			to_parameter: `${dstId}::${toParameter.section_name}::${toP}`,
+			bouncy,
+		});
+	}
+
 	public associatePort(device: MidiDevice, port: string, direction: string) {
 		this.sendJsonMessage({
 			command: "associate_midi_port",

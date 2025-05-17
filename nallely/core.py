@@ -385,6 +385,12 @@ class VirtualDevice(threading.Thread):
         self.links[int(link.is_stream)][link.src_repr()].append(link)
         self.links_registry[(link.src_repr(), link.dest_repr())] = link
 
+    def bounce_link(self, from_, value, ctx):
+        src_path = from_.repr()
+        for (src, _), link in self.links_registry.items():
+            if src == src_path:
+                link.trigger(value, ctx)
+
     def unbind_link(self, from_, target):
         if from_ is None:
             to_remove = []
@@ -817,6 +823,12 @@ class MidiDevice:
         cc_note = link.src.parameter.cc_note
         self.links[(type, cc_note)].append(link)
         self.links_registry[(link.src_repr(), link.dest_repr())] = link
+
+    def bounce_link(self, from_, value, ctx):
+        src_path = from_.repr()
+        for (src, _), link in self.links_registry.items():
+            if src == src_path:
+                link.trigger(value, ctx)
 
     def unbind_link(self, from_, target):
         if from_ is None:

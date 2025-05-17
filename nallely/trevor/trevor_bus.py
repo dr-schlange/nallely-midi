@@ -248,6 +248,10 @@ class TrevorBus(VirtualDevice):
         self.trevor.set_scaler_parameter(scaler_id, parameter, value)
         return self.full_state()
 
+    def make_link_bouncy(self, from_parameter, to_parameter, bouncy):
+        self.trevor.make_link_bouncy(from_parameter, to_parameter, bouncy)
+        return self.full_state()
+
     def reset_all(self):
         self.trevor.reset_all()
         return self.full_state()

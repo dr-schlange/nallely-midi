@@ -28,6 +28,24 @@ export const ScalerForm = ({ connection }: ScalerFormProps) => {
 	return (
 		<div className="connection-setup">
 			<h3>Connection Setup</h3>
+			{/* <label>
+				<input
+					type="checkbox"
+					checked={connection.bouncy}
+					onChange={(e) => {
+						const src = connection.src;
+						const dst = connection.dest;
+						trevorSocket?.makeLinkBouncy(
+							src.device,
+							src.parameter,
+							dst.device,
+							dst.parameter,
+							e.target.checked,
+						);
+					}}
+				/>
+				Bouncy
+			</label> */}
 			<label>
 				<input
 					type="checkbox"

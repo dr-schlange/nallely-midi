@@ -80,6 +80,15 @@ class TrevorAPI:
                     return scaler
         return None
 
+    def make_link_bouncy(self, from_parameter, to_parameter, bouncy):
+        from_device, _, _ = from_parameter.split("::")
+
+        src_device = self.get_device_instance(from_device)
+
+        link = src_device.links_registry.get((from_parameter, to_parameter))
+        if link:
+            link.bouncy = bouncy
+
     def reset_all(self, skip_unregistered=True):
         stop_all_connected_devices(skip_unregistered)
 

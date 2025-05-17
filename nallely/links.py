@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from typing import cast
 
-from .core import MidiDevice, ParameterInstance, ThreadContext, VirtualDevice
-from .modules import Int, ModulePadsOrKeys, PadOrKey, PadsOrKeysInstance, Scaler
+from .core import ParameterInstance, ThreadContext, VirtualDevice
+from .modules import Int, PadOrKey, PadsOrKeysInstance, Scaler
 
 
 @dataclass
@@ -11,6 +11,7 @@ class Link:
         Int | PadOrKey | PadsOrKeysInstance | ParameterInstance | Scaler | VirtualDevice
     )
     dest: Int | PadOrKey | PadsOrKeysInstance | ParameterInstance
+    bouncy: bool = False
 
     @classmethod
     def create(cls, src_feeder, dest):
@@ -40,7 +41,10 @@ class Link:
         assert self.callback
         if self.chain:
             value = self.chain(value, ctx)
-        return self.callback(value, ctx)
+        result = self.callback(value, ctx)
+        # if self.bouncy:
+        #     self.dest.device.bounce_link(self.dest.parameter, value, ctx)
+        return result
 
     def src_repr(self):
         return f"{id(self.src.device)}::{self.src.parameter.section_name}::{self.src.parameter.name}"

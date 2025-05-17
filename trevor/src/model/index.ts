@@ -60,6 +60,7 @@ export interface MidiDevice {
 export interface MidiConnection {
 	src: MidiConnectionEnd;
 	dest: MidiConnectionEnd;
+	bouncy: boolean;
 }
 
 export interface MidiConnectionEnd {

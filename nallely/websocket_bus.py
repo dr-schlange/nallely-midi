@@ -72,8 +72,7 @@ class WebSocketBus(VirtualDevice):
     def handler(self, client):
         path = client.request.path
         service_name = path.split("/")[1]
-        connected_devices = self.connected[service_name]
-
+        print("Conenction on ", path, service_name)
         if path.endswith("/autoconfig") and service_name not in self.connected:
             print(f"Autoconfig for {service_name}")
             try:
@@ -87,7 +86,7 @@ class WebSocketBus(VirtualDevice):
                     else "disconnected"
                 )
                 print(
-                    f"Client {client} on {service_name} {kind} [{len(connected_devices)} clients]"
+                    f"Client {client} on {service_name} {kind} and wasn't able to auto-config {service_name}"
                 )
         elif service_name not in self.known_services:
             print(
@@ -95,6 +94,7 @@ class WebSocketBus(VirtualDevice):
             )
             return
 
+        connected_devices = self.connected[service_name]
         connected_devices.append(client)
         print(f"Connecting on {service_name} [{len(connected_devices)} clients]")
         try:

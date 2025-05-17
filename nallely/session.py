@@ -204,28 +204,6 @@ class Session:
                 else:
                     to_ = asdict(dst)
 
-                # for entry in device.callbacks_registry:
-                #     entry: CallbackRegistryEntry
-                #     if isinstance(entry.from_, PadOrKey):
-                #         from_ = {
-                #             "note": entry.from_.cc_note,
-                #             "type": entry.from_.type,
-                #             "name": get_note_name(entry.from_.cc_note),
-                #             "section_name": entry.from_.pads_or_keys.section_name,
-                #             "mode": entry.from_.mode,
-                #         }
-                #     else:
-                #         from_ = asdict(entry.from_)
-                #     if isinstance(entry.parameter, PadOrKey):
-                #         to_ = {
-                #             "note": entry.parameter.cc_note,
-                #             "type": entry.parameter.type,
-                #             "name": get_note_name(entry.parameter.cc_note),
-                #             "section_name": entry.parameter.pads_or_keys.section_name,
-                #             "mode": entry.parameter.mode,
-                #         }
-                #     else:
-                #         to_ = asdict(entry.parameter)
                 connections.append(
                     {
                         "src": {
@@ -251,6 +229,7 @@ class Session:
                                 else dst.type
                             ),
                         },
+                        "bouncy": link.bouncy,
                     }
                 )
 
