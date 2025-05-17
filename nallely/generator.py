@@ -100,7 +100,7 @@ Generated configuration for the {brand} - {device}
                     parameter_code = f"    {parameter_name} = nallely.ModuleParameter({cc}{range}{init}{descr})\n"
                 f.write(parameter_code)
             f.write("\n\n")
-        device_name = device.replace("-", "")
+        device_name = device.replace("-", "").replace(" ", "")
         f.write(f"class {device_name.capitalize()}(nallely.MidiDevice):\n")
         for section in sections:
             f.write(f"    {section}: {section.capitalize()}Section  # type: ignore\n")
