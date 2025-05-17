@@ -724,7 +724,7 @@ class MidiDevice:
                 traceback.print_exc()
         if msg.type == "note_on" or msg.type == "note_off":
             try:
-                for link in self.links.get(("note", msg.control), []):
+                for link in self.links.get(("note", msg.note), []):
                     value = msg.note
                     ctx = ThreadContext(
                         {
@@ -734,7 +734,7 @@ class MidiDevice:
                         }
                     )
                     link.trigger(value, ctx)
-                for link in self.links.get(("velocity", msg.control), []):
+                for link in self.links.get(("velocity", msg.note), []):
                     value = msg.velocity
                     ctx = ThreadContext(
                         {
