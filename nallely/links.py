@@ -11,7 +11,7 @@ class Link:
         Int | PadOrKey | PadsOrKeysInstance | ParameterInstance | Scaler | VirtualDevice
     )
     dest: Int | PadOrKey | PadsOrKeysInstance | ParameterInstance
-    bouncy: bool = True
+    bouncy: bool = False
 
     @classmethod
     def create(cls, src_feeder, dest):
@@ -47,10 +47,10 @@ class Link:
         return result
 
     def src_repr(self):
-        return f"{id(self.src.device)}::{self.src.parameter.section_name}::{self.src.parameter.name}"
+        return self.src.repr()
 
     def dest_repr(self):
-        return f"{id(self.dest.device)}::{self.dest.parameter.section_name}::{self.dest.parameter.name}"
+        return self.dest.repr()
 
     @property
     def is_stream(self):
@@ -159,7 +159,7 @@ class Link:
                 ctx=ThreadContext({**ctx, "param": src.device.__class__.__name__}),
             )
         else:
-            return lambda _, ctx: lambda value, ctx: dest.device.set_parameter(
+            return lambda value, ctx: dest.device.set_parameter(
                 dest.parameter.name, value
             )
 

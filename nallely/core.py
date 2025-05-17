@@ -138,9 +138,7 @@ class ParameterInstance:
         return self.parameter.name
 
     def repr(self):
-        return (
-            f"{id(self.device)}::{self.parameter.section_name}::{self.parameter.name}"
-        )
+        return f"{id(self.device)}::{self.parameter.section_name}::{self.parameter.cv_name}"
 
     def bind(self, target):
         from .links import Link
