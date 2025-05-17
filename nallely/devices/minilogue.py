@@ -83,7 +83,7 @@ class Minilogue(nallely.MidiDevice):
     def __init__(self, device_name=None, *args, **kwargs):
         super().__init__(
             *args,
-            device_name=device_name or "minilogue",
+            device_name=device_name or "minilogue _ SOUND",
             **kwargs,
         )
 

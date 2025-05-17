@@ -78,9 +78,10 @@ class Link:
         src.device.bind_link(link=self)
 
     def _compile_Int__Int(self):
-        return lambda value, ctx: setattr(
-            self.dest.device, self.dest.parameter.name, value
-        )
+        dest = cast(Int, self.dest)
+
+        section = getattr(dest.device.modules, dest.parameter.section_name)
+        return lambda value, ctx: setattr(section, dest.parameter.name, value)
 
     # MIDI Device Key/Pad -> MIDI Device CC
     def _install_PadOrKey__Int(self):
@@ -92,7 +93,9 @@ class Link:
 
     def _compile_PadOrKey__Int(self):
         src = cast(PadOrKey, self.src)
-        return src.generate_inner_fun_midiparam(self.dest.device, self.dest.parameter)
+        dest = cast(Int, self.dest)
+        section = getattr(dest.device.modules, dest.parameter.section_name)
+        return src.generate_inner_fun_midiparam(section, self.dest.parameter)
 
     # Virtual Device Output -> MIDI Device CC
     def _install_ParameterInstance__Int(self):
@@ -103,9 +106,9 @@ class Link:
         src.device.bind_link(self)
 
     def _compile_ParameterInstance__Int(self):
-        return lambda value, ctx: setattr(
-            self.dest.device, self.dest.parameter.name, value
-        )
+        dest = cast(Int, self.dest)
+        section = getattr(dest.device.modules, dest.parameter.section_name)
+        return lambda value, ctx: setattr(section, self.dest.parameter.name, value)
 
     # MIDI Device CC -> Virtual Device Input
     def _install_Int__ParameterInstance(self):
@@ -165,15 +168,17 @@ class Link:
         dest = cast(ParameterInstance, self.dest)
 
         is_blocking_consummer = dest.parameter.consumer
+        section = getattr(self.dest.device, self.dest.parameter.section_name)
         if is_blocking_consummer:
             return lambda _, ctx: dest.device.receiving(
-                getattr(src.device, src.parameter.name),
+                getattr(section, src.parameter.name),
                 on=dest.parameter.name,
                 ctx=ThreadContext({**ctx, "param": src.parameter.name}),
             )
         else:
+
             return lambda _, ctx: dest.device.set_parameter(
-                dest.parameter.name, getattr(src.device, src.parameter.name)
+                dest.parameter.name, getattr(section, src.parameter.name)
             )
 
     # MIDI key/pad -> MIDI key/pad
@@ -289,3 +294,7 @@ class Link:
             return src.generate_inner_fun_virtual_consumer(dest.device, dest.parameter)
         else:
             return src.generate_inner_fun_virtual_normal(dest.device, dest.parameter)
+
+
+def debug(l):
+    return lambda value, ctx: (print("->", value, ctx), l(value, ctx))
