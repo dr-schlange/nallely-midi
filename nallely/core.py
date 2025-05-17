@@ -18,6 +18,7 @@ from .modules import (
     ModulePadsOrKeys,
     ModuleParameter,
     PadOrKey,
+    PadsOrKeysInstance,
     Scaler,
 )
 
@@ -136,19 +137,20 @@ class ParameterInstance:
     def name(self):
         return self.parameter.name
 
-    def __isub__(self, port):
-        match port:
-            case ParameterInstance():
-                device = port.device
-                device.unbind(self.device, self)
-            case VirtualDevice():
-                port.unbind(self.device, self)
-            case Int() | PadOrKey():
-                device = port.device
-                parameter = port.parameter
-                # device.unbind(self.device, self, port.type, port.cc_note)
-                device.unbind(self.device, self, parameter.type, parameter.cc_note)
-        return None  #  we need to return None to avoid to trigger the __set__ again
+    def repr(self):
+        return (
+            f"{id(self.device)}::{self.parameter.section_name}::{self.parameter.name}"
+        )
+
+    def bind(self, target):
+        from .links import Link
+
+        Link.create(self, target)
+
+    def __isub__(self, other):
+        other.device.unbind_link(other, self)
+        #  we need to return None to avoid to trigger the __set__ again
+        return None
 
     def scale(
         self,
@@ -191,90 +193,13 @@ class VirtualParameter:
         return ParameterInstance(parameter=self, device=device)
 
     def __set__(self, device: "VirtualDevice", value, append=True, chain=None):
-        if isinstance(value, VirtualDevice):
-            if self.consumer:
-                virtual_device = value
-                value.device.bind(
-                    lambda value, ctx: device.receiving(
-                        value,
-                        on=self.name,
-                        ctx=ThreadContext(
-                            {**ctx, "param": virtual_device.__class__.__name__}
-                        ),
-                    ),
-                    to=device,
-                    param=self,
-                    stream=self.stream,
-                    append=append,
-                    transformer_chain=chain,
-                    from_=value.output_cv.parameter,
-                )
-            else:
-                value.device.bind(
-                    lambda value, ctx: device.set_parameter(self.name, value),
-                    to=device,
-                    param=self,
-                    stream=self.stream,
-                    append=append,
-                    transformer_chain=chain,
-                    from_=value.output_cv.parameter,
-                )
-        elif isinstance(value, Int):
-            if self.consumer:
-                int_val = value
-                int_val.device.bind(
-                    lambda value, ctx: device.receiving(
-                        value,
-                        on=self.name,
-                        ctx=ThreadContext({**ctx, "param": int_val.parameter.name}),
-                    ),
-                    to=device,
-                    param=self,
-                    type=value.parameter.type,
-                    cc_note=value.parameter.cc_note,
-                    stream=self.stream,
-                    append=append,
-                    transformer_chain=chain,
-                    from_=value.parameter,
-                )
-            else:
-                value.device.bind(
-                    lambda value, ctx: device.set_parameter(self.name, value),
-                    to=device,
-                    param=self,
-                    type=value.parameter.type,
-                    cc_note=value.parameter.cc_note,
-                    stream=self.stream,
-                    append=append,
-                    transformer_chain=chain,
-                    from_=value.parameter,
-                )
-        elif isinstance(value, ParameterInstance):
-            if self.consumer:
-                value.device.bind(
-                    lambda _, ctx: device.receiving(
-                        getattr(value.device, value.parameter.name),
-                        on=self.name,
-                        ctx=ThreadContext({**ctx, "param": value.parameter.name}),
-                    ),
-                    to=device,
-                    param=self,
-                    append=append,
-                    transformer_chain=chain,
-                    from_=value.parameter,
-                )
-            else:
-                value.device.bind(
-                    lambda _, ctx: device.set_parameter(
-                        self.name, getattr(value.device, value.parameter.name)
-                    ),
-                    to=device,
-                    param=self,
-                    stream=self.stream,
-                    append=append,
-                    transformer_chain=chain,
-                    from_=value.parameter,
-                )
+        if isinstance(
+            value,
+            (ParameterInstance, Int, PadOrKey, PadsOrKeysInstance, VirtualDevice),
+        ):
+            assert self.cv_name
+            value.bind(getattr(device, self.cv_name))
+            return
         elif isinstance(value, Scaler):
             scaler = value
             self.__set__(device, scaler.data, append=append, chain=scaler)
@@ -304,13 +229,20 @@ class VirtualDevice(threading.Thread):
         return instance
 
     def __init__(self, target_cycle_time: float = 0.005, autoconnect: bool = False):
+        from .links import Link
+
         super().__init__(daemon=True)
         virtual_devices.append(self)
         self.device = self  # to be polymorphic with Int
         self.__virtual__ = self  # to have a fake section
-        self.callbacks_registry: list[CallbackRegistryEntry] = []
-        self.callbacks = defaultdict(list)
-        self.stream_callbacks = defaultdict(list)
+        self.links: tuple[
+            defaultdict[str, list[Link]], defaultdict[str, list[Link]]
+        ] = (
+            defaultdict(list),
+            defaultdict(list),
+        )
+        self.links_registry: dict[tuple[str, str], Link] = {}
+
         self.input_queue = Queue(maxsize=2000)
         self.pause_event = threading.Event()
         self.paused = False
@@ -430,7 +362,7 @@ class VirtualDevice(threading.Thread):
             #     except Empty:
             #         break
         for device in all_devices():
-            device.unbind(self, None)
+            device.unbind_link(None, self)
 
     def pause(self, duration=None):
         """Pause the LFO, optionally for a specific duration."""
@@ -455,80 +387,93 @@ class VirtualDevice(threading.Thread):
             self.pause_event.set()
 
     def unbind_all(self):
-        self.callbacks_registry.clear()
-        self.stream_callbacks.clear()
-        self.callbacks.clear()
+        self.stream_links.clear()
+        self.nonstream_links.clear()
+        self.links_registry.clear()
 
-    def bind(
-        self,
-        callback,
-        to,
-        param,
-        from_,
-        stream=False,
-        append=True,
-        transformer_chain=None,
-    ):
-        if transformer_chain:
-            _callback = lambda value, ctx: callback(transformer_chain(value, ctx), ctx)
-        else:
-            _callback = callback
-        if stream:
-            self.stream_callbacks[from_.name].append(
-                (_callback, param, transformer_chain)
-            )
-        else:
-            self.callbacks[from_.name].append((_callback, param, transformer_chain))
-        self.callbacks_registry.append(
-            CallbackRegistryEntry(
-                target=to,
-                parameter=param,
-                from_=from_,
-                callback=_callback,
-                chain=transformer_chain,
-            )
-        )
+    def bind_link(self, link):
+        self.links[int(link.is_stream)][link.src_repr()].append(link)
+        self.links_registry[(link.src_repr(), link.dest_repr())] = link
 
-    # def bind_to(self, other: "VirtualDevice", stream=False):
-    #     def queue_callback(value, ctx):
-    #         try:
-    #             other.output_queue.put_nowait((value, ctx))
-    #         except Full:
-    #             pass
-    #     self.bind(queue_callback, stream=stream)
-
-    def unbind(self, target, param=None):
-        for entry in list(self.callbacks_registry):
-            is_right_target = entry.target == target
-            is_right_param = param is None or entry.parameter.name == param.name
-            if is_right_target and is_right_param:
-                callback = entry.callback
-                self.callbacks_registry.remove(entry)
+    def unbind_link(self, from_, target):
+        if from_ is None:
+            to_remove = []
+            link_to_remove = []
+            target_path = target.repr()
+            for (src, dst), link in self.links_registry.items():
+                if dst == target_path:
+                    to_remove.append((src, dst))
+                    link_to_remove.append(link)
+            for key in to_remove:
+                del self.links_registry[key]
+            for link in link_to_remove:
                 try:
-                    for from_, callbacks in self.stream_callbacks.items():
-                        for c, parameter, chain in callbacks:
-                            if c is callback:
-                                self.stream_callbacks[from_].remove(
-                                    (callback, parameter, chain)
-                                )
-                                if param is not None:
-                                    return
+                    self.stream_links[from_.repr()].remove(link)
                 except ValueError:
                     ...
                 try:
-                    for from_, callbacks in self.callbacks.items():
-                        for c, parameter, chain in callbacks:
-                            if c is callback:
-                                self.callbacks[from_].remove(
-                                    (callback, parameter, chain)
-                                )
-                                if param is not None:
-                                    return
+                    self.nonstream_links[from_.repr()].remove(link)
                 except ValueError:
                     ...
+            return
+        if target is None:
+            to_remove = []
+            link_to_remove = []
+            src_path = from_.repr()
+            for (src, dst), link in self.links_registry.items():
+                if src == src_path:
+                    to_remove.append((src, dst))
+                    link_to_remove.append(link)
+            for key in to_remove:
+                del self.links_registry[key]
+            for link in link_to_remove:
+                for key in list(self.stream_links.keys()):
+                    try:
+                        self.stream_links[key].remove(link)
+                    except ValueError:
+                        ...
+                for key in list(self.nonstream_links.keys()):
+                    try:
+                        self.nonstream_links[key].remove(link)
+                    except ValueError:
+                        ...
+            return
+
+        key = (from_.repr(), target.repr())
+        link = self.links_registry.get(key)
+        if not link:
+            # print(f"Cannot unbind {from_} and {target}, they are not bound in {self}")
+            return
+
+        del self.links_registry[key]
+        try:
+            self.stream_links[from_.repr()].remove(link)
+        except ValueError:
+            ...
+        try:
+            self.nonstream_links[from_.repr()].remove(link)
+        except ValueError:
+            ...
 
     def process_input(self, param: str, value):
         setattr(self, param, value)
+
+    def repr(self):
+        # We are called because of the default output
+        return self.output_cv.repr()
+
+    def bind(self, target):
+        from .links import Link
+
+        Link.create(self.output_cv, target)
+
+    @property
+    def stream_links(self):
+        return self.links[int(True)]
+
+    @property
+    def nonstream_links(self):
+        return self.links[int(False)]
 
     def process_output(self, value, ctx, selected_outputs=None):
         if value is None:
@@ -537,20 +482,22 @@ class VirtualDevice(threading.Thread):
         #     self.output_queue.put_nowait((value, ctx))
         # except Full:
         #     pass  # Drop if full
-        for output in selected_outputs or list(self.stream_callbacks.keys()):
-            callbacks = self.stream_callbacks.get(output, [])
-            for callback, param, _ in callbacks:
+
+        # True -> stream; False -> non stream
+        for output in selected_outputs or list(self.stream_links.keys()):
+            links = self.stream_links.get(output, [])
+            for link in links:
                 try:
-                    callback(value, ctx)
+                    link.trigger(value, ctx)
                 except Exception as e:
                     traceback.print_exc()
                     raise e
         if value != ctx.last_value:
-            for output in selected_outputs or list(self.callbacks.keys()):
-                callbacks = self.callbacks.get(output, [])
-                for callback, param, _ in callbacks:
+            for output in selected_outputs or list(self.nonstream_links.keys()):
+                links = self.nonstream_links.get(output, [])
+                for link in links:
                     try:
-                        callback(value, ctx)
+                        link.trigger(value, ctx)
                     except Exception as e:
                         traceback.print_exc()
                         raise e
@@ -559,7 +506,6 @@ class VirtualDevice(threading.Thread):
     def scale(self, min=None, max=None, method="lin", as_int=False):
         return Scaler(
             self,
-            # self,
             min,
             max,
             method,
@@ -677,15 +623,13 @@ class MidiDevice:
         return super().__init_subclass__()
 
     def __post_init__(self, autoconnect, read_input_only):
+        from .links import Link
+
         if self not in connected_devices:
             connected_devices.append(self)
         self.reverse_map = {}
-        self.callbacks_registry: list[CallbackRegistryEntry] = []
-        # callbacks that are called when reacting to a value
-        self.input_callbacks: defaultdict[
-            tuple[str, int], list[tuple[Callable, Callable | None]]
-        ] = defaultdict(list)
-        self.output_callbacks = []  # callbacks that are called when sending a value
+        self.links: defaultdict[tuple[str, int], list[Link]] = defaultdict(list)
+        self.links_registry: dict[tuple[str, str], Link] = {}
         if self.modules_descr is None:
             self.modules_descr = {
                 k: v
@@ -754,9 +698,8 @@ class MidiDevice:
         self.close_in()
         self.close_out()
         # flush all callbacks and registry
-        self.callbacks_registry.clear()
-        self.input_callbacks.clear()
-        self.output_callbacks.clear()
+        self.links.clear()
+        self.links_registry.clear()
         if delete and self in connected_devices:
             connected_devices.remove(self)
 
@@ -776,20 +719,16 @@ class MidiDevice:
             print(msg)
         if msg.type == "control_change":
             try:
-                for callback, chain in self.input_callbacks.get(
-                    (msg.type, msg.control), []
-                ):
+                for link in self.links.get((msg.type, msg.control), []):
                     value = msg.value
                     ctx = ThreadContext({"debug": self.debug})
-                    if chain:
-                        value = chain(value, ctx)
-                    callback(value, ctx)
+                    link.trigger(value, ctx)
                 self._update_state(msg.control, msg.value)
             except:
                 traceback.print_exc()
         if msg.type == "note_on" or msg.type == "note_off":
             try:
-                for callback, chain in self.input_callbacks.get(("note", msg.note), []):
+                for link in self.links.get(("note", msg.control), []):
                     value = msg.note
                     ctx = ThreadContext(
                         {
@@ -798,12 +737,8 @@ class MidiDevice:
                             "velocity": msg.velocity,
                         }
                     )
-                    if chain:
-                        value = chain(value, ctx)
-                    callback(value, ctx)
-                for callback, chain in self.input_callbacks.get(
-                    ("velocity", msg.note), []
-                ):
+                    link.trigger(value, ctx)
+                for link in self.links.get(("velocity", msg.control), []):
                     value = msg.velocity
                     ctx = ThreadContext(
                         {
@@ -812,9 +747,7 @@ class MidiDevice:
                             "note": msg.note,
                         }
                     )
-                    if chain:
-                        value = chain(value, ctx)
-                    callback(value, ctx)
+                    link.trigger(value, ctx)
                 pads: ModulePadsOrKeys | None = self.reverse_map.get(("note", None))
                 if pads:
                     pads.basic_send(msg.type, msg.note, msg.velocity)
@@ -886,87 +819,61 @@ class MidiDevice:
         )
 
     def unbind_all(self):
-        self.callbacks_registry.clear()
-        self.input_callbacks.clear()
+        self.links.clear()
+        self.links_registry.clear()
 
-    def bind(
-        self,
-        callback,
-        type,
-        cc_note,
-        to,
-        param,
-        from_,
-        stream=False,
-        append=True,
-        transformer_chain: Callable | None = None,
-    ):
-        self.input_callbacks[(type, cc_note)].append((callback, transformer_chain))
-        self.callbacks_registry.append(
-            CallbackRegistryEntry(
-                target=to,
-                parameter=param,
-                callback=callback,
-                type=type,
-                cc_note=cc_note,
-                chain=transformer_chain,
-                from_=from_,
-            )
-        )
+    def bind_link(self, link):
+        type = link.src.parameter.type
+        cc_note = link.src.parameter.cc_note
+        self.links[(type, cc_note)].append(link)
+        self.links_registry[(link.src_repr(), link.dest_repr())] = link
 
-    def unbind(self, target, param, type=None, cc_note=None):
-        for entry in list(self.callbacks_registry):
-            is_right_target = entry.target == target
-            is_right_param = param is None or entry.parameter.name == param.name
-            is_right_type = type is None or entry.type == type
-            is_right_cc_note = cc_note is None or entry.cc_note == cc_note
-            if (
-                is_right_target
-                and is_right_param
-                and is_right_type
-                and is_right_cc_note
-            ):
-                callback = entry.callback
-                self.callbacks_registry.remove(entry)
-                try:
-                    for c, chain in list(self.input_callbacks[(type, cc_note)]):  # type: ignore
-                        if callback is c:
-                            self.input_callbacks[(type, cc_note)].remove((callback, chain))  # type: ignore
-                except ValueError:
-                    ...
+    def unbind_link(self, from_, target):
+        if from_ is None:
+            to_remove = []
+            link_to_remove = []
+            target_path = target.repr()
+            for (src, dst), link in self.links_registry.items():
+                if dst == target_path:
+                    to_remove.append((src, dst))
+                    link_to_remove.append(link)
+            for key in to_remove:
+                del self.links_registry[key]
+            for link in link_to_remove:
+                self.links[(from_.parameter.type, from_.parameter.cc_note)].remove(link)
+            return
+        if target is None:
+            to_remove = []
+            link_to_remove = []
+            src_path = from_.repr()
+            for (src, dst), link in self.links_registry.items():
+                if src == src_path:
+                    to_remove.append((src, dst))
+                    link_to_remove.append(link)
+            for key in to_remove:
+                del self.links_registry[key]
+            for link in link_to_remove:
+                for key in list(self.links.keys()):
+                    try:
+                        self.links[key].remove(link)
+                    except ValueError:
+                        ...
+            return
+
+        key = (from_.repr(), target.repr())
+        link = self.links_registry.get(key)
+        if not link:
+            # print(f"Cannot unbind {from_} and {target}, they are not bound in {self}")
+            return
+
+        del self.links_registry[key]
+        self.links[(from_.parameter.type, from_.parameter.cc_note)].remove(link)
 
     def __isub__(self, other):
         # The only way to be here is from a callback removal on the key/pad section
-        match other:
-            case PadOrKey():
-                mm = (
-                    self.reverse_map.get(("note", other.cc_note))
-                    or self.reverse_map[("note", None)]
-                )
-                other.device.unbind(self, mm, other.type, other.cc_note)
-            case ParameterInstance():
-                mm = self.reverse_map[("note", None)]
-                other.device.unbind(self, mm)
-            case VirtualDevice():
-                mm = self.reverse_map[("note", None)]
-                other.unbind(self, mm)
-            case Int():
-                mm = (
-                    self.reverse_map.get(("note", other.parameter.cc_note))
-                    or self.reverse_map[("note", None)]
-                )
-                other.device.unbind(
-                    self, mm, other.parameter.type, other.parameter.cc_note
-                )
-            case _:
-                raise Exception(
-                    f"Unbinding {other.__class__.__name__} not yet supported"
-                )
+        other.device.unbind_link(other, self)
         self.all_notes_off()
         return self
-
-    # def bind_output(self, callback):
-    #     self.output_callbacks.append(callback)
 
     def current_preset(self):
         return self.modules.as_dict_patch()
@@ -1036,7 +943,6 @@ class MidiDevice:
 
 class DeviceSerializer(json.JSONEncoder):
     def default(self, o):
-        print("DS Int")
         if isinstance(o, Decimal):
             return float(o)
         if isinstance(o, Int):

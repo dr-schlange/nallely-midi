@@ -32,6 +32,11 @@ class Int(int):
     def update(self, value):
         self.__wrapped__ = value
 
+    def bind(self, target):
+        from .links import Link
+
+        Link.create(self, target)
+
     def scale(
         self,
         min: int | float | None = None,
@@ -57,17 +62,7 @@ class Int(int):
     def __isub__(self, other):
         from .core import VirtualDevice
 
-        match other:
-            case PadOrKey() | Int():
-                param = other.parameter
-                other.device.unbind(
-                    self.device, self.parameter, param.type, param.cc_note
-                )
-            case FunctionType():
-                param = self.parameter
-                self.device.unbind(self.device, param, param.type, param.cc_note)
-            case VirtualDevice():
-                other.unbind(self.device, self.parameter)
+        other.device.unbind_link(other, self)
 
         return None  # we need to return None to avoid to trigger the __set__
 
@@ -82,6 +77,11 @@ class Int(int):
 
     def __float__(self):
         return float(self.__wrapped__)
+
+    def repr(self):
+        return (
+            f"{id(self.device)}::{self.parameter.section_name}::{self.parameter.name}"
+        )
 
 
 @dataclass
@@ -103,6 +103,11 @@ class Scaler:
             self.as_int or isinstance(self.to_min, int) and isinstance(self.to_max, int)
         )
 
+    def bind(self, target):
+        from .links import Link
+
+        Link.create(self, target)
+
     def convert_lin(self, value, from_min, from_max):
         if from_min is not None and value < from_min:
             value = from_min
@@ -116,7 +121,6 @@ class Scaler:
                 v = value + offset
                 return min(v, from_max + offset) if from_max is not None else v
             case None, None, to_min, to_max:
-                # print(f"Problem converting from -inf, +inf to {to_min}..{to_max}")
                 return value
             case from_min, _, to_min, None:
                 diff = abs(from_min - to_min)
@@ -149,16 +153,10 @@ class Scaler:
 
     def convert_log(self, value, from_max) -> int | float:
         if self.to_min is None or self.to_max is None:
-            # raise ValueError(
-            #     "Logarithmic scaling requires both min and max to be defined."
-            # )
             print("Logarithmic scaling requires both min and max to be defined.")
             return value
 
         if value < 0:
-            # raise ValueError(
-            #     f"Logarithmic scaling is undefined for non-positive values {value}."
-            # )
             print(f"Logarithmic scaling is undefined for non-positive values {value}.")
             return value
 
@@ -190,7 +188,6 @@ class Scaler:
         if isinstance(value, Int):
             value.update(res)
             return value
-        # print("Converting", value, res, "from", self.from_min, self.from_max, "to", self.to_min, self.to_max)
         return res
 
     def __call__(self, value, *args, **kwargs):
@@ -204,10 +201,12 @@ class ModuleParameter:
     channel: int = 0
     name: str = NOT_INIT
     section_name: str = NOT_INIT
-    stream: bool = False
     init_value: int = 0
     description: str | None = None
     range: tuple[int, int] = (0, 127)
+
+    def __post_init__(self):
+        self.stream = False
 
     @property
     def min_range(self):
@@ -223,7 +222,7 @@ class ModuleParameter:
         return instance.state[self.name]
 
     def install_fun(self, to_module, feeder, append=True):
-        self.__set__(to_module, feeder, send=False, append=append)
+        self.__set__(to_module, feeder, send=False)
 
     def generate_inner_fun_virtual(self, to_device, to_param):
         if to_param.consumer:
@@ -247,97 +246,24 @@ class ModuleParameter:
             return self.generate_inner_fun_virtual(to_device, to_param)
         return self.generate_inner_fun_normal(to_device, to_param)
 
-    def __set__(
-        self,
-        to_module,
-        feeder,
-        send=True,
-        debug=False,
-        force=False,
-        append=True,
-        chain=None,
-    ):
+    def __set__(self, to_module, feeder, send=True):
         if feeder is None:
-            return
-        if not force and isinstance(feeder, Int):
-            device_value = feeder
-            from_device: MidiDevice = device_value.device
-            # we create a callback on from_module that will "set" the module parameter to value of to_module
-            # finally triggering the code that sends the cc and sync the state lower in this class.
-            from_device.bind(
-                lambda value, ctx: setattr(to_module, self.name, value),
-                type=device_value.parameter.type,
-                cc_note=device_value.parameter.cc_note,
-                to=to_module.device,
-                param=self,
-                append=append,
-                transformer_chain=chain,
-                from_=device_value.parameter,
-            )
             return
 
         from .core import ParameterInstance, VirtualDevice
 
-        if isinstance(feeder, VirtualDevice):
-            device = feeder
-            device.bind(
-                lambda value, ctx: setattr(to_module, self.name, value),
-                to=to_module.device,
-                param=self,
-                append=append,
-                transformer_chain=chain,
-                from_=device.output_cv.parameter,
-            )
-            return
-        if isfunction(feeder):
-            fun = feeder
-            to_module.device.bind(
-                fun,
-                type=self.type,
-                cc_note=self.cc_note,
-                to=to_module.device,
-                append=append,
-                param=self,
-                transformer_chain=chain,
-                from_=None,
-            )
-            return
-        if isinstance(feeder, Scaler):
-            scaler = feeder
-            self.__set__(
-                to_module,
-                scaler.data,
-                send=False,
-                debug=debug,
-                force=force,
-                append=append,
-                chain=scaler,
-            )
-            return
-        if isinstance(feeder, PadOrKey):
-            pad: PadOrKey = feeder
-            from_device: MidiDevice = pad.device
-            from_device.bind(
-                pad.generate_fun(to_module, self),
-                type=pad.type,
-                cc_note=pad.cc_note,
-                to=to_module.device,
-                param=self,
-                append=append,
-                transformer_chain=chain,
-                from_=pad,
-            )
-            return
-        if isinstance(feeder, ParameterInstance):
-            device = feeder.device
-            device.bind(
-                lambda value, ctx: setattr(to_module, self.name, value),
-                to=to_module.device,
-                param=self,
-                append=append,
-                transformer_chain=chain,
-                from_=feeder.parameter,
-            )
+        if isinstance(
+            feeder,
+            (
+                ParameterInstance,
+                Int,
+                PadOrKey,
+                PadsOrKeysInstance,
+                VirtualDevice,
+                Scaler,
+            ),
+        ):
+            feeder.bind(getattr(to_module, self.name))
             return
 
         if send:
@@ -354,9 +280,10 @@ class padproperty(property):
         # pad: PadOrKey = getattr(instance, self.__name__)  # only works on python >= 3.13
         pad: PadOrKey = getattr(instance, self.fget.__name__)  # type: ignore
         if pad.mode == "latch":
-            raise Exception(
-                "Latch mode is not supported when binding a pad/key to a function"
-            )
+            # raise Exception(
+            #     "Latch mode is not supported when binding a pad/key to a function"
+            # )
+            print("Latch mode is not supported when binding a pad/key to a function")
         elif pad.mode == "hold":
             from .core import ThreadContext
 
@@ -383,6 +310,12 @@ class PadOrKey:
     range: tuple[int, int] = (0, 127)
 
     @property
+    def section_name(self):
+        if self.pads_or_keys:
+            return self.pads_or_keys.section_name
+        return NOT_INIT
+
+    @property
     def min_range(self):
         return self.range[0]
 
@@ -395,6 +328,17 @@ class PadOrKey:
         self.last_value = 0
         self.parameter = self
         self.name = f"#{self.cc_note}"
+        self.stream = False
+
+    def repr(self):
+        return (
+            f"{id(self.device)}::{self.parameter.section_name}::{self.parameter.name}"
+        )
+
+    def bind(self, target):
+        from .links import Link
+
+        Link.create(self, target)
 
     def copy(self, device, cc_note, type, mode="note"):
         return self.__class__(
@@ -557,31 +501,27 @@ class PadOrKey:
         else:
             return self.generate_inner_fun_midiparam(to_device, to_param)
 
-    def bind_function(self, fun, pad):
-        self.device.bind(
-            fun,
-            type=self.type,
-            cc_note=self.cc_note,
-            to=self.device,
-            param=self,
-            from_=pad,
-        )
-
     def __isub__(self, other):
-        match other:
-            case PadOrKey():
-                other.device.unbind(self.device, self, other.type, other.cc_note)
+        other.device.unbind_link(other, self)
 
-            case FunctionType():
-                self.device.unbind(
-                    self.device,
-                    param=self,
-                    cc_note=self.cc_note,
-                    type=self.type,
-                )
+        # we need to return None here, otherwise we trigger again the __set__
+        return None
+
+
+class PadsOrKeysInstance:
+    def __init__(self, parameter: ModulePadsOrKeys, device: MidiDevice):
+        self.parameter = parameter
+        self.device = device
+
+    def repr(self):
         return (
-            None  # we need to return None here, otherwise we trigger again the __set__
+            f"{id(self.device)}::{self.parameter.section_name}::{self.parameter.name}"
         )
+
+    def bind(self, target):
+        from .links import Link
+
+        Link.create(self, target)
 
 
 @dataclass
@@ -594,101 +534,106 @@ class ModulePadsOrKeys:
     cc_note: int = -1
     range: tuple[int, int] = (0, 127)
 
+    def __post_init__(self):
+        self.stream = False
+
     def __get__(self, instance, owner=None):
         if instance is None:
             return self
         return instance.state[self.section_name]
 
-    def __set__(self, instance, value, append=True, chain=None):
-        from .core import ParameterInstance, VirtualDevice
+    # def __set__(self, instance, value, append=True, chain=None):
+    #     if value is None:
+    #         return
+    #     from .core import ParameterInstance, VirtualDevice
 
-        match value:
-            case Scaler():
-                self.__set__(instance, value.data, chain=value)
-            case PadOrKey():
-                pad: PadOrKey = value
-                pad.device.bind(
-                    lambda value, ctx: instance.device.note(
-                        note=value, velocity=ctx.velocity, type=ctx.type
-                    ),
-                    type=self.type,
-                    cc_note=pad.cc_note,
-                    to=instance.device,
-                    param=self,
-                    append=append,
-                    from_=pad,
-                    transformer_chain=chain,
-                )
-            case list():
-                for e in value:
-                    pad: PadOrKey = e
-                    assert isinstance(pad, PadOrKey)
-                    self.__set__(instance, e)
-            case VirtualDevice():
-                feeder = value
+    #     match value:
+    #         case Scaler():
+    #             self.__set__(instance, value.data, chain=value)
+    #         case PadOrKey():
+    #             pad: PadOrKey = value
+    #             pad.device.bind(
+    #                 lambda value, ctx: instance.device.note(
+    #                     note=value, velocity=ctx.velocity, type=ctx.type
+    #                 ),
+    #                 type=self.type,
+    #                 cc_note=pad.cc_note,
+    #                 to=instance.device,
+    #                 param=self,
+    #                 append=append,
+    #                 from_=pad,
+    #                 transformer_chain=chain,
+    #             )
+    #         case list():
+    #             for e in value:
+    #                 pad: PadOrKey = e
+    #                 assert isinstance(pad, PadOrKey)
+    #                 self.__set__(instance, e)
+    #         case VirtualDevice():
+    #             feeder = value
 
-                def foo(value, ctx):
-                    if value == 0:
-                        instance.device.all_notes_off()
-                        return
-                    instance.device.note(
-                        note=value,
-                        velocity=127,
-                        type="note_off" if value == 0 else "note_on",
-                    )
+    #             def foo(value, ctx):
+    #                 if value == 0:
+    #                     instance.device.all_notes_off()
+    #                     return
+    #                 instance.device.note(
+    #                     note=value,
+    #                     velocity=127,
+    #                     type="note_off" if value == 0 else "note_on",
+    #                 )
 
-                feeder.bind(
-                    foo,
-                    to=instance.device,
-                    param=self,
-                    append=append,
-                    from_=value.output_cv.parameter,
-                    transformer_chain=chain,
-                )
-            case ParameterInstance():
-                feeder = value
+    #             feeder.bind(
+    #                 foo,
+    #                 to=instance.device,
+    #                 param=self,
+    #                 append=append,
+    #                 from_=value.output_cv.parameter,
+    #                 transformer_chain=chain,
+    #             )
+    #         case ParameterInstance():
+    #             feeder = value
 
-                def foo(value, ctx):
-                    if value == 0:
-                        instance.device.all_notes_off()
-                        return
-                    instance.device.note(
-                        note=value,
-                        velocity=127,
-                        type="note_off" if value == 0 else "note_on",
-                    )
+    #             def foo(value, ctx):
+    #                 if value == 0:
+    #                     instance.device.all_notes_off()
+    #                     return
+    #                 instance.device.note(
+    #                     note=value,
+    #                     velocity=127,
+    #                     type="note_off" if value == 0 else "note_on",
+    #                 )
 
-                feeder.device.bind(
-                    foo,
-                    to=instance.device,
-                    param=self,
-                    append=append,
-                    from_=value.parameter,
-                    transformer_chain=chain,
-                )
-            case Int():
-                feeder = value
+    #             feeder.device.bind(
+    #                 foo,
+    #                 to=instance.device,
+    #                 param=self,
+    #                 append=append,
+    #                 from_=value.parameter,
+    #                 transformer_chain=chain,
+    #             )
+    #         case Int():
+    #             feeder = value
 
-                def foo(value, ctx):
-                    if value == 0:
-                        instance.device.all_notes_off()
-                        return
-                    instance.device.note(
-                        note=value,
-                        velocity=127,
-                        type="note_off" if value == 0 else "note_on",
-                    )
+    #             def foo(value, ctx):
+    #                 if value == 0:
+    #                     instance.device.all_notes_off()
+    #                     return
+    #                 instance.device.note(
+    #                     note=value,
+    #                     velocity=127,
+    #                     type="note_off" if value == 0 else "note_on",
+    #                 )
 
-                feeder.device.bind(
-                    foo,
-                    type=feeder.parameter.type,
-                    cc_note=feeder.parameter.cc_note,
-                    to=instance.device,
-                    param=self,
-                    append=append,
-                    from_=feeder.parameter,
-                    transformer_chain=chain,
-                )
+    #             feeder.device.bind(
+    #                 foo,
+    #                 type=feeder.parameter.type,
+    #                 cc_note=feeder.parameter.cc_note,
+    #                 to=instance.device,
+    #                 param=self,
+    #                 append=append,
+    #                 from_=feeder.parameter,
+    #                 transformer_chain=chain,
+    #             )
 
     def basic_send(self, type, note, velocity): ...
 
@@ -709,7 +654,7 @@ class Module:
     device: MidiDevice
     meta: Any = None
     state_name: str = NOT_INIT
-    state: dict[str, Int] = field(default_factory=dict)
+    state: dict[str, Int | PadsOrKeysInstance] = field(default_factory=dict)
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
@@ -736,7 +681,10 @@ class Module:
         if self.meta.pads_or_keys:
             self.meta.pads_or_keys.section_name = self.__class__.state_name
             state_name = self.meta.pads_or_keys.section_name
-            self.state[state_name] = self.device  # type: ignore (special key)
+            # self.state[state_name] = self.device  # type: ignore (special key)
+            self.state[state_name] = PadsOrKeysInstance(
+                self.meta.pads_or_keys, self.device
+            )
         self._keys_notes = {}
 
     def setup_function(self, control, lfo): ...
@@ -748,7 +696,7 @@ class Module:
 
     def __getitem__(self, key) -> PadOrKey | list[PadOrKey]:
         if not self.meta.pads_or_keys:
-            raise Exception("Your device doesn't have a key/pad section")
+            raise Exception("Your section doesn't have a key/pad section")
         if isinstance(key, int):
             if key not in self._keys_notes:
                 self._keys_notes[key] = PadOrKey(
@@ -765,56 +713,27 @@ class Module:
         if not isinstance(pads, list):
             pads = [pads]
         match value:
-            case FunctionType():
-                [p.bind_function(value, p) for p in pads]
             case PadOrKey():
                 from_pad = value
-                from_module: MidiDevice = from_pad.device
-                for p in pads:
-                    from_module.bind(
-                        lambda value, ctx: p.device.note(
-                            ctx.type, p.cc_note, ctx.velocity
-                        ),
-                        type=from_pad.type,
-                        cc_note=from_pad.cc_note,
-                        to=p.device,
-                        param=p,
-                        append=True,
-                        from_=from_pad,
-                    )
+                for to_pad in pads:
+                    from_pad.bind(to_pad)
             case list():
                 from_pads = value
-                from_module: MidiDevice = from_pads[0].device
-                for from_pad in from_pads:
-                    for p in pads:
-                        from_module.bind(
-                            lambda value, ctx: p.device.note(
-                                ctx.type, p.cc_note, ctx.velocity
-                            ),
-                            type=from_pad.type,
-                            cc_note=from_pad.cc_note,
-                            to=p.device,
-                            param=p,
-                            append=True,
-                            from_=from_pad,
-                        )
+                for from_pad, to_pad in zip(from_pads, pads):
+                    from_pad.bind(to_pad)
 
     def __isub__(self, other):
-        # The only way to be here is from a callback removal on the key/pad section
-        match other:
-            case PadOrKey():
-                # We remove in a general way all the entries of this (type, cc/note)
-                other.device.unbind(self.device, None, other.type, other.cc_note)
-                return self
-            case list():
-                from_pads = other
-                for other in from_pads:
-                    other.device.unbind(self.device, None, other.type, other.cc_note)
-                return self
-            case ParameterInstance():
-                other.device.unbind(self.device, other.parameter)
-                return self
-        raise Exception(f"Unbinding {other.__class__.__name__} not yet supported")
+        # The only way to be here is from a callback removal on the section
+        # that is supposed to own a KeysOrPads
+        if not self.meta.pads_or_keys:
+            raise Exception("Your section doesn't have a key/pad section")
+
+        if isinstance(other, list):
+            for o in other:
+                o.device.unbind_link(o, None)
+        else:
+            other.device.unbind_link(other, None)
+        return self
 
     def all_parameters(self):
         return self.meta.parameters

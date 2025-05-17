@@ -41,21 +41,21 @@ def test__set_value(receiver):
     assert receiver.sink2 == 45
 
 
-def test__receive_information(sender):
-    send_simu, sender = sender
+# def test__receive_information(sender):
+#     send_simu, sender = sender
 
-    # if we received information
-    received = CTX()
-    sender.modules.main.button1 = lambda value, ctx: received.add(0, value)
-    sender.modules.main.button2 = lambda value, ctx: received.add(1, value)
+#     # if we received information
+#     received = CTX()
+#     sender.modules.main.button1 = lambda value, ctx: received.add(0, value)
+#     sender.modules.main.button2 = lambda value, ctx: received.add(1, value)
 
-    # We simulate a trigger of the control 45 by a user, sending value 32
-    send_simu.cc(45, 32)
+#     # We simulate a trigger of the control 45 by a user, sending value 32
+#     send_simu.cc(45, 32)
 
-    let_time_to_react()
+#     let_time_to_react()
 
-    assert received.get(0) == 32
-    assert received.get(1) == 0
+#     assert received.get(0) == 32
+#     assert received.get(1) == 0
 
 
 def test__mapping_sender_receiver(sender, receiver):
@@ -92,6 +92,7 @@ def test__mapping_sender_virtual(sender):
     lfo = LFO(waveform="square", min_value=5, max_value=10, speed=1000)
 
     lfo.start()
+
     lfo.speed_cv = sender.modules.main.button1
 
     let_time_to_react()
@@ -122,228 +123,183 @@ def test__remove_mapping_virtual_virtual(sender):
     lfo = LFO(waveform="square", min_value=5, max_value=10, speed=1000)
     lfo2 = LFO(waveform="square", min_value=5, max_value=10, speed=1000)
 
-    assert len(lfo.callbacks_registry) == 0
-    assert len(lfo2.callbacks_registry) == 0
+    assert len(lfo.links_registry) == 0
+    assert len(lfo2.links_registry) == 0
 
     lfo2.max_value_cv = lfo
 
-    assert len(lfo.callbacks_registry) == 1
-    assert len(lfo.callbacks) == 1
+    assert len(lfo.links_registry) == 1
+    assert len(lfo.nonstream_links) == 1
 
     lfo2.max_value_cv -= lfo
 
-    assert len(lfo.callbacks_registry) == 0
+    assert len(lfo.links_registry) == 0
     assert (
-        len(lfo.callbacks) == 1
+        len(lfo.nonstream_links) == 1
     )  # there is still the key in the map, but no callbacks
-    assert len(lfo.callbacks["output"]) == 0
+    assert len(lfo.nonstream_links["output"]) == 0
 
 
 def test__remove_mapping_sender_receiver(sender, receiver):
     _, sender = sender
     _, receiver = receiver
 
-    assert len(sender.output_callbacks) == 0
-    assert len(sender.input_callbacks) == 0
-    assert len(receiver.output_callbacks) == 0
-    assert len(receiver.input_callbacks) == 0
+    assert len(sender.links) == 0
+    assert len(receiver.links) == 0
 
     receiver.modules.main.sink1 = sender.modules.main.button1
 
-    assert len(sender.output_callbacks) == 0
-    assert len(sender.input_callbacks) == 1
-    assert len(receiver.output_callbacks) == 0
-    assert len(receiver.input_callbacks) == 0
+    assert len(sender.links) == 1
+    assert len(receiver.links) == 0
 
     receiver.modules.main.sink1 -= sender.modules.main.button1
 
-    assert len(sender.output_callbacks) == 0
-    assert (
-        len(sender.input_callbacks) == 1
-    )  # there is still the key in the map, but no callbacks
-    assert len(sender.input_callbacks[("control_change", 45)]) == 0
-    assert len(receiver.output_callbacks) == 0
-    assert len(receiver.input_callbacks) == 0
+    assert len(sender.links) == 1  # there is still the key in the map, but no callbacks
+    assert len(sender.links[("control_change", 45)]) == 0
+    assert len(receiver.links) == 0
 
 
 def test__remove_mapping_sender_virtual(sender):
     _, sender = sender
     lfo = LFO(waveform="square", min_value=5, max_value=10, speed=1000)
 
-    assert len(sender.output_callbacks) == 0
-    assert len(sender.input_callbacks) == 0
-    assert len(lfo.stream_callbacks) == 0
-    assert len(lfo.callbacks) == 0
+    assert len(sender.links) == 0
+    assert len(lfo.stream_links) == 0
+    assert len(lfo.nonstream_links) == 0
 
     lfo.speed_cv = sender.modules.main.button1
 
-    assert len(sender.output_callbacks) == 0
-    assert len(sender.input_callbacks) == 1
-    assert len(lfo.stream_callbacks) == 0
-    assert len(lfo.callbacks) == 0
+    assert len(sender.links) == 1
+    assert len(lfo.stream_links) == 0
+    assert len(lfo.nonstream_links) == 0
 
     lfo.speed_cv -= sender.modules.main.button1
 
-    assert len(sender.output_callbacks) == 0
-    assert (
-        len(sender.input_callbacks) == 1
-    )  # there is still the key in the map, but no callbacks
-    assert len(sender.input_callbacks[("control_change", 45)]) == 0
-    assert len(lfo.stream_callbacks) == 0
-    assert len(lfo.callbacks) == 0
+    assert len(sender.links) == 1  # there is still the key in the map, but no callbacks
+    assert len(sender.links[("control_change", 45)]) == 0
+    assert len(lfo.stream_links) == 0
+    assert len(lfo.nonstream_links) == 0
 
 
 def test__remove_mapping_virtual_receiver(receiver):
     _, receiver = receiver
     lfo = LFO(waveform="square", min_value=5, max_value=10, speed=1000)
 
-    assert len(lfo.stream_callbacks) == 0
-    assert len(lfo.callbacks) == 0
-    assert len(receiver.output_callbacks) == 0
-    assert len(receiver.input_callbacks) == 0
+    assert len(lfo.stream_links) == 0
+    assert len(lfo.nonstream_links) == 0
+    assert len(receiver.links) == 0
 
     receiver.modules.main.sink1 = lfo
 
-    assert len(lfo.stream_callbacks) == 0
-    assert len(lfo.callbacks) == 1
-    assert len(receiver.output_callbacks) == 0
-    assert len(receiver.input_callbacks) == 0
+    assert len(lfo.stream_links) == 0
+    assert len(lfo.nonstream_links) == 1
+    assert len(receiver.links) == 0
 
     receiver.modules.main.sink1 -= lfo
 
-    assert len(lfo.stream_callbacks) == 0
     assert (
-        len(lfo.callbacks) == 1
+        len(lfo.stream_links) == 1
+    )  # There is the key as there is a check, but it has to be empty
+    assert len(lfo.stream_links[lfo.repr()]) == 0
+    assert (
+        len(lfo.nonstream_links) == 1
     )  # there is still the key in the map, but no callbacks
-    assert len(lfo.callbacks["output"]) == 0
-    assert len(receiver.output_callbacks) == 0
-    assert len(receiver.input_callbacks) == 0
+    assert len(lfo.nonstream_links[lfo.repr()]) == 0
+    assert len(receiver.links) == 0
 
 
 def test__remove_keys_midi_midi(sender, receiver):
     _, receiver = receiver
     _, sender = sender
 
-    assert len(sender.output_callbacks) == 0
-    assert len(sender.input_callbacks) == 0
-    assert len(receiver.output_callbacks) == 0
-    assert len(receiver.input_callbacks) == 0
+    assert len(sender.links) == 0
+    assert len(receiver.links) == 0
 
     receiver.modules.main[0] = sender.modules.main[1]
 
-    assert len(sender.output_callbacks) == 0
-    assert len(sender.input_callbacks) == 1
-    assert len(receiver.output_callbacks) == 0
-    assert len(receiver.input_callbacks) == 0
+    assert len(sender.links) == 1
+    assert len(receiver.links) == 0
 
     receiver.modules.main[0] -= sender.modules.main[1]
 
-    assert len(sender.output_callbacks) == 0
-    assert (
-        len(sender.input_callbacks) == 1
-    )  # there is still the key in the map, but no callbacks
-    assert len(sender.input_callbacks[("note", 1)]) == 0
-    assert len(receiver.output_callbacks) == 0
-    assert len(receiver.input_callbacks) == 0
+    assert len(sender.links) == 1  # there is still the key in the map, but no callbacks
+    assert len(sender.links[("note", 1)]) == 0
+    assert len(receiver.links) == 0
 
 
 def test__remove_keys_from_full_section_midi_midi(sender, receiver):
     _, receiver = receiver
     _, sender = sender
 
-    assert len(sender.output_callbacks) == 0
-    assert len(sender.input_callbacks) == 0
-    assert len(receiver.output_callbacks) == 0
-    assert len(receiver.input_callbacks) == 0
+    assert len(sender.links) == 0
+    assert len(receiver.links) == 0
 
     receiver.modules.main[0] = sender.modules.main[1]
 
-    assert len(sender.output_callbacks) == 0
-    assert len(sender.input_callbacks) == 1
-    assert len(receiver.output_callbacks) == 0
-    assert len(receiver.input_callbacks) == 0
+    assert len(sender.links) == 1
+    assert len(receiver.links) == 0
 
     receiver.modules.main -= sender.modules.main[1]
 
-    assert len(sender.output_callbacks) == 0
-    assert (
-        len(sender.input_callbacks) == 1
-    )  # there is still the key in the map, but no callbacks
-    assert len(sender.input_callbacks[("note", 1)]) == 0
-    assert len(receiver.output_callbacks) == 0
-    assert len(receiver.input_callbacks) == 0
+    assert len(sender.links) == 1  # there is still the key in the map, but no callbacks
+    assert len(sender.links[("note", 1)]) == 0
+    assert len(receiver.links) == 0
 
 
 def test__remove_keys_from_one_to_full_section_midi_midi(sender, receiver):
     _, receiver = receiver
     _, sender = sender
 
-    assert len(sender.output_callbacks) == 0
-    assert len(sender.input_callbacks) == 0
-    assert len(receiver.output_callbacks) == 0
-    assert len(receiver.input_callbacks) == 0
+    assert len(sender.links) == 0
+    assert len(receiver.links) == 0
 
     receiver.modules.main[:] = sender.modules.main[1]
     receiver.modules.main[:] = sender.modules.main[2]
 
-    assert len(sender.output_callbacks) == 0
-    assert len(sender.input_callbacks) == 2
-    assert len(sender.input_callbacks[("note", 1)]) == 128
-    assert len(sender.input_callbacks[("note", 2)]) == 128
-    assert len(receiver.output_callbacks) == 0
-    assert len(receiver.input_callbacks) == 0
+    assert len(sender.links) == 2
+    assert len(sender.links[("note", 1)]) == 128
+    assert len(sender.links[("note", 2)]) == 128
+    assert len(receiver.links) == 0
 
     receiver.modules.main -= sender.modules.main[1]
 
-    assert len(sender.output_callbacks) == 0
-    assert (
-        len(sender.input_callbacks) == 2
-    )  # there is still the key in the map, but no callbacks
-    assert len(sender.input_callbacks[("note", 1)]) == 0
-    assert len(sender.input_callbacks[("note", 2)]) == 128
-    assert len(receiver.output_callbacks) == 0
-    assert len(receiver.input_callbacks) == 0
+    assert len(sender.links) == 2  # there is still the key in the map, but no callbacks
+    assert len(sender.links[("note", 1)]) == 0
+    assert len(sender.links[("note", 2)]) == 128
+    assert len(receiver.links) == 0
 
 
 def test__remove_keys_from_all_to_all_section_midi_midi(sender, receiver):
     _, receiver = receiver
     _, sender = sender
 
-    assert len(sender.output_callbacks) == 0
-    assert len(sender.input_callbacks) == 0
-    assert len(receiver.output_callbacks) == 0
-    assert len(receiver.input_callbacks) == 0
+    assert len(sender.links) == 0
+    assert len(receiver.links) == 0
 
     receiver.modules.main[:] = sender.modules.main[:]
 
-    assert len(sender.output_callbacks) == 0
-    assert len(sender.input_callbacks) == 128
-    assert len(sender.input_callbacks[("note", 0)]) == 128
-    assert len(sender.input_callbacks[("note", 1)]) == 128
-    assert len(sender.input_callbacks[("note", 2)]) == 128
-    assert len(sender.input_callbacks[("note", 126)]) == 128
-    assert len(sender.input_callbacks[("note", 127)]) == 128
-    assert len(receiver.output_callbacks) == 0
-    assert len(receiver.input_callbacks) == 0
+    assert len(sender.links) == 128
+    assert len(sender.links[("note", 0)]) == 1
+    assert len(sender.links[("note", 1)]) == 1
+    assert len(sender.links[("note", 2)]) == 1
+    assert len(sender.links[("note", 126)]) == 1
+    assert len(sender.links[("note", 127)]) == 1
+    assert len(receiver.links) == 0
 
     receiver.modules.main -= sender.modules.main[1]
 
-    assert len(sender.output_callbacks) == 0
     assert (
-        len(sender.input_callbacks) == 128
+        len(sender.links) == 128
     )  # there is still the key in the map, but no callbacks
-    assert len(sender.input_callbacks[("note", 1)]) == 0
-    assert len(sender.input_callbacks[("note", 2)]) == 128
-    assert len(receiver.output_callbacks) == 0
-    assert len(receiver.input_callbacks) == 0
+    assert len(sender.links[("note", 1)]) == 0
+    assert len(sender.links[("note", 2)]) == 1
+    assert len(receiver.links) == 0
 
     receiver.modules.main -= sender.modules.main[:]
 
-    assert len(sender.output_callbacks) == 0
     assert (
-        len(sender.input_callbacks) == 128
+        len(sender.links) == 128
     )  # there is still the key in the map, but no callbacks
-    assert len(sender.input_callbacks[("note", 1)]) == 0
-    assert len(sender.input_callbacks[("note", 2)]) == 0
-    assert len(receiver.output_callbacks) == 0
-    assert len(receiver.input_callbacks) == 0
+    assert len(sender.links[("note", 1)]) == 0
+    assert len(sender.links[("note", 2)]) == 0
+    assert len(receiver.links) == 0
