@@ -180,44 +180,76 @@ class Session:
             }
 
         for device in all_devices():
-            for entry in device.callbacks_registry:
-                entry: CallbackRegistryEntry
-                if isinstance(entry.from_, PadOrKey):
+            for link in device.links_registry.values():
+                src = link.src.parameter
+                if isinstance(src, PadOrKey):
                     from_ = {
-                        "note": entry.from_.cc_note,
-                        "type": entry.from_.type,
-                        "name": get_note_name(entry.from_.cc_note),
-                        "section_name": entry.from_.pads_or_keys.section_name,
-                        "mode": entry.from_.mode,
+                        "note": src.cc_note,
+                        "type": src.type,
+                        "name": get_note_name(src.cc_note),
+                        "section_name": src.pads_or_keys.section_name,
+                        "mode": src.mode,
                     }
                 else:
-                    from_ = asdict(entry.from_)
-                if isinstance(entry.parameter, PadOrKey):
+                    from_ = asdict(src)
+                dst = link.dest.parameter
+                if isinstance(dst, PadOrKey):
                     to_ = {
-                        "note": entry.parameter.cc_note,
-                        "type": entry.parameter.type,
-                        "name": get_note_name(entry.parameter.cc_note),
-                        "section_name": entry.parameter.pads_or_keys.section_name,
-                        "mode": entry.parameter.mode,
+                        "note": dst.cc_note,
+                        "type": dst.type,
+                        "name": get_note_name(dst.cc_note),
+                        "section_name": dst.pads_or_keys.section_name,
+                        "mode": dst.mode,
                     }
                 else:
-                    to_ = asdict(entry.parameter)
+                    to_ = asdict(dst)
+
+                # for entry in device.callbacks_registry:
+                #     entry: CallbackRegistryEntry
+                #     if isinstance(entry.from_, PadOrKey):
+                #         from_ = {
+                #             "note": entry.from_.cc_note,
+                #             "type": entry.from_.type,
+                #             "name": get_note_name(entry.from_.cc_note),
+                #             "section_name": entry.from_.pads_or_keys.section_name,
+                #             "mode": entry.from_.mode,
+                #         }
+                #     else:
+                #         from_ = asdict(entry.from_)
+                #     if isinstance(entry.parameter, PadOrKey):
+                #         to_ = {
+                #             "note": entry.parameter.cc_note,
+                #             "type": entry.parameter.type,
+                #             "name": get_note_name(entry.parameter.cc_note),
+                #             "section_name": entry.parameter.pads_or_keys.section_name,
+                #             "mode": entry.parameter.mode,
+                #         }
+                #     else:
+                #         to_ = asdict(entry.parameter)
                 connections.append(
                     {
                         "src": {
-                            "device": id(device),
-                            "repr": device.uid(),
+                            "device": id(link.src.device),
+                            "repr": link.src.device.uid(),
                             "parameter": from_,
-                            "explicit": entry.from_.cc_note,
-                            "chain": scaler_as_dict(entry.chain),
-                            "type": entry.type,
+                            "explicit": src.cc_note,
+                            "chain": scaler_as_dict(link.chain),
+                            "type": (
+                                "virtual"
+                                if isinstance(src, VirtualParameter)
+                                else src.type
+                            ),
                         },
                         "dest": {
-                            "device": id(entry.target),
-                            "repr": entry.target.uid(),
+                            "device": id(link.dest.device),
+                            "repr": link.dest.device.uid(),
                             "parameter": to_,
-                            "explicit": entry.cc_note,
-                            "type": entry.type,
+                            "explicit": src.cc_note,
+                            "type": (
+                                "virtual"
+                                if isinstance(dst, VirtualParameter)
+                                else dst.type
+                            ),
                         },
                     }
                 )

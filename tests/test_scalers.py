@@ -81,3 +81,15 @@ def test__scaler_lin_x_None_None():
     assert scaler.convert_lin(25, None, None) == 25
     assert scaler.convert_lin(25, 0, None) == 25
     assert scaler.convert_lin(25, None, 0) == 0
+
+
+def test__scaler_mapping():
+    lfo = LFO()
+
+    scaler = lfo.scale(0, 50, as_int=True)
+    lfo.speed_cv = scaler
+
+    link = list(lfo.links_registry.values())[0]
+
+    assert link.chain is not None
+    assert link.chain is scaler

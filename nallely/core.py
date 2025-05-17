@@ -195,14 +195,18 @@ class VirtualParameter:
     def __set__(self, device: "VirtualDevice", value, append=True, chain=None):
         if isinstance(
             value,
-            (ParameterInstance, Int, PadOrKey, PadsOrKeysInstance, VirtualDevice),
+            (
+                ParameterInstance,
+                Int,
+                PadOrKey,
+                PadsOrKeysInstance,
+                VirtualDevice,
+                Scaler,
+            ),
         ):
             assert self.cv_name
             value.bind(getattr(device, self.cv_name))
             return
-        elif isinstance(value, Scaler):
-            scaler = value
-            self.__set__(device, scaler.data, append=append, chain=scaler)
         elif isinstance(value, PadOrKey):
             pad = value
             foo = pad.generate_fun(device, self)

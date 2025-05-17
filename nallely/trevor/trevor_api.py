@@ -73,7 +73,7 @@ class TrevorAPI:
 
     def set_scaler_parameter(self, scaler_id, parameter, value):
         for device in chain(connected_devices, virtual_devices):
-            for entry in device.callbacks_registry:
+            for entry in device.links_registry.values():
                 if id(entry.chain) == scaler_id:
                     scaler = entry.chain
                     setattr(scaler, parameter, value)
@@ -101,7 +101,8 @@ class TrevorAPI:
             src = getattr(src_device, from_section)[int(from_parameter)]
         elif from_parameter == "all_keys_or_pads":
             # We know we want to bind all the notes/pads [0..127]
-            src = getattr(src_device, from_section)[:]
+            src_section = getattr(src_device, from_section)
+            src = getattr(src_section, src_section.meta.pads_or_keys.name)
         else:
             src = getattr(getattr(src_device, from_section), from_parameter)
         if unbind:

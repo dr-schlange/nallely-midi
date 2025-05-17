@@ -86,7 +86,7 @@ class Int(int):
 
 @dataclass
 class Scaler:
-    data: Int | VirtualDevice | PadOrKey | ParameterInstance
+    data: Int | VirtualDevice | PadOrKey | ParameterInstance | PadsOrKeysInstance
     # device: Any
     to_min: int | float | None
     to_max: int | float | None
@@ -523,6 +523,28 @@ class PadsOrKeysInstance:
 
         Link.create(self, target)
 
+    def __isub__(self, other):
+        other.device.unbind_link(other, self)
+
+    def scale(
+        self,
+        min: int | float | None = None,
+        max: int | float | None = None,
+        method: Literal["lin"] | Literal["log"] = "lin",
+        as_int: bool = False,
+    ):
+        return Scaler(
+            data=self,
+            # device=self.device,
+            to_min=min,
+            to_max=max,
+            # from_min=self.range[0],
+            # from_max=self.range[1],
+            method=method,
+            as_int=as_int,
+            auto=min is None and max is None,
+        )
+
 
 @dataclass
 class ModulePadsOrKeys:
@@ -542,98 +564,15 @@ class ModulePadsOrKeys:
             return self
         return instance.state[self.section_name]
 
-    # def __set__(self, instance, value, append=True, chain=None):
-    #     if value is None:
-    #         return
-    #     from .core import ParameterInstance, VirtualDevice
+    def __set__(self, target, feeder):
+        if feeder is None:
+            return
 
-    #     match value:
-    #         case Scaler():
-    #             self.__set__(instance, value.data, chain=value)
-    #         case PadOrKey():
-    #             pad: PadOrKey = value
-    #             pad.device.bind(
-    #                 lambda value, ctx: instance.device.note(
-    #                     note=value, velocity=ctx.velocity, type=ctx.type
-    #                 ),
-    #                 type=self.type,
-    #                 cc_note=pad.cc_note,
-    #                 to=instance.device,
-    #                 param=self,
-    #                 append=append,
-    #                 from_=pad,
-    #                 transformer_chain=chain,
-    #             )
-    #         case list():
-    #             for e in value:
-    #                 pad: PadOrKey = e
-    #                 assert isinstance(pad, PadOrKey)
-    #                 self.__set__(instance, e)
-    #         case VirtualDevice():
-    #             feeder = value
-
-    #             def foo(value, ctx):
-    #                 if value == 0:
-    #                     instance.device.all_notes_off()
-    #                     return
-    #                 instance.device.note(
-    #                     note=value,
-    #                     velocity=127,
-    #                     type="note_off" if value == 0 else "note_on",
-    #                 )
-
-    #             feeder.bind(
-    #                 foo,
-    #                 to=instance.device,
-    #                 param=self,
-    #                 append=append,
-    #                 from_=value.output_cv.parameter,
-    #                 transformer_chain=chain,
-    #             )
-    #         case ParameterInstance():
-    #             feeder = value
-
-    #             def foo(value, ctx):
-    #                 if value == 0:
-    #                     instance.device.all_notes_off()
-    #                     return
-    #                 instance.device.note(
-    #                     note=value,
-    #                     velocity=127,
-    #                     type="note_off" if value == 0 else "note_on",
-    #                 )
-
-    #             feeder.device.bind(
-    #                 foo,
-    #                 to=instance.device,
-    #                 param=self,
-    #                 append=append,
-    #                 from_=value.parameter,
-    #                 transformer_chain=chain,
-    #             )
-    #         case Int():
-    #             feeder = value
-
-    #             def foo(value, ctx):
-    #                 if value == 0:
-    #                     instance.device.all_notes_off()
-    #                     return
-    #                 instance.device.note(
-    #                     note=value,
-    #                     velocity=127,
-    #                     type="note_off" if value == 0 else "note_on",
-    #                 )
-
-    #             feeder.device.bind(
-    #                 foo,
-    #                 type=feeder.parameter.type,
-    #                 cc_note=feeder.parameter.cc_note,
-    #                 to=instance.device,
-    #                 param=self,
-    #                 append=append,
-    #                 from_=feeder.parameter,
-    #                 transformer_chain=chain,
-    #             )
+        if isinstance(feeder, list):
+            for f in feeder:
+                f.bind(getattr(target, self.name))
+        else:
+            feeder.bind(getattr(target, self.name))
 
     def basic_send(self, type, note, velocity): ...
 

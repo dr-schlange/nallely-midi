@@ -72,17 +72,29 @@ class WebSocketBus(VirtualDevice):
     def handler(self, client):
         path = client.request.path
         service_name = path.split("/")[1]
+        connected_devices = self.connected[service_name]
+
         if path.endswith("/autoconfig") and service_name not in self.connected:
             print(f"Autoconfig for {service_name}")
-            message = json.loads(client.recv())
-            print(f"Parameters: {message['parameters']}")
-            self.configure_remote_device(service_name, parameters=message["parameters"])  # type: ignore
+            try:
+                message = json.loads(client.recv())
+                print(f"Parameters: {message['parameters']}")
+                self.configure_remote_device(service_name, parameters=message["parameters"])  # type: ignore
+            except ConnectionClosed as e:
+                kind = (
+                    "crashed"
+                    if isinstance(e, ConnectionClosedError)
+                    else "disconnected"
+                )
+                print(
+                    f"Client {client} on {service_name} {kind} [{len(connected_devices)} clients]"
+                )
         elif service_name not in self.known_services:
             print(
                 f"Service {service_name} is not yet configured, you cannot subscribe to it yet"
             )
             return
-        connected_devices = self.connected[service_name]
+
         connected_devices.append(client)
         print(f"Connecting on {service_name} [{len(connected_devices)} clients]")
         try:

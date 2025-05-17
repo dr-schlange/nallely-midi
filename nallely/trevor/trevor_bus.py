@@ -329,17 +329,6 @@ def start_trevor(include_builtins, loaded_paths=None, init_script=None):
 
         trevor = TrevorBus()
         trevor.start()
-        # while (
-        #     q := input("Press 'q' to stop Trevor, press enter to display infos...")
-        # ) != "q":
-        #     trevor_infos("[TREVOR INFO]", loaded_paths, init_script)
-        #     # import os
-        #     # import psutil
-        #     # process = psutil.Process(os.getpid())
-        #     # mem_info = process.memory_info()
-        #     # print(f"Memory: {mem_info.rss / (1024 * 1024)} Mo")
-        #     # cpu_usage = process.cpu_percent(interval=1)
-        #     # print(f"CPU: {cpu_usage}%")
         _trevor_menu(loaded_paths, init_script, trevor)
         print("Shutting down...")
     finally:

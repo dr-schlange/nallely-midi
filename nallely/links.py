@@ -187,3 +187,83 @@ class Link:
         return lambda value, ctx: dest.device.note(
             ctx.type, dest.parameter.cc_note, ctx.velocity
         )
+
+    # MIDI pads/keys -> MIDI pads/keys
+    def _install_PadsOrKeysInstance__PadsOrKeysInstance(self):
+        src = cast(PadsOrKeysInstance, self.src)
+        dest = cast(PadsOrKeysInstance, self.dest)
+
+        self.callback = self._compile_PadsOrKeysInstance__PadsOrKeysInstance()
+        src.device.bind_link(self)
+
+    def _compile_PadsOrKeysInstance__PadsOrKeysInstance(self):
+        src = cast(PadsOrKeysInstance, self.src)
+        dest = cast(PadsOrKeysInstance, self.dest)
+
+        return lambda value, ctx: dest.device.note(
+            note=value, velocity=ctx.velocity, type=ctx.type
+        )
+
+    # MIDI pad/key -> MIDI pads/keys
+    def _install_PadOrKey__PadsOrKeysInstance(self):
+        src = cast(PadOrKey, self.src)
+        dest = cast(PadsOrKeysInstance, self.dest)
+
+        self.callback = self._compile_PadOrKey__PadsOrKeysInstance()
+        src.device.bind_link(self)
+
+    def _compile_PadOrKey__PadsOrKeysInstance(self):
+        src = cast(PadOrKey, self.src)
+        dest = cast(PadsOrKeysInstance, self.dest)
+
+        return lambda value, ctx: dest.device.note(
+            note=value, velocity=ctx.velocity, type=ctx.type
+        )
+
+    # Virtual device output -> MIDI pads/keys
+    def _install_ParameterInstance__PadsOrKeysInstance(self):
+        src = cast(ParameterInstance, self.src)
+        dest = cast(PadsOrKeysInstance, self.dest)
+
+        self.callback = self._compile_ParameterInstance__PadsOrKeysInstance()
+        src.device.bind_link(self)
+
+    def _compile_ParameterInstance__PadsOrKeysInstance(self):
+        src = cast(ParameterInstance, self.src)
+        dest = cast(PadsOrKeysInstance, self.dest)
+
+        def foo(value, ctx):
+            if value == 0:
+                dest.device.all_notes_off()
+                return
+            dest.device.note(
+                note=value,
+                velocity=127,
+                type="note_off" if value == 0 else "note_on",
+            )
+
+        return foo
+
+    # MIDI CC -> MIDI pads/keys
+    def _install_Int__PadsOrKeysInstance(self):
+        src = cast(ParameterInstance, self.src)
+        dest = cast(PadsOrKeysInstance, self.dest)
+
+        self.callback = self._compile_Int__PadsOrKeysInstance()
+        src.device.bind_link(self)
+
+    def _compile_Int__PadsOrKeysInstance(self):
+        src = cast(ParameterInstance, self.src)
+        dest = cast(PadsOrKeysInstance, self.dest)
+
+        def foo(value, ctx):
+            if value == 0:
+                dest.device.all_notes_off()
+                return
+            dest.device.note(
+                note=value,
+                velocity=127,
+                type="note_off" if value == 0 else "note_on",
+            )
+
+        return foo
