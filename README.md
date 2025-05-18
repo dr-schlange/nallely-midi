@@ -5,8 +5,10 @@ Nallely (pronounced "Nayeli") is an organic platform for experimentation around 
 Features:
 * programmatic seemless API to your MIDI Device,
 * virtual devices (LFOs for example) you can connect to your MIDI devices (as source or target),
+* introspective API for auto-adaptive virtual modules,
+* links are formally defined and are entities of the domain,
+* bouncy links: links can trigger target port associated link to have reaction chains,
 * Python API code generator for your device if it is listed by the [MIDI CC & NRPN database](https://github.com/pencilresearch/midi) project,
-* bind/unbind any Python function to any control/pad/key of your MIDI Device,
 * bind/unbind control/pad/key of your MIDI devices between each other or virtual devices, converting the CC between source and target if required,
 * bind/unbind the velocity of the pad/key of your MIDI devices to any CC control,
 * bind/unbind pad/key individualy to any control, note, parameter of MIDI devices or virtual devices,
@@ -17,13 +19,13 @@ Features:
 * LFOs composition with mathematical expressions,
 * Envelope Generator,
 * a web interface relying on a websocket protocol (named Trevor) which allows you to do graphically what you would ask Nallely to do in normal time (map devices, parameters, scalers),
-* interactive code playground in the browser (through Trevor UI),
+* interactive code playground in the browser (through Trevor UI) inspired by Smalltalk playground,
 * small web-based widget oscilloscope integrated in the web interface,
 * save/reload preset for any MIDI device,
 * save/reload patch for full connection between MIDI devices and virtual devices,
 * random preset generator for MIDI devices and virtual devices,
-* full random patch generator (basic at the moment) with auto-generative capacity,
-* introspective API for auto-adaptive virtual modules (still unstable at the moment).
+* full random patch generator (basic at the moment) with auto-generative capacity as virtual device (you can control it from MIDI devices or other virtual devices),
+* (currently disabled) _bind/unbind any Python function to any control/pad/key of your MIDI Device_,
 
 Planned:
 * handle multiple banks per device/per section,
@@ -34,8 +36,76 @@ Planned:
   * sequencer
 * possibility to broadcast messages and information from the external services,
 
+## Trevor, Nallely's companion
 
-## Quick examples
+Trevor is a communication protocol and a UI made to communicate with Nallely through websocket and ask Nallely to create device instance, map devices together or apply scaler. Trevor proposes a web UI that lets you bind everything at run time, without any need for stopping/starting again scripts, as well as an interactive code playground inspired by Smalltalk playgrounds that let's you code/script on the fly.
+
+
+## Documentation
+
+A first draft about how Nallely can help you declare your devices and map them using the current API can be find in the [documentation](./docs/main.md).
+
+
+### Installation & how to launch it
+
+Trevor runs in two parts: the websocket server (the backend), and the frontend. At the moment, this is the way to launch it, but in the future, it will be integrated in a more seemless way. The web UI is built with vite, react, and uses yarn. We consider here that you have all of this installed already. To install Trevor:
+
+```
+cd trevor
+yarn install
+```
+
+Then to launch everything:
+
+```
+# in 1 terminal, inside of the "trevor" directory
+yarn dev
+
+# in another terminal, there is various other options you can pass, try --help to see all of them
+nallely run --with-trevor
+```
+
+### Screenshots of Trevor UI
+![trevor1](https://github.com/user-attachments/assets/aa611b38-4e12-4437-a0d3-d6079966dc7a)
+![trevor2](https://github.com/user-attachments/assets/9baa2a96-5359-458b-abdd-7bf6f13e7eb6)
+
+### Screenshots of Trevor UI (old)
+
+![trevor-shot1](https://github.com/user-attachments/assets/011adf5c-47d4-4786-9375-bb337008b3cd)
+![trevor-shot2](https://github.com/user-attachments/assets/e2955fd9-9ab4-4e6a-876b-aa6e9e1f2280)
+![trevor-shot3](https://github.com/user-attachments/assets/5243180f-3e48-45e5-a21c-d5a05c4d7504)
+
+
+## Launch the example
+
+This repo comes with one example of a spiral that is controlled by LFOs created by Nallely. To launch it, once you have installed the library (obviously).
+
+There is 3 ways of launching the demo, either launching the `visual-spiral.py` script, or loading the `visual-spiral.nly` patch through the UI, or loading by a script the `visual-spiral.nly` patch. We will demonstrate here the two first ways: using the `visual-spiral.py` script, and using the UI.
+
+### Using the python script
+
+1. Simply copy those file from this repository:
+   * `visual-spiral.py` => core system for this small example, creates 2 LFOs, waits for external modules (spiral and possibly terminal-based oscilloscope) to connect and maps all together,
+   * `spiral.hml` => simple three.js spiral controlled by some parameters,
+   * `external_scope.py` => simple terminal-based oscilloscope relying on `plotext`.
+2. Launch `python -m http.server 8000` in the project repository and go with your browser to [http://localhost:8000/spiral.html](http://localhost:8000/spiral.html),
+3. Launch `visual-spiral.py`
+4. ...
+5. Profit
+6. (Optional) if you want to see the LFO shape, launch `external-scope.py` from another terminal.
+
+The screenshot below shows you what the result looks like with everything launched
+
+![shot](https://github.com/user-attachments/assets/0fc1a194-5281-4cbc-9ce9-bc2fc86e7342)
+
+
+### Using Trevor UI
+
+https://github.com/user-attachments/assets/6913a9be-e4d8-4bb6-b604-5734ce9b6d15
+
+
+
+## Other quick examples
 
 Here is a simple example about how to map the cutoff of the KORG NTS-1 with the cutoff of the KORG Minilogue, in an inverse fashion:
 
@@ -179,69 +249,3 @@ KORG:
 ```
 
 The `xxx: 'keys_or_pads'` entry doesn't have to be in an isolated section, it can be set with other sections, but it's only possible to have one `key_or_pads` entry by section.
-
-
-
-## Documentation
-
-A first draft about how Nallely can help you declare your devices and map them using the current API can be find in the [documentation](./docs/main.md).
-
-## Launch the example
-
-This repo comes with one example of a spiral that is controlled by LFOs created by Nallely. To launch it, once you have installed the library (obviously).
-
-There is 3 ways of launching the demo, either launching the `visual-spiral.py` script, or loading the `visual-spiral.nly` patch through the UI, or loading by a script the `visual-spiral.nly` patch. We will demonstrate here the two first ways: using the `visual-spiral.py` script, and using the UI.
-
-### Using the python script
-
-1. Simply copy those file from this repository:
-   * `visual-spiral.py` => core system for this small example, creates 2 LFOs, waits for external modules (spiral and possibly terminal-based oscilloscope) to connect and maps all together,
-   * `spiral.hml` => simple three.js spiral controlled by some parameters,
-   * `external_scope.py` => simple terminal-based oscilloscope relying on `plotext`.
-2. Launch `python -m http.server 8000` in the project repository and go with your browser to [http://localhost:8000/spiral.html](http://localhost:8000/spiral.html),
-3. Launch `visual-spiral.py`
-4. ...
-5. Profit
-6. (Optional) if you want to see the LFO shape, launch `external-scope.py` from another terminal.
-
-The screenshot below shows you what the result looks like with everything launched
-
-![shot](https://github.com/user-attachments/assets/0fc1a194-5281-4cbc-9ce9-bc2fc86e7342)
-
-
-### Using Trevor UI
-
-https://github.com/user-attachments/assets/6913a9be-e4d8-4bb6-b604-5734ce9b6d15
-
-## Trevor, Nallely's companion
-
-Trevor is a communication protocol and a UI made to communicate with Nallely through websocket and ask Nallely to create device instance, map devices together or apply scaler. Trevor proposes a web UI that lets you bind everything at run time, without any need for stopping/starting again scripts, as well as an interactive code playground inspired by Smalltalk playgrounds that let's you code/script on the fly.
-
-### Installation & how to launch it
-
-Trevor runs in two parts: the websocket server (the backend), and the frontend. At the moment, this is the way to launch it, but in the future, it will be integrated in a more seemless way. The web UI is built with vite, react, and uses yarn. We consider here that you have all of this installed already. To install Trevor:
-
-```
-cd trevor
-yarn install
-```
-
-Then to launch everything:
-
-```
-# in 1 terminal, inside of the "trevor" directory
-yarn dev
-
-# in another terminal, there is various other options you can pass, try --help to see all of them
-nallely run --with-trevor
-```
-
-### Screenshots of Trevor UI
-![trevor1](https://github.com/user-attachments/assets/aa611b38-4e12-4437-a0d3-d6079966dc7a)
-![trevor2](https://github.com/user-attachments/assets/9baa2a96-5359-458b-abdd-7bf6f13e7eb6)
-
-### Screenshots of Trevor UI (old)
-
-![trevor-shot1](https://github.com/user-attachments/assets/011adf5c-47d4-4786-9375-bb337008b3cd)
-![trevor-shot2](https://github.com/user-attachments/assets/e2955fd9-9ab4-4e6a-876b-aa6e9e1f2280)
-![trevor-shot3](https://github.com/user-attachments/assets/5243180f-3e48-45e5-a21c-d5a05c4d7504)
