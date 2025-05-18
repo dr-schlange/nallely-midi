@@ -20,6 +20,16 @@ class DeviceSimulator:
             mido.Message("control_change", control=cc, value=value, channel=channel)
         )
 
+    def note_on(self, note, velocity=64, channel=0):
+        self.port.send(
+            mido.Message("note_on", note=note, velocity=velocity, channel=channel)
+        )
+
+    def note_off(self, note, velocity=64, channel=0):
+        self.port.send(
+            mido.Message("note_off", note=note, velocity=velocity, channel=channel)
+        )
+
 
 class CTX:
     def __init__(self):

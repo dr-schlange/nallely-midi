@@ -74,6 +74,150 @@ def test__mapping_sender_receiver(sender, receiver):
     assert receiver.sink2 == 0
 
 
+def test__mapping_senderkeys_receiver(sender, receiver):
+    send_simu, sender = sender
+    _, receiver = receiver
+
+    receiver.modules.main.sink1 = sender.modules.main.keys
+
+    # We trigger a note
+    send_simu.note_on(note=77)
+
+    let_time_to_react()
+
+    assert receiver.sink1 == 77
+    assert receiver.sink2 == 0
+
+    # We trigger another one
+    send_simu.note_off(note=77)
+    send_simu.note_on(note=8)
+
+    let_time_to_react()
+
+    assert receiver.sink1 == 8
+    assert receiver.sink2 == 0
+
+
+def test__mapping_senderkey_from_keys_to_receiver(sender, receiver):
+    send_simu, sender = sender
+    _, receiver = receiver
+
+    receiver.modules.main.sink1 = sender.modules.main.keys[77]
+
+    # We trigger a note
+    send_simu.note_on(note=77)
+
+    let_time_to_react()
+
+    assert receiver.sink1 == 77
+    assert receiver.sink2 == 0
+
+    # We trigger another one not mapped
+    send_simu.note_off(note=77)
+    send_simu.note_on(note=8)
+
+    let_time_to_react()
+
+    assert receiver.sink1 == 77
+    assert receiver.sink2 == 0
+
+
+def test__mapping_senderkey_from_section_to_receiver(sender, receiver):
+    send_simu, sender = sender
+    _, receiver = receiver
+
+    receiver.modules.main.sink1 = sender.modules.main[5]
+
+    # We trigger a note
+    send_simu.note_on(note=5)
+
+    let_time_to_react()
+
+    assert receiver.sink1 == 5
+    assert receiver.sink2 == 0
+
+    # We trigger another one not mapped
+    send_simu.note_off(note=78)
+    send_simu.note_on(note=8)
+
+    let_time_to_react()
+
+    assert receiver.sink1 == 5
+    assert receiver.sink2 == 0
+
+
+def test__mapping_sender_to_receiver_keys(sender, receiver):
+    send_simu, sender = sender
+    _, receiver = receiver
+
+    receiver.modules.main.keys_sink = sender.modules.main.button1
+
+    # We simulate a trigger of 2 controls, 1 mapped, the other no
+    send_simu.cc(45, 32)
+    send_simu.cc(46, 15)
+
+    let_time_to_react()
+
+    assert receiver.played_notes[32] == 1
+    assert 15 not in receiver.played_notes
+
+    # We trigger a note_off using 0
+    send_simu.cc(45, 0)
+
+    let_time_to_react()
+
+    assert receiver.played_notes[32] == 0
+    assert 15 not in receiver.played_notes
+
+
+def test__mapping_sender_to_receiver_key_from_keys(sender, receiver):
+    send_simu, sender = sender
+    _, receiver = receiver
+
+    receiver.modules.main.keys_sink[5] = sender.modules.main.button1
+
+    # We simulate a trigger of 2 controls, 1 mapped, the other no
+    send_simu.cc(45, 32)
+    send_simu.cc(46, 15)
+
+    let_time_to_react()
+
+    assert receiver.played_notes[5] == 1
+    assert 15 not in receiver.played_notes
+
+    # We trigger a note_off using 0
+    send_simu.cc(45, 0)
+
+    let_time_to_react()
+
+    assert receiver.played_notes[5] == 0
+    assert 15 not in receiver.played_notes
+
+
+def test__mapping_sender_to_receiver_key_from_section(sender, receiver):
+    send_simu, sender = sender
+    _, receiver = receiver
+
+    receiver.modules.main[5] = sender.modules.main.button1
+
+    # We simulate a trigger of 2 controls, 1 mapped, the other no
+    send_simu.cc(45, 32)
+    send_simu.cc(46, 15)
+
+    let_time_to_react()
+
+    assert receiver.played_notes[5] == 1
+    assert 15 not in receiver.played_notes
+
+    # We trigger a note_off using 0
+    send_simu.cc(45, 0)
+
+    let_time_to_react()
+
+    assert receiver.played_notes[5] == 0
+    assert 15 not in receiver.played_notes
+
+
 def test__mapping_virtual_receiver(receiver):
     _, receiver = receiver
     lfo = LFO(waveform="square", min_value=5, max_value=10, speed=1000)

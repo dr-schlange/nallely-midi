@@ -5,6 +5,7 @@ import traceback
 from collections import defaultdict
 from dataclasses import InitVar, asdict, dataclass, field
 from decimal import Decimal
+from itertools import chain
 from pathlib import Path
 from queue import Empty, Full, Queue
 from typing import Any, Callable, Counter, Iterable, Literal, Type
@@ -376,6 +377,8 @@ class VirtualDevice(threading.Thread):
 
     def unbind_all(self):
         self.stream_links.clear()
+        for link in self.links_registry.values():
+            link.cleanup()
         self.nonstream_links.clear()
         self.links_registry.clear()
 
@@ -403,10 +406,12 @@ class VirtualDevice(threading.Thread):
             for link in link_to_remove:
                 try:
                     self.stream_links[from_.repr()].remove(link)
+                    link.cleanup()
                 except ValueError:
                     ...
                 try:
                     self.nonstream_links[from_.repr()].remove(link)
+                    link.cleanup()
                 except ValueError:
                     ...
             return
@@ -424,11 +429,13 @@ class VirtualDevice(threading.Thread):
                 for key in list(self.stream_links.keys()):
                     try:
                         self.stream_links[key].remove(link)
+                        link.cleanup()
                     except ValueError:
                         ...
                 for key in list(self.nonstream_links.keys()):
                     try:
                         self.nonstream_links[key].remove(link)
+                        link.cleanup()
                     except ValueError:
                         ...
             return
@@ -442,10 +449,12 @@ class VirtualDevice(threading.Thread):
         del self.links_registry[key]
         try:
             self.stream_links[from_.repr()].remove(link)
+            link.cleanup()
         except ValueError:
             ...
         try:
             self.nonstream_links[from_.repr()].remove(link)
+            link.cleanup()
         except ValueError:
             ...
 
@@ -824,6 +833,8 @@ class MidiDevice:
         )
 
     def unbind_all(self):
+        for link in self.links_registry.values():
+            link.cleanup()
         self.links.clear()
         self.links_registry.clear()
 
@@ -852,6 +863,7 @@ class MidiDevice:
                 del self.links_registry[key]
             for link in link_to_remove:
                 self.links[(from_.parameter.type, from_.parameter.cc_note)].remove(link)
+                link.cleanup()
             return
         if target is None:
             to_remove = []
@@ -867,6 +879,7 @@ class MidiDevice:
                 for key in list(self.links.keys()):
                     try:
                         self.links[key].remove(link)
+                        link.cleanup()
                     except ValueError:
                         ...
             return
@@ -879,6 +892,7 @@ class MidiDevice:
 
         del self.links_registry[key]
         self.links[(from_.parameter.type, from_.parameter.cc_note)].remove(link)
+        link.cleanup()
 
     def __isub__(self, other):
         # The only way to be here is from a callback removal on the key/pad section

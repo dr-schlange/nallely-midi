@@ -527,6 +527,12 @@ class PadsOrKeysInstance:
     def __isub__(self, other):
         other.device.unbind_link(other, self)
 
+    def __getitem__(self, key):
+        return getattr(self.device.modules, self.parameter.section_name)[key]
+
+    def __setitem__(self, key, value):
+        getattr(self.device.modules, self.parameter.section_name)[key] = value
+
     def scale(
         self,
         min: int | float | None = None,
@@ -649,18 +655,21 @@ class Module:
         raise Exception(f"Don't know what to look for key of type {key.__class__}")
 
     def __setitem__(self, key, value):
+        if value is None:
+            return
         pads = self[key]
         if not isinstance(pads, list):
             pads = [pads]
-        match value:
-            case PadOrKey():
-                from_pad = value
-                for to_pad in pads:
-                    from_pad.bind(to_pad)
-            case list():
-                from_pads = value
-                for from_pad, to_pad in zip(from_pads, pads):
-                    from_pad.bind(to_pad)
+
+        if isinstance(value, list):
+            from_pads = value
+            for from_pad, to_pad in zip(from_pads, pads):
+                from_pad.bind(to_pad)
+            return
+
+        from_pad = value
+        for to_pad in pads:
+            from_pad.bind(to_pad)
 
     def __isub__(self, other):
         # The only way to be here is from a callback removal on the section
