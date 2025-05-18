@@ -33,7 +33,7 @@ import { LoadModal } from "./modals/LoadModal";
 const DevicePatching = () => {
 	const mainSectionRef = useRef(null);
 	const [rackRowHeight, setRackRowHeight] = useState(150); // Default height
-	const [associateMode, setAssociateMode] = useState(false);
+	const [associateMode, setAssociateMode] = useState(true);
 	const [selectedSections, setSelectedSections] = useState<
 		MidiDeviceWithSection[]
 	>([]);
@@ -417,8 +417,13 @@ const DevicePatching = () => {
 		for (const line of svg.querySelectorAll("line")) {
 			line.remove();
 		}
-
-		for (const connection of allConnections) {
+		const sortedConnections = [...allConnections].sort((a, b) => {
+			const isSelected = (x) => connectionId(x) === selectedConnection;
+			if (isSelected(a) && !isSelected(b)) return 1;
+			if (!isSelected(a) && isSelected(b)) return -1;
+			return 0;
+		});
+		for (const connection of sortedConnections) {
 			const srcSection = connection.src.parameter.section_name;
 			const srcId = buildSectionId(
 				connection.src.device,

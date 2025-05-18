@@ -92,10 +92,18 @@ export const drawConnection = (
 	line.setAttribute("y1", fromY.toString());
 	line.setAttribute("x2", toX.toString());
 	line.setAttribute("y2", toY.toString());
-	line.setAttribute("stroke", selected ? "orange" : "orange");
-	line.setAttribute("stroke-width", selected ? "6" : "2");
+	if (selected) {
+		line.setAttribute("stroke-opacity", "1")
+		line.setAttribute("stroke", "blue");
+		line.setAttribute("stroke-width", "2.5");
+		line.setAttribute("marker-end", "url(#selected-retro-arrowhead)");
+	} else {
+		line.setAttribute("stroke-opacity", "1")
+		line.setAttribute("stroke", "gray");
+		line.setAttribute("stroke-width", "2");
+		line.setAttribute("marker-end", "url(#retro-arrowhead)");
+	}
 	line.id = `${fromElement.id}-${toElement.id}`;
-	line.setAttribute("marker-end", "url(#retro-arrowhead)");
 	if (clickHandler) {
 		line.addEventListener("click", clickHandler);
 	}

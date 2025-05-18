@@ -219,10 +219,27 @@ const InstanceCreation = () => {
 					>
 						<polygon
 							points="0,0 5,3 0,6"
-							fill="orange"
+							fill="gray"
 							stroke="white"
 							strokeWidth="1"
 							strokeOpacity="0.3"
+						/>
+					</marker>
+					<marker
+						id="selected-retro-arrowhead"
+						markerWidth="6"
+						markerHeight="6"
+						refX="5"
+						refY="3"
+						orient="auto"
+						markerUnits="strokeWidth"
+					>
+						<polygon
+							points="0,0 5,3 0,6"
+							fill="blue"
+							stroke="white"
+							strokeWidth="1"
+							strokeOpacity="0.8"
 						/>
 					</marker>
 				</defs>

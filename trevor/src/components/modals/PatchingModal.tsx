@@ -210,15 +210,20 @@ const PatchingModal = ({
 		setSelectedParameters([]);
 	};
 
-	const drawConnections = () => {
+	const updateConnections = () => {
 		if (!svgRef.current) return;
 
 		const svg = svgRef.current;
 		for (const line of svg.querySelectorAll("line")) {
 			line.remove();
 		}
-
-		for (const connection of connections) {
+		const sortedConnections = [...connections].sort((a, b) => {
+			const isSelected = (x) => connectionId(x) === selectedConnection;
+			if (isSelected(a) && !isSelected(b)) return 1;
+			if (!isSelected(a) && isSelected(b)) return -1;
+			return 0;
+		});
+		for (const connection of sortedConnections) {
 			const [fromElement, toElement] = findConnectorElement(connection);
 			drawConnection(
 				svg,
@@ -230,12 +235,12 @@ const PatchingModal = ({
 	};
 
 	useEffect(() => {
-		drawConnections();
+		updateConnections();
 	}, [connections, refresh]);
 
 	useEffect(() => {
 		const handleResize = () => {
-			drawConnections();
+			updateConnections();
 		};
 
 		const observer = new ResizeObserver(handleResize);
@@ -280,22 +285,9 @@ const PatchingModal = ({
 			<div className="modal-body">
 				<svg className="connection-svg modal" ref={svgRef}>
 					<title>Connection diagram</title>
-					<defs>
-						<marker
-							id="retro-arrowhead"
-							markerWidth="10"
-							markerHeight="10"
-							refX="7"
-							refY="5"
-							orient="auto"
-							markerUnits="strokeWidth"
-						>
-							<polygon points="0 0, 10 5, 0 10, 3 5" fill="orange" />{" "}
-						</marker>
-					</defs>
 				</svg>
 				<div className="left-panel">
-					<div className="top-left-panel" onScroll={drawConnections}>
+					<div className="top-left-panel" onScroll={updateConnections}>
 						<h3>
 							{firstSection?.device.repr} {firstSection?.section.name}
 						</h3>
@@ -334,7 +326,7 @@ const PatchingModal = ({
 							))}
 						</div>
 					</div>
-					<div className="bottom-left-panel" onScroll={drawConnections}>
+					<div className="bottom-left-panel" onScroll={updateConnections}>
 						<h3>
 							{secondSection?.device.repr} {secondSection?.section.name}
 						</h3>
