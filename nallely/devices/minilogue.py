@@ -22,7 +22,7 @@ class EnvelopesSection(nallely.Module):
     amp_eg_sustain = nallely.ModuleParameter(18)
     amp_eg_release = nallely.ModuleParameter(19)
     eg_attack = nallely.ModuleParameter(20)
-    eg_decay = nallely.ModuleParameter(21)
+    eg_decay = nallely.ModuleParameter(21, init_value=64)
     eg_sustain = nallely.ModuleParameter(22)
     eg_release = nallely.ModuleParameter(23)
 
@@ -60,7 +60,7 @@ class MixSection(nallely.Module):
 
 
 class FilterSection(nallely.Module):
-    cutoff = nallely.ModuleParameter(43)
+    cutoff = nallely.ModuleParameter(43, init_value=127)
     resonance = nallely.ModuleParameter(44)
     eg_intensity = nallely.ModuleParameter(45)
     type = nallely.ModuleParameter(84)
