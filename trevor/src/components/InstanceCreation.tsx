@@ -242,6 +242,23 @@ const InstanceCreation = () => {
 							strokeOpacity="0.8"
 						/>
 					</marker>
+					<marker
+						id="bouncy-retro-arrowhead"
+						markerWidth="6"
+						markerHeight="6"
+						refX="5"
+						refY="3"
+						orient="auto"
+						markerUnits="strokeWidth"
+					>
+						<polygon
+							points="0,0 5,3 0,6"
+							fill="green"
+							stroke="white"
+							strokeWidth="1"
+							strokeOpacity="0.8"
+						/>
+					</marker>
 				</defs>
 			</svg>
 		</div>

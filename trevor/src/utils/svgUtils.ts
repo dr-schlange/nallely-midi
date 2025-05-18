@@ -45,6 +45,7 @@ export const drawConnection = (
 	fromElement: Element | null,
 	toElement: Element | null,
 	selected = false,
+	bouncy = false,
 	clickHandler?: (event: MouseEvent) => void,
 ) => {
 	if (!fromElement || !toElement) return;
@@ -92,17 +93,22 @@ export const drawConnection = (
 	line.setAttribute("y1", fromY.toString());
 	line.setAttribute("x2", toX.toString());
 	line.setAttribute("y2", toY.toString());
+	line.setAttribute("stroke-opacity", "1");
+	line.setAttribute("stroke-width", "2");
+	line.setAttribute("stroke", "gray");
+	line.setAttribute("marker-end", "url(#retro-arrowhead)");
+
+	if (bouncy) {
+		line.setAttribute("stroke", "green");
+		line.setAttribute("marker-end", "url(#bouncy-retro-arrowhead)");
+	}
+
 	if (selected) {
-		line.setAttribute("stroke-opacity", "1")
 		line.setAttribute("stroke", "blue");
 		line.setAttribute("stroke-width", "2.5");
 		line.setAttribute("marker-end", "url(#selected-retro-arrowhead)");
-	} else {
-		line.setAttribute("stroke-opacity", "1")
-		line.setAttribute("stroke", "gray");
-		line.setAttribute("stroke-width", "2");
-		line.setAttribute("marker-end", "url(#retro-arrowhead)");
 	}
+
 	line.id = `${fromElement.id}-${toElement.id}`;
 	if (clickHandler) {
 		line.addEventListener("click", clickHandler);

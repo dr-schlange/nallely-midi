@@ -388,7 +388,7 @@ class VirtualDevice(threading.Thread):
 
     def bounce_link(self, from_, value, ctx):
         src_path = from_.repr()
-        for (src, _), link in self.links_registry.items():
+        for (src, _), link in list(self.links_registry.items()):
             if src == src_path:
                 link.trigger(value, ctx)
 
@@ -846,7 +846,7 @@ class MidiDevice:
 
     def bounce_link(self, from_, value, ctx):
         src_path = from_.repr()
-        for (src, _), link in self.links_registry.items():
+        for (src, _), link in list(self.links_registry.items()):
             if src == src_path:
                 link.trigger(value, ctx)
 

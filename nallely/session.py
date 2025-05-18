@@ -206,6 +206,7 @@ class Session:
 
                 connections.append(
                     {
+                        "id": id(link),
                         "src": {
                             "device": id(link.src.device),
                             "repr": link.src.device.uid(),

@@ -445,6 +445,7 @@ const DevicePatching = () => {
 				fromElement,
 				toElement,
 				connectionId(connection) === selectedConnection,
+				connection.bouncy
 			);
 		}
 	};

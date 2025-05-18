@@ -28,7 +28,7 @@ export const ScalerForm = ({ connection }: ScalerFormProps) => {
 	return (
 		<div className="connection-setup">
 			<h3>Connection Setup</h3>
-			{/* <label>
+			<label>
 				<input
 					type="checkbox"
 					checked={connection.bouncy}
@@ -45,7 +45,7 @@ export const ScalerForm = ({ connection }: ScalerFormProps) => {
 					}}
 				/>
 				Bouncy
-			</label> */}
+			</label>
 			<label>
 				<input
 					type="checkbox"
