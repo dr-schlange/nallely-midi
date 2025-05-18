@@ -146,7 +146,7 @@ class TrevorAPI:
             setattr(dest, to_parameter, chain)
         else:
             setattr(dest, to_parameter, src)
-        return chain
+        return src_device.links_registry.get((from_parameter, to_parameter))
 
     def associate_midi_port(self, device, port, direction):
         dev: MidiDevice = self.get_device_instance(device)  # type:ignore

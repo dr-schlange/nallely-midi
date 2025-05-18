@@ -109,9 +109,9 @@ class Session:
                 )
 
         # loads patchs
-        for link in content.get("connections"):
-            src = link["src"]
-            dest = link["dest"]
+        for serialized_link in content.get("connections"):
+            src = serialized_link["src"]
+            dest = serialized_link["dest"]
             src_param = src["parameter"]
             dest_param = dest["parameter"]
             if src_param.get("mode") == "note":
@@ -133,9 +133,12 @@ class Session:
             src_path = f"{device_map[src['device']]}::{src_param['section_name']}::{src_param_name}"
             dest_path = f"{device_map[dest['device']]}::{dest_param['section_name']}::{dest_param_name}"
             with_chain = src.get("chain", None)
-            result_chain = self.trevor.associate_parameters(
+            link = self.trevor.associate_parameters(
                 src_path, dest_path, with_scaler=with_chain
             )
+            assert link
+            link.bouncy = serialized_link.get("bouncy", False)
+            result_chain = link.chain
             if result_chain and with_chain:
                 del with_chain["id"]
                 del with_chain["device"]

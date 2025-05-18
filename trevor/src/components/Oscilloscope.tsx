@@ -34,7 +34,7 @@ export const Scope = ({ id }: ScopeProps) => {
 			ws.onopen = () => {
 				ws.send(
 					JSON.stringify({
-						kind: "consumer",
+						kind: "oscilloscope",
 						parameters: [{ name: "data", stream: true }],
 					}),
 				);
