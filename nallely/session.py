@@ -136,7 +136,10 @@ class Session:
             link = self.trevor.associate_parameters(
                 src_path, dest_path, with_scaler=with_chain
             )
-            assert link
+            if not link:
+                # We are in probably in a case when reloading, the websocket bus is not fully initialized
+                # i.e: it doesn't have all the services from before registered yet (they are in waiting room)
+                return
             link.bouncy = serialized_link.get("bouncy", False)
             result_chain = link.chain
             if result_chain and with_chain:
