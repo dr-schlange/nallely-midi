@@ -308,12 +308,24 @@ const DevicePatching = () => {
 	};
 
 	useEffect(() => {
-		updateInfo(
-			[...midi_devices, ...virtual_devices].find(
-				(d) => d.id === currentSelected,
-			),
+		const device = [...midi_devices, ...virtual_devices].find(
+			(d) => d.id === currentSelected,
 		);
-	}, [tempValues, midi_devices, virtual_devices]);
+		if (device) {
+			updateInfo(
+				[...midi_devices, ...virtual_devices].find(
+					(d) => d.id === currentSelected,
+				),
+			);
+			return;
+		}
+		const connection = [...allConnections].find(
+			(d) => d.id === currentSelected,
+		);
+		if (connection) {
+			displayConnectionMenu(connection);
+		}
+	}, [tempValues, midi_devices, virtual_devices, allConnections]);
 
 	const handleParameterClick = (
 		device: VirtualDevice,
@@ -445,7 +457,7 @@ const DevicePatching = () => {
 				fromElement,
 				toElement,
 				connectionId(connection) === selectedConnection,
-				connection.bouncy
+				connection.bouncy,
 			);
 		}
 	};
@@ -494,15 +506,9 @@ const DevicePatching = () => {
 		return [...midi_devices, ...virtual_devices].find((d) => d.id === deviceId);
 	};
 
-	const handleConnectionClick = (connection: MidiConnection) => {
-		const coId = connectionId(connection);
-		if (selectedConnection === coId) {
-			setSelectedConnection(undefined);
-			setInformation(undefined);
-
-			return;
-		}
+	const displayConnectionMenu = (connection: MidiConnection) => {
 		setSelectedConnection(connectionId(connection));
+		setCurrentSelected(connection.id);
 		const srcDevice = findDevice(connection.src.device);
 		const destDevice = findDevice(connection.dest.device);
 		setInformation(
@@ -546,6 +552,17 @@ const DevicePatching = () => {
 				</div>
 			</>,
 		);
+	};
+
+	const handleConnectionClick = (connection: MidiConnection) => {
+		const coId = connectionId(connection);
+		if (selectedConnection === coId) {
+			setSelectedConnection(undefined);
+			setInformation(undefined);
+			setCurrentSelected(undefined);
+			return;
+		}
+		displayConnectionMenu(connection);
 	};
 
 	const deleteAllConnections = () => {
