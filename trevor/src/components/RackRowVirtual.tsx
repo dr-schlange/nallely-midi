@@ -1,5 +1,8 @@
+import { useMemo } from "react";
 import type { VirtualDevice, VirtualParameter } from "../model";
 import VirtualDeviceComponent from "./VirtualDeviceComponent";
+import { useTrevorSelector } from "../store";
+import { useTrevorWebSocket } from "../websockets/websocket";
 
 export const RackRowVirtual = ({
 	height,
@@ -24,22 +27,13 @@ export const RackRowVirtual = ({
 	onNonSectionClick: () => void;
 	onSectionScroll?: () => void;
 }) => {
-	const slotWidth = 210;
+	const virtualClasses = useTrevorSelector(
+		(state) => state.nallely.classes.virtual,
+	);
 
-	const handleDragStart = (event: React.DragEvent, device: any) => {
-		event.dataTransfer.setData(
-			"device",
-			JSON.stringify({ ...device, rowIndex }),
-		);
-	};
-
-	const handleDrop = (event: React.DragEvent, targetSlot: number) => {
-		const draggedDevice = JSON.parse(event.dataTransfer.getData("device"));
-		onDeviceDrop(draggedDevice, targetSlot, rowIndex);
-	};
-
-	const handleDragOver = (event: React.DragEvent) => {
-		event.preventDefault();
+	const trevorSocket = useTrevorWebSocket();
+	const handleDeviceClassClick = (deviceClass: string) => {
+		trevorSocket?.createDevice(deviceClass);
 	};
 
 	return (
@@ -58,6 +52,22 @@ export const RackRowVirtual = ({
 				}
 			}}
 		>
+			<select
+				value={""}
+				style={{ width: "100%" }}
+				title="Adds a virtual device to the system"
+				onChange={(e) => {
+					const val = e.target.value;
+					handleDeviceClassClick(val);
+				}}
+			>
+				<option value={""}>--</option>
+				{virtualClasses.map((cls) => (
+					<option key={cls} value={cls}>
+						{cls}
+					</option>
+				))}
+			</select>
 			{devices.map((device, i) => (
 				<VirtualDeviceComponent
 					key={device.id}

@@ -30,32 +30,23 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 				style={{ width: "250px" }}
 				onScroll={() => onRackScroll?.()}
 			>
+				{/* <select
+					value={""}
+					style={{ width: "100%" }}
+					title="Adds a new widget to the system"
+					onChange={(e) => {
+						const index = e.target.selectedIndex - 1;
+						const val = e.target.value;
+					}}
+				>
+					<option value={""}>--</option>
+				</select> */}
+				<button style={{ padding: "5px", width: "100%" }} type={"button"}>
+					Scope
+				</button>
 				{widgetIds.map((id) => (
 					<Scope key={id} id={id} />
 				))}
-				<div
-					style={{
-						height: "100%",
-						width: "100%",
-						display: "flex",
-						flexDirection: "column",
-						alignItems: "center",
-						justifyContent: "flex-start",
-					}}
-				>
-					<div
-						className="device-patching-top-panel"
-						style={{ width: "100%", minWidth: "15%" }}
-					>
-						<button
-							type="button"
-							className={"associate-button"}
-							onClick={addWidget}
-						>
-							Scope
-						</button>
-					</div>
-				</div>
 			</div>
 		);
 	},

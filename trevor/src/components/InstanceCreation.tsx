@@ -32,6 +32,8 @@ const InstanceCreation = () => {
 	const [selectedDevice, setSelectedDevice] = useState<MidiDevice | null>();
 	const [selectedPort, setSelectedPort] = useState<MidiPort | null>();
 
+	const [isExpanded, setIsExpanded] = useState<boolean>(true);
+
 	useEffect(() => {
 		updateConnections();
 	}, [devices]);
@@ -111,84 +113,163 @@ const InstanceCreation = () => {
 		}
 	};
 
+	const handleExpand = () => {
+		setIsExpanded((prev) => !prev);
+	};
+
 	return (
 		<div className="instance-creation">
-			<div className="instance-creation-left-panel">
-				<div style={{ display: "flex", flexDirection: "row" }}>
-					<div className="instance-creation-midi-output">
-						<h3>MIDI Output</h3>
-						<div className="midi-ports-grid">
-							{midiInPorts.map((port) => (
-								// biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
-								<div
-									key={port}
-									className="midi-port"
-									title={port}
-									onClick={() => handlePortClick(port, "output")}
-								>
-									<span className="midi-port-name">
-										{truncateName(port, 8)}
-									</span>
-									<div
-										className="midi-port-circle"
-										id={`output-${port}`}
-										style={{
-											borderColor:
-												selectedPort?.name === port && selectedPort?.direction
-													? "yellow"
-													: "",
-										}}
-									/>
+			<button
+				style={{
+					width: "100%",
+					padding: "0px",
+					textAlign: "left",
+					paddingLeft: "5px",
+				}}
+				type="button"
+				title={isExpanded ? "Collapse panel" : "Expand panel"}
+				onClick={() => handleExpand()}
+			>
+				{isExpanded ? "-" : "+"}
+			</button>
+			{isExpanded && (
+				<>
+					<div className="instance-creation-main-panel">
+						<div style={{ display: "flex" }}>
+							<div className="instance-creation-midi-output">
+								<h3>MIDI Output</h3>
+								<div className="midi-ports-grid">
+									{midiInPorts.map((port) => (
+										// biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
+										<div
+											key={port}
+											className="midi-port"
+											title={port}
+											onClick={() => handlePortClick(port, "output")}
+										>
+											<span className="midi-port-name">
+												{truncateName(port, 8)}
+											</span>
+											<div
+												className="midi-port-circle"
+												id={`output-${port}`}
+												style={{
+													borderColor:
+														selectedPort?.name === port &&
+														selectedPort?.direction
+															? "yellow"
+															: "",
+												}}
+											/>
+										</div>
+									))}
 								</div>
-							))}
-						</div>
-					</div>
-					<div className="instance-creation-midi-inputs">
-						<h3>MIDI Inputs</h3>
-						<div className="midi-ports-grid">
-							{midiOutPorts.map((port) => (
-								// biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
-								<div
-									key={port}
-									className="midi-port"
-									title={port}
-									onClick={() => handlePortClick(port, "input")}
-								>
-									<span className="midi-port-name">
-										{truncateName(port, 8)}
-									</span>
-									<div
-										className="midi-port-circle"
-										id={`input-${port}`}
-										style={{
-											borderColor:
-												selectedPort?.name === port && selectedPort?.direction
-													? "yellow"
-													: "",
-										}}
-									/>
+							</div>
+							<div className="instance-creation-midi-inputs">
+								<h3>MIDI Inputs</h3>
+								<div className="midi-ports-grid">
+									{midiOutPorts.map((port) => (
+										// biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
+										<div
+											key={port}
+											className="midi-port"
+											title={port}
+											onClick={() => handlePortClick(port, "input")}
+										>
+											<span className="midi-port-name">
+												{truncateName(port, 8)}
+											</span>
+											<div
+												className="midi-port-circle"
+												id={`input-${port}`}
+												style={{
+													borderColor:
+														selectedPort?.name === port &&
+														selectedPort?.direction
+															? "yellow"
+															: "",
+												}}
+											/>
+										</div>
+									))}
 								</div>
-							))}
+							</div>
 						</div>
-					</div>
-				</div>
 
-				<div
-					className="device-class-left-panel device-list"
-					onScroll={() => updateConnections()}
-				>
-					{devices.map((device, i) => (
-						<MidiDeviceComponent
-							classConnections
-							key={device.id}
-							device={device}
-							selected={selectedDevice === device}
-							onDeviceClick={() => selectDevice(device)}
-						/>
-					))}
-				</div>
-			</div>
-			<div className="instance-creation-right-panel">
+						<div
+							className="device-class-left-panel device-list"
+							onScroll={() => updateConnections()}
+						>
+							{devices.map((device, i) => (
+								<MidiDeviceComponent
+									classConnections
+									key={device.id}
+									device={device}
+									selected={selectedDevice === device}
+									onDeviceClick={() => selectDevice(device)}
+								/>
+							))}
+						</div>
+					</div>
+					<svg className="connection-svg" ref={svgRef}>
+						<title>MIDI Device Port Mapping</title>
+						<defs>
+							<marker
+								id="retro-arrowhead"
+								markerWidth="6"
+								markerHeight="6"
+								refX="5"
+								refY="3"
+								orient="auto"
+								markerUnits="strokeWidth"
+							>
+								<polygon
+									points="0,0 5,3 0,6"
+									fill="gray"
+									stroke="white"
+									strokeWidth="1"
+									strokeOpacity="0.3"
+								/>
+							</marker>
+							<marker
+								id="selected-retro-arrowhead"
+								markerWidth="6"
+								markerHeight="6"
+								refX="5"
+								refY="3"
+								orient="auto"
+								markerUnits="strokeWidth"
+							>
+								<polygon
+									points="0,0 5,3 0,6"
+									fill="blue"
+									stroke="white"
+									strokeWidth="1"
+									strokeOpacity="0.8"
+								/>
+							</marker>
+							<marker
+								id="bouncy-retro-arrowhead"
+								markerWidth="6"
+								markerHeight="6"
+								refX="5"
+								refY="3"
+								orient="auto"
+								markerUnits="strokeWidth"
+							>
+								<polygon
+									points="0,0 5,3 0,6"
+									fill="green"
+									stroke="white"
+									strokeWidth="1"
+									strokeOpacity="0.8"
+								/>
+							</marker>
+						</defs>
+					</svg>
+				</>
+			)}
+			{/* <div className="instance-creation-right-panel">
 				<div className="device-class-right-panel">
 					<h3>Device Classes</h3>
 					<ul className="device-class-list">
@@ -204,63 +285,7 @@ const InstanceCreation = () => {
 						))}
 					</ul>
 				</div>
-			</div>
-			<svg className="connection-svg" ref={svgRef}>
-				<title>MIDI Device Port Mapping</title>
-				<defs>
-					<marker
-						id="retro-arrowhead"
-						markerWidth="6"
-						markerHeight="6"
-						refX="5"
-						refY="3"
-						orient="auto"
-						markerUnits="strokeWidth"
-					>
-						<polygon
-							points="0,0 5,3 0,6"
-							fill="gray"
-							stroke="white"
-							strokeWidth="1"
-							strokeOpacity="0.3"
-						/>
-					</marker>
-					<marker
-						id="selected-retro-arrowhead"
-						markerWidth="6"
-						markerHeight="6"
-						refX="5"
-						refY="3"
-						orient="auto"
-						markerUnits="strokeWidth"
-					>
-						<polygon
-							points="0,0 5,3 0,6"
-							fill="blue"
-							stroke="white"
-							strokeWidth="1"
-							strokeOpacity="0.8"
-						/>
-					</marker>
-					<marker
-						id="bouncy-retro-arrowhead"
-						markerWidth="6"
-						markerHeight="6"
-						refX="5"
-						refY="3"
-						orient="auto"
-						markerUnits="strokeWidth"
-					>
-						<polygon
-							points="0,0 5,3 0,6"
-							fill="green"
-							stroke="white"
-							strokeWidth="1"
-							strokeOpacity="0.8"
-						/>
-					</marker>
-				</defs>
-			</svg>
+			</div> */}
 		</div>
 	);
 };

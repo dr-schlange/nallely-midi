@@ -189,17 +189,25 @@ input[type="text"]:disabled {
 .instance-creation {
 	position: relative;
 	display: flex;
-	flex-direction: row;
+	flex-direction: column;
 	width: 100%;
-	height: 100%;
-	background-color: #d0d0d0; /* Amiga-style background */
+	height: auto;
+	background-color: #d0d0d0;
 	border: 2px solid #808080;
 	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
 }
 
-.instance-creation-left-panel {
+.instance-creation-main-panel {
 	display: flex;
-	/* flex: 10; */
+	width: 100%;
+	flex-direction: column;
+	background-color: #e0e0e0;
+	border-bottom: 2px solid #808080;
+	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
+}
+
+/* .instance-creation-left-panel {
+	display: flex;
 	min-width: 70%;
 	max-width: 90%;
 	width: 90%;
@@ -207,9 +215,9 @@ input[type="text"]:disabled {
 	background-color: #e0e0e0;
 	border-bottom: 2px solid #808080;
 	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
-}
+} */
 
-.instance-creation-right-panel {
+/* .instance-creation-right-panel {
 	display: flex;
 	flex: 2;
 	flex-direction: column;
@@ -219,7 +227,7 @@ input[type="text"]:disabled {
 	max-width: 260px;
 	width: 260px;
 	min-width: 260px;
-}
+} */
 
 .instance-creation-midi-output,
 .instance-creation-midi-inputs,
@@ -886,8 +894,8 @@ input[type="text"]:disabled {
 }
 
 .top-section {
-	flex: auto;
-	max-height: 20%;
+	/* flex: auto; */
+	/* max-height: 20%; */
 	display: flex;
 	border-bottom: 2px solid #808080;
 }

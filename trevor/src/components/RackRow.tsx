@@ -1,5 +1,7 @@
 import MidiDeviceComponent from "./DeviceComponent";
 import type { MidiDevice, MidiDeviceSection } from "../model";
+import { useTrevorSelector } from "../store";
+import { useTrevorWebSocket } from "../websockets/websocket";
 
 export const RackRow = ({
 	rowIndex,
@@ -24,22 +26,11 @@ export const RackRow = ({
 	onSectionScroll?: () => void;
 	onDeviceClick?: (device: MidiDevice) => void;
 }) => {
-	const slotWidth = 210;
+	const midiClasses = useTrevorSelector((state) => state.nallely.classes.midi);
 
-	const handleDragStart = (event: React.DragEvent, device: any) => {
-		event.dataTransfer.setData(
-			"device",
-			JSON.stringify({ ...device, rowIndex }),
-		);
-	};
-
-	const handleDrop = (event: React.DragEvent, targetSlot: number) => {
-		const draggedDevice = JSON.parse(event.dataTransfer.getData("device"));
-		onDeviceDrop(draggedDevice, targetSlot, rowIndex);
-	};
-
-	const handleDragOver = (event: React.DragEvent) => {
-		event.preventDefault();
+	const trevorSocket = useTrevorWebSocket();
+	const handleDeviceClassClick = (deviceClass: string) => {
+		trevorSocket?.createDevice(deviceClass);
 	};
 
 	return (
@@ -58,6 +49,22 @@ export const RackRow = ({
 				}
 			}}
 		>
+			<select
+				value={""}
+				style={{ width: "100%" }}
+				title="Adds a MIDI device to the system"
+				onChange={(e) => {
+					const val = e.target.value;
+					handleDeviceClassClick(val);
+				}}
+			>
+				<option value={""}>--</option>
+				{midiClasses.map((cls) => (
+					<option key={cls} value={cls}>
+						{cls}
+					</option>
+				))}
+			</select>
 			{devices.map((device, i) => (
 				<MidiDeviceComponent
 					key={device.id}
