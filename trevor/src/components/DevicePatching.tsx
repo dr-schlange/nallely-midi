@@ -66,6 +66,8 @@ const DevicePatching = () => {
 	>({});
 	const widgetRack = useRef<RackRowWidgetRef>(null);
 
+	const [isExpanded, setIsExpanded] = useState<boolean>(true);
+
 	useEffect(() => {
 		window.addEventListener("keydown", handleKeyDown);
 		return () => {
@@ -577,6 +579,10 @@ const DevicePatching = () => {
 		widgetRack.current?.resetAll();
 	};
 
+	const handleExpand = () => {
+		setIsExpanded((prev) => !prev);
+	};
+
 	return (
 		<div className="device-patching">
 			<div
@@ -614,131 +620,150 @@ const DevicePatching = () => {
 				<RackRowWidgets ref={widgetRack} />
 			</div>
 
-			<div className="device-patching-side-section">
-				<div className="device-patching-top-panel">
-					<button
-						type="button"
-						className={`associate-button ${associateMode ? "active" : ""}`}
-						onClick={toggleAssociateMode}
-					>
-						Associate
-					</button>
-				</div>
-				<div className="device-patching-top-panel">
-					<button
-						type="button"
-						className={"associate-button"}
-						onClick={handleLoadPatch}
-					>
-						Load
-					</button>
-				</div>
-				<div>
-					<div className="device-patching-middle-panel">
-						<div className="information-panel">
-							{information ? (
-								information
-							) : (
-								<>
-									<h3>Information</h3>
-									<p>Select a section to view details or associate sections</p>
-								</>
-							)}
+			<div>
+				<button
+					style={{
+						width: "100%",
+						padding: "0px",
+						textAlign: "left",
+						paddingLeft: "5px",
+					}}
+					type="button"
+					title={isExpanded ? "Open panel" : "Close panel"}
+					onClick={() => handleExpand()}
+				>
+					{isExpanded ? ">>" : "<<"}
+				</button>
+				{isExpanded && (
+					<div className="device-patching-side-section">
+						<div className="device-patching-top-panel">
+							<button
+								type="button"
+								className={`associate-button ${associateMode ? "active" : ""}`}
+								onClick={toggleAssociateMode}
+							>
+								Associate
+							</button>
 						</div>
-					</div>
-					<div className="bottom-right-panel">
-						<h3>Connections</h3>
-						<div
-							className="connection-setup"
-							style={{
-								height: "150px",
-								position: "relative",
-								overflowY: "scroll",
-							}}
-						>
-							<ul className="connections-list">
-								{allConnections.map((connection) => {
-									return (
-										<li
-											key={buildConnectionName(connection)}
-											onClick={() => handleConnectionClick(connection)}
-											onKeyDown={(e) => {
-												if (e.key === "Enter" || e.key === " ") {
-													handleConnectionClick(connection);
-												}
-											}}
-											onKeyUp={(e) => {
-												if (e.key === "Enter" || e.key === " ") {
-													e.preventDefault();
-												}
-											}}
-											className={`connection-item ${selectedConnection === connectionId(connection) ? "selected" : ""}`}
-										>
-											{buildConnectionName(connection)}
-										</li>
-									);
-								})}
-							</ul>
-						</div>
-						{allConnections?.length > 0 && (
+						<div className="device-patching-top-panel">
 							<button
 								type="button"
 								className={"associate-button"}
-								onClick={deleteAllConnections}
-								style={{
-									height: "auto",
-								}}
+								onClick={handleLoadPatch}
 							>
-								Delete All
+								Load
 							</button>
-						)}
+						</div>
+						<div>
+							<div className="device-patching-middle-panel">
+								<div className="information-panel">
+									{information ? (
+										information
+									) : (
+										<>
+											<h3>Information</h3>
+											<p>
+												Select a section to view details or associate sections
+											</p>
+										</>
+									)}
+								</div>
+							</div>
+							<div className="bottom-right-panel">
+								<h3>Connections</h3>
+								<div
+									className="connection-setup"
+									style={{
+										height: "150px",
+										position: "relative",
+										overflowY: "scroll",
+									}}
+								>
+									<ul className="connections-list">
+										{allConnections.map((connection) => {
+											return (
+												<li
+													key={buildConnectionName(connection)}
+													onClick={() => handleConnectionClick(connection)}
+													onKeyDown={(e) => {
+														if (e.key === "Enter" || e.key === " ") {
+															handleConnectionClick(connection);
+														}
+													}}
+													onKeyUp={(e) => {
+														if (e.key === "Enter" || e.key === " ") {
+															e.preventDefault();
+														}
+													}}
+													className={`connection-item ${selectedConnection === connectionId(connection) ? "selected" : ""}`}
+												>
+													{buildConnectionName(connection)}
+												</li>
+											);
+										})}
+									</ul>
+								</div>
+								{allConnections?.length > 0 && (
+									<button
+										type="button"
+										className={"associate-button"}
+										onClick={deleteAllConnections}
+										style={{
+											height: "auto",
+										}}
+									>
+										Delete All
+									</button>
+								)}
+							</div>
+						</div>
+						<div className="device-patching-top-panel">
+							<button
+								type="button"
+								className={"associate-button"}
+								onClick={openSaveModal}
+							>
+								Save
+							</button>
+						</div>
+						<div className="device-patching-top-panel">
+							<button
+								type="button"
+								className={"associate-button"}
+								onClick={resetAll}
+							>
+								Reset All
+							</button>
+						</div>
+						<div className="device-patching-top-panel">
+							<button
+								type="button"
+								className={"associate-button"}
+								onClick={() => trevorSocket?.pullFullState()}
+							>
+								Full State
+							</button>
+						</div>
+						<div className="device-patching-top-panel">
+							<button
+								type="button"
+								className={"associate-button"}
+								onClick={openPlayground}
+							>
+								Playground
+							</button>
+						</div>
+						<div className="device-patching-top-panel">
+							<button
+								type="button"
+								className={"associate-button"}
+								onClick={openAboutModal}
+							>
+								About
+							</button>
+						</div>
 					</div>
-				</div>
-				<div className="device-patching-top-panel">
-					<button
-						type="button"
-						className={"associate-button"}
-						onClick={openSaveModal}
-					>
-						Save
-					</button>
-				</div>
-				<div className="device-patching-top-panel">
-					<button
-						type="button"
-						className={"associate-button"}
-						onClick={resetAll}
-					>
-						Reset All
-					</button>
-				</div>
-				<div className="device-patching-top-panel">
-					<button
-						type="button"
-						className={"associate-button"}
-						onClick={() => trevorSocket?.pullFullState()}
-					>
-						Full State
-					</button>
-				</div>
-				<div className="device-patching-top-panel">
-					<button
-						type="button"
-						className={"associate-button"}
-						onClick={openPlayground}
-					>
-						Playground
-					</button>
-				</div>
-				<div className="device-patching-top-panel">
-					<button
-						type="button"
-						className={"associate-button"}
-						onClick={openAboutModal}
-					>
-						About
-					</button>
-				</div>
+				)}
 			</div>
 			{isModalOpen && (
 				<PatchingModal

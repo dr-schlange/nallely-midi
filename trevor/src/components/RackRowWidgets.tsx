@@ -41,7 +41,11 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 				>
 					<option value={""}>--</option>
 				</select> */}
-				<button style={{ padding: "5px", width: "100%" }} type={"button"}>
+				<button
+					style={{ padding: "5px", width: "100%" }}
+					type={"button"}
+					onClick={addWidget}
+				>
 					Scope
 				</button>
 				{widgetIds.map((id) => (
