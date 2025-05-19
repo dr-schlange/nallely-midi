@@ -86,6 +86,9 @@ class TrevorBus(VirtualDevice):
             client.send(self.to_json(self.full_state()))
             for message in client:
                 self.handleMessage(client, message)
+        except ConnectionClosed as e:
+            kind = "crashed" if isinstance(e, ConnectionClosedError) else "disconnected"
+            print(f"Client {client} on trevor {kind}")
         finally:
             print("Disconnecting", client)
             connected_clients.remove(client)
