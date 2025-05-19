@@ -7,7 +7,7 @@ def parse_args(argv):
     parser = argparse.ArgumentParser(
         prog="nallely",
         description="""Playground for MIDI instruments that let's you focus on your device, not the exchanged MIDI messages""",
-        epilog="Current phase: Ipomoea Tricolor",
+        epilog="Current phase: Ololiuhqui",
     )
     subparsers = parser.add_subparsers(dest="command", required=False)
     run_parser = subparsers.add_parser(

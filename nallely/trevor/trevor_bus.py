@@ -273,7 +273,14 @@ class TrevorBus(VirtualDevice):
 
     def list_patches(self):
         cwd = Path.cwd()
-        return {"knownPatches": [f"{file}" for file in cwd.rglob("*.nly")]}
+        all_files = sorted(
+            [file for file in cwd.rglob("*.nly") if file.is_file()],
+            key=lambda file: file.stem.lower(),
+        )
+
+        return {
+            "knownPatches": [f"{file}" for file in all_files],
+        }
 
     def load_all(self, name):
         errors = self.session.load_all(name)

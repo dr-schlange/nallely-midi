@@ -17,9 +17,11 @@ export const LoadModal = ({ onClose, onOk }: LoadModalProps) => {
 	}, [trevorWebSocket]);
 
 	const loadConfig = () => {
-		trevorWebSocket?.loadAll(selectedFile);
+		if (selectedFile && selectedFile.length > 0) {
+			trevorWebSocket?.loadAll(selectedFile);
+			onOk?.();
+		}
 		onClose?.();
-		onOk?.();
 	};
 
 	const handleFileClick = (file: string) => {

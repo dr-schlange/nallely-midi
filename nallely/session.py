@@ -136,17 +136,17 @@ class Session:
             link = self.trevor.associate_parameters(
                 src_path, dest_path, with_scaler=with_chain
             )
-            if not link:
-                # We are in probably in a case when reloading, the websocket bus is not fully initialized
+            if link:
+                # If this condition is false, we are in probably in a case when reloading,
+                # the websocket bus is not fully initialized
                 # i.e: it doesn't have all the services from before registered yet (they are in waiting room)
-                return
-            link.bouncy = serialized_link.get("bouncy", False)
-            result_chain = link.chain
-            if result_chain and with_chain:
-                del with_chain["id"]
-                del with_chain["device"]
-                for key, value in with_chain.items():
-                    setattr(result_chain, key, value)
+                link.bouncy = serialized_link.get("bouncy", False)
+                result_chain = link.chain
+                if result_chain and with_chain:
+                    del with_chain["id"]
+                    del with_chain["device"]
+                    for key, value in with_chain.items():
+                        setattr(result_chain, key, value)
 
         # restart the paused vdev
         for vdev in vdev_to_resume:
