@@ -1,0 +1,556 @@
+{
+  "midi_devices": [],
+  "virtual_devices": [
+    {
+      "id": 140732754780112,
+      "repr": "TrevorBus1",
+      "paused": false,
+      "running": true,
+      "config": {},
+      "class": "TrevorBus"
+    },
+    {
+      "id": 140732512863632,
+      "repr": "LFO1",
+      "paused": false,
+      "running": true,
+      "config": {
+        "speed": 0.005,
+        "sampling_rate": 50,
+        "waveform": "step",
+        "min_value": 0,
+        "max_value": 127.0,
+        "pulse_width": 0.3,
+        "step_size": 0.01
+      },
+      "class": "LFO"
+    },
+    {
+      "id": 140732512835600,
+      "repr": "LFO2",
+      "paused": false,
+      "running": true,
+      "config": {
+        "speed": 0.5,
+        "sampling_rate": 50,
+        "waveform": "half_wave_rectified_sine",
+        "min_value": 0,
+        "max_value": 52.07,
+        "pulse_width": 0.3,
+        "step_size": 0.2
+      },
+      "class": "LFO"
+    },
+    {
+      "id": 140732512863968,
+      "repr": "WebSocketBus1",
+      "paused": false,
+      "running": true,
+      "config": {
+        "scope0_data": {
+          "name": "scope0_data",
+          "stream": true,
+          "consumer": true,
+          "description": null,
+          "range": [
+            null,
+            null
+          ],
+          "accepted_values": [],
+          "cv_name": "scope0_data",
+          "section_name": "__virtual__",
+          "cc_note": -1
+        },
+        "scope1_data": {
+          "name": "scope1_data",
+          "stream": true,
+          "consumer": true,
+          "description": null,
+          "range": [
+            null,
+            null
+          ],
+          "accepted_values": [],
+          "cv_name": "scope1_data",
+          "section_name": "__virtual__",
+          "cc_note": -1
+        },
+        "scope2_data": {
+          "name": "scope2_data",
+          "stream": true,
+          "consumer": true,
+          "description": null,
+          "range": [
+            null,
+            null
+          ],
+          "accepted_values": [],
+          "cv_name": "scope2_data",
+          "section_name": "__virtual__",
+          "cc_note": -1
+        }
+      },
+      "class": "WebSocketBus"
+    },
+    {
+      "id": 140732754782128,
+      "repr": "ADSREnvelope1",
+      "paused": false,
+      "running": true,
+      "config": {
+        "gate": 0,
+        "attack": 0.41,
+        "decay": 0.2,
+        "sustain": 0.7,
+        "release": 0.41
+      },
+      "class": "ADSREnvelope"
+    }
+  ],
+  "connections": [
+    {
+      "id": 140732754786160,
+      "src": {
+        "device": 140732512863632,
+        "repr": "LFO1",
+        "parameter": {
+          "name": "output",
+          "stream": false,
+          "consumer": false,
+          "description": null,
+          "range": [
+            null,
+            null
+          ],
+          "accepted_values": [],
+          "cv_name": "output_cv",
+          "section_name": "__virtual__",
+          "cc_note": -1
+        },
+        "explicit": -1,
+        "chain": {
+          "id": 140732754785824,
+          "device": 140732512863632,
+          "to_min": null,
+          "to_max": null,
+          "auto": true,
+          "method": "lin",
+          "as_int": false
+        },
+        "type": "virtual"
+      },
+      "dest": {
+        "device": 140732512835600,
+        "repr": "LFO2",
+        "parameter": {
+          "name": "waveform",
+          "stream": false,
+          "consumer": false,
+          "description": null,
+          "range": [
+            null,
+            null
+          ],
+          "accepted_values": [
+            "sine",
+            "invert_sine",
+            "triangle",
+            "square",
+            "sawtooth",
+            "invert_sawtooth",
+            "random",
+            "smooth_random",
+            "smooth_random_exp",
+            "smooth_random_cosine",
+            "pulse",
+            "exponential",
+            "logarithmic",
+            "ramp_down",
+            "step",
+            "white_noise",
+            "half_wave_rectified_sine",
+            "tent_map"
+          ],
+          "cv_name": "waveform_cv",
+          "section_name": "__virtual__",
+          "cc_note": -1
+        },
+        "explicit": -1,
+        "type": "virtual"
+      },
+      "bouncy": false
+    },
+    {
+      "id": 140732755065296,
+      "src": {
+        "device": 140732512863632,
+        "repr": "LFO1",
+        "parameter": {
+          "name": "output",
+          "stream": false,
+          "consumer": false,
+          "description": null,
+          "range": [
+            null,
+            null
+          ],
+          "accepted_values": [],
+          "cv_name": "output_cv",
+          "section_name": "__virtual__",
+          "cc_note": -1
+        },
+        "explicit": -1,
+        "chain": {
+          "id": 140732755064656,
+          "device": 140732512863632,
+          "to_min": null,
+          "to_max": null,
+          "auto": true,
+          "method": "lin",
+          "as_int": false
+        },
+        "type": "virtual"
+      },
+      "dest": {
+        "device": 140732512863968,
+        "repr": "WebSocketBus1",
+        "parameter": {
+          "name": "scope0_data",
+          "stream": true,
+          "consumer": true,
+          "description": null,
+          "range": [
+            null,
+            null
+          ],
+          "accepted_values": [],
+          "cv_name": "scope0_data",
+          "section_name": "__virtual__",
+          "cc_note": -1
+        },
+        "explicit": -1,
+        "type": "virtual"
+      },
+      "bouncy": false
+    },
+    {
+      "id": 140732755014096,
+      "src": {
+        "device": 140732512863632,
+        "repr": "LFO1",
+        "parameter": {
+          "name": "output",
+          "stream": false,
+          "consumer": false,
+          "description": null,
+          "range": [
+            null,
+            null
+          ],
+          "accepted_values": [],
+          "cv_name": "output_cv",
+          "section_name": "__virtual__",
+          "cc_note": -1
+        },
+        "explicit": -1,
+        "chain": {
+          "id": 140732755013808,
+          "device": 140732512863632,
+          "to_min": null,
+          "to_max": null,
+          "auto": true,
+          "method": "lin",
+          "as_int": false
+        },
+        "type": "virtual"
+      },
+      "dest": {
+        "device": 140732512835600,
+        "repr": "LFO2",
+        "parameter": {
+          "name": "max_value",
+          "stream": false,
+          "consumer": false,
+          "description": null,
+          "range": [
+            null,
+            null
+          ],
+          "accepted_values": [],
+          "cv_name": "max_value_cv",
+          "section_name": "__virtual__",
+          "cc_note": -1
+        },
+        "explicit": -1,
+        "type": "virtual"
+      },
+      "bouncy": false
+    },
+    {
+      "id": 140732755564112,
+      "src": {
+        "device": 140732512863632,
+        "repr": "LFO1",
+        "parameter": {
+          "name": "output",
+          "stream": false,
+          "consumer": false,
+          "description": null,
+          "range": [
+            null,
+            null
+          ],
+          "accepted_values": [],
+          "cv_name": "output_cv",
+          "section_name": "__virtual__",
+          "cc_note": -1
+        },
+        "explicit": -1,
+        "chain": {
+          "id": 140732755563856,
+          "device": 140732512863632,
+          "to_min": 0.0,
+          "to_max": 1.0,
+          "auto": false,
+          "method": "lin",
+          "as_int": false
+        },
+        "type": "virtual"
+      },
+      "dest": {
+        "device": 140732754782128,
+        "repr": "ADSREnvelope1",
+        "parameter": {
+          "name": "attack",
+          "stream": false,
+          "consumer": false,
+          "description": null,
+          "range": [
+            0.0,
+            1.0
+          ],
+          "accepted_values": [],
+          "cv_name": "attack_cv",
+          "section_name": "__virtual__",
+          "cc_note": -1
+        },
+        "explicit": -1,
+        "type": "virtual"
+      },
+      "bouncy": false
+    },
+    {
+      "id": 140732755564624,
+      "src": {
+        "device": 140732512863632,
+        "repr": "LFO1",
+        "parameter": {
+          "name": "output",
+          "stream": false,
+          "consumer": false,
+          "description": null,
+          "range": [
+            null,
+            null
+          ],
+          "accepted_values": [],
+          "cv_name": "output_cv",
+          "section_name": "__virtual__",
+          "cc_note": -1
+        },
+        "explicit": -1,
+        "chain": {
+          "id": 140732755564368,
+          "device": 140732512863632,
+          "to_min": 0.0,
+          "to_max": 1.0,
+          "auto": false,
+          "method": "lin",
+          "as_int": false
+        },
+        "type": "virtual"
+      },
+      "dest": {
+        "device": 140732754782128,
+        "repr": "ADSREnvelope1",
+        "parameter": {
+          "name": "release",
+          "stream": false,
+          "consumer": false,
+          "description": null,
+          "range": [
+            0.0,
+            1.0
+          ],
+          "accepted_values": [],
+          "cv_name": "release_cv",
+          "section_name": "__virtual__",
+          "cc_note": -1
+        },
+        "explicit": -1,
+        "type": "virtual"
+      },
+      "bouncy": false
+    },
+    {
+      "id": 140732755066576,
+      "src": {
+        "device": 140732512835600,
+        "repr": "LFO2",
+        "parameter": {
+          "name": "output",
+          "stream": false,
+          "consumer": false,
+          "description": null,
+          "range": [
+            null,
+            null
+          ],
+          "accepted_values": [],
+          "cv_name": "output_cv",
+          "section_name": "__virtual__",
+          "cc_note": -1
+        },
+        "explicit": -1,
+        "chain": {
+          "id": 140732755063696,
+          "device": 140732512835600,
+          "to_min": null,
+          "to_max": null,
+          "auto": true,
+          "method": "lin",
+          "as_int": false
+        },
+        "type": "virtual"
+      },
+      "dest": {
+        "device": 140732512863968,
+        "repr": "WebSocketBus1",
+        "parameter": {
+          "name": "scope1_data",
+          "stream": true,
+          "consumer": true,
+          "description": null,
+          "range": [
+            null,
+            null
+          ],
+          "accepted_values": [],
+          "cv_name": "scope1_data",
+          "section_name": "__virtual__",
+          "cc_note": -1
+        },
+        "explicit": -1,
+        "type": "virtual"
+      },
+      "bouncy": false
+    },
+    {
+      "id": 140732512821296,
+      "src": {
+        "device": 140732512835600,
+        "repr": "LFO2",
+        "parameter": {
+          "name": "output",
+          "stream": false,
+          "consumer": false,
+          "description": null,
+          "range": [
+            null,
+            null
+          ],
+          "accepted_values": [],
+          "cv_name": "output_cv",
+          "section_name": "__virtual__",
+          "cc_note": -1
+        },
+        "explicit": -1,
+        "chain": {
+          "id": 140732512821568,
+          "device": 140732512835600,
+          "to_min": 0,
+          "to_max": 2,
+          "auto": false,
+          "method": "lin",
+          "as_int": true
+        },
+        "type": "virtual"
+      },
+      "dest": {
+        "device": 140732754782128,
+        "repr": "ADSREnvelope1",
+        "parameter": {
+          "name": "gate",
+          "stream": false,
+          "consumer": false,
+          "description": null,
+          "range": [
+            0,
+            1
+          ],
+          "accepted_values": [],
+          "cv_name": "gate_cv",
+          "section_name": "__virtual__",
+          "cc_note": -1
+        },
+        "explicit": -1,
+        "type": "virtual"
+      },
+      "bouncy": false
+    },
+    {
+      "id": 140732512820480,
+      "src": {
+        "device": 140732754782128,
+        "repr": "ADSREnvelope1",
+        "parameter": {
+          "name": "output",
+          "stream": false,
+          "consumer": false,
+          "description": null,
+          "range": [
+            null,
+            null
+          ],
+          "accepted_values": [],
+          "cv_name": "output_cv",
+          "section_name": "__virtual__",
+          "cc_note": -1
+        },
+        "explicit": -1,
+        "chain": {
+          "id": 140732512820208,
+          "device": 140732754782128,
+          "to_min": 13,
+          "to_max": 70,
+          "auto": true,
+          "method": "lin",
+          "as_int": false
+        },
+        "type": "virtual"
+      },
+      "dest": {
+        "device": 140732512863968,
+        "repr": "WebSocketBus1",
+        "parameter": {
+          "name": "scope2_data",
+          "stream": true,
+          "consumer": true,
+          "description": null,
+          "range": [
+            null,
+            null
+          ],
+          "accepted_values": [],
+          "cv_name": "scope2_data",
+          "section_name": "__virtual__",
+          "cc_note": -1
+        },
+        "explicit": -1,
+        "type": "virtual"
+      },
+      "bouncy": false
+    }
+  ],
+  "playground_code": ""
+}
