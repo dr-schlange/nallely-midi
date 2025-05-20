@@ -14,7 +14,7 @@ from .modules import Int, PadOrKey, PadsOrKeysInstance, Scaler
 #  src\dest (1) (2) (3) (4)
 #    (1)     X   X   X   X
 #    (2)     X   X   X   X
-#    (3)     X       X
+#    (3)     X       X   X
 #    (4)     X       X   X
 #
 @dataclass
@@ -60,6 +60,8 @@ class Link:
         assert self.callback
         if self.chain:
             value = self.chain(value, ctx)
+        if self.debug:
+            print("# --> ", value, ctx, self.callback)
         result = self.callback(value, ctx)
         if self.bouncy:
             self.dest.device.bounce_link(self.dest, value, ctx)
@@ -162,8 +164,24 @@ class Link:
             )
         else:
             return lambda value, ctx: dest.device.set_parameter(
-                dest.parameter.name, value
+                dest.parameter.name, value, ctx
             )
+
+    # MIDI pads/keys -> Virtual device input
+    def _install_PadsOrKeysInstance__ParameterInstance(self):
+        src = cast(PadsOrKeysInstance, self.src)
+        dest = cast(ParameterInstance, self.dest)
+
+        self.callback = self._compile_PadsOrKeysInstance__ParameterInstance()
+        src.device.bind_link(self)
+
+    def _compile_PadsOrKeysInstance__ParameterInstance(self):
+        src = cast(PadsOrKeysInstance, self.src)
+        dest = cast(ParameterInstance, self.dest)
+
+        return lambda value, ctx: dest.device.set_parameter(
+            dest.parameter.name, value, ctx
+        )
 
     # MIDI pad/key -> Virtual device input
     def _install_PadOrKey__ParameterInstance(self):
@@ -209,7 +227,7 @@ class Link:
             )
         else:
             return lambda value, ctx: dest.device.set_parameter(
-                dest.parameter.name, value
+                dest.parameter.name, value, ctx
             )
 
     def _compile_ParameterInstance__ParameterInstance(self):
@@ -228,7 +246,7 @@ class Link:
         else:
 
             return lambda _, ctx: dest.device.set_parameter(
-                dest.parameter.name, getattr(src_section, src_param)
+                dest.parameter.name, getattr(src_section, src_param), ctx
             )
 
     # MIDI key/pad -> MIDI key/pad
@@ -320,6 +338,12 @@ class Link:
         self.cleanup_callback = lambda: dest.device.all_notes_off()
 
         def foo(value, ctx):
+            is_note = ctx.get("type")
+            if is_note in ("note_off", "note_on"):
+                dest.device.note(
+                    note=value, velocity=ctx.get("velocity", 127), type=is_note
+                )
+                return
             if value == 0:
                 dest.device.all_notes_off()
                 return
@@ -346,6 +370,12 @@ class Link:
         self.cleanup_callback = lambda: dest.device.all_notes_off()
 
         def foo(value, ctx):
+            is_note = ctx.get("type")
+            if is_note in ("note_off", "note_on"):
+                dest.device.note(
+                    note=value, velocity=ctx.get("velocity", 127), type=is_note
+                )
+                return
             if value == 0:
                 dest.device.all_notes_off()
                 return
@@ -359,4 +389,9 @@ class Link:
 
 
 def debug(l):
-    return lambda value, ctx: (print("->", value, ctx), l(value, ctx))
+    def foo(value, ctx):
+        print("->", value, ctx)
+        r = l(value, ctx)
+        return r
+
+    return foo

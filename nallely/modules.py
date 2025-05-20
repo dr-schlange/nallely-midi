@@ -234,7 +234,7 @@ class ModuleParameter:
                 ctx=ThreadContext({**ctx, "param": self.name}),
             )
         else:
-            return lambda value, ctx: to_device.set_parameter(to_param.name, value)
+            return lambda value, ctx: to_device.set_parameter(to_param.name, value, ctx)
 
     def generate_inner_fun_normal(self, to_device, to_param):
         return lambda value, ctx: setattr(to_device, to_param.name, value)
@@ -462,13 +462,13 @@ class PadOrKey:
     def generate_inner_fun_virtual_normal(self, to_device, to_param):
         if self.mode == "hold":
             lambda value, ctx: (
-                to_device.set_parameter(to_param.name, value)
+                to_device.set_parameter(to_param.name, value, ctx)
                 if ctx.type == "note_on"
                 else ...
             )
         if self.mode == "latch":
             ...
-        return lambda value, ctx: to_device.set_parameter(to_param.name, value)
+        return lambda value, ctx: to_device.set_parameter(to_param.name, value, ctx)
 
     def generate_inner_fun_midiparam(self, to_module, to_param):
         if self.mode == "latch":

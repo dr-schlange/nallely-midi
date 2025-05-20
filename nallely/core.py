@@ -253,11 +253,11 @@ class VirtualDevice(threading.Thread):
 
     def receiving(self, value, on: str, ctx: ThreadContext): ...
 
-    def set_parameter(self, param: str, value: Any):
+    def set_parameter(self, param: str, value: Any, ctx: ThreadContext):
         if self.paused:
             return
         try:
-            self.input_queue.put_nowait((param, value))
+            self.input_queue.put_nowait((param, value, ctx or ThreadContext({})))
         except Full:
             print(
                 f"Warning: input_queue full for {self.uid()} — dropping message {param}={value}"
@@ -282,9 +282,10 @@ class VirtualDevice(threading.Thread):
             queue_level = self.input_queue.qsize()
             # We adjust the batch size dynamically based on queue pressure
             batch_size = min(max_batch_size, max(1, int(queue_level / 100)))
+            inner_ctx = {}
             for _ in range(batch_size):
                 try:
-                    param, value = self.input_queue.get_nowait()
+                    param, value, inner_ctx = self.input_queue.get_nowait()
                     self.process_input(param, value)
                     self.input_queue.task_done()
                 except Empty:
@@ -298,6 +299,7 @@ class VirtualDevice(threading.Thread):
                 )
 
             # Run main processing and output
+            ctx.update(inner_ctx)
             value = self.main(ctx)
             self.process_output(value, ctx)
 
@@ -567,12 +569,7 @@ class VirtualDevice(threading.Thread):
 
     @classmethod
     def all_parameters(cls) -> list[VirtualParameter]:
-        attrs = []
-        for base in reversed(cls.__mro__):
-            attrs.extend(
-                v for v in base.__dict__.values() if isinstance(v, VirtualParameter)
-            )
-        return attrs
+        return list(get_all_virtual_parameters(cls).values())
 
     def current_preset(self):
         d = {}
