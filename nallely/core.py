@@ -328,6 +328,8 @@ class VirtualDevice(threading.Thread):
 
     def stop(self, clear_queues=True):
         """Stop the LFO thread."""
+        for device in all_devices():
+            device.unbind_link(None, self)
         if self in virtual_devices:
             virtual_devices.remove(self)
         if not self.running:
@@ -352,8 +354,6 @@ class VirtualDevice(threading.Thread):
             #         self.output_queue.task_done()
             #     except Empty:
             #         break
-        for device in all_devices():
-            device.unbind_link(None, self)
 
     def pause(self, duration=None):
         """Pause the LFO, optionally for a specific duration."""
