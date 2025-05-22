@@ -1,8 +1,10 @@
 from dataclasses import dataclass
 from typing import cast
 
-from .core import ParameterInstance, ThreadContext, VirtualDevice
-from .modules import Int, PadOrKey, PadsOrKeysInstance, Scaler
+from .world import ThreadContext
+from .parameter_instances import Int, PadsOrKeysInstance, PadOrKey, ParameterInstance
+from .scaler import Scaler
+from .virtual_device import VirtualDevice
 
 
 # Callback compilation Matrix

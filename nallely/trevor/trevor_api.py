@@ -1,4 +1,3 @@
-from collections import ChainMap
 from itertools import chain
 
 from ..core import (
@@ -11,8 +10,8 @@ from ..core import (
     unbind_all,
     virtual_device_classes,
     virtual_devices,
+    Scaler,
 )
-from ..modules import Scaler
 
 
 class TrevorAPI:

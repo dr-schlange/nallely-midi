@@ -22,8 +22,9 @@ from ..core import (
     no_registration,
     stop_all_connected_devices,
     virtual_device_classes,
+    Int,
+    Module,
 )
-from ..modules import Int, Module
 from ..utils import StateEncoder, load_modules
 from ..websocket_bus import (  # noqa, we keep it so it's loaded in this namespace
     WebSocketBus,

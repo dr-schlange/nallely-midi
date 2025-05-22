@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 
-from ..core import MidiDevice
-from ..modules import Module, ModulePadsOrKeys, ModuleParameter
+from ..core import MidiDevice, Module, ModulePadsOrKeys, ModuleParameter
 
 
 @dataclass

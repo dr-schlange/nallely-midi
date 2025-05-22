@@ -5,7 +5,6 @@ from pathlib import Path
 import mido
 
 from .core import (
-    CallbackRegistryEntry,
     DeviceNotFound,
     MidiDevice,
     VirtualDevice,
@@ -15,8 +14,8 @@ from .core import (
     midi_device_classes,
     virtual_device_classes,
     virtual_devices,
+    PadOrKey
 )
-from .modules import PadOrKey
 from .trevor import TrevorAPI
 from .utils import StateEncoder, find_class, get_note_name, longest_common_substring
 from .websocket_bus import WebSocketBus

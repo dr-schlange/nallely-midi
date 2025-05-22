@@ -11,8 +11,11 @@ from .core import (
     ThreadContext,
     VirtualDevice,
     VirtualParameter,
+    Int,
+    ModulePadsOrKeys,
+    PadOrKey,
+    Scaler,
 )
-from .modules import Int, ModulePadsOrKeys, PadOrKey, Scaler
 
 
 @dataclass

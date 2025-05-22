@@ -11,10 +11,13 @@ from .core import (
     stop_all_virtual_devices,
     virtual_device_classes,
     virtual_devices,
+    Module,
+    ModulePadsOrKeys,
+    ModuleParameter,
+    PadOrKey,
 )
 from .eg import ADSREnvelope
 from .lfos import LFO, Cycler
-from .modules import Module, ModulePadsOrKeys, ModuleParameter, PadOrKey
 from .websocket_bus import WebSocketBus
 
 __all__ = [

@@ -1,0 +1,642 @@
+from collections import defaultdict
+from dataclasses import InitVar, asdict, dataclass, field
+
+import json
+from pathlib import Path
+import traceback
+from typing import Any, Callable, Counter, Type
+
+import mido
+
+from .scaler import Scaler
+
+from .parameter_instances import PadOrKey, PadsOrKeysInstance, Int, ParameterInstance
+
+from .world import (
+    DeviceNotFound,
+    DeviceSerializer,
+    ThreadContext,
+    midi_device_classes,
+    connected_devices,
+)
+
+from .virtual_device import VirtualDevice, VirtualParameter
+
+NOT_INIT = "uninitialized"
+
+
+@dataclass
+class ModuleParameter:
+    type = "control_change"
+    cc_note: int
+    channel: int = 0
+    name: str = NOT_INIT
+    section_name: str = NOT_INIT
+    init_value: int = 0
+    description: str | None = None
+    range: tuple[int, int] = (0, 127)
+
+    def __post_init__(self):
+        self.stream = False
+
+    @property
+    def min_range(self):
+        return self.range[0]
+
+    @property
+    def max_range(self):
+        return self.range[1]
+
+    def __get__(self, instance, owner=None) -> "Int | ModuleParameter":
+        if instance is None:
+            return self
+        return instance.state[self.name]
+
+    def install_fun(self, to_module, feeder, append=True):
+        self.__set__(to_module, feeder, send=False)
+
+    def generate_inner_fun_virtual(self, to_device, to_param):
+        if to_param.consumer:
+
+            return lambda value, ctx: to_device.receiving(
+                value,
+                on=to_param.name,
+                ctx=ThreadContext({**ctx, "param": self.name}),
+            )
+        else:
+            return lambda value, ctx: to_device.set_parameter(to_param.name, value, ctx)
+
+    def generate_inner_fun_normal(self, to_device, to_param):
+        return lambda value, ctx: setattr(to_device, to_param.name, value)
+
+    def generate_fun(self, to_device, to_param):
+
+        if isinstance(to_param, VirtualParameter):
+            return self.generate_inner_fun_virtual(to_device, to_param)
+        return self.generate_inner_fun_normal(to_device, to_param)
+
+    def __set__(self, to_module, feeder, send=True):
+        if feeder is None:
+            return
+
+        if isinstance(
+            feeder,
+            (
+                ParameterInstance,
+                Int,
+                PadOrKey,
+                PadsOrKeysInstance,
+                VirtualDevice,
+                Scaler,
+            ),
+        ):
+            feeder.bind(getattr(to_module, self.name))
+            return
+
+        if send:
+            # Normal case, we set a value through the descriptor, this triggers the send of the message
+            to_module.device.control_change(self.cc_note, feeder, channel=self.channel)
+        to_module.state[self.name].update(feeder)
+
+    def basic_set(self, device: "MidiDevice", value):
+        getattr(device.modules, self.section_name).state[self.name].update(value)
+
+
+@dataclass
+class ModulePadsOrKeys:
+    type = "note"
+    channel: int = 0
+    keys: dict[int, PadOrKey] = field(default_factory=dict)
+    section_name: str = NOT_INIT
+    name: str = NOT_INIT
+    cc_note: int = -1
+    range: tuple[int, int] = (0, 127)
+
+    def __post_init__(self):
+        self.stream = False
+
+    def __get__(self, instance, owner=None):
+        if instance is None:
+            return self
+        return instance.state[self.section_name]
+
+    def __set__(self, target, feeder):
+        if feeder is None:
+            return
+
+        if isinstance(feeder, list):
+            for f in feeder:
+                f.bind(getattr(target, self.name))
+        else:
+            feeder.bind(getattr(target, self.name))
+
+    def basic_send(self, type, note, velocity): ...
+
+
+@dataclass
+class MetaModule:
+    name: str
+    parameters: list[ModuleParameter]
+    pads_or_keys: ModulePadsOrKeys | None
+
+
+@dataclass
+class Module:
+    device: "MidiDevice"
+    meta: Any = None
+    state_name: str = NOT_INIT
+    state: dict[str, Int | PadsOrKeysInstance] = field(default_factory=dict)
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        parameters = []
+        pads = None
+        for name, value in vars(cls).items():
+            if isinstance(value, ModuleParameter):
+                value.name = name
+                # value.section_name = cls.state_name
+                parameters.append(value)
+            if isinstance(value, ModulePadsOrKeys):
+                pads = value
+                value.name = name
+                # pads.section_name = cls.state_name
+        cls.meta = MetaModule(cls.__name__, parameters, pads)
+
+    def __post_init__(self):
+        self.meta = self.__class__.meta
+        for param in self.meta.parameters:
+            param.section_name = self.__class__.state_name
+            self.state[param.name] = Int.create(
+                param.init_value, parameter=param, device=self.device
+            )
+        if self.meta.pads_or_keys:
+            self.meta.pads_or_keys.section_name = self.__class__.state_name
+            state_name = self.meta.pads_or_keys.section_name
+            # self.state[state_name] = self.device  # type: ignore (special key)
+            self.state[state_name] = PadsOrKeysInstance(
+                self.meta.pads_or_keys, self.device
+            )
+        self._keys_notes = {}
+
+    def setup_function(self, control, lfo): ...
+
+    def main_function(self, control):
+        return lambda value, _: (
+            setattr(self, control.name, value) if value is not None else None
+        )
+
+    def __getitem__(self, key) -> PadOrKey | list[PadOrKey]:
+        if not self.meta.pads_or_keys:
+            raise Exception("Your section doesn't have a key/pad section")
+        if isinstance(key, int):
+            if key not in self._keys_notes:
+                self._keys_notes[key] = PadOrKey(
+                    device=self.device, cc_note=key, pads_or_keys=self.meta.pads_or_keys
+                )
+            return self._keys_notes[key]
+        if isinstance(key, slice):
+            indices = key.indices(128)
+            return [self[i] for i in range(*indices)]  # type: ignore
+        raise Exception(f"Don't know what to look for key of type {key.__class__}")
+
+    def __setitem__(self, key, value):
+        if value is None:
+            return
+        pads = self[key]
+        if not isinstance(pads, list):
+            pads = [pads]
+
+        if isinstance(value, list):
+            from_pads = value
+            for from_pad, to_pad in zip(from_pads, pads):
+                from_pad.bind(to_pad)
+            return
+
+        from_pad = value
+        for to_pad in pads:
+            from_pad.bind(to_pad)
+
+    def __isub__(self, other):
+        # The only way to be here is from a callback removal on the section
+        # that is supposed to own a KeysOrPads
+        if not self.meta.pads_or_keys:
+            raise Exception("Your section doesn't have a key/pad section")
+
+        if isinstance(other, list):
+            for o in other:
+                o.device.unbind_link(o, None)
+        else:
+            other.device.unbind_link(other, None)
+        return self
+
+    def all_parameters(self):
+        return self.meta.parameters
+
+
+class DeviceState:
+    def __init__(self, device, modules: dict[str, Type[Module]]):
+        init_modules = {}
+        for state_name, ModuleCls in modules.items():
+            ModuleCls.state_name = state_name
+            moduleInstance = ModuleCls(device)
+            init_modules[state_name] = moduleInstance
+            for param in moduleInstance.meta.parameters:
+                device.reverse_map[("control_change", param.cc_note)] = param
+            if moduleInstance.meta.pads_or_keys:
+                device.reverse_map[("note", None)] = moduleInstance.meta.pads_or_keys
+        self.modules = init_modules
+
+    def __getattr__(self, name):
+        return self.modules[name]
+
+    def as_dict_patch(self, with_meta=False):
+        d = {}
+        for name, module in self.modules.items():
+            module_state = {}
+            d[name] = module_state
+            for parameter in module.meta.parameters:
+                value = getattr(getattr(self, name), parameter.name)
+                module_state[parameter.name] = int(value)
+                if with_meta:
+                    module_state[parameter.name] = {
+                        "section_name": parameter.section_name,
+                        "value": int(value),
+                    }
+            if not module_state:
+                del d[name]
+        return d
+
+    def from_dict_patch(self, d):
+        for sec_name, section in d.items():
+            for param, value in section.items():
+                setattr(self.modules[sec_name], param, value)
+
+    def to_list(self):
+        l = []
+        for name, module in self.modules.items():
+            module_state = {
+                "name": name,
+                "section_name": module.state_name,
+                "parameters": [
+                    asdict(parameter) for parameter in module.meta.parameters
+                ],
+            }
+            l.append(module_state)
+        return l
+
+
+@dataclass
+class MidiDevice:
+    device_name: str
+    modules_descr: dict[str, Type[Module]] | None = None
+    autoconnect: InitVar[bool] = True
+    read_input_only: InitVar[bool] = False
+    played_notes: Counter = field(default_factory=Counter)
+    outport: mido.ports.BaseOutput | None = None
+    inport: mido.ports.BaseInput | None = None
+    debug: bool = False
+    on_midi_message: Callable[["MidiDevice", mido.Message], None] | None = None
+
+    def __init_subclass__(cls) -> None:
+        midi_device_classes.append(cls)
+        return super().__init_subclass__()
+
+    def __post_init__(self, autoconnect, read_input_only):
+        from .links import Link
+
+        if self not in connected_devices:
+            connected_devices.append(self)
+        self.reverse_map = {}
+        self.links: defaultdict[tuple[str, int], list[Link]] = defaultdict(list)
+        self.links_registry: dict[tuple[str, str], Link] = {}
+        if self.modules_descr is None:
+            self.modules_descr = {
+                k: v
+                for k, v in self.__class__.__annotations__.items()
+                if isinstance(v, type) and issubclass(v, Module)
+            }
+        self.modules = DeviceState(self, self.modules_descr)
+        self.listening = False
+        self.outport_name = self.device_name
+        self.inport_name = self.device_name
+        if autoconnect:
+            try:
+                self.outport_name = next(
+                    (
+                        dev_name
+                        for dev_name in mido.get_output_names()  # type: ignore
+                        if self.device_name == dev_name or self.device_name in dev_name
+                    ),
+                )
+            except StopIteration:
+                raise DeviceNotFound(self.device_name)
+            if not read_input_only:
+                self.connect()
+            self.listen()
+
+    def connect(self):
+        self.outport = mido.open_output(self.outport_name, autoreset=True)  # type: ignore
+
+    def listen(self, start=True):
+        if not start:
+            self.listening = False
+            self.inport.callback = None  # type: ignore
+            return
+        if not self.listening:
+            try:
+                self.inport = mido.open_input(self.inport_name)  # type: ignore
+            except OSError:
+                try:
+                    self.inport_name = next(
+                        (
+                            dev_name
+                            for dev_name in mido.get_input_names()  # type: ignore
+                            if self.device_name == dev_name
+                            or self.device_name in dev_name
+                        ),
+                    )
+                    self.inport = mido.open_input(self.inport_name)  # type: ignore
+                except StopIteration:
+                    raise DeviceNotFound(self.device_name)
+            self.inport.callback = self._sync_state  # type: ignore
+
+    def close_out(self):
+        if self.outport:
+            self.outport.close()
+            self.outport = None
+            self.outport_name = None
+
+    def close_in(self):
+        if self.inport:
+            self.listen(False)
+            self.inport = None
+            self.inport_name = None
+
+    def close(self, delete=True):
+        self.all_notes_off()
+        self.close_in()
+        self.close_out()
+        # flush all callbacks and registry
+        self.links.clear()
+        self.links_registry.clear()
+        if delete and self in connected_devices:
+            connected_devices.remove(self)
+
+    stop = close
+
+    def _update_state(self, cc, value):
+        control: ModuleParameter | None = self.reverse_map.get(("control_change", cc))
+        if control:
+            control.basic_set(self, value)
+
+    def _sync_state(self, msg):
+        if msg.type == "clock":
+            return
+        if self.on_midi_message:
+            self.on_midi_message(self, msg)
+        if self.debug:
+            print(msg)
+        if msg.type == "control_change":
+            try:
+                for link in self.links.get((msg.type, msg.control), []):
+                    value = msg.value
+                    ctx = ThreadContext({"debug": self.debug})
+                    link.trigger(value, ctx)
+                self._update_state(msg.control, msg.value)
+            except:
+                traceback.print_exc()
+        if msg.type == "note_on" or msg.type == "note_off":
+            try:
+                # We look first if there are links at the "global level" for keys
+                for link in self.links.get(("note", -1), []):
+                    value = msg.note
+                    ctx = ThreadContext(
+                        {
+                            "debug": self.debug,
+                            "type": msg.type,
+                            "velocity": msg.velocity,
+                        }
+                    )
+                    link.trigger(value, ctx)
+                for link in self.links.get(("note", msg.note), []):
+                    value = msg.note
+                    ctx = ThreadContext(
+                        {
+                            "debug": self.debug,
+                            "type": msg.type,
+                            "velocity": msg.velocity,
+                        }
+                    )
+                    link.trigger(value, ctx)
+                for link in self.links.get(("velocity", msg.note), []):
+                    value = msg.velocity
+                    ctx = ThreadContext(
+                        {
+                            "debug": self.debug,
+                            "type": msg.type,
+                            "note": msg.note,
+                        }
+                    )
+                    link.trigger(value, ctx)
+                pads: ModulePadsOrKeys | None = self.reverse_map.get(("note", None))
+                if pads:
+                    pads.basic_send(msg.type, msg.note, msg.velocity)
+            except:
+                traceback.print_exc()
+
+    def send(self, msg):
+        if not self.outport:
+            return
+        self.outport.send(msg)
+
+    def note(self, type, note, velocity=127 // 2, channel=0):
+        getattr(self, type)(note, velocity=velocity, channel=channel)
+
+    def note_on(self, note, velocity=127 // 2, channel=0):
+        if not self.outport:
+            return
+        note = int(note)
+        if note > 127:
+            note = 127
+        elif note < 0:
+            note = 0
+        self.played_notes[note] += 1
+        self.outport.send(
+            mido.Message("note_on", channel=channel, note=note, velocity=velocity)
+        )
+        if self.played_notes[note] > 40:
+            for _ in range(20):
+                self.note_off(note, velocity=0)
+
+    def note_off(self, note, velocity=127 // 2, channel=0):
+        if not self.outport:
+            return
+        note = int(note)
+        if note > 127:
+            note = 127
+        elif note < 0:
+            note = 0
+        self.outport.send(
+            mido.Message("note_off", channel=channel, note=note, velocity=velocity)
+        )
+        if self.played_notes[note]:
+            self.played_notes[note] -= 1
+
+    def all_notes_off(self):
+        for note, occurence in self.played_notes.items():
+            for _ in range(occurence):
+                self.note_off(note, velocity=0)
+        self.played_notes.clear()
+
+    def force_all_notes_off(self, times=1):
+        for _ in range(times + 1):
+            for note in range(0, 128):
+                self.note_off(note, velocity=0)
+
+    def control_change(self, control, value=0, channel=0):
+        if not self.outport:
+            return
+        value = int(value)
+        if value > 127:
+            value = 127
+        elif value < 0:
+            value = 0
+        self._update_state(control, value)
+        self.outport.send(
+            mido.Message(
+                "control_change", channel=channel, control=control, value=value
+            )
+        )
+
+    def unbind_all(self):
+        for link in self.links_registry.values():
+            link.cleanup()
+        self.links.clear()
+        self.links_registry.clear()
+
+    def bind_link(self, link):
+        type = link.src.parameter.type
+        cc_note = link.src.parameter.cc_note
+        self.links[(type, cc_note)].append(link)
+        self.links_registry[(link.src_repr(), link.dest_repr())] = link
+
+    def bounce_link(self, from_, value, ctx):
+        src_path = from_.repr()
+        for (src, _), link in list(self.links_registry.items()):
+            if src == src_path:
+                link.trigger(value, ctx)
+
+    def unbind_link(self, from_, target):
+        if from_ is None:
+            to_remove = []
+            link_to_remove = []
+            target_path = target.repr()
+            for (src, dst), link in self.links_registry.items():
+                if dst == target_path:
+                    to_remove.append((src, dst))
+                    link_to_remove.append(link)
+            for key in to_remove:
+                del self.links_registry[key]
+            for link in link_to_remove:
+                self.links[(from_.parameter.type, from_.parameter.cc_note)].remove(link)
+                link.cleanup()
+            return
+        if target is None:
+            to_remove = []
+            link_to_remove = []
+            src_path = from_.repr()
+            for (src, dst), link in self.links_registry.items():
+                if src == src_path:
+                    to_remove.append((src, dst))
+                    link_to_remove.append(link)
+            for key in to_remove:
+                del self.links_registry[key]
+            for link in link_to_remove:
+                for key in list(self.links.keys()):
+                    try:
+                        self.links[key].remove(link)
+                        link.cleanup()
+                    except ValueError:
+                        ...
+            return
+
+        key = (from_.repr(), target.repr())
+        link = self.links_registry.get(key)
+        if not link:
+            # print(f"Cannot unbind {from_} and {target}, they are not bound in {self}")
+            return
+
+        del self.links_registry[key]
+        self.links[(from_.parameter.type, from_.parameter.cc_note)].remove(link)
+        link.cleanup()
+
+    def __isub__(self, other):
+        # The only way to be here is from a callback removal on the key/pad section
+        other.device.unbind_link(other, self)
+        self.all_notes_off()
+        return self
+
+    def current_preset(self):
+        return self.modules.as_dict_patch()
+
+    def save_preset(self, file: Path | str):
+        Path(file).write_text(
+            json.dumps(self.current_preset(), indent=2, cls=DeviceSerializer)
+        )
+
+    def load_preset(
+        self,
+        file: Path | str | None = None,
+        dct: dict[str, dict[str, int]] | None = None,
+    ):
+        if file:
+            p = Path(file)
+            self.modules.from_dict_patch(json.loads(p.read_text()))
+        if dct:
+            self.modules.from_dict_patch(dct)
+
+    def to_dict(self):
+        d = {
+            "id": id(self),
+            "repr": self.uid(),
+            "ports": {
+                "input": self.inport.name if self.inport else None,
+                "output": self.outport.name if self.outport else None,
+            },
+            "meta": {
+                "name": self.__class__.__name__,
+                "sections": [
+                    asdict(module.meta) for module in self.modules.modules.values()
+                ],
+            },
+            "config": self.modules.as_dict_patch(with_meta=False),
+        }
+        return d
+
+    def uid(self):
+        return f"{self.__class__.__name__}"
+
+    def all_sections(self):
+        return self.modules.modules.values()
+
+    def all_parameters(self):
+        parameters = []
+        for section in self.all_sections():
+            parameters.extend(section.all_parameters())
+        return parameters
+
+    def pads_or_keys(self):
+        for section in self.all_sections():
+            if section.meta.pads_or_keys:
+                return section.meta.pads_or_keys
+        return None
+
+    def random_preset(self):
+        import random
+
+        for parameter in self.all_parameters():
+            setattr(
+                getattr(self, parameter.section_name),
+                parameter.name,
+                random.randint(0, 127),
+            )
