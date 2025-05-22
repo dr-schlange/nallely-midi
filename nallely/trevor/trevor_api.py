@@ -187,7 +187,10 @@ class TrevorAPI:
                 value = int(value)
             except:
                 ...
-        device.process_input(parameter, value)
+        try:
+            device.process_input(parameter, value)
+        except Exception as e:
+            print(f"Couldn't set {parameter} to {value} for {device_id}: {e}")
 
     def delete_all_connections(self):
         unbind_all()

@@ -291,7 +291,7 @@ class VirtualDevice(threading.Thread):
                 except Empty:
                     break
 
-            # Optional: Log queue pressure
+            # Log queue pressure
             queue_level = self.input_queue.qsize()
             if queue_level > self.input_queue.maxsize * 0.8:
                 print(
@@ -480,7 +480,9 @@ class VirtualDevice(threading.Thread):
     def nonstream_links(self):
         return self.links[int(False)]
 
-    def process_output(self, value, ctx, selected_outputs=None):
+    def process_output(
+        self, value, ctx, selected_outputs: None | list[ParameterInstance] = None
+    ):
         if value is None:
             return
         # try:
@@ -489,7 +491,11 @@ class VirtualDevice(threading.Thread):
         #     pass  # Drop if full
 
         # True -> stream; False -> non stream
-        for output in selected_outputs or list(self.stream_links.keys()):
+        outputs = None
+        if selected_outputs:
+            outputs = [e.repr() for e in selected_outputs]
+
+        for output in outputs or list(self.stream_links.keys()):
             links = self.stream_links.get(output, [])
             for link in links:
                 try:
@@ -498,7 +504,7 @@ class VirtualDevice(threading.Thread):
                     traceback.print_exc()
                     raise e
         if value != ctx.last_value:
-            for output in selected_outputs or list(self.nonstream_links.keys()):
+            for output in outputs or list(self.nonstream_links.keys()):
                 links = self.nonstream_links.get(output, [])
                 for link in links:
                     try:
