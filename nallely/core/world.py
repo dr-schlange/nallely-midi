@@ -1,11 +1,11 @@
-from decimal import Decimal
 import json
+from decimal import Decimal
 from typing import TYPE_CHECKING, Any, Callable, Type
 
 if TYPE_CHECKING:
-    from .midi_device import MidiDevice, ModuleParameter, ModulePadsOrKeys
+    from .midi_device import MidiDevice, ModulePadsOrKeys, ModuleParameter
+    from .parameter_instances import PadOrKey, ParameterInstance
     from .virtual_device import VirtualDevice, VirtualParameter
-    from .parameter_instances import ParameterInstance, PadOrKey
 
 
 virtual_devices: list["VirtualDevice"] = []

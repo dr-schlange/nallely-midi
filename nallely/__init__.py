@@ -1,6 +1,10 @@
 from .core import (
     DeviceNotFound,
     MidiDevice,
+    Module,
+    ModulePadsOrKeys,
+    ModuleParameter,
+    PadOrKey,
     ThreadContext,
     VirtualDevice,
     VirtualParameter,
@@ -11,10 +15,6 @@ from .core import (
     stop_all_virtual_devices,
     virtual_device_classes,
     virtual_devices,
-    Module,
-    ModulePadsOrKeys,
-    ModuleParameter,
-    PadOrKey,
 )
 from .eg import ADSREnvelope
 from .lfos import LFO, Cycler

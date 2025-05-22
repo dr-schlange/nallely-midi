@@ -1,14 +1,11 @@
 from dataclasses import dataclass
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
-from .world import ThreadContext
 from .scaler import Scaler
-
-
-from typing import TYPE_CHECKING
+from .world import ThreadContext
 
 if TYPE_CHECKING:
-    from .midi_device import MidiDevice, ModuleParameter, ModulePadsOrKeys
+    from .midi_device import MidiDevice, ModulePadsOrKeys, ModuleParameter
     from .virtual_device import VirtualDevice, VirtualParameter
 
 
@@ -62,7 +59,9 @@ class Int(int):
         self.parameter: "ModuleParameter"
 
     @classmethod
-    def create(cls, val: int, device: "MidiDevice", parameter: "ModuleParameter") -> "Int":
+    def create(
+        cls, val: int, device: "MidiDevice", parameter: "ModuleParameter"
+    ) -> "Int":
         result = cls(val)
         result.__wrapped__ = val
         result.device = device

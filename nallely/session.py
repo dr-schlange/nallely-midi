@@ -7,6 +7,7 @@ import mido
 from .core import (
     DeviceNotFound,
     MidiDevice,
+    PadOrKey,
     VirtualDevice,
     VirtualParameter,
     all_devices,
@@ -14,7 +15,6 @@ from .core import (
     midi_device_classes,
     virtual_device_classes,
     virtual_devices,
-    PadOrKey
 )
 from .trevor import TrevorAPI
 from .utils import StateEncoder, find_class, get_note_name, longest_common_substring

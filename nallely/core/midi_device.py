@@ -1,26 +1,22 @@
+import json
+import traceback
 from collections import defaultdict
 from dataclasses import InitVar, asdict, dataclass, field
-
-import json
 from pathlib import Path
-import traceback
 from typing import Any, Callable, Counter, Type
 
 import mido
 
+from .parameter_instances import Int, PadOrKey, PadsOrKeysInstance, ParameterInstance
 from .scaler import Scaler
-
-from .parameter_instances import PadOrKey, PadsOrKeysInstance, Int, ParameterInstance
-
+from .virtual_device import VirtualDevice, VirtualParameter
 from .world import (
     DeviceNotFound,
     DeviceSerializer,
     ThreadContext,
-    midi_device_classes,
     connected_devices,
+    midi_device_classes,
 )
-
-from .virtual_device import VirtualDevice, VirtualParameter
 
 NOT_INIT = "uninitialized"
 

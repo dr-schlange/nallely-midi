@@ -1,18 +1,16 @@
+import math
 from dataclasses import dataclass
 from decimal import Decimal
-import math
-
-
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .virtual_device import VirtualDevice
     from .parameter_instances import (
         Int,
         PadOrKey,
         PadsOrKeysInstance,
         ParameterInstance,
     )
+    from .virtual_device import VirtualDevice
 
 
 @dataclass
@@ -100,8 +98,8 @@ class Scaler:
         return math.exp(log_min + (value / from_max) * (log_max - log_min))
 
     def convert(self, value):
-        from .virtual_device import VirtualDevice
         from .parameter_instances import Int
+        from .virtual_device import VirtualDevice
 
         from_min, from_max = (
             self.data.range

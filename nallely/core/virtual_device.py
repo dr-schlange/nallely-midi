@@ -1,17 +1,15 @@
-from collections import defaultdict
-from dataclasses import asdict, dataclass
-from decimal import Decimal
 import json
-from pathlib import Path
 import threading
 import time
 import traceback
+from collections import defaultdict
+from dataclasses import asdict, dataclass
+from decimal import Decimal
+from pathlib import Path
+from queue import Empty, Full, Queue
 from typing import Any, Iterable, Literal, Type
 
-from queue import Empty, Full, Queue
-
-
-from .parameter_instances import PadOrKey, PadsOrKeysInstance, ParameterInstance, Int
+from .parameter_instances import Int, PadOrKey, PadsOrKeysInstance, ParameterInstance
 from .scaler import Scaler
 from .world import (
     DeviceSerializer,
@@ -19,8 +17,8 @@ from .world import (
     all_devices,
     get_all_virtual_parameters,
     no_registration,
-    virtual_devices,
     virtual_device_classes,
+    virtual_devices,
 )
 
 

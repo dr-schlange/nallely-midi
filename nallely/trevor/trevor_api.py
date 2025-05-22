@@ -2,6 +2,7 @@ from itertools import chain
 
 from ..core import (
     MidiDevice,
+    Scaler,
     VirtualDevice,
     all_devices,
     connected_devices,
@@ -10,7 +11,6 @@ from ..core import (
     unbind_all,
     virtual_device_classes,
     virtual_devices,
-    Scaler,
 )
 
 

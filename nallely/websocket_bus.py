@@ -7,14 +7,14 @@ from websockets import ConnectionClosed, ConnectionClosedError
 from websockets.sync.server import serve
 
 from .core import (
-    ParameterInstance,
-    ThreadContext,
-    VirtualDevice,
-    VirtualParameter,
     Int,
     ModulePadsOrKeys,
     PadOrKey,
+    ParameterInstance,
     Scaler,
+    ThreadContext,
+    VirtualDevice,
+    VirtualParameter,
 )
 
 
