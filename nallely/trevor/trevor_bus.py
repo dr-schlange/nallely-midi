@@ -14,6 +14,8 @@ from websockets import ConnectionClosed, ConnectionClosedError
 from websockets.sync.server import serve
 
 from ..core import (
+    Int,
+    Module,
     ParameterInstance,
     VirtualDevice,
     all_devices,
@@ -22,8 +24,6 @@ from ..core import (
     no_registration,
     stop_all_connected_devices,
     virtual_device_classes,
-    Int,
-    Module,
 )
 from ..utils import StateEncoder, load_modules
 from ..websocket_bus import (  # noqa, we keep it so it's loaded in this namespace
@@ -96,7 +96,10 @@ class TrevorBus(VirtualDevice):
             print(f"Connected on {service_name} [{len(connected_clients)} clients]")
 
     def setup(self):
-        self.server.serve_forever()
+        try:
+            self.server.serve_forever()
+        except Exception as e:
+            print("Error while serving the trevor websocket server", e)
         return super().setup()
 
     def stop(self, clear_queues=False):
