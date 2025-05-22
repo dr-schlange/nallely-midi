@@ -7,24 +7,48 @@ import type {
 	VirtualParameter,
 } from "../model";
 import { store } from "../store";
-import { setErrors, setKnownPatches } from "../store/generalSlice";
+import {
+	setErrors,
+	setKnownPatches,
+	setConnected,
+} from "../store/generalSlice";
 import { setFullState } from "../store/trevorSlice";
 import { isPadOrdKey, isPadsOrdKeys, isVirtualParameter } from "../utils/utils";
 
-const WEBSOCKET_URL = `ws://${window.location.hostname}:6788/trevor`;
+// const WEBSOCKET_URL = `ws://${window.location.hostname}:6788/trevor`;
 
 class TrevorWebSocket {
 	public socket: WebSocket | null = null;
 	private reconnectInterval = 1 * 1000;
-	private isConnected = false;
+	public isConnected = false;
 	private manualClose = false;
 	private pendingRequests = new Map<string, (response: any) => void>();
 	private retryTimeoutId: ReturnType<typeof setTimeout> | null = null;
+	private unsubscribe;
 
-	constructor(private url: string) {
-		this.connect();
+	constructor(public url: string) {
+		this.connect(this.url);
+		this.unsubscribe = store.subscribe(this.handleStoreChange.bind(this));
 	}
 
+	handleStoreChange() {
+		const url = store.getState().general.trevorWebsocketURL;
+
+		if (`${url}/trevor` !== this.url) {
+			this.url = `${url}/trevor`;
+			this.handleURLChange(this.url);
+		}
+	}
+
+	handleURLChange(url) {
+		this.disconnect();
+		this.connect(url);
+	}
+
+	destroy() {
+		this.unsubscribe();
+		this.disconnect();
+	}
 	private generateRequestId(): string {
 		return Math.random().toString(36).substr(2, 9);
 	}
@@ -59,9 +83,24 @@ class TrevorWebSocket {
 		});
 	}
 
-	private connect() {
+	private connect(url: string) {
+		store.dispatch(setConnected("pending"));
+		if (this.retryTimeoutId !== null) {
+			clearTimeout(this.retryTimeoutId);
+			this.retryTimeoutId = null;
+		}
 		this.manualClose = false;
-		this.socket = new WebSocket(this.url);
+		if (this.socket) {
+			this.socket.close();
+			this.socket = null;
+		}
+		try {
+			this.socket = new WebSocket(url);
+		} catch (error) {
+			console.log(`Error while connecting to ${url}`, error);
+			store.dispatch(setConnected("disconnected"));
+			return;
+		}
 
 		this.socket.onopen = () => {
 			console.debug("Connected to Trevor");
@@ -79,6 +118,7 @@ class TrevorWebSocket {
 				return;
 			}
 			if (message.command === undefined) {
+				store.dispatch(setConnected("connected"));
 				store.dispatch(setFullState(message));
 				return;
 			}
@@ -94,14 +134,18 @@ class TrevorWebSocket {
 
 		this.socket.onerror = (error) => {
 			console.error("WebSocket error:", error);
-			// Just close; onclose will handle reconnection
 			if (this.socket) {
-				this.socket.close();
+				if (this.isConnected) {
+					this.socket.close();
+				} else {
+					this.reconnect();
+				}
 			}
 		};
 
 		this.socket.onclose = () => {
 			console.warn("WebSocket closed");
+			store.dispatch(setConnected("disconnected"));
 			this.isConnected = false;
 			this.socket = null;
 
@@ -128,12 +172,14 @@ class TrevorWebSocket {
 	}
 
 	private reconnect() {
-		if (this.retryTimeoutId !== null) {
-			clearTimeout(this.retryTimeoutId);
-		}
+		if (this.retryTimeoutId !== null) return;
+
+		// if (this.retryTimeoutId !== null) {
+		// 	clearTimeout(this.retryTimeoutId);
+		// }
 		this.retryTimeoutId = setTimeout(() => {
 			console.log("Reconnecting...");
-			this.connect();
+			this.connect(this.url);
 		}, this.reconnectInterval);
 	}
 
@@ -365,7 +411,9 @@ export const connectWebSocket = () => {
 	}
 
 	console.log("Create new Trevor websocket");
-	websocket = new TrevorWebSocket(WEBSOCKET_URL);
+	websocket = new TrevorWebSocket(
+		`${store.getState().general.trevorWebsocketURL}/trevor`,
+	);
 
 	unloadHandler = () => {
 		websocket?.disconnect();

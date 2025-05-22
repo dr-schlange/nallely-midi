@@ -141,4 +141,5 @@ export interface GeneralState {
 	errors: string[];
 	knownPatches: string[];
 	trevorWebsocketURL: string;
+	connected: string;
 }

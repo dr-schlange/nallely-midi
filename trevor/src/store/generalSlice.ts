@@ -4,7 +4,8 @@ import type { GeneralState } from "../model";
 const initialState: GeneralState = {
 	knownPatches: [],
 	errors: [],
-	trevorWebsocketURL: "localhost:6788",
+	trevorWebsocketURL: "ws://localhost:6788",
+	connected: "disconnected",
 };
 
 const generalSlice = createSlice({
@@ -26,6 +27,9 @@ const generalSlice = createSlice({
 		setWebsocketURL: (state, action: PayloadAction<string>) => {
 			state.trevorWebsocketURL = action.payload;
 		},
+		setConnected: (state, action: PayloadAction<string>) => {
+			state.connected = action.payload;
+		},
 	},
 });
 
@@ -35,6 +39,7 @@ export const {
 	clearErrors,
 	setKnownPatches,
 	clearKnownPatches,
+	setConnected,
 } = generalSlice.actions;
 
 export default generalSlice.reducer;

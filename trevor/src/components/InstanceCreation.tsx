@@ -4,6 +4,7 @@ import { useTrevorSelector } from "../store";
 import { drawConnection } from "../utils/svgUtils";
 import { useTrevorWebSocket } from "../websockets/websocket";
 import type { MidiDevice } from "../model";
+import { SettingsModal } from "./modals/SettingsModal";
 
 const truncateName = (name: string, maxLength: number) => {
 	return name.length > maxLength ? `${name.slice(0, maxLength)}...` : name;
@@ -33,6 +34,12 @@ const InstanceCreation = () => {
 	const [selectedPort, setSelectedPort] = useState<MidiPort | null>();
 
 	const [isExpanded, setIsExpanded] = useState<boolean>(true);
+	const websocketStatus = useTrevorSelector((state) => state.general.connected);
+	const connectionUrl = useTrevorSelector(
+		(state) => state.general.trevorWebsocketURL,
+	);
+
+	const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
 
 	useEffect(() => {
 		updateConnections();
@@ -82,10 +89,6 @@ const InstanceCreation = () => {
 		trevorSocket?.associatePort(device, port.name, port.direction);
 	};
 
-	const handleDeviceClassClick = (deviceClass: string) => {
-		trevorSocket?.createDevice(deviceClass);
-	};
-
 	const handlePortClick = (port: string, direction: string) => {
 		if (selectedPort?.name === port && selectedPort?.direction === direction) {
 			setSelectedPort(null);
@@ -117,21 +120,66 @@ const InstanceCreation = () => {
 		setIsExpanded((prev) => !prev);
 	};
 
+	const handleClose = () => {
+		setIsSettingsOpen(false);
+	};
+
+	const handleSettingsClick = () => {
+		setIsSettingsOpen(true);
+	};
+
+	const displayWebsocketStatus = () => {
+		switch (websocketStatus) {
+			case "disconnected":
+				return "🔴";
+			case "connected":
+				return "🟢";
+			default:
+				return "🟡";
+		}
+	};
+
 	return (
 		<div className="instance-creation">
-			<button
+			<div
 				style={{
-					width: "100%",
-					padding: "0px",
-					textAlign: "left",
-					paddingLeft: "5px",
+					display: "flex",
+					flexDirection: "row",
+					flexWrap: "nowrap",
+					alignItems: "center",
 				}}
-				type="button"
-				title={isExpanded ? "Collapse panel" : "Expand panel"}
-				onClick={() => handleExpand()}
 			>
-				{isExpanded ? "-" : "+"}
-			</button>
+				<button
+					style={{
+						width: "100%",
+						// padding: "0px",
+						textAlign: "left",
+						paddingLeft: "5px",
+					}}
+					type="button"
+					title={isExpanded ? "Collapse panel" : "Expand panel"}
+					onClick={() => handleExpand()}
+				>
+					{isExpanded ? "-" : "+"}
+				</button>
+				<span
+					title={
+						(websocketStatus === "connected" &&
+							`Connected to ${connectionUrl}`) ||
+						`Not connected, trying on ${connectionUrl}`
+					}
+				>
+					{displayWebsocketStatus()}
+				</span>
+				<button
+					style={{ fontSize: "larger", padding: "0px" }}
+					type="button"
+					title="settings"
+					onClick={handleSettingsClick}
+				>
+					⚙
+				</button>
+			</div>
 			{isExpanded && (
 				<>
 					<div className="instance-creation-main-panel">
@@ -269,23 +317,7 @@ const InstanceCreation = () => {
 					</svg>
 				</>
 			)}
-			{/* <div className="instance-creation-right-panel">
-				<div className="device-class-right-panel">
-					<h3>Device Classes</h3>
-					<ul className="device-class-list">
-						{deviceClasses.map((deviceClass) => (
-							// biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
-							<li
-								key={deviceClass}
-								className="device-class-item"
-								onClick={() => handleDeviceClassClick(deviceClass)}
-							>
-								{deviceClass}
-							</li>
-						))}
-					</ul>
-				</div>
-			</div> */}
+			{isSettingsOpen && <SettingsModal onClose={handleClose} />}
 		</div>
 	);
 };

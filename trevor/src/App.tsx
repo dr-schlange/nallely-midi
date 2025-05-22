@@ -4,9 +4,12 @@ import { Provider } from "react-redux";
 import { store, useTrevorSelector } from "./store";
 import { connectWebSocket } from "./websockets/websocket";
 import { ErrorModal } from "./components/modals/ErrorModal";
+import { useMemo } from "react";
 
 const App = () => {
-	connectWebSocket();
+	useMemo(() => {
+		connectWebSocket();
+	}, []);
 	return (
 		<Provider store={store}>
 			<Main />
