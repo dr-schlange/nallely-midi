@@ -1,6 +1,7 @@
 import json
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any, Callable, Type
+
 import mido
 
 if TYPE_CHECKING:

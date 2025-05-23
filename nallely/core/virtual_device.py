@@ -108,7 +108,7 @@ class VirtualDevice(threading.Thread):
         if self.paused:
             return
         try:
-            self.input_queue.put_nowait((param, value, ctx or ThreadContext({})))
+            self.input_queue.put_nowait((param, value, ctx or ThreadContext()))
         except Full:
             print(
                 f"Warning: input_queue full for {self.uid()} — dropping message {param}={value}"

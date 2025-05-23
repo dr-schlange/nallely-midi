@@ -28,6 +28,11 @@ def parse_args(argv):
         help="Launches the Trevor protocol/websocket server",
     )
     run_parser.add_argument(
+        "--serve-ui",
+        action="store_true",
+        help="Serves Trevor-UI, and makes it accessible from your browser. This option is only activated if '--with-trevor' is used.",
+    )
+    run_parser.add_argument(
         "-b",
         "--builtin-devices",
         action="store_true",
@@ -79,6 +84,7 @@ def main():
                 args.builtin_devices,
                 loaded_paths=args.libs,
                 init_script=args.init_script,
+                serve_ui=args.serve_ui,
             )
         elif args.init_script:
             from nallely.trevor import launch_standalone_script

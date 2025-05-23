@@ -3,6 +3,7 @@ exp*.py
 .envrc
 BAK/
 EXPE_BAK/
+trevor-ui/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

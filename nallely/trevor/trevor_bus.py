@@ -1,7 +1,10 @@
+import http.server
 import io
 import json
+import socketserver
 import sys
 import textwrap
+import threading
 import traceback
 from collections import ChainMap, defaultdict
 from contextlib import contextmanager
@@ -316,8 +319,63 @@ class TrevorBus(VirtualDevice):
         return self.full_state()
 
 
-def trevor_infos(header, loaded_paths, init_script):
+def resource_path(relative_path):
+    """Get absolute path to resource, works for dev and PyInstaller"""
+    if hasattr(sys, "_MEIPASS"):
+        # Running in PyInstaller bundle
+        base_path = Path(sys._MEIPASS)
+    else:
+        # Running in normal python environment
+        base_path = Path().cwd()
+
+    return base_path / relative_path
+
+
+class SilentHandler(http.server.SimpleHTTPRequestHandler):
+    def log_message(self, format, *args):
+        pass
+
+
+class ReusableTCPServer(socketserver.TCPServer):
+    allow_reuse_address = True
+
+
+class HTTPServerThread:
+    def __init__(self, directory: Path, port: int = 3000):
+        self.directory = directory
+        self.port = port
+        self.httpd = None
+        self.thread = None
+
+    def start(self):
+        handler = lambda *args, **kwargs: SilentHandler(
+            *args, directory=str(self.directory.resolve()), **kwargs
+        )
+        self.httpd = ReusableTCPServer(("0.0.0.0", self.port), handler)
+        self.thread = threading.Thread(target=self.httpd.serve_forever)
+        self.thread.daemon = True
+        self.thread.start()
+
+    def shutdown(self):
+        if self.httpd:
+            self.httpd.shutdown()
+            self.httpd.server_close()
+
+    def join(self):
+        if self.thread:
+            self.thread.join()
+
+    def stop(self):
+        self.shutdown()
+        self.join()
+
+
+def trevor_infos(header, loaded_paths, init_script, ui):
     info = f"{header}\n"
+    if ui:
+        info += (
+            f"  * Trevor-UI running on http://localhost:3000 or http://127.0.0.1:3000\n"
+        )
     info += f"  * init script = {init_script.resolve().absolute() if init_script else None}\n"
     info += "  * Loaded paths\n"
     for p in loaded_paths:
@@ -334,8 +392,15 @@ def trevor_infos(header, loaded_paths, init_script):
     return info
 
 
-def start_trevor(include_builtins, loaded_paths=None, init_script=None):
+def start_trevor(include_builtins, loaded_paths=None, init_script=None, serve_ui=None):
+    httpserver = None
     try:
+        if serve_ui:
+            httpserver = HTTPServerThread(resource_path("trevor-ui"))
+            httpserver.start()
+            print(
+                "Trevor-UI running on http://localhost:3000 or http://127.0.0.1:3000...\n"
+            )
         if include_builtins:
             from ..devices import NTS1, Minilogue  # noqa, we include them
 
@@ -347,9 +412,11 @@ def start_trevor(include_builtins, loaded_paths=None, init_script=None):
 
         trevor = TrevorBus()
         trevor.start()
-        _trevor_menu(loaded_paths, init_script, trevor)
+        _trevor_menu(loaded_paths, init_script, trevor, serve_ui)
         print("Shutting down...")
     finally:
+        if httpserver:
+            httpserver.stop()
         for device in connected_devices:
             device.all_notes_off()
             device.force_all_notes_off(10)
@@ -375,7 +442,7 @@ def launch_standalone_script(include_builtins, loaded_paths=None, init_script=No
         stop_all_connected_devices()
 
 
-def _trevor_menu(loaded_paths, init_script, trevor_bus=None):
+def _trevor_menu(loaded_paths, init_script, trevor_bus=None, trevor_ui=None):
     elprint = _print_with_trevor if trevor_bus else print
     while (
         q := input(
@@ -385,7 +452,10 @@ def _trevor_menu(loaded_paths, init_script, trevor_bus=None):
         if not q:
             elprint(
                 trevor_infos(
-                    "[TREVOR]" if trevor_bus else "[INFO]", loaded_paths, init_script
+                    "[TREVOR]" if trevor_bus else "[INFO]",
+                    loaded_paths,
+                    init_script,
+                    trevor_ui,
                 )
             )
         elif q == "?":

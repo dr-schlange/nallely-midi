@@ -11,16 +11,43 @@ interface ScopeProps {
 }
 
 export const Scope = ({ id }: ScopeProps) => {
-	const [plotData, setPlotData] = useState<[number[], number[]]>([[], []]);
 	const bufferRef = useRef<{ x: number[]; y: number[] }>({ x: [], y: [] });
 	const startTimeRef = useRef<number>(Date.now());
-	const divRef = useRef<HTMLDivElement>(null);
-	const [upperBound, setUpperBound] = useState(0);
-	const [label, setLabel] = useState("");
-
 	const wsRef = useRef<WebSocket | null>(null);
 	const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const isUnmounted = useRef(false);
+	const chartRef = useRef<uPlot | null>(null);
+	const updateScheduled = useRef(false);
+
+	const [upperBound, setUpperBound] = useState(0);
+	const [label, setLabel] = useState("");
+
+	const initialData: [number[], number[]] = [[], []];
+
+	const options: uPlot.Options = {
+		height: 115,
+		width: 180,
+		cursor: {
+			drag: { setScale: false },
+		},
+		axes: [{ show: false }, { show: false }],
+		legend: { show: false },
+		series: [
+			{ show: true },
+			{
+				label: label,
+				stroke: "orange",
+				width: 4,
+			},
+		],
+		scales: {
+			x: { time: false },
+			y: {
+				auto: true,
+				range: [0, upperBound],
+			},
+		},
+	};
 
 	useEffect(() => {
 		function connect() {
@@ -45,7 +72,7 @@ export const Scope = ({ id }: ScopeProps) => {
 				const newValue = Number.parseFloat(data.value);
 				if (Number.isNaN(newValue)) return;
 
-				setUpperBound((prev) => (newValue > prev ? newValue : prev));
+				setLabel(data.on);
 
 				const elapsed = (Date.now() - startTimeRef.current) / 1000;
 				const buf = bufferRef.current;
@@ -58,8 +85,17 @@ export const Scope = ({ id }: ScopeProps) => {
 					buf.y.shift();
 				}
 
-				setPlotData([buf.x.slice(), buf.y.slice()]);
-				setLabel(data.on);
+				setUpperBound((prev) => (newValue > prev ? newValue : prev));
+
+				if (!updateScheduled.current) {
+					updateScheduled.current = true;
+					requestAnimationFrame(() => {
+						if (chartRef.current) {
+							chartRef.current.setData([buf.x, buf.y]);
+						}
+						updateScheduled.current = false;
+					});
+				}
 			};
 
 			ws.onclose = () => {
@@ -79,7 +115,6 @@ export const Scope = ({ id }: ScopeProps) => {
 
 		return () => {
 			setTimeout(() => {
-				console.log("Cleaning WebSocket and cancelling retries");
 				isUnmounted.current = true;
 
 				if (retryTimeoutRef.current !== null) {
@@ -94,34 +129,15 @@ export const Scope = ({ id }: ScopeProps) => {
 		};
 	}, [id]);
 
-	const options: uPlot.Options = {
-		height: 115,
-		width: 180,
-		cursor: {
-			drag: { setScale: false },
-		},
-		axes: [{ show: false }, { show: false }],
-		legend: { show: false },
-		series: [
-			{ show: false },
-			{
-				label: label,
-				stroke: "orange",
-				width: 4,
-			},
-		],
-		scales: {
-			x: { time: false },
-			y: {
-				auto: false,
-				range: [0, upperBound],
-			},
-		},
-	};
-
 	return (
-		<div ref={divRef} className="scope">
-			<UplotReact options={options} data={plotData} target={divRef.current} />
+		<div className="scope">
+			<UplotReact
+				options={options}
+				data={initialData}
+				onCreate={(chart) => {
+					chartRef.current = chart;
+				}}
+			/>
 		</div>
 	);
 };
