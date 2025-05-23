@@ -16,11 +16,21 @@ jobs:
         with:
           python-version: '3.13'
 
+      - name: Install alsa and jack
+        run: |
+          apt-get update
+          apt-get install -y libasound2-dev libjack-jackd2-dev
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install pyinstaller
           pip install -e .
+
+      - name: Prepare Trevor-UI
+        run: |
+          (cd trevor && yarn install && yarn build)
+          bash ./prepare-trevor-ui.bash
 
       - name: Build with PyInstaller
         run: |
