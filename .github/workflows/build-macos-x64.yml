@@ -1,0 +1,32 @@
+name: Build PyInstaller macOS x64
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+
+      - name: Install dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          pip3 install pyinstaller
+
+      - name: Build with PyInstaller
+        run: |
+          pyinstaller --onefile your_script.py
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nallely-macos-x64
+          path: dist/nallely.bin
