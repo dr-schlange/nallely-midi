@@ -267,3 +267,11 @@ KORG:
 ```
 
 The `xxx: 'keys_or_pads'` entry doesn't have to be in an isolated section, it can be set with other sections, but it's only possible to have one `key_or_pads` entry by section.
+
+
+## Install Nallely and Trevor on a Raspberry Pi
+
+Nallely and Trevor works perfectly fine on raspberry pi, meaning that you can bring them with you, connect all your synth to the RPI and enjoy your organic meta-synth system everywhere with you.
+The configuration is currently still very manual (systemd service creation, etc), but will be made automatic later.
+
+TO WRITE
