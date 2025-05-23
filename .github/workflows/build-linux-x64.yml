@@ -18,8 +18,8 @@ jobs:
 
       - name: Install alsa and jack
         run: |
-          apt-get update
-          apt-get install -y libasound2-dev libjack-jackd2-dev
+          sudo apt-get update
+          sudo apt-get install -y libasound2-dev libjack-jackd2-dev
 
       - name: Install dependencies
         run: |
