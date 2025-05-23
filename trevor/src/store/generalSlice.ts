@@ -1,16 +1,17 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { GeneralState } from "../model";
 
-const initialState: GeneralState = {
+export const initialGeneralState: GeneralState = {
 	knownPatches: [],
 	errors: [],
 	trevorWebsocketURL: "ws://localhost:6788",
 	connected: "disconnected",
+	firstLaunch: true,
 };
 
 const generalSlice = createSlice({
 	name: "general",
-	initialState,
+	initialState: initialGeneralState,
 	reducers: {
 		setErrors: (state, action: PayloadAction<string[]>) => {
 			state.errors = action.payload;
@@ -30,6 +31,9 @@ const generalSlice = createSlice({
 		setConnected: (state, action: PayloadAction<string>) => {
 			state.connected = action.payload;
 		},
+		disableFirstLaunch: (state) => {
+			state.firstLaunch = false;
+		},
 	},
 });
 
@@ -40,6 +44,7 @@ export const {
 	setKnownPatches,
 	clearKnownPatches,
 	setConnected,
+	disableFirstLaunch,
 } = generalSlice.actions;
 
 export default generalSlice.reducer;

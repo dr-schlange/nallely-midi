@@ -1,12 +1,50 @@
+import {
+	useDispatch,
+	useSelector,
+	type TypedUseSelectorHook,
+} from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
 import trevorSlice from "./trevorSlice";
-import generalSlice from "./generalSlice";
+import generalSlice, { initialGeneralState } from "./generalSlice";
+
+const LOCAL_STORAGE_SETTINGS = "settings";
+
+// Loads general settings from the local storage
+function loadSettings() {
+	try {
+		const saved = localStorage.getItem(LOCAL_STORAGE_SETTINGS);
+		if (saved) {
+			const parsed = JSON.parse(saved);
+			return {
+				general: {
+					...initialGeneralState,
+					...parsed,
+				},
+			};
+		}
+	} catch (e) {
+		console.warn("Failed to parse localStorage state", e);
+	}
+	return undefined;
+}
 
 export const store = configureStore({
 	reducer: {
 		nallely: trevorSlice,
 		general: generalSlice,
 	},
+	preloadedState: loadSettings(),
+});
+
+store.subscribe(() => {
+	const state = store.getState();
+
+	const settings = {
+		trevorWebsocketURL: state.general.trevorWebsocketURL,
+		firstLaunch: state.general.firstLaunch,
+	};
+
+	localStorage.setItem(LOCAL_STORAGE_SETTINGS, JSON.stringify(settings));
 });
 
 // Infer RootState and AppDispatch types
@@ -18,14 +56,8 @@ export type AppDispatch = typeof store.dispatch;
  * import { useSelector, useDispatch } from 'react-redux'
  *
  * e.g.:
- *   const dispatch = useAppDispatch();
- *   const devices = useAppSelector((state) => state.midi.devices);
+ *   const dispatch = useTrevorDispatch();
+ *   const devices = useTrevorSelector((state) => state.midi.devices);
  */
-import {
-	useDispatch,
-	useSelector,
-	type TypedUseSelectorHook,
-} from "react-redux";
-
 export const useTrevorDispatch = () => useDispatch<AppDispatch>();
 export const useTrevorSelector: TypedUseSelectorHook<RootState> = useSelector;

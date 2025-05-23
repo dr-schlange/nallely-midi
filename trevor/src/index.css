@@ -532,6 +532,7 @@ input[type="text"]:disabled {
 .save-modal,
 .load-modal,
 .settings-modal,
+.welcome-modal,
 .error-modal {
 	position: fixed;
 	top: 50%;
@@ -574,8 +575,13 @@ input[type="text"]:disabled {
 
 .settings-modal {
 	z-index: 1;
-	width: 60%;
-	height: 17%;
+	width: 680px;
+	height: 100px;
+}
+
+.welcome-modal {
+	width: 80%;
+	height: 32%;
 }
 
 .modal-header {
@@ -622,6 +628,13 @@ input[type="text"]:disabled {
 
 .load-modal-body {
 	margin-right: 20px;
+}
+
+.welcome-modal-body {
+	display: flex;
+	flex-direction: column;
+	padding: 10px;
+	overflow-y: auto;
 }
 
 .save-modal-body input[type="text"] {
@@ -1206,5 +1219,19 @@ input[type="text"]:disabled {
 
 	.connection-svg {
 		top: 30px;
+	}
+
+	.settings-modal {
+		width: 90%;
+	}
+
+	.settings-modal-body input[type="text"] {
+		width: 55%;
+		padding: 5px;
+	}
+
+	.welcome-modal {
+		width: 95%;
+		height: 90%;
 	}
 }

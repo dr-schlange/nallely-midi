@@ -17,6 +17,12 @@ import { isPadOrdKey, isPadsOrdKeys, isVirtualParameter } from "../utils/utils";
 
 // const WEBSOCKET_URL = `ws://${window.location.hostname}:6788/trevor`;
 
+export const WsStatus = {
+	CONNECTED: "connected",
+	DISCONNECTED: "disconnected",
+	CONNECTING: "connecting",
+};
+
 class TrevorWebSocket {
 	public socket: WebSocket | null = null;
 	private reconnectInterval = 1 * 1000;
@@ -84,7 +90,7 @@ class TrevorWebSocket {
 	}
 
 	private connect(url: string) {
-		store.dispatch(setConnected("pending"));
+		store.dispatch(setConnected(WsStatus.CONNECTING));
 		if (this.retryTimeoutId !== null) {
 			clearTimeout(this.retryTimeoutId);
 			this.retryTimeoutId = null;
@@ -98,7 +104,7 @@ class TrevorWebSocket {
 			this.socket = new WebSocket(url);
 		} catch (error) {
 			console.log(`Error while connecting to ${url}`, error);
-			store.dispatch(setConnected("disconnected"));
+			store.dispatch(setConnected(WsStatus.DISCONNECTED));
 			return;
 		}
 
@@ -118,7 +124,7 @@ class TrevorWebSocket {
 				return;
 			}
 			if (message.command === undefined) {
-				store.dispatch(setConnected("connected"));
+				store.dispatch(setConnected(WsStatus.CONNECTED));
 				store.dispatch(setFullState(message));
 				return;
 			}
@@ -145,7 +151,7 @@ class TrevorWebSocket {
 
 		this.socket.onclose = () => {
 			console.warn("WebSocket closed");
-			store.dispatch(setConnected("disconnected"));
+			store.dispatch(setConnected(WsStatus.DISCONNECTED));
 			this.isConnected = false;
 			this.socket = null;
 

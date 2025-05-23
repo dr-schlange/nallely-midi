@@ -5,11 +5,13 @@ import { store, useTrevorSelector } from "./store";
 import { connectWebSocket } from "./websockets/websocket";
 import { ErrorModal } from "./components/modals/ErrorModal";
 import { useMemo } from "react";
+import { WelcomeModal } from "./components/modals/WelcomeModal";
 
 const App = () => {
 	useMemo(() => {
 		connectWebSocket();
 	}, []);
+
 	return (
 		<Provider store={store}>
 			<Main />
@@ -19,6 +21,8 @@ const App = () => {
 
 const Main = () => {
 	const errors = useTrevorSelector((state) => state.general.errors);
+	const firstLaunch = useTrevorSelector((state) => state.general.firstLaunch);
+
 	return (
 		<div className="app-layout">
 			<div className="top-section">
@@ -28,6 +32,7 @@ const Main = () => {
 				<DevicePatching />
 			</div>
 			{errors && errors.length > 0 && <ErrorModal errors={errors} />}
+			{firstLaunch && <WelcomeModal />}
 			<svg>
 				<title>Global definitions</title>
 				<defs>

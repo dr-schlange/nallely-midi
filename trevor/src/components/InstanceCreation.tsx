@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import MidiDeviceComponent from "./DeviceComponent";
 import { useTrevorSelector } from "../store";
 import { drawConnection } from "../utils/svgUtils";
-import { useTrevorWebSocket } from "../websockets/websocket";
+import { useTrevorWebSocket, WsStatus } from "../websockets/websocket";
 import type { MidiDevice } from "../model";
 import { SettingsModal } from "./modals/SettingsModal";
 
@@ -130,9 +130,9 @@ const InstanceCreation = () => {
 
 	const displayWebsocketStatus = () => {
 		switch (websocketStatus) {
-			case "disconnected":
+			case WsStatus.DISCONNECTED:
 				return "🔴";
-			case "connected":
+			case WsStatus.CONNECTED:
 				return "🟢";
 			default:
 				return "🟡";
@@ -152,7 +152,6 @@ const InstanceCreation = () => {
 				<button
 					style={{
 						width: "100%",
-						// padding: "0px",
 						textAlign: "left",
 						paddingLeft: "5px",
 					}}
@@ -164,7 +163,7 @@ const InstanceCreation = () => {
 				</button>
 				<span
 					title={
-						(websocketStatus === "connected" &&
+						(websocketStatus === WsStatus.CONNECTED &&
 							`Connected to ${connectionUrl}`) ||
 						`Not connected, trying on ${connectionUrl}`
 					}

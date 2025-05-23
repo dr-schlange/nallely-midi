@@ -142,4 +142,5 @@ export interface GeneralState {
 	knownPatches: string[];
 	trevorWebsocketURL: string;
 	connected: string;
+	firstLaunch: boolean;
 }
