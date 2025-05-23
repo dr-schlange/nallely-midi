@@ -24,7 +24,7 @@ jobs:
 
       - name: Prepare Trevor-UI
         run: |
-          (cd trevor && yarn build)
+          (cd trevor && yarn install && yarn build)
           bash ./prepare-trevor-ui.bash
 
       - name: Build with PyInstaller
