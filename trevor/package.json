@@ -9,7 +9,7 @@
 		"format": "biome format src --fix",
 		"preview": "vite preview",
 		"predeploy": "yarn build",
-		"deploy:gh": "gh-pages -d dist"
+		"deploy:gh": "yarn predeploy && gh-pages -d dist"
 	},
 	"dependencies": {
 		"@codemirror/autocomplete": "^6.18.6",
