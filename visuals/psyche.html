@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Psychedelic Spiral Animation</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: black;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        /* Added UI Controls Styling */
+        #controls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        #sliders {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        label {
+            color: white;
+            width: 150px;
+        }
+
+        input[type="range"] {
+            flex: 1;
+        }
+
+        .value {
+            color: white;
+            width: 50px;
+            text-align: right;
+        }
+
+        #hide-controls,
+        #toggle-controls {
+            margin-top: 10px;
+            padding: 5px 10px;
+        }
+
+        #toggle-controls {
+            display: none;
+            position: absolute;
+            top: 10px;
+            left: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- UI Controls -->
+    <div id="controls">
+        <div id="sliders"></div>
+        <button id="hide-controls">Hide Controls</button>
+    </div>
+    <button id="toggle-controls">Show Controls</button>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.134/examples/js/controls/OrbitControls.js"></script>
+    <script>
+        // Parameters
+        const config = {
+            animationSpeed: 0.02,  // Controls how fast particles move along the spiral
+            rotationSpeed: 0.001,  // Speed of overall rotation of the spiral structure
+            spiralTightness: 0.1,  // How tightly the spiral winds
+            zAmplitude: 5.0,       // Amplitude of z-axis oscillation
+            zFrequency: 1.0,       // Frequency of z-axis oscillation
+            colorShift: 0.1,        // Speed of color hue cycling
+            armCount: 4
+        };
+
+        // Slider configuration
+        const sliderConfig = {
+            animationSpeed: { min: 0.001, max: 0.5, step: 0.001 },
+            rotationSpeed: { min: 0.0001, max: 5, step: 0.0001 },
+            spiralTightness: { min: 0.01, max: 1.0, step: 0.01 },
+            zAmplitude: { min: 0.0, max: 10.0, step: 0.1 },
+            zFrequency: { min: 0.1, max: 5.0, step: 0.1 },
+            colorShift: { min: 0.0, max: 1.0, step: 0.01 },
+            armCount: { min: 1.0, max: 10.0, step: 0.1 }
+        };
+
+        // Create sliders for each parameter
+        function createSliders() {
+            const slidersContainer = document.getElementById('sliders');
+
+            for (const [param, value] of Object.entries(config)) {
+                const sliderSettings = sliderConfig[param];
+
+                const controlGroup = document.createElement('div');
+                controlGroup.className = 'control-group';
+
+                const sliderContainer = document.createElement('div');
+                sliderContainer.className = 'slider-container';
+
+                const label = document.createElement('label');
+                label.textContent = param;
+                label.htmlFor = `slider-${param}`;
+
+                const slider = document.createElement('input');
+                slider.type = 'range';
+                slider.min = sliderSettings.min;
+                slider.max = sliderSettings.max;
+                slider.step = sliderSettings.step;
+                slider.value = value;
+                slider.id = `slider-${param}`;
+
+                const valueDisplay = document.createElement('span');
+                valueDisplay.className = 'value';
+                valueDisplay.textContent = value;
+
+                slider.addEventListener('input', () => {
+                    config[param] = parseFloat(slider.value);
+                    valueDisplay.textContent = slider.value;
+                    if (param === 'gridSize') updateGrid(); // Regenerate grid if size changes
+                });
+
+                sliderContainer.appendChild(label);
+                sliderContainer.appendChild(slider);
+                sliderContainer.appendChild(valueDisplay);
+
+                controlGroup.appendChild(sliderContainer);
+                slidersContainer.appendChild(controlGroup);
+            }
+        }
+
+        // Call createSliders after defining config and sliderConfig
+        createSliders();
+
+        // UI control visibility (unchanged from template)
+        const controls = document.getElementById('controls');
+        const toggleButton = document.getElementById('toggle-controls');
+        const hideButton = document.getElementById('hide-controls');
+
+        hideButton.addEventListener('click', () => {
+            controls.style.display = 'none';
+            toggleButton.style.display = 'block';
+        });
+
+        toggleButton.addEventListener('click', () => {
+            controls.style.display = 'block';
+            toggleButton.style.display = 'none';
+        });
+
+        // Scene setup
+        const scene = new THREE.Scene();
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Camera position
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 50;
+
+        // Control for exploring manually
+        const mouseControl = new THREE.OrbitControls(camera, renderer.domElement);
+        mouseControl.enableDamping = true;  // Smooth motion
+        mouseControl.dampingFactor = 0.05;  // Damping intensity
+        mouseControl.screenSpacePanning = true;  // Disable panning
+        mouseControl.minDistance = -100;  // Min zoom
+        mouseControl.maxDistance = 100; // Max zoom
+        mouseControl.maxPolarAngle = Math.PI / 2; // Restrict to top-down view
+
+        // Animation core
+        const particleCount = 10000;
+        const armCount = config.armCount; // Fixed number of spiral arms
+        const numPerArm = Math.floor(particleCount / armCount);
+        const maxTheta = 50 * Math.PI * 2; // Maximum angle for initial distribution
+        const deltaTheta = maxTheta / numPerArm;
+
+        // Initialize phi (initial angle offset) for each particle
+        const phiArray = new Float32Array(particleCount);
+        for (let k = 0; k < armCount; k++) {
+            for (let i = 0; i < numPerArm; i++) {
+                const index = k * numPerArm + i;
+                phiArray[index] = i * deltaTheta + k * (2 * Math.PI / armCount);
+            }
+        }
+
+        // Create BufferGeometry for particles
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(particleCount * 3), 3));
+        geometry.setAttribute('phi', new THREE.BufferAttribute(phiArray, 1));
+
+        // Vertex shader
+        const vertexShader = `
+            uniform float u_time;
+            uniform float u_speed;
+            uniform float u_rotationSpeed;
+            uniform float u_spiralTightness;
+            uniform float u_zAmplitude;
+            uniform float u_zFrequency;
+            uniform float u_colorShift;
+            attribute float phi;
+            varying vec4 vColor;
+
+            // HSV to RGB conversion
+            vec3 hsv2rgb(vec3 c) {
+                vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+                vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+                return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+            }
+
+            void main() {
+                float theta = phi + u_time * u_speed;
+                float r = u_spiralTightness * theta;
+                float angle = theta + u_rotationSpeed * u_time;
+                float x = r * cos(angle);
+                float y = r * sin(angle);
+                float z = u_zAmplitude * sin(u_zFrequency * theta);
+
+                vec4 mvPosition = modelViewMatrix * vec4(x, y, z, 1.0);
+                gl_Position = projectionMatrix * mvPosition;
+                gl_PointSize = 2.0;
+
+                // Compute color
+                float hue = mod(theta + u_time * u_colorShift, 6.283) / 6.283;
+                vec3 color = hsv2rgb(vec3(hue, 1.0, 1.0));
+                vColor = vec4(color, 1.0);
+            }
+        `;
+
+        // Fragment shader
+        const fragmentShader = `
+            varying vec4 vColor;
+            void main() {
+                gl_FragColor = vColor;
+            }
+        `;
+
+        // Create ShaderMaterial
+        const material = new THREE.ShaderMaterial({
+            uniforms: {
+                u_time: { value: 0.0 },
+                u_speed: { value: config.animationSpeed },
+                u_rotationSpeed: { value: config.rotationSpeed },
+                u_spiralTightness: { value: config.spiralTightness },
+                u_zAmplitude: { value: config.zAmplitude },
+                u_zFrequency: { value: config.zFrequency },
+                u_colorShift: { value: config.colorShift }
+            },
+            vertexShader,
+            fragmentShader
+        });
+
+        // Create Points object and add to scene
+        const points = new THREE.Points(geometry, material);
+        scene.add(points);
+
+        // Animation variables
+        let time = 0;
+        let lastTime = performance.now() / 1000;
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            mouseControl.update();  // Update controls on every frame
+
+            // Update time for frame-rate independence
+            const now = performance.now() / 1000;
+            const deltaTime = now - lastTime;
+            lastTime = now;
+            time += deltaTime;
+
+            // Update uniforms based on config and time
+            material.uniforms.u_time.value = time;
+            material.uniforms.u_speed.value = config.animationSpeed;
+            material.uniforms.u_rotationSpeed.value = config.rotationSpeed;
+            material.uniforms.u_spiralTightness.value = config.spiralTightness;
+            material.uniforms.u_zAmplitude.value = config.zAmplitude;
+            material.uniforms.u_zFrequency.value = config.zFrequency;
+            material.uniforms.u_colorShift.value = config.colorShift;
+
+            renderer.render(scene, camera);
+        }
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // WebSocket setup
+        const connect = () => {
+            const ws = new WebSocket(`ws://${window.location.hostname}:6789/psychedelicspiral/autoconfig`);
+
+            ws.onopen = () => {
+                ws.send(JSON.stringify({
+                    kind: "visual",
+                    parameters: Object.entries(sliderConfig).map(([name, conf]) => { return { name, range: [conf.min, conf.max] } })
+                }));
+            };
+
+            ws.onclose = (e) => {
+                console.log('Socket is closed. Reconnect will be attempted in 1 second.', e.reason);
+                setTimeout(() => {
+                    connect();
+                }, 1000);
+            };
+
+            ws.onerror = (err) => {
+                console.error('Socket encountered error: ', err.message, 'Closing socket');
+                ws.close();
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                console.log("receiving", data);
+                config[data.on] = data.value;
+                const slider = document.getElementById(`slider-${data.on}`).value = parseFloat(data.value);
+            };
+        };
+        // Start ws connection
+        connect();
+        // Start animation
+        animate();
+    </script>
+</body>
+
+</html>

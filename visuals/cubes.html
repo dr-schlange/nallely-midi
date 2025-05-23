@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Psychedelic Cube Grid</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: black;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        /* Added UI Controls Styling */
+        #controls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        #sliders {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        label {
+            color: white;
+            width: 150px;
+        }
+
+        input[type="range"] {
+            flex: 1;
+        }
+
+        .value {
+            color: white;
+            width: 50px;
+            text-align: right;
+        }
+
+        #hide-controls,
+        #toggle-controls {
+            margin-top: 10px;
+            padding: 5px 10px;
+        }
+
+        #toggle-controls {
+            display: none;
+            position: absolute;
+            top: 10px;
+            left: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- UI Controls -->
+    <div id="controls">
+        <div id="sliders"></div>
+        <button id="hide-controls">Hide Controls</button>
+    </div>
+    <button id="toggle-controls">Show Controls</button>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.134/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script>
+        // Parameters
+        const config = {
+            animationSpeed: 0.02,   // Speed of overall animation
+            gridSize: 5,            // Number of cubes per side (total = gridSize^3)
+            cubeRotationSpeed: 1.0, // Speed of individual cube rotation
+            pulseFrequency: 2.0,    // Frequency of pulsing effect
+            pulseAmplitude: 0.5,    // Amplitude of pulsing (scale change)
+            colorShift: 0.1,        // Speed of color hue cycling
+            gridRotationSpeed: 0.5  // Speed of entire grid rotation
+        };
+
+        // Slider configuration
+        const sliderConfig = {
+            animationSpeed: { min: 0.001, max: 0.1, step: 0.001 },
+            gridSize: { min: 3, max: 10, step: 1 },
+            cubeRotationSpeed: { min: 0.1, max: 5.0, step: 0.1 },
+            pulseFrequency: { min: 0.1, max: 5.0, step: 0.1 },
+            pulseAmplitude: { min: 0.1, max: 1.0, step: 0.05 },
+            colorShift: { min: 0.0, max: 1.0, step: 0.01 },
+            gridRotationSpeed: { min: 0.1, max: 2.0, step: 0.1 }
+        };
+
+        // Create sliders for each parameter
+        function createSliders() {
+            const slidersContainer = document.getElementById('sliders');
+
+            for (const [param, value] of Object.entries(config)) {
+                const sliderSettings = sliderConfig[param];
+
+                const controlGroup = document.createElement('div');
+                controlGroup.className = 'control-group';
+
+                const sliderContainer = document.createElement('div');
+                sliderContainer.className = 'slider-container';
+
+                const label = document.createElement('label');
+                label.textContent = param;
+                label.htmlFor = `slider-${param}`;
+
+                const slider = document.createElement('input');
+                slider.type = 'range';
+                slider.min = sliderSettings.min;
+                slider.max = sliderSettings.max;
+                slider.step = sliderSettings.step;
+                slider.value = value;
+                slider.id = `slider-${param}`;
+
+                const valueDisplay = document.createElement('span');
+                valueDisplay.className = 'value';
+                valueDisplay.textContent = value;
+
+                slider.addEventListener('input', () => {
+                    config[param] = parseFloat(slider.value);
+                    valueDisplay.textContent = slider.value;
+                    if (param === 'gridSize') updateGrid(); // Regenerate grid if size changes
+                });
+
+                sliderContainer.appendChild(label);
+                sliderContainer.appendChild(slider);
+                sliderContainer.appendChild(valueDisplay);
+
+                controlGroup.appendChild(sliderContainer);
+                slidersContainer.appendChild(controlGroup);
+            }
+        }
+
+        // Call createSliders after defining config and sliderConfig
+        createSliders();
+
+        // UI control visibility
+        const controls = document.getElementById('controls');
+        const toggleButton = document.getElementById('toggle-controls');
+        const hideButton = document.getElementById('hide-controls');
+
+        hideButton.addEventListener('click', () => {
+            controls.style.display = 'none';
+            toggleButton.style.display = 'block';
+        });
+
+        toggleButton.addEventListener('click', () => {
+            controls.style.display = 'block';
+            toggleButton.style.display = 'none';
+        });
+
+        // Scene setup
+        const scene = new THREE.Scene();
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Camera position
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 50;
+
+        // Animation core
+        const group = new THREE.Group(); // Container for all cubes
+        scene.add(group);
+
+        function createGrid() {
+            group.clear(); // Remove existing cubes
+            const size = config.gridSize;
+            const spacing = 5; // Distance between cubes
+            const offset = (size - 1) * spacing / 2; // Center the grid
+
+            for (let x = 0; x < size; x++) {
+                for (let y = 0; y < size; y++) {
+                    for (let z = 0; z < size; z++) {
+                        const geometry = new THREE.BoxGeometry(2, 2, 2);
+                        const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
+                        const cube = new THREE.Mesh(geometry, material);
+                        cube.position.set(
+                            x * spacing - offset,
+                            y * spacing - offset,
+                            z * spacing - offset
+                        );
+                        group.add(cube);
+                    }
+                }
+            }
+        }
+
+        function updateGrid() {
+            createGrid(); // Recreate grid when gridSize changes
+        }
+
+        // Initialize grid
+        createGrid();
+
+        // Animation variables
+        let time = 0;
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            time += config.animationSpeed; // Speed of animation
+
+            // Update each cube
+            group.children.forEach((cube, index) => {
+                const { x, y, z } = cube.position;
+
+                // Individual cube rotation
+                cube.rotation.x += config.cubeRotationSpeed * config.animationSpeed;
+                cube.rotation.y += config.cubeRotationSpeed * config.animationSpeed;
+
+                // Pulsing effect
+                const pulse = 1 + config.pulseAmplitude * Math.sin(time * config.pulseFrequency + (x + y + z));
+                cube.scale.set(pulse, pulse, pulse);
+
+                // Color cycling
+                const hue = (Math.sin(time * config.colorShift + (x + y + z) * 0.1) + 1) / 2; // 0 to 1
+                const color = new THREE.Color().setHSL(hue, 1.0, 0.5);
+                cube.material.color = color;
+            });
+
+            // Rotate entire grid
+            group.rotation.x += config.gridRotationSpeed * config.animationSpeed;
+            group.rotation.y += config.gridRotationSpeed * config.animationSpeed;
+
+            renderer.render(scene, camera);
+        }
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // WebSocket setup
+        const connect = () => {
+            const ws = new WebSocket(`ws://${window.location.hostname}:6789/p2/autoconfig`);
+
+            ws.onopen = () => {
+                ws.send(JSON.stringify({
+                    kind: "visual",
+                    parameters: Object.entries(sliderConfig).map(([name, conf]) => { return { name, range: [conf.min, conf.max] } })
+                }));
+            };
+
+            ws.onclose = (e) => {
+                console.log('Socket is closed. Reconnect will be attempted in 1 second.', e.reason);
+                setTimeout(() => {
+                    connect();
+                }, 1000);
+            };
+
+            ws.onerror = (err) => {
+                console.error('Socket encountered error: ', err.message, 'Closing socket');
+                ws.close();
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                console.log("receiving", data);
+                config[data.on] = data.value;
+                if (data.on === 'gridSize') updateGrid(); // Update grid if size changes via WebSocket
+            };
+        };
+        // Start ws connection
+        connect();
+        // Start animation
+        animate();
+    </script>
+</body>
+
+</html>

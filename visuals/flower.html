@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Psychedelic 3D Spiral Arms with Z-Step Control</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: black; }
+        canvas { display: block; }
+        #controls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            border-radius: 5px;
+        }
+        #sliders { display: flex; flex-direction: column; gap: 10px; }
+        .control-group { display: flex; align-items: center; gap: 10px; }
+        label { color: white; width: 150px; }
+        input[type="range"] { flex: 1; }
+        .value { color: white; width: 50px; text-align: right; }
+        #hide-controls, #toggle-controls {
+            margin-top: 10px;
+            padding: 5px 10px;
+        }
+        #toggle-controls {
+            display: none;
+            position: absolute;
+            top: 10px;
+            left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <div id="sliders"></div>
+        <button id="hide-controls">Hide Controls</button>
+    </div>
+    <button id="toggle-controls">Show Controls</button>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.134/examples/js/controls/OrbitControls.js"></script>
+    <script>
+        // Configuration
+        const config = {
+            animationSpeed: 0.02,    // Overall animation speed
+            armCount: 6,             // Number of spiral arms
+            pulseFrequency: 1.0,     // Frequency of pulsing
+            colorShift: 0.1,         // Speed of color cycling
+            zoomLevel: 50,           // Camera z-position (zoom control)
+            zStep: 1.0,              // Z-axis step size for particle spacing
+            rotateX: 0,              // Rotation around X-axis (radians)
+            rotateY: 0,              // Rotation around Y-axis (radians)
+            rotateZ: 0,              // Rotation around Z-axis (radians)
+            moveX: 0,                // Camera X position
+            moveY: 0,                // Camera Y position
+            moveZ: 0                 // Camera Z offset (additive to zoomLevel)
+        };
+
+        // Slider settings
+        const sliderConfig = {
+            animationSpeed: { min: 0.001, max: 0.1, step: 0.001 },
+            armCount: { min: 2, max: 12, step: 1 },
+            pulseFrequency: { min: 0.1, max: 5.0, step: 0.1 },
+            colorShift: { min: 0.0, max: 1.0, step: 0.01 },
+            zoomLevel: { min: -40, max: 100, step: 1 },
+            zStep: { min: 0.1, max: 10.0, step: 0.1 }, // Z-step range
+            rotateX: { min: -3.14, max: 3.14, step: 0.01 },
+            rotateY: { min: -3.14, max: 3.14, step: 0.01 },
+            rotateZ: { min: -3.14, max: 3.14, step: 0.01 },
+            moveX: { min: -500, max: 500, step: 1 },
+            moveY: { min: -500, max: 500, step: 1 },
+            moveZ: { min: -500, max: 500, step: 1 }
+        };
+
+        // Create sliders
+        function createSliders() {
+            const slidersContainer = document.getElementById('sliders');
+            for (const [param, value] of Object.entries(config)) {
+                const settings = sliderConfig[param];
+                const group = document.createElement('div');
+                group.className = 'control-group';
+
+                const label = document.createElement('label');
+                label.textContent = param;
+                label.htmlFor = `slider-${param}`;
+
+                const slider = document.createElement('input');
+                slider.type = 'range';
+                slider.min = settings.min;
+                slider.max = settings.max;
+                slider.step = settings.step;
+                slider.value = value;
+                slider.id = `slider-${param}`;
+
+                const valueDisplay = document.createElement('span');
+                valueDisplay.className = 'value';
+                valueDisplay.textContent = value;
+
+                slider.addEventListener('input', () => {
+                    config[param] = parseFloat(slider.value);
+                    valueDisplay.textContent = slider.value;
+                    if (param === 'armCount' || param === 'zStep') updateParticles();
+                });
+
+                group.appendChild(label);
+                group.appendChild(slider);
+                group.appendChild(valueDisplay);
+                slidersContainer.appendChild(group);
+            }
+        }
+        createSliders();
+
+        // UI control visibility
+        const controls = document.getElementById('controls');
+        const toggleButton = document.getElementById('toggle-controls');
+        const hideButton = document.getElementById('hide-controls');
+
+        hideButton.addEventListener('click', () => {
+            controls.style.display = 'none';
+            toggleButton.style.display = 'block';
+        });
+
+        toggleButton.addEventListener('click', () => {
+            controls.style.display = 'block';
+            toggleButton.style.display = 'none';
+        });
+
+        // Three.js setup
+        const scene = new THREE.Scene();
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = config.zoomLevel;
+
+        // Particle system
+        let particleCount = 10000;
+        let particles, material;
+
+        function createParticles() {
+            const positions = new Float32Array(particleCount * 3);
+            const angles = new Float32Array(particleCount);
+            const numPerArm = Math.floor(particleCount / config.armCount);
+            const maxZ = -50; // Center at z = -50
+
+            for (let arm = 0; arm < config.armCount; arm++) {
+                for (let i = 0; i < numPerArm; i++) {
+                    const index = arm * numPerArm + i;
+                    const theta = (i / numPerArm) * Math.PI * 2 + (arm * 2 * Math.PI / config.armCount);
+                    const r = (i / numPerArm) * 20;
+                    positions[index * 3] = r * Math.cos(theta);
+                    positions[index * 3 + 1] = r * Math.sin(theta);
+                    // Z based on radius with custom step
+                    let zBase = maxZ + (r / 20) * (50 - maxZ); // Linear from -50 to 0
+                    let zSteps = Math.floor(zBase / config.zStep); // Number of steps
+                    positions[index * 3 + 2] = zSteps * config.zStep; // Apply step size
+                    angles[index] = theta;
+                }
+            }
+
+            const geometry = new THREE.BufferGeometry();
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('angle', new THREE.BufferAttribute(angles, 1));
+
+            material = new THREE.ShaderMaterial({
+                uniforms: {
+                    u_time: { value: 0.0 },
+                    u_pulseFrequency: { value: config.pulseFrequency },
+                    u_colorShift: { value: config.colorShift }
+                },
+                vertexShader: `
+                    uniform float u_time;
+                    uniform float u_pulseFrequency;
+                    uniform float u_colorShift;
+                    attribute float angle;
+                    varying vec3 vColor;
+
+                    vec3 hsv2rgb(vec3 c) {
+                        vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+                        vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+                        return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+                    }
+
+                    void main() {
+                        float r = length(position.xy);
+                        float pulse = 1.0 + 0.5 * sin(u_time * u_pulseFrequency + r);
+                        vec3 pos = position;
+                        pos.xy *= pulse;
+                        pos.xy = vec2(
+                            pos.x * cos(u_time) - pos.y * sin(u_time),
+                            pos.x * sin(u_time) + pos.y * cos(u_time)
+                        );
+                        vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+                        gl_Position = projectionMatrix * mvPosition;
+                        gl_PointSize = 100.0 / length(mvPosition.xyz); // Scales with distance
+
+                        float hue = mod(u_time * u_colorShift + angle, 6.283) / 6.283;
+                        vColor = hsv2rgb(vec3(hue, 1.0, 1.0));
+                    }
+                `,
+                fragmentShader: `
+                    varying vec3 vColor;
+                    void main() {
+                        gl_FragColor = vec4(vColor, 1.0);
+                    }
+                `
+            });
+
+            if (particles) scene.remove(particles);
+            particles = new THREE.Points(geometry, material);
+            scene.add(particles);
+        }
+
+        function updateParticles() {
+            createParticles();
+        }
+
+        createParticles();
+
+        // Animation state
+        let time = 0;
+        let clickCount = 0;
+        const initialZ = 50;
+
+        // Click to set zoom center or reset
+        window.addEventListener('click', (event) => {
+            const rect = renderer.domElement.getBoundingClientRect();
+            const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+            const y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(new THREE.Vector2(x, y), camera);
+            const intersects = raycaster.intersectObject(particles);
+            if (intersects.length > 0) {
+                const point = intersects[0].point;
+                clickCount++;
+                if (clickCount % 2 === 1) {
+                    // First click: Set zoom center
+                    particles.position.x -= point.x;
+                    particles.position.y -= point.y;
+                } else {
+                    // Second click: Reset camera and sliders
+                    camera.position.set(0, 0, initialZ);
+                    particles.position.set(0, 0, 0);
+                    config.zoomLevel = initialZ;
+                    config.moveX = 0;
+                    config.moveY = 0;
+                    config.moveZ = 0;
+                    config.rotateX = 0;
+                    config.rotateY = 0;
+                    config.rotateZ = 0;
+                    updateSliderValues();
+                }
+            }
+        });
+
+        // Update slider values after reset
+        function updateSliderValues() {
+            document.getElementById('slider-zoomLevel').value = config.zoomLevel;
+            document.querySelector('#slider-zoomLevel + .value').textContent = config.zoomLevel;
+            document.getElementById('slider-moveX').value = config.moveX;
+            document.querySelector('#slider-moveX + .value').textContent = config.moveX;
+            document.getElementById('slider-moveY').value = config.moveY;
+            document.querySelector('#slider-moveY + .value').textContent = config.moveY;
+            document.getElementById('slider-moveZ').value = config.moveZ;
+            document.querySelector('#slider-moveZ + .value').textContent = config.moveZ;
+            document.getElementById('slider-rotateX').value = config.rotateX;
+            document.querySelector('#slider-rotateX + .value').textContent = config.rotateX;
+            document.getElementById('slider-rotateY').value = config.rotateY;
+            document.querySelector('#slider-rotateY + .value').textContent = config.rotateY;
+            document.getElementById('slider-rotateZ').value = config.rotateZ;
+            document.querySelector('#slider-rotateZ + .value').textContent = config.rotateZ;
+        }
+// Control for exploring manually
+const mouseControl = new THREE.OrbitControls(camera, renderer.domElement);
+        mouseControl.enableDamping = true;  // Smooth motion
+        mouseControl.dampingFactor = 0.05;  // Damping intensity
+        mouseControl.screenSpacePanning = true;  // Disable panning
+        mouseControl.minDistance = -100;  // Min zoom
+        mouseControl.maxDistance = 100; // Max zoom
+        mouseControl.maxPolarAngle = Math.PI / 2; // Restrict to top-down view
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            mouseControl.update();
+
+            time += config.animationSpeed;
+
+            // Update camera position
+            camera.position.set(config.moveX, config.moveY, config.zoomLevel + config.moveZ);
+
+            // Apply rotations (order: Z, Y, X)
+            camera.rotation.set(0, 0, 0); // Reset rotation
+            camera.rotateZ(config.rotateZ);
+            camera.rotateY(config.rotateY);
+            camera.rotateX(config.rotateX);
+
+            material.uniforms.u_time.value = time;
+            material.uniforms.u_pulseFrequency.value = config.pulseFrequency;
+            material.uniforms.u_colorShift.value = config.colorShift;
+
+            renderer.render(scene, camera);
+        }
+
+        // Resize handling
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+        // WebSocket setup
+        const connect = () => {
+            const ws = new WebSocket(`ws://${window.location.hostname}:6789/p6/autoconfig`);
+
+            ws.onopen = () => {
+                ws.send(JSON.stringify({
+                    kind: "visual",
+                    parameters: Object.entries(sliderConfig).map(([name, conf]) => { return { name, range: [conf.min, conf.max] } })
+                }));
+            };
+
+            ws.onclose = (e) => {
+                console.log('Socket is closed. Reconnect will be attempted in 1 second.', e.reason);
+                setTimeout(() => {
+                    connect();
+                }, 1000);
+            };
+
+            ws.onerror = (err) => {
+                console.error('Socket encountered error: ', err.message, 'Closing socket');
+                ws.close();
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                console.log("receiving", data);
+                config[data.on] = data.value;
+                const slider = document.getElementById(`slider-${data.on}`).value = parseFloat(data.value);
+                if (data.on === 'armCount' || data.on === 'zStep') updateParticles();
+            };
+        };
+        // Start ws connection
+        connect();
+        animate();
+    </script>
+</body>
+</html>

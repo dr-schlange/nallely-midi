@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>3D Wavy Spiral</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: black;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        #controls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 4px;
+            color: white;
+            font-family: sans-serif;
+        }
+
+        .slider-container {
+            margin-bottom: 6px;
+        }
+
+        label {
+            display: inline-block;
+            width: 140px;
+        }
+
+        .value {
+            width: 50px;
+            display: inline-block;
+            text-align: right;
+        }
+
+        #toggle-controls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            display: none;
+            z-index: 1;
+            font-family: sans-serif;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="controls">
+        <div id="sliders"></div>
+        <button id="hide-controls">Hide Controls</button>
+    </div>
+    <button id="toggle-controls">Show Controls</button>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.134/examples/js/controls/OrbitControls.js"></script>
+    <script>
+        // --- CONFIGURABLE PARAMETERS ---
+        const config = {
+            layerCount: 6,      // number of spiral layers
+            spiralTurns: 4.0,    // revolutions per layer
+            separation: 8.0,    // radial gap per layer
+            rotationSpeed: 0.0,  // group rotation speed
+            waveAmplitude: 5.0,    // how tall the waves on each branch
+            waveFrequency: 3.0,    // number of wave cycles along branch
+            waveSpeed: 1.0,    // how fast the wave propagates
+            zSpread: 20.0,   // distance between layers on Z axis
+            hueShiftSpeed: 0.1     // color hue rotation speed
+        };
+
+        // --- SLIDER BOUNDS ---
+        const sliderConfig = {
+            layerCount: { min: 1, max: 12, step: 1 },
+            spiralTurns: { min: 0.5, max: 10, step: 0.1 },
+            separation: { min: 1.0, max: 50.0, step: 1 },
+            rotationSpeed: { min: 0, max: 0.01, step: 0.0001 },
+            waveAmplitude: { min: 0, max: 20.0, step: 0.5 },
+            waveFrequency: { min: 0, max: 10.0, step: 0.1 },
+            waveSpeed: { min: 0, max: 5.0, step: 0.1 },
+            zSpread: { min: 0, max: 50.0, step: 1 },
+            hueShiftSpeed: { min: 0, max: 1.0, step: 0.01 }
+        };
+
+        // --- SLIDER UI ---
+        function createSliders() {
+            const cont = document.getElementById('sliders');
+            for (const key in config) {
+                const val = config[key], b = sliderConfig[key];
+                if (!b) continue;
+                const wrap = document.createElement('div'); wrap.className = 'slider-container';
+                const lbl = document.createElement('label'); lbl.htmlFor = key; lbl.textContent = key;
+                const inp = document.createElement('input'); inp.type = 'range'; inp.id = key;
+                inp.min = b.min; inp.max = b.max; inp.step = b.step; inp.value = val;
+                const dsp = document.createElement('span'); dsp.className = 'value'; dsp.textContent = val;
+                inp.addEventListener('input', () => {
+                    config[key] = parseFloat(inp.value);
+                    dsp.textContent = inp.value;
+                    if (['layerCount', 'spiralTurns', 'separation', 'zSpread'].includes(key)) rebuildSpiral();
+                });
+                wrap.append(lbl, inp, dsp);
+                cont.appendChild(wrap);
+            }
+        }
+        createSliders();
+
+        // --- CONTROL TOGGLE ---
+        const ui = document.getElementById('controls');
+        document.getElementById('hide-controls').onclick = () => {
+            ui.style.display = 'none'; document.getElementById('toggle-controls').style.display = 'block';
+        };
+        document.getElementById('toggle-controls').onclick = () => {
+            ui.style.display = 'block'; document.getElementById('toggle-controls').style.display = 'none';
+        };
+
+        // --- THREE.JS SETUP ---
+        const scene = new THREE.Scene();
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 0, 150);
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+
+        // --- SPIRAL DATA HOLDERS ---
+        let spiralGroup;
+        let originals = []; // one entry per layer: { positions: Float32Array, phases: Float32Array }
+
+        // --- BUILD OR REBUILD SPIRAL ---
+        function buildSpiral() {
+            let rotations;
+            if (spiralGroup) {
+                rotations = spiralGroup.rotation
+                scene.remove(spiralGroup);
+            }
+            originals.length = 0;
+            spiralGroup = new THREE.Group();
+
+            const pts = 300;
+            for (let layer = 0; layer < config.layerCount; layer++) {
+                const geom = new THREE.BufferGeometry();
+                const posArr = new Float32Array((pts + 1) * 3);
+                const phaseArr = new Float32Array(pts + 1);
+
+                const baseZ = (layer - (config.layerCount - 1) / 2) * config.zSpread;
+
+                for (let i = 0; i <= pts; i++) {
+                    const t = i / pts;
+                    // angle & radius
+                    const angle = t * Math.PI * 2 * config.spiralTurns;
+                    const radius = layer * config.separation + t * config.separation * config.spiralTurns;
+                    // wave phase offset per vertex
+                    phaseArr[i] = angle;
+                    // initial z (will be modulated)
+                    posArr[3 * i + 2] = baseZ;
+                    // x,y
+                    posArr[3 * i] = radius * Math.cos(angle);
+                    posArr[3 * i + 1] = radius * Math.sin(angle);
+                }
+
+                geom.setAttribute('position', new THREE.BufferAttribute(posArr, 3));
+                const mat = new THREE.LineBasicMaterial({
+                    color: new THREE.Color().setHSL(layer / config.layerCount, 1, 0.5),
+                    linewidth: 2
+                });
+                const line = new THREE.Line(geom, mat);
+                spiralGroup.add(line);
+                originals.push({ positions: posArr, phases: phaseArr, baseZ });
+            }
+            if (rotations) {
+                spiralGroup.rotation.x = rotations.x
+                spiralGroup.rotation.y = rotations.y
+                spiralGroup.rotation.z = rotations.z
+            }
+
+            scene.add(spiralGroup);
+        }
+        function rebuildSpiral() { buildSpiral(); }
+        buildSpiral();
+
+        // --- ANIMATION LOOP ---
+        let clock = new THREE.Clock(), hueOffset = 0;
+        function animate() {
+            requestAnimationFrame(animate);
+            const t = clock.getElapsedTime();
+
+            // update each layer
+            spiralGroup.children.forEach((line, layer) => {
+                const geo = line.geometry;
+                const pos = geo.attributes.position.array;
+                const orig = originals[layer];
+                for (let i = 0; i <= 300; i++) {
+                    const idx = 3 * i;
+                    // wave on radius -> modify z
+                    const wave = config.waveAmplitude * Math.sin(orig.phases[i] * config.waveFrequency - t * config.waveSpeed);
+                    pos[idx + 2] = orig.baseZ + wave;
+                }
+                geo.attributes.position.needsUpdate = true;
+                // hue shift
+                line.material.color.setHSL(
+                    (layer / config.layerCount + hueOffset) % 1.0,
+                    1.0, 0.5
+                );
+            });
+
+            // rotate whole group
+
+            spiralGroup.rotation.y += config.rotationSpeed;
+            spiralGroup.rotation.z += config.rotationSpeed;
+            spiralGroup.rotation.x += config.rotationSpeed;
+
+            // advance hue
+            hueOffset = (hueOffset + clock.getDelta() * config.hueShiftSpeed) % 1.0;
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // --- RESIZE HANDLER ---
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // --- WEBSOCKET AUTO-CONFIG ---
+        (function connectWS() {
+            const ws = new WebSocket(`ws://${window.location.hostname}:6789/spiral3d/autoconfig`);
+            ws.onopen = () => {
+                ws.send(JSON.stringify({
+                    kind: "visual",
+                    parameters: Object.entries(sliderConfig).map(([name, conf]) => { return { name, range: [conf.min, conf.max] } })
+                }));
+            };
+            ws.onmessage = ({ data }) => {
+                const msg = JSON.parse(data);
+                if (config.hasOwnProperty(msg.on)) {
+                    config[msg.on] = msg.value;
+                    const slider = document.getElementById(msg.on);
+                    if (slider) {
+                        slider.value = msg.value;
+                        slider.nextElementSibling.textContent = msg.value;
+                    }
+                    if (['layerCount', 'spiralTurns', 'separation', 'zSpread'].includes(msg.on)) {
+                        rebuildSpiral();
+                    }
+                }
+            };
+            ws.onclose = () => setTimeout(connectWS, 1000);
+            ws.onerror = e => { console.error(e); ws.close(); };
+        })();
+    </script>
+</body>
+
+</html>

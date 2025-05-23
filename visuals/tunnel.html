@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Endless Tunnel Animation</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: black;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        #controls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 4px;
+            color: white;
+            font-family: sans-serif;
+        }
+
+        .slider-container {
+            margin-bottom: 6px;
+        }
+
+        label {
+            display: inline-block;
+            width: 100px;
+        }
+
+        .value {
+            width: 40px;
+            display: inline-block;
+            text-align: right;
+        }
+
+        #toggle-controls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            display: none;
+            z-index: 1;
+            font-family: sans-serif;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- UI Controls -->
+    <div id="controls">
+        <div id="sliders"></div>
+        <button id="hide-controls">Hide Controls</button>
+    </div>
+    <button id="toggle-controls">Show Controls</button>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.134/examples/js/controls/OrbitControls.js"></script>
+    <script>
+        // Parameters
+        const config = {
+            animationSpeed: 0.02,    // Overall animation speed
+            swirlSpeed: 1.0,         // Speed of spiral rotation
+            zSpeed: 10.0,            // Speed of movement along z-axis
+            waveAmplitude: 5.0,      // Magnitude of wave distortions
+            waveFrequency: 0.1,      // Frequency of wave distortions
+            colorCycleSpeed: 0.5,    // Speed of color cycling
+            particleCount: 20000     // Number of particles
+        }
+
+        // Slider configuration
+        const sliderConfig = {
+            animationSpeed: { min: 0.001, max: 0.05, step: 0.001 },
+            swirlSpeed: { min: 0.1, max: 5.0, step: 0.1 },
+            zSpeed: { min: 1.0, max: 50.0, step: 1.0 },
+            waveAmplitude: { min: 0.0, max: 20.0, step: 0.5 },
+            waveFrequency: { min: 0.01, max: 0.5, step: 0.01 },
+            colorCycleSpeed: { min: 0.1, max: 5.0, step: 0.1 },
+            particleCount: { min: 1000, max: 50000, step: 1000 }
+        }
+
+        // Create sliders for each parameter
+        function createSliders() {
+            const slidersContainer = document.getElementById('sliders');
+
+            for (const [param, value] of Object.entries(config)) {
+                const sliderSettings = sliderConfig[param];
+
+                const controlGroup = document.createElement('div');
+                controlGroup.className = 'control-group';
+
+                const sliderContainer = document.createElement('div');
+                sliderContainer.className = 'slider-container';
+
+                const label = document.createElement('label');
+                label.textContent = param;
+                label.htmlFor = `slider-${param}`;
+
+                const slider = document.createElement('input');
+                slider.type = 'range';
+                slider.min = sliderSettings.min;
+                slider.max = sliderSettings.max;
+                slider.step = sliderSettings.step;
+                slider.value = value;
+                slider.id = `slider-${param}`;
+
+                const valueDisplay = document.createElement('span');
+                valueDisplay.className = 'value';
+                valueDisplay.textContent = value;
+
+                slider.addEventListener('input', () => {
+                    if (param === 'particleCount') {
+                        config[param] = parseInt(slider.value);
+                        valueDisplay.textContent = slider.value;
+                        updateParticles();
+                    } else {
+                        config[param] = parseFloat(slider.value);
+                        valueDisplay.textContent = slider.value;
+                    }
+                });
+
+                sliderContainer.appendChild(label);
+                sliderContainer.appendChild(slider);
+                sliderContainer.appendChild(valueDisplay);
+
+                controlGroup.appendChild(sliderContainer);
+                slidersContainer.appendChild(controlGroup);
+            }
+        }
+
+        createSliders();
+
+        // UI control visibility
+        const controls = document.getElementById('controls');
+        const toggleButton = document.getElementById('toggle-controls');
+        const hideButton = document.getElementById('hide-controls');
+
+        hideButton.addEventListener('click', () => {
+            controls.style.display = 'none';
+            toggleButton.style.display = 'block';
+        });
+
+        toggleButton.addEventListener('click', () => {
+            controls.style.display = 'block';
+            toggleButton.style.display = 'none';
+        });
+
+        // Scene setup
+        const scene = new THREE.Scene();
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Camera position
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+        camera.position.set(0, 20, 50); // Slightly offset to view inside the tunnel
+
+        // Control for exploring manually
+        const mouseControl = new THREE.OrbitControls(camera, renderer.domElement);
+        mouseControl.enableDamping = true;
+        mouseControl.dampingFactor = 0.05;
+        mouseControl.screenSpacePanning = true;
+        mouseControl.minDistance = 10;
+        mouseControl.maxDistance = 500;
+        mouseControl.maxPolarAngle = Math.PI; // Allow full rotation for tunnel exploration
+
+        // Animation core
+        function createParticles() {
+            const geometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(config.particleCount * 3);
+            const initialRadii = new Float32Array(config.particleCount);
+            const initialAngles = new Float32Array(config.particleCount);
+            const initialZ = new Float32Array(config.particleCount);
+
+            // Distribute particles along a cylindrical tunnel
+            for (let i = 0; i < config.particleCount; i++) {
+                const radius = 20 + Math.random() * 10; // Base radius 20, with variation
+                const angle = Math.random() * 2 * Math.PI;
+                const z = (Math.random() - 0.5) * 1000; // Spread from z = -500 to 500
+                initialRadii[i] = radius;
+                initialAngles[i] = angle;
+                initialZ[i] = z;
+                positions[i * 3] = 0;
+                positions[i * 3 + 1] = 0;
+                positions[i * 3 + 2] = 0;
+            }
+
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('initialRadius', new THREE.BufferAttribute(initialRadii, 1));
+            geometry.setAttribute('initialAngle', new THREE.BufferAttribute(initialAngles, 1));
+            geometry.setAttribute('initialZ', new THREE.BufferAttribute(initialZ, 1));
+
+            // Vertex shader for particle movement, waves, and color
+            const vertexShader = `
+                uniform float time;
+                uniform float swirlSpeed;
+                uniform float zSpeed;
+                uniform float waveAmplitude;
+                uniform float waveFrequency;
+                uniform float colorCycleSpeed;
+                attribute float initialRadius;
+                attribute float initialAngle;
+                attribute float initialZ;
+                varying vec3 vColor;
+
+                vec3 hsv2rgb(vec3 c) {
+                    vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+                    vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+                    return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+                }
+
+                void main() {
+                    // Z-position cycles to create endless effect
+                    float z = mod(initialZ + time * zSpeed, 1000.0) - 500.0;
+                    // Spiral angle based on z and time
+                    float angle = initialAngle + z * 0.01 * swirlSpeed + time * swirlSpeed;
+                    // Wave distortion
+                    float radius = initialRadius + waveAmplitude * sin(waveFrequency * z + time);
+                    // Compute position
+                    vec3 pos = vec3(
+                        radius * cos(angle),
+                        radius * sin(angle),
+                        z
+                    );
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+                    gl_PointSize = 3.0 * (500.0 / (500.0 + z)); // Perspective scaling
+                    // Color based on z and time
+                    float hue = mod(time * colorCycleSpeed + z * 0.002, 1.0);
+                    vColor = hsv2rgb(vec3(hue, 1.0, 1.0));
+                }
+            `;
+
+            // Fragment shader for applying color
+            const fragmentShader = `
+                varying vec3 vColor;
+                void main() {
+                    gl_FragColor = vec4(vColor, 1.0);
+                }
+            `;
+
+            const material = new THREE.ShaderMaterial({
+                uniforms: {
+                    time: { value: 0 },
+                    swirlSpeed: { value: config.swirlSpeed },
+                    zSpeed: { value: config.zSpeed },
+                    waveAmplitude: { value: config.waveAmplitude },
+                    waveFrequency: { value: config.waveFrequency },
+                    colorCycleSpeed: { value: config.colorCycleSpeed }
+                },
+                vertexShader: vertexShader,
+                fragmentShader: fragmentShader
+            });
+
+            const points = new THREE.Points(geometry, material);
+            scene.add(points);
+            return { points, material };
+        }
+
+        function updateParticles() {
+            scene.remove(particleSystem.points);
+            particleSystem = createParticles();
+        }
+
+        // Initialize particle system
+        let particleSystem = createParticles();
+
+        // Animation variables
+        let time = 0;
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            mouseControl.update();
+
+            time += config.animationSpeed;
+
+            // Update shader uniforms
+            particleSystem.material.uniforms.time.value = time;
+            particleSystem.material.uniforms.swirlSpeed.value = config.swirlSpeed;
+            particleSystem.material.uniforms.zSpeed.value = config.zSpeed;
+            particleSystem.material.uniforms.waveAmplitude.value = config.waveAmplitude;
+            particleSystem.material.uniforms.waveFrequency.value = config.waveFrequency;
+            particleSystem.material.uniforms.colorCycleSpeed.value = config.colorCycleSpeed;
+
+            renderer.render(scene, camera);
+        }
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // WebSocket setup
+        const connect = () => {
+            const ws = new WebSocket(`ws://${window.location.hostname}:6789/endlessTunnel/autoconfig`);
+
+            ws.onopen = () => {
+                ws.send(JSON.stringify({
+                    kind: "visual",
+                    parameters: Object.entries(sliderConfig).map(([name, conf]) => { return { name, range: [conf.min, conf.max] } })
+                }));
+            };
+
+            ws.onclose = (e) => {
+                console.log('Socket is closed. Reconnect will be attempted in 1 second.', e.reason);
+                setTimeout(() => {
+                    connect();
+                }, 1000);
+            };
+
+            ws.onerror = (err) => {
+                console.error('Socket encountered error: ', err.message, 'Closing socket');
+                ws.close();
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                console.log("receiving", data);
+                config[data.on] = data.value;
+                if (data.on === 'particleCount') {
+                    config.particleCount = parseInt(data.value);
+                    updateParticles();
+                }
+            };
+        };
+
+        // Start WebSocket connection
+        connect();
+
+        // Start animation
+        animate();
+    </script>
+</body>
+
+</html>

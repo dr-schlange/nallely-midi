@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Living Particle Cloud</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: black; }
+        canvas { display: block; }
+        #controls {
+            position: absolute; top: 10px; left: 10px;
+            background: rgba(0,0,0,0.5); padding: 10px;
+            border-radius: 4px; color: white; font-family: sans-serif;
+        }
+        .slider-container { margin-bottom: 6px; }
+        label { display: inline-block; width: 120px; }
+        .value { width: 50px; display: inline-block; text-align: right; }
+        #toggle-controls {
+            position: absolute; top: 10px; left: 10px;
+            display: none; z-index: 1; font-family: sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <div id="sliders"></div>
+        <button id="hide-controls">Hide Controls</button>
+    </div>
+    <button id="toggle-controls">Show Controls</button>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.134/examples/js/controls/OrbitControls.js"></script>
+    <script>
+        // ----- CONFIGURABLE PARAMETERS -----
+        const config = {
+            particleCount:   5000,   // number of points
+            animationSpeed:  0.01,   // how fast 'time' advances
+            rotationSpeed:   0.001,  // overall cloud rotation
+            swirlFactor:     0.5,    // how tightly it swirls
+            pulseSpeed:      2.0,    // speed of radial pulsing
+            pulseAmplitude:  5.0,    // amount of radial pulse
+            zoomSpeed:       0.002,  // camera zoom speed
+            zoomRange:       10.0,   // extent of zoom in/out
+            gatherStrength:  0.005,  // pull particles back toward center
+            scatterIntensity:0.5,    // random jitter each frame
+            particleSize:    1.5,    // size of each point
+            colorHue:        0.6     // base hue for HSL color
+        };
+
+        // ---- SLIDER BOUNDS ----
+        const sliderConfig = {
+            particleCount:    { min: 100,    max: 20000, step: 100 },
+            animationSpeed:   { min: 0.001,  max: 0.05,   step: 0.001 },
+            rotationSpeed:    { min: 0.000,  max: 0.01,   step: 0.0001 },
+            swirlFactor:      { min: 0.0,    max: 2.0,    step: 0.01 },
+            pulseSpeed:       { min: 0.1,    max: 10.0,   step: 0.1 },
+            pulseAmplitude:   { min: 0.0,    max: 20.0,   step: 0.5 },
+            zoomSpeed:        { min: 0.0,    max: 0.01,   step: 0.0001 },
+            zoomRange:        { min: 0.0,    max: 50.0,   step: 1.0 },
+            gatherStrength:   { min: 0.0,    max: 0.05,   step: 0.001 },
+            scatterIntensity: { min: 0.0,    max: 5.0,    step: 0.1 },
+            particleSize:     { min: 0.1,    max: 5.0,    step: 0.1 },
+            colorHue:         { min: 0.0,    max: 1.0,    step: 0.01 }
+        };
+
+        // ---- Slider UI Creation ----
+        function createSliders() {
+            const cont = document.getElementById('sliders');
+            for (let key in config) {
+                const val = config[key];
+                const bounds = sliderConfig[key];
+                if (!bounds) continue;
+
+                const wrapper = document.createElement('div');
+                wrapper.className = 'slider-container';
+
+                const lbl = document.createElement('label');
+                lbl.htmlFor = key; lbl.textContent = key;
+                wrapper.appendChild(lbl);
+
+                const input = document.createElement('input');
+                input.type = 'range';
+                input.id = key;
+                input.min = bounds.min; input.max = bounds.max;
+                input.step = bounds.step; input.value = val;
+                wrapper.appendChild(input);
+
+                const disp = document.createElement('span');
+                disp.className = 'value';
+                disp.textContent = val;
+                wrapper.appendChild(disp);
+
+                input.addEventListener('input', () => {
+                    const v = parseFloat(input.value);
+                    config[key] = v;
+                    disp.textContent = v;
+                    if (key === 'particleCount') resetParticles();
+                });
+
+                cont.appendChild(wrapper);
+            }
+        }
+        createSliders();
+
+        // ---- Show/Hide Controls ----
+        const controlsUI = document.getElementById('controls');
+        const toggleBtn   = document.getElementById('toggle-controls');
+        const hideBtn     = document.getElementById('hide-controls');
+        hideBtn.onclick = () => { controlsUI.style.display = 'none'; toggleBtn.style.display = 'block'; };
+        toggleBtn.onclick = () => { controlsUI.style.display = 'block'; toggleBtn.style.display = 'none'; };
+
+        // ---- Three.js Setup ----
+        const scene    = new THREE.Scene();
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 100;
+
+        const orbit = new THREE.OrbitControls(camera, renderer.domElement);
+        orbit.enableDamping = true;
+        orbit.dampingFactor = 0.05;
+
+        // ---- Particle System ----
+        let points, geometry, material, originalPositions;
+        function initParticles() {
+            if (points) scene.remove(points);
+
+            const count = config.particleCount;
+            geometry = new THREE.BufferGeometry();
+            const pos = new Float32Array(count * 3);
+            originalPositions = new Float32Array(count * 3);
+
+            for (let i = 0; i < count; i++) {
+                const phi   = Math.random() * Math.PI * 2;
+                const theta = Math.acos(2 * Math.random() - 1);
+                const r     = 50 * Math.cbrt(Math.random());
+
+                const x = r * Math.sin(theta) * Math.cos(phi);
+                const y = r * Math.sin(theta) * Math.sin(phi);
+                const z = r * Math.cos(theta);
+
+                pos[3*i]   = x;
+                pos[3*i+1] = y;
+                pos[3*i+2] = z;
+
+                originalPositions[3*i]   = x;
+                originalPositions[3*i+1] = y;
+                originalPositions[3*i+2] = z;
+            }
+
+            geometry.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+            material = new THREE.PointsMaterial({
+                size: config.particleSize,
+                vertexColors: false,
+                color: new THREE.Color().setHSL(config.colorHue, 1.0, 0.5)
+            });
+
+            points = new THREE.Points(geometry, material);
+            scene.add(points);
+        }
+        initParticles();
+
+        function resetParticles() {
+            initParticles();
+        }
+
+        // ---- Animation Loop ----
+        let time = 0;
+        function animate() {
+            requestAnimationFrame(animate);
+            orbit.update();
+
+            time += config.animationSpeed;
+
+            // update per-particle positions
+            const posAttr = geometry.getAttribute('position');
+            for (let i = 0; i < config.particleCount; i++) {
+                const ix = 3 * i, iy = ix + 1, iz = ix + 2;
+                const ox = originalPositions[ix],
+                      oy = originalPositions[iy],
+                      oz = originalPositions[iz];
+
+                // polar rewrite
+                const d0 = Math.sqrt(ox*ox + oy*oy);
+                let θ = Math.atan2(oy, ox) + config.swirlFactor * time;
+                let r = d0 + config.pulseAmplitude * Math.sin(config.pulseSpeed * time);
+                // scatter jitter
+                const jx = (Math.random() - 0.5) * config.scatterIntensity;
+                const jy = (Math.random() - 0.5) * config.scatterIntensity;
+                // gather toward center
+                const gx = -ox * config.gatherStrength;
+                const gy = -oy * config.gatherStrength;
+
+                posAttr.array[ix]   = r * Math.cos(θ) + jx + gx;
+                posAttr.array[iy]   = r * Math.sin(θ) + jy + gy;
+                posAttr.array[iz]   = oz + jx * 0.2; // slight z jitter
+            }
+            posAttr.needsUpdate = true;
+
+            // overall cloud rotation & zoom
+            points.rotation.y += config.rotationSpeed;
+            camera.position.z = 100 + config.zoomRange * Math.sin(config.zoomSpeed * time);
+
+            // update material if size or color changed
+            material.size = config.particleSize;
+            material.color.setHSL(config.colorHue, 1.0, 0.5);
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // ---- Handle Resize ----
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth/window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // ---- WebSocket Integration ----
+        (function connectWS() {
+            const ws = new WebSocket(`ws://${window.location.hostname}:6789/particlecloud/autoconfig`);
+            ws.onopen = () => {
+                ws.send(JSON.stringify({
+                    kind: "visual",
+                    parameters: Object.entries(sliderConfig).map(([name, conf]) => { return { name, range: [conf.min, conf.max] } })
+                }));
+            };
+            ws.onmessage = ({ data }) => {
+                const msg = JSON.parse(data);
+                if (config.hasOwnProperty(msg.on)) {
+                    config[msg.on] = msg.value;
+                    const slider = document.getElementById(msg.on);
+                    if (slider) {
+                        slider.value = msg.value;
+                        slider.nextElementSibling.textContent = msg.value;
+                    }
+                    if (msg.on === 'particleCount') resetParticles();
+                }
+            };
+            ws.onclose = () => setTimeout(connectWS, 1000);
+            ws.onerror = err => { console.error(err); ws.close(); };
+        })();
+    </script>
+</body>
+</html>
