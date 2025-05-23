@@ -34,6 +34,12 @@ export const WelcomeModal = () => {
 					</ul>
 				</p>
 				<p>Note: the default url is set to {defaultURL}</p>
+				<p>
+					Note2: Nallely runs with Trevor on a normal webocket, not a secure
+					websocket. If you use Brave and try to connect to {defaultURL}, there
+					is chances that the connection will be blocked. Use chromium/chrome or
+					firefox instead.
+				</p>
 			</div>
 		</div>
 	);

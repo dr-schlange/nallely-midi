@@ -1,16 +1,15 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
-const command = process.env.npm_lifecycle_event;
-
-const sourcemap = command !== "deploy:gh";
-const base = command === "deploy:gh" ? "/nallely-midi/" : "/";
+const isGH = process.env.GH === "true";
+const base = isGH ? "/nallely-midi/" : "/";
+console.log(`** Building for base: ${base}`);
 
 export default defineConfig({
 	base,
 	build: {
 		outDir: "dist",
-		sourcemap: sourcemap,
+		sourcemap: !isGH,
 	},
 	plugins: [react()],
 });

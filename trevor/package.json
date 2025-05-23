@@ -8,8 +8,7 @@
 		"build": "tsc -b && vite build",
 		"format": "biome format src --fix",
 		"preview": "vite preview",
-		"predeploy": "yarn build",
-		"deploy:gh": "yarn predeploy && gh-pages -d dist"
+		"deploy:gh": "GH=true yarn build && gh-pages -d dist"
 	},
 	"dependencies": {
 		"@codemirror/autocomplete": "^6.18.6",

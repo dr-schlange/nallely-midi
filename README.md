@@ -36,19 +36,37 @@ Planned:
   * sequencer
 * possibility to broadcast messages and information from the external services,
 
-## Trevor, Nallely's companion
+## Quick start
 
-Trevor is a communication protocol and a UI made to communicate with Nallely through websocket and ask Nallely to create device instance, map devices together or apply scaler. Trevor proposes a web UI that lets you bind everything at run time, without any need for stopping/starting again scripts, as well as an interactive code playground inspired by Smalltalk playgrounds that let's you code/script on the fly.
+When you have Nallely installed on your machine (see sections below about installation), you can run this line to quickly start a Nallely session with Trevor (the communication protocol between Nallely and UI/external world).
 
+```
+nallely run --with-trevor -b -l experiments/harmonizer.py experiments/mono2poly.py
+```
+
+This will start a Nallely session running Trevor including the default builtins MIDI devices - Korg Minilogue, and Korg NTS-1 (option `-b`) and loads some experimental virtual devices that are not yet in Nallely's core: a pitch shifter, an harmonizer and a virtual device that lets you dispatch an input on multiple outputs, keeping track of the allocated outputs already, transforming for example 2 monophonic synths in a 2 voice polyphonic synth.
+
+Once the Nallely session with Trevor is running, you can navigate with your browser to [https://dr-schlange.github.io/nallely-midi/](https://dr-schlange.github.io/nallely-midi/), and start to play with Nallely. All modern browser are supported, but a security restriction with Brave will prevent it to connect to your localhost Nallely session if you don't serve the webinterface from the same domain.
 
 ## Documentation
 
 A first draft about how Nallely can help you declare your devices and map them using the current API can be find in the [documentation](./docs/main.md).
 
 
+## Trevor, Nallely's companion
+
+Trevor is a communication protocol and a UI made to communicate with Nallely through websocket and ask Nallely to create device instance, map devices together or apply scaler. Trevor proposes a web UI that lets you bind everything at run time, without any need for stopping/starting again scripts, as well as an interactive code playground inspired by Smalltalk playgrounds that let's you code/script on the fly.
+Trevor runs in two parts: the websocket server (the backend), and the frontend. The frontend is merly just a representation of the state given by the backend, it holds no important state and always render what the backend sends. This means that Trevor-UI is a web interface, but any UI that connects to this websocket, renders the received state and sends commands that complies with the Trevor API (to be documented), it's possible to have another type of UI. There is no limit, Trevor-UI is a simple UI, but other UIs focusing on new interactions and other representation will be developed in the future.
+
+### Online access
+
+Trevor is accessible from your browser directly at this address [https://dr-schlange.github.io/nallely-midi/](https://dr-schlange.github.io/nallely-midi/).
+By default it will try to connect to a Nallely session on `ws://localhost:6788`. If you have a Nallely session running with Trevor, it should connect automatically. If your session is running at another address on your network, you can change the address clicking on the ⚙ button located at the top right of the interface.
+All browser are supported with the restriction that if you use Brave, then you need to have the Nallely session and the Trevor-UI hosted on the same domain. For security reasons, Brave doesn't allow websocket connections towards a domain different from the one that served the webapp in the first place.
+
 ### Installation & how to launch it
 
-Trevor runs in two parts: the websocket server (the backend), and the frontend. At the moment, this is the way to launch it, but in the future, it will be integrated in a more seemless way. The web UI is built with vite, react, and uses yarn. We consider here that you have all of this installed already. To install Trevor:
+ In dev mode, or pure local mode, you can run Trevor-UI this way: the web UI is built with vite, react, and uses yarn. We consider here that you have all of this installed already. To install Trevor:
 
 ```
 cd trevor
