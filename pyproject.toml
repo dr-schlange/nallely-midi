@@ -32,7 +32,7 @@ dependencies = ["mido", "websockets", "python-rtmidi", "ruamel.yaml"]
 dev = ["pytest", "build", "pytest-asyncio"]
 
 [tool.setuptools]
-packages = ["nallely", "nallely.devices", "nallely.trevor"]
+packages = ["nallely", "nallely.devices", "nallely.trevor", "nallely.core"]
 include-package-data = true
 
 [tool.setuptools.package-data]
