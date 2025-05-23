@@ -22,6 +22,11 @@ jobs:
           pip install pyinstaller
           pip install -e .
 
+      - name: Prepare Trevor-UI
+        run: |
+          (cd trevor && yarn build)
+          bash ./prepare-trevor-ui.bash
+
       - name: Build with PyInstaller
         run: |
           pyinstaller nallely.spec
