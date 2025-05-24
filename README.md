@@ -8,7 +8,7 @@ Features:
 * introspective API for auto-adaptive virtual modules,
 * links are formally defined and are entities of the domain,
 * bouncy links: links can trigger target port associated link to have reaction chains,
-* Python API code generator for your device if it is listed by the [MIDI CC & NRPN database](https://github.com/pencilresearch/midi) project,
+* Python API code generator for your device if it is listed by the [MIDI CC & NRPN database](https://github.com/pencilresearch/midi) project, or from a YAML description you can easily write (see `configs` folder for examples)
 * bind/unbind control/pad/key of your MIDI devices between each other or virtual devices, converting the CC between source and target if required,
 * bind/unbind the velocity of the pad/key of your MIDI devices to any CC control,
 * bind/unbind pad/key individualy to any control, note, parameter of MIDI devices or virtual devices,
