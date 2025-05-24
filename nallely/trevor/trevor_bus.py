@@ -22,12 +22,12 @@ from ..core import (
     ParameterInstance,
     VirtualDevice,
     all_devices,
+    all_links,
     connected_devices,
     midi_device_classes,
     no_registration,
     stop_all_connected_devices,
     virtual_device_classes,
-    all_links,
 )
 from ..utils import StateEncoder, load_modules
 from ..websocket_bus import (  # noqa, we keep it so it's loaded in this namespace
@@ -107,8 +107,11 @@ class TrevorBus(VirtualDevice):
             print(f"Client {client} on trevor {kind}")
         finally:
             print("Disconnecting", client)
-            connected_clients.remove(client)
-            print(f"Connected on {service_name} [{len(connected_clients)} clients]")
+            try:
+                connected_clients.remove(client)
+                print(f"Connected on {service_name} [{len(connected_clients)} clients]")
+            except ValueError:
+                pass
 
     def setup(self):
         try:
@@ -148,7 +151,7 @@ class TrevorBus(VirtualDevice):
                         f"Client {client} on trevor {kind} [{len(connected_devices)} clients]"
                     )
                 except Exception:
-                    ...
+                    pass
 
     def full_state(self):
         return self.session.snapshot()
@@ -260,7 +263,7 @@ class TrevorBus(VirtualDevice):
                         f"Client {client} on trevor {kind} [{len(connected_devices)} clients]"
                     )
                 except Exception:
-                    ...
+                    pass
 
     def create_scaler(self, from_parameter, to_parameter, create):
         self.trevor.manage_scaler(from_parameter, to_parameter, create)

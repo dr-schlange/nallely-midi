@@ -7,6 +7,7 @@ from .world import (
     DeviceNotFound,
     ThreadContext,
     all_devices,
+    all_links,
     connected_devices,
     get_all_virtual_parameters,
     get_connected_devices,
@@ -18,7 +19,6 @@ from .world import (
     unbind_all,
     virtual_device_classes,
     virtual_devices,
-    all_links,
 )
 
 __all__ = [

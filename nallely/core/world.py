@@ -5,10 +5,10 @@ from typing import TYPE_CHECKING, Any, Callable, Type
 import mido
 
 if TYPE_CHECKING:
+    from .links import Link
     from .midi_device import MidiDevice, ModulePadsOrKeys, ModuleParameter
     from .parameter_instances import PadOrKey, ParameterInstance
     from .virtual_device import VirtualDevice, VirtualParameter
-    from .links import Link
 
 
 virtual_devices: list["VirtualDevice"] = []

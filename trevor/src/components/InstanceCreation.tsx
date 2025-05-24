@@ -55,14 +55,6 @@ const InstanceCreation = () => {
 		(state) => state.runTime.loggedComponent,
 	);
 
-	const onStdoutHandler = useCallback((event) => {
-		const message = JSON.parse(event.data);
-
-		if (message.command === "stdout") {
-			setLogMessages((prev) => `${prev}${message.line}`);
-		}
-	}, []);
-
 	useEffect(() => {
 		const win = logWindowRef.current;
 		if (!win) {
@@ -96,12 +88,21 @@ const InstanceCreation = () => {
 	};
 
 	useEffect(() => {
+		const onStdoutHandler = (event) => {
+			const message = JSON.parse(event.data);
+
+			if (message.command === "stdout") {
+				console.log("REceiv", message.line);
+				setLogMessages((prev) => `${prev}${message.line}`);
+			}
+		};
+
 		trevorSocket?.socket?.addEventListener("message", onStdoutHandler);
 
 		return () => {
 			trevorSocket?.socket?.removeEventListener("message", onStdoutHandler);
 		};
-	}, [trevorSocket, onStdoutHandler]);
+	}, [trevorSocket]);
 
 	// Handling of the log window END
 

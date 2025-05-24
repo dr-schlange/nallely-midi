@@ -120,14 +120,17 @@ class WebSocketBus(VirtualDevice):
                                 f"Client {device} on {service_name} {kind} [{len(connected_devices)} clients]"
                             )
                         except Exception:
-                            ...
+                            pass
         except ConnectionClosed:
             print(
                 f"Client {client} on {service_name} disconnected unexpectedly [{len(connected_devices)} clients]"
             )
         finally:
-            print("Remove", client)
-            connected_devices.remove(client)
+            try:
+                print("Remove", client)
+                connected_devices.remove(client)
+            except ValueError:
+                pass
 
     def setup(self):
         self.server.serve_forever()
@@ -170,7 +173,7 @@ class WebSocketBus(VirtualDevice):
                         f"Cannot send information on {parameter} for {connected}, it probably {kind} [{len(devices)} clients]"
                     )
                 except Exception:
-                    ...
+                    pass
 
     def configure_remote_device(self, name, parameters: list[str | dict[str, Any]]):
         virtual_parameters = []
