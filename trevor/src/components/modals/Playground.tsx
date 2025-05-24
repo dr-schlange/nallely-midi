@@ -103,6 +103,8 @@ export function Playground({ onClose }: PlaygroundProps) {
 		trevorSocket?.executeCode(code);
 	};
 
+	const [captureState, setCaptureState] = useState("start");
+
 	const customLinter = () => {
 		return errors;
 	};
@@ -324,6 +326,22 @@ mod-?:     displays this entry
 				>
 					print
 				</button>
+				{/* <button
+					type="button"
+					title="Captures stdout and stderr"
+					className="close-button"
+					onClick={() => {
+						if (captureState === "start") {
+							trevorSocket?.startCaptureSTDOUT();
+							setCaptureState("stop")
+						} else {
+							trevorSocket?.stopCaptureSTDOUT();
+							setCaptureState("start")
+						}
+					}}
+				>
+					{captureState} capture
+				</button> */}
 			</div>
 			<div
 				className="modal-body"

@@ -103,7 +103,7 @@ class TrevorWebSocket {
 		try {
 			this.socket = new WebSocket(url);
 		} catch (error) {
-			console.log(`Error while connecting to ${url}`, error);
+			console.debug(`Error while connecting to ${url}`, error);
 			store.dispatch(setConnected(WsStatus.DISCONNECTED));
 			return;
 		}
@@ -166,7 +166,7 @@ class TrevorWebSocket {
 		this.manualClose = true;
 
 		if (this.retryTimeoutId !== null) {
-			console.log("Clearing retry timeout...");
+			console.debug("Clearing retry timeout...");
 			clearTimeout(this.retryTimeoutId);
 			this.retryTimeoutId = null;
 		}
@@ -184,7 +184,7 @@ class TrevorWebSocket {
 		// 	clearTimeout(this.retryTimeoutId);
 		// }
 		this.retryTimeoutId = setTimeout(() => {
-			console.log("Reconnecting...");
+			console.debug("Reconnecting...");
 			this.connect(this.url);
 		}, this.reconnectInterval);
 	}
@@ -399,6 +399,20 @@ class TrevorWebSocket {
 			device_id,
 		});
 	}
+
+	public startCaptureSTDOUT(deviceOrLink) {
+		this.sendJsonMessage({
+			command: "start_capture_stdout",
+			device_or_link: deviceOrLink,
+		});
+	}
+
+	public stopCaptureSTDOUT(deviceOrLink) {
+		this.sendJsonMessage({
+			command: "stop_capture_stdout",
+			device_or_link: deviceOrLink,
+		});
+	}
 }
 
 let websocket: TrevorWebSocket | null = null;
@@ -411,12 +425,12 @@ export const connectWebSocket = () => {
 	}
 
 	if (websocket) {
-		console.log("Already connected, disconnecting first...");
+		console.debug("Already connected, disconnecting first...");
 		websocket.disconnect();
 		websocket = null;
 	}
 
-	console.log("Create new Trevor websocket");
+	console.debug("Create new Trevor websocket");
 	websocket = new TrevorWebSocket(
 		`${store.getState().general.trevorWebsocketURL}/trevor`,
 	);

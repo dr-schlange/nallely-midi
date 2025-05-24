@@ -1,6 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, ReactEventHandler } from "react";
 import type { MidiDevice, MidiDeviceSection } from "../model";
-import { buildSectionId } from "../utils/utils";
+import { buildSectionId, isLogMode, setDebugMode } from "../utils/utils";
+import { useTrevorWebSocket } from "../websockets/websocket";
+import { useTrevorDispatch } from "../store";
+import { setLogComponent } from "../store/runtimeSlice";
 
 const generateAcronym = (name: string): string => {
 	return name
@@ -42,6 +45,9 @@ const MidiDeviceComponent = ({
 	selected?: boolean;
 	onSectionScroll?: () => void;
 }) => {
+	const trevorSocket = useTrevorWebSocket();
+	const dispatch = useTrevorDispatch();
+
 	const [isNameOnLeft, setIsNameOnLeft] = useState(true); // Track the side of the name
 	// const sections = Object.keys(device.config);
 	const sections = device.meta.sections;
@@ -54,19 +60,28 @@ const MidiDeviceComponent = ({
 		setIsNameOnLeft(leftSections.length > rightSections.length);
 	}, [leftSections, rightSections]);
 
+	const handleDeviceClick = (device: MidiDevice) => {
+		if (isLogMode()) {
+			return;
+		}
+		onDeviceClick?.(device);
+	};
+
 	return (
 		// biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
 		<div
 			className="device-component"
 			style={{
-				// width: width - margin * 3,
-				// height: height - margin * 3,
 				boxSizing: "border-box",
 				borderColor: selected ? "yellow" : "",
 				position: "relative",
 			}}
 			id={`${device.id}`}
-			onClick={() => onDeviceClick?.(device)}
+			onClick={() => handleDeviceClick(device)}
+			onMouseEnter={(e) => setDebugMode(e, device.id, true)}
+			onMouseLeave={(e) => setDebugMode(e, device.id, false)}
+			onTouchStart={(e) => setDebugMode(e, device.id, true)}
+			onTouchEnd={(e) => setDebugMode(e, device.id, true)}
 		>
 			<div className={`device-name ${isNameOnLeft ? "left" : "right"}`}>
 				{device.repr}

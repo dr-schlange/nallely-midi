@@ -8,6 +8,9 @@ import type {
 	VirtualDevice,
 	VirtualParameter,
 } from "../model";
+import { store } from "../store";
+import { useTrevorWebSocket } from "../websockets/websocket";
+import { setLogComponent } from "../store/runtimeSlice";
 
 export const useGlobalShortcut = (
 	callback: () => void,
@@ -122,4 +125,27 @@ export const buildConnectionName = (connection: MidiConnection) => {
 	}
 
 	return `${connection.src.repr}${srcSection}[${srcParamName}] → ${connection.dest.repr}${dstSection}[${dstParamName}]`;
+};
+
+export const isLogMode = () => {
+	return document.body.style.cursor === "zoom-in";
+};
+
+export const setDebugMode = (
+	event: { stopPropagation: () => void },
+	componentId: number | string,
+	activate: boolean,
+) => {
+	if (!isLogMode()) {
+		return;
+	}
+	const trevorSocket = useTrevorWebSocket();
+	event.stopPropagation();
+	if (activate) {
+		trevorSocket.startCaptureSTDOUT(componentId);
+		store.dispatch(setLogComponent(componentId));
+	} else {
+		trevorSocket.stopCaptureSTDOUT(componentId);
+		store.dispatch(setLogComponent(undefined));
+	}
 };

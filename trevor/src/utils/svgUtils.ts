@@ -1,5 +1,5 @@
 import type { MidiConnection } from "../model";
-import { buildParameterId } from "./utils";
+import { buildParameterId, setDebugMode } from "./utils";
 
 export const findConnectorElement = (connection: MidiConnection) => {
 	let srcId = buildParameterId(connection.src.device, connection.src.parameter);
@@ -46,6 +46,7 @@ export const drawConnection = (
 	toElement: Element | null,
 	selected = false,
 	bouncy = false,
+	linkId?: number | undefined,
 	clickHandler?: (event: MouseEvent) => void,
 ) => {
 	if (!fromElement || !toElement) return;
@@ -88,30 +89,71 @@ export const drawConnection = (
 		toY = toCenterY - svgRect.top;
 	}
 
-	const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-	line.setAttribute("x1", fromX.toString());
-	line.setAttribute("y1", fromY.toString());
-	line.setAttribute("x2", toX.toString());
-	line.setAttribute("y2", toY.toString());
-	line.setAttribute("stroke-opacity", "1");
-	line.setAttribute("stroke-width", "2");
-	line.setAttribute("stroke", "gray");
-	line.setAttribute("marker-end", "url(#retro-arrowhead)");
+	const drawLine = (
+		id: string,
+		options: {
+			stroke: string;
+			strokeWidth: number;
+			strokeOpacity: string;
+			pointerEvents?: string;
+			markerEnd?: string;
+		},
+	) => {
+		const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+		line.setAttribute("x1", fromX.toString());
+		line.setAttribute("y1", fromY.toString());
+		line.setAttribute("x2", toX.toString());
+		line.setAttribute("y2", toY.toString());
+		line.setAttribute("stroke", options.stroke);
+		line.setAttribute("stroke-width", options.strokeWidth.toString());
+		line.setAttribute("stroke-opacity", options.strokeOpacity);
+		if (options.pointerEvents) {
+			line.setAttribute("pointer-events", options.pointerEvents);
+		}
+		if (options.markerEnd) {
+			line.setAttribute("marker-end", options.markerEnd);
+		}
+		line.id = id;
+		return line;
+	};
 
-	if (bouncy) {
-		line.setAttribute("stroke", "green");
-		line.setAttribute("marker-end", "url(#bouncy-retro-arrowhead)");
+	if (linkId) {
+		const hitLine = drawLine(`${fromElement.id}-${toElement.id}-hit`, {
+			stroke: "transparent",
+			strokeWidth: 18,
+			strokeOpacity: "0",
+			pointerEvents: "stroke",
+		});
+
+		if (clickHandler) hitLine.addEventListener("click", clickHandler);
+		hitLine.addEventListener("touchstart", (e) =>
+			setDebugMode(e, linkId, true),
+		);
+		hitLine.addEventListener("touchend", (e) => setDebugMode(e, linkId, false));
+		hitLine.addEventListener("mouseenter", (e) =>
+			setDebugMode(e, linkId, true),
+		);
+		hitLine.addEventListener("mouseleave", (e) =>
+			setDebugMode(e, linkId, false),
+		);
+		svg.appendChild(hitLine);
 	}
 
-	if (selected) {
-		line.setAttribute("stroke", "blue");
-		line.setAttribute("stroke-width", "2.5");
-		line.setAttribute("marker-end", "url(#selected-retro-arrowhead)");
-	}
+	// 2. Draw actual visible line
+	const color = selected ? "blue" : bouncy ? "green" : "gray";
+	const marker = selected
+		? "url(#selected-retro-arrowhead)"
+		: bouncy
+			? "url(#bouncy-retro-arrowhead)"
+			: "url(#retro-arrowhead)";
 
-	line.id = `${fromElement.id}-${toElement.id}`;
-	if (clickHandler) {
-		line.addEventListener("click", clickHandler);
-	}
-	svg.appendChild(line);
+	const visibleLine = drawLine(`${fromElement.id}-${toElement.id}`, {
+		stroke: color,
+		strokeWidth: selected ? 2.5 : 2,
+		strokeOpacity: "1",
+		markerEnd: marker,
+	});
+
+	// Append both: hit line below visible line
+	svg.appendChild(visibleLine);
 };

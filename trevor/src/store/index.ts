@@ -5,6 +5,7 @@ import {
 } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
 import trevorSlice from "./trevorSlice";
+import runTimeSlice from "./runtimeSlice";
 import generalSlice, { initialGeneralState } from "./generalSlice";
 
 const LOCAL_STORAGE_SETTINGS = "settings";
@@ -32,6 +33,7 @@ export const store = configureStore({
 	reducer: {
 		nallely: trevorSlice,
 		general: generalSlice,
+		runTime: runTimeSlice,
 	},
 	preloadedState: loadSettings(),
 });

@@ -144,3 +144,8 @@ export interface GeneralState {
 	connected: string;
 	firstLaunch: boolean;
 }
+
+export interface RunTimeState {
+	logMode: boolean;
+	loggedComponent: number | string | undefined;
+}

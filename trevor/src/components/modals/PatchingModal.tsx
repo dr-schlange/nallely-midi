@@ -231,6 +231,7 @@ const PatchingModal = ({
 				toElement,
 				connectionId(connection) === selectedConnection,
 				connection.bouncy,
+				connection.id,
 			);
 		}
 	};

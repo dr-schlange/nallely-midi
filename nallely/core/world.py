@@ -8,6 +8,7 @@ if TYPE_CHECKING:
     from .midi_device import MidiDevice, ModulePadsOrKeys, ModuleParameter
     from .parameter_instances import PadOrKey, ParameterInstance
     from .virtual_device import VirtualDevice, VirtualParameter
+    from .links import Link
 
 
 virtual_devices: list["VirtualDevice"] = []
@@ -76,6 +77,13 @@ def get_all_virtual_parameters(cls):
             if isinstance(v, VirtualParameter):
                 out[k] = v
     return out
+
+
+def all_links() -> dict[int, "Link"]:
+    links = {}
+    for vdev in all_devices():
+        links.update({id(link): link for link in vdev.links_registry.values()})
+    return links
 
 
 class ThreadContext(dict):

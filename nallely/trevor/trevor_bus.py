@@ -27,6 +27,7 @@ from ..core import (
     no_registration,
     stop_all_connected_devices,
     virtual_device_classes,
+    all_links,
 )
 from ..utils import StateEncoder, load_modules
 from ..websocket_bus import (  # noqa, we keep it so it's loaded in this namespace
@@ -46,6 +47,16 @@ class OutputCapture(io.StringIO):
 
     def send_line_to_websocket(self, line):
         self.send_message({"command": "stdout", "line": line})
+
+    def start_capture(self):
+        self.old_stdout = sys.stdout
+        self.old_stderr = sys.stderr
+        sys.stdout = self
+        sys.stderr = self
+
+    def stop_capture(self):
+        sys.stdout = self.old_stdout
+        sys.stderr = self.old_stderr
 
     @contextmanager
     def capture(self):
@@ -75,6 +86,7 @@ class TrevorBus(VirtualDevice):
         self.exec_context = ChainMap(globals())
         self.trevor = TrevorAPI()
         self.session = Session(self)
+        self.general_capture = OutputCapture(self.send_message)
 
     @staticmethod
     def to_json(obj, **kwargs):
@@ -317,6 +329,34 @@ class TrevorBus(VirtualDevice):
     def kill_device(self, device_id):
         self.trevor.kill_device(device_id)
         return self.full_state()
+
+    def start_capture_stdout(self, device_or_link=None):
+        if device_or_link:
+            try:
+                device = self.trevor.get_device_instance(device_or_link)
+                device.debug = True
+            except:
+                try:
+                    link = all_links()[device_or_link]
+                    link.debug = True
+                except:
+                    print(f"Couldn't find {device_or_link}")
+                    pass
+        self.general_capture.start_capture()
+
+    def stop_capture_stdout(self, device_or_link=None):
+        if device_or_link:
+            try:
+                device = self.trevor.get_device_instance(device_or_link)
+                device.debug = False
+            except:
+                try:
+                    link = all_links()[device_or_link]
+                    link.debug = False
+                except:
+                    print(f"Couldn't find {device_or_link}")
+                    pass
+        self.general_capture.stop_capture()
 
 
 def resource_path(relative_path):
