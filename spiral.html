@@ -163,7 +163,8 @@
 
         // WebSocket setup to control the cube
         const connect = () => {
-            const ws = new WebSocket(`ws://${window.location.hostname}:6789/spiral/autoconfig`);
+            // const ws = new WebSocket(`ws://${window.location.hostname}:6789/spiral/autoconfig`);
+            const ws = new WebSocket(`ws://localhost:6789/spiral/autoconfig`);
 
             ws.onopen = () => {
                 ws.send(JSON.stringify({

@@ -36,21 +36,82 @@ Planned:
   * sequencer
 * possibility to broadcast messages and information from the external services,
 
-## Quick start
+## Architecture and Quickstart
 
-When you have Nallely installed on your machine (see sections below about installation), you can run this line to quickly start a Nallely session with Trevor (the communication protocol between Nallely and UI/external world).
+Nallely and Trevor is based on a simple classical decoupled architecture:
+
+* Nallely defines a kind of small object model (devices, parameters, links between parameters and their semantic) relying on threads (1 instance of device by thread), and message sending between them (signal sent from a device parameter to another),
+* Trevor defines the protocol to manipulate Nallely "from the outside", and exposes this API programmatically and through a websocket server.
+* Trevor-UI defines a web-UI that communicates with a running Nallely's session through the Trevor Websocket Server.
+
+The following diagram shows a kind of instance of what a Nallely's session can look like.
+
+```mermaid
+flowchart BT
+  TrevorUI["Trevor UI (web)"]
+
+  subgraph TrevorWSS["Trevor WebSocket Server"]
+    direction TB
+    Nallely["Nallely Session"]
+    subgraph Nallely["Nallely Session"]
+      direction TB
+      MIDI["MIDI Device API"] --> Virtual2["EG"]
+      MIDI2["MIDI Device 2 API"]
+      MIDI2 --> Virtual2
+      MIDI2 --> Virtual1
+      Virtual2 --> MIDI2
+      Virtual1["LFO"] --> Virtual2
+      Virtual1 --> MIDI
+      Virtual1 --> MIDI2
+      WSBus["Websocket Bus"]
+      LFO2 --> WSBus
+      MIDI2 --> WSBus
+    end
+    TrevorProto["Trevor Protocol"]
+    Nallely <--> TrevorProto
+  end
+
+  WSBus --> WSBPort["⭘ WebSocket Bus Port"]
+  TrevorUI -.-> Port
+  MIDIDevice["MIDI Device"] <--> MIDI
+  MIDIDevice2["MIDI Device 2"] <--> MIDI2
+  WSBPort --> Visual1
+  WSBPort --> Visual2
+  WSBPort --> Oscilloscope1
+  TrevorProto --> Port["⭘ Trevor WebSocket Port"]
+```
+
+A Nallely's session is made of a set of Virtual Devices instances (LFOs, EG, Harmonizer, etc), and MIDI Device instances that connects to physical MIDI devices through a dedicated API.
+The API can be written manually or generated from a YAML decription.
+In a session, virtual devices and MIDI devices exposes parameters which can all be patched. Consequently, you can have a LFO that controls the speed of another one, and the output of this modulated LFO can modulate another one. All devices inside a Nallely session are patchable: you can also patch parameter inside a same device. Consequently, you can have a parameter of your MIDI device that contols multiple parameters of other MIDI devices, or even parameter of the same MIDI device (e.g: the cutoff that controls also the resonance in an inverted fashion, or on a dedicated small range only).
+A websocket bus, also a virtual device, hence patchable, allows visuals and external application to register to it, exposing their ports. Once their ports are exposed on the bus, any MIDI or virtual device inside the Nallely's session can connect to them and control them.
+
+
+### Quick Installation
+
+This repository proposes pre-compiled binaries that can directly be downloaded from the `Release` section in this repository. Those binaries are built from the repository by Github action. The binaries are produced by `pyinstaller` and embedd Nallely and Trevor, that can be ran from the command line, as well as Trevor-UI and visuals that can be accessed directly from your local web-browser.
+
+1. Download the archive related to your OS. Please, note that the binary for MacOS and Windows have been built, but not tested as I don't have machines with those OS right now.
+2. Unzip the archive, you should have a single binary file: Nallely with Trevor.
+3. Run Nallely: `nallely run --with-trevor --serve-ui`. If you want to have the builtins MIDI devices API loaded add the option `-b`.
+
+Once you have Nallely running, you should see a prompt. Pressing `enter` will display information about the running Nallely's session. Typing `q` shutsdown the session, `?` displays the help menu.
+As Nallely have been run with Trevor and serves the UI, you can directly go to [http://localhost:3000](http://localhost:3000) or [http://127.0.0.1:3000](http://127.0.0.1:3000) which will serve Trevor-UI. The UI should connect directly to the Trevor Websocket Server.
+All the embedded visuals are available at [http://localhost:3000/visuals](http://localhost:3000/visuals). You can open them, and to manipulate them from Nallely and Trevor-UI, you need first to create a `WebsocketBus` in Nallely. You can do that by opening the dropdown menu of the middle vertical rack in the UI and clicking on `WebsocketBus` (currently we are limited to 1 bus, but many different visuals can register to a same bus).
+
+##### Extra Virtual Devices
+
+This repository proposes some extra virtual devices that are not yet embedded in Nallely as they are not yet "good enough". You can find them in the `experiments` folder. To load them, first download them on your hardrive somewhere, then you need to run Nallely including them:
 
 ```
-nallely run --with-trevor -b -l experiments/harmonizer.py experiments/mono2poly.py
+nallely run --with-trevor --serve-ui -b -l experiments/harmonizer.py experiments/mono2poly.py
 ```
-
 This will start a Nallely session running Trevor including the default builtins MIDI devices - Korg Minilogue, and Korg NTS-1 (option `-b`) and loads some experimental virtual devices that are not yet in Nallely's core: a pitch shifter, an harmonizer and a virtual device that lets you dispatch an input on multiple outputs, keeping track of the allocated outputs already, transforming for example 2 monophonic synths in a 2 voice polyphonic synth.
-
-Once the Nallely session with Trevor is running, you can navigate with your browser to [https://dr-schlange.github.io/nallely-midi/](https://dr-schlange.github.io/nallely-midi/), and start to play with Nallely. All modern browser are supported, but a security restriction with Brave will prevent it to connect to your localhost Nallely session if you don't serve the webinterface from the same domain.
+You can then navigate to [http://localhost:3000](http://localhost:3000) or [http://127.0.0.1:3000](http://127.0.0.1:3000), you should see the virtual devices in the drop-down menu of the middle vertical rack.
 
 ## Documentation
 
-A first draft about how Nallely can help you declare your devices and map them using the current API can be find in the [documentation](./docs/main.md).
+A first draft about how Nallely can help you declare your devices and map them using the current API can be find in the [documentation](./docs/main.md). The documentation has not been updated with the latest capabilities of the API, but it should be retrocompatible, unless I really missed something.
 
 
 ## Trevor, Nallely's companion
@@ -58,13 +119,7 @@ A first draft about how Nallely can help you declare your devices and map them u
 Trevor is a communication protocol and a UI made to communicate with Nallely through websocket and ask Nallely to create device instance, map devices together or apply scaler. Trevor proposes a web UI that lets you bind everything at run time, without any need for stopping/starting again scripts, as well as an interactive code playground inspired by Smalltalk playgrounds that let's you code/script on the fly.
 Trevor runs in two parts: the websocket server (the backend), and the frontend. The frontend is merly just a representation of the state given by the backend, it holds no important state and always render what the backend sends. This means that Trevor-UI is a web interface, but any UI that connects to this websocket, renders the received state and sends commands that complies with the Trevor API (to be documented), it's possible to have another type of UI. There is no limit, Trevor-UI is a simple UI, but other UIs focusing on new interactions and other representation will be developed in the future.
 
-### Online access
-
-Trevor is accessible from your browser directly at this address [https://dr-schlange.github.io/nallely-midi/](https://dr-schlange.github.io/nallely-midi/).
-By default it will try to connect to a Nallely session on `ws://localhost:6788`. If you have a Nallely session running with Trevor, it should connect automatically. If your session is running at another address on your network, you can change the address clicking on the ⚙ button located at the top right of the interface.
-All browser are supported with the restriction that if you use Brave, then you need to have the Nallely session and the Trevor-UI hosted on the same domain. For security reasons, Brave doesn't allow websocket connections towards a domain different from the one that served the webapp in the first place.
-
-### Installation & how to launch it
+### Local Dev Installation
 
  In dev mode, or pure local mode, you can run Trevor-UI this way: the web UI is built with vite, react, and uses yarn. We consider here that you have all of this installed already. To install Trevor:
 
@@ -96,16 +151,38 @@ nallely run --with-trevor
 
 ## Launch the example
 
-This repo comes with one example of a spiral that is controlled by LFOs created by Nallely. To launch it, once you have installed the library (obviously).
+This repo comes with one example of a spiral that is controlled by LFOs created by Nallely. To launch it, once you have installed Nallely or downloaded the
 
-There is 3 ways of launching the demo, either launching the `visual-spiral.py` script, or loading the `visual-spiral.nly` patch through the UI, or loading by a script the `visual-spiral.nly` patch. We will demonstrate here the two first ways: using the `visual-spiral.py` script, and using the UI.
+There is 4 ways of launching the demo:
 
-### Using the python script
+1. either  using the Nallely binary you can download from the release section,
+3. launching the `visual-spiral.py` script if you have Python installed on your machine and Nallely installed as library (pip installed),
+5. loading the `visual-spiral.nly` patch through the UI,
+6. loading by a script the `visual-spiral.nly` patch.
+
+We will demonstrate here the three first ways: using the `visual-spiral.py` script, using the downloaded binary, and using the UI.
+
+### Using the downloaded binary
+
+Once you have the binary download, you can run any python script that relies on Nallely's internal API without the need of Trevor. This is handy when you need to have simple scripts, but not to load Trevor, and without using the UI.
+
+1. Simply copy those files from this repository:
+  * `visual-spiral.py` => core system for this small example, creates 2 LFOs, waits for external modules (spiral and possibly terminal-based oscilloscope) to connect and maps all together,
+  * `spiral.hml` => simple three.js spiral controlled by some parameters,
+2. Launch `nallely run -i visual-spiral.py`,
+3. Open `spiral.html` in your browser,
+4. ...
+5. Profit
+
+
+### Using the Python script
+
+This way of doing relies on the assumption that you have Python installed on your machine and Nallely installed through `pip install` (see section below)
 
 1. Simply copy those file from this repository:
    * `visual-spiral.py` => core system for this small example, creates 2 LFOs, waits for external modules (spiral and possibly terminal-based oscilloscope) to connect and maps all together,
    * `spiral.hml` => simple three.js spiral controlled by some parameters,
-   * `external_scope.py` => simple terminal-based oscilloscope relying on `plotext`.
+   * `external_scope.py` => simple terminal-based oscilloscope relying on `plotext` (optional).
 2. Launch `python -m http.server 8000` in the project repository and go with your browser to [http://localhost:8000/spiral.html](http://localhost:8000/spiral.html),
 3. Launch `visual-spiral.py`
 4. ...
@@ -123,7 +200,7 @@ https://github.com/user-attachments/assets/6913a9be-e4d8-4bb6-b604-5734ce9b6d15
 
 
 
-## Other quick examples
+## Other quick examples using Nallely's internal API
 
 Here is a simple example about how to map the cutoff of the KORG NTS-1 with the cutoff of the KORG Minilogue, in an inverse fashion:
 
@@ -188,12 +265,13 @@ finally:
   nallely.stop_all_connected_devices()
 ```
 
+This is one way of creating a harmonizer, there is a more direct way that you can find in the `experiments` folder.
 
 ## Requirements and how to install
 
 The current version requires Python >= 3.10. The library relies mainly on `mido` and `python-rtmidi`, so your system needs to support them.
 
-### Installation
+### Local Installation from sources
 
 There is currently no pypi package for it, so the easiest way to install the library is to:
 
@@ -225,7 +303,7 @@ The command line let's you either run a simple script (an "init scrip"), launch 
 
 ```
 $ nallely run -h
-usage: nallely run [-h] [-l [LIBS ...]] [--with-trevor] [-b] [-i INIT_SCRIPT]
+usage: nallely run [-h] [-l [LIBS ...]] [--with-trevor] [--serve-ui] [-b] [-i INIT_SCRIPT]
 
 options:
   -h, --help            show this help message and exit
@@ -234,6 +312,7 @@ options:
                         The current working directory is always added, even if this option is not used. The paths that are Python files will be
                         automatically imported.
   --with-trevor         Launches the Trevor protocol/websocket server
+  --serve-ui            Serves Trevor-UI, and makes it accessible from your browser. This option is only activated if '--with-trevor' is used.
   -b, --builtin-devices
                         Loads builtin MIDI devices (Korg NTS1, Korg Minilogue)
   -i, --init INIT_SCRIPT
