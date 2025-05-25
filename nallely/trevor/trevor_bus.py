@@ -35,6 +35,9 @@ from ..websocket_bus import (  # noqa, we keep it so it's loaded in this namespa
 )
 from .trevor_api import TrevorAPI
 
+_SYSTEM_STDOUT = sys.stdout
+_SYSTEM_STDERR = sys.stderr
+
 
 class OutputCapture(io.StringIO):
     def __init__(self, send_message):
@@ -49,19 +52,21 @@ class OutputCapture(io.StringIO):
         self.send_message({"command": "stdout", "line": line})
 
     def start_capture(self):
-        self.old_stdout = sys.stdout
-        self.old_stderr = sys.stderr
+        # self.old_stdout = _SYSTEM_STDOUT
+        # self.old_stderr = _SYSTEM_STDERR
         sys.stdout = self
         sys.stderr = self
 
     def stop_capture(self):
-        sys.stdout = self.old_stdout
-        sys.stderr = self.old_stderr
+        # sys.stdout = self.old_stdout
+        # sys.stderr = self.old_stderr
+        sys.stdout = _SYSTEM_STDOUT
+        sys.stderr = _SYSTEM_STDERR
 
     @contextmanager
     def capture(self):
-        old_stdout = sys.stdout
-        old_stderr = sys.stderr
+        # old_stdout = _SYSTEM_STDOUT
+        # old_stderr = _SYSTEM_STDERR
 
         sys.stdout = self
         sys.stderr = self
@@ -69,8 +74,10 @@ class OutputCapture(io.StringIO):
         try:
             yield self
         finally:
-            sys.stdout = old_stdout
-            sys.stderr = old_stderr
+            # sys.stdout = old_stdout
+            # sys.stderr = old_stderr
+            sys.stdout = _SYSTEM_STDOUT
+            sys.stdout = _SYSTEM_STDERR
 
 
 @no_registration
@@ -86,7 +93,7 @@ class TrevorBus(VirtualDevice):
         self.exec_context = ChainMap(globals())
         self.trevor = TrevorAPI()
         self.session = Session(self)
-        self.general_capture = OutputCapture(self.send_message)
+        self.redirector = OutputCapture(self.send_message)
 
     @staticmethod
     def to_json(obj, **kwargs):
@@ -207,7 +214,7 @@ class TrevorBus(VirtualDevice):
         return self.full_state()
 
     def execute_code(self, code):
-        with OutputCapture(self.send_message).capture():
+        with self.redirector.capture():
             try:
                 print(">>>", indent(code, "... ")[4:])
                 self.trevor.execute_code(code, self.exec_context)
@@ -345,7 +352,7 @@ class TrevorBus(VirtualDevice):
                 except:
                     print(f"Couldn't find {device_or_link}")
                     pass
-        self.general_capture.start_capture()
+        self.redirector.start_capture()
 
     def stop_capture_stdout(self, device_or_link=None):
         if device_or_link:
@@ -359,7 +366,7 @@ class TrevorBus(VirtualDevice):
                 except:
                     print(f"Couldn't find {device_or_link}")
                     pass
-        self.general_capture.stop_capture()
+        self.redirector.stop_capture()
 
 
 def resource_path(relative_path):
