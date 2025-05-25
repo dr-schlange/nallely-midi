@@ -92,7 +92,6 @@ const InstanceCreation = () => {
 			const message = JSON.parse(event.data);
 
 			if (message.command === "stdout") {
-				console.log("REceiv", message.line);
 				setLogMessages((prev) => `${prev}${message.line}`);
 			}
 		};
