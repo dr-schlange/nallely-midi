@@ -435,6 +435,10 @@ input[type="text"]:disabled {
 	border: 2px dashed #808080; /* Dashed border for drop area */
 }
 
+.rack-row select {
+	width: 100%;
+}
+
 .device-component {
 	background-color: #e0e0e0;
 	border: 5px solid #808080;
@@ -1228,6 +1232,15 @@ button.active {
 @media (max-height: 450px) {
 	.rack-row {
 		align-items: center;
+		width: 100%;
+		height: 150px;
+		flex-direction: row;
+	}
+
+	.rack-row select {
+		min-width: 21px;
+		width: 21px;
+		height: 100%;
 	}
 
 	.top-section {
@@ -1273,5 +1286,73 @@ button.active {
 		white-space: pre-wrap;
 		word-wrap: break-word;
 		overflow-x: hidden,;
+	}
+
+	.device-patching-main-section {
+		flex-direction: column;
+	}
+}
+
+@media (max-width: 450px) {
+	.rack-row {
+		align-items: center;
+		width: 100%;
+		height: 150px;
+		flex-direction: row;
+	}
+
+	.rack-row select {
+		min-width: 21px;
+		width: 21px;
+		height: 100%;
+	}
+
+	.top-section {
+		max-height: 90%;
+	}
+
+	.parameters-grid {
+		flex-wrap: nowrap;
+	}
+
+	.right-panel {
+		max-width: 35%;
+	}
+
+	.connection-svg {
+		top: 30px;
+	}
+
+	.settings-modal {
+		width: 90%;
+	}
+
+	.settings-modal-body input[type="text"] {
+		width: 55%;
+		padding: 5px;
+	}
+
+	.welcome-modal {
+		width: 95%;
+		height: 90%;
+	}
+
+	.logWindow {
+		width: 93%;
+		height: 80%;
+		margin: 2% !important;
+		left: 0px !important;
+		top: 0px !important;
+	}
+
+	.logWindow pre {
+		font-size: 10px;
+		white-space: pre-wrap;
+		word-wrap: break-word;
+		overflow-x: hidden,;
+	}
+
+	.device-patching-main-section {
+		flex-direction: column;
 	}
 }

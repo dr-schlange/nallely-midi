@@ -51,7 +51,6 @@ export const RackRow = ({
 		>
 			<select
 				value={""}
-				style={{ width: "100%" }}
 				title="Adds a MIDI device to the system"
 				onChange={(e) => {
 					const val = e.target.value;

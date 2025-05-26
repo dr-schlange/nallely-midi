@@ -9,48 +9,58 @@ export interface RackRowWidgetRef {
 	resetAll: () => void;
 }
 
+interface RackRowWidget {
+	id: string;
+}
+
+const WidgetComponents = {
+	Scope,
+};
+
 export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 	({ onRackScroll }: WidgetRackProps, ref) => {
 		// const slotWidth = 210;
-		const [widgetIds, setWidgetIds] = useState<number[]>([]);
+		const [widgetIds, setWidgetIds] = useState<
+			Record<number, React.FC<RackRowWidget>>
+		>({});
 
-		const addWidget = () => {
-			setWidgetIds([...widgetIds, widgetIds.length]);
+		const addWidget = (type) => {
+			setWidgetIds({ ...widgetIds, [Object.values(widgetIds).length]: type });
 		};
 
 		useImperativeHandle(ref, () => ({
 			resetAll() {
-				setWidgetIds([]);
+				setWidgetIds({});
 			},
 		}));
 
 		return (
-			<div
-				className="rack-row"
-				style={{ width: "250px" }}
-				onScroll={() => onRackScroll?.()}
-			>
-				{/* <select
+			<div className="rack-row" onScroll={() => onRackScroll?.()}>
+				<select
 					value={""}
-					style={{ width: "100%" }}
 					title="Adds a new widget to the system"
 					onChange={(e) => {
-						const index = e.target.selectedIndex - 1;
 						const val = e.target.value;
+						addWidget(WidgetComponents[val]);
 					}}
 				>
 					<option value={""}>--</option>
-				</select> */}
-				<button
+					{Object.keys(WidgetComponents).map((name) => (
+						<option key={name} value={name}>
+							{name}
+						</option>
+					))}
+				</select>
+				{/* <button
 					style={{ padding: "5px", width: "100%" }}
 					type={"button"}
 					onClick={addWidget}
 				>
-					Scope
-				</button>
-				{widgetIds.map((id) => (
-					<Scope key={id} id={id} />
-				))}
+					∿
+				</button> */}
+				{Object.entries(widgetIds).map(([id, Widget]) => {
+					return <Widget key={id} id={id} />;
+				})}
 			</div>
 		);
 	},

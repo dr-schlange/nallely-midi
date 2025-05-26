@@ -54,7 +54,6 @@ export const RackRowVirtual = ({
 		>
 			<select
 				value={""}
-				style={{ width: "100%" }}
 				title="Adds a virtual device to the system"
 				onChange={(e) => {
 					const val = e.target.value;
