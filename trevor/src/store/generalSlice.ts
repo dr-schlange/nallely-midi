@@ -4,7 +4,7 @@ import type { GeneralState } from "../model";
 export const initialGeneralState: GeneralState = {
 	knownPatches: [],
 	errors: [],
-	trevorWebsocketURL: "ws://localhost:6788",
+	trevorWebsocketURL: `ws://${window.location.hostname}:6788`,
 	connected: "disconnected",
 	firstLaunch: true,
 };
