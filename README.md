@@ -142,6 +142,7 @@ nallely run --with-trevor
 
 ### Screenshots/videos of Trevor UI
 ![Screenshot vertical](https://github.com/user-attachments/assets/ba1203f4-c870-4805-9c73-40380e400bed)
+
 https://github.com/user-attachments/assets/fb94513a-bee0-442a-b809-fc60ed7c3ab2
 
 ### Screenshots of Trevor UI (old)
