@@ -13,6 +13,7 @@ export const RackRowVirtual = ({
 	onNonSectionClick,
 	devices,
 	onSectionScroll,
+	horizontal,
 }: {
 	height: number;
 	rowIndex: number;
@@ -26,6 +27,7 @@ export const RackRowVirtual = ({
 	selectedSections: string[];
 	onNonSectionClick: () => void;
 	onSectionScroll?: () => void;
+	horizontal?: boolean;
 }) => {
 	const virtualClasses = useTrevorSelector(
 		(state) => state.nallely.classes.virtual,
@@ -39,7 +41,7 @@ export const RackRowVirtual = ({
 	return (
 		// biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
 		<div
-			className="rack-row"
+			className={`rack-row ${horizontal ? "horizontal" : ""}`}
 			onScroll={() => onSectionScroll()}
 			onClick={(event) => {
 				if (

@@ -12,6 +12,7 @@ export const RackRow = ({
 	devices,
 	onSectionScroll,
 	onDeviceClick,
+	horizontal,
 }: {
 	rowIndex: number;
 	devices: MidiDevice[];
@@ -25,6 +26,7 @@ export const RackRow = ({
 	onNonSectionClick: () => void;
 	onSectionScroll?: () => void;
 	onDeviceClick?: (device: MidiDevice) => void;
+	horizontal?: boolean;
 }) => {
 	const midiClasses = useTrevorSelector((state) => state.nallely.classes.midi);
 
@@ -36,7 +38,7 @@ export const RackRow = ({
 	return (
 		// biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
 		<div
-			className="rack-row"
+			className={`rack-row ${horizontal ? "horizontal" : ""}`}
 			onScroll={() => onSectionScroll?.()}
 			onClick={(event) => {
 				if (

@@ -26,7 +26,7 @@ export const Scope = ({ id }: ScopeProps) => {
 
 	const options: uPlot.Options = {
 		height: 115,
-		width: 180,
+		width: 170,
 		cursor: {
 			drag: { setScale: false },
 		},

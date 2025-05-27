@@ -30,6 +30,9 @@ import { Playground } from "./modals/Playground";
 import { RackRowWidgets, type RackRowWidgetRef } from "./RackRowWidgets";
 import { LoadModal } from "./modals/LoadModal";
 
+const VERTICAL = "⇄";
+const HORIZONTAL = "⇅";
+
 const DevicePatching = () => {
 	const mainSectionRef = useRef(null);
 	const [rackRowHeight, setRackRowHeight] = useState(150); // Default height
@@ -65,8 +68,10 @@ const DevicePatching = () => {
 		Record<number, Record<string, string | undefined>>
 	>({});
 	const widgetRack = useRef<RackRowWidgetRef>(null);
-
 	const [isExpanded, setIsExpanded] = useState<boolean>(true);
+	const [orientation, setOrientation] = useState<string>(
+		window.innerHeight < 450 ? HORIZONTAL : VERTICAL,
+	);
 
 	useEffect(() => {
 		window.addEventListener("keydown", handleKeyDown);
@@ -583,12 +588,17 @@ const DevicePatching = () => {
 		setIsExpanded((prev) => !prev);
 	};
 
+	const toggleOrientation = () => {
+		setOrientation((prev) => (prev === VERTICAL ? HORIZONTAL : VERTICAL));
+	};
+
 	return (
-		<div className="device-patching">
+		<div
+			className={`device-patching ${orientation === VERTICAL ? "vertical" : ""}`}
+		>
 			<div
-				className="device-patching-main-section"
+				className={`device-patching-main-section ${orientation === HORIZONTAL ? "horizontal" : ""}`}
 				ref={mainSectionRef}
-				style={{ overflow: "hidden" }} // Prevent scrollbars
 			>
 				<RackRow
 					devices={midi_devices}
@@ -601,6 +611,7 @@ const DevicePatching = () => {
 					)}
 					onSectionScroll={updateConnections}
 					onDeviceClick={handleMidiDeviceClick}
+					horizontal={orientation === HORIZONTAL}
 				/>
 				<RackRowVirtual
 					devices={virtual_devices.filter(
@@ -615,9 +626,13 @@ const DevicePatching = () => {
 						(d) => `${d.device.id}-${d.section.parameters[0]?.section_name}`,
 					)}
 					onSectionScroll={updateConnections}
+					horizontal={orientation === HORIZONTAL}
 				/>
 				<svg className="device-patching-svg" ref={svgRef} />
-				<RackRowWidgets ref={widgetRack} />
+				<RackRowWidgets
+					ref={widgetRack}
+					horizontal={orientation === HORIZONTAL}
+				/>
 			</div>
 
 			<div>
@@ -634,7 +649,7 @@ const DevicePatching = () => {
 				>
 					{isExpanded ? ">>" : "<<"}
 				</button>
-				{isExpanded && (
+				{(isExpanded && (
 					<div className="device-patching-side-section">
 						<div className="device-patching-top-panel">
 							<button
@@ -763,6 +778,14 @@ const DevicePatching = () => {
 							</button>
 						</div>
 					</div>
+				)) || (
+					<button
+						className="rightbar-button"
+						type="button"
+						onClick={toggleOrientation}
+					>
+						{orientation}
+					</button>
 				)}
 			</div>
 			{isModalOpen && (

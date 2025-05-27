@@ -3,6 +3,7 @@ import { Scope } from "./Oscilloscope";
 
 interface WidgetRackProps {
 	onRackScroll?: () => void;
+	horizontal?: boolean;
 }
 
 export interface RackRowWidgetRef {
@@ -18,7 +19,7 @@ const WidgetComponents = {
 };
 
 export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
-	({ onRackScroll }: WidgetRackProps, ref) => {
+	({ onRackScroll, horizontal }: WidgetRackProps, ref) => {
 		// const slotWidth = 210;
 		const [widgetIds, setWidgetIds] = useState<
 			Record<number, React.FC<RackRowWidget>>
@@ -35,7 +36,10 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 		}));
 
 		return (
-			<div className="rack-row" onScroll={() => onRackScroll?.()}>
+			<div
+				className={`rack-row ${horizontal ? "horizontal" : ""}`}
+				onScroll={() => onRackScroll?.()}
+			>
 				<select
 					value={""}
 					title="Adds a new widget to the system"
