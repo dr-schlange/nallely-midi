@@ -63,7 +63,7 @@ class Link:
         if self.chain:
             value = self.chain(value, ctx)
         if self.debug:
-            print("# --> ", value, ctx, self.callback)
+            print(f"# {value}\n" f"  {ctx}\n")
         result = self.callback(value, ctx)
         if self.bouncy:
             self.dest.device.bounce_link(self.dest, value, ctx)

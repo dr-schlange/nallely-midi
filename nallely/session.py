@@ -168,7 +168,7 @@ class Session:
         Path(f"{name}.nly").write_text(self.to_json(d, indent=2))
 
     @classmethod
-    def all_connections(cls):
+    def all_connections_as_dict(cls):
         connections = []
 
         def scaler_as_dict(scaler):
@@ -251,7 +251,7 @@ class Session:
             ],
             "midi_devices": [device.to_dict() for device in connected_devices],
             "virtual_devices": [device.to_dict() for device in virtual_devices],
-            "connections": self.all_connections(),
+            "connections": self.all_connections_as_dict(),
             "classes": {
                 "virtual": [cls.__name__ for cls in virtual_device_classes],
                 "midi": [cls.__name__ for cls in midi_device_classes],

@@ -1,4 +1,5 @@
 from itertools import chain
+from typing import Any
 
 from ..core import (
     MidiDevice,
@@ -92,7 +93,11 @@ class TrevorAPI:
         stop_all_connected_devices(skip_unregistered)
 
     def associate_parameters(
-        self, from_parameter, to_parameter, unbind=False, with_scaler=True
+        self,
+        from_parameter,
+        to_parameter,
+        unbind=False,
+        with_scaler: bool | dict[str, Any] = True,
     ):
         from_path = from_parameter
         to_path = to_parameter
@@ -139,7 +144,9 @@ class TrevorAPI:
             dest[int(to_parameter)] = src
         elif with_scaler:
             target = getattr(dest.__class__, to_parameter, None)
-            if target:
+            if isinstance(with_scaler, dict):
+                chain = src.scale(with_scaler.get("to_min"), with_scaler.get("to_max"))
+            elif target:
                 to_range = getattr(dest.__class__, to_parameter).range
                 chain = src.scale(to_range[0], to_range[1])
             else:
