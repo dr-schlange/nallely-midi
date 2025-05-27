@@ -1,9 +1,6 @@
 import { useState, useEffect, useRef, ReactEventHandler } from "react";
 import type { MidiDevice, MidiDeviceSection } from "../model";
 import { buildSectionId, isLogMode, setDebugMode } from "../utils/utils";
-import { useTrevorWebSocket } from "../websockets/websocket";
-import { useTrevorDispatch } from "../store";
-import { setLogComponent } from "../store/runtimeSlice";
 
 const generateAcronym = (name: string): string => {
 	return name
@@ -45,9 +42,6 @@ const MidiDeviceComponent = ({
 	selected?: boolean;
 	onSectionScroll?: () => void;
 }) => {
-	const trevorSocket = useTrevorWebSocket();
-	const dispatch = useTrevorDispatch();
-
 	const [isNameOnLeft, setIsNameOnLeft] = useState(true); // Track the side of the name
 	// const sections = Object.keys(device.config);
 	const sections = device.meta.sections;

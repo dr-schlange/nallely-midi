@@ -14,7 +14,7 @@ export const LoadModal = ({ onClose, onOk }: LoadModalProps) => {
 
 	useEffect(() => {
 		trevorWebSocket?.listPatches();
-	}, [trevorWebSocket]);
+	}, [trevorWebSocket?.socket]);
 
 	const loadConfig = () => {
 		if (selectedFile && selectedFile.length > 0) {

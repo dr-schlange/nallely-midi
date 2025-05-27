@@ -13,7 +13,10 @@ const runtimeSlice = createSlice({
 		setLogMode: (state, action: PayloadAction<boolean>) => {
 			state.logMode = action.payload;
 		},
-		setLogComponent: (state, action: PayloadAction<number | string | undefined>) => {
+		setLogComponent: (
+			state,
+			action: PayloadAction<number | string | undefined>,
+		) => {
 			state.loggedComponent = action.payload;
 		},
 	},

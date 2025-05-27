@@ -158,7 +158,7 @@ export function Playground({ onClose }: PlaygroundProps) {
 				trevorSocket?.socket?.removeEventListener("message", onMessageHandler);
 			}
 		};
-	}, [trevorSocket]);
+	}, [trevorSocket?.socket]);
 
 	const myCustomKeymap = Prec.highest(
 		keymap.of([

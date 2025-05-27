@@ -88,7 +88,6 @@ const InstanceCreation = () => {
 	};
 
 	useEffect(() => {
-		console.log("Install stdout", trevorSocket)
 		const onStdoutHandler = (event) => {
 			const message = JSON.parse(event.data);
 
@@ -100,7 +99,6 @@ const InstanceCreation = () => {
 		trevorSocket?.socket?.addEventListener("message", onStdoutHandler);
 
 		return () => {
-			console.log("Remove stdout")
 			trevorSocket?.socket?.removeEventListener("message", onStdoutHandler);
 		};
 	}, [trevorSocket?.socket]);
