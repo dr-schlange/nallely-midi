@@ -145,7 +145,11 @@ class TrevorAPI:
         elif with_scaler:
             target = getattr(dest.__class__, to_parameter, None)
             if isinstance(with_scaler, dict):
-                chain = src.scale(with_scaler.get("to_min"), with_scaler.get("to_max"))
+                chain = src.scale(
+                    min=with_scaler.get("to_min"),
+                    max=with_scaler.get("to_max"),
+                    as_int=with_scaler.get("as_int"),
+                )
             elif target:
                 to_range = getattr(dest.__class__, to_parameter).range
                 chain = src.scale(to_range[0], to_range[1])

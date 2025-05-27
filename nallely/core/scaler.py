@@ -20,7 +20,7 @@ class Scaler:
     to_min: int | float | None
     to_max: int | float | None
     method: str = "lin"
-    as_int: bool = False
+    as_int: bool | None = False
     # from_min: int | float | None = None
     # from_max: int | float | None = None
     auto: bool = False
@@ -28,9 +28,12 @@ class Scaler:
     def __post_init__(self):
         if self.to_min == 0 and self.method == "log":
             self.to_min = 0.001
-        self.as_int = (
-            self.as_int or isinstance(self.to_min, int) and isinstance(self.to_max, int)
-        )
+        if self.as_int is None:
+            self.as_int = (
+                self.as_int
+                or isinstance(self.to_min, int)
+                and isinstance(self.to_max, int)
+            )
 
     def bind(self, target):
         from .links import Link
