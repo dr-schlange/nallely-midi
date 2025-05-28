@@ -284,7 +284,7 @@ const PatchingModal = ({
 					Close
 				</button>
 			</div>
-			<div className="modal-body">
+			<div className="modal-body patching">
 				<svg className="connection-svg modal" ref={svgRef}>
 					<title>Connection diagram</title>
 				</svg>
@@ -323,7 +323,9 @@ const PatchingModal = ({
 									}}
 								>
 									<div className="parameter-box" />
-									<span className="parameter-name left">{param.name}</span>
+									<div className="text-wrapper">
+										<span className="parameter-name left">{param.name}</span>
+									</div>
 								</div>
 							))}
 						</div>

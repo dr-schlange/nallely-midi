@@ -471,7 +471,7 @@ const DevicePatching = () => {
 
 	useEffect(() => {
 		updateConnections();
-	}, [allConnections, selectedConnection]); // Update lines when connections change
+	}, [allConnections, selectedConnection, orientation]); // Update lines when connections change
 
 	useEffect(() => {
 		const handleResize = () => {

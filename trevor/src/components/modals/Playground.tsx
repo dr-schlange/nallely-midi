@@ -250,7 +250,7 @@ mod-?:     displays this entry
 
 	return (
 		<div className="patching-modal">
-			<div className="modal-header">
+			<div className="modal-header playground">
 				<button
 					type="button"
 					className="close-button"

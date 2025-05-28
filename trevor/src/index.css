@@ -1256,8 +1256,37 @@ button.active {
 }
 
 @media (max-height: 450px) {
+	h3 {
+		font-size: 15px;
+	}
+
+	li {
+		font-size: 11px !important;
+	}
+
+	.associate-button {
+		font-size: 14px;
+	}
+
+	p {
+		font-size: 12px;
+	}
+
 	.device-patching.vertical {
 		height: 145%;
+	}
+
+	.parameters-grid {
+		flex-wrap: nowrap;
+	}
+
+	.parameters-grid.right {
+		align-items: flex-start;
+		transform: translateX(20%);
+	}
+
+	.parameters-grid.left {
+		flex-wrap: nowrap;
 	}
 
 	.device-patching-main-section {
@@ -1313,9 +1342,34 @@ button.active {
 		word-wrap: break-word;
 		overflow-x: hidden,;
 	}
+
+	.patching-modal {
+		width: 95%;
+		height: 77%;
+	}
+
+	.parameter-box {
+		width: 20px;
+		height: 20px;
+	}
 }
 
 @media (max-width: 450px) {
+	h3 {
+		font-size: 15px;
+	}
+
+	li {
+		font-size: 11px !important;
+	}
+
+	.associate-button {
+		font-size: 14px;
+	}
+
+	p {
+		font-size: 12px;
+	}
 	.rack-row {
 		align-items: center;
 		height: 100%;
@@ -1340,10 +1394,6 @@ button.active {
 		flex-wrap: nowrap;
 	}
 
-	.right-panel {
-		max-width: 35%;
-	}
-
 	.connection-svg {
 		top: 30px;
 	}
@@ -1375,5 +1425,83 @@ button.active {
 		white-space: pre-wrap;
 		word-wrap: break-word;
 		overflow-x: hidden,;
+	}
+
+	.modal-header.playground {
+		height: 60px;
+		flex-wrap: wrap;
+	}
+
+	.patching-modal {
+		width: 92%;
+		height: 70%;
+	}
+
+	.modal-header label {
+		font-size: small;
+	}
+
+	.modal-header label select {
+		width: 20px;
+	}
+
+	.modal-body.patching {
+		flex-direction: column;
+	}
+
+	.left-panel {
+		flex-direction: column;
+		width: 100%;
+		flex: 2.5;
+	}
+
+	.right-panel {
+		flex-direction: row;
+		max-width: 100%;
+	}
+
+	.parameters-grid.left {
+		flex-direction: row;
+		padding-left: unset;
+	}
+
+	.parameter-box {
+		width: 20px;
+		height: 20px;
+	}
+
+	.parameter-name.left {
+		display: inline-block;
+		left: 25%;
+		transform: rotate(-90deg);
+		transform-origin: left top;
+		line-height: 1.2;
+		top: -5px;
+	}
+
+	.text-wrapper {
+		display: flex;
+		height: auto;
+		width: auto;
+	}
+
+	.parameters-grid.right {
+		flex-direction: row;
+		transform: unset;
+	}
+
+	.parameter-name.right {
+		transform: rotate(-90deg) translateX(-68%);
+		left: unset;
+	}
+
+	.about-modal {
+		width: 90%;
+		height: 32%;
+	}
+
+	.save-modal {
+		width: 94%;
+		height: 25%;
 	}
 }
