@@ -148,4 +148,5 @@ export interface GeneralState {
 export interface RunTimeState {
 	logMode: boolean;
 	loggedComponent: number | string | undefined;
+	patchFilename: string;
 }

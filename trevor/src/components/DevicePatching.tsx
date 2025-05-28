@@ -72,6 +72,9 @@ const DevicePatching = () => {
 	const [orientation, setOrientation] = useState<string>(
 		window.innerHeight < 450 ? HORIZONTAL : VERTICAL,
 	);
+	const patchFilename = useTrevorSelector(
+		(state) => state.runTime.patchFilename,
+	);
 
 	useEffect(() => {
 		window.addEventListener("keydown", handleKeyDown);
@@ -592,6 +595,10 @@ const DevicePatching = () => {
 		setOrientation((prev) => (prev === VERTICAL ? HORIZONTAL : VERTICAL));
 	};
 
+	const savePatch = () => {
+		trevorSocket.saveAll(patchFilename);
+	};
+
 	return (
 		<div
 			className={`device-patching ${orientation === VERTICAL ? "vertical" : ""}`}
@@ -779,13 +786,22 @@ const DevicePatching = () => {
 						</div>
 					</div>
 				)) || (
-					<button
-						className="rightbar-button"
-						type="button"
-						onClick={toggleOrientation}
-					>
-						{orientation}
-					</button>
+					<>
+						<button
+							className="rightbar-button"
+							type="button"
+							onClick={toggleOrientation}
+						>
+							{orientation}
+						</button>
+						<button
+							className="rightbar-button"
+							type="button"
+							onClick={savePatch}
+						>
+							🖫
+						</button>
+					</>
 				)}
 			</div>
 			{isModalOpen && (

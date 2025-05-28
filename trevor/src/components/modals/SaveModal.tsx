@@ -1,16 +1,23 @@
 import { useState } from "react";
 import { useTrevorWebSocket } from "../../websockets/websocket";
+import { useTrevorDispatch, useTrevorSelector } from "../../store";
+import { setPatchFilename } from "../../store/runtimeSlice";
 
 interface SaveModalProps {
 	onClose: () => void;
 }
 
 export const SaveModal = ({ onClose }: SaveModalProps) => {
-	const [fileName, setFileName] = useState("patch");
+	const currentPatchName = useTrevorSelector(
+		(state) => state.runTime.patchFilename,
+	);
+	const dispatch = useTrevorDispatch();
+	const [fileName, setFileName] = useState(currentPatchName);
 	const trevorWebSocket = useTrevorWebSocket();
 
 	const saveConfig = () => {
 		trevorWebSocket?.saveAll(fileName);
+		dispatch(setPatchFilename(fileName));
 		onClose();
 	};
 

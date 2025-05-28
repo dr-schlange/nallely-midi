@@ -4,6 +4,7 @@ import type { RunTimeState } from "../model";
 export const initialGeneralState: RunTimeState = {
 	logMode: false,
 	loggedComponent: undefined,
+	patchFilename: "patch",
 };
 
 const runtimeSlice = createSlice({
@@ -19,9 +20,13 @@ const runtimeSlice = createSlice({
 		) => {
 			state.loggedComponent = action.payload;
 		},
+		setPatchFilename: (state, action: PayloadAction<string>) => {
+			state.patchFilename = action.payload;
+		},
 	},
 });
 
-export const { setLogMode, setLogComponent } = runtimeSlice.actions;
+export const { setLogMode, setLogComponent, setPatchFilename } =
+	runtimeSlice.actions;
 
 export default runtimeSlice.reducer;

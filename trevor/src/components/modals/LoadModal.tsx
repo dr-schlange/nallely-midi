@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTrevorWebSocket } from "../../websockets/websocket";
-import { useTrevorSelector } from "../../store";
+import { useTrevorDispatch, useTrevorSelector } from "../../store";
+import { setPatchFilename } from "../../store/runtimeSlice";
 
 interface LoadModalProps {
 	onClose?: () => void;
@@ -10,6 +11,7 @@ interface LoadModalProps {
 export const LoadModal = ({ onClose, onOk }: LoadModalProps) => {
 	const [selectedFile, setSelectedFile] = useState("");
 	const files = useTrevorSelector((state) => state.general.knownPatches);
+	const dispatch = useTrevorDispatch();
 	const trevorWebSocket = useTrevorWebSocket();
 
 	useEffect(() => {
@@ -19,6 +21,9 @@ export const LoadModal = ({ onClose, onOk }: LoadModalProps) => {
 	const loadConfig = () => {
 		if (selectedFile && selectedFile.length > 0) {
 			trevorWebSocket?.loadAll(selectedFile);
+
+			const patchName = selectedFile.split("/").slice(-1)[0].split(".")[0];
+			dispatch(setPatchFilename(patchName));
 			onOk?.();
 		}
 		onClose?.();
