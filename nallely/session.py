@@ -154,7 +154,7 @@ class Session:
 
         return errors
 
-    def save_all(self, name):
+    def save_all(self, name) -> Path:
         d = self.snapshot()
         del d["input_ports"]
         del d["output_ports"]
@@ -165,7 +165,9 @@ class Session:
         for device in d["virtual_devices"]:
             device["class"] = device["meta"]["name"]
             del device["meta"]
-        Path(f"{name}.nly").write_text(self.to_json(d, indent=2))
+        file = Path(f"{name}.nly")
+        file.write_text(self.to_json(d, indent=2))
+        return file
 
     @classmethod
     def all_connections_as_dict(cls):

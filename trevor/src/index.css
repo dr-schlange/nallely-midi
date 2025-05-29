@@ -213,8 +213,8 @@ input[type="text"]:disabled {
 	width: 100%;
 	height: auto;
 	background-color: #d0d0d0;
-	border: 2px solid #808080;
-	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
+	/* border: 2px solid #808080;
+	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000; */
 }
 
 .instance-creation-main-panel {
@@ -222,8 +222,8 @@ input[type="text"]:disabled {
 	width: 100%;
 	flex-direction: column;
 	background-color: #e0e0e0;
-	border-bottom: 2px solid #808080;
-	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
+	/* border-bottom: 2px solid #808080;
+	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000; */
 }
 
 /* .instance-creation-left-panel {
@@ -266,7 +266,7 @@ input[type="text"]:disabled {
 
 .instance-creation-midi-inputs {
 	flex: 4;
-	border-right: 2px solid #808080;
+	/* border-right: 2px solid #808080; */
 }
 
 .instance-creation-info-panel {
@@ -360,7 +360,7 @@ input[type="text"]:disabled {
 	height: 100%;
 	background-color: #d0d0d0;
 	border: 2px solid #808080;
-	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
+	/* box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000; */
 }
 
 .device-patching-main-section {
@@ -443,6 +443,7 @@ input[type="text"]:disabled {
 	align-items: center;
 	width: 100%;
 	height: 150px;
+	min-height: 150px;
 	flex-direction: row;
 }
 
@@ -975,7 +976,7 @@ button.active {
 	flex: 1;
 	display: flex;
 	flex-direction: column;
-	height: 100%;
+	height: 100vh;
 	background-color: #c0c0c0;
 }
 
@@ -1255,6 +1256,16 @@ button.active {
 	background-color: #ccc;
 }
 
+.notification-bar {
+	height: 32px;
+	max-height: 32px;
+	display: flex;
+	justify-content: flex-start;
+	align-items: center;
+	padding: 0 10px;
+	background-color: #a0a0a0;
+}
+
 @media (max-height: 450px) {
 	h3 {
 		font-size: 15px;
@@ -1272,9 +1283,9 @@ button.active {
 		font-size: 12px;
 	}
 
-	.device-patching.vertical {
+	/* .device-patching.vertical {
 		height: 145%;
-	}
+	} */
 
 	.parameters-grid {
 		flex-wrap: nowrap;
@@ -1298,8 +1309,12 @@ button.active {
 		height: 100%;
 	}
 
-	.top-section {
+	/* .top-section {
 		max-height: 90%;
+	} */
+
+	.bottom-section {
+		min-height: 84%;
 	}
 
 	.parameters-grid {
@@ -1386,8 +1401,12 @@ button.active {
 		overflow-x: auto;
 	}
 
-	.top-section {
+	/* .top-section {
 		max-height: 90%;
+	} */
+
+	.bottom-section {
+		min-height: 93%;
 	}
 
 	.parameters-grid {

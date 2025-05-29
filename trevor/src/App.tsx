@@ -6,6 +6,7 @@ import { connectWebSocket } from "./websockets/websocket";
 import { ErrorModal } from "./components/modals/ErrorModal";
 import { useMemo } from "react";
 import { WelcomeModal } from "./components/modals/WelcomeModal";
+import { NotificationBar } from "./components/NotificationBar";
 
 const App = () => {
 	useMemo(() => {
@@ -89,6 +90,7 @@ const Main = () => {
 					</marker>
 				</defs>
 			</svg>
+			<NotificationBar />
 		</div>
 	);
 };

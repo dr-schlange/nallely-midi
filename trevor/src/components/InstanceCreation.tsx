@@ -23,14 +23,6 @@ const InstanceCreation = () => {
 	const midiInPorts = useTrevorSelector((state) => state.nallely.input_ports);
 	const midiOutPorts = useTrevorSelector((state) => state.nallely.output_ports);
 	const devices = useTrevorSelector((state) => state.nallely.midi_devices);
-	// const virtualClasses = useTrevorSelector(
-	// 	(state) => state.nallely.classes.virtual,
-	// );
-	// const midiClasses = useTrevorSelector((state) => state.nallely.classes.midi);
-	// const deviceClasses = useMemo(
-	// 	() => [...midiClasses, ...virtualClasses],
-	// 	[midiClasses, virtualClasses],
-	// );
 	const [selectedDevice, setSelectedDevice] = useState<MidiDevice | null>();
 	const [selectedPort, setSelectedPort] = useState<MidiPort | null>();
 

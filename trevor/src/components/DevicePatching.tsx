@@ -799,7 +799,7 @@ const DevicePatching = () => {
 							type="button"
 							onClick={savePatch}
 						>
-							🖫
+							💾
 						</button>
 					</>
 				)}

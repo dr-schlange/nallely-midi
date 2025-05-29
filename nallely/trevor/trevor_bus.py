@@ -5,6 +5,7 @@ import socketserver
 import sys
 import textwrap
 import threading
+import time
 import traceback
 from collections import ChainMap, defaultdict
 from contextlib import contextmanager
@@ -159,6 +160,11 @@ class TrevorBus(VirtualDevice):
                     )
                 except Exception:
                     pass
+
+    def send_notification(self, status, message):
+        self.send_message(
+            {"status": status, "message": message, "command": "notification"}
+        )
 
     def full_state(self):
         return self.session.snapshot()
@@ -318,7 +324,8 @@ class TrevorBus(VirtualDevice):
         return self.full_state()
 
     def save_all(self, name):
-        self.session.save_all(name)
+        file = self.session.save_all(name)
+        self.send_notification("ok", f"Patch saved in {file.absolute()}")
 
     def resume_device(self, device_id, start):
         self.trevor.resume_device(device_id, start)
