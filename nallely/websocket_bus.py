@@ -30,6 +30,7 @@ class WSWaitingRoom:
     def rebind(self, target):
         for element in self.queue:
             setattr(target, self.name, element)
+        self.flush()
 
     def flush(self):
         self.queue.clear()
@@ -45,32 +46,31 @@ class WebSocketBus(VirtualDevice):
         self.to_update = None
         super().__init__(target_cycle_time=10, **kwargs)
 
-        def __setattr__(self, key, value):
-            if isinstance(getattr(self, key, None), WSWaitingRoom):
-                getattr(self, key).append(value)
-                return
-            if (
-                isinstance(
-                    value,
-                    (
-                        Int,
-                        ParameterInstance,
-                        PadOrKey,
-                        ModulePadsOrKeys,
-                        Scaler,
-                        VirtualDevice,
-                    ),
-                )
-                and key not in self.__dict__
-                and key not in self.__class__.__dict__
-            ):
-                waiting_room = WSWaitingRoom(key)
-                waiting_room.append(value)
-                object.__setattr__(self, key, waiting_room)
-                return
-            object.__setattr__(self, key, value)
+    def __setattr__(self, key, value):
+        if isinstance(getattr(self, key, None), WSWaitingRoom):
+            getattr(self, key).append(value)
+            return
+        if (
+            isinstance(
+                value,
+                (
+                    Int,
+                    ParameterInstance,
+                    PadOrKey,
+                    ModulePadsOrKeys,
+                    Scaler,
+                    VirtualDevice,
+                ),
+            )
+            and key not in self.__dict__
+            and key not in self.__class__.__dict__
+        ):
+            waiting_room = WSWaitingRoom(key)
+            waiting_room.append(value)
+            object.__setattr__(self, key, waiting_room)
+            return
 
-        self.__class__.__setattr__ = __setattr__
+        object.__setattr__(self, key, value)
 
     def handler(self, client):
         path = client.request.path
@@ -138,6 +138,7 @@ class WebSocketBus(VirtualDevice):
 
     def stop(self, clear_queues=False):
         if self.running and self.server:
+            print("Shutting down websocket bus...")
             self.server.shutdown()
         for key, value in list(self.__class__.__dict__.items()):
             if isinstance(value, VirtualParameter):
@@ -181,7 +182,7 @@ class WebSocketBus(VirtualDevice):
             is_stream = False
             range = (None, None)
             pname = parameter
-            print(parameter)
+            print("Configuring", parameter)
             if isinstance(parameter, dict):
                 pname = parameter.get("name", None)
                 range = parameter.get("range", range)
@@ -200,6 +201,7 @@ class WebSocketBus(VirtualDevice):
             setattr(self.__class__, param_name, vparam)
             if waiting_room and isinstance(waiting_room, WSWaitingRoom):
                 waiting_room.rebind(self)
+                del self.__dict__[param_name]
         self.known_services[name] = virtual_parameters
         if self.to_update:
             self.to_update.send_update(self)

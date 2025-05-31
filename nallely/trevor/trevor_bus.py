@@ -487,6 +487,7 @@ def start_trevor(
         print("Shutting down...")
     finally:
         if httpserver:
+            print("Shutting down Trevor-UI...")
             httpserver.stop()
         for device in connected_devices:
             device.all_notes_off()

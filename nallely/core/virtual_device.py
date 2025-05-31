@@ -73,8 +73,8 @@ class VirtualDevice(threading.Thread):
 
         super().__init__(daemon=True)
         virtual_devices.append(self)
-        self.device = self  # to be polymorphic with Int
-        self.__virtual__ = self  # to have a fake section
+        object.__setattr__(self, "device", self)  # to be polymorphic with Int
+        object.__setattr__(self, "__virtual__", self)  # to have a fake section
         self.links: tuple[
             defaultdict[str, list[Link]], defaultdict[str, list[Link]]
         ] = (
