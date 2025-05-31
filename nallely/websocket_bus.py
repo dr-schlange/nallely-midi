@@ -65,6 +65,7 @@ class WebSocketBus(VirtualDevice):
             and key not in self.__dict__
             and key not in self.__class__.__dict__
         ):
+            print(f"[DEBUG] Set in waiting room for {key}")
             waiting_room = WSWaitingRoom(key)
             waiting_room.append(value)
             object.__setattr__(self, key, waiting_room)
@@ -75,13 +76,14 @@ class WebSocketBus(VirtualDevice):
     def handler(self, client):
         path = client.request.path
         service_name = path.split("/")[1]
-        print("Conenction on ", path, service_name)
-        if path.endswith("/autoconfig") and service_name not in self.connected:
+        print("Connection on ", path, service_name)
+        if path.endswith("/autoconfig"):
             print(f"Autoconfig for {service_name}")
             try:
                 message = json.loads(client.recv())
-                print(f"Parameters: {message['parameters']}")
-                self.configure_remote_device(service_name, parameters=message["parameters"])  # type: ignore
+                if service_name not in self.connected:
+                    print(f"Parameters: {message['parameters']}")
+                    self.configure_remote_device(service_name, parameters=message["parameters"])  # type: ignore
             except ConnectionClosed as e:
                 kind = (
                     "crashed"
@@ -107,20 +109,33 @@ class WebSocketBus(VirtualDevice):
                     if device == client:
                         continue
                     try:
-                        device.send(message)
-                    except ConnectionClosed as e:
-                        try:
-                            connected_devices.remove(device)
-                            kind = (
-                                "crashed"
-                                if isinstance(e, ConnectionClosedError)
-                                else "disconnected"
-                            )
-                            print(
-                                f"Client {device} on {service_name} {kind} [{len(connected_devices)} clients]"
-                            )
-                        except Exception:
-                            pass
+                        json_message = json.loads(message)
+                        param_name = f"{service_name}_{json_message["on"]}"
+                        output = getattr(self, f"{param_name}_cv")
+                        value = float(json_message["value"])
+                        setattr(self, param_name, value)
+                        self.process_output(
+                            value, ThreadContext(), selected_outputs=[output]
+                        )
+                    except Exception as e:
+                        print(
+                            f"Couldn't parse the message and broadcast {message} to local instances: {e}"
+                        )
+                    # try:
+                    #     device.send(message)
+                    # except ConnectionClosed as e:
+                    #     try:
+                    #         connected_devices.remove(device)
+                    #         kind = (
+                    #             "crashed"
+                    #             if isinstance(e, ConnectionClosedError)
+                    #             else "disconnected"
+                    #         )
+                    #         print(
+                    #             f"Client {device} on {service_name} {kind} [{len(connected_devices)} clients]"
+                    #         )
+                    #     except Exception:
+                    #         pass
         except ConnectionClosed:
             print(
                 f"Client {client} on {service_name} disconnected unexpectedly [{len(connected_devices)} clients]"
@@ -150,6 +165,7 @@ class WebSocketBus(VirtualDevice):
         parameter = "_".join(parameter)
 
         devices = self.connected[device]
+        # setattr(self, parameter, value)
         for connected in list(devices):
             try:
                 connected.send(
@@ -188,20 +204,21 @@ class WebSocketBus(VirtualDevice):
                 range = parameter.get("range", range)
                 is_stream = parameter.get("stream", False)
             param_name = f"{name}_{pname}"
-            waiting_room = getattr(self, param_name, None)
+            cv_name = f"{param_name}_cv"
+            waiting_room = getattr(self, cv_name, None)
             vparam = VirtualParameter(
                 f"{param_name}",
                 consumer=True,
                 stream=is_stream,
-                cv_name=param_name,
+                cv_name=cv_name,
                 range=range,
             )
-            print("Registering", param_name, "range", range, "stream", is_stream)
+            print("Registering", cv_name, "range", range, "stream", is_stream)
             virtual_parameters.append(vparam)
-            setattr(self.__class__, param_name, vparam)
+            setattr(self.__class__, cv_name, vparam)
             if waiting_room and isinstance(waiting_room, WSWaitingRoom):
+                del self.__dict__[cv_name]
                 waiting_room.rebind(self)
-                del self.__dict__[param_name]
         self.known_services[name] = virtual_parameters
         if self.to_update:
             self.to_update.send_update(self)

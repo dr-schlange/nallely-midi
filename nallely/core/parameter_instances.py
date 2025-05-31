@@ -50,6 +50,9 @@ class ParameterInstance:
             auto=min is None and max is None,
         )
 
+    def value(self):
+        return object.__getattribute__(self.device, self.parameter.name)
+
 
 class Int(int):
     def __init__(self, val):
