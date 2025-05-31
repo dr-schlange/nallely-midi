@@ -5,7 +5,6 @@ import socketserver
 import sys
 import textwrap
 import threading
-import time
 import traceback
 from collections import ChainMap, defaultdict
 from contextlib import contextmanager

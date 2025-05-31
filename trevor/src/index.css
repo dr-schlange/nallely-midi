@@ -1307,6 +1307,7 @@ button.active {
 	.rack-row {
 		width: 200px;
 		height: 100%;
+		min-width: 200px;
 	}
 
 	/* .top-section {
@@ -1401,10 +1402,6 @@ button.active {
 		overflow-x: auto;
 	}
 
-	/* .top-section {
-		max-height: 90%;
-	} */
-
 	.bottom-section {
 		min-height: 93%;
 	}
@@ -1475,12 +1472,12 @@ button.active {
 	}
 
 	.right-panel {
-		flex-direction: row;
+		flex-direction: row-reverse;
 		max-width: 100%;
 	}
 
 	.parameters-grid.left {
-		flex-direction: row;
+		flex-direction: row-reverse;
 		padding-left: unset;
 	}
 
@@ -1491,11 +1488,11 @@ button.active {
 
 	.parameter-name.left {
 		display: inline-block;
-		left: 25%;
-		transform: rotate(-90deg);
-		transform-origin: left top;
+		transform: rotate(90deg);
+		transform-origin: right bottom;
 		line-height: 1.2;
-		top: -5px;
+		top: -11px;
+		right: 18px;
 	}
 
 	.text-wrapper {
@@ -1505,12 +1502,12 @@ button.active {
 	}
 
 	.parameters-grid.right {
-		flex-direction: row;
+		flex-direction: row-reverse;
 		transform: unset;
 	}
 
 	.parameter-name.right {
-		transform: rotate(-90deg) translateX(-68%);
+		transform: rotate(90deg) translateX(59%);
 		left: unset;
 	}
 
@@ -1522,5 +1519,13 @@ button.active {
 	.save-modal {
 		width: 94%;
 		height: 25%;
+	}
+
+	.bottom-left-panel {
+		flex-direction: row-reverse;
+	}
+
+	.top-left-panel {
+		flex-direction: row-reverse;
 	}
 }
