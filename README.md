@@ -103,12 +103,12 @@ All the embedded visuals are available at [http://localhost:3000/visuals](http:/
 
 ##### Extra Virtual Devices
 
-This repository proposes some extra virtual devices that are not yet embedded in Nallely as they are not yet "good enough". You can find them in the `experiments` folder. To load them, first download them on your hardrive somewhere, then you need to run Nallely including them:
+This repository proposes some extra virtual devices in the `experimental` packaged which are not yet embedded in Nallely as they are not yet "good enough". You can activate them by running Nallely with the `--experimental`:
 
 ```
-nallely run --with-trevor --serve-ui -b -l experiments/harmonizer.py experiments/mono2poly.py
+nallely run --with-trevor --serve-ui -b --experimental
 ```
-This will start a Nallely session running Trevor including the default builtins MIDI devices - Korg Minilogue, and Korg NTS-1 (option `-b`) and loads some experimental virtual devices that are not yet in Nallely's core: a pitch shifter, an harmonizer and a virtual device that lets you dispatch an input on multiple outputs, keeping track of the allocated outputs already, transforming for example 2 monophonic synths in a 2 voice polyphonic synth.
+This will start a Nallely session running Trevor including the default builtins MIDI devices - Korg Minilogue, and Korg NTS-1 (option `-b`) and loads some experimental virtual devices that are not yet in Nallely's core: a pitch shifter, an harmonizer and a virtual device that lets you dispatch an input on multiple outputs, keeping track of the allocated outputs already, transforming for example 2 monophonic synths in a 2 voice polyphonic synth, and highly unstable meta-virtual devices that can generate random patches and create random virtual modules instances.
 You can then navigate to [http://localhost:3000](http://localhost:3000) or [http://127.0.0.1:3000](http://127.0.0.1:3000), you should see the virtual devices in the drop-down menu of the middle vertical rack.
 
 ## Documentation
@@ -270,7 +270,7 @@ finally:
   nallely.stop_all_connected_devices()
 ```
 
-This is one way of creating a harmonizer, there is a more direct way that you can find in the `experiments` folder.
+This is one way of creating a harmonizer, there is a more direct way that you can find in the `nallely.experimental` package.
 
 ## Requirements and how to install
 
@@ -308,7 +308,7 @@ The command line let's you either run a simple script (an "init scrip"), launch 
 
 ```
 $ nallely run -h
-usage: nallely run [-h] [-l [LIBS ...]] [--with-trevor] [--serve-ui] [-b] [-i INIT_SCRIPT]
+usage: nallely run [-h] [-l [LIBS ...]] [--with-trevor] [--serve-ui] [-b] [--experimental] [-i INIT_SCRIPT]
 
 options:
   -h, --help            show this help message and exit
@@ -320,6 +320,7 @@ options:
   --serve-ui            Serves Trevor-UI, and makes it accessible from your browser. This option is only activated if '--with-trevor' is used.
   -b, --builtin-devices
                         Loads builtin MIDI devices (Korg NTS1, Korg Minilogue)
+  --experimental        Loads experimental virtuals devices
   -i, --init INIT_SCRIPT
                         Path towards an init script to launch. If used with "--with-trevor", the script will be launched *before* Trevor is started.
 ```

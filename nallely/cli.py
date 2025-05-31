@@ -39,6 +39,11 @@ def parse_args(argv):
         help=f"Loads builtin MIDI devices (Korg NTS1, Korg Minilogue)",
     )
     run_parser.add_argument(
+        "--experimental",
+        action="store_true",
+        help=f"Loads experimental virtuals devices",
+    )
+    run_parser.add_argument(
         "-i",
         "--init",
         type=Path,
@@ -85,6 +90,7 @@ def main():
                 loaded_paths=args.libs,
                 init_script=args.init_script,
                 serve_ui=args.serve_ui,
+                include_experimental=args.experimental,
             )
         elif args.init_script:
             from nallely.trevor import launch_standalone_script
@@ -93,6 +99,7 @@ def main():
                 args.builtin_devices,
                 loaded_paths=args.libs,
                 init_script=args.init_script,
+                include_experimental=args.experimental,
             )
     elif args.command == "generate":
         from nallely.generator import generate_api

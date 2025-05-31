@@ -448,7 +448,13 @@ def trevor_infos(header, loaded_paths, init_script, ui):
     return info
 
 
-def start_trevor(include_builtins, loaded_paths=None, init_script=None, serve_ui=None):
+def start_trevor(
+    include_builtins,
+    loaded_paths=None,
+    init_script=None,
+    serve_ui=None,
+    include_experimental=None,
+):
     httpserver = None
     try:
         if serve_ui:
@@ -459,6 +465,15 @@ def start_trevor(include_builtins, loaded_paths=None, init_script=None, serve_ui
             )
         if include_builtins:
             from ..devices import NTS1, Minilogue  # noqa, we include them
+
+        if include_experimental:
+            from ..experimental import (  # noqa, we include the experimental devices
+                Harmonizer,
+                InstanceCreator,
+                Mono2Poly,
+                PitchShifter,
+                RandomPatcher,
+            )
 
         loaded_paths = loaded_paths or []
         load_modules(loaded_paths)
@@ -479,10 +494,21 @@ def start_trevor(include_builtins, loaded_paths=None, init_script=None, serve_ui
         stop_all_connected_devices()
 
 
-def launch_standalone_script(include_builtins, loaded_paths=None, init_script=None):
+def launch_standalone_script(
+    include_builtins, loaded_paths=None, init_script=None, include_experimental=None
+):
     try:
         if include_builtins:
             from ..devices import NTS1, Minilogue  # noqa, we include them
+
+        if include_experimental:
+            from ..experimental import (  # noqa, we include the experimental devices
+                Harmonizer,
+                InstanceCreator,
+                Mono2Poly,
+                PitchShifter,
+                RandomPatcher,
+            )
 
         loaded_paths = loaded_paths or []
         load_modules(loaded_paths)
