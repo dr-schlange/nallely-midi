@@ -63,7 +63,7 @@ class Link:
         if self.chain:
             value = self.chain(value, ctx)
         if self.debug:
-            print(f"# {value}\n" f"  {ctx}\n")
+            print(f"# {value} -- {self.callback.__qualname__}\n" f"  {ctx}\n")
         result = self.callback(value, ctx)
         if self.bouncy:
             self.dest.device.bounce_link(self.dest, value, ctx)
@@ -239,16 +239,16 @@ class Link:
         is_blocking_consummer = dest.parameter.consumer
         src_section = getattr(src.device, src.parameter.section_name)
         src_param = src.parameter.name
+        chain = self.chain or (lambda x: x)
         if is_blocking_consummer:
             return lambda _, ctx: dest.device.receiving(
-                getattr(src_section, src_param),
+                chain(getattr(src_section, src_param)),
                 on=dest.parameter.name,
                 ctx=ThreadContext({**ctx, "param": src.parameter.name}),
             )
         else:
-
             return lambda _, ctx: dest.device.set_parameter(
-                dest.parameter.name, getattr(src_section, src_param), ctx
+                dest.parameter.name, chain(getattr(src_section, src_param)), ctx
             )
 
     # MIDI key/pad -> MIDI key/pad

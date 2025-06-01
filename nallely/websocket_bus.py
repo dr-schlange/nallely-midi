@@ -53,7 +53,7 @@ class WSWaitingRoom:
         return self
 
     def bind(self, parameter):
-        # print(f"[DEBUG] CALL {parameter}")
+        # print(f"[DEBUG] Bind {parameter}")
         self.append_output(WSOutputEntry([], parameter))
 
     def append_output(self, value):
@@ -73,6 +73,7 @@ class WSWaitingRoom:
             if out_entry.scaler:
                 # print(f"[DEBUG] Re-creating scaler {out_entry.scaler}")
                 src_parameter = src_parameter.scale(*out_entry.scaler)
+                # print(f"[DEBUG] scaler {src_parameter}")
             try:
                 setattr(target_device, target_parameter.cv_name, src_parameter)
             except AttributeError:
@@ -99,6 +100,7 @@ class WSWaitingRoom:
 class WebSocketBus(VirtualDevice):
 
     def __init__(self, host="0.0.0.0", port=6789, **kwargs):
+        self.forever = False  # Required to be explicit as we override __setattr__ to create waiting rooms on missing attributes
         self.server = serve(self.handler, host=host, port=port)
         self.connected = defaultdict(list)
         self.known_services = {}
@@ -222,7 +224,11 @@ class WebSocketBus(VirtualDevice):
         return super().setup()
 
     def stop(self, clear_queues=False):
+        # print("[DEBUG] Stopping server")
         for service, clients in self.connected.items():
+            # for client in clients:
+            #     print(f"[DEBUG] Closing connection for {client} on {service}")
+            #     client.send(json.dumps({"on": "__close_bus__"}))
             clients.clear()
         if self.running and self.server:
             print("Shutting down websocket bus...")
