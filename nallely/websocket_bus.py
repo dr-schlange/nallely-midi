@@ -222,12 +222,14 @@ class WebSocketBus(VirtualDevice):
         return super().setup()
 
     def stop(self, clear_queues=False):
-        for key, value in list(self.__class__.__dict__.items()):
-            if isinstance(value, VirtualParameter):
-                delattr(self.__class__, key)
+        for service, clients in self.connected.items():
+            clients.clear()
         if self.running and self.server:
             print("Shutting down websocket bus...")
             self.server.shutdown()
+        for key, value in list(self.__class__.__dict__.items()):
+            if isinstance(value, VirtualParameter):
+                delattr(self.__class__, key)
         super().stop(clear_queues)
 
     def receiving(self, value, on, ctx: ThreadContext):
