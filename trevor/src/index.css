@@ -838,8 +838,8 @@ button.active {
 }
 
 .parameter-box {
-	width: 40px;
-	height: 40px;
+	width: 30px;
+	height: 30px;
 	border-radius: 4px;
 	background-color: #d0d0d0; /* Gray square for parameters */
 	border: 2px solid #808080; /* Amiga-style border */
@@ -1373,6 +1373,25 @@ button.active {
 @media (max-width: 450px) {
 	h3 {
 		font-size: 15px;
+	}
+
+	.top-left-panel h3 {
+		transform: rotate(90deg);
+		transform-origin: right;
+		margin-top: 10px;
+		margin-right: 5px;
+		max-width: 26px;
+		position: relative;
+	}
+
+	.bottom-left-panel h3 {
+		font-size: 14px;
+		font-weight: bold;
+		transform: rotate(90deg);
+		transform-origin: left bottom;
+		max-width: 10px;
+		margin-top: -21px;
+		margin-right: 5px;
 	}
 
 	li {
