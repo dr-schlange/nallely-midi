@@ -9,7 +9,7 @@ from pathlib import Path
 from queue import Empty, Full, Queue
 from typing import Any, Iterable, Literal, Type
 
-from .parameter_instances import Int, PadOrKey, PadsOrKeysInstance, ParameterInstance
+from .parameter_instances import ParameterInstance
 from .scaler import Scaler
 from .world import (
     DeviceSerializer,
@@ -43,17 +43,19 @@ class VirtualParameter:
         return ParameterInstance(parameter=self, device=device)
 
     def __set__(self, device: "VirtualDevice", value, append=True, chain=None):
-        if isinstance(
-            value,
-            (
-                ParameterInstance,
-                Int,
-                PadOrKey,
-                PadsOrKeysInstance,
-                VirtualDevice,
-                Scaler,
-            ),
-        ):
+        # if isinstance(
+        #     value,
+        #     (
+        #         ParameterInstance,
+        #         Int,
+        #         PadOrKey,
+        #         PadsOrKeysInstance,
+        #         VirtualDevice,
+        #         Scaler,
+        #         WSWaitingRoom,
+        #     ),
+        # ):
+        if hasattr(value, "bind"):
             assert self.cv_name
             value.bind(getattr(device, self.cv_name))
 
@@ -72,6 +74,7 @@ class VirtualDevice(threading.Thread):
         from .links import Link
 
         super().__init__(daemon=True)
+        self.output = None
         virtual_devices.append(self)
         object.__setattr__(self, "device", self)  # to be polymorphic with Int
         object.__setattr__(self, "__virtual__", self)  # to have a fake section
@@ -405,7 +408,7 @@ class VirtualDevice(threading.Thread):
     def to_dict(self):
         virtual_parameters = self.all_parameters()
         config = self.current_preset()
-        del config["output"]
+        # del config["output"]
         return {
             "id": id(self),
             "repr": self.uid(),
@@ -431,7 +434,12 @@ class VirtualDevice(threading.Thread):
     def current_preset(self):
         d = {}
         for parameter in self.all_parameters():
-            d[parameter.name] = getattr(self, parameter.name, None)
+            try:
+                value = object.__getattribute__(self, parameter.name)
+                if value is not None:
+                    d[parameter.name] = value
+            except AttributeError:
+                pass
         return d
 
     def save_preset(self, file: Path | str):

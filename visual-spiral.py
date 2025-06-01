@@ -38,13 +38,13 @@ try:
     #   - hueCircling (interesting values in range [min=0, max=1]),
     # we send the values of the lfo to "/spiral" for the parameter "pattern"
 
-    ws.spiral_pattern = lfo
+    ws.spiral_pattern_cv = lfo
 
     # We apply a scaler here, we could have changed the range of the lfo, but it's an example
-    ws.spiral_particleColor = lfo2.scale(min=0.0, max=1, method="lin")
+    ws.spiral_particleColor_cv = lfo2.scale(min=0.0, max=1, method="lin")
 
     # We send data on "/scope" also, in case the external scope connects (on "data")
-    ws.scope_data = lfo2
+    ws.scope_data_cv = lfo2
 
     # # We map k1 from the MPD32 to the speed of the lfo
     # mpd32 = MPD32()
@@ -67,5 +67,6 @@ try:
         for service, parameters in ws.known_services.items():
             print(" * ", service, tuple(p.name for p in parameters))
     Session().save_all("visual-spiral")
+    print("Finish saving")
 finally:
     stop_all_connected_devices()

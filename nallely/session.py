@@ -131,7 +131,6 @@ class Session:
                 )
             src_path = f"{device_map[src['device']]}::{src_param['section_name']}::{src_param_name}"
             dest_path = f"{device_map[dest['device']]}::{dest_param['section_name']}::{dest_param_name}"
-            print(f"[DEBUG] Recreating parameters with {src_path} {dest_path}")
             with_chain = src.get("chain", None)
             link = self.trevor.associate_parameters(
                 src_path, dest_path, with_scaler=with_chain

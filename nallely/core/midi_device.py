@@ -8,8 +8,7 @@ from typing import Any, Callable, Counter, Type
 import mido
 
 from .parameter_instances import Int, PadOrKey, PadsOrKeysInstance, ParameterInstance
-from .scaler import Scaler
-from .virtual_device import VirtualDevice, VirtualParameter
+from .virtual_device import VirtualParameter
 from .world import (
     DeviceNotFound,
     DeviceSerializer,
@@ -75,17 +74,18 @@ class ModuleParameter:
         if feeder is None:
             return
 
-        if isinstance(
-            feeder,
-            (
-                ParameterInstance,
-                Int,
-                PadOrKey,
-                PadsOrKeysInstance,
-                VirtualDevice,
-                Scaler,
-            ),
-        ):
+        # if isinstance(
+        #     feeder,
+        #     (
+        #         ParameterInstance,
+        #         Int,
+        #         PadOrKey,
+        #         PadsOrKeysInstance,
+        #         VirtualDevice,
+        #         Scaler,
+        #     ),
+        # ):
+        if hasattr(feeder, "bind"):
             feeder.bind(getattr(to_module, self.name))
             return
 

@@ -47,7 +47,7 @@ def test__virtual_device_current_preset():
 
     d = l.current_preset()
 
-    assert len(d) == 8
+    assert len(d) == 7
     assert d["max_value"] == 1000
     assert d["min_value"] == 20
     assert d["speed"] == 50

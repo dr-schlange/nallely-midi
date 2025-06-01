@@ -7,6 +7,7 @@ from decimal import Decimal
 from pathlib import Path
 
 from .core import ParameterInstance
+from .websocket_bus import WSWaitingRoom
 
 
 def longest_common_substring(s1: str, s2: str) -> str:

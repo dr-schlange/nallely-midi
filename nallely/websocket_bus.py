@@ -1,7 +1,7 @@
 import json
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Literal
 
 from websockets import ConnectionClosed, ConnectionClosedError
 from websockets.sync.server import serve
@@ -16,25 +16,84 @@ from .core import (
     VirtualDevice,
     VirtualParameter,
 )
+from .core.parameter_instances import PadsOrKeysInstance
+
+
+@dataclass
+class WSOutputEntry:
+    scaler: list[Any]
+    target: Int | PadOrKey | PadsOrKeysInstance | ParameterInstance | None
+
+    def bind(self, parameter):
+        self.target = parameter
 
 
 @dataclass
 class WSWaitingRoom:
     name: str
-    queue: list = field(default_factory=list)
+    inputs_queue: list = field(default_factory=list)
+    outputs_queue: list = field(default_factory=list)
 
-    def append(self, value):
-        if value not in self.queue:
-            self.queue.append(value)
+    def append_input(self, value):
+        if value not in self.inputs_queue:
+            self.inputs_queue.append(value)
 
     def rebind(self, target):
-        for element in self.queue:
-            setattr(target, self.name, element)
-        self.flush()
+        # We need to rebind the inputs first
+        self.rebind_inputs(target)
+        self.rebind_outputs(target)
 
-    def flush(self):
-        self.queue.clear()
+    def rebind_inputs(self, target):
+        for element in self.inputs_queue:
+            setattr(target, self.name, element)
+        self.flush_inputs()
+
+    def flush_inputs(self):
+        self.inputs_queue.clear()
         return self
+
+    def bind(self, parameter):
+        # print(f"[DEBUG] CALL {parameter}")
+        self.append_output(WSOutputEntry([], parameter))
+
+    def append_output(self, value):
+        if value not in self.outputs_queue:
+            self.outputs_queue.append(value)
+
+    def rebind_outputs(self, source):
+        for out_entry in self.outputs_queue:
+            if out_entry.target is None:
+                continue
+            # print(
+            #     f"[DEBUG] Rebind output {self.name} from {source} to {out_entry.target} "
+            # )
+            src_parameter = getattr(source, self.name)
+            target_device = out_entry.target.device
+            target_parameter = out_entry.target.parameter
+            if out_entry.scaler:
+                # print(f"[DEBUG] Re-creating scaler {out_entry.scaler}")
+                src_parameter = src_parameter.scale(*out_entry.scaler)
+            try:
+                setattr(target_device, target_parameter.cv_name, src_parameter)
+            except AttributeError:
+                setattr(target_device, target_parameter.name, src_parameter)
+        self.flush_outputs()
+
+    def flush_outputs(self):
+        self.outputs_queue.clear()
+        return self
+
+    def scale(
+        self,
+        min: int | float | None = None,
+        max: int | float | None = None,
+        method: Literal["lin"] | Literal["log"] = "lin",
+        as_int: bool = False,
+    ):
+        # print("[DEBUG] SCALER CREATION")
+        out_entry = WSOutputEntry([min, max, method, as_int], None)
+        self.append_output(out_entry)
+        return out_entry
 
 
 class WebSocketBus(VirtualDevice):
@@ -46,10 +105,19 @@ class WebSocketBus(VirtualDevice):
         self.to_update = None
         super().__init__(target_cycle_time=10, **kwargs)
 
+    def __getattr__(self, key):
+        # print(f"[DEBUG] Create a waitingRoom for {key}")
+        # We build a waiting room
+        waiting_room = WSWaitingRoom(key)
+        object.__setattr__(self, key, waiting_room)
+        return waiting_room
+
     def __setattr__(self, key, value):
-        if isinstance(getattr(self, key, None), WSWaitingRoom):
-            getattr(self, key).append(value)
-            return
+        if key in self.__dict__:
+            room = object.__getattribute__(self, key)
+            if isinstance(room, WSWaitingRoom):
+                room.append_input(value)
+                return
         if (
             isinstance(
                 value,
@@ -65,9 +133,8 @@ class WebSocketBus(VirtualDevice):
             and key not in self.__dict__
             and key not in self.__class__.__dict__
         ):
-            print(f"[DEBUG] Set in waiting room for {key}")
             waiting_room = WSWaitingRoom(key)
-            waiting_room.append(value)
+            waiting_room.append_input(value)
             object.__setattr__(self, key, waiting_room)
             return
 
@@ -106,13 +173,13 @@ class WebSocketBus(VirtualDevice):
             for message in client:
                 # Sends message to other modules connected to this channel
                 for device in list(connected_devices):
-                    if device == client:
-                        continue
                     try:
                         json_message = json.loads(message)
+                        # print("[DEBUG] Received", json_message)
                         param_name = f"{service_name}_{json_message["on"]}"
                         output = getattr(self, f"{param_name}_cv")
                         value = float(json_message["value"])
+                        # print(f"[DEBUG] INTERNAL ROUTING {param_name} with {value}")
                         setattr(self, param_name, value)
                         self.process_output(
                             value, ThreadContext(), selected_outputs=[output]
@@ -121,6 +188,9 @@ class WebSocketBus(VirtualDevice):
                         print(
                             f"Couldn't parse the message and broadcast {message} to local instances: {e}"
                         )
+                    if device == client:
+                        continue
+                    # Sync all clients connected to the same service
                     # try:
                     #     device.send(message)
                     # except ConnectionClosed as e:
@@ -152,12 +222,12 @@ class WebSocketBus(VirtualDevice):
         return super().setup()
 
     def stop(self, clear_queues=False):
-        if self.running and self.server:
-            print("Shutting down websocket bus...")
-            self.server.shutdown()
         for key, value in list(self.__class__.__dict__.items()):
             if isinstance(value, VirtualParameter):
                 delattr(self.__class__, key)
+        if self.running and self.server:
+            print("Shutting down websocket bus...")
+            self.server.shutdown()
         super().stop(clear_queues)
 
     def receiving(self, value, on, ctx: ThreadContext):
@@ -165,7 +235,7 @@ class WebSocketBus(VirtualDevice):
         parameter = "_".join(parameter)
 
         devices = self.connected[device]
-        # setattr(self, parameter, value)
+        setattr(self, parameter, value)
         for connected in list(devices):
             try:
                 connected.send(
@@ -205,7 +275,11 @@ class WebSocketBus(VirtualDevice):
                 is_stream = parameter.get("stream", False)
             param_name = f"{name}_{pname}"
             cv_name = f"{param_name}_cv"
-            waiting_room = getattr(self, cv_name, None)
+            # waiting_room = getattr(self, cv_name, None)
+            try:
+                waiting_room = object.__getattribute__(self, cv_name)
+            except AttributeError:
+                waiting_room = None
             vparam = VirtualParameter(
                 f"{param_name}",
                 consumer=True,
