@@ -181,9 +181,21 @@ class Link:
         src = cast(PadsOrKeysInstance, self.src)
         dest = cast(ParameterInstance, self.dest)
 
-        return lambda value, ctx: dest.device.set_parameter(
-            dest.parameter.name, value, ctx
-        )
+        # This count is "global" to the link instance only
+        count = set()
+
+        def foo(value, ctx):
+            nonlocal count
+            if ctx.type == "note_on":
+                count.add(value)
+            elif ctx.type == "note_off" and value in count:
+                count.remove(value)
+            if count:
+                return dest.device.set_parameter(dest.parameter.name, value, ctx)
+            else:
+                return dest.device.set_parameter(dest.parameter.name, 0, ctx)
+
+        return foo
 
     # MIDI pad/key -> Virtual device input
     def _install_PadOrKey__ParameterInstance(self):

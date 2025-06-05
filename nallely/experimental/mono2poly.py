@@ -1,3 +1,4 @@
+import time
 from collections import deque
 from typing import Any
 
@@ -146,3 +147,105 @@ class Mono2Poly(VirtualDevice):
         return (
             None  # we deactivate the normal output, we trigger the right one manually
         )
+
+
+class FakePoly(VirtualDevice):
+    input_cv = VirtualParameter("input", range=(0, 127))
+    time_cv = VirtualParameter("time", range=(0, 127))
+
+    def __init__(self, *args, **kwargs):
+        self.input = None
+        self.time = 100
+        super().__init__(*args, target_cycle_time=1 / 1000, **kwargs)
+
+    def main(self, ctx: ThreadContext) -> Any:
+        type = ctx.get("type", None)
+        value = self.input
+
+        if value:
+            self.input = None
+            for i in range(10):
+                # Trigger the fake note
+                time.sleep((1 / 1000) * self.time)
+                self.process_output(
+                    value + 3,
+                    ThreadContext({**ctx, "type": "note_on"}),
+                )
+                time.sleep((1 / 1000) * self.time)
+
+                return value
+
+                # Trigger the real note
+                # self.process_output(value, ctx)
+                # self.process_output(
+                #     value,
+                #     ThreadContext({**ctx, "type": "note_off"}),
+                # )
+                # self.process_output(
+                #     value + 3,
+                #     ThreadContext({**ctx, "type": "note_off"}),
+                # )
+                # time.sleep((1 / 1000) * self.time)  # 100 ms
+
+        return None
+
+
+class Arpegiator(VirtualDevice):
+    input_cv = VirtualParameter("input", range=(0, 127))
+    time_cv = VirtualParameter("time", range=(20, 150))
+    reset_cv = VirtualParameter("reset", range=(0, 1))
+    hold_cv = VirtualParameter("hold", range=(0, 1))
+
+    def __init__(self, *args, **kwargs):
+        self.input = None
+        self._time = 100
+        self.notes = []
+        self.index = 0
+        self.reset = 0
+        self.hold = 0
+        super().__init__(*args, target_cycle_time=(1 / 1000) * self._time, **kwargs)
+
+    @property
+    def time(self):
+        return self._time
+
+    @time.setter
+    def time(self, value):
+        self._time = value
+        self.target_cycle_time = (1 / 1000) * value
+
+    def main(self, ctx: ThreadContext) -> Any:
+        if self.reset == 1:
+            print("Reset notes")
+            self.reset = 0
+            for note in self.notes:
+                self.process_output(
+                    note,
+                    ThreadContext({**ctx, "type": "note_off"}),
+                )
+            self.index = 0
+            self.notes = []
+        type = ctx.get("type", None)
+        value = self.input
+        if type == "note_off" and value in self.notes and not self.hold:
+            self.input = None
+            self.notes.remove(value)
+        elif value and value not in self.notes:
+            print(f"STORE {value}")
+            self.input = None
+            self.notes.append(value)
+
+        if len(self.notes) > 0:
+            self.process_output(
+                self.notes[self.index - 1],
+                ThreadContext({**ctx, "type": "note_off"}),
+            )
+            self.process_output(
+                self.notes[self.index],
+                ThreadContext({**ctx, "type": "note_on"}),
+            )
+            self.index += 1
+            if self.index >= len(self.notes):
+                self.index = 0
+
+        return None
