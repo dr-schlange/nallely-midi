@@ -154,8 +154,13 @@ class VirtualDevice(threading.Thread):
 
             # Run main processing and output
             ctx.update(inner_ctx)
+            # try:
             value = self.main(ctx)
             self.process_output(value, ctx)
+            # except Exception as e:
+            #     print(
+            #         f"Exception caught in {self.repr()}, execution continue, but you should check that:\n * {e}"
+            #     )
 
             if queue_level > self.input_queue.maxsize * 0.8:
                 # Skip sleep to catch up faster
