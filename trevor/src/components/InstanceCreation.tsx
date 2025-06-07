@@ -5,7 +5,7 @@ import { drawConnection } from "../utils/svgUtils";
 import { useTrevorWebSocket, WsStatus } from "../websockets/websocket";
 import type { MidiDevice } from "../model";
 import { SettingsModal } from "./modals/SettingsModal";
-import { setLogMode } from "../store/runtimeSlice";
+import { setClassCodeMode, setLogMode } from "../store/runtimeSlice";
 
 const truncateName = (name: string, maxLength: number) => {
 	return name.length > maxLength ? `${name.slice(0, maxLength)}...` : name;
@@ -45,6 +45,9 @@ const InstanceCreation = () => {
 	const logMode = useTrevorSelector((state) => state.runTime.logMode);
 	const loggedComponent = useTrevorSelector(
 		(state) => state.runTime.loggedComponent,
+	);
+	const classCodeMode = useTrevorSelector(
+		(state) => state.runTime.classCodeMode,
 	);
 
 	useEffect(() => {
@@ -191,6 +194,21 @@ const InstanceCreation = () => {
 		}
 	};
 
+	const handleClassCodeMode = () => {
+		if (!classCodeMode) {
+			document.body.style.cursor = "crosshair";
+		} else {
+			document.body.style.cursor = "auto";
+		}
+		dispatch(setClassCodeMode(!classCodeMode));
+	};
+
+	useEffect(() => {
+		if (!classCodeMode) {
+			document.body.style.cursor = "auto";
+		}
+	}, [classCodeMode]);
+
 	return (
 		<>
 			{loggedComponent && (
@@ -227,10 +245,19 @@ const InstanceCreation = () => {
 						{isExpanded ? "-" : "+"}
 					</button>
 					<button
+						className={classCodeMode ? "active" : ""}
+						style={{ padding: "0px", width: "27px", height: "100%" }}
+						type="button"
+						title="class code"
+						onClick={handleClassCodeMode}
+					>
+						C
+					</button>
+					<button
 						className={logMode ? "active" : ""}
 						style={{ fontSize: "larger", padding: "0px" }}
 						type="button"
-						title="settings"
+						title="log mode"
 						onClick={handleLogMode}
 					>
 						🔍

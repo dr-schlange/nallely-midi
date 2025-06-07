@@ -14,6 +14,7 @@ import {
 } from "../store/generalSlice";
 import { setFullState } from "../store/trevorSlice";
 import { isPadOrdKey, isPadsOrdKeys, isVirtualParameter } from "../utils/utils";
+import * as RuntimeAPI from "../store/runtimeSlice";
 
 // const WEBSOCKET_URL = `ws://${window.location.hostname}:6788/trevor`;
 
@@ -24,14 +25,15 @@ export const WsStatus = {
 };
 
 class TrevorWebSocket {
-	public socket: WebSocket | null = null;
+	socket: WebSocket | null = null;
 	private reconnectInterval = 1 * 1000;
-	public isConnected = false;
+	isConnected = false;
 	private manualClose = false;
 	private pendingRequests = new Map<string, (response: any) => void>();
 	private retryTimeoutId: ReturnType<typeof setTimeout> | null = null;
 	private unsubscribe;
 
+	// biome-ignore lint/nursery/useConsistentMemberAccessibility: fake positive
 	constructor(public url: string) {
 		this.connect(this.url);
 		this.unsubscribe = store.subscribe(this.handleStoreChange.bind(this));
@@ -59,10 +61,7 @@ class TrevorWebSocket {
 		return Math.random().toString(36).substr(2, 9);
 	}
 
-	public requestWithAnswer(
-		command: string,
-		args: Record<string, any>,
-	): Promise<any> {
+	requestWithAnswer(command: string, args: Record<string, any>): Promise<any> {
 		if (!this.socket || !this.isConnected) {
 			return Promise.reject(new Error("WebSocket is not connected"));
 		}
@@ -78,11 +77,11 @@ class TrevorWebSocket {
 		});
 	}
 
-	public requestCompletion(expression: string) {
+	requestCompletion(expression: string) {
 		return this.requestWithAnswer("completion_request", { expression });
 	}
 
-	public executeCode(code: string) {
+	executeCode(code: string) {
 		return this.sendJsonMessage({
 			command: "execute_code",
 			code,
@@ -128,6 +127,12 @@ class TrevorWebSocket {
 				store.dispatch(setFullState(message));
 				return;
 			}
+			if (message.command.startsWith("RuntimeAPI::")) {
+				const apiCommand =
+					RuntimeAPI[message.command.replace("RuntimeAPI::", "")];
+				store.dispatch(apiCommand(message.arg));
+				return;
+			}
 			if (message.command === "completion" && message.requestId) {
 				const resolve = this.pendingRequests.get(message.requestId);
 				if (resolve) {
@@ -161,7 +166,7 @@ class TrevorWebSocket {
 		};
 	}
 
-	public disconnect() {
+	disconnect() {
 		this.isConnected = false;
 		this.manualClose = true;
 
@@ -189,7 +194,7 @@ class TrevorWebSocket {
 		}, this.reconnectInterval);
 	}
 
-	public sendMessage(message: string) {
+	sendMessage(message: string) {
 		if (this.socket && this.isConnected) {
 			this.socket.send(message);
 		} else {
@@ -197,18 +202,18 @@ class TrevorWebSocket {
 		}
 	}
 
-	public sendJsonMessage(message: object) {
+	sendJsonMessage(message: object) {
 		this.sendMessage(JSON.stringify(message));
 	}
 
-	public createDevice(deviceClass: string) {
+	createDevice(deviceClass: string) {
 		this.sendJsonMessage({
 			command: "create_device",
 			name: deviceClass,
 		});
 	}
 
-	public associateParameters(
+	associateParameters(
 		fromDevice: MidiDevice | VirtualDevice,
 		fromParameter: MidiParameter | VirtualParameter | PadsOrKeys | PadOrKey,
 		toDevice: MidiDevice | VirtualDevice,
@@ -244,7 +249,7 @@ class TrevorWebSocket {
 		});
 	}
 
-	public createScaler(
+	createScaler(
 		fromDevice: MidiDevice | VirtualDevice | number,
 		fromParameter: MidiParameter | VirtualParameter,
 		toDevice: MidiDevice | VirtualDevice | number,
@@ -267,7 +272,7 @@ class TrevorWebSocket {
 		});
 	}
 
-	public makeLinkBouncy(
+	makeLinkBouncy(
 		fromDevice: MidiDevice | VirtualDevice | number,
 		fromParameter: MidiParameter | VirtualParameter,
 		toDevice: MidiDevice | VirtualDevice | number,
@@ -290,7 +295,7 @@ class TrevorWebSocket {
 		});
 	}
 
-	public associatePort(device: MidiDevice, port: string, direction: string) {
+	associatePort(device: MidiDevice, port: string, direction: string) {
 		this.sendJsonMessage({
 			command: "associate_midi_port",
 			device: device.id,
@@ -299,21 +304,21 @@ class TrevorWebSocket {
 		});
 	}
 
-	public saveAll(name: string) {
+	saveAll(name: string) {
 		this.sendJsonMessage({
 			command: "save_all",
 			name,
 		});
 	}
 
-	public loadAll(name: string) {
+	loadAll(name: string) {
 		this.sendJsonMessage({
 			command: "load_all",
 			name,
 		});
 	}
 
-	public toggle_device(device: VirtualDevice, start = false) {
+	toggle_device(device: VirtualDevice, start = false) {
 		if (!device.running || device.paused) {
 			this.sendJsonMessage({
 				command: "resume_device",
@@ -329,7 +334,7 @@ class TrevorWebSocket {
 		}
 	}
 
-	public setVirtualValue(
+	setVirtualValue(
 		device: VirtualDevice,
 		parameter: VirtualParameter,
 		value: number | string | boolean,
@@ -342,7 +347,7 @@ class TrevorWebSocket {
 		});
 	}
 
-	public setScalerValue(
+	setScalerValue(
 		scalerId: number,
 		parameter: string,
 		value: number | string | boolean,
@@ -355,62 +360,78 @@ class TrevorWebSocket {
 		});
 	}
 
-	public resetAll() {
+	resetAll() {
 		this.sendJsonMessage({
 			command: "reset_all",
 		});
 	}
 
-	public pullFullState() {
+	pullFullState() {
 		this.sendJsonMessage({
 			command: "full_state",
 		});
 	}
 
-	public deleteAllConnections() {
+	deleteAllConnections() {
 		this.sendJsonMessage({
 			command: "delete_all_connections",
 		});
 	}
 
-	public saveCode(code: string) {
+	saveCode(code: string) {
 		this.sendJsonMessage({
 			command: "save_code",
 			code,
 		});
 	}
 
-	public listPatches() {
+	listPatches() {
 		this.sendJsonMessage({
 			command: "list_patches",
 		});
 	}
 
-	public randomPreset(device_id: number) {
+	randomPreset(device_id: number) {
 		this.sendJsonMessage({
 			command: "random_preset",
 			device_id,
 		});
 	}
 
-	public killDevice(device_id: number) {
+	killDevice(device_id: number) {
 		this.sendJsonMessage({
 			command: "kill_device",
 			device_id,
 		});
 	}
 
-	public startCaptureSTDOUT(deviceOrLink) {
+	startCaptureSTDOUT(deviceOrLink: number | string | undefined = undefined) {
 		this.sendJsonMessage({
 			command: "start_capture_stdout",
 			device_or_link: deviceOrLink,
 		});
 	}
 
-	public stopCaptureSTDOUT(deviceOrLink) {
+	stopCaptureSTDOUT(deviceOrLink: number | string | undefined = undefined) {
 		this.sendJsonMessage({
 			command: "stop_capture_stdout",
 			device_or_link: deviceOrLink,
+		});
+	}
+
+	fetchClassCode(device_id: number) {
+		this.sendJsonMessage({
+			command: "fetch_class_code",
+			device_id,
+		});
+	}
+
+	compileInject(device_id: number, method_name, method_code) {
+		this.sendJsonMessage({
+			command: "compile_inject",
+			device_id,
+			method_name,
+			method_code,
 		});
 	}
 }

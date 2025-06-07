@@ -149,4 +149,11 @@ export interface RunTimeState {
 	logMode: boolean;
 	loggedComponent: number | string | undefined;
 	patchFilename: string;
+	classCodeMode: boolean;
+	classCode: ClassCode;
+}
+
+export interface ClassCode {
+	className: string;
+	methods: Record<string, string>;
 }

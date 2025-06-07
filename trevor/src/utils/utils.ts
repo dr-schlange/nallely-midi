@@ -131,6 +131,10 @@ export const isLogMode = () => {
 	return document.body.style.cursor === "zoom-in";
 };
 
+export const isClassCodeMode = () => {
+	return document.body.style.cursor === "crosshair";
+};
+
 export const setDebugMode = (
 	event: { stopPropagation: () => void },
 	componentId: number | string,

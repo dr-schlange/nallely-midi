@@ -33,6 +33,7 @@ from ..utils import StateEncoder, load_modules
 from ..websocket_bus import (  # noqa, we keep it so it's loaded in this namespace
     WebSocketBus,
 )
+from .meta_trevor_api import MetaTrevorAPI
 from .trevor_api import TrevorAPI
 
 _SYSTEM_STDOUT = sys.stdout
@@ -92,6 +93,7 @@ class TrevorBus(VirtualDevice):
         self.server = serve(self.handler, host=host, port=port)
         self.exec_context = ChainMap(globals())
         self.trevor = TrevorAPI()
+        self.meta_trevor = MetaTrevorAPI(self.exec_context)
         self.session = Session(self)
         self.redirector = OutputCapture(self.send_message)
 
@@ -373,6 +375,36 @@ class TrevorBus(VirtualDevice):
                     print(f"Couldn't find {device_or_link}")
                     pass
         self.redirector.stop_capture()
+
+    def fetch_class_code(self, device_id):
+        try:
+            device = self.trevor.get_device_instance(device_id)
+            class_code = self.meta_trevor.fetch_class_code(device)
+            self.send_message(
+                {"arg": class_code, "command": "RuntimeAPI::setClassCode"}
+            )
+        except:
+            print(f"Couldn't find {device_id}")
+            pass
+
+    def compile_inject(self, device_id, method_name, method_code):
+        try:
+            device = self.trevor.get_device_instance(device_id)
+        except Exception as e:
+            print(f"Couldn't find {device_id}")
+            return
+        try:
+            self.meta_trevor.compile_inject(device, method_name, method_code)
+            self.send_notification(
+                "ok",
+                f"Method {method_name} compiled and injected in {device.__class__.__name__}",
+            )
+        except Exception as e:
+            self.send_notification(
+                "error",
+                f"Error while compiling/injecting {method_name} in {device.__class__.__name__}",
+            )
+            print(e)
 
 
 def resource_path(relative_path):

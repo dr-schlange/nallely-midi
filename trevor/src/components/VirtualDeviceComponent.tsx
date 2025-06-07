@@ -2,6 +2,9 @@ import { useState, useEffect, useId } from "react";
 import type { VirtualDevice, VirtualParameter } from "../model";
 import { useTrevorWebSocket } from "../websockets/websocket";
 import { buildSectionId } from "../utils/utils";
+import { useTrevorDispatch, useTrevorSelector } from "../store";
+import { ClassBrowser } from "./modals/ClassBrowser";
+import { setClassCodeMode } from "../store/runtimeSlice";
 
 const generateAcronym = (name: string): string => {
 	return name
@@ -50,6 +53,11 @@ const VirtualDeviceComponent = ({
 	const leftSections = parameters.slice(0, half);
 	const rightSections = parameters.slice(half);
 	const trevorSocket = useTrevorWebSocket();
+	const classCodeMode = useTrevorSelector(
+		(state) => state.runTime.classCodeMode,
+	);
+	const dispatch = useTrevorDispatch();
+	const [isCodeOpen, setIsCodeOpen] = useState<boolean>(false);
 
 	useEffect(() => {
 		// Dynamically adjust the side of the name based on section positions
@@ -59,6 +67,19 @@ const VirtualDeviceComponent = ({
 	const pauseResume = (device: VirtualDevice) => {
 		// We start the device if it wasn't
 		trevorSocket?.toggle_device(device, /* start= */ !device.running);
+	};
+
+	const handleDeviceClick = (device: VirtualDevice) => {
+		if (classCodeMode) {
+			setIsCodeOpen((prev) => !prev);
+			dispatch(setClassCodeMode(false));
+			return;
+		}
+		onDeviceClick?.(device);
+	};
+
+	const handleClassBrowserClose = () => {
+		setIsCodeOpen(false);
 	};
 
 	return (
@@ -72,7 +93,7 @@ const VirtualDeviceComponent = ({
 				borderColor: selected ? "yellow" : "",
 			}}
 			id={`${device.id}-__virtual__`}
-			onClick={() => onDeviceClick?.(device)}
+			onClick={() => handleDeviceClick(device)}
 		>
 			<div className={`device-name ${isNameOnLeft ? "left" : "right"}`}>
 				{device.repr}
@@ -151,6 +172,9 @@ const VirtualDeviceComponent = ({
 					})}
 				</div>
 			</div>
+			{isCodeOpen && (
+				<ClassBrowser onClose={handleClassBrowserClose} device={device} />
+			)}
 		</div>
 	);
 };
