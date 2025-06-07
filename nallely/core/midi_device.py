@@ -252,7 +252,9 @@ class DeviceState:
             d[name] = module_state
             for parameter in module.meta.parameters:
                 value = getattr(getattr(self, name), parameter.name)
-                module_state[parameter.name] = int(value)
+                value = int(value)
+                if value != parameter.init_value:
+                    module_state[parameter.name] = int(value)
                 if with_meta:
                     module_state[parameter.name] = {
                         "section_name": parameter.section_name,

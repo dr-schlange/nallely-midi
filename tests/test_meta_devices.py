@@ -64,3 +64,31 @@ def test__virtual_device_load_preset():
     assert l.min_value == 20
     assert l.speed == 50
     assert l.waveform == "sine"
+
+
+def test__save_midi_device_nondefault_values(nts1):
+    nts1.filter.cutoff = 15
+    nts1.filter.resonance = 44
+    nts1.arp.length = 100
+
+    d = nts1.to_dict()
+    config = d["config"]
+
+    assert len(config) == 2
+    assert "filter" in config
+    assert "arp" in config
+    assert "oscs" not in config
+    assert "keys" not in config
+
+    assert len(config["filter"]) == 2
+    assert "cutoff" in config["filter"]
+    assert "resonance" in config["filter"]
+    assert "type" not in config["filter"]
+
+    assert len(config["arp"]) == 1
+    assert "length" in config["arp"]
+    assert "interval" not in config["arp"]
+
+    assert config["filter"]["cutoff"] == 15
+    assert config["filter"]["resonance"] == 44
+    assert config["arp"]["length"] == 100

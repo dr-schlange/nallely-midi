@@ -1,4 +1,6 @@
 # Local files
+.envrc.*
+backup/
 exp*.py
 .envrc
 BAK/
