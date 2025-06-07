@@ -64,6 +64,9 @@ class VirtualDevice(threading.Thread):
     _id: dict[Type, int] = defaultdict(int)
     output_cv = VirtualParameter(name="output")
 
+    # We use a consumer to bypass the input queue
+    set_pause_cv = VirtualParameter(name="set_pause", range=(0, 1), consumer=True)
+
     def __new__(cls, *args, **kwargs):
         instance = super().__new__(cls)
         instance._id[cls] += 1
@@ -105,7 +108,11 @@ class VirtualDevice(threading.Thread):
 
     def main(self, ctx: ThreadContext) -> Any: ...
 
-    def receiving(self, value, on: str, ctx: ThreadContext): ...
+    def receiving(self, value, on: str, ctx: ThreadContext):
+        if on == "set_pause":
+            self.set_pause = value
+        if hasattr(self, "to_update"):
+            self.to_update.send_update()  # type: ignore, this is set by the trevor bus dynamically
 
     def set_parameter(self, param: str, value: Any, ctx: ThreadContext):
         if self.paused:
@@ -230,6 +237,17 @@ class VirtualDevice(threading.Thread):
             if duration:
                 time.sleep(duration)
                 self.resume()
+
+    @property
+    def set_pause(self):
+        return 1 if self.paused else 0
+
+    @set_pause.setter
+    def set_pause(self, value):
+        if value == 0:
+            self.resume()
+        else:
+            self.pause()
 
     def resume(self):
         if self.running and self.paused:
