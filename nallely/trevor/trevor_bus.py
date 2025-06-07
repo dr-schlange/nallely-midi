@@ -29,6 +29,7 @@ from ..core import (
     stop_all_connected_devices,
     virtual_device_classes,
 )
+from ..core.midi_device import MidiDevice, ModuleParameter
 from ..utils import StateEncoder, load_modules
 from ..websocket_bus import (  # noqa, we keep it so it's loaded in this namespace
     WebSocketBus,
@@ -258,7 +259,28 @@ class TrevorBus(VirtualDevice):
     def create_device(self, name):
         instance = self.trevor.create_device(name)
         instance.to_update = self
+        if isinstance(instance, MidiDevice):
+            instance.on_midi_message = self.send_control_value_update
         return self.full_state()
+
+    def send_control_value_update(
+        self, device: MidiDevice, msg, control: ModuleParameter | None
+    ):
+        if not control:
+            # If we are here, the control is not bind in the system, so we don't send updates
+            return
+        info = f"{msg.value} {device.uid()} {control.section_name} {control.name} [CC #{msg.control}]"
+        self.send_message(
+            {
+                "command": "RuntimeAPI::updateCCState",
+                "arg": {
+                    "device": device.uid(),
+                    "section": control.section_name,
+                    "parameter": control.name,
+                    "value": msg.value,
+                },
+            }
+        )
 
     def send_update(self, device=None):
         connected_devices = self.connected["trevor"]
@@ -637,7 +659,5 @@ def _print_with_trevor(text):
         t = t.ljust(size) if t else f"{indent}"
         m = m[size:] if m else ""
         final += f"{t}  {m}\n"
-    print(
-        '  "Today I went to dig my fresher bone, I did it secretly so Lisa didn\'t see it."'
-    )
+    print('  "Today I took a long sunny nap."')
     print(final[:-3])

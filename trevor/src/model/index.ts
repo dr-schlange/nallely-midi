@@ -152,6 +152,7 @@ export interface RunTimeState {
 	saveDefaultValue: boolean;
 	classCodeMode: boolean;
 	classCode: ClassCode;
+	ccValues: Record<string, Record<string, Record<string, number>>>;
 }
 
 export interface ClassCode {

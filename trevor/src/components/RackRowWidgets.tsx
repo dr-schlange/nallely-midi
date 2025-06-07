@@ -65,6 +65,9 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 				{Object.entries(widgetIds).map(([id, Widget]) => {
 					return <Widget key={id} id={id} />;
 				})}
+				{Object.keys(widgetIds).length === 0 && (
+					<p style={{ color: "#808080" }}>Widgets</p>
+				)}
 			</div>
 		);
 	},

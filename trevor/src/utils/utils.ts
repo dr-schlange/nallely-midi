@@ -153,3 +153,20 @@ export const setDebugMode = (
 		store.dispatch(setLogComponent(undefined));
 	}
 };
+
+export const generateAcronym = (name: string, length = 3): string => {
+	return name
+		.split(" ")
+		.map((word) => {
+			if (!word) return "";
+			word = word.replace(/Section$/, "");
+			if (word.length <= length) {
+				return word;
+			}
+			const firstChar = word[0];
+			const rest = word.slice(1).replace(/[aeiou]/gi, "");
+			return (firstChar + rest).slice(0, length);
+		})
+		.join("")
+		.toUpperCase();
+};

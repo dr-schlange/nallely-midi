@@ -1,23 +1,11 @@
 import { useState, useEffect, useRef, ReactEventHandler } from "react";
 import type { MidiDevice, MidiDeviceSection } from "../model";
-import { buildSectionId, isLogMode, setDebugMode } from "../utils/utils";
-
-const generateAcronym = (name: string): string => {
-	return name
-		.split(" ")
-		.map((word) => {
-			if (!word) return "";
-			word = word.replace(/Section$/, "");
-			if (word.length <= 3) {
-				return word;
-			}
-			const firstChar = word[0];
-			const rest = word.slice(1).replace(/[aeiou]/gi, "");
-			return (firstChar + rest).slice(0, 3);
-		})
-		.join("")
-		.toUpperCase();
-};
+import {
+	buildSectionId,
+	generateAcronym,
+	isLogMode,
+	setDebugMode,
+} from "../utils/utils";
 
 const MidiDeviceComponent = ({
 	// width = 220,

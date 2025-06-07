@@ -26,7 +26,7 @@ const InstanceCreation = () => {
 	const [selectedDevice, setSelectedDevice] = useState<MidiDevice | null>();
 	const [selectedPort, setSelectedPort] = useState<MidiPort | null>();
 
-	const [isExpanded, setIsExpanded] = useState<boolean>(true);
+	const [isExpanded, setIsExpanded] = useState<boolean>(false);
 	const websocketStatus = useTrevorSelector((state) => state.general.connected);
 	const connectionUrl = useTrevorSelector(
 		(state) => state.general.trevorWebsocketURL,
@@ -242,7 +242,7 @@ const InstanceCreation = () => {
 						title={isExpanded ? "Collapse panel" : "Expand panel"}
 						onClick={() => handleExpand()}
 					>
-						{isExpanded ? "-" : "+"}
+						{isExpanded ? "- MIDI inputs - outputs" : "+ MIDI inputs - outputs"}
 					</button>
 					<button
 						className={classCodeMode ? "active" : ""}

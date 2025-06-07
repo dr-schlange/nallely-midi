@@ -76,6 +76,7 @@ export const RackRow = ({
 					onDeviceClick={onDeviceClick}
 				/>
 			))}
+			{devices.length === 0 && <p style={{ color: "#808080" }}>MIDI devices</p>}
 		</div>
 	);
 };

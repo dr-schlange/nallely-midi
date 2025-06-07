@@ -8,7 +8,15 @@ export const initialGeneralState: RunTimeState = {
 	saveDefaultValue: false,
 	classCodeMode: false,
 	classCode: undefined,
+	ccValues: {},
 };
+
+interface CCState {
+	device: string;
+	section: string;
+	parameter: string;
+	value: number;
+}
 
 const runtimeSlice = createSlice({
 	name: "runTime",
@@ -38,6 +46,22 @@ const runtimeSlice = createSlice({
 		setSaveDefaultValue: (state, action: PayloadAction<boolean>) => {
 			state.saveDefaultValue = action.payload;
 		},
+		updateCCState: (state, action: PayloadAction<CCState>) => {
+			const { device, section, parameter, value } = action.payload;
+			state.ccValues = {
+				...state.ccValues,
+				[device]: {
+					...(state.ccValues?.[device] || {}),
+					[section]: {
+						...(state.ccValues[device]?.[section] || {}),
+						[parameter]: value,
+					},
+				},
+			};
+		},
+		resetCCState: (state) => {
+			state.ccValues = {};
+		},
 	},
 });
 
@@ -48,6 +72,8 @@ export const {
 	setClassCodeMode,
 	setClassCode,
 	setSaveDefaultValue,
+	updateCCState,
+	resetCCState,
 } = runtimeSlice.actions;
 
 export default runtimeSlice.reducer;

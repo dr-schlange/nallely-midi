@@ -1,27 +1,10 @@
-import { useState, useEffect, useId } from "react";
+import { useState, useEffect } from "react";
 import type { VirtualDevice, VirtualParameter } from "../model";
 import { useTrevorWebSocket } from "../websockets/websocket";
-import { buildSectionId } from "../utils/utils";
+import { buildSectionId, generateAcronym } from "../utils/utils";
 import { useTrevorDispatch, useTrevorSelector } from "../store";
 import { ClassBrowser } from "./modals/ClassBrowser";
 import { setClassCodeMode } from "../store/runtimeSlice";
-
-const generateAcronym = (name: string): string => {
-	return name
-		.split(" ")
-		.map((word) => {
-			if (!word) return "";
-			word = word.replace(/Section$/, "");
-			if (word.length <= 3) {
-				return word;
-			}
-			const firstChar = word[0];
-			const rest = word.slice(1).replace(/[aeiou]/gi, "");
-			return (firstChar + rest).slice(0, 3);
-		})
-		.join("")
-		.toUpperCase();
-};
 
 const VirtualDeviceComponent = ({
 	// width = 220,

@@ -293,7 +293,9 @@ class MidiDevice:
     outport: mido.ports.BaseOutput | None = None
     inport: mido.ports.BaseInput | None = None
     debug: bool = False
-    on_midi_message: Callable[["MidiDevice", mido.Message], None] | None = None
+    on_midi_message: (
+        Callable[["MidiDevice", mido.Message, ModuleParameter | None], None] | None
+    ) = None
 
     def __init_subclass__(cls) -> None:
         midi_device_classes.append(cls)
@@ -382,25 +384,32 @@ class MidiDevice:
 
     stop = close
 
-    def _update_state(self, cc, value):
-        control: ModuleParameter | None = self.reverse_map.get(("control_change", cc))
+    def _get_control(self, cc):
+        return self.reverse_map.get(("control_change", cc))
+
+    def _update_state(self, cc, value, msg):
+        control: ModuleParameter | None = self._get_control(cc)
         if control:
             control.basic_set(self, value)
+            if self.on_midi_message:
+                try:
+                    self.on_midi_message(self, msg, control)
+                except:
+                    traceback.print_exc()
 
     def _sync_state(self, msg):
         if msg.type == "clock":
             return
-        if self.on_midi_message:
-            self.on_midi_message(self, msg)
         if self.debug:
             print(msg)
         if msg.type == "control_change":
+            control = msg.control
             try:
-                for link in self.links.get((msg.type, msg.control), []):
+                for link in self.links.get((msg.type, control), []):
                     value = msg.value
                     ctx = ThreadContext({"debug": self.debug})
                     link.trigger(value, ctx)
-                self._update_state(msg.control, msg.value)
+                self._update_state(control, msg.value, msg)
             except:
                 traceback.print_exc()
         if msg.type == "note_on" or msg.type == "note_off":
@@ -499,12 +508,11 @@ class MidiDevice:
             value = 127
         elif value < 0:
             value = 0
-        self._update_state(control, value)
-        self.outport.send(
-            mido.Message(
-                "control_change", channel=channel, control=control, value=value
-            )
+        msg = mido.Message(
+            "control_change", channel=channel, control=control, value=value
         )
+        self._update_state(control, value, msg)
+        self.outport.send(msg)
 
     def unbind_all(self):
         for link in self.links_registry.values():

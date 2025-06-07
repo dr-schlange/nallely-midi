@@ -80,6 +80,9 @@ export const RackRowVirtual = ({
 					onSectionScroll={onSectionScroll}
 				/>
 			))}
+			{devices.length === 0 && (
+				<p style={{ color: "#808080" }}>Virtual devices</p>
+			)}
 		</div>
 	);
 };

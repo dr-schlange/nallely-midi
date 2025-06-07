@@ -29,6 +29,7 @@ import { SaveModal } from "./modals/SaveModal";
 import { Playground } from "./modals/Playground";
 import { RackRowWidgets, type RackRowWidgetRef } from "./RackRowWidgets";
 import { LoadModal } from "./modals/LoadModal";
+import { RackRowCCRef, RackRowCCs } from "./RackRowCC";
 
 const VERTICAL = "⇄";
 const HORIZONTAL = "⇅";
@@ -68,6 +69,7 @@ const DevicePatching = () => {
 		Record<number, Record<string, string | undefined>>
 	>({});
 	const widgetRack = useRef<RackRowWidgetRef>(null);
+	const ccsRack = useRef<RackRowCCRef>(null);
 	const [isExpanded, setIsExpanded] = useState<boolean>(true);
 	const [orientation, setOrientation] = useState<string>(
 		window.innerHeight < 450 ? HORIZONTAL : VERTICAL,
@@ -318,6 +320,7 @@ const DevicePatching = () => {
 	const resetAll = () => {
 		trevorSocket?.resetAll();
 		widgetRack.current?.resetAll();
+		ccsRack.current?.resetAll();
 	};
 
 	useEffect(() => {
@@ -588,6 +591,7 @@ const DevicePatching = () => {
 
 	const handleLoadOk = () => {
 		widgetRack.current?.resetAll();
+		ccsRack.current?.resetAll();
 	};
 
 	const handleExpand = () => {
@@ -610,6 +614,7 @@ const DevicePatching = () => {
 				className={`device-patching-main-section ${orientation === HORIZONTAL ? "horizontal" : ""}`}
 				ref={mainSectionRef}
 			>
+				<RackRowCCs ref={ccsRack} horizontal={orientation === HORIZONTAL} />
 				<RackRow
 					devices={midi_devices}
 					rowIndex={0}
