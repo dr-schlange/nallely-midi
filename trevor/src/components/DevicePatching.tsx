@@ -277,7 +277,7 @@ const DevicePatching = () => {
 							style={{ marginTop: 0, marginBottom: 0, marginLeft: "10px" }}
 						>
 							{""}
-							{param.name}: {device.config[param.section_name][param.name]}
+							{param.name}: {device.config[param.section_name]?.[param.name]}
 						</p>
 					))}
 				</>,
@@ -321,6 +321,7 @@ const DevicePatching = () => {
 		trevorSocket?.resetAll();
 		widgetRack.current?.resetAll();
 		ccsRack.current?.resetAll();
+		setInformation(undefined);
 	};
 
 	useEffect(() => {

@@ -129,8 +129,9 @@ export const RackRowCCs = forwardRef<RackRowCCRef, CCsRackProps>(
 					key={deviceName}
 					style={{
 						backgroundColor: "#e0e0e0",
-						border: "5px solid #808080",
+						border: "3px solid #808080",
 						...switchSizeOrientation(horizontal),
+						padding: "1px",
 					}}
 				>
 					<p style={{ fontSize: "10px" }}>{deviceName}</p>
@@ -148,9 +149,13 @@ export const RackRowCCs = forwardRef<RackRowCCRef, CCsRackProps>(
 									key={`${deviceName}::${sectionName}`}
 									style={{
 										border: "2px solid #808080",
+										// borderTop: "2px solid #808080",
+										// borderRight: "2px solid #808080",
 										width: "100%",
 										display: "flex",
 										flexDirection: horizontal ? "row" : "column",
+										borderRadius: "3px",
+										margin: "1px",
 									}}
 								>
 									<p style={{ fontSize: "8px" }}>
