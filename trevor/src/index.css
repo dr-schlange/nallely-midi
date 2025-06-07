@@ -369,6 +369,7 @@ input[type="text"]:disabled {
 	border-right: 2px solid #808080;
 	width: 100%;
 	position: relative;
+	overflow-x: auto;
 }
 
 .device-patching-side-section {
@@ -428,6 +429,7 @@ input[type="text"]:disabled {
 	overflow-x: auto;
 	gap: 5px;
 	flex-direction: column;
+	min-width: 200px;
 }
 
 .rack-row[data-slot]:hover {
@@ -1377,7 +1379,7 @@ button.active {
 	}
 }
 
-@media (max-width: 450px) {
+@media (max-width: 600px) {
 	h3 {
 		font-size: 15px;
 	}
