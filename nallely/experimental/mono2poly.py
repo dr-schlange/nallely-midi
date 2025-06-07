@@ -154,6 +154,7 @@ class Arpegiator(VirtualDevice):
     bpm_cv = VirtualParameter("bpm", range=(40, 600))
     reset_cv = VirtualParameter("reset", range=(0, 1))
     hold_cv = VirtualParameter("hold", range=(0, 1))
+    record_cv = VirtualParameter("record", range=(0, 1))
 
     def __init__(self, *args, **kwargs):
         self.input = None
@@ -162,6 +163,7 @@ class Arpegiator(VirtualDevice):
         self.index = 0
         self.reset = 0
         self.hold = 0
+        self.record = 0
         super().__init__(
             *args, target_cycle_time=(1 / 1000) * (60000 / self._bpm), **kwargs
         )
@@ -199,11 +201,21 @@ class Arpegiator(VirtualDevice):
 
         type = ctx.get("type", None)
         value = self.input
-        if value is not None:
-            if type == "note_off" and not self.hold and value in self.notes:
+        if value:
+            if (
+                type == "note_off"
+                and not self.record
+                and not self.hold
+                and value in self.notes
+            ):
                 self.input = None
+                self.index = self.index + (-1 if self.index > 0 else 0)
                 self.notes.remove(value)
-            elif type == "note_on":
+                self.process_output(
+                    value,
+                    ThreadContext({**ctx, "type": "note_off"}),
+                )
+            elif type == "note_on" and self.record > 0 and value not in self.notes:
                 self.input = None
                 self.notes.append(value)
 

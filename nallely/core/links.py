@@ -193,6 +193,7 @@ class Link:
             if count:
                 return dest.device.set_parameter(dest.parameter.name, value, ctx)
             else:
+                dest.device.set_parameter(dest.parameter.name, value, ctx)
                 return dest.device.set_parameter(dest.parameter.name, 0, ctx)
 
         return foo
