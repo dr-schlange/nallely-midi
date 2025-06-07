@@ -410,7 +410,7 @@ class VirtualDevice(threading.Thread):
         else:
             return lambda value, ctx: setattr(to_device, to_param.name, value)
 
-    def to_dict(self):
+    def to_dict(self, save_defaultvalues=False):
         virtual_parameters = self.all_parameters()
         config = self.current_preset()
         # del config["output"]

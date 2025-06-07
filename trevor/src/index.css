@@ -675,6 +675,13 @@ button.active {
 	align-items: center;
 }
 
+.save-modal-body {
+	flex-direction: column;
+	align-items: flex-start;
+	margin-left: 10px;
+	justify-content: space-around;
+}
+
 .error-modal-body,
 .load-modal-body {
 	margin-left: 10px;

@@ -245,7 +245,7 @@ class DeviceState:
     def __getattr__(self, name):
         return self.modules[name]
 
-    def as_dict_patch(self, with_meta=False):
+    def as_dict_patch(self, with_meta=False, save_defaultvalues=False):
         d = {}
         for name, module in self.modules.items():
             module_state = {}
@@ -253,7 +253,7 @@ class DeviceState:
             for parameter in module.meta.parameters:
                 value = getattr(getattr(self, name), parameter.name)
                 value = int(value)
-                if value != parameter.init_value:
+                if value != parameter.init_value or save_defaultvalues:
                     module_state[parameter.name] = int(value)
                 if with_meta:
                     module_state[parameter.name] = {
@@ -574,8 +574,8 @@ class MidiDevice:
         self.all_notes_off()
         return self
 
-    def current_preset(self):
-        return self.modules.as_dict_patch()
+    def current_preset(self, save_defaultvalues=False):
+        return self.modules.as_dict_patch(save_defaultvalues)
 
     def save_preset(self, file: Path | str):
         Path(file).write_text(
@@ -593,7 +593,7 @@ class MidiDevice:
         if dct:
             self.modules.from_dict_patch(dct)
 
-    def to_dict(self):
+    def to_dict(self, save_defaultvalues=False):
         d = {
             "id": id(self),
             "repr": self.uid(),
@@ -607,7 +607,9 @@ class MidiDevice:
                     asdict(module.meta) for module in self.modules.modules.values()
                 ],
             },
-            "config": self.modules.as_dict_patch(with_meta=False),
+            "config": self.modules.as_dict_patch(
+                with_meta=False, save_defaultvalues=save_defaultvalues
+            ),
         }
         return d
 

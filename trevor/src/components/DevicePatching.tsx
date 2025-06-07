@@ -75,6 +75,9 @@ const DevicePatching = () => {
 	const patchFilename = useTrevorSelector(
 		(state) => state.runTime.patchFilename,
 	);
+	const saveDefaultValue = useTrevorSelector(
+		(state) => state.runTime.saveDefaultValue,
+	);
 
 	useEffect(() => {
 		window.addEventListener("keydown", handleKeyDown);
@@ -596,7 +599,7 @@ const DevicePatching = () => {
 	};
 
 	const savePatch = () => {
-		trevorSocket.saveAll(patchFilename);
+		trevorSocket.saveAll(patchFilename, saveDefaultValue);
 	};
 
 	return (

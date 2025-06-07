@@ -154,8 +154,8 @@ class Session:
 
         return errors
 
-    def save_all(self, name) -> Path:
-        d = self.snapshot()
+    def save_all(self, name, save_defaultvalues=False) -> Path:
+        d = self.snapshot(save_defaultvalues=save_defaultvalues)
         del d["input_ports"]
         del d["output_ports"]
         del d["classes"]
@@ -243,16 +243,22 @@ class Session:
 
         return connections
 
-    def snapshot(self):
+    def snapshot(self, save_defaultvalues=False):
         return {
             "input_ports": [
-                name for name in mido.get_input_names() if "RtMidi" not in name
+                name for name in mido.get_input_names() if "RtMidi" not in name  # type: ignore type issue with mido
             ],
             "output_ports": [
-                name for name in mido.get_output_names() if "RtMidi" not in name
+                name for name in mido.get_output_names() if "RtMidi" not in name  # type: ignore type issue with mido
             ],
-            "midi_devices": [device.to_dict() for device in connected_devices],
-            "virtual_devices": [device.to_dict() for device in virtual_devices],
+            "midi_devices": [
+                device.to_dict(save_defaultvalues=save_defaultvalues)
+                for device in connected_devices
+            ],
+            "virtual_devices": [
+                device.to_dict(save_defaultvalues=save_defaultvalues)
+                for device in virtual_devices
+            ],
             "connections": self.all_connections_as_dict(),
             "classes": {
                 "virtual": [cls.__name__ for cls in virtual_device_classes],

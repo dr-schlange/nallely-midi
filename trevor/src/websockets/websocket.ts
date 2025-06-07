@@ -304,10 +304,11 @@ class TrevorWebSocket {
 		});
 	}
 
-	saveAll(name: string) {
+	saveAll(name: string, saveDefaultValue = false) {
 		this.sendJsonMessage({
 			command: "save_all",
 			name,
+			save_defaultvalues: saveDefaultValue,
 		});
 	}
 

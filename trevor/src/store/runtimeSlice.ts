@@ -5,6 +5,7 @@ export const initialGeneralState: RunTimeState = {
 	logMode: false,
 	loggedComponent: undefined,
 	patchFilename: "patch",
+	saveDefaultValue: false,
 	classCodeMode: false,
 	classCode: undefined,
 };
@@ -34,6 +35,9 @@ const runtimeSlice = createSlice({
 				methods: { ...action.payload.methods },
 			};
 		},
+		setSaveDefaultValue: (state, action: PayloadAction<boolean>) => {
+			state.saveDefaultValue = action.payload;
+		},
 	},
 });
 
@@ -43,6 +47,7 @@ export const {
 	setPatchFilename,
 	setClassCodeMode,
 	setClassCode,
+	setSaveDefaultValue,
 } = runtimeSlice.actions;
 
 export default runtimeSlice.reducer;

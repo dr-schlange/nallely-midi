@@ -324,8 +324,8 @@ class TrevorBus(VirtualDevice):
             self.send_message({"errors": errors})
         return self.full_state()
 
-    def save_all(self, name):
-        file = self.session.save_all(name)
+    def save_all(self, name, save_defaultvalues=False):
+        file = self.session.save_all(name, save_defaultvalues=save_defaultvalues)
         self.send_notification("ok", f"Patch saved in {file.absolute()}")
 
     def resume_device(self, device_id, start):
