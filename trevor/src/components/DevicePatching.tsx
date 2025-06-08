@@ -29,7 +29,7 @@ import { SaveModal } from "./modals/SaveModal";
 import { Playground } from "./modals/Playground";
 import { RackRowWidgets, type RackRowWidgetRef } from "./RackRowWidgets";
 import { LoadModal } from "./modals/LoadModal";
-import { RackRowCCRef, RackRowCCs } from "./RackRowCC";
+import { type RackRowCCRef, RackRowCCs } from "./RackRowCC";
 
 const VERTICAL = "⇄";
 const HORIZONTAL = "⇅";
@@ -498,19 +498,6 @@ const DevicePatching = () => {
 		};
 	}, [allConnections, selectedConnection]);
 
-	const handleDeviceDrop = (
-		draggedDevice: any,
-		targetSlot: number,
-		targetRow: number,
-	) => {
-		// Handle device drop logic
-		updateConnections(); // Update connections after device drop
-	};
-
-	const addDeviceToRack = (newDevice: any) => {
-		// Handle adding device to rack logic
-	};
-
 	const handleNonSectionClick = () => {
 		setSelectedSections([]); // Deselect sections
 	};
@@ -618,8 +605,6 @@ const DevicePatching = () => {
 				<RackRowCCs ref={ccsRack} horizontal={orientation === HORIZONTAL} />
 				<RackRow
 					devices={midi_devices}
-					rowIndex={0}
-					onDeviceDrop={handleDeviceDrop}
 					onSectionClick={handleSectionClick}
 					onNonSectionClick={handleNonSectionClick}
 					selectedSections={selectedSections.map(
@@ -628,14 +613,12 @@ const DevicePatching = () => {
 					onSectionScroll={updateConnections}
 					onDeviceClick={handleMidiDeviceClick}
 					horizontal={orientation === HORIZONTAL}
+					onDeviceDrop={updateConnections}
 				/>
 				<RackRowVirtual
 					devices={virtual_devices.filter(
 						(device) => !device.meta.name.includes("TrevorBus"),
 					)}
-					height={rackRowHeight}
-					rowIndex={0}
-					onDeviceDrop={handleDeviceDrop}
 					onParameterClick={handleParameterClick}
 					onNonSectionClick={handleNonSectionClick}
 					selectedSections={selectedSections.map(
@@ -643,6 +626,7 @@ const DevicePatching = () => {
 					)}
 					onSectionScroll={updateConnections}
 					horizontal={orientation === HORIZONTAL}
+					onDeviceDrop={updateConnections}
 				/>
 				<svg className="device-patching-svg" ref={svgRef} />
 				<RackRowWidgets

@@ -170,3 +170,61 @@ export const generateAcronym = (name: string, length = 3): string => {
 		.join("")
 		.toUpperCase();
 };
+
+const LOCAL_STORAGE_KEY = "order-in-rack";
+const EMPTY_ORDER = {
+	midi: [],
+	virtuals: [],
+	widgets: [],
+};
+
+const JSONClone = (d) => {
+	return JSON.parse(JSON.stringify(d));
+};
+
+export const loadDeviceOrder = (rack: string): string[] | number[] => {
+	try {
+		const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
+		return raw ? JSON.parse(raw)[rack] : [];
+	} catch {
+		return [];
+	}
+};
+
+export const saveDeviceOrder = (rack: string, ids: string[] | number[]) => {
+	try {
+		const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
+		const orderMem = raw ? JSON.parse(raw) : JSONClone(EMPTY_ORDER);
+		orderMem[rack] = ids;
+		localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(orderMem));
+	} catch {
+		console.debug(
+			`Cannot read properly ${LOCAL_STORAGE_KEY}, removing the previously saved order if any`,
+		);
+	}
+};
+
+export type HasId = { id: string | number };
+
+export const mergeDevicesPreservingOrder = <T extends HasId>(
+	rack: string,
+	incoming: T[],
+): T[] => {
+	const savedOrder = loadDeviceOrder(rack);
+	const incomingById = new Map<string | number, T>(
+		incoming.map((d) => [d.id, d]),
+	);
+
+	const ordered: T[] = [];
+	for (const id of savedOrder) {
+		const device = incomingById.get(id);
+		if (device) {
+			ordered.push(device);
+			incomingById.delete(id); // remove from remaining
+		}
+	}
+
+	const remaining = Array.from(incomingById.values());
+
+	return [...ordered, ...remaining];
+};

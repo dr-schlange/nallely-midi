@@ -20,55 +20,128 @@ const WidgetComponents = {
 
 export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 	({ onRackScroll, horizontal }: WidgetRackProps, ref) => {
-		// const slotWidth = 210;
-		const [widgetIds, setWidgetIds] = useState<
-			Record<number, React.FC<RackRowWidget>>
-		>({});
+		const [widgets, setWidgets] = useState<
+			{ id: number; component: React.FC<any> }[]
+		>([]);
 
-		const addWidget = (type) => {
-			setWidgetIds({ ...widgetIds, [Object.values(widgetIds).length]: type });
+		const sensors = useSensors(
+			useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+		);
+
+		const addWidget = (Component) => {
+			setWidgets([
+				...widgets,
+				{ id: Object.values(widgets).length, component: Component },
+			]);
 		};
 
 		useImperativeHandle(ref, () => ({
 			resetAll() {
-				setWidgetIds({});
+				setWidgets([]);
 			},
 		}));
 
+		const handleDragEnd = (event) => {
+			const { active, over } = event;
+			if (!over || active.id === over.id) return;
+
+			const oldIndex = widgets.findIndex((w) => w.id === active.id);
+			const newIndex = widgets.findIndex((w) => w.id === over.id);
+			setWidgets(arrayMove(widgets, oldIndex, newIndex));
+		};
+
 		return (
-			<div
-				className={`rack-row ${horizontal ? "horizontal" : ""}`}
-				onScroll={() => onRackScroll?.()}
+			<DndContext
+				sensors={sensors}
+				collisionDetection={closestCenter}
+				onDragEnd={handleDragEnd}
+				modifiers={[
+					horizontal ? restrictToHorizontalAxis : restrictToVerticalAxis,
+				]}
 			>
-				<select
-					value={""}
-					title="Adds a new widget to the system"
-					onChange={(e) => {
-						const val = e.target.value;
-						addWidget(WidgetComponents[val]);
-					}}
+				<SortableContext
+					items={widgets.map((w) => w.id)}
+					strategy={
+						horizontal
+							? horizontalListSortingStrategy
+							: verticalListSortingStrategy
+					}
 				>
-					<option value={""}>--</option>
-					{Object.keys(WidgetComponents).map((name) => (
-						<option key={name} value={name}>
-							{name}
-						</option>
-					))}
-				</select>
-				{/* <button
-					style={{ padding: "5px", width: "100%" }}
-					type={"button"}
-					onClick={addWidget}
-				>
-					∿
-				</button> */}
-				{Object.entries(widgetIds).map(([id, Widget]) => {
-					return <Widget key={id} id={id} />;
-				})}
-				{Object.keys(widgetIds).length === 0 && (
-					<p style={{ color: "#808080" }}>Widgets</p>
-				)}
-			</div>
+					<div
+						className={`rack-row ${horizontal ? "horizontal" : ""}`}
+						onScroll={() => onRackScroll?.()}
+					>
+						<select
+							value={""}
+							title="Adds a new widget to the system"
+							onChange={(e) => {
+								const val = e.target.value;
+								addWidget(WidgetComponents[val]);
+							}}
+						>
+							<option value={""}>--</option>
+							{Object.keys(WidgetComponents).map((name) => (
+								<option key={name} value={name}>
+									{name}
+								</option>
+							))}
+						</select>
+
+						{widgets.map(({ id, component: Widget }) => (
+							<SortableWidget key={id} id={id}>
+								<Widget id={id} />
+							</SortableWidget>
+						))}
+
+						{widgets.length === 0 && (
+							<p style={{ color: "#808080" }}>Widgets</p>
+						)}
+					</div>
+				</SortableContext>
+			</DndContext>
 		);
 	},
 );
+
+// for sortable components
+import {
+	arrayMove,
+	horizontalListSortingStrategy,
+	SortableContext,
+	useSortable,
+	verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import type { HasId } from "../utils/utils";
+import {
+	restrictToHorizontalAxis,
+	restrictToParentElement,
+	restrictToVerticalAxis,
+} from "@dnd-kit/modifiers";
+import {
+	closestCenter,
+	DndContext,
+	PointerSensor,
+	useSensor,
+	useSensors,
+} from "@dnd-kit/core";
+
+const SortableWidget = ({
+	id,
+	children,
+}: { id: string; children: React.ReactNode }) => {
+	const { attributes, listeners, setNodeRef, transform, transition } =
+		useSortable({ id });
+
+	const style = {
+		transform: CSS.Transform.toString(transform),
+		transition,
+		touchAction: "none",
+	};
+
+	return (
+		<div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+			{children}
+		</div>
+	);
+};

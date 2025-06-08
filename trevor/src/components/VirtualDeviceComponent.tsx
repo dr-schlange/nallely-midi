@@ -6,20 +6,7 @@ import { useTrevorDispatch, useTrevorSelector } from "../store";
 import { ClassBrowser } from "./modals/ClassBrowser";
 import { setClassCodeMode } from "../store/runtimeSlice";
 
-const VirtualDeviceComponent = ({
-	// width = 220,
-	margin = 5,
-	// height = 150,
-	device,
-	selected = false,
-	onParameterClick,
-	onDeviceClick,
-	selectedSections,
-	classConnections = false,
-	onSectionScroll,
-}: {
-	// width?: number;
-	// height?: number;
+export interface VirtualDeviceComponentProps {
 	margin?: number;
 	device: VirtualDevice;
 	onParameterClick?: (parameter: VirtualParameter) => void;
@@ -28,7 +15,17 @@ const VirtualDeviceComponent = ({
 	classConnections?: boolean;
 	selected?: boolean;
 	onSectionScroll?: () => void;
-}) => {
+}
+
+const VirtualDeviceComponent = ({
+	device,
+	selected = false,
+	onParameterClick,
+	onDeviceClick,
+	selectedSections,
+	classConnections = false,
+	onSectionScroll,
+}: VirtualDeviceComponentProps) => {
 	const [isNameOnLeft, setIsNameOnLeft] = useState(true); // Track the side of the name
 	// const sections = Object.keys(device.config);
 	const parameters = device.meta.parameters;

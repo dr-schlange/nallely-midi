@@ -8,9 +8,6 @@ import {
 } from "../utils/utils";
 
 const MidiDeviceComponent = ({
-	// width = 220,
-	margin = 5,
-	// height = 150,
 	device,
 	selected = false,
 	onSectionClick,
@@ -19,8 +16,6 @@ const MidiDeviceComponent = ({
 	classConnections = false,
 	onSectionScroll,
 }: {
-	// width?: number;
-	// height?: number;
 	margin?: number;
 	device: MidiDevice;
 	onSectionClick?: (section: MidiDeviceSection) => void;
