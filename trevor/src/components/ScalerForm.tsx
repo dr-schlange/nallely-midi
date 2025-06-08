@@ -25,6 +25,11 @@ export const ScalerForm = ({ connection }: ScalerFormProps) => {
 		setAsInt(connection.src.chain?.as_int ?? false);
 	}, [connection]);
 
+	const switchMinMax = () => {
+		setMax(min);
+		setMin(max);
+	};
+
 	return (
 		<div className="connection-setup">
 			<h3>Connection Setup</h3>
@@ -82,6 +87,13 @@ export const ScalerForm = ({ connection }: ScalerFormProps) => {
 						}
 					/>
 				</label>
+				<button
+					type="button"
+					style={{ fontSize: "14px", marginBottom: "10px" }}
+					onClick={switchMinMax}
+				>
+					⇄
+				</button>
 				{/* biome-ignore lint/a11y/noLabelWithoutControl: <explanation> */}
 				<label>
 					Max:
