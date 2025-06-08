@@ -77,6 +77,8 @@ class Session:
                         f'MIDI device ports "{common_port}" for {device_class_name} could not be found. Is your device connected or MIDI ports existing? Your device was still created, but it was not connected to any MIDI port.'
                     )
                 device_map[device["id"]] = id(mididev)
+                if self.trevor_bus:
+                    mididev.on_midi_message = self.trevor_bus.send_control_value_update
                 mididev.load_preset(dct=device["config"])
             except ValueError:
                 errors.append(
@@ -91,7 +93,8 @@ class Session:
             try:
                 cls = find_class(cls_name)
                 vdev: VirtualDevice = cls()
-                vdev.to_update = self.trevor_bus  # type: ignore
+                if self.trevor_bus:
+                    vdev.to_update = self.trevor_bus  # type: ignore
                 device_map[device["id"]] = id(vdev)
                 if device.get("running", False):
                     vdev.start()  # We start the device
