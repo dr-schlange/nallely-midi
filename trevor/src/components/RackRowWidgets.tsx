@@ -112,10 +112,8 @@ import {
 	verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import type { HasId } from "../utils/utils";
 import {
 	restrictToHorizontalAxis,
-	restrictToParentElement,
 	restrictToVerticalAxis,
 } from "@dnd-kit/modifiers";
 import {
@@ -129,7 +127,7 @@ import {
 const SortableWidget = ({
 	id,
 	children,
-}: { id: string; children: React.ReactNode }) => {
+}: { id: number; children: React.ReactNode }) => {
 	const { attributes, listeners, setNodeRef, transform, transition } =
 		useSortable({ id });
 
