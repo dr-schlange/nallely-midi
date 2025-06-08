@@ -242,7 +242,7 @@ const InstanceCreation = () => {
 						title={isExpanded ? "Collapse panel" : "Expand panel"}
 						onClick={() => handleExpand()}
 					>
-						{isExpanded ? "- MIDI inputs - outputs" : "+ MIDI inputs - outputs"}
+						{isExpanded ? "- MIDI IOs" : "+ MIDI IOs"}
 					</button>
 					<button
 						className={classCodeMode ? "active" : ""}
