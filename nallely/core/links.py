@@ -19,13 +19,24 @@ from .world import ThreadContext
 #    (3)     X       X   X
 #    (4)     X       X   X
 #
-@dataclass
 class Link:
-    src_feeder: (
-        Int | PadOrKey | PadsOrKeysInstance | ParameterInstance | Scaler | VirtualDevice
-    )
-    dest: Int | PadOrKey | PadsOrKeysInstance | ParameterInstance
-    bouncy: bool = False
+    def __init__(
+        self,
+        src_feeder: (
+            Int
+            | PadOrKey
+            | PadsOrKeysInstance
+            | ParameterInstance
+            | Scaler
+            | VirtualDevice
+        ),
+        dest: Int | PadOrKey | PadsOrKeysInstance | ParameterInstance,
+        bouncy: bool = False,
+    ):
+        self.src_feeder = src_feeder
+        self.dest = dest
+        self.bouncy = bouncy
+        self.__post_init__()
 
     @classmethod
     def create(cls, src_feeder, dest):

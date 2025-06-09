@@ -593,3 +593,29 @@ def test__mapping_pad_to_virtual(sender):
     assert len(sender.links[("note", 1)]) == 0
     assert len(lfo.nonstream_links) == 0
     assert len(lfo.stream_links) == 0
+
+
+# Unit test for identified bug
+def test__mapping_cc_to_cc__then__unbind(sender, receiver):
+    _, sender = sender
+    _, receiver = receiver
+
+    receiver.modules.main.sink1 = sender.modules.main.button1
+    receiver.modules.main.sink2 = sender.modules.main.button1
+
+    let_time_to_react()
+    assert len(sender.links[("control_change", 45)]) == 2
+    assert len(sender.links[("control_change", 20)]) == 0
+    assert sender.links[("control_change", 45)][0].dest.parameter.name == "sink1"
+    assert sender.links[("control_change", 45)][1].dest.parameter.name == "sink2"
+
+    receiver.modules.main.sink2 -= sender.modules.main.button1
+    receiver.modules.main.sink2 = sender.modules.main.button2
+
+    # button1 = CC #45
+    # button2 = CC #20
+    assert len(sender.links[("control_change", 45)]) == 1
+    assert sender.links[("control_change", 45)][0].dest.parameter.name == "sink1"
+
+    assert len(sender.links[("control_change", 20)]) == 1
+    assert sender.links[("control_change", 20)][0].dest.parameter.name == "sink2"
