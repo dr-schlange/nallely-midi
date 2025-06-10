@@ -647,7 +647,7 @@ const DevicePatching = () => {
 					title={isExpanded ? "Open panel" : "Close panel"}
 					onClick={() => handleExpand()}
 				>
-					{isExpanded ? ">>" : "<<"}
+					{isExpanded ? "»" : "«"}
 				</button>
 				{(isExpanded && (
 					<div className="device-patching-side-section">
