@@ -926,6 +926,7 @@ button.active {
 	display: flex;
 	justify-content: space-between;
 	margin-bottom: 10px;
+	align-items: flex-end;
 }
 
 .connection-setup input[type="text"] {
@@ -1497,11 +1498,13 @@ button.active {
 		flex-direction: column;
 		width: 100%;
 		flex: 2.5;
+		min-height: 30%;
 	}
 
 	.right-panel {
 		flex-direction: row-reverse;
 		max-width: 100%;
+		max-height: 30%;
 	}
 
 	.parameters-grid.left {

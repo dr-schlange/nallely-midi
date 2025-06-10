@@ -26,6 +26,8 @@ export const ScalerForm = ({ connection }: ScalerFormProps) => {
 	}, [connection]);
 
 	const switchMinMax = () => {
+		trevorSocket?.setScalerValue(scalerId!, "to_min", max);
+		trevorSocket?.setScalerValue(scalerId!, "to_max", min);
 		setMax(min);
 		setMin(max);
 	};
