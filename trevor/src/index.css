@@ -848,8 +848,8 @@ button.active {
 }
 
 .parameter-box {
-	width: 30px;
-	height: 30px;
+	width: 20px;
+	height: 20px;
 	border-radius: 4px;
 	background-color: #d0d0d0; /* Gray square for parameters */
 	border: 2px solid #808080; /* Amiga-style border */
