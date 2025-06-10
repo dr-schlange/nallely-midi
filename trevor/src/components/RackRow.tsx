@@ -172,14 +172,29 @@ function SortableComponent<T extends HasId>({
 	const { attributes, listeners, setNodeRef, transform, transition } =
 		useSortable({ id: device.id });
 
-	const style = {
+	const style: React.CSSProperties = {
 		transform: CSS.Transform.toString(transform),
 		transition,
 		touchAction: "none",
+		position: "relative",
 	};
 
 	return (
-		<div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+		<div ref={setNodeRef} style={style} {...attributes}>
+			<div
+				{...listeners}
+				style={{
+					position: "absolute",
+					top: 3,
+					left: 7,
+					zIndex: 10,
+					cursor: "grab",
+					fontSize: "15px",
+					color: "gray",
+				}}
+			>
+				=
+			</div>
 			<DeviceComponent
 				device={device}
 				onSectionClick={onSectionClick}
