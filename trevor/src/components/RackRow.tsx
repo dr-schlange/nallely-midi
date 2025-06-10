@@ -177,7 +177,7 @@ function SortableComponent<T extends HasId>({
 		transition,
 		touchAction: "none",
 		position: "relative",
-	};
+	} as const satisfies React.CSSProperties;
 
 	return (
 		<div ref={setNodeRef} style={style} {...attributes}>
