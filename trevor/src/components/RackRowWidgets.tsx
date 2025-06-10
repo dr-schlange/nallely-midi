@@ -146,7 +146,7 @@ const SortableWidget = ({
 					position: "absolute",
 					top: 3,
 					left: 7,
-					zIndex: 10,
+					zIndex: 1,
 					cursor: "grab",
 					fontSize: "15px",
 					color: "gray",

@@ -601,6 +601,7 @@ button.active {
 	flex-direction: column;
 	border: 2px solid #808080;
 	box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+	z-index: 2;
 }
 
 .patching-modal {
@@ -632,7 +633,7 @@ button.active {
 }
 
 .settings-modal {
-	z-index: 1;
+	z-index: 2;
 	width: 680px;
 	height: 100px;
 }
@@ -1013,7 +1014,7 @@ button.active {
 }
 
 .connection-svg.modal {
-	z-index: 1;
+	z-index: 2;
 }
 
 .device-patching-svg {
