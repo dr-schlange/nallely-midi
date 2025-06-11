@@ -173,6 +173,7 @@ const InstanceCreation = () => {
 
 	const handleExpand = () => {
 		setIsExpanded((prev) => !prev);
+		updateConnections();
 	};
 
 	const handleClose = () => {

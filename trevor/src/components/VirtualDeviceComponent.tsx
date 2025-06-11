@@ -1,7 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import type { VirtualDevice, VirtualParameter } from "../model";
 import { useTrevorWebSocket } from "../websockets/websocket";
-import { buildSectionId, generateAcronym } from "../utils/utils";
+import {
+	buildParameterId,
+	buildSectionId,
+	generateAcronym,
+} from "../utils/utils";
 import { useTrevorDispatch, useTrevorSelector } from "../store";
 import { ClassBrowser } from "./modals/ClassBrowser";
 import { setClassCodeMode } from "../store/runtimeSlice";
@@ -16,6 +20,10 @@ export interface VirtualDeviceComponentProps {
 	selected?: boolean;
 	onSectionScroll?: () => void;
 }
+
+const collectAllParameters = (device: VirtualDevice) => {
+	return device.meta.parameters.map((p) => buildParameterId(device.id, p));
+};
 
 const VirtualDeviceComponent = ({
 	device,
@@ -38,6 +46,27 @@ const VirtualDeviceComponent = ({
 	);
 	const dispatch = useTrevorDispatch();
 	const [isCodeOpen, setIsCodeOpen] = useState<boolean>(false);
+	const allParameters = useMemo(() => collectAllParameters(device), [device]);
+	const allConnections = useTrevorSelector(
+		(state) => state.nallely.connections,
+	);
+	const incomingConnections = useMemo(() => {
+		return allConnections
+			.filter((c) =>
+				allParameters.includes(
+					buildParameterId(c.dest.device, c.dest.parameter),
+				),
+			)
+			.map((c) => c.dest.parameter.name);
+	}, [allConnections, allParameters]);
+
+	const outgoingConnections = useMemo(() => {
+		return allConnections
+			.filter((c) =>
+				allParameters.includes(buildParameterId(c.src.device, c.src.parameter)),
+			)
+			.map((c) => c.src.parameter.name);
+	}, [allConnections, allParameters]);
 
 	useEffect(() => {
 		// Dynamically adjust the side of the name based on section positions
@@ -62,6 +91,9 @@ const VirtualDeviceComponent = ({
 		setIsCodeOpen(false);
 	};
 
+	const isSelected =
+		selectedSections?.length > 0 &&
+		selectedSections.some((s) => s.startsWith(device.id.toString()));
 	return (
 		// biome-ignore lint/a11y/useKeyWithClickEvents: TODO
 		<div
@@ -70,7 +102,7 @@ const VirtualDeviceComponent = ({
 				// width: width - margin * 3,
 				// height: height - margin * 3,
 				boxSizing: "border-box",
-				borderColor: selected ? "yellow" : "",
+				borderColor: isSelected ? "yellow" : "",
 			}}
 			id={`${device.id}-__virtual__`}
 			onClick={() => handleDeviceClick(device)}
@@ -96,18 +128,21 @@ const VirtualDeviceComponent = ({
 						const paramId = classConnections
 							? `${parameterId}-class`
 							: parameterId;
+						const incoming = incomingConnections.includes(parameter.name);
+						const outgoing = outgoingConnections.includes(parameter.name);
+						const selected = selectedSections?.includes(paramId);
 						return (
 							// biome-ignore lint/a11y/useKeyWithClickEvents: TODO
 							<div
 								key={paramId}
-								className={`device-section ${selectedSections?.includes(paramId) ? "selected" : ""}`}
+								className={`device-section ${selected ? "selected" : ""}`}
 								onClick={(event) => {
 									event.stopPropagation();
 									onParameterClick?.(parameter);
 								}}
 							>
 								<div
-									className="device-section-box"
+									className={`device-section-box ${incoming || outgoing ? "occupied" : ""}`}
 									title={parameter.name}
 									id={paramId}
 								/>
@@ -126,11 +161,14 @@ const VirtualDeviceComponent = ({
 					{rightSections.map((parameter) => {
 						const sectionId = buildSectionId(device.id, parameter.cv_name);
 						const paramId = classConnections ? `${sectionId}-class` : sectionId;
+						const incoming = incomingConnections.includes(parameter.name);
+						const outgoing = outgoingConnections.includes(parameter.name);
+						const selected = selectedSections?.includes(paramId);
 						return (
 							// biome-ignore lint/a11y/useKeyWithClickEvents: TODO
 							<div
 								key={paramId}
-								className={`device-section ${selectedSections?.includes(paramId) ? "selected" : ""}`}
+								className={`device-section ${selected ? "selected" : ""}`}
 								onClick={(event) => {
 									event.stopPropagation();
 									onParameterClick?.(parameter);
@@ -143,7 +181,7 @@ const VirtualDeviceComponent = ({
 									{generateAcronym(parameter.name)}
 								</span>
 								<div
-									className="device-section-box"
+									className={`device-section-box ${incoming || outgoing ? "occupied" : ""}`}
 									title={parameter.name}
 									id={paramId}
 								/>

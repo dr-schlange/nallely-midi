@@ -84,6 +84,9 @@ export interface PadsOrKeys {
 	channel: number;
 	keys: Record<any, any>;
 	section_name: string;
+	cc_note: -1;
+	name: string;
+	range: [number, number];
 }
 
 export interface PadOrKey {

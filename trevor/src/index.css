@@ -470,7 +470,8 @@ input[type="text"]:disabled {
 
 .device-component {
 	background-color: #e0e0e0;
-	border: 5px solid #808080;
+	border: 5px solid;
+	border-color: #808080;
 	box-sizing: border-box;
 	display: flex;
 	flex-direction: column;
@@ -520,16 +521,21 @@ input[type="text"]:disabled {
 	gap: 5px; /* Space between section box and name */
 }
 
-.device-section.selected .device-section-box {
-	background-color: yellow;
-}
-
 .device-section-box {
 	width: 20px;
 	height: 20px;
 	background-color: orange;
 	border-radius: 3px;
 	cursor: pointer;
+}
+
+.device-section-box.occupied {
+	background-color: #bb995a;
+}
+
+.device-section.selected .device-section-box,
+.device-section.selected .occupied {
+	background-color: yellow;
 }
 
 .device-section-box:hover {
@@ -848,6 +854,7 @@ button.active {
 }
 
 .parameter-box {
+	/* color: #bb995a */
 	width: 20px;
 	height: 20px;
 	border-radius: 4px;

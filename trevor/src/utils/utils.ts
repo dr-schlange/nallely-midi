@@ -40,7 +40,7 @@ export const useGlobalShortcut = (
 
 export const buildParameterId = (
 	device: number,
-	parameter: MidiParameter | VirtualParameter | PadOrKey,
+	parameter: MidiParameter | VirtualParameter | PadOrKey | PadsOrKeys,
 	forceParameterName: string | undefined = undefined,
 ) => {
 	const isVirtual = (parameter as VirtualParameter).consumer !== undefined;
