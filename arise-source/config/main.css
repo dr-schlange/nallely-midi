@@ -195,3 +195,9 @@ h3 {
 	border-bottom: 1px;
 	border-bottom-style: solid;
 }
+
+@media (max-width: 550px) {
+	.logo pre {
+		font-size: 5px;
+	}
+}
