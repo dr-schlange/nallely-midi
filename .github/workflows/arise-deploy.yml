@@ -1,0 +1,56 @@
+# .github/workflows/arise-deploy.yml
+name: Deploy Arise to html branch
+
+on:
+  # Runs on pushes targeting the default branch
+  # Only runs when the push contains changes to the site source itself. No need to rebuild the site if it's just program files that have changed.
+  push:
+    branches: ["website"]
+    paths: ['arise-source/**']
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# Default to bash
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: Deploy Arise
+    steps:
+      - name: Check if we should deploy to prod or staging
+        run: |
+          echo "SMART DEPLOY"
+          echo "============"
+          echo "We only want to deploy to prod if the branch that triggered this workflow is 'website'. Otherwise, we want the site to be deployed to staging..."
+          echo ""
+          if [[ $GITHUB_REF == 'refs/heads/website' ]]; then
+              # Feel free to change the value of OUTPUT_BRANCH. This is where Arise artefacts will be deployed for production.
+              echo "OUTPUT_BRANCH=gh-pages" >> "$GITHUB_ENV"
+              echo "Workflow running from website branch. Pushing results to production deployment branch (html)."
+          else
+              # Feel free to change the value of OUTPUT_BRANCH. This is where Arise artefacts will be deployed for staging.
+              echo "OUTPUT_BRANCH=gh-pages-staging" >> "$GITHUB_ENV"
+              echo "Workflow running from a development branch. Pushing results to staging deployment branch (html-staging)."
+          fi
+
+      - name: git-checkout
+        uses: actions/checkout@v4
+
+      - name: Install pandoc
+        run: sudo apt-get install -y pandoc
+
+      - name: Build website with Arise
+        run: bash arise build
+
+      - name: Push to live branch
+        uses: s0/git-publish-subdir-action@develop
+        env:
+          REPO: self
+          BRANCH: ${{ env.OUTPUT_BRANCH }} # If you want to change this, change it in the step above. This allows us to intelligently deploy to production from main or staging if we're on a dev branch.
+          FOLDER: arise-out # The Arise build output location. Don't change this.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Handled automatically -- Don't change this unless you're pushing to a different repo
+          MESSAGE: "Commit: ({sha}) {msg}" # Copies commit msg from main to the deploy version branch
