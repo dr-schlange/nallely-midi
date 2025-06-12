@@ -1,0 +1,19 @@
+AmigaFonts – Collection of retro fonts (Topaz, MicroKnight, etc.)
+
+These fonts are released under the GNU General Public License with the Font Exception (GPL-FE):
+https://www.gnu.org/licenses/gpl-faq.html#FontException
+
+This exception allows embedding and use of the fonts in documents and software without requiring the entire work to be licensed under the GPL.
+
+The fonts included here are © their respective original authors:
+- Topaz is © Amiga Inc.
+- TopazPlus, P0T-NOoDLE, MicroKnight, MicroKnightPlus, mO'sOul:
+  Converted versions (ttf, fon, eot, psf, etc.) are © dMG/t!s^dS!
+- P0T-NOoDLE is © Leo "Nudel" Davidson
+- MicroKnight is © Niels Krogh "Nölb/Grafictive" Mortensen
+- mO'sOul is © Desoto/Mo'Soul
+
+Redistribution and use in unmodified form is permitted with attribution.
+No modifications have been made to the font files.
+
+Source: https://github.com/rewtnull/amigafonts

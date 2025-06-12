@@ -1,0 +1,159 @@
+#!/bin/bash
+######################################
+# ARISE
+# https://github.com/spectrasecure/arise
+arise_version="1.1.0"
+######################################
+
+##############################################################
+# Begin main script function
+# Don't edit below this line unless you know what you're doing
+##############################################################
+
+cd "$(dirname $0)"
+
+# Set the site config directories. Don't touch this-- changing the config location is not supported at this time
+config="arise-out/config"
+source arise-source/config/arise.conf
+
+# Check if we're running a current version of bash before potentially causing code that won't run properly on ancient bash versions
+[ "$BASH_VERSINFO" -lt 5 ] && echo -e 'ERROR: Arise requires Bash version 5 or greater to run. Please install a newer version of Bash or ensure that you are using the newest version installed on your computer.\n\nYour current version of Bash is: '"$BASH_VERSINFO"'\n\nYou can verify the current running version of Bash by running the following command: echo "$BASH_VERSINFO"' && exit 1
+
+# Makes sure that our paths have or don't have a '/' as expected regardless of user input.
+## Favicon should have a '/' at the start of the path.
+[[ $favicon != '' ]] && [[ ${favicon:0:1} != '/' ]] && favicon='/'"$favicon"
+## Base URL should not have a '/' at the end.
+[[ ${base_url: -1} == '/' ]] && base_url=${base_url::-1}
+
+# Source functions
+for FILE in lib/functions/inline/* ; do [[ $FILE == *.sh ]] && source $FILE ; done
+for FILE in lib/functions/subshell/* ; do [[ $FILE == *.sh ]] && source $FILE ; done
+
+# Display our pretty logo no matter what when the program is run :)
+arise_logo
+
+# Set default build settings
+force_overwrite=false
+keep_source=false
+
+# Read our arguments and set the build mode for processing. Display help if an invalid option is made.
+if [[ $@ == "build" ]]; then
+        arise_build="full"
+        echo "Starting site deploy. Building full site."
+elif [[ $@ == "build -k" ]]; then
+        arise_build="full"
+        keep_source=true
+        echo "Starting site deploy. Building full site. Source .md files will be retained in the final output."
+elif [[ $@ == "build -f" ]]; then
+        arise_build="full"
+        echo "Starting site deploy. Building full site."
+        echo;
+        read -p 'WARNING: Specifying "-f" will DELETE the current contents of '"$(realpath arise-out)"'. Proceed? [Y/n]: ' -n 1 -r;
+        echo;
+        if [[ $REPLY =~ ^[Nn]$ ]]; then
+                echo 'Aborting.';
+                exit 1;
+        else
+                force_overwrite=true;
+        fi;
+elif [[ $@ == "build -kf" ]] || [[ $@ == "build -fk" ]]; then
+        arise_build="full"
+        keep_source=true
+        echo "Starting site deploy. Building full site. Source .md files will be retained in the final output."
+        echo;
+        read -p 'WARNING: Specifying "-f" will DELETE the current contents of '"$(realpath arise-out)"'. Proceed? [Y/n]: ' -n 1 -r;
+        echo;
+        if [[ $REPLY =~ ^[Nn]$ ]]; then
+                echo 'Aborting.';
+                exit 1;
+        else
+                force_overwrite=true;
+        fi;
+else
+        while getopts ":psrkf" options; do
+                case "${options}" in
+                        p)
+                                [[ -n "$arise_build" ]] && { arise_help; echo -e '\n\nERROR: Multiple exclusive build options detected. Aborting.'; exit 1; }
+                                arise_build="pages_only";
+                                echo "Starting site deploy. Building pages only.";
+                                ;;
+                        s)
+                                [[ -n "$arise_build" ]] && { arise_help; echo -e '\n\nERROR: Multiple exclusive build options detected. Aborting.'; exit 1; }
+                                arise_build="sitemap_only";
+                                echo "Starting site deploy. Building sitemap only.";
+                                ;;
+                        r)
+                                [[ -n "$arise_build" ]] && { arise_help; echo -e '\n\nERROR: Multiple exclusive build options detected. Aborting.'; exit 1; }
+                                arise_build="rss_only";
+                                echo "Starting site deploy. Building RSS feed only.";
+                                ;;
+                        k)
+                                keep_source=true;
+                                echo "Source .md files will be retained in the final output."l
+                                ;;
+                        f)
+                                echo;
+                                read -p 'WARNING: Specifying "-f" will DELETE the current contents of '"$(realpath arise-out)"'. Proceed? [y/N]: ' -n 1 -r;
+                                echo;
+                                if [[ $REPLY =~ ^[Yy]$ ]]; then
+                                        force_overwrite=true;
+                                else
+                                        echo 'Aborting.';
+                                        exit 1;
+                                fi;
+                                ;;
+                esac
+        done
+fi
+
+[[ -z "$arise_build" ]] && { arise_help; exit 1; }
+echo
+
+# Make sure "arise_out" is empty and copy the source files over there to work from during the build process.
+[[ -d arise-out ]] && [[ "$force_overwrite" == true ]] && rm -rf arise-out
+mkdir -p arise-out
+[[ -n "$(ls -A arise-out)" ]] && echo -e 'ERROR: The build output directory "/arise-out" is not empty. Program aborted to prevent overwrite of existing data.\n\nPlease empty the output directory before running Arise again or run your command with the "-f" flag to overwrite the existing output (dangerous).' && exit 1
+cp -r "arise-source/". "arise-out"
+## Set an absolute path for $config
+config=$(realpath $config)
+
+# Define a temporary file for a list of all source files for post-build cleanup
+removelist="arise-out/arise-remove-$RANDOM.tmp"
+touch $removelist
+removelist=$(realpath $removelist)
+
+# Run the build process depending on whatever options have been set
+if [[ "$arise_build" == "full" ]] || [[ "$arise_build" == "pages_only" ]]; then
+        echo -n "Building pages..."
+        build_page_tree arise-out || { echo "ERROR: An error was encountered while building pages. Aborting build cycle."; exit 1; }
+        echo " DONE."
+fi
+
+if [[ "$arise_build" == "full" ]] || [[ "$arise_build" == "rss_only" ]]; then
+        echo -n "Building RSS feed..."
+        build_rss arise-out/rss.xml || { echo "ERROR: An error was encountered while building the RSS feed. Aborting build cycle."; exit 1; }
+        echo " DONE."
+fi
+
+if [[ "$arise_build" == "full" ]] || [[ "$arise_build" == "sitemap_only" ]]; then
+        echo -n "Building sitemap..."
+        build_sitemap arise-out/sitemap.xml || { echo "ERROR: An error was encountered while building the sitemap. Aborting build cycle."; exit 1; }
+        echo " DONE."
+fi
+
+if [[ "$keep_source" == false ]]; then
+        echo -n "Cleaning up build source files from output..."
+        # Remove every page that we built from as part of the build cycle
+        while read fname; do
+                [[ -f "$fname" ]] && rm "$fname"
+        done <$removelist
+        # Remove site config templates
+        rm "$config/header.html"
+        rm "$config/content_header.html"
+        rm "$config/footer.html"
+        rm "$config/arise.conf"
+        echo " DONE."
+fi
+
+rm $removelist
+echo -e '\nBuild completed! Built artefacts have been generated at:\n'"$(realpath arise-out)"

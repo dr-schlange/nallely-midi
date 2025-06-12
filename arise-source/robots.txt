@@ -1,0 +1,4 @@
+User-agent: *
+Disallow: https://dr-schlange.github.io/nallely-midi/config/*
+
+Sitemap: https://dr-schlange.github.io/nallely-midi/sitemap.xml

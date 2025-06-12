@@ -1,0 +1,197 @@
+/*** Core page styles to set the primary colours and styles to be inherited by everything else ***/
+
+/* Core Styling */
+@font-face {
+	font-family: "TopazPlusA1200";
+	src: url("/fonts/TopazPlusa600a1200a4000.woff2") format("woff2");
+	font-weight: normal;
+	font-style: normal;
+	font-display: swap;
+}
+
+html * {
+	font-family: "TopazPlusA1200", monospace;
+}
+body {
+	margin: 40px auto;
+	max-width: 650px;
+	line-height: 1.6;
+	font-size: 18px;
+	color: black;
+	/* background-color:#121619; */
+	background-color: #c0c0c0;
+	padding: 0 10px;
+}
+/********************************/
+/********************************/
+
+/*** Post styling. This section is for defining markup classes to make it easier to write prettier posts. ***/
+
+img {
+	max-width: 100%;
+	max-height: 100%;
+	margin-top: 20px;
+	margin-bottom: 20px;
+	border-radius: 16px;
+	margin-left: auto;
+	margin-right: auto;
+	display: block;
+}
+
+code {
+	background-color: #293137;
+	border-radius: 16px;
+	padding-left: 30px;
+	padding-right: 30px;
+	line-height: 2em;
+
+	padding-top: 1px;
+	padding-bottom: 1px;
+	color: #65f85a;
+	font-family: monospace;
+}
+
+pre {
+	overflow-x: auto;
+	white-space: pre-wrap;
+	white-space: -moz-pre-wrap;
+	white-space: -pre-wrap;
+	white-space: -o-pre-wrap;
+	word-wrap: break-word;
+}
+
+blockquote {
+	border-left: 1px solid black;
+	display: block;
+	margin-top: 1em;
+	margin-bottom: 1em;
+	margin-left: 30px;
+	padding-left: 10px;
+	margin-right: 40px;
+	font-style: italic;
+	color: black;
+}
+
+hr {
+	color: black;
+	margin-left: auto;
+	margin-right: auto;
+	max-width: 300px;
+}
+
+#endline {
+	/* Special kind of <hr> for spacing out footnotes from the rest of a post */
+	color: black;
+	margin-left: auto;
+	margin-right: auto;
+	max-width: 300px;
+	margin-top: 80px;
+}
+
+a {
+	color: blue;
+}
+
+a:visited {
+	color: #bb995a;
+}
+
+h1 {
+	line-height: 1.2;
+}
+
+h2,
+h3 {
+	padding-top: 24px;
+	line-height: 1.2;
+}
+
+/* Style for inline dates. These are configured via a separate include file in /config/content_header.html. See notes on Arise page creation for more details. */
+.date {
+	padding-bottom: 0;
+	margin-bottom: 0;
+	font-size: 14px;
+}
+
+@media screen and (max-width: 900px) {
+	.date {
+		text-align: right;
+	}
+}
+@media screen and (min-width: 901px) {
+	.date {
+		float: right;
+		margin-left: 30px;
+	}
+}
+
+/********************************/
+/********************************/
+
+/*** Modular component styles. Includes styling for the headers, navigation controls, and footer. ***/
+
+/* Site logo. Styled to responsively move to either left or be centred, depending if the page is being viewed on desktop or mobile respectively. */
+.logo {
+	margin-bottom: 20px;
+	text-align: center;
+}
+
+.logo pre {
+	overflow: hidden;
+	font-family: monospace;
+	font-size: 9px;
+	color: orange;
+	text-decoration: none;
+	line-height: 1;
+	background-color: rgb(128, 128, 128);
+}
+
+.logo a {
+	text-decoration: none;
+}
+
+.logo a:visited {
+	color: black;
+}
+
+/* Navbar styling. */
+.topbar {
+	padding-right: 10px;
+	border-top: 1px solid gray;
+	border-bottom: 1px solid gray;
+	margin-bottom: 20px;
+	text-align: center;
+}
+.topbar a {
+	color: black;
+	text-decoration: none;
+	/* font-weight: bolder; */
+}
+
+/* Site footer styling */
+.footer {
+	border-top: 2px solid gray;
+	font-size: 12px;
+	margin-top: 120px;
+	text-align: center;
+}
+
+/********************************/
+/********************************/
+
+/*** Other misc garbage ***/
+
+/* Arise Index Style */
+.arise-toc-td {
+	border-width: 1px;
+	border-color: black;
+	border-top-style: solid;
+	text-align: center;
+	padding-right: 10px;
+	padding-bottom: 5px;
+}
+.arise-toc-th {
+	padding-bottom: 20px;
+	border-bottom: 1px;
+	border-bottom-style: solid;
+}
