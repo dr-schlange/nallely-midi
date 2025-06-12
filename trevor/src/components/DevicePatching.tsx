@@ -141,7 +141,7 @@ const DevicePatching = () => {
 			return (
 				<select
 					style={{
-						width: "98.5%",
+						maxWidth: "52.1%",
 					}}
 					value={value ? value.toString() : "--"}
 					onChange={(e) =>
@@ -227,7 +227,16 @@ const DevicePatching = () => {
 		if (isVirtualDevice(device)) {
 			setInformation(
 				<>
-					<p style={{ marginLeft: "5px" }}>{device.repr}</p>
+					<p
+						style={{
+							marginLeft: "5px",
+							marginTop: "5px",
+							fontSize: "24px",
+							marginBottom: "4px",
+						}}
+					>
+						{device.repr}
+					</p>
 					<button
 						type="button"
 						className={"associate-button"}
@@ -237,21 +246,24 @@ const DevicePatching = () => {
 					</button>
 					<hr />
 					{device.meta.parameters.map((param) => (
-						<p
+						<div
 							key={param.name}
 							style={{
 								marginTop: 0,
-								marginBottom: 0,
+								marginBottom: 2,
 								marginLeft: "10px",
 								marginRight: "5px",
+								display: "flex",
+								flexDirection: "row",
+								alignItems: "center",
 							}}
 						>
 							{/* biome-ignore lint/a11y/noLabelWithoutControl: <explanation> */}
-							<label>
-								{param.name}{" "}
+							<label style={{width: "100%", display: "flex"}}>
+								<p style={{margin: "0px 0px 3px", width: "50%", overflowInline: "auto"}}>{param.name}</p>
 								{createInput(device, param, device.config[param.name])}
 							</label>
-						</p>
+						</div>
 					))}
 					<hr />
 					<button
@@ -642,9 +654,9 @@ const DevicePatching = () => {
 				<button
 					style={{
 						width: "100%",
-						padding: "0px",
+						padding: "4px 0px 0px 5px",
 						textAlign: "left",
-						paddingLeft: "5px",
+						fontSize: "20px",
 					}}
 					type="button"
 					title={isExpanded ? "Open panel" : "Close panel"}

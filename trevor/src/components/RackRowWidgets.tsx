@@ -144,11 +144,11 @@ const SortableWidget = ({
 				{...listeners}
 				style={{
 					position: "absolute",
-					top: 3,
+					top: 5,
 					left: 7,
 					zIndex: 1,
 					cursor: "grab",
-					fontSize: "15px",
+					fontSize: "23px",
 					color: "gray",
 				}}
 			>

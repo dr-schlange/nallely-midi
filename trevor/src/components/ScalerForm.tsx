@@ -34,7 +34,7 @@ export const ScalerForm = ({ connection }: ScalerFormProps) => {
 
 	return (
 		<div className="connection-setup">
-			<h3>Connection Setup</h3>
+			<h3>Patch Setup</h3>
 			<label>
 				<input
 					type="checkbox"
@@ -73,9 +73,16 @@ export const ScalerForm = ({ connection }: ScalerFormProps) => {
 			</label>
 			<div className="form-group">
 				{/* biome-ignore lint/a11y/noLabelWithoutControl: <explanation> */}
-				<label>
-					Min:
+				<label style={{ display: "flex", flexDirection: "column" }}>
+					<p
+						style={{
+							margin: "0px 0px 3px",
+						}}
+					>
+						min
+					</p>
 					<DragNumberInput
+						width="100%"
 						disabled={!scalerEnabled}
 						value={min.toString()}
 						range={[null, null]} // or set appropriate bounds
@@ -91,15 +98,27 @@ export const ScalerForm = ({ connection }: ScalerFormProps) => {
 				</label>
 				<button
 					type="button"
-					style={{ fontSize: "14px", marginBottom: "10px" }}
+					style={{
+						fontSize: "14px",
+						marginBottom: "10px",
+						minWidth: "27px",
+						maxHeight: "27px",
+					}}
 					onClick={switchMinMax}
 				>
 					⇄
 				</button>
 				{/* biome-ignore lint/a11y/noLabelWithoutControl: <explanation> */}
-				<label>
-					Max:
+				<label style={{ display: "flex", flexDirection: "column" }}>
+					<p
+						style={{
+							margin: "0px 0px 3px",
+						}}
+					>
+						max
+					</p>
 					<DragNumberInput
+						width="85%"
 						disabled={!scalerEnabled}
 						value={max.toString()}
 						range={[null, null]} // or set appropriate bounds
@@ -115,7 +134,7 @@ export const ScalerForm = ({ connection }: ScalerFormProps) => {
 				</label>
 			</div>
 			<label>
-				Method:
+				Method
 				<select
 					value={method}
 					disabled={!scalerEnabled}

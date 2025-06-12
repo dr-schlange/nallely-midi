@@ -1,17 +1,20 @@
-/* @import url('https://fonts.cdnfonts.com/css/amiga-forever'); */
+@font-face {
+	font-family: "TopazPlusA1200";
+	src: url("/fonts/Topaza600a1200a400.woff2") format("woff2");
+	font-weight: normal;
+	font-style: normal;
+}
 
 @font-face {
-	font-family: "Amiga Forever";
-	src: url("/fonts/amiga4ever.ttf") format("truetype"),
-		url("/fonts/amiga4ever-pro.ttf") format("truetype"),
-		url("/fonts/amiga4ever-pro2.ttf") format("truetype");
+	font-family: "TopazPlusA1200";
+	src: url("/fonts/TopazPlusa600a1200a4000.woff2") format("woff2");
 	font-weight: normal;
 	font-style: normal;
 }
 
 :root {
-	font-family: "Amiga Forever", system-ui, Avenir, Helvetica, Arial, sans-serif; /* Use the Amiga font */
-	line-height: 1.5;
+	font-family: "TopazPlusA1200", system-ui, Avenir, Helvetica, Arial, sans-serif; /* Use the Amiga font */
+	/* line-height: 1.1; */
 	font-weight: 400;
 
 	color-scheme: light;
@@ -34,18 +37,25 @@ body,
 	padding: 0;
 	width: 100%;
 	height: 100%;
+	font-family: "TopazPlusA1200", system-ui, Avenir, Helvetica, Arial, sans-serif; /* Use the Amiga font */
 }
 
-pre {
-	font-family: "Amiga Forever", system-ui, Avenir, Helvetica, Arial, sans-serif;
-	font-size: 12px;
+button,
+select,
+pre,
+textarea,
+input {
+	font-family: inherit;
 }
 
 body {
-	font-family: "Amiga Forever", system-ui, Avenir, Helvetica, Arial, sans-serif;
 	display: flex;
 	flex-direction: column;
 	background-color: #c0c0c0; /* Amiga Workbench background */
+}
+
+pre {
+	font-size: 18px;
 }
 
 a {
@@ -55,7 +65,6 @@ a {
 }
 a:hover {
 	color: orange; /* Hover color for links */
-	/* color: #0000ff;  */
 }
 
 h1 {
@@ -72,9 +81,7 @@ h3 {
 button,
 input,
 textarea,
-select,
-checkbox {
-	font-family: "Amiga Forever", system-ui, Avenir, Helvetica, Arial, sans-serif;
+select {
 	background-color: #d0d0d0; /* Amiga-style button background */
 	border: 2px solid #808080; /* Amiga-style border */
 	color: #000000;
@@ -122,7 +129,7 @@ input[type="text"]:disabled {
 }
 
 .logWindow pre {
-	font-size: 10px;
+	font-size: 15px;
 	white-space: pre-wrap;
 	word-wrap: break-word;
 	overflow-x: hidden,;
@@ -145,13 +152,10 @@ input[type="text"]:disabled {
 	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
 }
 
-/* .right-panel {
-	flex: 1;
+.information-panel {
 	display: flex;
 	flex-direction: column;
-	background-color: #f0f0f0;
-	border-left: 2px solid #808080;
-} */
+}
 
 .top-right-panel,
 .bottom-right-panel {
@@ -213,8 +217,6 @@ input[type="text"]:disabled {
 	width: 100%;
 	height: auto;
 	background-color: #d0d0d0;
-	/* border: 2px solid #808080;
-	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000; */
 }
 
 .instance-creation-main-panel {
@@ -222,32 +224,7 @@ input[type="text"]:disabled {
 	width: 100%;
 	flex-direction: column;
 	background-color: #e0e0e0;
-	/* border-bottom: 2px solid #808080;
-	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000; */
 }
-
-/* .instance-creation-left-panel {
-	display: flex;
-	min-width: 70%;
-	max-width: 90%;
-	width: 90%;
-	flex-direction: column;
-	background-color: #e0e0e0;
-	border-bottom: 2px solid #808080;
-	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
-} */
-
-/* .instance-creation-right-panel {
-	display: flex;
-	flex: 2;
-	flex-direction: column;
-	height: 100%;
-	background-color: #e0e0e0;
-	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
-	max-width: 260px;
-	width: 260px;
-	min-width: 260px;
-} */
 
 .instance-creation-midi-output,
 .instance-creation-midi-inputs,
@@ -274,8 +251,7 @@ input[type="text"]:disabled {
 }
 
 .info-content {
-	font-family: "Amiga Forever", inherit;
-	font-size: 12px;
+	font-size: 18px;
 	color: #000000;
 	text-align: center;
 	background-color: #f0f0f0;
@@ -302,14 +278,15 @@ input[type="text"]:disabled {
 }
 
 .device-name {
-	font-size: 12px;
+	font-size: 18px;
 	font-weight: bold;
 	color: #000000;
 	text-align: center;
+	margin-bottom: 3px;
 }
 
 .device-item {
-	font-size: 12px;
+	font-size: 18px;
 	padding: 5px;
 	cursor: pointer;
 	background-color: #d0d0d0;
@@ -341,7 +318,7 @@ input[type="text"]:disabled {
 }
 
 .device-class-item {
-	font-size: 12px;
+	font-size: 18px;
 	padding: 5px;
 	cursor: pointer;
 	background-color: #d0d0d0;
@@ -483,14 +460,6 @@ input[type="text"]:disabled {
 	height: 140px;
 }
 
-.device-name {
-	position: relative;
-	font-size: 12px;
-	font-weight: bold;
-	color: #000000; /* Black text for the name */
-	text-align: center;
-}
-
 .device-sections {
 	display: flex;
 	justify-content: space-between; /* Position sections on sides */
@@ -518,7 +487,9 @@ input[type="text"]:disabled {
 .device-section {
 	display: flex;
 	align-items: center;
-	gap: 5px; /* Space between section box and name */
+	gap: 1px; /* Space between section box and name */
+	margin-top: 1px;
+	margin-bottom: 1px;
 }
 
 .device-section-box {
@@ -543,7 +514,7 @@ input[type="text"]:disabled {
 }
 
 .device-section-name {
-	font-size: 10px;
+	font-size: 13px;
 	font-weight: bold;
 	color: #000000;
 }
@@ -570,9 +541,8 @@ input[type="text"]:disabled {
 	height: 100%;
 	background-color: #d0d0d0;
 	border: 2px solid #808080;
-	font-size: 16px;
+	font-size: 21px;
 	font-weight: bold;
-	font-family: "Amiga Forever", system-ui, Avenir, Helvetica, Arial, sans-serif; /* Use the same font */
 	cursor: pointer;
 	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000; /* Amiga-style 3D effect */
 }
@@ -663,7 +633,6 @@ button.active {
 	background-color: #d0d0d0;
 	border: 2px solid #808080;
 	padding: 5px 10px;
-	font-family: "Amiga Forever", system-ui, Avenir, Helvetica, Arial, sans-serif; /* Use the same font */
 	cursor: pointer;
 	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000; /* Amiga-style 3D effect */
 }
@@ -712,7 +681,6 @@ button.active {
 .save-modal-body input[type="text"] {
 	width: 45%;
 	padding: 5px;
-	font-family: "Amiga Forever", system-ui, Avenir, Helvetica, Arial, sans-serif;
 	border: 2px solid #808080;
 	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
 	background-color: #d0d0d0;
@@ -722,7 +690,6 @@ button.active {
 .settings-modal-body input[type="text"] {
 	width: 60%;
 	padding: 5px;
-	font-family: "Amiga Forever", system-ui, Avenir, Helvetica, Arial, sans-serif;
 	border: 2px solid #808080;
 	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
 	background-color: #d0d0d0;
@@ -753,7 +720,7 @@ button.active {
 
 .top-left-panel h3 {
 	margin: 0 0 10px 0;
-	font-size: 14px;
+	font-size: 19px;
 	font-weight: bold;
 }
 
@@ -764,7 +731,7 @@ button.active {
 }
 
 .top-left-panel li {
-	font-size: 12px;
+	font-size: 18px;
 	margin-bottom: 5px;
 }
 
@@ -784,7 +751,7 @@ button.active {
 
 .bottom-left-panel h3 {
 	margin: 0 0 10px 0;
-	font-size: 14px;
+	font-size: 19px;
 	font-weight: bold;
 }
 
@@ -795,7 +762,7 @@ button.active {
 }
 
 .bottom-left-panel li {
-	font-size: 12px;
+	font-size: 18px;
 	margin-bottom: 5px;
 }
 
@@ -865,7 +832,7 @@ button.active {
 }
 
 .parameter-name {
-	font-size: 10px;
+	font-size: 15px;
 	font-weight: bold;
 	color: #000000; /* Black text for parameter names */
 	position: absolute;
@@ -911,7 +878,6 @@ button.active {
 }
 
 .connection-setup {
-	font-family: "Amiga Forever", system-ui, Avenir, Helvetica, Arial, sans-serif;
 	color: #000000;
 	background-color: #e0e0e0;
 	padding: 10px;
@@ -921,14 +887,14 @@ button.active {
 
 .connection-setup h3 {
 	margin: 0 0 10px 0;
-	font-size: 14px;
+	font-size: 19px;
 	font-weight: bold;
 }
 
 .connection-setup label {
 	display: block;
 	margin-bottom: 10px;
-	font-size: 12px;
+	font-size: 18px;
 }
 
 .connection-setup input[type="checkbox"] {
@@ -945,7 +911,6 @@ button.active {
 .connection-setup input[type="text"] {
 	width: 45%;
 	padding: 5px;
-	font-family: "Amiga Forever", system-ui, Avenir, Helvetica, Arial, sans-serif;
 	border: 2px solid #808080;
 	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
 	background-color: #d0d0d0;
@@ -955,7 +920,6 @@ button.active {
 .connection-setup select {
 	width: 100%;
 	padding: 5px;
-	font-family: "Amiga Forever", system-ui, Avenir, Helvetica, Arial, sans-serif;
 	border: 2px solid #808080;
 	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
 	background-color: #d0d0d0;
@@ -990,7 +954,7 @@ button.active {
 }
 
 .connections-list li {
-	font-size: 12px;
+	font-size: 15px;
 	margin-bottom: 5px;
 	color: #000000;
 }
@@ -1061,7 +1025,7 @@ button.active {
 }
 
 .midi-port-name {
-	font-size: 10px;
+	font-size: 15px;
 	font-weight: bold;
 	color: #000000;
 	margin-bottom: 5px; /* Space between name and circle */
@@ -1105,17 +1069,15 @@ button.active {
 }
 
 .amiga-button {
-	font-family: "Amiga Forever", system-ui, Avenir, Helvetica, Arial, sans-serif;
+	font-family: "TopazPlusA1200", system-ui, Avenir, Helvetica, Arial, sans-serif;
 	background-color: #d0d0d0;
 	border: 2px solid #808080;
 	color: #000000;
-	font-size: 16px;
+	font-size: 21px;
 	font-weight: bold;
 	padding: 5px 5px;
 	cursor: pointer;
 	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
-	/* width: 40px; */
-	/* height: 40px; */
 }
 
 .amiga-button:hover {
@@ -1143,12 +1105,12 @@ button.active {
 .cm-editor .cm-scroller,
 .cm-content {
 	box-sizing: border-box;
-	font-family: "Amiga Forever", system-ui, Avenir, Helvetica, Arial, sans-serif;
-	font-size: 14px;
+	font-family: "TopazPlusA1200", system-ui, Avenir, Helvetica, Arial, sans-serif;
+	font-size: 19px;
 }
 
 .cm-gutters {
-	font-size: 12px; /* tu peux réduire ici si tu veux */
+	font-size: 18px; /* tu peux réduire ici si tu veux */
 }
 
 .cm-tooltip {
@@ -1156,8 +1118,8 @@ button.active {
 	color: #000; /* Texte noir */
 	border: 2px solid #000; /* Bordure noire épaisse */
 	border-radius: 4px;
-	font-family: "Amiga Forever", system-ui, Avenir, Helvetica, Arial, sans-serif;
-	font-size: 14px;
+	font-family: "TopazPlusA1200", system-ui, Avenir, Helvetica, Arial, sans-serif;
+	font-size: 19px;
 	box-shadow: 4px 4px 0px #ccc; /* effet de profondeur rétro */
 }
 
@@ -1185,8 +1147,8 @@ button.active {
 .cm-tooltip-autocomplete,
 .cm-tooltip-autocomplete ul,
 .cm-tooltip-autocomplete li {
-	font-family: "Amiga Forever", system-ui, Avenir, Helvetica, Arial, sans-serif !important;
-	font-size: 12px;
+	font-family: "TopazPlusA1200", system-ui, Avenir, Helvetica, Arial, sans-serif !important;
+	font-size: 18px;
 }
 
 .cm-lintRange-error {
@@ -1233,7 +1195,7 @@ button.active {
 }
 
 .midi-icon {
-	font-size: 18px;
+	font-size: 23px;
 	padding: 4px 6px;
 	border: 2px solid #808080;
 	border-radius: 4px;
@@ -1244,7 +1206,7 @@ button.active {
 }
 
 .midi-toggle-icon {
-	font-size: 14px;
+	font-size: 19px;
 }
 
 .midi-container.open .midi-header {
@@ -1269,7 +1231,7 @@ button.active {
 	background-color: #eee;
 	border: 1px solid #bbb;
 	padding: 6px;
-	font-size: 11px;
+	font-size: 16px;
 	text-align: center;
 	border-radius: 3px;
 	cursor: default;
@@ -1291,19 +1253,19 @@ button.active {
 
 @media (max-height: 450px) {
 	h3 {
-		font-size: 15px;
+		font-size: 20px;
 	}
 
 	li {
-		font-size: 11px !important;
+		font-size: 16px !important;
 	}
 
 	.associate-button {
-		font-size: 14px;
+		font-size: 19px;
 	}
 
 	p {
-		font-size: 12px;
+		font-size: 18px;
 	}
 
 	/* .device-patching.vertical {
@@ -1376,7 +1338,7 @@ button.active {
 	}
 
 	.logWindow pre {
-		font-size: 10px;
+		font-size: 15px;
 		white-space: pre-wrap;
 		word-wrap: break-word;
 		overflow-x: hidden,;
@@ -1395,7 +1357,7 @@ button.active {
 
 @media (max-width: 600px) {
 	h3 {
-		font-size: 15px;
+		font-size: 20px;
 	}
 
 	.top-left-panel h3 {
@@ -1408,7 +1370,7 @@ button.active {
 	}
 
 	.bottom-left-panel h3 {
-		font-size: 14px;
+		font-size: 19px;
 		font-weight: bold;
 		transform: rotate(90deg);
 		transform-origin: left bottom;
@@ -1418,15 +1380,15 @@ button.active {
 	}
 
 	li {
-		font-size: 11px !important;
+		font-size: 16px !important;
 	}
 
 	.associate-button {
-		font-size: 14px;
+		font-size: 19px;
 	}
 
 	p {
-		font-size: 12px;
+		font-size: 18px;
 	}
 	.rack-row {
 		align-items: center;
@@ -1479,7 +1441,7 @@ button.active {
 	}
 
 	.logWindow pre {
-		font-size: 10px;
+		font-size: 15px;
 		white-space: pre-wrap;
 		word-wrap: break-word;
 		overflow-x: hidden,;
@@ -1496,7 +1458,7 @@ button.active {
 	}
 
 	.modal-header label {
-		font-size: small;
+		font-size: normal;
 	}
 
 	.modal-header label select {

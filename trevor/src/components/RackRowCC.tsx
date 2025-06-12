@@ -36,7 +36,7 @@ const CircularSlider = ({ value, section, param }) => {
 		>
 			<p
 				style={{
-					fontSize: "8px",
+					fontSize: "12px",
 					margin: "0px",
 					marginTop: "5px",
 					marginLeft: "5px",
@@ -57,8 +57,8 @@ const CircularSlider = ({ value, section, param }) => {
 					x="50%"
 					y="50%"
 					textAnchor="middle"
-					dy=".3em"
-					fontSize="10"
+					dy="8px"
+					fontSize="14px"
 					fill="#333"
 				>
 					{value}
@@ -134,7 +134,7 @@ export const RackRowCCs = forwardRef<RackRowCCRef, CCsRackProps>(
 						padding: "1px",
 					}}
 				>
-					<p style={{ fontSize: "10px" }}>{deviceName}</p>
+					<p style={{ fontSize: "16px", margin: "0px" }}>{deviceName}</p>
 					<div
 						key={`${deviceName}-body`}
 						style={{
@@ -158,7 +158,7 @@ export const RackRowCCs = forwardRef<RackRowCCRef, CCsRackProps>(
 										margin: "1px",
 									}}
 								>
-									<p style={{ fontSize: "8px" }}>
+									<p style={{ fontSize: "12px" }}>
 										{generateAcronym(sectionName, 5)}
 									</p>
 									{Object.entries(sortObjectByKey(parameter)).map(

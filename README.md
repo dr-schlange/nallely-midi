@@ -360,3 +360,12 @@ Nallely and Trevor works perfectly fine on raspberry pi, meaning that you can br
 The configuration is currently still very manual (systemd service creation, etc), but will be made automatic later.
 
 TO WRITE
+
+
+## Fonts used
+
+Nallely includes several retro Amiga-style fonts from the [rewtnull/amigafonts](https://github.com/rewtnull/amigafonts) project.
+
+These fonts are licensed under the GNU GPL with the Font Exception, which allows them to be used and embedded in this BSD-licensed project without imposing copyleft requirements.
+
+See [`trevor/public/fonts/LICENSE.amigafonts`](trevor/public/fonts/LICENSE.amigafonts) for full license and attributions.
