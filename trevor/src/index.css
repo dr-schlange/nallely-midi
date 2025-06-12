@@ -1572,4 +1572,12 @@ button.active {
 	.top-left-panel {
 		flex-direction: row-reverse;
 	}
+
+	.device-patching-svg {
+		width: 140%;
+	}
+
+	.device-patching-svg.horizontal {
+		width: 100%;
+	}
 }

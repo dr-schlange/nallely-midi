@@ -628,7 +628,10 @@ const DevicePatching = () => {
 					horizontal={orientation === HORIZONTAL}
 					onDeviceDrop={updateConnections}
 				/>
-				<svg className="device-patching-svg" ref={svgRef} />
+				<svg
+					className={`device-patching-svg ${orientation === HORIZONTAL ? "horizontal" : ""}`}
+					ref={svgRef}
+				/>
 				<RackRowWidgets
 					ref={widgetRack}
 					horizontal={orientation === HORIZONTAL}
