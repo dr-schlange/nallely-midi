@@ -196,7 +196,7 @@ h3 {
 	border-bottom-style: solid;
 }
 
-@media (max-width: 550px) {
+@media (max-width: 650px) {
 	.logo pre {
 		font-size: 5px;
 	}
