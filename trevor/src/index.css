@@ -10,6 +10,7 @@
 	src: url("/fonts/TopazPlusa600a1200a4000.woff2") format("woff2");
 	font-weight: normal;
 	font-style: normal;
+	font-display: swap;
 }
 
 :root {
@@ -1352,6 +1353,16 @@ button.active {
 	.parameter-box {
 		width: 20px;
 		height: 20px;
+	}
+
+	.device-patching-svg {
+		width: 140%;
+		height: 100%;
+	}
+
+	.device-patching-svg.horizontal {
+		width: 100%;
+		height: 140%;
 	}
 }
 
