@@ -51,7 +51,7 @@ export const MidiGrid = ({
 		channel: 0,
 		section_name: section.pads_or_keys?.section_name || "unknown",
 		keys: {},
-	};
+	} as PadsOrKeys;
 
 	const midiNotes = Array.from({ length: 128 }, (_, i) => ({
 		number: i,
