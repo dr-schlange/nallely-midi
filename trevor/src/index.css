@@ -907,7 +907,7 @@ button.active {
 
 .parameter:not(.selected) .parameter-box.occupied {
 	background-color: #bb995a;
-	border: 2px solid #927847;
+	border: 2px solid #bb995a;
 }
 
 .connection-setup {
