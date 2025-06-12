@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import type {
 	MidiConnection,
 	MidiDevice,
@@ -19,28 +19,32 @@ import {
 	buildParameterId,
 	connectionId,
 	connectionsOfInterest,
-	isPadOrdKey,
 	isPadsOrdKeys,
-	isVirtualParameter,
+	isVirtualDevice,
+	parameterUUID,
 } from "../../utils/utils";
 import { MidiGrid } from "../MidiGrid";
 
-const parameterUUID = (
-	device: MidiDevice | number | VirtualDevice,
-	parameter: MidiParameter | VirtualParameter | PadsOrKeys | PadOrKey,
-) => {
-	const id = typeof device === "object" ? device.id : device;
-	let parameterName: string | number;
-	if (isVirtualParameter(parameter)) {
-		parameterName = parameter.cv_name;
-	} else if (isPadsOrdKeys(parameter)) {
-		parameterName = "all_keys_or_pads";
-	} else if (isPadOrdKey(parameter)) {
-		parameterName = parameter.note;
-	} else {
-		parameterName = parameter.name;
+const collectAllVirtualParameters = (device: VirtualDevice) => {
+	return device.meta.parameters.map((p) => parameterUUID(device.id, p));
+};
+
+const collectAllMidiParameters = (device: MidiDevice) => {
+	const parameters: (MidiParameter | PadsOrKeys)[] = [];
+	for (const section of device.meta.sections) {
+		if (section.pads_or_keys) {
+			parameters.push(section.pads_or_keys);
+		}
+		parameters.push(...section.parameters);
 	}
-	return `${id}::${parameter.section_name}::${parameterName}`;
+	return parameters.map((p) => parameterUUID(device.id, p));
+};
+
+const collectAllParameters = (device: MidiDevice | VirtualDevice) => {
+	if (isVirtualDevice(device)) {
+		return collectAllVirtualParameters(device);
+	}
+	return collectAllMidiParameters(device);
 };
 
 const PatchingModal = ({
@@ -277,6 +281,32 @@ const PatchingModal = ({
 		return "";
 	};
 
+	const srcPadsOrKey = firstSection?.section.pads_or_keys;
+	const srcAllParameters = collectAllParameters(firstSection.device);
+	const srcAllIncoming = allConnections
+		.filter((c) =>
+			srcAllParameters.includes(parameterUUID(c.dest.device, c.dest.parameter)),
+		)
+		.map((c) => parameterUUID(c.dest.device, c.dest.parameter));
+	const srcAllOutgoing = allConnections
+		.filter((c) =>
+			srcAllParameters.includes(parameterUUID(c.src.device, c.src.parameter)),
+		)
+		.map((c) => parameterUUID(c.src.device, c.src.parameter));
+
+	const dstPadsOrKey = secondSection?.section.pads_or_keys;
+	const dstAllParameters = collectAllParameters(secondSection.device);
+	const dstAllIncoming = allConnections
+		.filter((c) =>
+			dstAllParameters.includes(parameterUUID(c.dest.device, c.dest.parameter)),
+		)
+		.map((c) => parameterUUID(c.dest.device, c.dest.parameter));
+	const dstAllOutgoing = allConnections
+		.filter((c) =>
+			dstAllParameters.includes(parameterUUID(c.src.device, c.src.parameter)),
+		)
+		.map((c) => parameterUUID(c.src.device, c.src.parameter));
+
 	return (
 		<div className="patching-modal">
 			<div className="modal-header">
@@ -306,28 +336,40 @@ const PatchingModal = ({
 									/>
 								</div>
 							)}
-							{firstSection?.section.parameters.map((param) => (
-								<div
-									key={param.name}
-									className={`parameter ${
-										selectedParameters[0]?.parameter === param ? "selected" : ""
-									}`}
-									id={buildParameterId(firstSection.device.id, param)}
-									onClick={() =>
-										handleParameterClick(firstSection.device, param)
-									}
-									onKeyDown={(e) => {
-										if (e.key === "Enter" || e.key === " ") {
-											handleParameterClick(firstSection.device, param);
+							{firstSection?.section.parameters.map((param) => {
+								const incoming = srcAllIncoming.includes(
+									parameterUUID(firstSection.device.id, param),
+								);
+								const outgoing = srcAllOutgoing.includes(
+									parameterUUID(firstSection.device.id, param),
+								);
+								return (
+									<div
+										key={param.name}
+										className={`parameter ${
+											selectedParameters[0]?.parameter === param
+												? "selected"
+												: ""
+										}`}
+										id={buildParameterId(firstSection.device.id, param)}
+										onClick={() =>
+											handleParameterClick(firstSection.device, param)
 										}
-									}}
-								>
-									<div className="parameter-box" />
-									<div className="text-wrapper">
-										<span className="parameter-name left">{param.name}</span>
+										onKeyDown={(e) => {
+											if (e.key === "Enter" || e.key === " ") {
+												handleParameterClick(firstSection.device, param);
+											}
+										}}
+									>
+										<div
+											className={`parameter-box ${incoming || outgoing ? "occupied" : ""}`}
+										/>
+										<div className="text-wrapper">
+											<span className="parameter-name left">{param.name}</span>
+										</div>
 									</div>
-								</div>
-							))}
+								);
+							})}
 						</div>
 					</div>
 					<div className="bottom-left-panel" onScroll={updateConnections}>
@@ -348,31 +390,43 @@ const PatchingModal = ({
 								</div>
 							)}
 
-							{secondSection?.section.parameters.map((param) => (
-								<div
-									key={param.name}
-									className={`parameter ${
-										selectedParameters[0]?.parameter === param ? "selected" : ""
-									}`}
-									id={buildParameterId(secondSection.device.id, param)}
-									onClick={() =>
-										handleParameterClick(secondSection.device, param)
-									}
-									onKeyDown={(e) => {
-										if (e.key === "Enter" || e.key === " ") {
-											handleParameterClick(secondSection.device, param);
+							{secondSection?.section.parameters.map((param) => {
+								const incoming = dstAllIncoming.includes(
+									parameterUUID(secondSection.device.id, param),
+								);
+								const outgoing = dstAllOutgoing.includes(
+									parameterUUID(secondSection.device.id, param),
+								);
+								return (
+									<div
+										key={param.name}
+										className={`parameter ${
+											selectedParameters[0]?.parameter === param
+												? "selected"
+												: ""
+										}`}
+										id={buildParameterId(secondSection.device.id, param)}
+										onClick={() =>
+											handleParameterClick(secondSection.device, param)
 										}
-									}}
-									onKeyUp={(e) => {
-										if (e.key === "Enter" || e.key === " ") {
-											e.preventDefault();
-										}
-									}}
-								>
-									<div className="parameter-box" />
-									<span className="parameter-name right">{param.name}</span>
-								</div>
-							))}
+										onKeyDown={(e) => {
+											if (e.key === "Enter" || e.key === " ") {
+												handleParameterClick(secondSection.device, param);
+											}
+										}}
+										onKeyUp={(e) => {
+											if (e.key === "Enter" || e.key === " ") {
+												e.preventDefault();
+											}
+										}}
+									>
+										<div
+											className={`parameter-box ${incoming || outgoing ? "occupied" : ""}`}
+										/>
+										<span className="parameter-name right">{param.name}</span>
+									</div>
+								);
+							})}
 						</div>
 					</div>
 				</div>

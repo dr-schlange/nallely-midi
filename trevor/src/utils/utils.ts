@@ -55,6 +55,24 @@ export const buildSectionId = (device: number, section: string) => {
 	return `${device}-${section}`;
 };
 
+export const parameterUUID = (
+	device: MidiDevice | number | VirtualDevice,
+	parameter: MidiParameter | VirtualParameter | PadsOrKeys | PadOrKey,
+) => {
+	const id = typeof device === "object" ? device.id : device;
+	let parameterName: string | number;
+	if (isVirtualParameter(parameter)) {
+		parameterName = parameter.cv_name;
+	} else if (isPadsOrdKeys(parameter)) {
+		parameterName = "all_keys_or_pads";
+	} else if (isPadOrdKey(parameter)) {
+		parameterName = parameter.note;
+	} else {
+		parameterName = parameter.name;
+	}
+	return `${id}::${parameter.section_name}::${parameterName}`;
+};
+
 export const connectionId = (connection: MidiConnection): string => {
 	const srcId = connection.src.device;
 	const dstId = connection.dest.device;

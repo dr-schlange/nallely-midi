@@ -35,7 +35,6 @@ const VirtualDeviceComponent = ({
 	onSectionScroll,
 }: VirtualDeviceComponentProps) => {
 	const [isNameOnLeft, setIsNameOnLeft] = useState(true); // Track the side of the name
-	// const sections = Object.keys(device.config);
 	const parameters = device.meta.parameters;
 	const half = Math.ceil(parameters.length / 2); // Split sections into left and right sides
 	const leftSections = parameters.slice(0, half);

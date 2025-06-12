@@ -905,6 +905,11 @@ button.active {
 	background-color: #d0d0d0;
 }
 
+.parameter:not(.selected) .parameter-box.occupied {
+	background-color: #bb995a;
+	border: 2px solid #927847;
+}
+
 .connection-setup {
 	font-family: "Amiga Forever", system-ui, Avenir, Helvetica, Arial, sans-serif;
 	color: #000000;
