@@ -12,6 +12,7 @@ export const initialGeneralState: RunTimeState = {
 };
 
 interface CCState {
+	device_id: number;
 	device: string;
 	section: string;
 	parameter: string;
@@ -47,14 +48,17 @@ const runtimeSlice = createSlice({
 			state.saveDefaultValue = action.payload;
 		},
 		updateCCState: (state, action: PayloadAction<CCState>) => {
-			const { device, section, parameter, value } = action.payload;
+			const { device_id, device, section, parameter, value } = action.payload;
 			state.ccValues = {
 				...state.ccValues,
-				[device]: {
-					...(state.ccValues?.[device] || {}),
-					[section]: {
-						...(state.ccValues[device]?.[section] || {}),
-						[parameter]: value,
+				[device_id]: {
+					...state.ccValues[device_id],
+					[device]: {
+						...(state.ccValues[device_id]?.[device] || {}),
+						[section]: {
+							...(state.ccValues[device_id]?.[device]?.[section] || {}),
+							[parameter]: value,
+						},
 					},
 				},
 			};

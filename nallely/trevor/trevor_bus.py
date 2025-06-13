@@ -274,6 +274,7 @@ class TrevorBus(VirtualDevice):
             {
                 "command": "RuntimeAPI::updateCCState",
                 "arg": {
+                    "device_id": id(device),
                     "device": device.uid(),
                     "section": control.section_name,
                     "parameter": control.name,
@@ -427,6 +428,9 @@ class TrevorBus(VirtualDevice):
                 f"Error while compiling/injecting {method_name} in {device.__class__.__name__}",
             )
             print(e)
+
+    def set_parameter_value(self, device_id, section_name, parameter_name, value):
+        self.trevor.set_parameter_value(device_id, section_name, parameter_name, value)
 
 
 def resource_path(relative_path):

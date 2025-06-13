@@ -435,6 +435,21 @@ class TrevorWebSocket {
 			method_code,
 		});
 	}
+
+	setParameterValue(
+		device_id: number,
+		section_name: string,
+		parameter_name: string,
+		value: number,
+	) {
+		this.sendJsonMessage({
+			command: "set_parameter_value",
+			device_id,
+			section_name,
+			parameter_name,
+			value,
+		});
+	}
 }
 
 let websocket: TrevorWebSocket | null = null;

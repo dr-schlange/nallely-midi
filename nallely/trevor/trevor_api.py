@@ -208,3 +208,7 @@ class TrevorAPI:
     def kill_device(self, device_id):
         dev = self.get_device_instance(device_id)
         dev.stop()
+
+    def set_parameter_value(self, device_id, section_name, parameter_name, value):
+        dev = self.get_device_instance(device_id)
+        setattr(getattr(dev, section_name), parameter_name, value)
