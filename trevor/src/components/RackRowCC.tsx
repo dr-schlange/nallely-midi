@@ -23,7 +23,7 @@ interface RackRowCCs {
 	id: string;
 }
 
-const CircularSlider = ({ value, section, param, onManualSliderChange }) => {
+const CircularSlider = ({ value, param, onManualSliderChange }) => {
 	const radius = 20;
 	const strokeWidth = 2;
 	const size = radius * 2 + strokeWidth;
@@ -42,37 +42,61 @@ const CircularSlider = ({ value, section, param, onManualSliderChange }) => {
 
 	const ghostAngle =
 		ghostValue !== null ? startAngle - (ghostValue / 127) * totalAngle : null;
-
 	const ghostCx =
 		ghostAngle !== null ? center + radius * Math.cos(ghostAngle) : null;
 	const ghostCy =
 		ghostAngle !== null ? center - radius * Math.sin(ghostAngle) : null;
 
-	const handlePointerDown = (e) => {
-		startY.current = e.clientY || e.touches?.[0]?.clientY;
-		document.addEventListener("pointermove", handlePointerMove);
-		document.addEventListener("pointerup", handlePointerUp);
+	const startDrag = (y) => {
+		startY.current = y;
+		window.addEventListener("mousemove", onMouseMove);
+		window.addEventListener("mouseup", onMouseUp);
+		window.addEventListener("touchmove", onTouchMove);
+		window.addEventListener("touchend", onTouchEnd);
 	};
 
-	const handlePointerMove = (e) => {
-		const currentY = e.clientY || e.touches?.[0]?.clientY;
-		const delta = startY.current - currentY;
+	const handlePointerDown = (e) => {
+		e.preventDefault();
+		const y = e.clientY;
+		startDrag(y);
+	};
 
+	const handleTouchStart = (e) => {
+		const y = e.touches[0].clientY;
+		startDrag(y);
+	};
+
+	const onMouseMove = (e) => {
+		handleDrag(e.clientY);
+	};
+
+	const onTouchMove = (e) => {
+		if (e.touches.length > 0) {
+			handleDrag(e.touches[0].clientY);
+		}
+	};
+
+	const handleDrag = (currentY) => {
+		const delta = startY.current - currentY;
 		const deltaValue = Math.round(delta / 2);
 		const newValue = Math.min(127, Math.max(0, value + deltaValue));
-
 		ghostValueRef.current = newValue;
 		setGhostValue(newValue);
 	};
 
-	const handlePointerUp = () => {
-		document.removeEventListener("pointermove", handlePointerMove);
-		document.removeEventListener("pointerup", handlePointerUp);
+	const endDrag = () => {
+		window.removeEventListener("mousemove", onMouseMove);
+		window.removeEventListener("mouseup", onMouseUp);
+		window.removeEventListener("touchmove", onTouchMove);
+		window.removeEventListener("touchend", onTouchEnd);
 
 		if (ghostValueRef.current !== null && ghostValueRef.current !== value) {
 			onManualSliderChange?.(ghostValueRef.current);
 		}
 	};
+
+	const onMouseUp = () => endDrag();
+	const onTouchEnd = () => endDrag();
 
 	useEffect(() => {
 		setGhostValue(null);
@@ -86,11 +110,12 @@ const CircularSlider = ({ value, section, param, onManualSliderChange }) => {
 				display: "flex",
 				alignItems: "center",
 				userSelect: "none",
-				cursor: "pointer",
+				touchAction: "none",
 			}}
 			onPointerDown={handlePointerDown}
+			onTouchStart={handleTouchStart}
 		>
-			<p style={{ fontSize: "12px", margin: "5px 0 0 0px" }}>
+			<p style={{ fontSize: "12px", margin: "5px 0 0 5px" }}>
 				{generateAcronym(param, 5)}
 			</p>
 			{/* biome-ignore lint/a11y/noSvgWithoutTitle: <explanation> */}
@@ -103,7 +128,6 @@ const CircularSlider = ({ value, section, param, onManualSliderChange }) => {
 					strokeWidth={strokeWidth}
 					fill="none"
 				/>
-
 				<circle cx={cx} cy={cy} r={4} fill="orange" />
 
 				{ghostValue !== null && (
@@ -252,7 +276,6 @@ export const RackRowCCs = forwardRef<RackRowCCRef, CCsRackProps>(
 												<CircularSlider
 													key={`${deviceName}::${sectionName}::${paramName}`}
 													value={value}
-													section={sectionName}
 													param={paramName}
 													onManualSliderChange={(value) =>
 														handleParameterChange(
