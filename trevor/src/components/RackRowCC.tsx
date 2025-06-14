@@ -206,6 +206,8 @@ const switchSizeOrientation = (horizontal) => {
 export const RackRowCCs = forwardRef<RackRowCCRef, CCsRackProps>(
 	({ onRackScroll, horizontal }: CCsRackProps, ref) => {
 		const ccs = useTrevorSelector((state) => state.runTime.ccValues);
+		const devices = useTrevorSelector((state) => state.nallely.midi_devices);
+
 		const dispatch = useTrevorDispatch();
 		const trevorSocket = useTrevorWebSocket();
 

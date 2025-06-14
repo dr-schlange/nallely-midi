@@ -1,5 +1,6 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { RunTimeState, ClassCode } from "../model";
+import { setFullState } from "./trevorSlice";
 
 export const initialGeneralState: RunTimeState = {
 	logMode: false,
@@ -49,23 +50,33 @@ const runtimeSlice = createSlice({
 		},
 		updateCCState: (state, action: PayloadAction<CCState>) => {
 			const { device_id, device, section, parameter, value } = action.payload;
-			state.ccValues = {
-				...state.ccValues,
-				[device_id]: {
-					...state.ccValues[device_id],
-					[device]: {
-						...(state.ccValues[device_id]?.[device] || {}),
-						[section]: {
-							...(state.ccValues[device_id]?.[device]?.[section] || {}),
-							[parameter]: value,
-						},
-					},
-				},
-			};
+			if (!state.ccValues[device_id]) {
+				state.ccValues[device_id] = {};
+			}
+			if (!state.ccValues[device_id][device]) {
+				state.ccValues[device_id][device] = {};
+			}
+			if (!state.ccValues[device_id][device][section]) {
+				state.ccValues[device_id][device][section] = {};
+			}
+
+			state.ccValues[device_id][device][section][parameter] = value;
 		},
 		resetCCState: (state) => {
 			state.ccValues = {};
 		},
+	},
+	extraReducers: (builder) => {
+		builder.addCase(setFullState, (state, action) => {
+			const midiDevices = action.payload.midi_devices;
+			const validIds = new Set(midiDevices.map((d) => d.id.toString()));
+
+			for (const deviceId in state.ccValues) {
+				if (!validIds.has(deviceId)) {
+					delete state.ccValues[deviceId];
+				}
+			}
+		});
 	},
 });
 

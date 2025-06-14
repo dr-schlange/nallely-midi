@@ -259,8 +259,16 @@ const DevicePatching = () => {
 							}}
 						>
 							{/* biome-ignore lint/a11y/noLabelWithoutControl: <explanation> */}
-							<label style={{width: "100%", display: "flex"}}>
-								<p style={{margin: "0px 0px 3px", width: "50%", overflowInline: "auto"}}>{param.name}</p>
+							<label style={{ width: "100%", display: "flex" }}>
+								<p
+									style={{
+										margin: "0px 0px 3px",
+										width: "50%",
+										overflowInline: "auto",
+									}}
+								>
+									{param.name}
+								</p>
 								{createInput(device, param, device.config[param.name])}
 							</label>
 						</div>
