@@ -148,6 +148,11 @@ export interface GeneralState {
 	firstLaunch: boolean;
 }
 
+export type CCValues = Record<
+	number,
+	Record<string, Record<string, Record<string, number>>>
+>;
+
 export interface RunTimeState {
 	logMode: boolean;
 	loggedComponent: number | string | undefined;
@@ -155,10 +160,7 @@ export interface RunTimeState {
 	saveDefaultValue: boolean;
 	classCodeMode: boolean;
 	classCode: ClassCode;
-	ccValues: Record<
-		number,
-		Record<string, Record<string, Record<string, number>>>
-	>;
+	ccValues: CCValues;
 }
 
 export interface ClassCode {

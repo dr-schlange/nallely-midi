@@ -2,6 +2,7 @@ import {
 	forwardRef,
 	useEffect,
 	useImperativeHandle,
+	useMemo,
 	useRef,
 	useState,
 } from "react";
@@ -9,6 +10,7 @@ import { useTrevorDispatch, useTrevorSelector } from "../store";
 import { resetCCState } from "../store/runtimeSlice";
 import { generateAcronym } from "../utils/utils";
 import { useTrevorWebSocket } from "../websockets/websocket";
+import { CCValues, MidiDevice } from "../model";
 
 interface CCsRackProps {
 	onRackScroll?: () => void;
@@ -203,10 +205,40 @@ const switchSizeOrientation = (horizontal) => {
 	};
 };
 
+const buildFullParameters = (
+	devices: MidiDevice[],
+	ccValues: CCValues,
+): CCValues => {
+	const fullParameters = {};
+	for (const device of devices) {
+		const config = {};
+		fullParameters[device.id] = { [device.repr]: config };
+		for (const section of device.meta.sections) {
+			const sectionConfig = {};
+			let sectionName = undefined;
+			for (const parameter of section.parameters) {
+				sectionName = parameter.section_name;
+				sectionConfig[parameter.name] =
+					ccValues?.[device.id]?.[device.repr]?.[parameter.section_name]?.[
+						parameter.name
+					] || parameter.init_value;
+			}
+			if (sectionName) {
+				config[sectionName] = sectionConfig;
+			}
+		}
+	}
+	return fullParameters;
+};
+
 export const RackRowCCs = forwardRef<RackRowCCRef, CCsRackProps>(
 	({ onRackScroll, horizontal }: CCsRackProps, ref) => {
 		const ccs = useTrevorSelector((state) => state.runTime.ccValues);
 		const devices = useTrevorSelector((state) => state.nallely.midi_devices);
+		const [seeAll, setSeeAll] = useState(false);
+		const fullCCs = useMemo(() => {
+			return buildFullParameters(devices, ccs);
+		}, [devices, ccs]);
 
 		const dispatch = useTrevorDispatch();
 		const trevorSocket = useTrevorWebSocket();
@@ -231,11 +263,17 @@ export const RackRowCCs = forwardRef<RackRowCCRef, CCsRackProps>(
 			);
 		};
 
+		const handleSeeAll = () => {
+			setSeeAll((prev) => !prev);
+			updateCCs();
+		};
+
 		const updateCCs = () => {
-			if (Object.values(ccs).length === 0) {
+			const root = seeAll ? fullCCs : ccs;
+			if (Object.values(root).length === 0) {
 				return <p style={{ color: "#808080" }}>CCs values</p>;
 			}
-			return Object.entries(ccs).map(([deviceId, config]) =>
+			return Object.entries(root).map(([deviceId, config]) =>
 				Object.entries(config).map(([deviceName, section]) => (
 					<div
 						key={deviceName}
@@ -306,6 +344,18 @@ export const RackRowCCs = forwardRef<RackRowCCRef, CCsRackProps>(
 				// @ts-expect-error: all good, but should check later
 				style={switchOrientation(horizontal)}
 			>
+				<button
+					type="button"
+					style={{
+						width: "100%",
+						height: "27px",
+						backgroundColor: seeAll ? "orange" : "",
+					}}
+					onClick={handleSeeAll}
+				>
+					{/* {seeAll ? "𜲦𜲧" : "𜲨𜲩"} */}
+					see all
+				</button>
 				{updateCCs()}
 			</div>
 		);
