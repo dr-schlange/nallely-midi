@@ -20,7 +20,17 @@ Think about Nallely as a small brain, where each device is kind of biological ne
 
 ## Advanced MIDI mapping
 
-Anything that is exposed as a parameter of a device is patchable.
+Anything that is exposed as a parameter of a device is patchable. In Nallely, patchs are reified and actors of the system. They are smart adaptors between your MIDI devices and any virtual device, performing automatic MIDI message conversion on the fly, and auto adapting data range to the target. This enables for powerful actions:
+
+* with a single MIDI controller you can connect multiple MIDI devices having different MIDI implementation without needing to reconfigure your controller;
+* you can modify the range of data that transit on each patch individually;
+* you can map the full keyboard of your MIDI device to another;
+* you can map only one key note to another key note; 
+* you can map multiple keys to different target;
+* you can map even the full keyboard notes, or velocity, to a CC parameter;
+* don't have a controller but two synths? Well, you can patch your controls from one of your synth to the other, even if they are not implementing the same MIDI CC;
+* ... 
+
 
 ## Connect visuals
 
@@ -34,7 +44,7 @@ Anything that is exposed as a parameter of a device is patchable.
 
 ### Code your own visuals
 
-## An organic system inspired by Smalltalk
+## An organic system inspired by live systems 
 
 ## Open-source
 
