@@ -235,6 +235,7 @@ input[type="text"]:disabled {
 	align-items: center;
 	justify-content: flex-start;
 	padding: 10px;
+	overflow: auto;
 }
 
 .instance-creation-midi-output {
