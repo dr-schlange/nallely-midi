@@ -106,15 +106,35 @@ influenced by how the small neurons are connected. Soon modules to
 introduce impluses from webcam and, or audio will arrive, giving this
 small muscial brain the capacity to see and hear.</p>
 <h2 id="advanced-midi-mapping">Advanced MIDI mapping</h2>
-<p>Anything that is exposed as a parameter of a device is patchable.</p>
+<p>Anything that is exposed as a parameter of a device is patchable. In
+Nallely, patchs are reified and actors of the system. They are smart
+adaptors between your MIDI devices and any virtual device, performing
+automatic MIDI message conversion on the fly, and auto adapting data
+range to the target. This enables for powerful actions:</p>
+<ul>
+<li>with a single MIDI controller you can connect multiple MIDI devices
+having different MIDI implementation without needing to reconfigure your
+controller;</li>
+<li>you can modify the range of data that transit on each patch
+individually;</li>
+<li>you can map the full keyboard of your MIDI device to another;</li>
+<li>you can map only one key note to another key note;</li>
+<li>you can map multiple keys to different target;</li>
+<li>you can map even the full keyboard notes, or velocity, to a CC
+parameter;</li>
+<li>don’t have a controller but two synths? Well, you can patch your
+controls from one of your synth to the other, even if they are not
+implementing the same MIDI CC;</li>
+<li>…</li>
+</ul>
 <h2 id="connect-visuals">Connect visuals</h2>
 <h2 id="control-from-everywhere">Control from everywhere</h2>
 <h2 id="live-coding">Live-coding</h2>
 <h2 id="enhance-the-system">Enhance the system</h2>
 <h3 id="code-your-own-devices">Code your own devices</h3>
 <h3 id="code-your-own-visuals">Code your own visuals</h3>
-<h2 id="an-organic-system-inspired-by-smalltalk">An organic system
-inspired by Smalltalk</h2>
+<h2 id="an-organic-system-inspired-by-live-systems">An organic system
+inspired by live systems</h2>
 <h2 id="open-source">Open-source</h2>
 <p>Nallely is available, open-source, free, and will remain free and
 open-source.</p>
