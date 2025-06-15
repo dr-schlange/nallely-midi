@@ -658,7 +658,13 @@ const DevicePatching = () => {
 				/>
 			</div>
 
-			<div>
+			<div
+				style={
+					isExpanded
+						? { minWidth: "262px", overflowY: "auto", height: "100%" }
+						: {}
+				}
+			>
 				<button
 					style={{
 						width: "100%",

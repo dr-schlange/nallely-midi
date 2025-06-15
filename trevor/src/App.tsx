@@ -34,7 +34,7 @@ const Main = () => {
 			</div>
 			{errors && errors.length > 0 && <ErrorModal errors={errors} />}
 			{firstLaunch && <WelcomeModal />}
-			<svg>
+			<svg style={{ height: "0px", width: "0px" }}>
 				<title>Global definitions</title>
 				<defs>
 					<marker
