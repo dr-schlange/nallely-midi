@@ -363,6 +363,8 @@ class Link:
 
         self.cleanup_callback = lambda: dest.device.all_notes_off()
 
+        previous = None
+
         def foo(value, ctx):
             is_note = ctx.get("type")
             if is_note in ("note_off", "note_on"):
@@ -370,14 +372,19 @@ class Link:
                     note=value, velocity=ctx.get("velocity", 127), type=is_note
                 )
                 return
-            if value == 0:
-                dest.device.all_notes_off()
-                return
             dest.device.note(
                 note=value,
                 velocity=127,
                 type="note_off" if value == 0 else "note_on",
             )
+            nonlocal previous
+            if previous:
+                dest.device.note(
+                    note=previous,
+                    velocity=127,
+                    type="note_off",
+                )
+            previous = value
 
         return foo
 
@@ -395,6 +402,8 @@ class Link:
 
         self.cleanup_callback = lambda: dest.device.all_notes_off()
 
+        previous = None
+
         def foo(value, ctx):
             is_note = ctx.get("type")
             if is_note in ("note_off", "note_on"):
@@ -402,14 +411,19 @@ class Link:
                     note=value, velocity=ctx.get("velocity", 127), type=is_note
                 )
                 return
-            if value == 0:
-                dest.device.all_notes_off()
-                return
             dest.device.note(
                 note=value,
                 velocity=127,
                 type="note_off" if value == 0 else "note_on",
             )
+            nonlocal previous
+            if previous:
+                dest.device.note(
+                    note=previous,
+                    velocity=127,
+                    type="note_off",
+                )
+            previous = value
 
         return foo
 
