@@ -30,6 +30,7 @@ class LFO(TimeBasedDevice):
             "tent_map",
         ],
     )
+    invert_polarity_cv = VirtualParameter("invert_polarity")
     min_value_cv = VirtualParameter("min_value")
     max_value_cv = VirtualParameter("max_value")
     pulse_width_cv = VirtualParameter("pulse_width", range=(0.0, 1.0))
@@ -57,6 +58,7 @@ class LFO(TimeBasedDevice):
         self._random_value = 0
         self._previous_value = 0
         self._current_value = 0
+        self.invert_polarity = 0.0
         super().__init__(speed=speed, sampling_rate=sampling_rate, **kwargs)
 
     @property
@@ -212,6 +214,9 @@ class LFO(TimeBasedDevice):
             )
         else:
             raise ValueError(f"Unsupported waveform type: {waveform}")
+
+        if self.invert_polarity:
+            result = self.max_value + self.min_value - Decimal(result)
         return int(result) if self.as_int else result
 
     @property

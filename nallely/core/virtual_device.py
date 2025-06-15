@@ -497,6 +497,8 @@ class VirtualDevice(threading.Thread):
 @no_registration
 class TimeBasedDevice(VirtualDevice):
     speed_cv = VirtualParameter("speed", range=(0, 10.0))
+    phase_cv = VirtualParameter("phase", range=(0.0, 1.0))
+    sync_cv = VirtualParameter("sync")
     sampling_rate_cv = VirtualParameter("sampling_rate", range=(0.001, None))
 
     def __init__(
@@ -511,6 +513,8 @@ class TimeBasedDevice(VirtualDevice):
             self.compute_sampling_rate() if sampling_rate == "auto" else sampling_rate
         )
         self.time_step = Decimal(speed) / self._sampling_rate
+        self.phase = 0.0
+        self.sync = 0
         super().__init__(target_cycle_time=1 / self._sampling_rate, **kwargs)
 
     @property
@@ -547,8 +551,9 @@ class TimeBasedDevice(VirtualDevice):
 
     def main(self, ctx: ThreadContext):
         t = ctx.t
+        self.sync = t
         ticks = ctx.ticks
-        generated_value = self.generate_value(t, ticks)
+        generated_value = self.generate_value((t + Decimal(self.phase)) % 1, ticks)
         t += self.time_step
         ctx.t = t % 1
         ctx.ticks += 1
