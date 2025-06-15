@@ -153,10 +153,10 @@ class WebSocketBus(VirtualDevice):
                 if service_name not in self.connected:
                     print(f"Parameters: {message['parameters']}")
                     self.configure_remote_device(service_name, parameters=message["parameters"])  # type: ignore
-            except ConnectionClosed as e:
+            except (ConnectionClosed, TimeoutError) as e:
                 kind = (
                     "crashed"
-                    if isinstance(e, ConnectionClosedError)
+                    if isinstance(e, (ConnectionClosedError, TimeoutError))
                     else "disconnected"
                 )
                 print(
@@ -208,7 +208,7 @@ class WebSocketBus(VirtualDevice):
                     #         )
                     #     except Exception:
                     #         pass
-        except ConnectionClosed:
+        except (ConnectionClosed, TimeoutError):
             print(
                 f"Client {client} on {service_name} disconnected unexpectedly [{len(connected_devices)} clients]"
             )
@@ -256,12 +256,12 @@ class WebSocketBus(VirtualDevice):
                         }
                     )
                 )
-            except ConnectionClosed as e:
+            except (ConnectionClosed, TimeoutError) as e:
                 try:
                     devices.remove(device)
                     kind = (
                         "crashed"
-                        if isinstance(e, ConnectionClosedError)
+                        if isinstance(e, (ConnectionClosedError, TimeoutError))
                         else "disconnected"
                     )
                     print(

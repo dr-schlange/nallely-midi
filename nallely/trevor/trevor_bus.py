@@ -112,8 +112,12 @@ class TrevorBus(VirtualDevice):
             client.send(self.to_json(self.full_state()))
             for message in client:
                 self.handleMessage(client, message)
-        except ConnectionClosed as e:
-            kind = "crashed" if isinstance(e, ConnectionClosedError) else "disconnected"
+        except (ConnectionClosed, TimeoutError) as e:
+            kind = (
+                "crashed"
+                if isinstance(e, (ConnectionClosedError, TimeoutError))
+                else "disconnected"
+            )
             print(f"Client {client} on trevor {kind}")
         finally:
             print("Disconnecting", client)
@@ -149,12 +153,12 @@ class TrevorBus(VirtualDevice):
         for client in list(connected_devices):
             try:
                 client.send(self.to_json(message))
-            except ConnectionClosed as e:
+            except (ConnectionClosed, TimeoutError) as e:
                 try:
                     connected_devices.remove(client)
                     kind = (
                         "crashed"
-                        if isinstance(e, ConnectionClosedError)
+                        if isinstance(e, (ConnectionClosedError, TimeoutError))
                         else "disconnected"
                     )
                     print(
@@ -288,12 +292,12 @@ class TrevorBus(VirtualDevice):
         for client in list(connected_devices):
             try:
                 client.send(self.to_json(self.full_state()))
-            except ConnectionClosed as e:
+            except (ConnectionClosed, TimeoutError) as e:
                 try:
                     connected_devices.remove(client)
                     kind = (
                         "crashed"
-                        if isinstance(e, ConnectionClosedError)
+                        if isinstance(e, (ConnectionClosedError, TimeoutError))
                         else "disconnected"
                     )
                     print(
