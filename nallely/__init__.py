@@ -15,6 +15,7 @@ from .core import (
     stop_all_virtual_devices,
     virtual_device_classes,
     virtual_devices,
+    on,
 )
 from .eg import ADSREnvelope
 from .lfos import LFO, Cycler
@@ -41,4 +42,5 @@ __all__ = [
     "connected_devices",
     "midi_device_classes",
     "ThreadContext",
+    "on",
 ]

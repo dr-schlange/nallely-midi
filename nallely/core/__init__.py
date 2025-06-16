@@ -1,7 +1,7 @@
 from .midi_device import MidiDevice, Module, ModulePadsOrKeys, ModuleParameter
 from .parameter_instances import Int, PadOrKey, PadsOrKeysInstance, ParameterInstance
 from .scaler import Scaler
-from .virtual_device import TimeBasedDevice, VirtualDevice, VirtualParameter
+from .virtual_device import TimeBasedDevice, VirtualDevice, VirtualParameter, on
 from .world import (
     CallbackRegistryEntry,
     DeviceNotFound,
@@ -51,4 +51,5 @@ __all__ = [
     "ThreadContext",
     "Module",
     "all_links",
+    "on",
 ]

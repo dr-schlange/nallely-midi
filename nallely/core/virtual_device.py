@@ -7,7 +7,7 @@ from dataclasses import asdict, dataclass
 from decimal import Decimal
 from pathlib import Path
 from queue import Empty, Full, Queue
-from typing import Any, Iterable, Literal, Type
+from typing import Any, Callable, Iterable, Literal, Type
 
 from .parameter_instances import ParameterInstance
 from .scaler import Scaler
@@ -58,6 +58,28 @@ class VirtualParameter:
         if hasattr(value, "bind"):
             assert self.cv_name
             value.bind(getattr(device, self.cv_name))
+
+
+class OnChange:
+    def __init__(self, parameter, func):
+        self.parameter = parameter
+        self.func = func
+
+    def __set_name__(self, owner, name):
+        # creates the alias and inject the real function in the class namespace anyway
+        setattr(owner, f"_on_{self.parameter.name}", self.func)
+        setattr(owner, name, self.func)
+
+    def __get__(self, instance, owner):
+        return self.func.__get__(instance, owner)
+
+
+@staticmethod
+def on(parameter):
+    def wrapper(func):
+        return OnChange(parameter, func)
+
+    return wrapper
 
 
 class VirtualDevice(threading.Thread):
@@ -165,30 +187,28 @@ class VirtualDevice(threading.Thread):
                 )
 
             # Run main processing and output
-            if changed:
-                for param in changed:
-                    # ctx.update(inner_ctx)
-                    if hasattr(self, f"on_{param}"):
-                        value = getattr(self, f"on_{param}")(getattr(self, param), ctx)
-                        if value is not None:
-                            self.process_output(
-                                value,
-                                ctx,
-                                selected_outputs=[self.output_cv],
-                                changed=changed,
-                            )
-            else:
-                ctx.update(inner_ctx)
-                # try:
-                value = self.main(ctx)
-                if value is not None:
-                    self.process_output(
-                        value, ctx, selected_outputs=[self.output_cv], changed=changed
-                    )
-                # except Exception as e:
-                #     print(
-                #         f"Exception caught in {self.repr()}, execution continue, but you should check that:\n * {e}"
-                #     )
+            for param in changed:
+                # ctx.update(inner_ctx)
+                if hasattr(self, f"on_{param}"):
+                    value = getattr(self, f"on_{param}")(getattr(self, param), ctx)
+                    if value is not None:
+                        self.process_output(
+                            value,
+                            ctx,
+                            selected_outputs=[self.output_cv],
+                            changed=changed,
+                        )
+            ctx.update(inner_ctx)
+            # try:
+            value = self.main(ctx)
+            if value is not None:
+                self.process_output(
+                    value, ctx, selected_outputs=[self.output_cv], changed=changed
+                )
+            # except Exception as e:
+            #     print(
+            #         f"Exception caught in {self.repr()}, execution continue, but you should check that:\n * {e}"
+            #     )
 
             if queue_level > self.input_queue.maxsize * 0.8:
                 # Skip sleep to catch up faster
