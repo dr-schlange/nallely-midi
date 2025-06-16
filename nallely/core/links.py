@@ -71,6 +71,7 @@ class Link:
 
     def trigger(self, value, ctx):
         assert self.callback
+        ctx.raw_value = value
         if self.chain:
             value = self.chain(value, ctx)
         if self.debug:
@@ -366,25 +367,28 @@ class Link:
         previous = None
 
         def foo(value, ctx):
-            is_note = ctx.get("type")
-            if is_note in ("note_off", "note_on"):
-                dest.device.note(
-                    note=value, velocity=ctx.get("velocity", 127), type=is_note
-                )
-                return
-            dest.device.note(
-                note=value,
-                velocity=127,
-                type="note_off" if value == 0 else "note_on",
-            )
+            value = int(value)
+            # is_note = ctx.get("type")
+            # if is_note in ("note_off", "note_on"):
+            #     dest.device.note(
+            #         note=value, velocity=ctx.get("velocity", 127), type=is_note
+            #     )
+            #     return
             nonlocal previous
-            if previous:
-                dest.device.note(
-                    note=previous,
-                    velocity=127,
-                    type="note_off",
-                )
-            previous = value
+            if previous != value:
+                if ctx.raw_value != 0:
+                    dest.device.note(
+                        note=value,
+                        velocity=ctx.get("velocity", 127),
+                        type="note_on",
+                    )
+                if previous:
+                    dest.device.note(
+                        note=previous,
+                        velocity=ctx.get("velocity", 127),
+                        type="note_off",
+                    )
+                previous = value
 
         return foo
 
@@ -405,25 +409,28 @@ class Link:
         previous = None
 
         def foo(value, ctx):
-            is_note = ctx.get("type")
-            if is_note in ("note_off", "note_on"):
-                dest.device.note(
-                    note=value, velocity=ctx.get("velocity", 127), type=is_note
-                )
-                return
-            dest.device.note(
-                note=value,
-                velocity=127,
-                type="note_off" if value == 0 else "note_on",
-            )
+            # is_note = ctx.get("type")
+            # if is_note in ("note_off", "note_on"):
+            #     dest.device.note(
+            #         note=value, velocity=ctx.get("velocity", 127), type=is_note
+            #     )
+            #     return
+            # Handle CC values
             nonlocal previous
-            if previous:
-                dest.device.note(
-                    note=previous,
-                    velocity=127,
-                    type="note_off",
-                )
-            previous = value
+            if previous != value:
+                if ctx.raw_value != 0:
+                    dest.device.note(
+                        note=value,
+                        velocity=ctx.get("velocity", 127),
+                        type="note_on",
+                    )
+                if previous:
+                    dest.device.note(
+                        note=previous,
+                        velocity=ctx.get("velocity", 127),
+                        type="note_off",
+                    )
+                previous = value
 
         return foo
 

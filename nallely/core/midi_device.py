@@ -106,7 +106,7 @@ class ModulePadsOrKeys:
     section_name: str = NOT_INIT
     name: str = NOT_INIT
     cc_note: int = -1
-    range: tuple[int, int] = (0, 127)
+    range: tuple[int, int] = (24, 108)
 
     def __post_init__(self):
         self.stream = False

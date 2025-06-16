@@ -62,7 +62,7 @@ class VirtualParameter:
 
 class VirtualDevice(threading.Thread):
     _id: dict[Type, int] = defaultdict(int)
-    output_cv = VirtualParameter(name="output")
+    output_cv = VirtualParameter(name="output", range=(0, 127))
 
     # We use a consumer to bypass the input queue
     set_pause_cv = VirtualParameter(name="set_pause", range=(0, 1), consumer=True)
@@ -125,11 +125,14 @@ class VirtualDevice(threading.Thread):
             )
             # self.target_cycle_time = 0.001
 
+    def process_input(self, param: str, value):
+        setattr(self, param, value)
+
     def run(self):
         self.ready_event.set()
         ctx = self.setup()
         ctx.parent = self
-        ctx.last_value = None
+        ctx.last_value = {}
 
         while self.running:
             start_time = time.perf_counter()
@@ -144,9 +147,11 @@ class VirtualDevice(threading.Thread):
             # We adjust the batch size dynamically based on queue pressure
             batch_size = min(max_batch_size, max(1, int(queue_level / 100)))
             inner_ctx = {}
+            changed = []
             for _ in range(batch_size):
                 try:
                     param, value, inner_ctx = self.input_queue.get_nowait()
+                    changed.append(param)
                     self.process_input(param, value)
                     self.input_queue.task_done()
                 except Empty:
@@ -160,14 +165,30 @@ class VirtualDevice(threading.Thread):
                 )
 
             # Run main processing and output
-            ctx.update(inner_ctx)
-            # try:
-            value = self.main(ctx)
-            self.process_output(value, ctx)
-            # except Exception as e:
-            #     print(
-            #         f"Exception caught in {self.repr()}, execution continue, but you should check that:\n * {e}"
-            #     )
+            if changed:
+                for param in changed:
+                    # ctx.update(inner_ctx)
+                    if hasattr(self, f"on_{param}"):
+                        value = getattr(self, f"on_{param}")(getattr(self, param), ctx)
+                        if value is not None:
+                            self.process_output(
+                                value,
+                                ctx,
+                                selected_outputs=[self.output_cv],
+                                changed=changed,
+                            )
+            else:
+                ctx.update(inner_ctx)
+                # try:
+                value = self.main(ctx)
+                if value is not None:
+                    self.process_output(
+                        value, ctx, selected_outputs=[self.output_cv], changed=changed
+                    )
+                # except Exception as e:
+                #     print(
+                #         f"Exception caught in {self.repr()}, execution continue, but you should check that:\n * {e}"
+                #     )
 
             if queue_level > self.input_queue.maxsize * 0.8:
                 # Skip sleep to catch up faster
@@ -179,6 +200,49 @@ class VirtualDevice(threading.Thread):
                 elapsed_time = time.perf_counter() - start_time
                 sleep_time = max(0, self.target_cycle_time - elapsed_time)
                 time.sleep(sleep_time)
+
+    def process_output(
+        self,
+        value,
+        ctx,
+        selected_outputs: None | list[ParameterInstance] = None,
+        changed=None,
+    ):
+        if value is None:
+
+            return
+        # try:
+        #     self.output_queue.put_nowait((value, ctx))
+        # except Full:
+        #     pass  # Drop if full
+
+        # True -> stream; False -> non stream
+        outputs = None
+        if selected_outputs:
+            outputs = [e.repr() for e in selected_outputs]
+
+        for output in outputs or list(self.stream_links.keys()):
+            links = self.stream_links.get(output, [])
+            for link in links:
+                try:
+                    link.trigger(value, ctx)
+                except Exception as e:
+                    traceback.print_exc()
+                    raise e
+
+        for output in outputs or list(self.nonstream_links.keys()):
+            if (
+                value != ctx.last_value.get(output)
+                and ctx.last_value.get(output) is not None
+            ):
+                links = self.nonstream_links.get(output, [])
+                for link in links:
+                    try:
+                        link.trigger(value, ctx)
+                    except Exception as e:
+                        traceback.print_exc()
+                        raise e
+            ctx.last_value[output] = value
 
     def start(self):
         """Start the LFO thread."""
@@ -337,9 +401,6 @@ class VirtualDevice(threading.Thread):
         except ValueError:
             ...
 
-    def process_input(self, param: str, value):
-        setattr(self, param, value)
-
     def repr(self):
         # We are called because of the default output
         return self.output_cv.repr()
@@ -357,40 +418,6 @@ class VirtualDevice(threading.Thread):
     def nonstream_links(self):
         return self.links[int(False)]
 
-    def process_output(
-        self, value, ctx, selected_outputs: None | list[ParameterInstance] = None
-    ):
-        if value is None:
-            return
-        # try:
-        #     self.output_queue.put_nowait((value, ctx))
-        # except Full:
-        #     pass  # Drop if full
-
-        # True -> stream; False -> non stream
-        outputs = None
-        if selected_outputs:
-            outputs = [e.repr() for e in selected_outputs]
-
-        for output in outputs or list(self.stream_links.keys()):
-            links = self.stream_links.get(output, [])
-            for link in links:
-                try:
-                    link.trigger(value, ctx)
-                except Exception as e:
-                    traceback.print_exc()
-                    raise e
-        if value != ctx.last_value:
-            for output in outputs or list(self.nonstream_links.keys()):
-                links = self.nonstream_links.get(output, [])
-                for link in links:
-                    try:
-                        link.trigger(value, ctx)
-                    except Exception as e:
-                        traceback.print_exc()
-                        raise e
-            ctx.last_value = value
-
     def scale(self, min=None, max=None, method="lin", as_int=False):
         return Scaler(
             self,
@@ -404,12 +431,12 @@ class VirtualDevice(threading.Thread):
         )
 
     @property
-    def max_range(self) -> float | int | None:
-        return None
+    def min_range(self) -> float | int | None:
+        return self.output_cv.parameter.range[0]
 
     @property
-    def min_range(self) -> float | int | None:
-        return None
+    def max_range(self) -> float | int | None:
+        return self.output_cv.parameter.range[1]
 
     @property
     def range(self):
@@ -514,7 +541,7 @@ class TimeBasedDevice(VirtualDevice):
         )
         self.time_step = Decimal(speed) / self._sampling_rate
         self.phase = 0.0
-        self.sync = 0
+        self.sync = None
         super().__init__(target_cycle_time=1 / self._sampling_rate, **kwargs)
 
     @property
@@ -549,9 +576,12 @@ class TimeBasedDevice(VirtualDevice):
     def setup(self):
         return ThreadContext({"t": Decimal(0), "ticks": 0})
 
+    def on_sync(self, value, ctx):
+        if value > 0:
+            ctx.t = 0
+
     def main(self, ctx: ThreadContext):
         t = ctx.t
-        self.sync = t
         ticks = ctx.ticks
         generated_value = self.generate_value((t + Decimal(self.phase)) % 1, ticks)
         t += self.time_step
