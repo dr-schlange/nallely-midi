@@ -11,11 +11,11 @@ from .core import (
     all_devices,
     connected_devices,
     midi_device_classes,
+    on,
     stop_all_connected_devices,
     stop_all_virtual_devices,
     virtual_device_classes,
     virtual_devices,
-    on,
 )
 from .eg import ADSREnvelope
 from .lfos import LFO, Cycler

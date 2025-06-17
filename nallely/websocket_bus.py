@@ -183,9 +183,7 @@ class WebSocketBus(VirtualDevice):
                         value = float(json_message["value"])
                         # print(f"[DEBUG] INTERNAL ROUTING {param_name} with {value}")
                         setattr(self, param_name, value)
-                        self.process_output(
-                            value, ThreadContext(), selected_outputs=[output]
-                        )
+                        self.send_out(value, ThreadContext(), selected_outputs=[output])
                     except Exception as e:
                         print(
                             f"Couldn't parse the message and broadcast {message} to local instances: {e}"

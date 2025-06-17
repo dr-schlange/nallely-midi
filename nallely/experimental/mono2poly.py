@@ -1,8 +1,7 @@
-import time
 from collections import deque
 from typing import Any
 
-from nallely import VirtualDevice, VirtualParameter
+from nallely import VirtualDevice, VirtualParameter, on
 from nallely.core import ParameterInstance, ThreadContext
 
 
@@ -18,6 +17,7 @@ class Mono2Poly(VirtualDevice):
     """
 
     input_cv = VirtualParameter(name="input", range=(0, 127))
+    gate_cv = VirtualParameter(name="gate", range=(0, 1))
     output_number_cv = VirtualParameter(name="outport_number", range=(1, 5))
 
     def __init__(self, outport_number=5, **kwargs):
@@ -25,6 +25,7 @@ class Mono2Poly(VirtualDevice):
         self.output = None
         self.input = 0
         self.last_value = None
+        self.gate = 0
         self.last_type = None
         self.allocator: deque[int | None] = deque([None] * outport_number)
         self._update_outputs()
@@ -60,7 +61,7 @@ class Mono2Poly(VirtualDevice):
             for i in range(from_, self._outport_number):
                 name = f"output{i}"
                 cv_name = f"{name}_cv"
-                out = VirtualParameter(name=name, cv_name=cv_name)
+                out = VirtualParameter(name=name, cv_name=cv_name, range=(0, 127))
                 # We inject at run time new VirtualParameters
                 setattr(self.__class__, cv_name, out)
                 self.outputs.append(getattr(self, cv_name))
@@ -86,67 +87,44 @@ class Mono2Poly(VirtualDevice):
     def _current(self):
         return self.queue[0]
 
-    def main(self, ctx: ThreadContext) -> Any:
-        mode = ctx.get("mode", ctx.get("type", None))
-        value = self.input
+    @on(input_cv, edge="rising")
+    def on_input(self, value, ctx):
+        self.send_out(value, ctx, selected_outputs=[self.output_cv])
 
-        # If there is no "mode", we are receiving from a virtual device
-        if mode is None and value > 0:
-            output = self._next()
-            ctx.type = "note_on"
-            ctx.mode = "note"
-            # we send the value on this output, i.e: we trigger the right callbacks (the one associated to this output)
-            self.process_output(value, ctx, selected_outputs=[output])
-            return
+    @on(gate_cv, edge="any")
+    def on_gate(self, value, ctx):
+        self.send_out(self.input, ctx, selected_outputs=[self.output_cv])
 
-        # If there is a mode and it's a "note" mode, we route
-        if mode in ["note_on", "note", "note_off"]:
-            type = ctx.type
+    def main(
+        self, ctx: ThreadContext
+    ) -> Any: ...  # IDLE, poll at a specific frequency (target_cycle_time)
 
-            # We skip to avoid double allocation
-            if type == self.last_type and self.last_value == value:
-                return
 
-            # when a note is released
-            if type == "note_off":
-                try:
-                    idx = self.allocator.index(value)
-                    self.allocator[idx] = None
-                    # we get the name of the corresponding output
-                    out = self.outputs[idx]
-                    # we send the value on this output, i.e: we trigger the right callbacks (the one associated to this output)
-                    self.process_output(value, ctx, selected_outputs=[out])
-                except ValueError:
-                    self.process_output(value, ctx, selected_outputs=self.outputs)
-                self.last_value = value
-                self.last_type = type
-                return
-            # When we allocate a note
-            try:
-                idx = self.allocator.index(None)  # first free spot
-            except ValueError:
-                current = self._current()
-                old = self.allocator[0]
-                self.process_output(
-                    old,
-                    ThreadContext({**ctx, "type": "note_off"}),
-                    selected_outputs=[current],
-                )
-                output = self._next()
-            else:
-                self.allocator[idx] = value  # we mark the spot as taken
-                output = self.outputs[
-                    idx
-                ]  # we get the name of the corresponding output
-            self.last_value = value
-            self.last_type = type
-            self.process_output(
-                value, ctx, selected_outputs=[output]
-            )  # we send the value on this output
+class Gate(VirtualDevice):
+    input_cv = VirtualParameter(name="input", range=(0, 127))
+    gate_cv = VirtualParameter(name="gate", range=(0, 1))
 
-        return (
-            None  # we deactivate the normal output, we trigger the right one manually
-        )
+    def __init__(self, **kwargs):
+        self.input = 0
+        self.gate = 0
+        super().__init__(target_cycle_time=1 / 50, **kwargs)
+
+    @on(input_cv, edge="any")
+    def on_input(self, value, ctx):
+        if self.gate > 0:
+            self.send_out(value, ctx, selected_outputs=[self.output_cv])
+
+    @on(gate_cv, edge="falling")
+    def on_gate_down(self, _, ctx):
+        self.send_out(0, ctx, selected_outputs=[self.output_cv])
+
+    @on(gate_cv, edge="rising")
+    def on_gate_up(self, _, ctx):
+        self.send_out(self.input, ctx, selected_outputs=[self.output_cv])
+
+    def main(
+        self, ctx: ThreadContext
+    ) -> Any: ...  # IDLE, poll at a specific frequency (target_cycle_time)
 
 
 class Arpegiator(VirtualDevice):
@@ -186,7 +164,7 @@ class Arpegiator(VirtualDevice):
         if self.reset > 0:
             self.reset = 0
             for note in self.notes:
-                self.process_output(
+                self.send_out(
                     note,
                     ThreadContext({**ctx, "type": "note_off"}),
                 )
@@ -211,7 +189,7 @@ class Arpegiator(VirtualDevice):
                 self.input = None
                 self.index = self.index + (-1 if self.index > 0 else 0)
                 self.notes.remove(value)
-                self.process_output(
+                self.send_out(
                     value,
                     ThreadContext({**ctx, "type": "note_off"}),
                 )
@@ -220,11 +198,11 @@ class Arpegiator(VirtualDevice):
                 self.notes.append(value)
 
         if len(self.notes) > 0:
-            self.process_output(
+            self.send_out(
                 self.notes[self.index - 1],
                 ThreadContext({**ctx, "type": "note_off"}),
             )
-            self.process_output(
+            self.send_out(
                 self.notes[self.index],
                 ThreadContext({**ctx, "type": "note_on"}),
             )

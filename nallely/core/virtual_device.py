@@ -61,23 +61,72 @@ class VirtualParameter:
 
 
 class OnChange:
-    def __init__(self, parameter, func):
+    conditions = {
+        "rising": lambda prev, curr: (prev or 0) == 0 and curr > 0,
+        "falling": lambda prev, curr: (prev or 0) > 0 and curr == 0,
+        "both": lambda prev, curr: prev != curr,
+        "any": lambda _, __: True,
+        "increase": lambda prev, curr: prev is not None and curr > prev,
+        "decrease": lambda prev, curr: prev is not None and curr < prev,
+        "flat": lambda prev, curr: prev is not None and curr == prev,
+    }
+    conditions_name = list(conditions.keys())
+
+    def __init__(self, parameter, func, condition):
         self.parameter = parameter
         self.func = func
+        self.condition_func = None
+
+        try:
+            self.condition_func = self.conditions[condition]
+            self.condition = condition
+            self._wrap_func()
+            return
+        except KeyError:
+            if callable(condition):
+                self.condition_func = condition
+                self.condition = f"custom_{id(condition)}"
+                self._wrap_func()
+                return
+        raise ValueError(f"Condition {condition} unknown")
+
+    def _wrap_func(self):
+        last_value = None
+        original = self.func
+        cond = self.condition_func
+        assert cond
+
+        def wrapped(instance, value, ctx):
+            nonlocal last_value
+            prev = last_value
+            last_value = value
+            if cond(prev, value):
+                return original(instance, value, ctx)
+
+        self.func = wrapped
+
+    @classmethod
+    def alias_name(cls, parameter_name, condition_name):
+        return f"_on_{condition_name}_{parameter_name}"
 
     def __set_name__(self, owner, name):
-        # creates the alias and inject the real function in the class namespace anyway
-        setattr(owner, f"_on_{self.parameter.name}", self.func)
+        alias_name = self.alias_name(self.parameter.name, self.condition)
+        setattr(owner, alias_name, self.func)
         setattr(owner, name, self.func)
 
     def __get__(self, instance, owner):
         return self.func.__get__(instance, owner)
 
 
-@staticmethod
-def on(parameter):
+def on(
+    parameter,
+    edge: (
+        Literal["rising", "falling", "both", "increase", "decrease", "flat", "any"]
+        | Callable[[int | float, int | float], int | float | None]
+    ),
+):
     def wrapper(func):
-        return OnChange(parameter, func)
+        return OnChange(parameter, func, condition=edge)
 
     return wrapper
 
@@ -134,7 +183,7 @@ class VirtualDevice(threading.Thread):
         if on == "set_pause":
             self.set_pause = value
         if hasattr(self, "to_update"):
-            self.to_update.send_update()  # type: ignore, this is set by the trevor bus dynamically
+            self.to_update.send_update()  # type: ignore -> this is set by the trevor bus dynamically
 
     def set_parameter(self, param: str, value: Any, ctx: ThreadContext):
         if self.paused:
@@ -155,6 +204,8 @@ class VirtualDevice(threading.Thread):
         ctx = self.setup()
         ctx.parent = self
         ctx.last_value = {}
+        edge_keys = OnChange.conditions_name
+        alias_name = OnChange.alias_name
 
         while self.running:
             start_time = time.perf_counter()
@@ -189,22 +240,17 @@ class VirtualDevice(threading.Thread):
             # Run main processing and output
             for param in changed:
                 # ctx.update(inner_ctx)
-                if hasattr(self, f"on_{param}"):
-                    value = getattr(self, f"on_{param}")(getattr(self, param), ctx)
-                    if value is not None:
-                        self.process_output(
-                            value,
-                            ctx,
-                            selected_outputs=[self.output_cv],
-                            changed=changed,
-                        )
+                for key in edge_keys:
+                    aliased_name = alias_name(param, key)
+                    if hasattr(self, aliased_name):
+                        value = getattr(self, aliased_name)(getattr(self, param), ctx)
+                        if value is not None:
+                            self.send_out(value, ctx, selected_outputs=[self.output_cv])
             ctx.update(inner_ctx)
             # try:
             value = self.main(ctx)
             if value is not None:
-                self.process_output(
-                    value, ctx, selected_outputs=[self.output_cv], changed=changed
-                )
+                self.send_out(value, ctx, selected_outputs=[self.output_cv])
             # except Exception as e:
             #     print(
             #         f"Exception caught in {self.repr()}, execution continue, but you should check that:\n * {e}"
@@ -221,12 +267,8 @@ class VirtualDevice(threading.Thread):
                 sleep_time = max(0, self.target_cycle_time - elapsed_time)
                 time.sleep(sleep_time)
 
-    def process_output(
-        self,
-        value,
-        ctx,
-        selected_outputs: None | list[ParameterInstance] = None,
-        changed=None,
+    def send_out(
+        self, value, ctx, selected_outputs: None | list[ParameterInstance] = None
     ):
         if value is None:
 

@@ -1,4 +1,4 @@
-from .core import VirtualDevice, VirtualParameter
+from .core import VirtualDevice, VirtualParameter, on
 
 
 class ADSREnvelope(VirtualDevice):
@@ -28,19 +28,32 @@ class ADSREnvelope(VirtualDevice):
         ctx.level = 0.0
         return ctx
 
+    @on(gate_cv, edge="rising")
+    def on_gate_1(self, _, ctx):
+        if ctx.phase in ["idle", "release"]:
+            ctx.phase = "attack"
+            ctx.time_in_phase = 0.0
+
+    @on(gate_cv, edge="falling")
+    def on_gate_0(self, _, ctx):
+        if ctx.phase not in ["release", "idle"]:
+            ctx.phase = "release"
+            ctx.time_in_phase = 0.0
+            ctx.release_start_level = ctx.level
+
     def main(self, ctx):
         dt = self.target_cycle_time
         ctx.time_in_phase += dt
 
-        if self.gate:
-            if ctx.phase in ["idle", "release"]:
-                ctx.phase = "attack"
-                ctx.time_in_phase = 0.0
-        else:
-            if ctx.phase not in ["release", "idle"]:
-                ctx.phase = "release"
-                ctx.time_in_phase = 0.0
-                ctx.release_start_level = ctx.level
+        # if self.gate:
+        #     if ctx.phase in ["idle", "release"]:
+        #         ctx.phase = "attack"
+        #         ctx.time_in_phase = 0.0
+        # else:
+        #     if ctx.phase not in ["release", "idle"]:
+        #         ctx.phase = "release"
+        #         ctx.time_in_phase = 0.0
+        #         ctx.release_start_level = ctx.level
 
         if ctx.phase == "attack":
             if self.attack == 0:
