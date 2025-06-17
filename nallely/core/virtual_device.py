@@ -203,7 +203,7 @@ class VirtualDevice(threading.Thread):
         self.ready_event.set()
         ctx = self.setup()
         ctx.parent = self
-        ctx.last_value = {}
+        ctx.last_values = {}
         edge_keys = OnChange.conditions_name
         alias_name = OnChange.alias_name
 
@@ -294,8 +294,8 @@ class VirtualDevice(threading.Thread):
 
         for output in outputs or list(self.nonstream_links.keys()):
             if (
-                value != ctx.last_value.get(output)
-                and ctx.last_value.get(output) is not None
+                value != ctx.last_values.get(output)
+                and ctx.last_values.get(output) is not None
             ):
                 links = self.nonstream_links.get(output, [])
                 for link in links:
@@ -304,7 +304,7 @@ class VirtualDevice(threading.Thread):
                     except Exception as e:
                         traceback.print_exc()
                         raise e
-            ctx.last_value[output] = value
+            ctx.last_values[output] = value
 
     def start(self):
         """Start the LFO thread."""
