@@ -1,5 +1,5 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { RunTimeState, ClassCode } from "../model";
+import type { RunTimeState, ClassCode, CCValues } from "../model";
 import { setFullState } from "./trevorSlice";
 
 export const initialGeneralState: RunTimeState = {
@@ -62,6 +62,24 @@ const runtimeSlice = createSlice({
 
 			state.ccValues[device_id][device][section][parameter] = value;
 		},
+		updateCCValues: (state, action: PayloadAction<CCValues>) => {
+			const { ccValues } = state;
+
+			for (const [deviceId, devices] of Object.entries(action.payload)) {
+				if (!ccValues[deviceId]) ccValues[deviceId] = {};
+				for (const [device, sections] of Object.entries(devices)) {
+					if (!ccValues[deviceId][device]) ccValues[deviceId][device] = {};
+					for (const [section, parameters] of Object.entries(sections)) {
+						if (!ccValues[deviceId][device][section]) {
+							ccValues[deviceId][device][section] = {};
+						}
+						for (const [parameter, value] of Object.entries(parameters)) {
+							ccValues[deviceId][device][section][parameter] = value;
+						}
+					}
+				}
+			}
+		},
 		resetCCState: (state) => {
 			state.ccValues = {};
 		},
@@ -89,6 +107,7 @@ export const {
 	setSaveDefaultValue,
 	updateCCState,
 	resetCCState,
+	updateCCValues,
 } = runtimeSlice.actions;
 
 export default runtimeSlice.reducer;

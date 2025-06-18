@@ -5,6 +5,7 @@ import socketserver
 import sys
 import textwrap
 import threading
+import time
 import traceback
 from collections import ChainMap, defaultdict
 from contextlib import contextmanager
@@ -82,6 +83,10 @@ class OutputCapture(io.StringIO):
             sys.stdout = _SYSTEM_STDERR
 
 
+def make_ccvalues():
+    return defaultdict(lambda: defaultdict(lambda: defaultdict(dict)))
+
+
 @no_registration
 class TrevorBus(VirtualDevice):
     forever = True
@@ -97,6 +102,9 @@ class TrevorBus(VirtualDevice):
         self.meta_trevor = MetaTrevorAPI(self.exec_context)
         self.session = Session(self)
         self.redirector = OutputCapture(self.send_message)
+        self.cc_update_interval = 0.05e9  # every X ns
+        self.next_cc_update_time = time.time_ns() + self.cc_update_interval
+        self.cc_update_package = defaultdict(make_ccvalues)
 
     @staticmethod
     def to_json(obj, **kwargs):
@@ -273,19 +281,17 @@ class TrevorBus(VirtualDevice):
         if not control:
             # If we are here, the control is not bind in the system, so we don't send updates
             return
-        info = f"{msg.value} {device.uid()} {control.section_name} {control.name} [CC #{msg.control}]"
-        self.send_message(
-            {
-                "command": "RuntimeAPI::updateCCState",
-                "arg": {
-                    "device_id": id(device),
-                    "device": device.uid(),
-                    "section": control.section_name,
-                    "parameter": control.name,
-                    "value": msg.value,
-                },
-            }
-        )
+        current_parameter = self.cc_update_package[id(device)][device.uid()][
+            control.section_name
+        ]
+        if msg.value != current_parameter[control.name]:
+            current_parameter[control.name] = msg.value
+        if time.time_ns() > self.next_cc_update_time:
+            self.send_message(
+                {"command": "RuntimeAPI::updateCCValues", "arg": self.cc_update_package}
+            )
+            self.cc_update_package.clear()
+            self.next_cc_update_time = time.time_ns() + self.cc_update_interval
 
     def send_update(self, device=None):
         connected_devices = self.connected["trevor"]
