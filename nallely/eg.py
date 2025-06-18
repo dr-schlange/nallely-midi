@@ -1,3 +1,7 @@
+from typing import Any
+
+from nallely.core.world import ThreadContext
+
 from .core import VirtualDevice, VirtualParameter, on
 
 
@@ -14,7 +18,7 @@ class ADSREnvelope(VirtualDevice):
         self.sustain = sustain
         self.release = release
         self.gate = 0  # False
-        super().__init__(target_cycle_time=1 / 50, **kwargs)
+        super().__init__(**kwargs)
 
     def process_input(self, param, value):
         if param == "gate":
@@ -98,3 +102,35 @@ class ADSREnvelope(VirtualDevice):
     @property
     def range(self):
         return (0.0, 1.0)
+
+
+class VCA(VirtualDevice):
+    input_cv = VirtualParameter("input", range=(0, 127))
+    amplitude_cv = VirtualParameter("amplitude", range=(0.0, 1.0))
+    gain_cv = VirtualParameter("gain", range=(1.0, 2.0))
+
+    @property
+    def range(self):
+        return (0, 127)
+
+    def __init__(self, **kwargs):
+        self.input = 0.0
+        self.amplitude = 0.0
+        self.gain = 1.0
+        super().__init__(**kwargs)
+
+    def setup(self) -> ThreadContext:
+        self._close_port("input")
+        return super().setup()
+
+    @on(input_cv, edge="any")
+    def sending_modulated_input(self, value, ctx):
+        return value * self.amplitude * self.gain
+
+    @on(amplitude_cv, edge="rising")
+    def opening(self, value, ctx):
+        self._open_port("input")
+
+    @on(amplitude_cv, edge="falling")
+    def closing(self, value, ctx):
+        self._close_port("input")

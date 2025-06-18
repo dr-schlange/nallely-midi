@@ -89,7 +89,6 @@ def all_links() -> dict[int, "Link"]:
 class ThreadContext(dict):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self["last_value"] = None
 
     def __getattr__(self, key):
         return self[key]

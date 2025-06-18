@@ -1,7 +1,9 @@
+import collections
 import importlib
 import importlib.util
 import json
 import sys
+import threading
 from dataclasses import asdict
 from decimal import Decimal
 from pathlib import Path
@@ -90,3 +92,45 @@ def get_note_name(midi_note):
     note = NOTE_NAMES[midi_note % 12]
     octave = midi_note // 12
     return f"{note}{octave}"
+
+
+class ThreadSafeDefaultDict(collections.defaultdict):
+    def __init__(self, default_factory=None, *args, **kwargs):
+        super().__init__(default_factory, *args, **kwargs)
+        self._lock = threading.RLock()
+
+    def __getitem__(self, key):
+        with self._lock:
+            if key not in self:
+                if self.default_factory is None:
+                    raise KeyError(key)
+                self[key] = self.default_factory()
+            return super().__getitem__(key)
+
+    def __setitem__(self, key, value):
+        with self._lock:
+            super().__setitem__(key, value)
+
+    def __delitem__(self, key):
+        with self._lock:
+            super().__delitem__(key)
+
+    def get(self, key, default=None):
+        with self._lock:
+            return super().get(key, default)
+
+    def items(self):  # type: ignore
+        with self._lock:
+            return list(super().items())
+
+    def keys(self):  # type: ignore
+        with self._lock:
+            return list(super().keys())
+
+    def values(self):  # type: ignore
+        with self._lock:
+            return list(super().values())
+
+    def __contains__(self, key):
+        with self._lock:
+            return super().__contains__(key)

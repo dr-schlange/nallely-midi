@@ -376,7 +376,7 @@ class Link:
             #     return
             nonlocal previous
             if previous != value:
-                if ctx.raw_value != 0:
+                if int(ctx.raw_value) != 0:
                     dest.device.note(
                         note=value,
                         velocity=ctx.get("velocity", 127),
@@ -409,16 +409,16 @@ class Link:
         previous = None
 
         def foo(value, ctx):
+            value = int(value)
             # is_note = ctx.get("type")
             # if is_note in ("note_off", "note_on"):
             #     dest.device.note(
             #         note=value, velocity=ctx.get("velocity", 127), type=is_note
             #     )
             #     return
-            # Handle CC values
             nonlocal previous
             if previous != value:
-                if ctx.raw_value != 0:
+                if int(ctx.raw_value) != 0:
                     dest.device.note(
                         note=value,
                         velocity=ctx.get("velocity", 127),

@@ -145,6 +145,7 @@ class VirtualDevice(threading.Thread):
         return instance
 
     def __init__(self, target_cycle_time: float = 0.005, autoconnect: bool = False):
+        from ..utils import ThreadSafeDefaultDict
         from .links import Link
 
         super().__init__(daemon=True)
@@ -159,14 +160,14 @@ class VirtualDevice(threading.Thread):
             defaultdict(list),
         )
         self.links_registry: dict[tuple[str, str], Link] = {}
-
-        self.input_queue = Queue(maxsize=2000)
+        self.input_queues = ThreadSafeDefaultDict(lambda: Queue(maxsize=2000))
         self.pause_event = threading.Event()
         self.paused = False
         self.running = False
         self.pause_event.set()
         self.target_cycle_time = target_cycle_time
         self.ready_event = threading.Event()
+        self.closed_ports = set()
         if autoconnect:
             self.start()
 
@@ -179,6 +180,15 @@ class VirtualDevice(threading.Thread):
 
     def main(self, ctx: ThreadContext) -> Any: ...
 
+    def _open_port(self, port):
+        try:
+            self.closed_ports.remove(port)
+        except:
+            pass
+
+    def _close_port(self, port):
+        self.closed_ports.add(port)
+
     def receiving(self, value, on: str, ctx: ThreadContext):
         if on == "set_pause":
             self.set_pause = value
@@ -186,13 +196,13 @@ class VirtualDevice(threading.Thread):
             self.to_update.send_update()  # type: ignore -> this is set by the trevor bus dynamically
 
     def set_parameter(self, param: str, value: Any, ctx: ThreadContext):
-        if self.paused:
+        if self.paused or param in self.closed_ports:
             return
         try:
-            self.input_queue.put_nowait((param, value, ctx or ThreadContext()))
+            self.input_queues[param].put_nowait((value, ctx or ThreadContext()))
         except Full:
             print(
-                f"Warning: input_queue full for {self.uid()} — dropping message {param}={value}"
+                f"Warning: input_queue full for {self.uid()}[{param}] — dropping message {value}"
             )
             # self.target_cycle_time = 0.001
 
@@ -214,58 +224,58 @@ class VirtualDevice(threading.Thread):
             if not self.running:
                 break
 
-            # Process a batch of inputs per cycle (to avoid backlog)
-            max_batch_size = 10  # Maximum number of items to process per cycle
-            queue_level = self.input_queue.qsize()
-            # We adjust the batch size dynamically based on queue pressure
-            batch_size = min(max_batch_size, max(1, int(queue_level / 100)))
+            changed = set()
             inner_ctx = {}
-            changed = []
-            for _ in range(batch_size):
-                try:
-                    param, value, inner_ctx = self.input_queue.get_nowait()
-                    changed.append(param)
-                    self.process_input(param, value)
-                    self.input_queue.task_done()
-                except Empty:
-                    break
+            for param, input_queue in list(self.input_queues.items()):
+                # Process a batch of inputs per cycle (to avoid backlog)
+                max_batch_size = 10  # Maximum number of items to process per cycle
+                queue_level = input_queue.qsize()
+                # We adjust the batch size dynamically based on queue pressure
+                batch_size = min(max_batch_size, max(1, int(queue_level / 100)))
+                for _ in range(batch_size):
+                    try:
+                        value, inner_ctx = input_queue.get_nowait()
+                        changed.add(param)
+                        self.process_input(param, value)
+                        input_queue.task_done()
+                    except Empty:
+                        break
 
-            # Log queue pressure
-            queue_level = self.input_queue.qsize()
-            if queue_level > self.input_queue.maxsize * 0.8:
-                print(
-                    f"[{self.uid()}] Queue usage: {queue_level}/{self.input_queue.maxsize}"
-                )
+                # Log queue pressure
+                queue_level = input_queue.qsize()
+                if queue_level > input_queue.maxsize * 0.8:
+                    print(
+                        f"[{self.uid()}] Queue usage: {queue_level}/{input_queue.maxsize}"
+                    )
 
-            # Run main processing and output
-            for param in changed:
-                # ctx.update(inner_ctx)
+                # Run main processing and output
                 for key in edge_keys:
                     aliased_name = alias_name(param, key)
                     if hasattr(self, aliased_name):
                         value = getattr(self, aliased_name)(getattr(self, param), ctx)
                         if value is not None:
+                            ctx.update(inner_ctx)
                             self.send_out(value, ctx, selected_outputs=[self.output_cv])
-            ctx.update(inner_ctx)
-            # try:
-            value = self.main(ctx)
-            if value is not None:
-                self.send_out(value, ctx, selected_outputs=[self.output_cv])
-            # except Exception as e:
-            #     print(
-            #         f"Exception caught in {self.repr()}, execution continue, but you should check that:\n * {e}"
-            #     )
+            if not changed:
+                value = self.main(ctx)
+                if value is not None:
+                    self.send_out(value, ctx, selected_outputs=[self.output_cv])
 
-            if queue_level > self.input_queue.maxsize * 0.8:
-                # Skip sleep to catch up faster
-                print(
-                    f"[{self.uid()}] High queue pressure, skipping sleep for this cycle."
-                )
-            else:
-                # Adaptive sleep
-                elapsed_time = time.perf_counter() - start_time
-                sleep_time = max(0, self.target_cycle_time - elapsed_time)
-                time.sleep(sleep_time)
+            # if queue_level > self.input_queue.maxsize * 0.8:
+            #     # Skip sleep to catch up faster
+            #     print(
+            #         f"[{self.uid()}] High queue pressure, skipping sleep for this cycle."
+            #     )
+            # else:
+            #     # Adaptive sleep
+            #     elapsed_time = time.perf_counter() - start_time
+            #     sleep_time = max(0, self.target_cycle_time - elapsed_time)
+            #     time.sleep(sleep_time)
+
+            # Adaptive sleep
+            elapsed_time = time.perf_counter() - start_time
+            sleep_time = max(0, self.target_cycle_time - elapsed_time)
+            time.sleep(sleep_time)
 
     def send_out(
         self, value, ctx, selected_outputs: None | list[ParameterInstance] = None
@@ -332,34 +342,26 @@ class VirtualDevice(threading.Thread):
             self.join()  # Wait for the thread to finish
         if clear_queues:
             # Clear input_queue
-            inqueue = self.input_queue
-            while not inqueue.empty():
-                try:
-                    inqueue.get_nowait()
-                    inqueue.task_done()
-                except Empty:
-                    break
-            # Clear output_queue
-            # while not self.output_queue.empty():
-            #     try:
-            #         self.output_queue.get_nowait()
-            #         self.output_queue.task_done()
-            #     except Empty:
-            #         break
+            for inqueue in self.input_queues.values():
+                while not inqueue.empty():
+                    try:
+                        inqueue.get_nowait()
+                        inqueue.task_done()
+                    except Empty:
+                        break
 
     def pause(self, duration=None):
         """Pause the LFO, optionally for a specific duration."""
         if self.running and not self.paused:
             self.paused = True
             self.pause_event.clear()
-            inqueue = self.input_queue
-            inqueue = self.input_queue
-            while not inqueue.empty():
-                try:
-                    inqueue.get_nowait()
-                    inqueue.task_done()
-                except Empty:
-                    break
+            for inqueue in self.input_queues.values():
+                while not inqueue.empty():
+                    try:
+                        inqueue.get_nowait()
+                        inqueue.task_done()
+                    except Empty:
+                        break
             if duration:
                 time.sleep(duration)
                 self.resume()
