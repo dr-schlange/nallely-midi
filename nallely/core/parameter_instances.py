@@ -5,7 +5,12 @@ from .scaler import Scaler
 from .world import ThreadContext
 
 if TYPE_CHECKING:
-    from .midi_device import MidiDevice, ModulePadsOrKeys, ModuleParameter
+    from .midi_device import (
+        MidiDevice,
+        ModulePadsOrKeys,
+        ModuleParameter,
+        ModulePitchwheel,
+    )
     from .virtual_device import VirtualDevice, VirtualParameter
 
 
@@ -35,7 +40,7 @@ class ParameterInstance:
         self,
         min: int | float | None = None,
         max: int | float | None = None,
-        method: Literal["lin"] | Literal["log"] = "lin",
+        method: Literal["lin", "log"] = "lin",
         as_int: bool = False,
     ):
         return Scaler(
@@ -83,7 +88,7 @@ class Int(int):
         self,
         min: int | float | None = None,
         max: int | float | None = None,
-        method: Literal["lin"] | Literal["log"] = "lin",
+        method: Literal["lin", "log"] = "lin",
         as_int: bool = False,
     ):
         return Scaler(
@@ -152,7 +157,7 @@ class PadsOrKeysInstance:
         self,
         min: int | float | None = None,
         max: int | float | None = None,
-        method: Literal["lin"] | Literal["log"] = "lin",
+        method: Literal["lin", "log"] = "lin",
         as_int: bool = False,
     ):
         return Scaler(
@@ -162,6 +167,36 @@ class PadsOrKeysInstance:
             to_max=max,
             # from_min=self.range[0],
             # from_max=self.range[1],
+            method=method,
+            as_int=as_int,
+            auto=min is None and max is None,
+        )
+
+
+class PitchwheelInstance:
+    def __init__(self, parameter: "ModulePitchwheel", device: "MidiDevice"):
+        self.parameter = parameter
+        self.device = device
+
+    def repr(self):
+        return (
+            f"{id(self.device)}::{self.parameter.section_name}::{self.parameter.name}"
+        )
+
+    def __isub__(self, other):
+        other.device.unbind_link(other, self)
+
+    def scale(
+        self,
+        min: int | float | None = None,
+        max: int | float | None = None,
+        method: Literal["lin", "log"] = "lin",
+        as_int: bool = False,
+    ):
+        return Scaler(
+            data=self,
+            to_min=min,
+            to_max=max,
             method=method,
             as_int=as_int,
             auto=min is None and max is None,
@@ -273,7 +308,7 @@ class PadOrKey:
         self,
         min: int | float | None = None,
         max: int | float | None = None,
-        method: Literal["lin"] | Literal["log"] = "lin",
+        method: Literal["lin", "log"] = "lin",
         as_int: bool = False,
     ):
         return Scaler(

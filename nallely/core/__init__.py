@@ -1,4 +1,10 @@
-from .midi_device import MidiDevice, Module, ModulePadsOrKeys, ModuleParameter
+from .midi_device import (
+    MidiDevice,
+    Module,
+    ModulePadsOrKeys,
+    ModuleParameter,
+    ModulePitchwheel,
+)
 from .parameter_instances import Int, PadOrKey, PadsOrKeysInstance, ParameterInstance
 from .scaler import Scaler
 from .virtual_device import TimeBasedDevice, VirtualDevice, VirtualParameter, on
@@ -52,4 +58,5 @@ __all__ = [
     "Module",
     "all_links",
     "on",
+    "ModulePitchwheel",
 ]

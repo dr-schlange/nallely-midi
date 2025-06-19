@@ -6,6 +6,7 @@ Arturia:
     keys:
       notes: 'keys_or_pads'
       mod: {cc: 1, description: '', init: 0, min: 0, max: 127}
+      pitchwheel: 'pitchwheel'
     pads:
       notes: 'keys_or_pads'
       p4: {cc: 105, description: '', init: 0, min: 0, max: 127}

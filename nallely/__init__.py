@@ -4,6 +4,7 @@ from .core import (
     Module,
     ModulePadsOrKeys,
     ModuleParameter,
+    ModulePitchwheel,
     PadOrKey,
     ThreadContext,
     VirtualDevice,
@@ -43,4 +44,5 @@ __all__ = [
     "midi_device_classes",
     "ThreadContext",
     "on",
+    "ModulePitchwheel",
 ]

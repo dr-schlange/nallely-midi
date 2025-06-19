@@ -48,3 +48,4 @@ KORG:
       rate: {cc: 21, description: '', init: 0, max: 127, min: 0}
     keys:
       notes: 'keys_or_pads'
+      pitchwheel: 'pitchwheel'

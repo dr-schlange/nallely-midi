@@ -6,6 +6,7 @@ import type {
 	MidiParameter,
 	PadOrKey,
 	PadsOrKeys,
+	Pitchwheel,
 	VirtualDevice,
 	VirtualDeviceWithSection,
 	VirtualParameter,
@@ -30,10 +31,13 @@ const collectAllVirtualParameters = (device: VirtualDevice) => {
 };
 
 const collectAllMidiParameters = (device: MidiDevice) => {
-	const parameters: (MidiParameter | PadsOrKeys)[] = [];
+	const parameters: (MidiParameter | PadsOrKeys | Pitchwheel)[] = [];
 	for (const section of device.meta.sections) {
 		if (section.pads_or_keys) {
 			parameters.push(section.pads_or_keys);
+		}
+		if (section.pitchwheel) {
+			parameters.push(section.pitchwheel);
 		}
 		parameters.push(...section.parameters);
 	}
@@ -73,13 +77,15 @@ const PatchingModal = ({
 				f,
 				firstSection?.device.id,
 				firstSection?.section.parameters[0]?.section_name ||
-					firstSection?.section.pads_or_keys?.section_name,
+					firstSection?.section.pads_or_keys?.section_name ||
+					firstSection?.section.pitchwheel?.section_name,
 			) ||
 			connectionsOfInterest(
 				f,
 				secondSection?.device.id,
 				secondSection?.section.parameters[0]?.section_name ||
-					secondSection?.section.pads_or_keys?.section_name,
+					secondSection?.section.pads_or_keys?.section_name ||
+					secondSection?.section.pitchwheel?.section_name,
 			),
 	);
 
@@ -275,7 +281,8 @@ const PatchingModal = ({
 		const param = selectedParameters[0];
 		if (device.id === param.device.id) {
 			return (
-				(param?.parameter as PadOrKey)?.note || param?.parameter.section_name
+				(param?.parameter as PadOrKey)?.note ||
+				((param?.parameter as PadsOrKeys)?.keys != null && "__pads_or_keys__")
 			);
 		}
 		return "";
@@ -307,6 +314,16 @@ const PatchingModal = ({
 		)
 		.map((c) => parameterUUID(c.src.device, c.src.parameter));
 
+	const getSectionParameters = (sectionWrapper) => {
+		if (!sectionWrapper) {
+			return [];
+		}
+		const pitchwheel = sectionWrapper.section.pitchwheel
+			? [sectionWrapper.section.pitchwheel]
+			: [];
+		return [...sectionWrapper.section.parameters, ...pitchwheel];
+	};
+
 	return (
 		<div className="patching-modal">
 			<div className="modal-header">
@@ -336,7 +353,8 @@ const PatchingModal = ({
 									/>
 								</div>
 							)}
-							{firstSection?.section.parameters.map((param) => {
+							{/* {firstSection?.section.parameters.map((param) => { */}
+							{getSectionParameters(firstSection).map((param) => {
 								const incoming = srcAllIncoming.includes(
 									parameterUUID(firstSection.device.id, param),
 								);
@@ -390,7 +408,7 @@ const PatchingModal = ({
 								</div>
 							)}
 
-							{secondSection?.section.parameters.map((param) => {
+							{getSectionParameters(secondSection).map((param) => {
 								const incoming = dstAllIncoming.includes(
 									parameterUUID(secondSection.device.id, param),
 								);

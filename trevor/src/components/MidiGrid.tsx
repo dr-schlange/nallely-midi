@@ -94,7 +94,7 @@ export const MidiGrid = ({
 					<>
 						{/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
 						<span
-							className={`midi-icon ${!isOpen && highlight === section.pads_or_keys?.section_name ? "selected" : ""}`}
+							className={`midi-icon ${!isOpen && highlight === "__pads_or_keys__" ? "selected" : ""}`}
 							role="img"
 							aria-label="piano"
 							onClick={() =>

@@ -68,6 +68,7 @@ class FilterSection(nallely.Module):
 
 class KeySection(nallely.Module):
     notes = nallely.ModulePadsOrKeys()
+    pitchwheel = nallely.ModulePitchwheel()
 
 
 class Minilogue(nallely.MidiDevice):

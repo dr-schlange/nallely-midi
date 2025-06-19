@@ -3,6 +3,7 @@ import type {
 	MidiDevice,
 	MidiDeviceSection,
 	MidiParameter,
+	Pitchwheel,
 	PadsOrKeys,
 } from "../model";
 import {
@@ -15,10 +16,13 @@ import {
 import { useTrevorSelector } from "../store";
 
 const collectAllParameters = (device: MidiDevice) => {
-	const parameters: (MidiParameter | PadsOrKeys)[] = [];
+	const parameters: (MidiParameter | PadsOrKeys | Pitchwheel)[] = [];
 	for (const section of device.meta.sections) {
 		if (section.pads_or_keys) {
 			parameters.push(section.pads_or_keys);
+		}
+		if (section.pitchwheel) {
+			parameters.push(section.pitchwheel);
 		}
 		parameters.push(...section.parameters);
 	}
@@ -36,6 +40,7 @@ const collectAllSections = (device: MidiDevice) => {
 const internalSectionName = (section) =>
 	section.parameters?.[0]?.section_name ||
 	section.pads_or_keys?.section_name ||
+	section.pitchwheel?.section_name ||
 	"unknown";
 
 const MidiDeviceComponent = ({

@@ -9,13 +9,14 @@ if TYPE_CHECKING:
         PadOrKey,
         PadsOrKeysInstance,
         ParameterInstance,
+        PitchwheelInstance,
     )
     from .virtual_device import VirtualDevice
 
 
 @dataclass
 class Scaler:
-    data: "Int | VirtualDevice | PadOrKey | ParameterInstance | PadsOrKeysInstance"
+    data: "Int | VirtualDevice | PadOrKey | ParameterInstance | PadsOrKeysInstance | PitchwheelInstance"
     # device: Any
     to_min: int | float | None
     to_max: int | float | None

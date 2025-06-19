@@ -49,3 +49,4 @@ KORG:
       vco_2_wave: {cc: 51, description: '', init: 0, max: 127, min: 0}
     keys:
       notes: 'keys_or_pads'
+      pitchwheel: 'pitchwheel'

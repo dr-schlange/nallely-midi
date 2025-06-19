@@ -46,6 +46,7 @@ class KeysSection(nallely.Module):
     state_name = "keys"
     notes = nallely.ModulePadsOrKeys()
     mod = nallely.ModuleParameter(1)
+    pitchwheel = nallely.ModulePitchwheel()
 
 
 class Minilab(nallely.MidiDevice):

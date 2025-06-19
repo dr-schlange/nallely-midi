@@ -7,7 +7,7 @@ from typing import Any, Callable, Counter, Type
 
 import mido
 
-from .parameter_instances import Int, PadOrKey, PadsOrKeysInstance, ParameterInstance
+from .parameter_instances import Int, PadOrKey, PadsOrKeysInstance, PitchwheelInstance
 from .virtual_device import VirtualParameter
 from .world import (
     DeviceNotFound,
@@ -74,17 +74,6 @@ class ModuleParameter:
         if feeder is None:
             return
 
-        # if isinstance(
-        #     feeder,
-        #     (
-        #         ParameterInstance,
-        #         Int,
-        #         PadOrKey,
-        #         PadsOrKeysInstance,
-        #         VirtualDevice,
-        #         Scaler,
-        #     ),
-        # ):
         if hasattr(feeder, "bind"):
             feeder.bind(getattr(to_module, self.name))
             return
@@ -114,7 +103,7 @@ class ModulePadsOrKeys:
     def __get__(self, instance, owner=None):
         if instance is None:
             return self
-        return instance.state[self.section_name]
+        return instance.state[f"{self.section_name}_note"]
 
     def __set__(self, target, feeder):
         if feeder is None:
@@ -130,10 +119,43 @@ class ModulePadsOrKeys:
 
 
 @dataclass
+class ModulePitchwheel:
+    type = "pitchwheel"
+    channel: int = 0
+    section_name: str = NOT_INIT
+    name: str = NOT_INIT
+    cc_note: int = -1
+    range: tuple[int, int] = (-8192, 8192)
+
+    def __post_init__(self):
+        self.stream = False
+
+    def __get__(self, instance, owner=None):
+        if instance is None:
+            return self
+        return instance.state[f"{self.section_name}_pitch"]
+
+    def __set__(self, target, feeder):
+        if feeder is None:
+            return
+
+        if isinstance(feeder, list):
+            for f in feeder:
+                f.bind(getattr(target, self.name))
+        else:
+            feeder.bind(getattr(target, self.name))
+
+    def basic_send(
+        self, type, note, velocity
+    ): ...  # no need to keep state, behavior of pitchwheel is to reset to 0
+
+
+@dataclass
 class MetaModule:
     name: str
     parameters: list[ModuleParameter]
     pads_or_keys: ModulePadsOrKeys | None
+    pitchwheel: ModulePitchwheel | None
 
 
 @dataclass
@@ -141,22 +163,26 @@ class Module:
     device: "MidiDevice"
     meta: Any = None
     state_name: str = NOT_INIT
-    state: dict[str, Int | PadsOrKeysInstance] = field(default_factory=dict)
+    state: dict[str, Int | PadsOrKeysInstance | PitchwheelInstance] = field(
+        default_factory=dict
+    )
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
         parameters = []
         pads = None
+        pitchwheel = None
         for name, value in vars(cls).items():
             if isinstance(value, ModuleParameter):
                 value.name = name
-                # value.section_name = cls.state_name
                 parameters.append(value)
             if isinstance(value, ModulePadsOrKeys):
                 pads = value
                 value.name = name
-                # pads.section_name = cls.state_name
-        cls.meta = MetaModule(cls.__name__, parameters, pads)
+            if isinstance(value, ModulePitchwheel):
+                pitchwheel = value
+                value.name = name
+        cls.meta = MetaModule(cls.__name__, parameters, pads, pitchwheel)
 
     def __post_init__(self):
         self.meta = self.__class__.meta
@@ -168,9 +194,14 @@ class Module:
         if self.meta.pads_or_keys:
             self.meta.pads_or_keys.section_name = self.__class__.state_name
             state_name = self.meta.pads_or_keys.section_name
-            # self.state[state_name] = self.device  # type: ignore (special key)
-            self.state[state_name] = PadsOrKeysInstance(
+            self.state[f"{state_name}_note"] = PadsOrKeysInstance(
                 self.meta.pads_or_keys, self.device
+            )
+        if self.meta.pitchwheel:
+            self.meta.pitchwheel.section_name = self.__class__.state_name
+            state_name = self.meta.pitchwheel.section_name
+            self.state[f"{state_name}_pitch"] = PitchwheelInstance(
+                self.meta.pitchwheel, self.device
             )
         self._keys_notes = {}
 
@@ -240,6 +271,10 @@ class DeviceState:
                 device.reverse_map[("control_change", param.cc_note)] = param
             if moduleInstance.meta.pads_or_keys:
                 device.reverse_map[("note", None)] = moduleInstance.meta.pads_or_keys
+            if moduleInstance.meta.pitchwheel:
+                device.reverse_map[("pitchwheel", None)] = (
+                    moduleInstance.meta.pitchwheel
+                )
         self.modules = init_modules
 
     def __getattr__(self, name):
@@ -450,6 +485,14 @@ class MidiDevice:
                     pads.basic_send(msg.type, msg.note, msg.velocity)
             except:
                 traceback.print_exc()
+        if msg.type == "pitchwheel":
+            try:
+                for link in self.links.get((msg.type, -1), []):
+                    pitch = msg.pitch
+                    ctx = ThreadContext({"debug": self.debug, "type": msg.type})
+                    link.trigger(pitch, ctx)
+            except:
+                traceback.print_exc()
 
     def send(self, msg):
         if not self.outport:
@@ -488,6 +531,16 @@ class MidiDevice:
         )
         if self.played_notes[note]:
             self.played_notes[note] -= 1
+
+    def pitchwheel(self, pitch, channel=0):
+        if not self.outport:
+            return
+        pitch = int(pitch)
+        if pitch > 8191:
+            pitch = 8191
+        elif pitch < -8192:
+            pitch = -8192
+        self.outport.send(mido.Message("pitchwheel", channel=channel, pitch=pitch))
 
     def all_notes_off(self):
         for note, occurence in self.played_notes.items():
@@ -637,6 +690,12 @@ class MidiDevice:
         for section in self.all_sections():
             if section.meta.pads_or_keys:
                 return section.meta.pads_or_keys
+        return None
+
+    def pitchwheel_meta(self):
+        for section in self.all_sections():
+            if section.meta.pitchwheel:
+                return section.meta.pitchwheel
         return None
 
     def random_preset(self):

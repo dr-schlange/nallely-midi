@@ -88,7 +88,7 @@ class WSWaitingRoom:
         self,
         min: int | float | None = None,
         max: int | float | None = None,
-        method: Literal["lin"] | Literal["log"] = "lin",
+        method: Literal["lin", "log"] = "lin",
         as_int: bool = False,
     ):
         # print("[DEBUG] SCALER CREATION")

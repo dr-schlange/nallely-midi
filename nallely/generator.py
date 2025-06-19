@@ -83,6 +83,10 @@ Generated configuration for the {brand} - {device}
                     parameter_code = (
                         f"    {parameter_name} = nallely.ModulePadsOrKeys()\n"
                     )
+                elif config == "pitchwheel":
+                    parameter_code = (
+                        f"    {parameter_name} = nallely.ModulePitchwheel()\n"
+                    )
                 else:
                     cc = config["cc"]
                     min, max = config["min"], config["max"]

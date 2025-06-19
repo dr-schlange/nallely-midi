@@ -1,7 +1,13 @@
 from dataclasses import dataclass
 from typing import cast
 
-from .parameter_instances import Int, PadOrKey, PadsOrKeysInstance, ParameterInstance
+from .parameter_instances import (
+    Int,
+    PadOrKey,
+    PadsOrKeysInstance,
+    ParameterInstance,
+    PitchwheelInstance,
+)
 from .scaler import Scaler
 from .virtual_device import VirtualDevice
 from .world import ThreadContext
@@ -12,12 +18,14 @@ from .world import ThreadContext
 #   (2) PadOrKey           -> MIDI device single pad/key
 #   (3) PadsOrKeysInstance -> MIDI device whole pads/keys as one entity
 #   (4) ParameterInstance  -> Virtual device input or output (depending if src or dst)
+#   (5) PitchwheelInstance -> MIDI device pitch wheel
 #
-#  src\dest (1) (2) (3) (4)
-#    (1)     X   X   X   X
-#    (2)     X   X   X   X
-#    (3)     X       X   X
-#    (4)     X       X   X
+#  src\dest (1) (2) (3) (4) (5)
+#    (1)     X   X   X   X   X
+#    (2)     X   X   X   X   X
+#    (3)     X       X   X   X
+#    (4)     X       X   X   X
+#    (5)     X       X   X   X
 #
 class Link:
     def __init__(
@@ -29,8 +37,11 @@ class Link:
             | ParameterInstance
             | Scaler
             | VirtualDevice
+            | PitchwheelInstance
         ),
-        dest: Int | PadOrKey | PadsOrKeysInstance | ParameterInstance,
+        dest: (
+            Int | PadOrKey | PadsOrKeysInstance | ParameterInstance | PitchwheelInstance
+        ),
         bouncy: bool = False,
     ):
         self.src_feeder = src_feeder
@@ -53,7 +64,9 @@ class Link:
             src = src.data
         if isinstance(src, VirtualDevice):
             src = src.output_cv
-        self.src: Int | PadOrKey | PadsOrKeysInstance | ParameterInstance = src
+        self.src: (
+            Int | PadOrKey | PadsOrKeysInstance | ParameterInstance | PitchwheelInstance
+        ) = src
         self.callback = None
         self.cleanup_callback = None
 
@@ -434,11 +447,166 @@ class Link:
 
         return foo
 
+    # MIDI Pitchwheel -> MIDI CC
+    def _install_PitchwheelInstance__Int(self):
+        src = cast(PitchwheelInstance, self.src)
+        dest = cast(Int, self.dest)
 
-def debug(l):
-    def foo(value, ctx):
-        print("->", value, ctx)
-        r = l(value, ctx)
-        return r
+        self.callback = self._compile_PitchwheelInstance__Int()
+        src.device.bind_link(self)
 
-    return foo
+    def _compile_PitchwheelInstance__Int(self):
+        src = cast(PitchwheelInstance, self.src)
+        dest = cast(Int, self.dest)
+
+        section = getattr(dest.device.modules, dest.parameter.section_name)
+        return lambda value, ctx: setattr(section, dest.parameter.name, value)
+
+    # MIDI Pitchwheel -> MIDI pads/keys
+    def _install_PitchwheelInstance__PadsOrKeysInstance(self):
+        src = cast(PitchwheelInstance, self.src)
+        dest = cast(PadsOrKeysInstance, self.dest)
+
+        self.callback = self._compile_PitchwheelInstance__PadsOrKeysInstance()
+        src.device.bind_link(self)
+
+    def _compile_PitchwheelInstance__PadsOrKeysInstance(self):
+        src = cast(PitchwheelInstance, self.src)
+        dest = cast(PadsOrKeysInstance, self.dest)
+
+        self.cleanup_callback = lambda: dest.device.all_notes_off()
+
+        previous = None
+
+        def foo(value, ctx):
+            value = int(value)
+            nonlocal previous
+            if previous != value:
+                if int(ctx.raw_value) != 0:
+                    dest.device.note(
+                        note=value,
+                        velocity=ctx.get("velocity", 127),
+                        type="note_on",
+                    )
+                if previous:
+                    dest.device.note(
+                        note=previous,
+                        velocity=ctx.get("velocity", 127),
+                        type="note_off",
+                    )
+                previous = value
+
+        return foo
+
+    # MIDI Pitchwheel -> Virtual Device Input
+    def _install_PitchwheelInstance__ParameterInstance(self):
+        src = cast(PitchwheelInstance, self.src)
+        dest = cast(ParameterInstance, self.dest)
+
+        self.callback = self._compile_PitchwheelInstance__ParameterInstance()
+        src.device.bind_link(self)
+
+    def _compile_PitchwheelInstance__ParameterInstance(self):
+        src = cast(PitchwheelInstance, self.src)
+        dest = cast(ParameterInstance, self.dest)
+
+        is_blocking_consummer = dest.parameter.consumer
+        if is_blocking_consummer:
+            return lambda value, ctx: dest.device.receiving(
+                value,
+                on=dest.parameter.name,
+                ctx=ThreadContext({**ctx, "param": src.parameter.name}),
+            )
+        else:
+            return lambda value, ctx: dest.device.set_parameter(
+                dest.parameter.name, value, ctx
+            )
+
+    # MIDI Pitchwheel -> MIDI Pitchwheel
+    def _install_PitchwheelInstance__PitchwheelInstance(self):
+        src = cast(PitchwheelInstance, self.src)
+        dest = cast(PitchwheelInstance, self.dest)
+
+        self.callback = self._compile_PitchwheelInstance__PitchwheelInstance()
+        src.device.bind_link(self)
+
+    def _compile_PitchwheelInstance__PitchwheelInstance(self):
+        src = cast(PitchwheelInstance, self.src)
+        dest = cast(PitchwheelInstance, self.dest)
+
+        self.cleanup_callback = lambda: dest.device.pitchwheel(0)
+
+        return lambda value, ctx: dest.device.pitchwheel(value)
+
+    # MIDI CC -> MIDI Pitchwheel
+    def _install_Int__PitchwheelInstance(self):
+        src = cast(Int, self.src)
+        dest = cast(PitchwheelInstance, self.dest)
+
+        self.callback = self._compile_Int__PitchwheelInstance()
+        src.device.bind_link(self)
+
+    def _compile_Int__PitchwheelInstance(self):
+        src = cast(Int, self.src)
+        dest = cast(PitchwheelInstance, self.dest)
+
+        self.cleanup_callback = lambda: dest.device.pitchwheel(0)
+
+        return lambda value, ctx: dest.device.pitchwheel(value)
+
+    # MIDI key/pad -> MIDI Pitchwheel
+    def _install_PadOrKey__PitchwheelInstance(self):
+        src = cast(PadOrKey, self.src)
+        dest = cast(PitchwheelInstance, self.dest)
+
+        self.callback = self._compile_PadOrKey__PitchwheelInstance()
+        src.device.bind_link(self)
+
+    def _compile_PadOrKey__PitchwheelInstance(self):
+        src = cast(PadOrKey, self.src)
+        dest = cast(PitchwheelInstance, self.dest)
+
+        self.cleanup_callback = lambda: dest.device.pitchwheel(0)
+
+        return lambda value, ctx: dest.device.pitchwheel(value)
+
+    # MIDI pads/keys -> MIDI Pitchwheel
+    def _install_PadsOrKeysInstance__PitchwheelInstance(self):
+        src = cast(PadsOrKeysInstance, self.src)
+        dest = cast(PitchwheelInstance, self.dest)
+
+        self.callback = self._compile_PadsOrKeysInstance__PitchwheelInstance()
+        src.device.bind_link(self)
+
+    def _compile_PadsOrKeysInstance__PitchwheelInstance(self):
+        src = cast(PadsOrKeysInstance, self.src)
+        dest = cast(PitchwheelInstance, self.dest)
+
+        self.cleanup_callback = lambda: dest.device.pitchwheel(0)
+
+        return lambda value, ctx: dest.device.pitchwheel(value)
+
+    # Virtual output -> MIDI Pitchwheel
+    def _install_ParameterInstance__PitchwheelInstance(self):
+        src = cast(ParameterInstance, self.src)
+        dest = cast(PitchwheelInstance, self.dest)
+
+        self.callback = self._compile_ParameterInstance__PitchwheelInstance()
+        src.device.bind_link(self)
+
+    def _compile_ParameterInstance__PitchwheelInstance(self):
+        src = cast(ParameterInstance, self.src)
+        dest = cast(PitchwheelInstance, self.dest)
+
+        self.cleanup_callback = lambda: dest.device.pitchwheel(0)
+
+        return lambda value, ctx: dest.device.pitchwheel(value)
+
+
+# def debug(l):
+#     def foo(value, ctx):
+#         print("->", value, ctx)
+#         r = l(value, ctx)
+#         return r
+
+#     return foo
