@@ -1,6 +1,12 @@
 from dataclasses import dataclass
 
-from ..core import MidiDevice, Module, ModulePadsOrKeys, ModuleParameter
+from ..core import (
+    MidiDevice,
+    Module,
+    ModulePadsOrKeys,
+    ModuleParameter,
+    ModulePitchwheel,
+)
 
 
 @dataclass
@@ -63,6 +69,7 @@ class ArpSection(Module):
 @dataclass
 class KeysSection(Module):
     notes = ModulePadsOrKeys()
+    pitchwheel = ModulePitchwheel()
 
 
 class NTS1(MidiDevice):
