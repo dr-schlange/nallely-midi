@@ -111,7 +111,7 @@ class VCA(VirtualDevice):
 
     @property
     def range(self):
-        return (0, 127)
+        return (0.0, 127.0)
 
     def __init__(self, **kwargs):
         self.input = 0.0
@@ -134,3 +134,4 @@ class VCA(VirtualDevice):
     @on(amplitude_cv, edge="falling")
     def closing(self, value, ctx):
         self._close_port("input")
+        return 0

@@ -5,6 +5,8 @@ The documentation starts by giving a general overview of the concepts that are k
 
 NOTE: Please note that this library/platform makes an intensive use of meta-programming, meaning that sometimes, the auto-completion can be lost. This will be fixed in future versions as much as possible when concepts will be made more polymorphic.
 
+NOTE2: This documentation is somehow kind of more for developers/low-level, and about how to handle Nallely at the code level, not the interface/UI level. If you are curious about how to code your own virtual device for Nallely and have a kind of better view of what's proposed, you can read this post about how to write your own VCA virtual device with Nallely: https://dr-schlange.github.io/nallely-midi/posts/build-vca/ .
+
 ## General Overview
 
 Nallely is a companion for your MIDI devices, and a platform for scripting interaction between your devices and experiment with other technologies (e.g: Three.js) to give visual animations that are driven by your MIDI devices.
