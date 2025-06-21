@@ -32,7 +32,7 @@ img {
 	max-height: 100%;
 	margin-top: 20px;
 	margin-bottom: 20px;
-	border-radius: 16px;
+	border-radius: 5px;
 	margin-left: auto;
 	margin-right: auto;
 	display: block;
@@ -40,15 +40,10 @@ img {
 
 code {
 	background-color: #293137;
-	border-radius: 16px;
-	padding-left: 30px;
-	padding-right: 30px;
-	line-height: 2em;
-
-	padding-top: 1px;
-	padding-bottom: 1px;
-	color: #65f85a;
-	font-family: monospace;
+	border-radius: 3px;
+	padding: 3px;
+	color: orange;
+	font-family: "TopazPlusA1200", monospace;
 }
 
 pre {
@@ -143,7 +138,7 @@ h3 {
 	color: orange;
 	text-decoration: none;
 	line-height: 1;
-	background-color: rgb(128, 128, 128);
+	background-color: #293137;
 }
 
 .logo a {
@@ -176,6 +171,22 @@ h3 {
 	text-align: center;
 }
 
+div.sourceCode {
+	border-radius: 3px;
+}
+
+code.sourceCode {
+	display: block;
+	color: inherit;
+	margin: 5px;
+}
+
+video {
+	border-radius: 3px;
+	width: 100%;
+	height: auto;
+}
+
 /********************************/
 /********************************/
 
@@ -199,5 +210,11 @@ h3 {
 @media (max-width: 650px) {
 	.logo pre {
 		font-size: 5px;
+	}
+}
+
+@media (max-width: 350px) {
+	.logo pre {
+		font-size: 3px;
 	}
 }

@@ -13,13 +13,20 @@
     </image>
     <atom:link href="https://dr-schlange.github.io/nallely-midi/rss.xml" rel="self" type="application/rss+xml"/>
         <ttl>60</ttl>
-<lastBuildDate>Sat, 14 Jun 2025 00:04:12 +0000</lastBuildDate>
+<lastBuildDate>Sat, 21 Jun 2025 19:25:02 +0000</lastBuildDate>
         <item>
         <title>Presenting Nallely</title>
         <dc:creator>Dr. Schlange</dc:creator>
         <description>Nallely is an organic living system for MIDI</description>
         <link>https://dr-schlange.github.io/nallely-midi/posts/presenting-nallely/</link>
         <pubDate>Thu, 12 Jun 2025 00:00:00 +0000</pubDate>
+        </item>
+        <item>
+        <title>Let&#39;s build a VCA with Nallely</title>
+        <dc:creator>Dr. Schlange</dc:creator>
+        <description>How to build a Voltage Control Amplifier with Nallely from scratch</description>
+        <link>https://dr-schlange.github.io/nallely-midi/posts/build-vca/</link>
+        <pubDate>Sat, 21 Jun 2025 00:00:00 +0000</pubDate>
         </item>
         <item>
         <title>A website for Nallely</title>

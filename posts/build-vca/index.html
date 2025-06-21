@@ -1,0 +1,750 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+        <!-- Basic Metadata -->
+        <meta charset="utf-8" />
+        <meta name="HandheldFriendly" content="True" />
+        <meta name="generator" content="Arise" />
+
+        <title>Let&#39;s build a VCA with Nallely · Nallely MIDI</title>
+        <meta name="description" content="How to build a Voltage Control Amplifier with Nallely from scratch">
+        <meta name="author" content="Dr. Schlange">
+        <!-- End Basic Metadata -->
+
+        <!-- OpenGraph Metadata -->
+        <meta property="og:site_name" content="Nallely MIDI" />
+        <meta property="og:type" content="article" />
+        <meta property="og:title" content="Let&#39;s build a VCA with Nallely · Nallely MIDI" />
+        <meta property="og:description" content="How to build a Voltage Control Amplifier with Nallely from scratch" />
+        <meta property="og:url" content="https://dr-schlange.github.io/nallely-midi/posts/build-vca/" />
+        <meta property="og:image" content="https://dr-schlange.github.io/nallely-midi/posts/build-vca/" />
+        <meta property="article:published_time" content="2025-06-21" />
+        <meta property="article:modified_time" content="2025-06-21" />
+        <!-- End OpenGraph Metadata -->
+
+        <!-- Twitter Metadata -->
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Let&#39;s build a VCA with Nallely · Nallely MIDI" />
+        <meta name="twitter:description" content="How to build a Voltage Control Amplifier with Nallely from scratch" />
+        <meta name="twitter:url" content="https://dr-schlange.github.io/nallely-midi/posts/build-vca/" />
+        <meta name="twitter:image" content="https://dr-schlange.github.io/nallely-midi/posts/build-vca/" />
+        <!-- End Twitter Metadata -->
+
+        <!-- Favicon -->
+        <link rel="apple-touch-icon" sizes="180x180" href="/nallely-midi/config/favicon/apple-touch-icon.png">
+        <link rel="icon" type="image/png" sizes="32x32" href="/nallely-midi/config/favicon/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/nallely-midi/config/favicon/favicon-16x16.png">
+        <link rel="manifest" href="/nallely-midi/config/favicon/site.webmanifest">
+        <link rel="mask-icon" href="/nallely-midi/config/favicon/safari-pinned-tab.svg" color="#5bbad5">
+        <link rel="shortcut icon" href="/nallely-midi/config/favicon/favicon.ico">
+        <meta name="msapplication-TileColor" content="#00aba9">
+        <meta name="msapplication-config" content="/config/favicon/browserconfig.xml">
+        <meta name="theme-color" content="#ffffff">
+        <!-- End Favicon -->
+
+        <!-- Styesheet+Logo -->
+        <style>
+                html * {font-family:monospace,sans-serif;}
+                body {background-color:#121619;margin:40px auto;max-width:650px;padding:0 10px;color:#65f85a;}
+                a {color:#b8f1b4;}
+                hr {color:#65f85a;}
+                .topbar a {color:#65f85a;}
+        </style>
+        <link rel="stylesheet" href="/nallely-midi/config/highlight.css">
+        <link rel="stylesheet" href="/nallely-midi/config/main.css">
+        <div class="logo"><a href="/nallely-midi">
+        <pre id="logo">
+
+  ██████   █████           ████  ████           ████                ██████   ██████ █████ ██████████   █████
+░░██████ ░░███           ░░███ ░░███          ░░███               ░░██████ ██████ ░░███ ░░███░░░░███ ░░███
+ ░███░███ ░███   ██████   ░███  ░███   ██████  ░███  █████ ████    ░███░█████░███  ░███  ░███   ░░███ ░███
+ ░███░░███░███  ░░░░░███  ░███  ░███  ███░░███ ░███ ░░███ ░███     ░███░░███ ░███  ░███  ░███    ░███ ░███
+ ░███ ░░██████   ███████  ░███  ░███ ░███████  ░███  ░███ ░███     ░███ ░░░  ░███  ░███  ░███    ░███ ░███
+ ░███  ░░█████  ███░░███  ░███  ░███ ░███░░░   ░███  ░███ ░███     ░███      ░███  ░███  ░███    ███  ░███
+  █████  ░░█████░░████████ █████ █████░░██████  █████ ░░███████     █████     █████ █████ ██████████   █████
+░░░░░    ░░░░░  ░░░░░░░░ ░░░░░ ░░░░░  ░░░░░░  ░░░░░   ░░░░░███    ░░░░░     ░░░░░ ░░░░░ ░░░░░░░░░░   ░░░░░
+          ███ ░███
+        ░░██████
+                                                      ░░░░░░                                               </pre>
+        </a></div>
+
+        <!-- End Styles+Logo -->
+
+        <!-- Navigation -->
+        <nav class="topbar">
+                <a href="/nallely-midi">Home</a> ⟛ <a href="/nallely-midi/news">News</a> ⟛ <a href="/nallely-midi/posts">Posts</a> ⟛ <a href="https://github.com/dr-schlange/nallely-midi">GitHub</a> ⟛ <a href="https://github.com/dr-schlange/nallely-midi/releases/latest">Download</a>
+        </nav>
+        <!-- End Navigation -->
+</head>
+
+<body>
+<p class="date">// 2025-06-21 <i>by Dr. Schlange</i></p>
+<h1 id="how-to-build-a-vca-with-nallely">How to build a VCA with
+Nallely</h1>
+<p>Lately I’m <a
+href="https://github.com/dr-schlange/nallely-midi/issues/12">refactoring
+the interal API</a> to create virtual devices. I want something that is
+simple, yet expressive enough to focus on the signal/value computation
+logics, without bothering so much on keeping track of notes/values to
+detect edges or increasing values. So, what’s better than write a new,
+very simple, virtual device? This will help to see quickly:</p>
+<ul>
+<li>where are the friction points,</li>
+<li>what’s complicated to write,</li>
+<li>what’s complicated to conceptually get,</li>
+<li>how we can converge towards the simplest version that do not
+translate simplicity in loss of flexibility.</li>
+</ul>
+<p>What’s the simplest module we can write for that? Well, let’s build a
+VCA!</p>
+<h2 id="why-a-vca-whats-would-be-a-vca-with-nallely">Why a VCA? What’s
+would be a VCA with Nallely?</h2>
+<p>In this tutorial/reflection post, we will build a Voltage Control
+Amplifier (VCA), well, something close to it. The idea behind the VCA is
+simple: an <code>input</code> is fed to the module, then a CV controls
+the amount of the input signal is sent out of the VCA (the
+<code>amplitude</code>). This kind of devices is simple enough to not
+consider a lot of routing or computation logic, and will give us exactly
+what we need to reflect and iterate on the internal API.</p>
+<p>So, how do we start, what do we need, what’s the dev process
+here?</p>
+<h2 id="write-code-here-launch-it-like-this">Write code here, launch it
+like this</h2>
+<p>Let’s prepare our environment to develop our VCA. First, we need to
+have <a
+href="https://github.com/dr-schlange/nallely-midi?tab=readme-ov-file#quick-installation">Nallely
+on your system</a> and be able to run it. Once you have that, you can
+grab your best code editor, with all your favorite Python related
+plugins, and we are good to go.</p>
+<p>First, we will write the virtual device in a separate file, so we
+create a <code>vca.py</code> file somewhere. This is the file that will
+contain the virtual device (or multiple virtual devices). To load the
+file in a Nallely session, we just need to run from the command
+line:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">nallely</span> run <span class="at">--with-trevor</span> <span class="at">--serve-ui</span> <span class="at">-l</span> PATH_TO_YOUR_FILE/vca.py</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co"># if we have vca.py in the same current directory</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co"># we are launching Nallely from</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="ex">nallely</span> run <span class="at">--with-trevor</span> <span class="at">--serve-ui</span> <span class="at">-l</span> vca.py</span></code></pre></div>
+<p>That’s it:</p>
+<ul>
+<li><code>nallely run</code> will launch a Nallely session;</li>
+<li><code>--with-trevor</code> will enable the Trevor protocol/bus (to
+communicate with a UI);</li>
+<li><code>--serve-ui</code> will serve the Trevor-UI on port
+<code>3000</code> on <code>localhost</code> (you could have your own
+alternative UI as long as it conforms to the Trevor protocol);</li>
+<li><code>-l ...</code> will load the file as a library for Nallely
+inside the Nallely session.</li>
+</ul>
+<p>Running the commands displays:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">Trevor-UI</span> running on http://localhost:3000 or http://127.0.0.1:3000...</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="ex">Press</span> <span class="st">&#39;q&#39;</span> to stop the script, press enter to display infos, press <span class="pp">?</span> to display menu...</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;</span></span></code></pre></div>
+<p>Navigating now to <code>http://localhost:3000</code>, you should see
+this</p>
+<figure>
+<img src="imgs/00.png" alt="Empty Nallely session [open wide]" />
+<figcaption aria-hidden="true">Empty Nallely session <a
+href="imgs/00.png">[open wide]</a></figcaption>
+</figure>
+<p>Now, we need to write the VCA virtual device actual code in
+<code>vca.py</code>. We start with the basic, creating a new class that
+inherits from the <code>VirtualDevice</code> class. Let’s call it
+<code>MyVCA</code> so we can differenciate it from the <code>VCA</code>
+virtual device already existing in Nallely.</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> nallely <span class="im">import</span> VirtualDevice</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> MyVCA(VirtualDevice):</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    ...</span></code></pre></div>
+<p>That’s it, now your new device will be known in Nallely sessions.
+Stop the current Nallely session typing <code>q</code> then
+<code>enter</code> in the prompt, then launch again <code>nallely</code>
+using the same command line you previously used. In the UI, once it
+reconnected to the session (it’s automatic, look for the connection
+indicator in the top-right of the screen), you can select in the
+dropdown of the virtual device rack the option for the VCA.</p>
+<figure>
+<img src="imgs/01.png"
+alt="MyVCA appears among the other virtual devices" />
+<figcaption aria-hidden="true">MyVCA appears among the other virtual
+devices</figcaption>
+</figure>
+<p>When we click on it to add it to the virtual device rack, a
+<code>MyVCA</code> instance is added to the rack, and already has 2
+ports, which are the ports that all the virtual devices inherit from
+<code>VirtualDevice</code>. The first one is the default
+<code>output</code>, while the second one is a <code>set_pause</code>.
+It allows us to pause the device when set to <code>1</code> (pause the
+underlying thread). As those ports are visible, they are directly
+patchable in the system.</p>
+<figure>
+<img src="imgs/02.png"
+alt="We’re a parent! This is our first instance of our MyVCA device (so beautiful, it has my eyes)" />
+<figcaption aria-hidden="true">We’re a parent! This is our first
+instance of our MyVCA device (so beautiful, it has my eyes)</figcaption>
+</figure>
+<p>We have now all we need to start giving more power and shape to our
+VCA.</p>
+<h2 id="adding-new-ports">Adding new ports</h2>
+<p>We are definitly missing ports and behaviors in our VCA. Currently,
+we only have the default <code>output</code> and the
+<code>set_pause</code>, which are pretty generic, but not related to the
+VCA. If we read again <a
+href="#why-a-vca-whats-would-be-a-vca-with-nallely">what we need</a>, we
+quickly see that we require at least an <code>input</code> port and an
+<code>amplitude</code> port. Let’s add them to the device.</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> nallely <span class="im">import</span> VirtualDevice, VirtualParameter</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> MyVCA(VirtualDevice):</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    input_cv <span class="op">=</span> VirtualParameter(name<span class="op">=</span><span class="st">&quot;input&quot;</span>, <span class="bu">range</span><span class="op">=</span>(<span class="fl">0.0</span>, <span class="fl">127.0</span>))</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    amplitude_cv <span class="op">=</span> VirtualParameter(name<span class="op">=</span><span class="st">&quot;amplitude&quot;</span>, <span class="bu">range</span><span class="op">=</span>(<span class="fl">0.0</span>, <span class="fl">1.0</span>))</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">@property</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="bu">range</span>(<span class="va">self</span>):</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> (<span class="fl">0.0</span>, <span class="fl">127.0</span>)</span></code></pre></div>
+<p>In this snippet, we defined 2 class variables <code>input_cv</code>
+and <code>amplitude_cv</code>. They are <code>VirtualParamter</code>
+instances. For each of them, we define the internal <code>name</code> of
+the parameter (port) and the <code>range</code> it considers. The
+“internal” name is a name that is used to access the actual value later,
+while the name of the class variable, e.g: <code>input_cv</code>, is
+used for patching. The <code>range</code> is not necessary, but it helps
+to declare what’s the best range on which the parameter is operating.
+This is useful when those ports will be patched. As we declared the
+range, when a patch is created with this port as target, a scaler is
+automatically created to indicate that the value that will be sent to
+the parameter has to be adapted to this range. Also, please note that we
+used float here. If we use two integers in the ranges, the conversion
+will automatically consider a rounding as int for the converted
+value.</p>
+<p>So, we set the range for the <code>input_cv</code> and
+<code>amplitude_cv</code> port. How do we set the range for the
+<code>output_cv</code> port that is automatically inherited from the
+<code>VirtualDevice</code>? Well, this is done by overriding the
+<code>range(...)</code> property. We set here the output to the
+<code>0.0..127.0</code> range. Why do we choose this range? We could
+have decided of any range, but 0..127 is practical as it will map well
+with the range of usually accepted values in MIDI. Obviously, as there
+is the auto-scaling kicking in, we could have set any other range, but
+having a large one helps to have a conversion that is a little bit
+“finer” than if we had declared, for example, <code>0.0..1.0</code> as
+output range.</p>
+<p>Let’s now restart the Nallely session, and create a new instance.</p>
+<figure>
+<img src="imgs/03.png" alt="We have now the ports we added" />
+<figcaption aria-hidden="true">We have now the ports we
+added</figcaption>
+</figure>
+<p>Those ports are already patchable and understood by Nallely in the
+session. Let’s create an LFO and patch it with our VCA.</p>
+<figure>
+<video src="imgs/04.mkv" controls=""><a href="imgs/04.mkv">The
+parameters are already patchable</a></video>
+<figcaption aria-hidden="true">The parameters are already
+patchable</figcaption>
+</figure>
+<p>We are in good tracks, but there is still something we need to do, we
+need to setup the initial values for the internal name of the
+parameters. There is a catch also, due to the nature of the object model
+of Nallely. Let’s add the init values and we discuss after of what’s
+going on.</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> nallely <span class="im">import</span> VirtualDevice, VirtualParameter</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> MyVCA(VirtualDevice):</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    input_cv <span class="op">=</span> VirtualParameter(name<span class="op">=</span><span class="st">&quot;input&quot;</span>, <span class="bu">range</span><span class="op">=</span>(<span class="fl">0.0</span>, <span class="fl">127.0</span>))</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    amplitude_cv <span class="op">=</span> VirtualParameter(name<span class="op">=</span><span class="st">&quot;amplitude&quot;</span>, <span class="bu">range</span><span class="op">=</span>(<span class="fl">0.0</span>, <span class="fl">1.0</span>))</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">@property</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="bu">range</span>(<span class="va">self</span>):</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> (<span class="dv">0</span>, <span class="dv">127</span>)</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, <span class="op">**</span>kwargs):</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.<span class="bu">input</span> <span class="op">=</span> <span class="fl">0.0</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.amplitude <span class="op">=</span> <span class="fl">0.0</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>        <span class="bu">super</span>().<span class="fu">__init__</span>(<span class="op">**</span>kwargs)</span></code></pre></div>
+<p>We set <code>input</code> and <code>amplitude</code> as
+<code>0.0</code>, and, we called the <code>__init__(...)</code> method
+from the super class at the end (here is the catch). Let’s break this
+down. We consider that <code>input</code> has no entry when the instance
+of our VCA is created and that the <code>amplitude</code> will be
+<code>0.0</code> (no amplitude). If you are curious, <a
+href="#why-do-we-super-at-the-end">see here why <code>super</code> is
+called at the end of the init method</a>.</p>
+<p>Now that we have the port, that would be nice to have the device
+actually doing something.</p>
+<h2 id="reacting-when-receving-values-on-the-ports">Reacting when
+receving values on the ports</h2>
+<p>Currently, instances of the device can be created, and the ports can
+be patched. All is handled by Nallely and its object model. However, we
+don’t have any behavior right now. What should be done then? We need to
+consider this logic:</p>
+<ul>
+<li>when a value arrives on the <code>input</code>, we multiply it with
+the current <code>amplitude</code>, and we redirect it to the default
+<code>output</code>.</li>
+</ul>
+<p>That’s pretty much it actually, nothing else. To react to value
+arriving on parameters/ports, we use the <code>@on</code> decorator.
+This decorator lets you add information to a method to express the fact
+that this method has to be triggered when the value arrives on a
+specific port. Talk is cheap, lets see the code.</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> nallely <span class="im">import</span> VirtualDevice, VirtualParameter, on</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> MyVCA(VirtualDevice):</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    input_cv <span class="op">=</span> VirtualParameter(name<span class="op">=</span><span class="st">&quot;input&quot;</span>, <span class="bu">range</span><span class="op">=</span>(<span class="fl">0.0</span>, <span class="fl">127.0</span>))</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    amplitude_cv <span class="op">=</span> VirtualParameter(name<span class="op">=</span><span class="st">&quot;amplitude&quot;</span>, <span class="bu">range</span><span class="op">=</span>(<span class="fl">0.0</span>, <span class="fl">1.0</span>))</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">@property</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="bu">range</span>(<span class="va">self</span>):</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> (<span class="dv">0</span>, <span class="dv">127</span>)</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, <span class="op">**</span>kwargs):</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.<span class="bu">input</span> <span class="op">=</span> <span class="fl">0.0</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.amplitude <span class="op">=</span> <span class="fl">0.0</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>        <span class="bu">super</span>().<span class="fu">__init__</span>(<span class="op">**</span>kwargs)</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">@on</span>(input_cv, edge<span class="op">=</span><span class="st">&quot;any&quot;</span>)</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> handle_input(<span class="va">self</span>, value, ctx):</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> value <span class="op">*</span> <span class="va">self</span>.amplitude</span></code></pre></div>
+<p>The method <code>handle_input</code> is decorated by
+<code>@on</code>, attached to <code>input_cv</code>. We also wrote that
+the <code>edge</code> that will trigger the method is <code>any</code>,
+meaning that any value arriving, whatever the previous value, will
+trigger the input. Those methods have to have the signature
+<code>self, value, ctx</code>, where <code>value</code> is the value
+received, and <code>ctx</code> is information about the trigger context.
+In our case, we just need to do this: we need to multiply the input,
+with the current amplitude, which is done by
+<code>value * self.amplitude</code>. We could also have written it
+<code>self.input * self.amplitude</code> as <code>value</code> is just a
+quick access to <code>self.input</code> in this decorated method. The
+computed value is returned. Returning a value of a trigger method
+actually sends the value on the default output. There is ways of having
+finer control over the sent values, but it’s for another story.</p>
+<p>Now we have a first version of our VCA! We can stop/restart the
+Nallely session, then create:</p>
+<ul>
+<li>an instance of our VCA;</li>
+<li>an LFO that will drive the amplitude;</li>
+<li>an LFO that will drive the input;</li>
+<li>a Websocket bus to create an oscilloscope and see the output of the
+VCA;</li>
+</ul>
+<p>and we patch everything together. To patch everything, we will use
+the mobile version, just because why not. Trevor-UI is touch/mobile
+friendly, so you can drive your full session from your phone or any
+portable device that has access to the same network than the one where
+the Nalelly session is running. If you are building or built your patch
+on another machine, you can still connect from your phone or any other
+devices, you’ll see the patch, the session and you’ll be able to
+interact with it. A running session is shared by all the connected UIs
+(clients).</p>
+<figure>
+<img src="imgs/05.png"
+alt="Our VCA is running, so many emotions! (see patch creation here)" />
+<figcaption aria-hidden="true">Our VCA is running, so many emotions!
+(see patch creation <a
+href="https://www.youtube.com/watch?v=M2PFefOS9Js">here</a>)</figcaption>
+</figure>
+<p>Here what’s happening:</p>
+<ol type="1">
+<li>LFO1 is sending values to the <code>input</code> of our VCA. It’s a
+sine running at a specific frequency;</li>
+<li>LFO2 is driving the <code>amplitude</code> of our VCA. It’s a pulse,
+so when the LFO will switch to the max value, it will be converted to a
+<code>1</code> sent on the <code>amplitude</code> of our VCA;</li>
+<li>Consequently, the VCA is cutting “slices” of the input. So, it’s
+slicing our sine from LFO1, by multiplying the values arriving on
+<code>input</code> by the values that are arriving on
+<code>amplitude</code>.</li>
+</ol>
+<p>This multiplication explains also why we don’t see a “smooth” sine as
+slice of LFO1. As the multiplication of the input by the amplitude is
+performed on float, and that float have a specific precision in Python,
+well, some values represent bad. When they are transmitted to the
+frontend, then translated to as a value on the graph of the osciloscope,
+this value sometimes doesn’t perfectly fit a nice increasing or
+decreasing slope. This is, however, not a huge deal, especially if we
+use the value to reach a MIDI device. The output of our VCA could drive
+the notes, or “turn” the buttons (CCs), the pitch wheel of physical
+synth, and those values will be converted to an integer on the range
+0..127. So intermediate “values” (e.g: 50.3567), will be rounded
+anyway.</p>
+<p>Also, it’s important to consider that the oscilloscope gives a “rough
+idea” of the values, but doesn’t reflect the actual load of the system.
+Meaning that even if you can see some “miss” on the oscilloscope, it’s
+probably related to the broadcast of the values to the frontend, which
+are handled by a separated thread, and not about the values actually
+produced by the virtual device. Consequently, you can see something that
+looks a little bit glitchy sometimes, but you’ll not “hear it” from your
+MIDI devices.</p>
+<p>Another note: if we really want to cut smooth slices, we could code
+instead another virtual device that would just let pass the
+<code>input</code> depending on a <code>gate</code> without doing any
+computation. This way, we would ensure that we get a nice sine, or a
+nice copy of the input values.</p>
+<h2 id="lets-improve-things-a-little-bit-more">Let’s improve things a
+little bit more</h2>
+<p>We have our VCA running, but we can improve a little bit how to the
+virtual device reacts. Currently, the virtual device is receiving values
+all the time on <code>input</code> (as we have a sine, so each value
+sent to the port is different from the previous one), while it receives
+only changes of values on <code>amplitude</code>. This means that when
+<code>amplitude</code> is <code>0</code>, input continues to receive
+information and performs the computation. The VCA multiplies the input
+by 0 (the amplitude), and thus produces 0 as output. This is fine, but
+this implies that the internal queue for our VCA <code>input</code>
+actually receiving values that are “consummed”, but that do not do
+nothing (produces 0). Those values are actually stored in the queue at
+some point, which is not efficient as we know that we need to start the
+computation when <code>amplitude</code> is &gt; 0. So, instead, we could
+decide to “close” the <code>input</code> port when
+<code>amplitude</code> is switching from a non-zero value to 0 and
+“open” the <code>input</code> port when <code>amplitude</code> is
+switching from 0 to something which is &gt; 0.</p>
+<p>There is low level methods on the <code>VirtualDevice</code> to do
+that: <code>_close_port(...)</code> and <code>_open_port(...)</code>. We
+will also need to react on rising and falling edges of
+<code>amplitude</code>, using <code>@on</code>. Coding this behavior is
+pretty forward even if there is a small twist.</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> nallely <span class="im">import</span> VirtualDevice, VirtualParameter, on</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> MyVCA(VirtualDevice):</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    input_cv <span class="op">=</span> VirtualParameter(name<span class="op">=</span><span class="st">&quot;input&quot;</span>, <span class="bu">range</span><span class="op">=</span>(<span class="dv">0</span>, <span class="dv">127</span>))</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    amplitude_cv <span class="op">=</span> VirtualParameter(name<span class="op">=</span><span class="st">&quot;amplitude&quot;</span>, <span class="bu">range</span><span class="op">=</span>(<span class="fl">0.0</span>, <span class="fl">1.0</span>))</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, <span class="op">**</span>kwargs):</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.<span class="bu">input</span> <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.amplitude <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>        <span class="bu">super</span>().<span class="fu">__init__</span>(<span class="op">**</span>kwargs)</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> setup(<span class="va">self</span>):</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>._close_port(<span class="st">&quot;input&quot;</span>)</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="bu">super</span>().setup()</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">@on</span>(input_cv, edge<span class="op">=</span><span class="st">&quot;any&quot;</span>)</span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> sending_modulated_input(<span class="va">self</span>, value, ctx):</span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> value <span class="op">*</span> <span class="va">self</span>.amplitude</span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">@on</span>(amplitude_cv, edge<span class="op">=</span><span class="st">&quot;rising&quot;</span>)</span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> opening(<span class="va">self</span>, value, ctx):</span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>._open_port(<span class="st">&quot;input&quot;</span>)</span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>    <span class="at">@on</span>(amplitude_cv, edge<span class="op">=</span><span class="st">&quot;falling&quot;</span>)</span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> closing(<span class="va">self</span>, value, ctx):</span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>._close_port(<span class="st">&quot;input&quot;</span>)</span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="dv">0</span></span></code></pre></div>
+<p>We have now two new methods <code>opening</code> and
+<code>closing</code>, which are reacting to changes on
+<code>amplitude_cv</code>:</p>
+<ul>
+<li><code>opening</code> is reacting on <code>rising</code> edges (i.e:
+that transition from 0);</li>
+<li><code>closing</code> is reacting on <code>falling</code> edges (i.e:
+that transition to 0).</li>
+</ul>
+<p>Those method only makes the calls to <code>_open_port</code> and
+<code>_close_port</code> to open or close the <code>input</code> port.
+As you can see, we starts with a closed port as the
+<code>amplitude</code> init value is set to 0. You can also see that the
+initial state for the port wasn’t set in <code>__init__</code>, but was
+set in a new <code>setup(...)</code> method. This method is called
+<em>before</em> running the main loop method from the thread. We need to
+initialize our port as “closed” in this method as the
+<code>_open_port(...)</code> and <code>_close_port(...)</code> methods
+are working with some internal instance variables that will be
+initialized <em>arfter</em> the execution of
+<code>super().__init__(...)</code> in the <code>__init__(...)</code>
+method. Let’s be honest, that’s not great, but that’s the way it’s done
+right now.</p>
+<p>Now that we have our new VCA, we can try to play a little bit more
+with it, this time considering a sine entering on
+<code>amplitude_cv</code>.</p>
+<figure>
+<img src="imgs/06.png" alt="So beautiful, I want to cry…" />
+<figcaption aria-hidden="true">So beautiful, I want to cry…</figcaption>
+</figure>
+<p>Where to go from there? Well, you can now use your VCA, connect it to
+your MIDI devices, to another virtual device, if you have some visuals
+runnings and register on the Websocket bus, you can drive those and make
+them come to life. That’s your first module, you have now the basics to
+build your own virtual devices, and a kind of a deeper view of Nallely.
+So let’s start building, make noise and make things move!</p>
+<h2 id="reflecting-on-the-vca-example">Reflecting on the VCA
+example</h2>
+<p>Ok, if you make it until here, you’re tough, the article is long and
+rich (hopefully) in details. We have our own VCA, it’s optimised, but
+what did we learn from this experience? How can I use this information
+to refine the internal API.</p>
+<h3 id="whats-on-the-right-track">What’s on the right track</h3>
+<p>Well, we see that it’s quite easy to create a virtual device, we only
+inherits from <code>VirtualDevice</code>, and we get for free the
+handling of the thread, as well as internal queues, a default output,
+and a patchable way to pause the virtual device.</p>
+<p>We saw that we can declaratively defines parameters (ports), by just
+creating class variables that are <code>VirtualParameter</code>
+instances. That’s pretty convenient, they are directly understood by
+Nallely and integrated in the system.</p>
+<p>We also saw that we have some facilities to react on different kind
+of input values using the <code>@on</code> decorator, which helps to not
+have to deal with some internal logic about remembering old values or
+triggering only on some conditions. That’s enough at the moment, but it
+could be improved.</p>
+<h3 id="whats-ok-ish">What’s ok-ish</h3>
+<p>The fact of having a different name between the variable name for the
+class variable that defines the parameter and the “internal” name of the
+parameter, is not the best, but is ok at the moment. This gives
+flexibility as it allows us to write <code>@property</code> using the
+internal name, without overriding the class variable name. That’s
+something we can live with, but that could be improved considering a
+naming convention between the port name and the “internal” port
+name.</p>
+<p>I’m not opiniated in the idea of having a convention though, as I can
+see where, in this case, the convention could be problematic. We loose
+the completion, in a way, meaning that if we want to introduce a
+<code>@property</code>, we have a chance to misstype the name of the
+internal parameter/port and it might be annoying to debug. Having to
+write the name forces us to see well what’s the name of the internal
+property, which helps in seeing issues quicker. So, definitely, there is
+work and thoughts to give to this, but it’s not prioritary at the
+moment. I mean, I guess we can live with typing two names (it appeared
+to be handy in one situation also, so… why not).</p>
+<p>We could also consider a name by default (convention), and let the
+possibility to override it, but, again, I’m enclined to think that it
+might be error prone. I need to think more about it.</p>
+<h3 id="whats-grinding-my-gear">What’s grinding my gear</h3>
+<p>The way of defining the default values for the parameters/ports is
+definitely not right. We have to manually insert it at a specific
+position in the <code>__init__(...)</code> method and we shouldn’t have
+to do that or to care about that. That’s a huge gotchat.</p>
+<p>How could we improve that? Well, there is this
+<code>setup(...)</code> method that is called before running the main
+thread loop. We could create an internal method on our
+<code>VirtualDevice</code> that would be called automatically by the
+<code>setup(...)</code> method. This method is called once at the thread
+initialization, so it should not impact so much performances. The
+behavior of this method would be to dynamically inject in the instance
+the values of all the <code>VirtualParameter</code> of the virtual
+device instance. This would remove the need for us to override
+<code>__init__(...)</code> in our virtual device, but mainly, it would
+remove the possible error of forgetting to call <code>super</code> and
+to place this call at the end of the initialization method. The method
+that is called by <code>setup</code> would looks something like
+this.</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> myinit(<span class="va">self</span>):</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> parameter <span class="kw">in</span> <span class="va">self</span>.all_parameters():</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>        <span class="bu">setattr</span>(<span class="va">self</span>, parameter.name, parameter.init_value)</span></code></pre></div>
+<p>This method is only called once, and <code>all_parameters()</code>
+will iterate over, perhaps 10 values maximum, let’s say 50 if there is a
+huge virtual device, even if it doesn’t make so much sense. That’s ok,
+50 values are not a performance hole. That sounds sweet… but… there’s a
+catch… Well, it’s called only once… If we have a self-modifying virtual
+component, that injects at run time new virtual parameters (because why
+not), then the init value of the parameter inserted on the class using a
+<code>setattr</code> will indeed inject the new parameter at the class
+level, but the initialization of the default value will not be done. The
+current implementation also doesn’t support that, but at least, we are
+forced to think about it.</p>
+<p>To overcome this, we could try to twist a little bit the way virtual
+parameters are injected in a virtual device, by creating our own small
+protocol to call a specific method on the virtual parameter instance to
+set the default value in all the instances of this virtual device. We
+could otherwise have a mechanism that inject a specific method instead
+of the parameter default value that would bootstrap itself on the first
+access, removing itself from the calling instance and installing the
+default value instead of itself.</p>
+<p>To sum up, there is various ways of solving this friction, but we
+have to be careful in the solution we apply. Gaining abstraction implies
+that we need to consider that new use cases could pop as the complexity
+to do something seems to vanish.</p>
+<p>Other point that grinds my gear is the <code>_open_port(...)</code>
+and <code>_close_port(...)</code> methods. I mean, let’s face it, they
+work, but they let too much low-level concern filter to the higher-level
+abstraction. As a virtual device developer, I shouldn’t care about this
+low-level concern most of the time. How to handle that? That’s something
+that requires more thinking. If we look at what we have, definitely, we
+can understand that we have actually a kind of dependency logic between
+ports. We could try to reflect that at a higher level. I can see clearly
+that there is this dependency between ports, but I have a hard time to
+really find the best way to represent it in a flexible manner. Is this
+dependency only a dependency that will be related to a kind of “gate”
+logic? Is there other use-cases where defining this dependency would be
+relevant and useful? I honestly don’t know right now, so, I need to
+think about it more. If you have any idea, please feel free to open a
+ticket and let me know, we can definitely brainstorm together.</p>
+<h2 id="to-go-further">To go further</h2>
+<p>Here are some reflections about what could be done better, and why we
+are still kind of falling short compared to a living system experience
+while developing.</p>
+<h3
+id="why-cannot-we-code-directly-in-the-interface-without-having-to-stopreload">Why
+cannot we code directly in the interface without having to
+stop/reload?</h3>
+<p>Currently, Nallely offers some capabilities to directly code and run
+code directly from the web interface. There is two main options for
+that:</p>
+<ol type="1">
+<li>the playground,</li>
+<li>the code browser.</li>
+</ol>
+<p>The playground is not well suited for the development of a new
+virtual device, even if it can totally be done, because of the
+hot-reload mecanism that is put in place for the execution of the code
+inside the playground. It would work, but it’s not convenient at all.
+So, what about the code browser? Well, it’s objectively not finished and
+still in a PoC/WIP state.</p>
+<p>The main limitations at the moment are that if we want to replicate
+something that is close from Smalltalk’s code browser, we need to
+differenciate methods from attributes. That’s something that is not that
+<em>sencillo</em> in Python. Not impossible, but relying only on
+filtering only <code>callable</code> might have some methods we don’t
+want and filtering well without loosing any important method requires a
+little bit more thinking. So that’s definitely something that will be
+done later.</p>
+<p>Another limitation is that we need to “save” the result. In the
+current code browser, a <code>&lt;ctrl-s&gt;</code> will compile, inject
+the new method in the class at run time, updating all the instance, but
+all is done in memory, the code is not serialized on disk. We should
+then provide a way to store the new code as text in the original file
+where the original method is actually defined. We could also generate
+the code of a new full class, or the code of a monkey patch that would
+be stored in a temporary file that could be loaded later. Let’s explore
+quickly all the options:</p>
+<h4 id="inject-the-code-of-the-new-method">Inject the code of the new
+method</h4>
+<p>If we consider injecting the code of the new method where the code of
+the original method is defined. That’s totally doable, but not that
+easy: we need to properly insert the code as text in the right place,
+moving the code that is potentially “below” in the file “lower”. That’s
+the kind of things where we need to bother a lot with lines and offset,
+and… I don’t know… I don’t like it, so it’s like the last option I would
+consider.</p>
+<p>Another approach would be to build the AST of the whole file where to
+inject the method, then regenerate the code of the full file. This is
+easier, <strong>but</strong> we loose the formatting of the whole file,
+unless we apply a formating policy like <code>black</code>, but that
+would mean that we impose something. That’s personal taste I guess, but
+I don’t like the idea of imposing something on formatting to others.
+Well, internally <code>black</code> is used for developing Nallely, but
+it’s because I don’t want to care about formatting. I don’t want to
+impose a way of formatting things on your own devices that will not be
+included in the Nallely’s core code.</p>
+<p>We could use also <a
+href="https://github.com/davidhalter/parso"><code>parso</code></a> that
+would keep the indentation of the code. That might be the best option if
+following this path. There is also other libraries that are designed to
+handle the CST instead of the AST as <a
+href="https://github.com/Instagram/LibCST"><code>LibCST</code></a> for
+example. On a personal note, I kind of like <code>parso</code>.</p>
+<h4 id="generate-the-code-of-a-new-full-class">Generate the code of a
+new full class</h4>
+<p>This approach would consider the full code of the new class, so the
+code of the methods that didn’t change and the code of the method that
+changed, to be generated in another file that would act like a temporary
+buffer in which we write all the modifications. That’s a simpler
+approach in the sense that if we have various classes in a Python
+module, we don’t need to regenerate the code of the previous
+classes/functions (as in the previous method). The downside of this
+approach though is that we need to track the code of each class in their
+temporary file, and we need to have temporary files to deal with. Again,
+nothing really complicated, but there is probably a lot of small
+gotchas, and juggling with all the files is never fun (again, personal
+opinion).</p>
+<h4 id="generate-a-monkey-patch">Generate a Monkey patch</h4>
+<p>In this approach, instead of writing the full class to the original
+file, or to a new temporary file, the idea is to generate only the code
+of the method in a temporary file, and the lines to monkey patch the
+original class. That approach could be a good solution between the two
+previous ones. The code of the method is only generated in the tmp file,
+meaning also that we can generate code for multiple methods for multiple
+classes in the same file without any problem, and we can target easily
+the method we want to modify. The monkey patch file with all the patched
+method can be seen then as a kind of “overlay” over the original classes
+of the system. There is still some complexity to handle: there is the
+need to not forget the the <code>@on</code> decorator which creates an
+object which implements <code>__set_name__</code>, which is only
+triggered when the instance is added in a class during the class
+definition, as explained in the <a
+href="https://docs.python.org/3/reference/datamodel.html#object.__set_name__">Python
+object model documentation</a>. Meaning that we also need to generate
+the code that will trigger the hook. That’s not a huge deal, but it
+means that we need to have something a little bit “smart” to detect in
+the code browser the fact that there is a decorator set on the method
+and to translate it in this “patch”.</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># code in the code browser</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="at">@on</span>(input_cv, edge<span class="op">=</span><span class="st">&quot;rising&quot;</span>)</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> mymethod(<span class="va">self</span>, value, ctx):</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    ...</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="co"># generated patch code</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> mod1.mod2  <span class="co"># we import the right module</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> mymethod(<span class="va">self</span>, value, ctx):  <span class="co"># method *without* the decorator</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>    ...</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a><span class="co"># we inject the method applying the decorator at the same time</span></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>mod1.mod2.MyClass.mymethod <span class="op">=</span> (</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>    on(mod1.mod2.MyClass.input_cv, edge<span class="op">=</span><span class="st">&quot;rising&quot;</span>)(mymethod)</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>mod1.mod2.MyClass.mymethod.<span class="fu">__set_name__</span>(MyClass, <span class="st">&quot;mymethod&quot;</span>)  <span class="co"># we trigger the hook manually</span></span></code></pre></div>
+<blockquote>
+<p>Note: in this approach, you also need to deal with transforming
+<code>super().xxx</code> calls in
+<code>super(self, MyClass).xxx</code></p>
+</blockquote>
+<p>The generated file can then be reloaded later, during another Nallely
+session.</p>
+<p>If we want to have this piece of code integrated “for good”, we can
+either consider a “commit” option as in Smalltalk code browser when
+writing an image (like a <code>&lt;ctr-shift-s&gt;</code>) or manually
+copying the method to the right place, even if this process should be
+better done automatically.</p>
+<p>Anyway, as you can see, this requires more reflection to get
+something that would work properly. Not that it’s impossible, more that
+it requires fine tuning to get a smooth experience.</p>
+<h3 id="why-do-we-super-at-the-end">Why do we <code>super</code> at the
+end?</h3>
+<p>For attentive reader, a question you might have is: why we called the
+<code>__init__</code> at the end?</p>
+<p>Well, in Nallely, the object model considers that an instance of
+virtual device is a thread. This means that when we inherit from
+<code>VirtualDevice</code>, we inherit from Python’s <code>Thread</code>
+class, and we need to init it properly. This initialization is done in
+the super class (as well as some other technical variables
+initialization for the <code>VirtualDevice</code> to work well).</p>
+<p>You’ll tell me</p>
+<blockquote>
+<p>yes, but we could call first the super init, then init the values</p>
+</blockquote>
+<p>and you would be right to say that. However, here is the catch, at
+this stage of developement of our VCA, and for this specific device,
+this will just work. But at the moment we are calling the super
+initialization of the <code>Thread</code> class, then the
+<code>run</code> method (the main loop method) will be called, which
+might call the <code>main</code> method (internal method, we are using
+it for this device). If in this method, you are directly reading
+information like <code>self.input</code>, there is a chance that this
+variable access is executed <em>before</em> it has been initialized.
+This would lead to an exception and the premature death our your device.
+In our specific case, this will not happend, but just in case, it’s a
+kind of pattern that is better to stick with at the moment.</p>
+
+        <!-- Page Footer -->
+        <div class="footer">
+                <p>Built with <a href="https://github.com/spectrasecure/arise">Arise</a>, a cloud-native static site generator written in Bash.</p>
+        </div>
+        <!-- End Page Footer -->
+
+</body>
+</html>
