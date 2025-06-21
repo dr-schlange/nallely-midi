@@ -40,16 +40,13 @@ img {
 
 code {
 	background-color: #293137;
-	border-radius: 16px;
-	padding-left: 30px;
-	padding-right: 30px;
-	line-height: 2em;
-
-	padding-top: 1px;
-	padding-bottom: 1px;
-	color: #65f85a;
-	font-family: monospace;
+	border-radius: 3px;
+	padding: 3px;
+	color: orange;
+	font-family: "TopazPlusA1200", monospace;
 }
+
+
 
 pre {
 	overflow-x: auto;
@@ -199,5 +196,12 @@ h3 {
 @media (max-width: 650px) {
 	.logo pre {
 		font-size: 5px;
+	}
+}
+
+
+@media (max-width: 350px) {
+	.logo pre {
+		font-size: 3px;
 	}
 }
