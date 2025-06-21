@@ -32,7 +32,7 @@ img {
 	max-height: 100%;
 	margin-top: 20px;
 	margin-bottom: 20px;
-	border-radius: 16px;
+	border-radius: 5px;
 	margin-left: auto;
 	margin-right: auto;
 	display: block;
@@ -45,8 +45,6 @@ code {
 	color: orange;
 	font-family: "TopazPlusA1200", monospace;
 }
-
-
 
 pre {
 	overflow-x: auto;
@@ -140,7 +138,7 @@ h3 {
 	color: orange;
 	text-decoration: none;
 	line-height: 1;
-	background-color: rgb(128, 128, 128);
+	background-color: #293137;
 }
 
 .logo a {
@@ -173,6 +171,22 @@ h3 {
 	text-align: center;
 }
 
+div.sourceCode {
+	border-radius: 3px;
+}
+
+code.sourceCode {
+	display: block;
+	color: inherit;
+	margin: 5px;
+}
+
+video {
+	border-radius: 3px;
+	width: 100%;
+	height: auto;
+}
+
 /********************************/
 /********************************/
 
@@ -198,7 +212,6 @@ h3 {
 		font-size: 5px;
 	}
 }
-
 
 @media (max-width: 350px) {
 	.logo pre {

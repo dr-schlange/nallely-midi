@@ -5,7 +5,7 @@
 # Builds a page from a source .md file and outputs the built version to 'index.html' in the same directory
 #
 #############
-# Usage: 
+# Usage:
 # build_page source.md
 
 build_page() (
