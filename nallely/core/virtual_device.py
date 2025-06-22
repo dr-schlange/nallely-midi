@@ -43,18 +43,6 @@ class VirtualParameter:
         return ParameterInstance(parameter=self, device=device)
 
     def __set__(self, device: "VirtualDevice", value, append=True, chain=None):
-        # if isinstance(
-        #     value,
-        #     (
-        #         ParameterInstance,
-        #         Int,
-        #         PadOrKey,
-        #         PadsOrKeysInstance,
-        #         VirtualDevice,
-        #         Scaler,
-        #         WSWaitingRoom,
-        #     ),
-        # ):
         if hasattr(value, "bind"):
             assert self.cv_name
             value.bind(getattr(device, self.cv_name))
@@ -62,13 +50,13 @@ class VirtualParameter:
 
 class OnChange:
     conditions = {
-        "rising": lambda prev, curr: (prev or 0) == 0 and curr > 0,
-        "falling": lambda prev, curr: (prev or 0) > 0 and curr == 0,
-        "both": lambda prev, curr: prev != curr,
         "any": lambda _, __: True,
+        "flat": lambda prev, curr: prev is not None and curr == prev,
+        "both": lambda prev, curr: prev != curr,
+        "rising": lambda prev, curr: (prev or 0) == 0 and curr > 0,
         "increase": lambda prev, curr: prev is not None and curr > prev,
         "decrease": lambda prev, curr: prev is not None and curr < prev,
-        "flat": lambda prev, curr: prev is not None and curr == prev,
+        "falling": lambda prev, curr: (prev or 0) > 0 and curr == 0,
     }
     conditions_name = list(conditions.keys())
 
@@ -92,7 +80,7 @@ class OnChange:
         raise ValueError(f"Condition {condition} unknown")
 
     def _wrap_func(self):
-        last_value = None
+        last_value = 0
         original = self.func
         cond = self.condition_func
         assert cond
@@ -101,8 +89,7 @@ class OnChange:
         def wrapped(instance, value, ctx):
             nonlocal last_value
             with lock:
-                prev = last_value
-                condition_met = cond(prev, value)
+                condition_met = cond(last_value, value)
                 last_value = value
 
             if condition_met:
@@ -253,18 +240,34 @@ class VirtualDevice(threading.Thread):
                         f"[{self.uid()}] Queue usage: {queue_level}/{input_queue.maxsize}"
                     )
 
-                # Run main processing and output
-                for key in edge_keys:
-                    aliased_name = alias_name(param, key)
-                    if hasattr(self, aliased_name):
-                        value = getattr(self, aliased_name)(getattr(self, param), ctx)
-                        if value is not None:
-                            ctx.update(inner_ctx)
-                            self.send_out(value, ctx, selected_outputs=[self.output_cv])
-            if not changed:
+            # Run main processing and output
+            if changed:
+                # if any parameter have been impacted
+                for param in changed:
+                    for key in edge_keys:
+                        aliased_name = alias_name(param, key)
+                        if hasattr(self, aliased_name):
+                            value = getattr(self, aliased_name)(
+                                getattr(self, param), ctx
+                            )
+                            if value is not None:
+                                ctx.update(inner_ctx)
+                                self.send_out(
+                                    value,
+                                    ctx,
+                                    selected_outputs=[self.output_cv],
+                                    from_=param,
+                                )
+            else:
+                # if nothing changed we call the idle loop
                 value = self.main(ctx)
                 if value is not None:
-                    self.send_out(value, ctx, selected_outputs=[self.output_cv])
+                    self.send_out(
+                        value,
+                        ctx,
+                        selected_outputs=[self.output_cv],
+                        from_="_default_idle",
+                    )
 
             # if queue_level > self.input_queue.maxsize * 0.8:
             #     # Skip sleep to catch up faster
@@ -283,10 +286,13 @@ class VirtualDevice(threading.Thread):
             time.sleep(sleep_time)
 
     def send_out(
-        self, value, ctx, selected_outputs: None | list[ParameterInstance] = None
+        self,
+        value,
+        ctx,
+        selected_outputs: None | list[ParameterInstance] = None,
+        from_: str | None = None,
     ):
         if value is None:
-
             return
         # try:
         #     self.output_queue.put_nowait((value, ctx))
@@ -308,10 +314,8 @@ class VirtualDevice(threading.Thread):
                     raise e
 
         for output in outputs or list(self.nonstream_links.keys()):
-            if (
-                value != ctx.last_values.get(output)
-                and ctx.last_values.get(output) is not None
-            ):
+            last_value_key = f"{output}_{from_}"
+            if value != ctx.last_values.get(last_value_key):
                 links = self.nonstream_links.get(output, [])
                 for link in links:
                     try:
@@ -319,7 +323,7 @@ class VirtualDevice(threading.Thread):
                     except Exception as e:
                         traceback.print_exc()
                         raise e
-            ctx.last_values[output] = value
+            ctx.last_values[last_value_key] = value
 
     def start(self):
         """Start the LFO thread."""
