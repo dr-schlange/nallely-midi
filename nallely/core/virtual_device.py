@@ -7,7 +7,7 @@ from dataclasses import asdict, dataclass
 from decimal import Decimal
 from pathlib import Path
 from queue import Empty, Full, Queue
-from typing import Any, Callable, Iterable, Literal, Type
+from typing import Any, Callable, Iterable, Literal, Sequence, Type
 
 from .parameter_instances import ParameterInstance
 from .scaler import Scaler
@@ -29,10 +29,14 @@ class VirtualParameter:
     consumer: bool = False
     description: str | None = None
     range: tuple[int | float | None, int | float | None] = (None, None)
-    accepted_values: Iterable[Any] = ()
+    accepted_values: Sequence[Any] = ()
     cv_name: str | None = None
     section_name: str = "__virtual__"
     cc_note: int = -1
+
+    def __post_init__(self):
+        if self.accepted_values and self.range == (None, None):
+            self.range = (0, len(self.accepted_values) - 1)
 
     def __set_name__(self, owner, name):
         self.cv_name = name
@@ -251,21 +255,34 @@ class VirtualDevice(threading.Thread):
                                 getattr(self, param), ctx
                             )
                             if value is not None:
+                                if isinstance(value, tuple):
+                                    value, selected_outputs = value
+                                    # perform internal routing. I don't like it
+                                    # please refactor at some point with the
+                                    # logic of the vparam -> vparam link
+                                    for output in selected_outputs:
+                                        setattr(self, output.name, value)
+                                else:
+                                    selected_outputs = [self.output_cv]
                                 ctx.update(inner_ctx)
                                 self.send_out(
                                     value,
                                     ctx,
-                                    selected_outputs=[self.output_cv],
+                                    selected_outputs=selected_outputs,
                                     from_=param,
                                 )
             else:
                 # if nothing changed we call the idle loop
                 value = self.main(ctx)
                 if value is not None:
+                    if isinstance(value, tuple):
+                        value, selected_outputs = value
+                    else:
+                        selected_outputs = [self.output_cv]
                     self.send_out(
                         value,
                         ctx,
-                        selected_outputs=[self.output_cv],
+                        selected_outputs=selected_outputs,
                         from_="_default_idle",
                     )
 

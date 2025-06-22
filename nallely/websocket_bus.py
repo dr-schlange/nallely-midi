@@ -241,9 +241,11 @@ class WebSocketBus(VirtualDevice):
         parameter = "_".join(parameter)
 
         devices = self.connected[device]
+        # print(f"[DEBUG] set {parameter=}, {value=}")
         setattr(self, parameter, value)
         for connected in list(devices):
             try:
+                # print(f"[DEBUG] send to {connected}")
                 connected.send(
                     json.dumps(
                         {

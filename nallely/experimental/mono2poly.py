@@ -100,25 +100,6 @@ class Mono2Poly(VirtualDevice):
     ) -> Any: ...  # IDLE, poll at a specific frequency (target_cycle_time)
 
 
-class Gate(VirtualDevice):
-    input_cv = VirtualParameter(name="input", range=(0, 127))
-    gate_cv = VirtualParameter(name="gate", range=(0, 1))
-
-    def __init__(self, **kwargs):
-        self.input = 0
-        self.gate = 0
-        super().__init__(target_cycle_time=1 / 50, **kwargs)
-
-    @on(input_cv, edge="both")
-    def on_input(self, value, ctx):
-        if self.gate > 0:
-            return value
-
-    @on(gate_cv, edge="falling")
-    def on_gate_down(self, _, ctx):
-        return 0
-
-
 class Arpegiator(VirtualDevice):
     input_cv = VirtualParameter("input", range=(0, 127))
     bpm_cv = VirtualParameter("bpm", range=(40, 600))

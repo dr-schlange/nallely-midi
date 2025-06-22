@@ -18,9 +18,9 @@ from .core import (
     virtual_device_classes,
     virtual_devices,
 )
-from .eg import ADSREnvelope, VCA, Gate
-from .shifter import PitchShifter
+from .eg import VCA, ADSREnvelope, Gate, Switch
 from .lfos import LFO, Cycler
+from .shifter import PitchShifter
 from .websocket_bus import WebSocketBus
 
 __all__ = [
@@ -49,4 +49,5 @@ __all__ = [
     "VCA",
     "Gate",
     "PitchShifter",
+    "Switch",
 ]

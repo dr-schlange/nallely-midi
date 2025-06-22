@@ -144,7 +144,7 @@ class Gate(VirtualDevice):
     def __init__(self, **kwargs):
         self.input = 0
         self.gate = 0
-        super().__init__(target_cycle_time=1 / 50, **kwargs)
+        super().__init__(**kwargs)
 
     def setup(self) -> ThreadContext:
         self._close_port("input")
@@ -163,3 +163,44 @@ class Gate(VirtualDevice):
     def closing(self, value, ctx):
         self._close_port("input")
         return 0
+
+
+class Switch(VirtualDevice):
+    output2_cv = VirtualParameter(name="output2", range=(0, 127))
+    input_cv = VirtualParameter(name="input", range=(0, 127))
+    selector_cv = VirtualParameter(name="selector", range=(0, 1))
+    type_cv = VirtualParameter(name="type", accepted_values=("toggle", "absolute"))
+
+    def __init__(self, **kwargs):
+        self.input = 0
+        self.output2 = 0
+        self.selector = 0
+        self.out_num = 0
+        self.type = "toggle"
+        self.outputs = [self.output_cv, self.output2_cv]
+        super().__init__(**kwargs)
+
+    def process_input(self, param: str, value):
+        if param == "type" and isinstance(value, (int, float)):
+            value = self.type_cv.parameter.accepted_values[
+                int(value) % len(self.outputs)
+            ]
+        return super().process_input(param, value)
+
+    @on(input_cv, edge="any")
+    def on_input(self, value, ctx):
+        return value, [self.outputs[self.out_num]]
+
+    @on(selector_cv, edge="rising")
+    def rising_selector(self, value, ctx):
+        if self.type == "toggle":
+            self.out_num = int(self.out_num + 1) % len(self.outputs)
+            return
+        self.out_num = int(value)
+
+    @on(selector_cv, edge="falling")
+    def falling_selector(self, value, ctx):
+        if self.type == "absolute":
+            old_out = self.out_num
+            self.out_num = 0
+            return 0, [self.outputs[old_out]]
