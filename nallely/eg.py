@@ -123,7 +123,7 @@ class VCA(VirtualDevice):
         self._close_port("input")
         return super().setup()
 
-    @on(input_cv, edge="any")
+    @on(input_cv, edge="both")
     def sending_modulated_input(self, value, ctx):
         return value * self.amplitude * self.gain
 
@@ -132,6 +132,34 @@ class VCA(VirtualDevice):
         self._open_port("input")
 
     @on(amplitude_cv, edge="falling")
+    def closing(self, value, ctx):
+        self._close_port("input")
+        return 0
+
+
+class Gate(VirtualDevice):
+    input_cv = VirtualParameter(name="input", range=(0, 127))
+    gate_cv = VirtualParameter(name="gate", range=(0, 1))
+
+    def __init__(self, **kwargs):
+        self.input = 0
+        self.gate = 0
+        super().__init__(target_cycle_time=1 / 50, **kwargs)
+
+    def setup(self) -> ThreadContext:
+        self._close_port("input")
+        return super().setup()
+
+    @on(input_cv, edge="both")
+    def on_input(self, value, ctx):
+        if self.gate > 0:
+            return value
+
+    @on(gate_cv, edge="rising")
+    def opening(self, value, ctx):
+        self._open_port("input")
+
+    @on(gate_cv, edge="falling")
     def closing(self, value, ctx):
         self._close_port("input")
         return 0

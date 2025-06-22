@@ -109,22 +109,14 @@ class Gate(VirtualDevice):
         self.gate = 0
         super().__init__(target_cycle_time=1 / 50, **kwargs)
 
-    @on(input_cv, edge="any")
+    @on(input_cv, edge="both")
     def on_input(self, value, ctx):
         if self.gate > 0:
-            self.send_out(value, ctx, selected_outputs=[self.output_cv])
+            return value
 
     @on(gate_cv, edge="falling")
     def on_gate_down(self, _, ctx):
-        self.send_out(0, ctx, selected_outputs=[self.output_cv])
-
-    @on(gate_cv, edge="rising")
-    def on_gate_up(self, _, ctx):
-        self.send_out(self.input, ctx, selected_outputs=[self.output_cv])
-
-    def main(
-        self, ctx: ThreadContext
-    ) -> Any: ...  # IDLE, poll at a specific frequency (target_cycle_time)
+        return 0
 
 
 class Arpegiator(VirtualDevice):

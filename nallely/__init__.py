@@ -18,7 +18,8 @@ from .core import (
     virtual_device_classes,
     virtual_devices,
 )
-from .eg import ADSREnvelope
+from .eg import ADSREnvelope, VCA, Gate
+from .shifter import PitchShifter
 from .lfos import LFO, Cycler
 from .websocket_bus import WebSocketBus
 
@@ -45,4 +46,7 @@ __all__ = [
     "ThreadContext",
     "on",
     "ModulePitchwheel",
+    "VCA",
+    "Gate",
+    "PitchShifter",
 ]

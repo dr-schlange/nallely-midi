@@ -539,7 +539,6 @@ def start_trevor(
                 Harmonizer,
                 InstanceCreator,
                 Mono2Poly,
-                PitchShifter,
                 RandomPatcher,
             )
 
@@ -575,7 +574,6 @@ def launch_standalone_script(
                 Harmonizer,
                 InstanceCreator,
                 Mono2Poly,
-                PitchShifter,
                 RandomPatcher,
             )
 

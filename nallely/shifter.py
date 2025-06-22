@@ -10,7 +10,7 @@ class PitchShifter(VirtualDevice):
         return (0, 127)
 
     def __init__(self, *args, **kwargs):
-        self.input = None
+        self.input = 0
         self.shift = 0
         super().__init__(*args, **kwargs)
 
@@ -20,4 +20,10 @@ class PitchShifter(VirtualDevice):
 
     @on(input_cv, edge="falling")
     def reset_input(self, value, ctx):
+        return 0
+
+    @on(shift_cv, edge="both")
+    def apply_shift(self, value, ctx):
+        if self.input > 0:
+            return self.input + value
         return 0
