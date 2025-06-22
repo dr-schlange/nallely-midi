@@ -76,6 +76,7 @@ class OnChange:
         self.parameter = parameter
         self.func = func
         self.condition_func = None
+        self._lock = threading.Lock()
 
         try:
             self.condition_func = self.conditions[condition]
@@ -95,12 +96,16 @@ class OnChange:
         original = self.func
         cond = self.condition_func
         assert cond
+        lock = self._lock
 
         def wrapped(instance, value, ctx):
             nonlocal last_value
-            prev = last_value
-            last_value = value
-            if cond(prev, value):
+            with lock:
+                prev = last_value
+                condition_met = cond(prev, value)
+                last_value = value
+
+            if condition_met:
                 return original(instance, value, ctx)
 
         self.func = wrapped
