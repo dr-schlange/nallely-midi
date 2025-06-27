@@ -27,16 +27,16 @@ Features:
 * save/reload patch for full connection between MIDI devices and virtual devices,
 * random preset generator for MIDI devices and virtual devices,
 * full random patch generator (basic at the moment) with auto-generative capacity as virtual device (you can control it from MIDI devices or other virtual devices),
+* possibility to send and broadcast messages and information from the external services,
 * (currently disabled) _bind/unbind any Python function to any control/pad/key of your MIDI Device_,
 
 Planned:
 * handle multiple banks per device/per section,
-* scaler that maps to a list of elements, or to true/false (boolean scaler), useful for external services,
+* scaler that explicitally maps (vs implicit as right now) to a list of elements, or to true/false (boolean scaler), useful for external services,
 * program change support for devices that do not support them (to change banks for example),
 * some new virtual devices:
   * arpegiator
   * sequencer
-* possibility to broadcast messages and information from the external services,
 
 ## Architecture and Quickstart
 
