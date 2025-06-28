@@ -208,7 +208,7 @@ export const Scope = ({ id, onClose }: ScopeProps) => {
 					zIndex: 1,
 					top: "1%",
 					right: "1%",
-					width: "100%",
+					width: "90%",
 					textAlign: "center",
 					cursor: "pointer",
 					display: "flex",
