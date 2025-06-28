@@ -173,7 +173,7 @@ export const Scope = ({ id }: ScopeProps) => {
 				style={{
 					position: "absolute",
 					color: "gray",
-					zIndex: 10,
+					zIndex: 1,
 					top: "1%",
 					right: "2%",
 					backgroundColor: walker ? "yellow" : "#e0e0e0",
