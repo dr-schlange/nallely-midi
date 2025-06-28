@@ -13,6 +13,9 @@ from .virtual_device import VirtualDevice
 from .world import ThreadContext
 
 
+DEFAULT_VELOCITY = 64
+
+
 # Callback compilation Matrix
 #   (1) Int                -> MIDI CC
 #   (2) PadOrKey           -> MIDI device single pad/key
@@ -211,9 +214,10 @@ class Link:
 
         def foo(value, ctx):
             nonlocal count
-            if ctx.type == "note_on":
+            type = ctx.get("type", "note_off" if ctx.raw_value else "note_on")
+            if type == "note_on":
                 count.add(value)
-            elif ctx.type == "note_off" and value in count:
+            elif type == "note_off" and value in count:
                 count.remove(value)
             if count:
                 return dest.device.set_parameter(dest.parameter.name, value, ctx)
@@ -304,7 +308,9 @@ class Link:
         self.cleanup_callback = lambda: dest.device.all_notes_off()
 
         return lambda value, ctx: dest.device.note(
-            ctx.type, dest.parameter.cc_note, ctx.velocity
+            ctx.get("type", "note_off" if ctx.raw_value else "note_on"),
+            dest.parameter.cc_note,
+            ctx.velocity,
         )
 
     # MIDI CC -> MIDI key/pad
@@ -343,8 +349,8 @@ class Link:
 
         return lambda value, ctx: dest.device.note(
             note=value,
-            velocity=ctx.get("velocity", 64),
-            type=ctx.get("type", "note_on"),
+            velocity=ctx.get("velocity", DEFAULT_VELOCITY),
+            type=ctx.get("type", "note_off" if ctx.raw_value else "note_on"),
         )
 
     # MIDI pad/key -> MIDI pads/keys
@@ -363,8 +369,8 @@ class Link:
 
         return lambda value, ctx: dest.device.note(
             note=value,
-            velocity=ctx.get("velocity", 64),
-            type=ctx.get("type", "note_on"),
+            velocity=ctx.get("velocity", DEFAULT_VELOCITY),
+            type=ctx.get("type", "note_off" if ctx.raw_value else "note_on"),
         )
 
     # Virtual device output -> MIDI pads/keys
@@ -388,7 +394,7 @@ class Link:
             # is_note = ctx.get("type")
             # if is_note in ("note_off", "note_on"):
             #     dest.device.note(
-            #         note=value, velocity=ctx.get("velocity", 127), type=is_note
+            #         note=value, velocity=ctx.get("velocity", DEFAULT_VELOCITY), type=is_note
             #     )
             #     return
             nonlocal previous
@@ -396,13 +402,13 @@ class Link:
                 if int(ctx.raw_value) != 0:
                     dest.device.note(
                         note=value,
-                        velocity=ctx.get("velocity", 127),
+                        velocity=ctx.get("velocity", DEFAULT_VELOCITY),
                         type="note_on",
                     )
                 if previous:
                     dest.device.note(
                         note=previous,
-                        velocity=ctx.get("velocity", 127),
+                        velocity=ctx.get("velocity", DEFAULT_VELOCITY),
                         type="note_off",
                     )
                 previous = value
@@ -430,7 +436,7 @@ class Link:
             # is_note = ctx.get("type")
             # if is_note in ("note_off", "note_on"):
             #     dest.device.note(
-            #         note=value, velocity=ctx.get("velocity", 127), type=is_note
+            #         note=value, velocity=ctx.get("velocity", DEFAULT_VELOCITY), type=is_note
             #     )
             #     return
             nonlocal previous
@@ -438,13 +444,13 @@ class Link:
                 if int(ctx.raw_value) != 0:
                     dest.device.note(
                         note=value,
-                        velocity=ctx.get("velocity", 127),
+                        velocity=ctx.get("velocity", DEFAULT_VELOCITY),
                         type="note_on",
                     )
                 if previous:
                     dest.device.note(
                         note=previous,
-                        velocity=ctx.get("velocity", 127),
+                        velocity=ctx.get("velocity", DEFAULT_VELOCITY),
                         type="note_off",
                     )
                 previous = value
@@ -489,13 +495,13 @@ class Link:
                 if int(ctx.raw_value) != 0:
                     dest.device.note(
                         note=value,
-                        velocity=ctx.get("velocity", 127),
+                        velocity=ctx.get("velocity", DEFAULT_VELOCITY),
                         type="note_on",
                     )
                 if previous:
                     dest.device.note(
                         note=previous,
-                        velocity=ctx.get("velocity", 127),
+                        velocity=ctx.get("velocity", DEFAULT_VELOCITY),
                         type="note_off",
                     )
                 previous = value
