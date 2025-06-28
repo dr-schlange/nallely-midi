@@ -19,7 +19,7 @@ const WidgetComponents = {
 };
 
 const findFirstMissingValue = (arr: number[]): number => {
-	if (arr.length === 0) return null;
+	if (arr.length === 0) return 0;
 
 	const min = Math.min(...arr);
 	const max = Math.max(...arr);
