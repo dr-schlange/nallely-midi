@@ -21,11 +21,41 @@ const Walker = ({ fps = 8, paused = false }) => {
 	);
 };
 
+const Button = ({ activated = false, onClick = undefined, text }) => {
+	const [clickColor, setClickColor] = useState<string | undefined>(undefined);
+
+	return (
+		// biome-ignore lint/a11y/noStaticElementInteractions: <explanation>
+		// biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
+		<div
+			style={{
+				color: "gray",
+				zIndex: 1,
+				backgroundColor: clickColor || (activated ? "yellow" : "#e0e0e0"),
+				width: "12px",
+				textAlign: "center",
+				cursor: "pointer",
+				border: "2px solid gray",
+			}}
+			onMouseDown={() => {
+				setClickColor((_) => "orange");
+			}}
+			onMouseUp={() => {
+				setClickColor((_) => undefined);
+				onClick?.();
+			}}
+		>
+			{text}
+		</div>
+	);
+};
+
 interface ScopeProps {
 	id: number;
+	onClose?: (id: number) => void;
 }
 
-export const Scope = ({ id }: ScopeProps) => {
+export const Scope = ({ id, onClose }: ScopeProps) => {
 	const bufferRef = useRef<{ x: number[]; y: number[] }>({ x: [], y: [] });
 	const startTimeRef = useRef<number>(Date.now());
 	const wsRef = useRef<WebSocket | null>(null);
@@ -70,6 +100,10 @@ export const Scope = ({ id }: ScopeProps) => {
 
 	const toggleWalker = () => {
 		setWalker((prev) => !prev);
+	};
+
+	const closeScope = () => {
+		onClose?.(id);
 	};
 
 	useEffect(() => {
@@ -167,24 +201,24 @@ export const Scope = ({ id }: ScopeProps) => {
 
 	return (
 		<div className="scope">
-			{/** biome-ignore lint/a11y/noStaticElementInteractions: <explanation> */}
-			{/** biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
 			<div
 				style={{
 					position: "absolute",
 					color: "gray",
 					zIndex: 1,
 					top: "1%",
-					right: "2%",
-					backgroundColor: walker ? "yellow" : "#e0e0e0",
-					width: "12px",
+					right: "1%",
+					width: "100%",
 					textAlign: "center",
 					cursor: "pointer",
-					border: "2px solid gray",
+					display: "flex",
+					justifyContent: "flex-end",
+					flexDirection: "row",
+					gap: "4px",
 				}}
-				onClick={toggleWalker}
 			>
-				w
+				<Button text="w" activated={walker} onClick={toggleWalker} />
+				<Button text="x" onClick={closeScope} />
 			</div>
 			<UplotReact
 				options={options}

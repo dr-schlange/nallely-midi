@@ -12,7 +12,6 @@ from .scaler import Scaler
 from .virtual_device import VirtualDevice
 from .world import ThreadContext
 
-
 DEFAULT_VELOCITY = 64
 
 

@@ -50,6 +50,10 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 			setWidgets(arrayMove(widgets, oldIndex, newIndex));
 		};
 
+		const closeWidget = (id: number) => {
+			setWidgets((prev) => prev.filter((w) => w.id !== id));
+		};
+
 		return (
 			<DndContext
 				sensors={sensors}
@@ -89,7 +93,7 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 
 						{widgets.map(({ id, component: Widget }) => (
 							<SortableWidget key={id} id={id}>
-								<Widget id={id} />
+								<Widget id={id} onClose={closeWidget} />
 							</SortableWidget>
 						))}
 
