@@ -127,7 +127,10 @@ import {
 const SortableWidget = ({
 	id,
 	children,
-}: { id: number; children: React.ReactNode }) => {
+}: {
+	id: number;
+	children: React.ReactNode;
+}) => {
 	const { attributes, listeners, setNodeRef, transform, transition } =
 		useSortable({ id });
 

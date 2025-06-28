@@ -2,7 +2,8 @@
 
 @font-face {
 	font-family: "Amiga Forever";
-	src: url("/fonts/amiga4ever.ttf") format("truetype"),
+	src:
+		url("/fonts/amiga4ever.ttf") format("truetype"),
 		url("/fonts/amiga4ever-pro.ttf") format("truetype"),
 		url("/fonts/amiga4ever-pro2.ttf") format("truetype");
 	font-weight: normal;
@@ -13,7 +14,8 @@
 	color-scheme: dark;
 	color: #f0f0f0;
 	background-color: #202020;
-	font-family: "Amiga Forever", system-ui, Avenir, Helvetica, Arial, sans-serif; /* Use the Amiga font */
+	font-family:
+		"Amiga Forever", system-ui, Avenir, Helvetica, Arial, sans-serif; /* Use the Amiga font */
 	line-height: 1.5;
 	font-weight: 400;
 
@@ -82,7 +84,9 @@ checkbox {
 	border: 2px solid #505050; /* Amiga-style border */
 	color: #f0f0f0;
 	padding: 4px;
-	box-shadow: inset -1px -1px 0px #101010, inset 1px 1px 0px #f0f0f0; /* Amiga-style 3D effect */
+	box-shadow:
+		inset -1px -1px 0px #101010,
+		inset 1px 1px 0px #f0f0f0; /* Amiga-style 3D effect */
 	cursor: pointer;
 }
 button:hover,
@@ -136,7 +140,9 @@ input[type="text"]:disabled {
 	height: 100vh;
 	background-color: #303030; /* Amiga-style panel background */
 	border: 2px solid #505050; /* Amiga-style border */
-	box-shadow: inset -1px -1px 0px #101010, inset 1px 1px 0px #f0f0f0;
+	box-shadow:
+		inset -1px -1px 0px #101010,
+		inset 1px 1px 0px #f0f0f0;
 }
 
 .left-panel {
@@ -145,7 +151,9 @@ input[type="text"]:disabled {
 	flex-direction: column;
 	border-right: 2px solid #505050;
 	background-color: #303030;
-	box-shadow: inset -1px -1px 0px #101010, inset 1px 1px 0px #f0f0f0;
+	box-shadow:
+		inset -1px -1px 0px #101010,
+		inset 1px 1px 0px #f0f0f0;
 }
 
 /* .right-panel {
@@ -177,7 +185,9 @@ input[type="text"]:disabled {
 	display: flex;
 	background-color: #404040;
 	border-bottom: 2px solid #505050;
-	box-shadow: inset -1px -1px 0px #101010, inset 1px 1px 0px #f0f0f0;
+	box-shadow:
+		inset -1px -1px 0px #101010,
+		inset 1px 1px 0px #f0f0f0;
 }
 
 .top-panel .midi-output,
@@ -199,14 +209,18 @@ input[type="text"]:disabled {
 	flex: 1;
 	background-color: #404040;
 	border-bottom: 2px solid #505050;
-	box-shadow: inset -1px -1px 0px #101010, inset 1px 1px 0px #f0f0f0;
+	box-shadow:
+		inset -1px -1px 0px #101010,
+		inset 1px 1px 0px #f0f0f0;
 }
 
 .bottom-panel {
 	flex: 1;
 	display: flex;
 	background-color: #404040;
-	box-shadow: inset -1px -1px 0px #101010, inset 1px 1px 0px #f0f0f0;
+	box-shadow:
+		inset -1px -1px 0px #101010,
+		inset 1px 1px 0px #f0f0f0;
 }
 
 .instance-creation {
@@ -284,7 +298,9 @@ input[type="text"]:disabled {
 	background-color: #505050;
 	padding: 10px;
 	border: 2px solid #505050;
-	box-shadow: inset -1px -1px 0px #101010, inset 1px 1px 0px #f0f0f0;
+	box-shadow:
+		inset -1px -1px 0px #101010,
+		inset 1px 1px 0px #f0f0f0;
 }
 
 .device-class-left-panel {
@@ -391,20 +407,26 @@ input[type="text"]:disabled {
 	justify-content: center;
 	background-color: #303030;
 	border-bottom: 2px solid #505050;
-	box-shadow: inset -1px -1px 0px #101010, inset 1px 1px 0px #f0f0f0;
+	box-shadow:
+		inset -1px -1px 0px #101010,
+		inset 1px 1px 0px #f0f0f0;
 }
 
 .device-patching-middle-panel {
 	flex: 1; /* 50% of the remaining space */
 	background-color: #404040;
 	border-bottom: 2px solid #505050;
-	box-shadow: inset -1px -1px 0px #101010, inset 1px 1px 0px #f0f0f0;
+	box-shadow:
+		inset -1px -1px 0px #101010,
+		inset 1px 1px 0px #f0f0f0;
 }
 
 .device-patching-bottom-panel {
 	flex: 1; /* 50% of the remaining space */
 	background-color: #404040;
-	box-shadow: inset -1px -1px 0px #101010, inset 1px 1px 0px #f0f0f0;
+	box-shadow:
+		inset -1px -1px 0px #101010,
+		inset 1px 1px 0px #f0f0f0;
 }
 
 .main-section {
@@ -416,7 +438,9 @@ input[type="text"]:disabled {
 	justify-content: flex-start;
 	gap: 4px; /* Add gap between rows */
 	background-color: #404040;
-	box-shadow: inset -1px -1px 0px #101010, inset 1px 1px 0px #f0f0f0;
+	box-shadow:
+		inset -1px -1px 0px #101010,
+		inset 1px 1px 0px #f0f0f0;
 }
 
 .rack-row {
@@ -559,7 +583,9 @@ input[type="text"]:disabled {
 	flex-direction: column;
 	background-color: #404040;
 	border: 2px solid #505050;
-	box-shadow: inset -1px -1px 0px #101010, inset 1px 1px 0px #f0f0f0;
+	box-shadow:
+		inset -1px -1px 0px #101010,
+		inset 1px 1px 0px #f0f0f0;
 }
 
 .associate-button {
@@ -569,9 +595,12 @@ input[type="text"]:disabled {
 	border: 2px solid #505050;
 	font-size: 16px;
 	font-weight: bold;
-	font-family: "Amiga Forever", system-ui, Avenir, Helvetica, Arial, sans-serif; /* Use the same font */
+	font-family:
+		"Amiga Forever", system-ui, Avenir, Helvetica, Arial, sans-serif; /* Use the same font */
 	cursor: pointer;
-	box-shadow: inset -1px -1px 0px #101010, inset 1px 1px 0px #f0f0f0; /* Amiga-style 3D effect */
+	box-shadow:
+		inset -1px -1px 0px #101010,
+		inset 1px 1px 0px #f0f0f0; /* Amiga-style 3D effect */
 }
 
 .associate-button:hover {
@@ -580,12 +609,16 @@ input[type="text"]:disabled {
 
 .associate-button.active {
 	background-color: #ffff66;
-	box-shadow: inset 1px 1px 0px #505050, inset -1px -1px 0px #101010; /* Inverted 3D effect */
+	box-shadow:
+		inset 1px 1px 0px #505050,
+		inset -1px -1px 0px #101010; /* Inverted 3D effect */
 }
 
 button.active {
 	background-color: #ffff66;
-	box-shadow: inset 1px 1px 0px #505050, inset -1px -1px 0px #101010;
+	box-shadow:
+		inset 1px 1px 0px #505050,
+		inset -1px -1px 0px #101010;
 }
 
 .patching-modal,
@@ -659,9 +692,12 @@ button.active {
 	background-color: #303030;
 	border: 2px solid #505050;
 	padding: 5px 10px;
-	font-family: "Amiga Forever", system-ui, Avenir, Helvetica, Arial, sans-serif; /* Use the same font */
+	font-family:
+		"Amiga Forever", system-ui, Avenir, Helvetica, Arial, sans-serif; /* Use the same font */
 	cursor: pointer;
-	box-shadow: inset -1px -1px 0px #101010, inset 1px 1px 0px #f0f0f0; /* Amiga-style 3D effect */
+	box-shadow:
+		inset -1px -1px 0px #101010,
+		inset 1px 1px 0px #f0f0f0; /* Amiga-style 3D effect */
 }
 
 .modal-body,
@@ -710,7 +746,9 @@ button.active {
 	padding: 5px;
 	font-family: "Amiga Forever", system-ui, Avenir, Helvetica, Arial, sans-serif;
 	border: 2px solid #505050;
-	box-shadow: inset -1px -1px 0px #101010, inset 1px 1px 0px #f0f0f0;
+	box-shadow:
+		inset -1px -1px 0px #101010,
+		inset 1px 1px 0px #f0f0f0;
 	background-color: #303030;
 	color: #f0f0f0;
 }
@@ -720,7 +758,9 @@ button.active {
 	padding: 5px;
 	font-family: "Amiga Forever", system-ui, Avenir, Helvetica, Arial, sans-serif;
 	border: 2px solid #505050;
-	box-shadow: inset -1px -1px 0px #101010, inset 1px 1px 0px #f0f0f0;
+	box-shadow:
+		inset -1px -1px 0px #101010,
+		inset 1px 1px 0px #f0f0f0;
 	background-color: #303030;
 	color: #f0f0f0;
 }
@@ -743,7 +783,9 @@ button.active {
 	padding: 10px;
 	overflow-y: auto;
 	border: 2px solid #505050;
-	box-shadow: inset -1px -1px 0px #101010, inset 1px 1px 0px #f0f0f0;
+	box-shadow:
+		inset -1px -1px 0px #101010,
+		inset 1px 1px 0px #f0f0f0;
 	overflow-x: auto;
 }
 
@@ -775,7 +817,9 @@ button.active {
 	padding: 10px;
 	overflow-y: auto; /* Allow scrolling if content overflows */
 	border: 2px solid #505050;
-	box-shadow: inset -1px -1px 0px #101010, inset 1px 1px 0px #f0f0f0;
+	box-shadow:
+		inset -1px -1px 0px #101010,
+		inset 1px 1px 0px #f0f0f0;
 }
 
 .bottom-left-panel h3 {
@@ -810,7 +854,9 @@ button.active {
 	height: 80%; /* Adjust content height */
 	padding: 20px;
 	border: 2px solid #505050;
-	box-shadow: inset -1px -1px 0px #101010, inset 1px 1px 0px #f0f0f0;
+	box-shadow:
+		inset -1px -1px 0px #101010,
+		inset 1px 1px 0px #f0f0f0;
 	overflow: auto; /* Allow scrolling if content overflows */
 }
 
@@ -855,7 +901,9 @@ button.active {
 	border-radius: 4px;
 	background-color: #303030; /* Gray square for parameters */
 	border: 2px solid #505050; /* Amiga-style border */
-	box-shadow: inset -1px -1px 0px #101010, inset 1px 1px 0px #f0f0f0; /* Amiga-style 3D effect */
+	box-shadow:
+		inset -1px -1px 0px #101010,
+		inset 1px 1px 0px #f0f0f0; /* Amiga-style 3D effect */
 	position: relative;
 }
 
@@ -906,7 +954,9 @@ button.active {
 	background-color: #404040;
 	padding: 10px;
 	border: 2px solid #505050;
-	box-shadow: inset -1px -1px 0px #101010, inset 1px 1px 0px #f0f0f0;
+	box-shadow:
+		inset -1px -1px 0px #101010,
+		inset 1px 1px 0px #f0f0f0;
 }
 
 .connection-setup h3 {
@@ -937,7 +987,9 @@ button.active {
 	padding: 5px;
 	font-family: "Amiga Forever", system-ui, Avenir, Helvetica, Arial, sans-serif;
 	border: 2px solid #505050;
-	box-shadow: inset -1px -1px 0px #101010, inset 1px 1px 0px #f0f0f0;
+	box-shadow:
+		inset -1px -1px 0px #101010,
+		inset 1px 1px 0px #f0f0f0;
 	background-color: #303030;
 	color: #f0f0f0;
 }
@@ -947,7 +999,9 @@ button.active {
 	padding: 5px;
 	font-family: "Amiga Forever", system-ui, Avenir, Helvetica, Arial, sans-serif;
 	border: 2px solid #505050;
-	box-shadow: inset -1px -1px 0px #101010, inset 1px 1px 0px #f0f0f0;
+	box-shadow:
+		inset -1px -1px 0px #101010,
+		inset 1px 1px 0px #f0f0f0;
 	background-color: #303030;
 	color: #f0f0f0;
 }
@@ -970,7 +1024,9 @@ button.active {
 	padding: 10px;
 	background-color: #404040;
 	border: 2px solid #505050;
-	box-shadow: inset -1px -1px 0px #101010, inset 1px 1px 0px #f0f0f0;
+	box-shadow:
+		inset -1px -1px 0px #101010,
+		inset 1px 1px 0px #f0f0f0;
 }
 
 .connections-list {
@@ -1078,7 +1134,9 @@ button.active {
 	background-color: #303030;
 	border: 2px solid #505050;
 	border-radius: 50%;
-	box-shadow: inset -1px -1px 0px #101010, inset 1px 1px 0px #f0f0f0;
+	box-shadow:
+		inset -1px -1px 0px #101010,
+		inset 1px 1px 0px #f0f0f0;
 }
 
 @media (prefers-color-scheme: light) {
@@ -1106,7 +1164,9 @@ button.active {
 	font-weight: bold;
 	padding: 5px 5px;
 	cursor: pointer;
-	box-shadow: inset -1px -1px 0px #101010, inset 1px 1px 0px #f0f0f0;
+	box-shadow:
+		inset -1px -1px 0px #101010,
+		inset 1px 1px 0px #f0f0f0;
 	/* width: 40px; */
 	/* height: 40px; */
 }
@@ -1178,7 +1238,8 @@ button.active {
 .cm-tooltip-autocomplete,
 .cm-tooltip-autocomplete ul,
 .cm-tooltip-autocomplete li {
-	font-family: "Amiga Forever", system-ui, Avenir, Helvetica, Arial, sans-serif !important;
+	font-family:
+		"Amiga Forever", system-ui, Avenir, Helvetica, Arial, sans-serif !important;
 	font-size: 12px;
 }
 
@@ -1230,7 +1291,9 @@ button.active {
 	padding: 4px 6px;
 	border: 2px solid #505050;
 	border-radius: 4px;
-	box-shadow: inset -1px -1px 0px #101010, inset 1px 1px 0px #f0f0f0;
+	box-shadow:
+		inset -1px -1px 0px #101010,
+		inset 1px 1px 0px #f0f0f0;
 	display: flex;
 	align-items: center;
 	justify-content: center;

@@ -245,6 +245,7 @@ class VirtualDevice(threading.Thread):
                     )
 
             # Run main processing and output
+            triggered = False
             if changed:
                 # if any parameter have been impacted
                 for param in changed:
@@ -254,6 +255,7 @@ class VirtualDevice(threading.Thread):
                             value = getattr(self, aliased_name)(
                                 getattr(self, param), ctx
                             )
+                            triggered = True
                             if value is not None:
                                 if isinstance(value, tuple):
                                     value, selected_outputs = value
@@ -271,8 +273,8 @@ class VirtualDevice(threading.Thread):
                                     selected_outputs=selected_outputs,
                                     from_=param,
                                 )
-            else:
-                # if nothing changed we call the idle loop
+            # if nothing changed we call the idle loop
+            if not triggered:
                 value = self.main(ctx)
                 if value is not None:
                     if isinstance(value, tuple):

@@ -2,9 +2,24 @@ import { useEffect, useRef, useState } from "react";
 import "uplot/dist/uPlot.min.css";
 import type uPlot from "uplot";
 import UplotReact from "uplot-react";
+import walkerSprites from "../assets/walker.png";
 
 const RECO_DELAY = 5000;
 const BUFFER_SIZE = 200;
+
+const Walker = ({ fps = 8, paused = false }) => {
+	const duration = 5 / fps;
+
+	return (
+		<div
+			className={`walker ${paused ? "paused" : ""}`}
+			style={{
+				backgroundImage: `url(${walkerSprites})`,
+				animationDuration: `${duration}s`,
+			}}
+		/>
+	);
+};
 
 interface ScopeProps {
 	id: number;
@@ -21,6 +36,10 @@ export const Scope = ({ id }: ScopeProps) => {
 
 	const [upperBound, setUpperBound] = useState(0);
 	const [label, setLabel] = useState("");
+
+	const [walker, setWalker] = useState(false);
+	const [autoPaused, setAutoPaused] = useState(false);
+	const inactivityTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	const initialData: [number[], number[]] = [[], []];
 
@@ -49,6 +68,10 @@ export const Scope = ({ id }: ScopeProps) => {
 		},
 	};
 
+	const toggleWalker = () => {
+		setWalker((prev) => !prev);
+	};
+
 	useEffect(() => {
 		function connect() {
 			if (isUnmounted.current) return;
@@ -68,6 +91,16 @@ export const Scope = ({ id }: ScopeProps) => {
 			};
 
 			ws.onmessage = (event) => {
+				if (inactivityTimeout.current) {
+					clearTimeout(inactivityTimeout.current);
+				}
+
+				inactivityTimeout.current = setTimeout(() => {
+					setAutoPaused(true);
+				}, 10);
+
+				setAutoPaused(false);
+
 				const data = JSON.parse(event.data);
 				const newValue = Number.parseFloat(data.value);
 				if (Number.isNaN(newValue)) return;
@@ -114,6 +147,9 @@ export const Scope = ({ id }: ScopeProps) => {
 		connect();
 
 		return () => {
+			if (inactivityTimeout.current) {
+				clearTimeout(inactivityTimeout.current);
+			}
 			setTimeout(() => {
 				isUnmounted.current = true;
 
@@ -131,6 +167,25 @@ export const Scope = ({ id }: ScopeProps) => {
 
 	return (
 		<div className="scope">
+			{/** biome-ignore lint/a11y/noStaticElementInteractions: <explanation> */}
+			{/** biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
+			<div
+				style={{
+					position: "absolute",
+					color: "gray",
+					zIndex: 10,
+					top: "1%",
+					right: "2%",
+					backgroundColor: walker ? "yellow" : "#e0e0e0",
+					width: "12px",
+					textAlign: "center",
+					cursor: "pointer",
+					border: "2px solid gray",
+				}}
+				onClick={toggleWalker}
+			>
+				w
+			</div>
 			<UplotReact
 				options={options}
 				data={initialData}
@@ -138,6 +193,7 @@ export const Scope = ({ id }: ScopeProps) => {
 					chartRef.current = chart;
 				}}
 			/>
+			{walker && <Walker paused={autoPaused} />}
 		</div>
 	);
 };

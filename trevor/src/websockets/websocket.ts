@@ -33,7 +33,6 @@ class TrevorWebSocket {
 	private retryTimeoutId: ReturnType<typeof setTimeout> | null = null;
 	private unsubscribe;
 
-	// biome-ignore lint/nursery/useConsistentMemberAccessibility: fake positive
 	constructor(public url: string) {
 		this.connect(this.url);
 		this.unsubscribe = store.subscribe(this.handleStoreChange.bind(this));

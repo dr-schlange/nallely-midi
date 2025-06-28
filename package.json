@@ -1,8 +1,0 @@
-{
-  "dependencies": {
-    "@biomejs/biome": "^2.0.6",
-    "@reduxjs/toolkit": "^2.6.1",
-    "react-redux": "^9.2.0"
-  },
-  "version": "0.0.0"
-}

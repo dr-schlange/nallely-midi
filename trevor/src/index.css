@@ -14,7 +14,8 @@
 }
 
 :root {
-	font-family: "TopazPlusA1200", system-ui, Avenir, Helvetica, Arial, sans-serif; /* Use the Amiga font */
+	font-family:
+		"TopazPlusA1200", system-ui, Avenir, Helvetica, Arial, sans-serif; /* Use the Amiga font */
 	/* line-height: 1.1; */
 	font-weight: 400;
 
@@ -42,7 +43,8 @@ body,
 	padding: 0;
 	width: 100%;
 	height: 100%;
-	font-family: "TopazPlusA1200", system-ui, Avenir, Helvetica, Arial, sans-serif; /* Use the Amiga font */
+	font-family:
+		"TopazPlusA1200", system-ui, Avenir, Helvetica, Arial, sans-serif; /* Use the Amiga font */
 }
 
 button,
@@ -91,7 +93,9 @@ select {
 	border: 2px solid #808080; /* Amiga-style border */
 	color: #000000;
 	padding: 4px;
-	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000; /* Amiga-style 3D effect */
+	box-shadow:
+		inset -1px -1px 0px #ffffff,
+		inset 1px 1px 0px #000000; /* Amiga-style 3D effect */
 	cursor: pointer;
 }
 button:hover,
@@ -145,7 +149,9 @@ input[type="text"]:disabled {
 	height: 100vh;
 	background-color: #d0d0d0; /* Amiga-style panel background */
 	border: 2px solid #808080; /* Amiga-style border */
-	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
+	box-shadow:
+		inset -1px -1px 0px #ffffff,
+		inset 1px 1px 0px #000000;
 }
 
 .left-panel {
@@ -154,7 +160,9 @@ input[type="text"]:disabled {
 	flex-direction: column;
 	border-right: 2px solid #808080;
 	background-color: #d0d0d0;
-	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
+	box-shadow:
+		inset -1px -1px 0px #ffffff,
+		inset 1px 1px 0px #000000;
 }
 
 .information-panel {
@@ -183,7 +191,9 @@ input[type="text"]:disabled {
 	display: flex;
 	background-color: #e0e0e0;
 	border-bottom: 2px solid #808080;
-	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
+	box-shadow:
+		inset -1px -1px 0px #ffffff,
+		inset 1px 1px 0px #000000;
 }
 
 .top-panel .midi-output,
@@ -205,14 +215,18 @@ input[type="text"]:disabled {
 	flex: 1;
 	background-color: #e0e0e0;
 	border-bottom: 2px solid #808080;
-	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
+	box-shadow:
+		inset -1px -1px 0px #ffffff,
+		inset 1px 1px 0px #000000;
 }
 
 .bottom-panel {
 	flex: 1;
 	display: flex;
 	background-color: #e0e0e0;
-	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
+	box-shadow:
+		inset -1px -1px 0px #ffffff,
+		inset 1px 1px 0px #000000;
 }
 
 .instance-creation {
@@ -263,7 +277,9 @@ input[type="text"]:disabled {
 	background-color: #f0f0f0;
 	padding: 10px;
 	border: 2px solid #808080;
-	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
+	box-shadow:
+		inset -1px -1px 0px #ffffff,
+		inset 1px 1px 0px #000000;
 }
 
 .device-class-left-panel {
@@ -371,20 +387,26 @@ input[type="text"]:disabled {
 	justify-content: center;
 	background-color: #d0d0d0;
 	border-bottom: 2px solid #808080;
-	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
+	box-shadow:
+		inset -1px -1px 0px #ffffff,
+		inset 1px 1px 0px #000000;
 }
 
 .device-patching-middle-panel {
 	flex: 1; /* 50% of the remaining space */
 	background-color: #e0e0e0;
 	border-bottom: 2px solid #808080;
-	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
+	box-shadow:
+		inset -1px -1px 0px #ffffff,
+		inset 1px 1px 0px #000000;
 }
 
 .device-patching-bottom-panel {
 	flex: 1; /* 50% of the remaining space */
 	background-color: #e0e0e0;
-	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
+	box-shadow:
+		inset -1px -1px 0px #ffffff,
+		inset 1px 1px 0px #000000;
 }
 
 .main-section {
@@ -396,7 +418,9 @@ input[type="text"]:disabled {
 	justify-content: flex-start;
 	gap: 4px; /* Add gap between rows */
 	background-color: #e0e0e0;
-	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
+	box-shadow:
+		inset -1px -1px 0px #ffffff,
+		inset 1px 1px 0px #000000;
 }
 
 .rack-row {
@@ -539,7 +563,9 @@ input[type="text"]:disabled {
 	flex-direction: column;
 	background-color: #e0e0e0;
 	border: 2px solid #808080;
-	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
+	box-shadow:
+		inset -1px -1px 0px #ffffff,
+		inset 1px 1px 0px #000000;
 }
 
 .associate-button {
@@ -550,7 +576,9 @@ input[type="text"]:disabled {
 	font-size: 21px;
 	font-weight: bold;
 	cursor: pointer;
-	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000; /* Amiga-style 3D effect */
+	box-shadow:
+		inset -1px -1px 0px #ffffff,
+		inset 1px 1px 0px #000000; /* Amiga-style 3D effect */
 }
 
 .associate-button:hover {
@@ -559,12 +587,16 @@ input[type="text"]:disabled {
 
 .associate-button.active {
 	background-color: yellow;
-	box-shadow: inset 1px 1px 0px #808080, inset -1px -1px 0px #ffffff; /* Inverted 3D effect */
+	box-shadow:
+		inset 1px 1px 0px #808080,
+		inset -1px -1px 0px #ffffff; /* Inverted 3D effect */
 }
 
 button.active {
 	background-color: yellow;
-	box-shadow: inset 1px 1px 0px #808080, inset -1px -1px 0px #ffffff;
+	box-shadow:
+		inset 1px 1px 0px #808080,
+		inset -1px -1px 0px #ffffff;
 }
 
 .patching-modal,
@@ -640,7 +672,9 @@ button.active {
 	border: 2px solid #808080;
 	padding: 5px 10px;
 	cursor: pointer;
-	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000; /* Amiga-style 3D effect */
+	box-shadow:
+		inset -1px -1px 0px #ffffff,
+		inset 1px 1px 0px #000000; /* Amiga-style 3D effect */
 }
 
 .modal-body,
@@ -688,7 +722,9 @@ button.active {
 	width: 45%;
 	padding: 5px;
 	border: 2px solid #808080;
-	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
+	box-shadow:
+		inset -1px -1px 0px #ffffff,
+		inset 1px 1px 0px #000000;
 	background-color: #d0d0d0;
 	color: #000000;
 }
@@ -697,7 +733,9 @@ button.active {
 	width: 60%;
 	padding: 5px;
 	border: 2px solid #808080;
-	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
+	box-shadow:
+		inset -1px -1px 0px #ffffff,
+		inset 1px 1px 0px #000000;
 	background-color: #d0d0d0;
 	color: #000000;
 }
@@ -720,7 +758,9 @@ button.active {
 	padding: 10px;
 	overflow-y: auto;
 	border: 2px solid #808080;
-	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
+	box-shadow:
+		inset -1px -1px 0px #ffffff,
+		inset 1px 1px 0px #000000;
 	overflow-x: auto;
 }
 
@@ -752,7 +792,9 @@ button.active {
 	padding: 10px;
 	overflow-y: auto; /* Allow scrolling if content overflows */
 	border: 2px solid #808080;
-	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
+	box-shadow:
+		inset -1px -1px 0px #ffffff,
+		inset 1px 1px 0px #000000;
 }
 
 .bottom-left-panel h3 {
@@ -787,7 +829,9 @@ button.active {
 	height: 80%; /* Adjust content height */
 	padding: 20px;
 	border: 2px solid #808080;
-	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
+	box-shadow:
+		inset -1px -1px 0px #ffffff,
+		inset 1px 1px 0px #000000;
 	overflow: auto; /* Allow scrolling if content overflows */
 }
 
@@ -833,7 +877,9 @@ button.active {
 	border-radius: 4px;
 	background-color: #d0d0d0; /* Gray square for parameters */
 	border: 2px solid #808080; /* Amiga-style border */
-	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000; /* Amiga-style 3D effect */
+	box-shadow:
+		inset -1px -1px 0px #ffffff,
+		inset 1px 1px 0px #000000; /* Amiga-style 3D effect */
 	position: relative;
 }
 
@@ -888,7 +934,9 @@ button.active {
 	background-color: #e0e0e0;
 	padding: 10px;
 	border: 2px solid #808080;
-	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
+	box-shadow:
+		inset -1px -1px 0px #ffffff,
+		inset 1px 1px 0px #000000;
 }
 
 .connection-setup h3 {
@@ -918,7 +966,9 @@ button.active {
 	width: 45%;
 	padding: 5px;
 	border: 2px solid #808080;
-	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
+	box-shadow:
+		inset -1px -1px 0px #ffffff,
+		inset 1px 1px 0px #000000;
 	background-color: #d0d0d0;
 	color: #000000;
 }
@@ -927,7 +977,9 @@ button.active {
 	width: 100%;
 	padding: 5px;
 	border: 2px solid #808080;
-	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
+	box-shadow:
+		inset -1px -1px 0px #ffffff,
+		inset 1px 1px 0px #000000;
 	background-color: #d0d0d0;
 	color: #000000;
 }
@@ -950,7 +1002,9 @@ button.active {
 	padding: 10px;
 	background-color: #e0e0e0;
 	border: 2px solid #808080;
-	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
+	box-shadow:
+		inset -1px -1px 0px #ffffff,
+		inset 1px 1px 0px #000000;
 }
 
 .connections-list {
@@ -1058,7 +1112,9 @@ button.active {
 	background-color: #d0d0d0;
 	border: 2px solid #808080;
 	border-radius: 50%;
-	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
+	box-shadow:
+		inset -1px -1px 0px #ffffff,
+		inset 1px 1px 0px #000000;
 }
 
 @media (prefers-color-scheme: light) {
@@ -1075,7 +1131,8 @@ button.active {
 }
 
 .amiga-button {
-	font-family: "TopazPlusA1200", system-ui, Avenir, Helvetica, Arial, sans-serif;
+	font-family:
+		"TopazPlusA1200", system-ui, Avenir, Helvetica, Arial, sans-serif;
 	background-color: #d0d0d0;
 	border: 2px solid #808080;
 	color: #000000;
@@ -1083,7 +1140,9 @@ button.active {
 	font-weight: bold;
 	padding: 5px 5px;
 	cursor: pointer;
-	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
+	box-shadow:
+		inset -1px -1px 0px #ffffff,
+		inset 1px 1px 0px #000000;
 }
 
 .amiga-button:hover {
@@ -1111,7 +1170,8 @@ button.active {
 .cm-editor .cm-scroller,
 .cm-content {
 	box-sizing: border-box;
-	font-family: "TopazPlusA1200", system-ui, Avenir, Helvetica, Arial, sans-serif;
+	font-family:
+		"TopazPlusA1200", system-ui, Avenir, Helvetica, Arial, sans-serif;
 	font-size: 19px;
 }
 
@@ -1124,7 +1184,8 @@ button.active {
 	color: #000; /* Texte noir */
 	border: 2px solid #000; /* Bordure noire épaisse */
 	border-radius: 4px;
-	font-family: "TopazPlusA1200", system-ui, Avenir, Helvetica, Arial, sans-serif;
+	font-family:
+		"TopazPlusA1200", system-ui, Avenir, Helvetica, Arial, sans-serif;
 	font-size: 19px;
 	box-shadow: 4px 4px 0px #ccc; /* effet de profondeur rétro */
 }
@@ -1153,7 +1214,8 @@ button.active {
 .cm-tooltip-autocomplete,
 .cm-tooltip-autocomplete ul,
 .cm-tooltip-autocomplete li {
-	font-family: "TopazPlusA1200", system-ui, Avenir, Helvetica, Arial, sans-serif !important;
+	font-family:
+		"TopazPlusA1200", system-ui, Avenir, Helvetica, Arial, sans-serif !important;
 	font-size: 18px;
 }
 
@@ -1205,7 +1267,9 @@ button.active {
 	padding: 4px 6px;
 	border: 2px solid #808080;
 	border-radius: 4px;
-	box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000;
+	box-shadow:
+		inset -1px -1px 0px #ffffff,
+		inset 1px 1px 0px #000000;
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -1557,5 +1621,37 @@ button.active {
 
 	.device-patching-svg.horizontal {
 		width: 100%;
+	}
+}
+
+/* Walker animation */
+.walker {
+	/* animation */
+	width: 32px;
+	height: 32px;
+	background-repeat: no-repeat;
+	image-rendering: pixelated;
+	background-size: 192px 32px;
+	animation: play-sprite 1s steps(5) infinite;
+	animation-play-state: running;
+
+	/* position */
+	top: 50%;
+	left: 50%;
+	transform: translate(149%, -83%);
+	z-index: 10;
+}
+
+.walker.paused {
+	animation: none;
+	background-position: -160px 0;
+}
+
+@keyframes play-sprite {
+	from {
+		background-position: 0px 0px;
+	}
+	to {
+		background-position: -160px 0px;
 	}
 }
