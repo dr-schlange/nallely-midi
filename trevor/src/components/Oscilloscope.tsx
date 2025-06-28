@@ -97,7 +97,7 @@ export const Scope = ({ id }: ScopeProps) => {
 
 				inactivityTimeout.current = setTimeout(() => {
 					setAutoPaused(true);
-				}, 10);
+				}, 1000);
 
 				setAutoPaused(false);
 
