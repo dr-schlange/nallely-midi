@@ -18,6 +18,22 @@ const WidgetComponents = {
 	Scope,
 };
 
+const findFirstMissingValue = (arr: number[]): number => {
+	if (arr.length === 0) return null;
+
+	const min = Math.min(...arr);
+	const max = Math.max(...arr);
+	const set = new Set(arr);
+
+	for (let i = min; i <= max; i++) {
+		if (!set.has(i)) {
+			return i;
+		}
+	}
+
+	return max + 1;
+};
+
 export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 	({ onRackScroll, horizontal }: WidgetRackProps, ref) => {
 		const [widgets, setWidgets] = useState<
@@ -31,7 +47,10 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 		const addWidget = (Component) => {
 			setWidgets([
 				...widgets,
-				{ id: Object.values(widgets).length, component: Component },
+				{
+					id: findFirstMissingValue(widgets.map((w) => w.id)),
+					component: Component,
+				},
 			]);
 		};
 
