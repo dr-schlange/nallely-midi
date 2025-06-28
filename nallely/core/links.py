@@ -342,7 +342,7 @@ class Link:
         self.cleanup_callback = lambda: dest.device.all_notes_off()
 
         return lambda value, ctx: dest.device.note(
-            note=value, velocity=ctx.velocity, type=ctx.type
+            note=value, velocity=ctx.get("velocity", 64), type=ctx.type
         )
 
     # MIDI pad/key -> MIDI pads/keys
@@ -360,7 +360,7 @@ class Link:
         self.cleanup_callback = lambda: dest.device.all_notes_off()
 
         return lambda value, ctx: dest.device.note(
-            note=value, velocity=ctx.velocity, type=ctx.type
+            note=value, velocity=ctx.get("velocity", 64), type=ctx.type
         )
 
     # Virtual device output -> MIDI pads/keys
