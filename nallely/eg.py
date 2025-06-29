@@ -27,77 +27,75 @@ class ADSREnvelope(VirtualDevice):
 
     def setup(self):
         ctx = super().setup()
-        ctx.phase = "idle"  # 'attack', 'decay', 'sustain', 'release', 'idle'
-        ctx.time_in_phase = 0.0
-        ctx.level = 0.0
+        self._phase = "idle"  # 'attack', 'decay', 'sustain', 'release', 'idle'
+        self._time_in_phase = 0.0
+        self._level = 0.0
+        self._release_start_level = 0.0
         return ctx
+
+    def debug_print(self, ctx):
+        super().debug_print(ctx)
+        print(f" * {self._phase=}")
+        print(f" * {self._time_in_phase=}")
+        print(f" * {self._level=}")
 
     @on(gate_cv, edge="rising")
     def on_gate_1(self, _, ctx):
-        if ctx.phase in ["idle", "release"]:
-            ctx.phase = "attack"
-            ctx.time_in_phase = 0.0
+        if self._phase in ["idle", "release"]:
+            self._phase = "attack"
+            self._time_in_phase = 0.0
 
     @on(gate_cv, edge="falling")
     def on_gate_0(self, _, ctx):
-        if ctx.phase not in ["release", "idle"]:
-            ctx.phase = "release"
-            ctx.time_in_phase = 0.0
-            ctx.release_start_level = ctx.level
+        if self._phase not in ["release", "idle"]:
+            self._phase = "release"
+            self._time_in_phase = 0.0
+            self._release_start_level = self._level
 
     def main(self, ctx):
+
         dt = self.target_cycle_time
-        ctx.time_in_phase += dt
+        self._time_in_phase += dt
 
-        # if self.gate:
-        #     if ctx.phase in ["idle", "release"]:
-        #         ctx.phase = "attack"
-        #         ctx.time_in_phase = 0.0
-        # else:
-        #     if ctx.phase not in ["release", "idle"]:
-        #         ctx.phase = "release"
-        #         ctx.time_in_phase = 0.0
-        #         ctx.release_start_level = ctx.level
-
-        if ctx.phase == "attack":
+        if self._phase == "attack":
             if self.attack == 0:
-                ctx.level = 1.0
-                ctx.phase = "decay"
-                ctx.time_in_phase = 0.0
+                self._level = 1.0
+                self._phase = "decay"
+                self._time_in_phase = 0.0
             else:
-                ctx.level = min(1.0, ctx.time_in_phase / self.attack)
-                if ctx.level >= 1.0:
-                    ctx.phase = "decay"
-                    ctx.time_in_phase = 0.0
+                self._level = min(1.0, self._time_in_phase / self.attack)
+                if self._level >= 1.0:
+                    self._phase = "decay"
+                    self._time_in_phase = 0.0
 
-        elif ctx.phase == "decay":
+        elif self._phase == "decay":
             if self.decay == 0:
-                ctx.level = self.sustain
-                ctx.phase = "sustain"
+                self._level = self.sustain
+                self._phase = "sustain"
             else:
-                decay_progress = ctx.time_in_phase / self.decay
-                ctx.level = 1.0 - (1.0 - self.sustain) * min(1.0, decay_progress)
+                decay_progress = self._time_in_phase / self.decay
+                self._level = 1.0 - (1.0 - self.sustain) * min(1.0, decay_progress)
                 if decay_progress >= 1.0:
-                    ctx.phase = "sustain"
+                    self._phase = "sustain"
 
-        elif ctx.phase == "sustain":
-            ctx.level = self.sustain
+        elif self._phase == "sustain":
+            self._level = self.sustain
 
-        elif ctx.phase == "release":
+        elif self._phase == "release":
             if self.release == 0:
-                ctx.level = 0.0
-                ctx.phase = "idle"
+                self._level = 0.0
+                self._phase = "idle"
             else:
-                release_progress = ctx.time_in_phase / self.release
-                ctx.level = ctx.release_start_level * (1.0 - min(1.0, release_progress))
+                release_progress = min(1.0, self._time_in_phase / self.release)
+                self._level = self._release_start_level * (1.0 - release_progress)
                 if release_progress >= 1.0:
-                    ctx.level = 0.0
-                    ctx.phase = "idle"
+                    self._level = 0.0
+                    self._phase = "idle"
 
-        elif ctx.phase == "idle":
-            ctx.level = 0.0
+        elif self._phase == "idle":
+            self._level = 0.0
 
-        return ctx.level
+        return self._level
 
     @property
     def range(self):

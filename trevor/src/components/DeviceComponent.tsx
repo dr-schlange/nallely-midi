@@ -1,33 +1,13 @@
-import { useState, useEffect, useRef, ReactEventHandler, useMemo } from "react";
-import type {
-	MidiDevice,
-	MidiDeviceSection,
-	MidiParameter,
-	Pitchwheel,
-	PadsOrKeys,
-} from "../model";
+/** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
+import { useState, useEffect, useMemo } from "react";
+import type { MidiDevice, MidiDeviceSection } from "../model";
 import {
-	buildParameterId,
 	buildSectionId,
 	generateAcronym,
 	isLogMode,
 	setDebugMode,
 } from "../utils/utils";
 import { useTrevorSelector } from "../store";
-
-const collectAllParameters = (device: MidiDevice) => {
-	const parameters: (MidiParameter | PadsOrKeys | Pitchwheel)[] = [];
-	for (const section of device.meta.sections) {
-		if (section.pads_or_keys) {
-			parameters.push(section.pads_or_keys);
-		}
-		if (section.pitchwheel) {
-			parameters.push(section.pitchwheel);
-		}
-		parameters.push(...section.parameters);
-	}
-	return parameters.map((p) => buildParameterId(device.id, p));
-};
 
 const collectAllSections = (device: MidiDevice) => {
 	const sections: string[] = [];

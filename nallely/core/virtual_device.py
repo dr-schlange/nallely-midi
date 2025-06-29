@@ -68,7 +68,7 @@ class OnChange:
         self.parameter = parameter
         self.func = func
         self.condition_func = None
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
 
         try:
             self.condition_func = self.conditions[condition]
@@ -84,20 +84,19 @@ class OnChange:
         raise ValueError(f"Condition {condition} unknown")
 
     def _wrap_func(self):
-        last_value = 0
         original = self.func
         cond = self.condition_func
         assert cond
         lock = self._lock
 
-        def wrapped(instance, value, ctx):
-            nonlocal last_value
+        def wrapped(instance, value, last_value, ctx):
             with lock:
                 condition_met = cond(last_value, value)
                 last_value = value
 
             if condition_met:
-                return original(instance, value, ctx)
+                return True, original(instance, value, ctx)  # type: ignore
+            return False, None
 
         self.func = wrapped
 
@@ -145,6 +144,7 @@ class VirtualDevice(threading.Thread):
         from .links import Link
 
         super().__init__(daemon=True)
+        self.debug = False
         self.output = None
         virtual_devices.append(self)
         object.__setattr__(self, "device", self)  # to be polymorphic with Int
@@ -164,6 +164,7 @@ class VirtualDevice(threading.Thread):
         self.target_cycle_time = target_cycle_time
         self.ready_event = threading.Event()
         self.closed_ports = set()
+        self._param_last_values = {}
         if autoconnect:
             self.start()
 
@@ -175,6 +176,13 @@ class VirtualDevice(threading.Thread):
         return ThreadContext()
 
     def main(self, ctx: ThreadContext) -> Any: ...
+
+    def debug_print(self, ctx):
+        print("======")
+        print(f"{self.uid()}")
+        print("======")
+        for virt in self.all_parameters():
+            print(f"* {virt.cv_name}[{virt.name}] = {getattr(self, virt.name)}")
 
     def _open_port(self, port):
         try:
@@ -232,6 +240,7 @@ class VirtualDevice(threading.Thread):
                     try:
                         value, inner_ctx = input_queue.get_nowait()
                         changed.add(param)
+                        self._param_last_values[param] = getattr(self, param, None)
                         self.process_input(param, value)
                         input_queue.task_done()
                     except Empty:
@@ -249,14 +258,22 @@ class VirtualDevice(threading.Thread):
             if changed:
                 # if any parameter have been impacted
                 for param in changed:
+                    current_value = getattr(self, param)
+                    last_value = self._param_last_values.get(param)
                     for key in edge_keys:
                         aliased_name = alias_name(param, key)
                         if hasattr(self, aliased_name):
-                            value = getattr(self, aliased_name)(
-                                getattr(self, param), ctx
+                            success, value = getattr(self, aliased_name)(
+                                current_value, last_value, ctx
                             )
                             triggered = True
-                            if value is not None:
+                            if success and self.debug:
+                                print(
+                                    f"TRIGGER {param} {aliased_name} {last_value=} {getattr(self, param)=}"
+                                )
+                                self.debug_print(ctx)
+                                print()
+                            if success and value is not None:
                                 if isinstance(value, tuple):
                                     value, selected_outputs = value
                                     # perform internal routing. I don't like it
@@ -267,6 +284,8 @@ class VirtualDevice(threading.Thread):
                                 else:
                                     selected_outputs = [self.output_cv]
                                 ctx.update(inner_ctx)
+                                if self.debug:
+                                    print(f"out: {selected_outputs}")
                                 self.send_out(
                                     value,
                                     ctx,
@@ -274,19 +293,19 @@ class VirtualDevice(threading.Thread):
                                     from_=param,
                                 )
             # if nothing changed we call the idle loop
-            if not triggered:
-                value = self.main(ctx)
-                if value is not None:
-                    if isinstance(value, tuple):
-                        value, selected_outputs = value
-                    else:
-                        selected_outputs = [self.output_cv]
-                    self.send_out(
-                        value,
-                        ctx,
-                        selected_outputs=selected_outputs,
-                        from_="_default_idle",
-                    )
+            # if not triggered:
+            value = self.main(ctx)
+            if value is not None:
+                if isinstance(value, tuple):
+                    value, selected_outputs = value
+                else:
+                    selected_outputs = [self.output_cv]
+                self.send_out(
+                    value,
+                    ctx,
+                    selected_outputs=selected_outputs,
+                    from_="_default_idle",
+                )
 
             # if queue_level > self.input_queue.maxsize * 0.8:
             #     # Skip sleep to catch up faster

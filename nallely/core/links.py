@@ -385,20 +385,15 @@ class Link:
         dest = cast(PadsOrKeysInstance, self.dest)
 
         self.cleanup_callback = lambda: dest.device.all_notes_off()
+        lower_range_value, _ = dest.parameter.range
 
         previous = None
 
         def foo(value, ctx):
             value = int(value)
-            # is_note = ctx.get("type")
-            # if is_note in ("note_off", "note_on"):
-            #     dest.device.note(
-            #         note=value, velocity=ctx.get("velocity", DEFAULT_VELOCITY), type=is_note
-            #     )
-            #     return
             nonlocal previous
             if previous != value:
-                if int(ctx.raw_value) != 0:
+                if lower_range_value != value and ctx.raw_value != 0:
                     dest.device.note(
                         note=value,
                         velocity=ctx.get("velocity", DEFAULT_VELOCITY),
@@ -432,12 +427,6 @@ class Link:
 
         def foo(value, ctx):
             value = int(value)
-            # is_note = ctx.get("type")
-            # if is_note in ("note_off", "note_on"):
-            #     dest.device.note(
-            #         note=value, velocity=ctx.get("velocity", DEFAULT_VELOCITY), type=is_note
-            #     )
-            #     return
             nonlocal previous
             if previous != value:
                 if int(ctx.raw_value) != 0:

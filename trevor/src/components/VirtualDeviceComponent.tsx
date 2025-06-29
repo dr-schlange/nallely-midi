@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
 import { useState, useEffect, useMemo } from "react";
 import type { VirtualDevice, VirtualParameter } from "../model";
 import { useTrevorWebSocket } from "../websockets/websocket";
@@ -5,6 +6,7 @@ import {
 	buildParameterId,
 	buildSectionId,
 	generateAcronym,
+	setDebugMode,
 } from "../utils/utils";
 import { useTrevorDispatch, useTrevorSelector } from "../store";
 import { ClassBrowser } from "./modals/ClassBrowser";
@@ -105,6 +107,10 @@ const VirtualDeviceComponent = ({
 			}}
 			id={`${device.id}-__virtual__`}
 			onClick={() => handleDeviceClick(device)}
+			onMouseEnter={(e) => setDebugMode(e, device.id, true)}
+			onMouseLeave={(e) => setDebugMode(e, device.id, false)}
+			onTouchStart={(e) => setDebugMode(e, device.id, true)}
+			onTouchEnd={(e) => setDebugMode(e, device.id, true)}
 		>
 			<div className={`device-name ${isNameOnLeft ? "left" : "right"}`}>
 				{device.repr}
