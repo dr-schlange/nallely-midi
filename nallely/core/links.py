@@ -399,6 +399,11 @@ class Link:
                         velocity=ctx.get("velocity", DEFAULT_VELOCITY),
                         type="note_on",
                     )
+                    dest.device.note(
+                        note=0,
+                        velocity=ctx.get("velocity", DEFAULT_VELOCITY),
+                        type="note_off",
+                    )
                 if previous:
                     dest.device.note(
                         note=previous,

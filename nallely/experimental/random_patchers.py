@@ -110,9 +110,9 @@ class RandomPatcher(VirtualDevice):
         for src, dst in selected_combinations:
             self.trevor_api.associate_parameters(src, dst)
 
-    def process_input(self, param, value):
+    def store_input(self, param, value):
         if param == "exclude_device":
             if value == "--":
                 return
 
-        return super().process_input(param, value)
+        return super().store_input(param, value)

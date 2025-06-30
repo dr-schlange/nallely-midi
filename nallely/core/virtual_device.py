@@ -210,7 +210,7 @@ class VirtualDevice(threading.Thread):
             )
             # self.target_cycle_time = 0.001
 
-    def process_input(self, param: str, value):
+    def store_input(self, param: str, value):
         setattr(self, param, value)
 
     def run(self):
@@ -241,7 +241,7 @@ class VirtualDevice(threading.Thread):
                         value, inner_ctx = input_queue.get_nowait()
                         changed.add(param)
                         self._param_last_values[param] = getattr(self, param, None)
-                        self.process_input(param, value)
+                        self.store_input(param, value)
                         input_queue.task_done()
                     except Empty:
                         break
@@ -629,7 +629,7 @@ class VirtualDevice(threading.Thread):
             max = max or 127
             as_int = isinstance(min, int) and isinstance(max, int)
             rand = random.randint if as_int else random.uniform
-            self.process_input(parameter.name, rand(min, max))  # type: ignore
+            self.store_input(parameter.name, rand(min, max))  # type: ignore
 
 
 @no_registration

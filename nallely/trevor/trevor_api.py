@@ -198,7 +198,7 @@ class TrevorAPI:
             except:
                 ...
         try:
-            device.process_input(parameter, value)
+            device.store_input(parameter, value)
         except Exception as e:
             print(f"Couldn't set {parameter} to {value} for {device_id}: {e}")
 

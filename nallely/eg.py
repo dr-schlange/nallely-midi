@@ -20,10 +20,10 @@ class ADSREnvelope(VirtualDevice):
         self.gate = 0  # False
         super().__init__(**kwargs)
 
-    def process_input(self, param, value):
+    def store_input(self, param, value):
         if param == "gate":
-            return super().process_input(param, 1 if value != 0 else 0)
-        super().process_input(param, value)
+            return super().store_input(param, 1 if value != 0 else 0)
+        super().store_input(param, value)
 
     def setup(self):
         ctx = super().setup()
@@ -178,12 +178,12 @@ class Switch(VirtualDevice):
         self.outputs = [self.output_cv, self.output2_cv]
         super().__init__(**kwargs)
 
-    def process_input(self, param: str, value):
+    def store_input(self, param: str, value):
         if param == "type" and isinstance(value, (int, float)):
             value = self.type_cv.parameter.accepted_values[
                 int(value) % len(self.outputs)
             ]
-        return super().process_input(param, value)
+        return super().store_input(param, value)
 
     @on(input_cv, edge="any")
     def on_input(self, value, ctx):
