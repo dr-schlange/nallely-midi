@@ -6,7 +6,7 @@ from pathlib import Path
 def parse_args(argv):
     parser = argparse.ArgumentParser(
         prog="nallely",
-        description="""Playground for MIDI instruments that let's you focus on your device, not the exchanged MIDI messages""",
+        description="""Modular MIDI brain for MIDI instruments that let's you focus on your device, not the exchanged MIDI messages""",
         epilog="Current phase: Ololiuhqui",
     )
     subparsers = parser.add_subparsers(dest="command", required=False)
@@ -20,7 +20,7 @@ def parse_args(argv):
         nargs="*",
         dest="libs",
         type=Path,
-        help="""Includes one or more paths (file or directory) where to look for MIDI devices API (includes those paths to Python's lib paths). The current working directory is always added, even if this option is not used. The paths that are Python files will be automatically imported.""",
+        help="""Includes one or more paths (file or directory) where to look for MIDI devices API (includes those paths to Python's lib paths). The current working directory is always added, even if this option is not used. The paths that are Python files will be automatically imported""",
     )
     run_parser.add_argument(
         "--with-trevor",
@@ -30,7 +30,7 @@ def parse_args(argv):
     run_parser.add_argument(
         "--serve-ui",
         action="store_true",
-        help="Serves Trevor-UI, and makes it accessible from your browser. This option is only activated if '--with-trevor' is used.",
+        help="Serves Trevor-UI, and makes it accessible from your browser. This option is only activated if '--with-trevor' is used",
     )
     run_parser.add_argument(
         "-b",
@@ -48,7 +48,7 @@ def parse_args(argv):
         "--init",
         type=Path,
         dest="init_script",
-        help="""Path towards an init script to launch. If used with "--with-trevor", the script will be launched *before* Trevor is started.""",
+        help="""Path towards an init script/patch to launch. If used with "--with-trevor", the script will be launched *before* Trevor is started; accepted formats=[.py, .nly]""",
     )
 
     generate_parser = subparsers.add_parser(

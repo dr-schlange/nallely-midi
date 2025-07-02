@@ -519,7 +519,7 @@ def trevor_infos(header, loaded_paths, init_script, ui):
 def start_trevor(
     include_builtins,
     loaded_paths=None,
-    init_script=None,
+    init_script: Path | None = None,
     serve_ui=None,
     include_experimental=None,
 ):
@@ -544,12 +544,14 @@ def start_trevor(
 
         loaded_paths = loaded_paths or []
         load_modules(loaded_paths)
-        if init_script:
+        if init_script and init_script.suffix == ".py":
             code = init_script.read_text(encoding="utf-8")
             exec(code)
 
         trevor = TrevorBus()
         trevor.start()
+        if init_script and init_script.suffix == ".nly":
+            trevor.session.load_all(init_script)
         _trevor_menu(loaded_paths, init_script, trevor, serve_ui)
         print("Shutting down...")
     finally:
