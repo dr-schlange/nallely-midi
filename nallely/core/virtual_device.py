@@ -5,8 +5,10 @@ import traceback
 from collections import defaultdict
 from dataclasses import asdict, dataclass
 from decimal import Decimal
+from functools import partial
 from pathlib import Path
 from queue import Empty, Full, Queue
+from types import GeneratorType
 from typing import Any, Callable, Iterable, Literal, Sequence, Type
 
 from .parameter_instances import ParameterInstance
@@ -88,6 +90,12 @@ class OnChange:
         cond = self.condition_func
         assert cond
         lock = self._lock
+        # send_out = lambda vdev, ctx, value, selected_outputs: vdev.send_out(
+        #     value,
+        #     selected_outputs=selected_outputs,
+        #     ctx=ctx,
+        #     from_=self.parameter.name,
+        # )
 
         def wrapped(instance, value, last_value, ctx):
             with lock:
@@ -95,6 +103,7 @@ class OnChange:
                 last_value = value
 
             if condition_met:
+                # ctx.send_out = partial(instance.send_out, ctx=ctx)
                 return True, original(instance, value, ctx)  # type: ignore
             return False, None
 
@@ -199,7 +208,7 @@ class VirtualDevice(threading.Thread):
         if hasattr(self, "to_update"):
             self.to_update.send_update()  # type: ignore -> this is set by the trevor bus dynamically
 
-    def set_parameter(self, param: str, value: Any, ctx: ThreadContext):
+    def set_parameter(self, param: str, value: Any, ctx: ThreadContext | None = None):
         if self.paused or param in self.closed_ports:
             return
         try:
@@ -220,6 +229,20 @@ class VirtualDevice(threading.Thread):
         ctx.last_values = {}
         edge_keys = OnChange.conditions_name
         alias_name = OnChange.alias_name
+
+        def handle_output(return_value, param, ctx):
+            if isinstance(return_value, tuple):
+                return_value, selected_outputs = return_value
+            else:
+                selected_outputs = [self.output_cv]
+            if self.debug:
+                print(f"out: {selected_outputs}")
+            self.send_out(
+                return_value,
+                ctx,
+                selected_outputs=selected_outputs,
+                from_=param,
+            )
 
         while self.running:
             start_time = time.perf_counter()
@@ -273,25 +296,19 @@ class VirtualDevice(threading.Thread):
                                 )
                                 self.debug_print(ctx)
                                 print()
-                            if success and value is not None:
-                                if isinstance(value, tuple):
-                                    value, selected_outputs = value
-                                    # perform internal routing. I don't like it
-                                    # please refactor at some point with the
-                                    # logic of the vparam -> vparam link
-                                    for output in selected_outputs:
-                                        setattr(self, output.name, value)
-                                else:
-                                    selected_outputs = [self.output_cv]
-                                ctx.update(inner_ctx)
-                                if self.debug:
-                                    print(f"out: {selected_outputs}")
-                                self.send_out(
-                                    value,
-                                    ctx,
-                                    selected_outputs=selected_outputs,
-                                    from_=param,
-                                )
+                            if not success or value is None:
+                                continue
+                            ctx.update(inner_ctx)
+                            if isinstance(value, GeneratorType):
+                                try:
+                                    while True:
+                                        gen_return = next(value)
+                                        handle_output(gen_return, param, ctx)
+                                except StopIteration as e:
+                                    if e.value:
+                                        handle_output(e.value, param, ctx)
+                            else:
+                                handle_output(value, param, ctx)
             # if nothing changed we call the idle loop
             # if not triggered:
             value = self.main(ctx)
@@ -341,6 +358,11 @@ class VirtualDevice(threading.Thread):
         outputs = None
         if selected_outputs:
             outputs = [e.repr() for e in selected_outputs]
+            # perform internal routing. I don't like it
+            # please refactor at some point with the
+            # logic of the vparam -> vparam link
+            for output in selected_outputs:
+                setattr(self, output.name, value)
 
         for output in outputs or list(self.stream_links.keys()):
             links = self.stream_links.get(output, [])
@@ -361,7 +383,7 @@ class VirtualDevice(threading.Thread):
                     except Exception as e:
                         traceback.print_exc()
                         raise e
-            ctx.last_values[last_value_key] = value
+                ctx.last_values[last_value_key] = value
 
     def start(self):
         """Start the LFO thread."""

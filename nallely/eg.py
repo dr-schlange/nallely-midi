@@ -156,6 +156,7 @@ class Gate(VirtualDevice):
     @on(gate_cv, edge="rising")
     def opening(self, value, ctx):
         self._open_port("input")
+        return self.input
 
     @on(gate_cv, edge="falling")
     def closing(self, value, ctx):
@@ -168,6 +169,7 @@ class Switch(VirtualDevice):
     input_cv = VirtualParameter(name="input", range=(0, 127))
     selector_cv = VirtualParameter(name="selector", range=(0, 1))
     type_cv = VirtualParameter(name="type", accepted_values=("toggle", "absolute"))
+    hold_last_cv = VirtualParameter(name="hold_last")
 
     def __init__(self, **kwargs):
         self.input = 0
@@ -175,14 +177,17 @@ class Switch(VirtualDevice):
         self.selector = 0
         self.out_num = 0
         self.type = "toggle"
+        self.hold_last = True
         self.outputs = [self.output_cv, self.output2_cv]
-        super().__init__(**kwargs)
+        super().__init__(target_cycle_time=1 / 100, **kwargs)
 
     def store_input(self, param: str, value):
         if param == "type" and isinstance(value, (int, float)):
             value = self.type_cv.parameter.accepted_values[
                 int(value) % len(self.outputs)
             ]
+        elif param == "hold_last":
+            value = bool(value)
         return super().store_input(param, value)
 
     @on(input_cv, edge="any")
@@ -191,14 +196,20 @@ class Switch(VirtualDevice):
 
     @on(selector_cv, edge="rising")
     def rising_selector(self, value, ctx):
+        old_out = self.out_num
         if self.type == "toggle":
             self.out_num = int(self.out_num + 1) % len(self.outputs)
-            return
-        self.out_num = int(value)
+        else:
+            self.out_num = int(value)
+        if not self.hold_last:
+            yield 0, [self.outputs[old_out]]
+        return self.input, [self.outputs[self.out_num]]
 
     @on(selector_cv, edge="falling")
     def falling_selector(self, value, ctx):
         if self.type == "absolute":
             old_out = self.out_num
-            self.out_num = 0
-            return 0, [self.outputs[old_out]]
+            self.out_num = int(value)
+            if not self.hold_last:
+                yield 0, [self.outputs[old_out]]
+            return self.input, [self.outputs[self.out_num]]

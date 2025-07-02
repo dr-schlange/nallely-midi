@@ -13,6 +13,7 @@ from ..core import (
     virtual_device_classes,
     virtual_devices,
 )
+from ..core.world import ThreadContext
 
 
 class TrevorAPI:
@@ -198,7 +199,13 @@ class TrevorAPI:
             except:
                 ...
         try:
-            device.store_input(parameter, value)
+            try:
+                last_value = getattr(device, parameter)
+            except:
+                last_value = None
+            device.set_parameter(
+                parameter, value, ThreadContext({"last_value": last_value})
+            )
         except Exception as e:
             print(f"Couldn't set {parameter} to {value} for {device_id}: {e}")
 

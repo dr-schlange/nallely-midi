@@ -208,7 +208,7 @@ const DevicePatching = () => {
 					type="checkbox"
 					checked={Boolean(device.config[parameter.name]) ?? false}
 					onChange={(e) => {
-						const newVal = Boolean(e.target.value);
+						const newVal = !e.target.value;
 						trevorSocket?.setVirtualValue(device, parameter, newVal);
 					}}
 				/>

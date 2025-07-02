@@ -139,7 +139,7 @@ class Session:
                 src_path, dest_path, with_scaler=with_chain
             )
             if link:
-                # If this condition is false, we are in probably in a case when reloading,
+                # If the above condition is false (we are *not* in this if), we are in probably in a case when reloading,
                 # the websocket bus is not fully initialized
                 # i.e: it doesn't have all the services from before registered yet (they are in waiting room)
                 link.bouncy = serialized_link.get("bouncy", False)
