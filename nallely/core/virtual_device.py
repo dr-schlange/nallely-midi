@@ -244,6 +244,18 @@ class VirtualDevice(threading.Thread):
                 from_=param,
             )
 
+        def handle_generator_or_output(value, param, ctx):
+            if isinstance(value, GeneratorType):
+                try:
+                    while True:
+                        gen_return = next(value)
+                        handle_output(gen_return, param, ctx)
+                except StopIteration as e:
+                    if e.value:
+                        handle_output(e.value, param, ctx)
+            else:
+                handle_output(value, param, ctx)
+
         while self.running:
             start_time = time.perf_counter()
             self.pause_event.wait()  # Block if paused
@@ -299,30 +311,11 @@ class VirtualDevice(threading.Thread):
                             if not success or value is None:
                                 continue
                             ctx.update(inner_ctx)
-                            if isinstance(value, GeneratorType):
-                                try:
-                                    while True:
-                                        gen_return = next(value)
-                                        handle_output(gen_return, param, ctx)
-                                except StopIteration as e:
-                                    if e.value:
-                                        handle_output(e.value, param, ctx)
-                            else:
-                                handle_output(value, param, ctx)
-            # if nothing changed we call the idle loop
-            # if not triggered:
+                            handle_generator_or_output(value, param, ctx)
+            # we call the idle loop
+            # # if not triggered:
             value = self.main(ctx)
-            if value is not None:
-                if isinstance(value, tuple):
-                    value, selected_outputs = value
-                else:
-                    selected_outputs = [self.output_cv]
-                self.send_out(
-                    value,
-                    ctx,
-                    selected_outputs=selected_outputs,
-                    from_="_default_idle",
-                )
+            handle_generator_or_output(value, "_default_idle", ctx)
 
             # if queue_level > self.input_queue.maxsize * 0.8:
             #     # Skip sleep to catch up faster
