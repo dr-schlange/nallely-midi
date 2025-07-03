@@ -1,0 +1,75 @@
+Roland:
+  S1:
+    oscillator:
+      ᴧ_level: { cc: 19, description: "", init: 0, max: 127, min: 0 }
+      ꟺ_level: { cc: 20, description: "", init: 0, max: 127, min: 0 }
+      bend_sens: { cc: 18, description: "", init: 0, max: 127, min: 0 }
+      chop_comb: { cc: 104, description: "", init: 0, max: 127, min: 0 }
+      chop_overtone: { cc: 103, description: "", init: 0, max: 127, min: 0 }
+      draw_sw: { cc: 107, description: "", init: 0, max: 127, min: 0 }
+      draw_multiply: { cc: 102, description: "", init: 0, max: 127, min: 0 }
+      lfo: { cc: 13, description: "", init: 0, max: 127, min: 0 }
+      pulse_width: { cc: 15, description: "", init: 0, max: 127, min: 0 }
+      pwm_source: { cc: 16, description: "", init: 0, max: 127, min: 0 }
+      range: { cc: 14, description: "", init: 0, max: 127, min: 0 }
+      sub_oct_type: { cc: 22, description: "", init: 0, max: 127, min: 0 }
+      sub_osc_level: { cc: 21, description: "", init: 0, max: 127, min: 0 }
+      noise_mode: { cc: 78, description: "", init: 0, max: 127, min: 0 }
+      noise_level: { cc: 23, description: "", init: 0, max: 127, min: 0 }
+    filter:
+      frequency: { cc: 74, description: "", init: 0, max: 127, min: 0 }
+      resonance: { cc: 71, description: "", init: 0, max: 127, min: 0 }
+      envelope: { cc: 24, description: "", init: 0, max: 127, min: 0 }
+      lfo: { cc: 25, description: "", init: 0, max: 127, min: 0 }
+      keyboard_follow: { cc: 26, description: "", init: 0, max: 127, min: 0 }
+      bend_sens: { cc: 27, description: "", init: 0, max: 127, min: 0 }
+    amp:
+      amp_envelope_mode_sw:
+        { cc: 28, description: "", init: 0, max: 127, min: 0 }
+    env:
+      attack: { cc: 73, description: "", init: 0, max: 127, min: 0 }
+      decay: { cc: 75, description: "", init: 0, max: 127, min: 0 }
+      sustain: { cc: 30, description: "", init: 0, max: 127, min: 0 }
+      release: { cc: 72, description: "", init: 0, max: 127, min: 0 }
+      trigger_mode: { cc: 29, description: "", init: 0, max: 127, min: 0 }
+    lfo:
+      key_trigger: { cc: 105, description: "", init: 0, max: 127, min: 0 }
+      mode: { cc: 79, description: "", init: 0, max: 127, min: 0 }
+      modulation_depth: { cc: 17, description: "", init: 0, max: 127, min: 0 }
+      rate: { cc: 3, description: "", init: 0, max: 127, min: 0 }
+      sync: { cc: 106, description: "", init: 0, max: 127, min: 0 }
+      wave_form: { cc: 12, description: "", init: 0, max: 127, min: 0 }
+    chord:
+      voice_2_sw: { cc: 81, description: "", init: 0, max: 127, min: 0 }
+      voice_2_key_shift:
+        { cc: 85, description: "", init: 0, max: 127, min: 0 }
+      voice_3_sw: { cc: 82, description: "", init: 0, max: 127, min: 0 }
+      voice_3_key_shift:
+        { cc: 86, description: "", init: 0, max: 127, min: 0 }
+      voice_4_sw: { cc: 83, description: "", init: 0, max: 127, min: 0 }
+      voice_4_key_shift:
+        { cc: 87, description: "", init: 0, max: 127, min: 0 }
+    reverb:
+      level: { cc: 91, description: "", init: 0, max: 127, min: 0 }
+      time: { cc: 89, description: "", init: 0, max: 127, min: 0 }
+    chorus:
+      chorus: { cc: 93, description: "", init: 0, max: 127, min: 0 }
+    delay:
+      level: { cc: 92, description: "", init: 0, max: 127, min: 0 }
+      time: { cc: 90, description: "", init: 0, max: 127, min: 0 }
+    portamento:
+      portamento: { cc: 65, description: "", init: 0, max: 127, min: 0 }
+      mode: { cc: 31, description: Portamento
+            mode, init: 0, max: 127, min: 0 }
+      time: { cc: 5, description: "", init: 0, max: 127, min: 0 }
+    general:
+      pan: { cc: 10, description: "", init: 0, max: 127, min: 0 }
+      poly_mode: { cc: 80, description: "", init: 0, max: 127, min: 0 }
+      transpose_sw: { cc: 77, description: "", init: 0, max: 127, min: 0 }
+    keys:
+      notes: "keys_or_pads"
+      pitchwheel: "pitchwheel"
+      modulation_wheel: { cc: 1, description: "", init: 0, max: 127, min: 0 }
+      fine_tune: { cc: 76, description: "", init: 0, max: 127, min: 0 }
+      damper_pedal: { cc: 64, description: "", init: 0, max: 127, min: 0 }
+      expression_pedal: { cc: 11, description: "", init: 0, max: 127, min: 0 }
