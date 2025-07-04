@@ -3,9 +3,15 @@ Generated configuration for the Roland - S-1
 """
 import nallely
 
+class GeneralSection(nallely.Module):
+    pan = nallely.ModuleParameter(10)
+    poly_mode = nallely.ModuleParameter(80)
+    transpose_sw = nallely.ModuleParameter(77)
+
+
 class OscillatorSection(nallely.Module):
-    saw_level = nallely.ModuleParameter(19, name="⩘_level")
-    square_level = nallely.ModuleParameter(20, name="ꟺ_level")
+    ᴧ_level = nallely.ModuleParameter(19)
+    ꟺ_level = nallely.ModuleParameter(20)
     bend_sens = nallely.ModuleParameter(18)
     chop_comb = nallely.ModuleParameter(104)
     chop_overtone = nallely.ModuleParameter(103)
@@ -60,35 +66,20 @@ class ChordSection(nallely.Module):
     voice_4_key_shift = nallely.ModuleParameter(87)
 
 
-class ReverbSection(nallely.Module):
-    level = nallely.ModuleParameter(91)
-    time = nallely.ModuleParameter(89)
-
-
-class ChorusSection(nallely.Module):
+class EffectsSection(nallely.Module):
+    reverb_level = nallely.ModuleParameter(91)
+    reverb_time = nallely.ModuleParameter(89)
     chorus = nallely.ModuleParameter(93)
-
-
-class DelaySection(nallely.Module):
-    level = nallely.ModuleParameter(92)
-    time = nallely.ModuleParameter(90)
-
-
-class PortamentoSection(nallely.Module):
-    portamento = nallely.ModuleParameter(65)
-    mode = nallely.ModuleParameter(31, description='Portamento mode')
-    time = nallely.ModuleParameter(5)
-
-
-class GeneralSection(nallely.Module):
-    pan = nallely.ModuleParameter(10)
-    poly_mode = nallely.ModuleParameter(80)
-    transpose_sw = nallely.ModuleParameter(77)
+    delay_level = nallely.ModuleParameter(92)
+    delay_time = nallely.ModuleParameter(90)
 
 
 class KeysSection(nallely.Module):
     notes = nallely.ModulePadsOrKeys()
     pitchwheel = nallely.ModulePitchwheel()
+    portamento = nallely.ModuleParameter(65)
+    portamento_mode = nallely.ModuleParameter(31, description='Portamento mode')
+    portamento_time = nallely.ModuleParameter(5)
     modulation_wheel = nallely.ModuleParameter(1)
     fine_tune = nallely.ModuleParameter(76)
     damper_pedal = nallely.ModuleParameter(64)
@@ -96,17 +87,14 @@ class KeysSection(nallely.Module):
 
 
 class S1(nallely.MidiDevice):
+    general: GeneralSection  # type: ignore
     oscillator: OscillatorSection  # type: ignore
     filter: FilterSection  # type: ignore
     amp: AmpSection  # type: ignore
     env: EnvSection  # type: ignore
     lfo: LfoSection  # type: ignore
     chord: ChordSection  # type: ignore
-    reverb: ReverbSection  # type: ignore
-    chorus: ChorusSection  # type: ignore
-    delay: DelaySection  # type: ignore
-    portamento: PortamentoSection  # type: ignore
-    general: GeneralSection  # type: ignore
+    effects: EffectsSection  # type: ignore
     keys: KeysSection  # type: ignore
 
     def __init__(self, device_name=None, *args, **kwargs):
@@ -115,6 +103,10 @@ class S1(nallely.MidiDevice):
 ,            device_name=device_name or 'S-1',
             **kwargs,
         )
+
+    @property
+    def general(self) -> GeneralSection:
+        return self.modules.general
 
     @property
     def oscillator(self) -> OscillatorSection:
@@ -141,24 +133,8 @@ class S1(nallely.MidiDevice):
         return self.modules.chord
 
     @property
-    def reverb(self) -> ReverbSection:
-        return self.modules.reverb
-
-    @property
-    def chorus(self) -> ChorusSection:
-        return self.modules.chorus
-
-    @property
-    def delay(self) -> DelaySection:
-        return self.modules.delay
-
-    @property
-    def portamento(self) -> PortamentoSection:
-        return self.modules.portamento
-
-    @property
-    def general(self) -> GeneralSection:
-        return self.modules.general
+    def effects(self) -> EffectsSection:
+        return self.modules.effects
 
     @property
     def keys(self) -> KeysSection:

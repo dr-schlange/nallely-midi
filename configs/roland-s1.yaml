@@ -1,5 +1,9 @@
 Roland:
   S1:
+    general:
+      pan: { cc: 10, description: "", init: 0, max: 127, min: 0 }
+      poly_mode: { cc: 80, description: "", init: 0, max: 127, min: 0 }
+      transpose_sw: { cc: 77, description: "", init: 0, max: 127, min: 0 }
     oscillator:
       ᴧ_level: { cc: 19, description: "", init: 0, max: 127, min: 0 }
       ꟺ_level: { cc: 20, description: "", init: 0, max: 127, min: 0 }
@@ -41,34 +45,23 @@ Roland:
       wave_form: { cc: 12, description: "", init: 0, max: 127, min: 0 }
     chord:
       voice_2_sw: { cc: 81, description: "", init: 0, max: 127, min: 0 }
-      voice_2_key_shift:
-        { cc: 85, description: "", init: 0, max: 127, min: 0 }
+      voice_2_key_shift: { cc: 85, description: "", init: 0, max: 127, min: 0 }
       voice_3_sw: { cc: 82, description: "", init: 0, max: 127, min: 0 }
-      voice_3_key_shift:
-        { cc: 86, description: "", init: 0, max: 127, min: 0 }
+      voice_3_key_shift: { cc: 86, description: "", init: 0, max: 127, min: 0 }
       voice_4_sw: { cc: 83, description: "", init: 0, max: 127, min: 0 }
-      voice_4_key_shift:
-        { cc: 87, description: "", init: 0, max: 127, min: 0 }
-    reverb:
-      level: { cc: 91, description: "", init: 0, max: 127, min: 0 }
-      time: { cc: 89, description: "", init: 0, max: 127, min: 0 }
-    chorus:
+      voice_4_key_shift: { cc: 87, description: "", init: 0, max: 127, min: 0 }
+    effects:
+      reverb_level: { cc: 91, description: "", init: 0, max: 127, min: 0 }
+      reverb_time: { cc: 89, description: "", init: 0, max: 127, min: 0 }
       chorus: { cc: 93, description: "", init: 0, max: 127, min: 0 }
-    delay:
-      level: { cc: 92, description: "", init: 0, max: 127, min: 0 }
-      time: { cc: 90, description: "", init: 0, max: 127, min: 0 }
-    portamento:
-      portamento: { cc: 65, description: "", init: 0, max: 127, min: 0 }
-      mode: { cc: 31, description: Portamento
-            mode, init: 0, max: 127, min: 0 }
-      time: { cc: 5, description: "", init: 0, max: 127, min: 0 }
-    general:
-      pan: { cc: 10, description: "", init: 0, max: 127, min: 0 }
-      poly_mode: { cc: 80, description: "", init: 0, max: 127, min: 0 }
-      transpose_sw: { cc: 77, description: "", init: 0, max: 127, min: 0 }
+      delay_level: { cc: 92, description: "", init: 0, max: 127, min: 0 }
+      delay_time: { cc: 90, description: "", init: 0, max: 127, min: 0 }
     keys:
       notes: "keys_or_pads"
       pitchwheel: "pitchwheel"
+      portamento: { cc: 65, description: "", init: 0, max: 127, min: 0 }
+      portamento_mode: { cc: 31, description: Portamento mode, init: 0, max: 127, min: 0 }
+      portamento_time: { cc: 5, description: "", init: 0, max: 127, min: 0 }
       modulation_wheel: { cc: 1, description: "", init: 0, max: 127, min: 0 }
       fine_tune: { cc: 76, description: "", init: 0, max: 127, min: 0 }
       damper_pedal: { cc: 64, description: "", init: 0, max: 127, min: 0 }

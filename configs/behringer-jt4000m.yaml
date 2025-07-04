@@ -1,0 +1,71 @@
+# 1 Modulation X
+# 5 Portamento Time X
+# 24 OSC1 Wave X
+# 25 OSC2 Wave X
+# 28 LFO2 Amount X
+# 70 LFO1 Amount X
+# 71 VCF Resonance X
+# 72 LFO1 Rate X
+# 73 LFO2 Rate X
+# 74 VCF Cutoff X
+# 81 VCA EG Attack X
+# 82 VCA EG Decay X
+# 83 VCA EG Sustain X
+# 84 VCA EG Release X
+# 85 VCF EG Attack X
+# 86 VCF EG Decay X
+# 87 VCF EG Sustain X
+# 88 VCF EG Release X
+# 95 Ring Modulation Amount X
+# 96 Ring Modulation on/off (0-64 = off / 65 – 127 = on) X
+# 111 OSC1 Fine Tune X
+# 112 OSC2 Fine Tune X
+# 113 OSC1 PWM/supersaw Detune/FM Feedback X
+# 114 OSC2 PWM X
+# 115 OSC1 Coarse Tune X
+# 116 OSC2 Coarse Tune X
+# 47 Filter Env Amount X
+# 54 LFO1 Waveform X
+# 55 LFO2 Waveform X
+# 56 LFO1 Destination X
+Behringer:
+  JT-4000M MICRO:
+    oscillator:
+      osc1_wave: { cc: 24, description: "", init: 0, max: 127, min: 0 }
+      osc1_type: { cc: 113, description: "", init: 0, max: 127, min: 0 }
+      osc1_coarse_tune: { cc: 115, description: "", init: 0, max: 127, min: 0 }
+      osc1_fine_tune: { cc: 111, description: "", init: 0, max: 127, min: 0 }
+      osc2_wave: { cc: 25, description: "", init: 0, max: 127, min: 0 }
+      osc2_pwm: { cc: 114, description: "", init: 0, max: 127, min: 0 }
+      osc2_coarse_tune: { cc: 116, description: "", init: 0, max: 127, min: 0 }
+      osc2_fine_tune: { cc: 112, description: "", init: 0, max: 127, min: 0 }
+      balance: { cc: 29, description: "", init: 64, max: 127, min: 0 }
+    lfo:
+      lfo1_waveform: { cc: 54, description: "", init: 0, max: 127, min: 0 }
+      lfo1_rate: { cc: 72, description: "", init: 0, max: 127, min: 0 }
+      lfo1_amount: { cc: 70, description: "", init: 0, max: 127, min: 0 }
+      lfo1_destination: { cc: 56, description: "", init: 0, max: 127, min: 0 }
+      lfo2_waveform: { cc: 55, description: "", init: 0, max: 127, min: 0 }
+      lfo2_rate: { cc: 73, description: "", init: 0, max: 127, min: 0 }
+      lfo2_amount: { cc: 28, description: "", init: 0, max: 127, min: 0 }
+    vcf:
+      cutoff: { cc: 74, description: "", init: 0, max: 127, min: 0 }
+      resonance: { cc: 71, description: "", init: 0, max: 127, min: 0 }
+      env_amount: { cc: 47, description: "", init: 0, max: 127, min: 0 }
+      attack: { cc: 85, description: "", init: 0, max: 127, min: 0 }
+      decay: { cc: 86, description: "", init: 0, max: 127, min: 0 }
+      sustain: { cc: 87, description: "", init: 0, max: 127, min: 0 }
+      release: { cc: 88, description: "", init: 0, max: 127, min: 0 }
+    vca:
+      attack: { cc: 81, description: "", init: 0, max: 127, min: 0 }
+      decay: { cc: 82, description: "", init: 0, max: 127, min: 0 }
+      sustain: { cc: 83, description: "", init: 0, max: 127, min: 0 }
+      release: { cc: 84, description: "", init: 0, max: 127, min: 0 }
+    ring_mod:
+      on_off: { cc: 96, description: "", init: 0, max: 127, min: 0 }
+      amount: { cc: 95, description: "", init: 0, max: 127, min: 0 }
+    keys:
+      notes: "keys_or_pads"
+      pitchwheel: "pitchwheel"
+      modulation: { cc: 1, description: "", init: 0, max: 127, min: 0 }
+      portamento_time: { cc: 5, description: "", init: 0, max: 127, min: 0 }
