@@ -1,0 +1,39 @@
+Behringer:
+  PROVS:
+    oscillator:
+      voice_A_wave: { cc: 24, description: "", init: 0, max: 127, min: 0 }
+      voice_A_coarse_tuning: { cc: 115, description: "", init: 0, max: 99, min: 0 }
+      voice_A_fine_tuning: { cc: 111, description: "", init: 0, max: 99, min: 0 }
+      voice_B_wave: { cc: 25, description: "", init: 0, max: 127, min: 0 }
+      voice_B_coarse_tuning: { cc: 116, description: "", init: 0, max: 99, min: 0 }
+      voice_B_fine_tuning: { cc: 112, description: "", init: 0, max: 99, min: 0 }
+      voice_C_wave: { cc: 26, description: "", init: 0, max: 127, min: 0 }
+      voice_C_coarse_tuning: { cc: 117, description: "", init: 0, max: 99, min: 0 }
+      voice_C_fine_tuning: { cc: 113, description: "", init: 0, max: 99, min: 0 }
+      voice_D_wave: { cc: 27, description: "", init: 0, max: 127, min: 0 }
+      voice_D_coarse_tuning: { cc: 118, description: "", init: 0, max: 99, min: 0 }
+      voice_D_fine_tuning: { cc: 114, description: "", init: 0, max: 99, min: 0 }
+    lfo:
+      lfo1_rate: { cc: 72, description: "", init: 0, max: 99, min: 0 }
+      lfo1_amount: { cc: 70, description: "", init: 0, max: 99, min: 0 }
+      lfo2_rate: { cc: 73, description: "", init: 0, max: 99, min: 0 }
+      lfo2_amount:  { cc: 28, description: "", init: 0, max: 99, min: 0 }
+    vcf:
+      cutoff: { cc: 74, description: "", init: 0, max: 99, min: 0 }
+      resonance: { cc: 71, description: "", init: 0, max: 99, min: 0 }
+      attack: { cc: 85, description: "", init: 0, max: 99, min: 0 }
+      decay: { cc: 86, description: "", init: 0, max: 99, min: 0 }
+      sustain: { cc: 87, description: "", init: 0, max: 99, min: 0 }
+      release: { cc: 88, description: "", init: 0, max: 99, min: 0 }
+    vca:
+      attack: { cc: 81, description: "", init: 0, max: 99, min: 0 }
+      decay: { cc: 82, description: "", init: 0, max: 99, min: 0 }
+      sustain: { cc: 83, description: "", init: 0, max: 99, min: 0 }
+      release: { cc: 84, description: "", init: 0, max: 99, min: 0 }
+    chorus:
+      rate: { cc: 92, description: "", init: 0, max: 99, min: 0 }
+      depth: { cc: 91, description: "", init: 0, max: 99, min: 0 }
+    keys:
+      notes: "keys_or_pads"
+      pitchwheel: "pitchwheel"
+      modulation: { cc: 1, description: "", init: 0, max: 127, min: 0 }
