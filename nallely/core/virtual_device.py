@@ -222,6 +222,20 @@ class VirtualDevice(threading.Thread):
     def store_input(self, param: str, value):
         setattr(self, param, value)
 
+    def sleep(self, t):
+        if t < self.target_cycle_time * 1000:
+            # print(f"Fits {t=} in the current time of {self.target_cycle_time * 1000}ms")
+            time.sleep(float(t) / 1000)
+            yield
+            return
+        next_tick = time.time_ns() + t * 1_000_000
+        # print(f"Sleeping for {t}ms until {next_tick}")
+        while time.time_ns() < next_tick:
+            # print(f"Still sleeping... now={time.time_ns()}")
+            yield "__suspend__"
+        # print(f"Finished sleeping at {time.time_ns()}")
+        yield
+
     def run(self):
         self.ready_event.set()
         ctx = self.setup()
@@ -229,6 +243,8 @@ class VirtualDevice(threading.Thread):
         ctx.last_values = {}
         edge_keys = OnChange.conditions_name
         alias_name = OnChange.alias_name
+        self.suspended_tasks = []
+        main_gen = self.main(ctx)
 
         def handle_output(return_value, param, ctx):
             if isinstance(return_value, tuple):
@@ -244,17 +260,48 @@ class VirtualDevice(threading.Thread):
                 from_=param,
             )
 
-        def handle_generator_or_output(value, param, ctx):
+        def handle_generator_or_output(value, param, ctx) -> bool:
+            """Returns True if generator finished, False otherwise"""
             if isinstance(value, GeneratorType):
                 try:
                     while True:
                         gen_return = next(value)
+                        if isinstance(gen_return, GeneratorType):
+                            try:
+                                while True:
+                                    sleepytime = next(gen_return)
+                                    if sleepytime == "__suspend__":
+                                        self.suspended_tasks.append(
+                                            (gen_return, value, param, ctx)
+                                        )
+                                        return False
+                            except StopIteration:
+                                continue
+                        if gen_return is None or gen_return == "__suspend__":
+                            continue
                         handle_output(gen_return, param, ctx)
                 except StopIteration as e:
-                    if e.value:
+                    gen_return = e.value
+                    if gen_return and gen_return != "__suspend__":
                         handle_output(e.value, param, ctx)
+                    return True
             else:
                 handle_output(value, param, ctx)
+            return False
+
+        def resume_suspended_tasks():
+            still_pending = []
+            for sleep_gen, parent_gen, param, ctx in self.suspended_tasks:
+                try:
+                    result = next(sleep_gen)
+                    if result == "__suspend__":
+                        still_pending.append((sleep_gen, parent_gen, param, ctx))
+                    else:
+                        handle_generator_or_output(parent_gen, param, ctx)
+                except StopIteration:
+                    handle_generator_or_output(parent_gen, param, ctx)
+
+            self.suspended_tasks = still_pending
 
         while self.running:
             start_time = time.perf_counter()
@@ -262,6 +309,8 @@ class VirtualDevice(threading.Thread):
 
             if not self.running:
                 break
+
+            resume_suspended_tasks()
 
             changed = set()
             inner_ctx = {}
@@ -289,7 +338,7 @@ class VirtualDevice(threading.Thread):
                     )
 
             # Run main processing and output
-            triggered = False
+            # triggered = False
             if changed:
                 # if any parameter have been impacted
                 for param in changed:
@@ -301,7 +350,7 @@ class VirtualDevice(threading.Thread):
                             success, value = getattr(self, aliased_name)(
                                 current_value, last_value, ctx
                             )
-                            triggered = True
+                            # triggered = True
                             if success and self.debug:
                                 print(
                                     f"TRIGGER {param} {aliased_name} {last_value=} {getattr(self, param)=}"
@@ -314,9 +363,12 @@ class VirtualDevice(threading.Thread):
                             handle_generator_or_output(value, param, ctx)
             # we call the idle loop
             # # if not triggered:
-            value = self.main(ctx)
-            handle_generator_or_output(value, "_default_idle", ctx)
-
+            # value = next(main_gen)
+            if main_gen is None or not isinstance(main_gen, GeneratorType):
+                main_gen = self.main(ctx)
+            finished = handle_generator_or_output(main_gen, "_default_idle", ctx)
+            if finished:
+                main_gen = None
             # if queue_level > self.input_queue.maxsize * 0.8:
             #     # Skip sleep to catch up faster
             #     print(
