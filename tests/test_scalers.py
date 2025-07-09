@@ -93,3 +93,13 @@ def test__scaler_mapping():
 
     assert link.chain is not None
     assert link.chain is scaler
+
+
+def test__scaler_lin_x_y_identity():
+    lfo = LFO()
+    # lfo.range = (24, 108)  # type: ignore
+
+    scaler = lfo.scale(24, 108, as_int=False)
+
+    assert scaler.convert_lin(24, 24, 108) == 24
+    assert scaler.convert_lin(60, 24, 108) == 60

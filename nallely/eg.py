@@ -1,5 +1,3 @@
-from typing import Any
-
 from nallely.core.world import ThreadContext
 
 from .core import VirtualDevice, VirtualParameter, on
