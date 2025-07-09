@@ -1,5 +1,5 @@
 """
-Generated configuration for the Behringer - PROVS
+Generated configuration for the Behringer - PROVS-MINI
 """
 import nallely
 
@@ -19,15 +19,16 @@ class OscillatorSection(nallely.Module):
 
 
 class LfoSection(nallely.Module):
+    lfo1_shape = nallely.ModuleParameter(54, range=(0, 99))
     lfo1_rate = nallely.ModuleParameter(72, range=(0, 99))
     lfo1_amount = nallely.ModuleParameter(70, range=(0, 99))
+    lfo2_shape = nallely.ModuleParameter(55, range=(0, 99))
     lfo2_rate = nallely.ModuleParameter(73, range=(0, 99))
     lfo2_amount = nallely.ModuleParameter(28, range=(0, 99))
 
 
-class VcfSection(nallely.Module):
-    cutoff = nallely.ModuleParameter(74, range=(0, 99))
-    resonance = nallely.ModuleParameter(71, range=(0, 99))
+class FilSection(nallely.Module):
+    amount = nallely.ModuleParameter(47, range=(0, 99))
     attack = nallely.ModuleParameter(85, range=(0, 99))
     decay = nallely.ModuleParameter(86, range=(0, 99))
     sustain = nallely.ModuleParameter(87, range=(0, 99))
@@ -41,7 +42,13 @@ class VcaSection(nallely.Module):
     release = nallely.ModuleParameter(84, range=(0, 99))
 
 
-class ChorusSection(nallely.Module):
+class VcfSection(nallely.Module):
+    cutoff = nallely.ModuleParameter(74, range=(0, 99))
+    resonance = nallely.ModuleParameter(71, range=(0, 99))
+
+
+class EffectSection(nallely.Module):
+    type = nallely.ModuleParameter(9)
     rate = nallely.ModuleParameter(92, range=(0, 99))
     depth = nallely.ModuleParameter(91, range=(0, 99))
 
@@ -50,20 +57,22 @@ class KeysSection(nallely.Module):
     notes = nallely.ModulePadsOrKeys()
     pitchwheel = nallely.ModulePitchwheel()
     modulation = nallely.ModuleParameter(1)
+    portamento = nallely.ModuleParameter(5)
 
 
-class Provs(nallely.MidiDevice):
+class Provsmini(nallely.MidiDevice):
     oscillator: OscillatorSection  # type: ignore
     lfo: LfoSection  # type: ignore
-    vcf: VcfSection  # type: ignore
+    fil: FilSection  # type: ignore
     vca: VcaSection  # type: ignore
-    chorus: ChorusSection  # type: ignore
+    vcf: VcfSection  # type: ignore
+    effect: EffectSection  # type: ignore
     keys: KeysSection  # type: ignore
 
     def __init__(self, device_name=None, *args, **kwargs):
         super().__init__(
             *args
-,            device_name=device_name or 'PROVS',
+,            device_name=device_name or 'PROVS-MINI',
             **kwargs,
         )
 
@@ -76,16 +85,20 @@ class Provs(nallely.MidiDevice):
         return self.modules.lfo
 
     @property
-    def vcf(self) -> VcfSection:
-        return self.modules.vcf
+    def fil(self) -> FilSection:
+        return self.modules.fil
 
     @property
     def vca(self) -> VcaSection:
         return self.modules.vca
 
     @property
-    def chorus(self) -> ChorusSection:
-        return self.modules.chorus
+    def vcf(self) -> VcfSection:
+        return self.modules.vcf
+
+    @property
+    def effect(self) -> EffectSection:
+        return self.modules.effect
 
     @property
     def keys(self) -> KeysSection:
