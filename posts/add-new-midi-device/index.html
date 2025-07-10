@@ -7,28 +7,28 @@
         <meta name="HandheldFriendly" content="True" />
         <meta name="generator" content="Arise" />
 
-        <title>Thoughts - tutorials - experiments · Nallely MIDI</title>
-        <meta name="description" content="Thoughts, posts, tutorials, experimentations, ...">
-        <meta name="author" content="">
+        <title>How to make Nallely understand new MIDI devices · Nallely MIDI</title>
+        <meta name="description" content="How to add a new MIDI device in Nallely">
+        <meta name="author" content="Dr. Schlange">
         <!-- End Basic Metadata -->
 
         <!-- OpenGraph Metadata -->
         <meta property="og:site_name" content="Nallely MIDI" />
         <meta property="og:type" content="article" />
-        <meta property="og:title" content="Thoughts - tutorials - experiments · Nallely MIDI" />
-        <meta property="og:description" content="Thoughts, posts, tutorials, experimentations, ..." />
-        <meta property="og:url" content="https://dr-schlange.github.io/nallely-midi/posts/" />
-        <meta property="og:image" content="https://dr-schlange.github.io/nallely-midi/posts/" />
-        <meta property="article:published_time" content="" />
-        <meta property="article:modified_time" content="" />
+        <meta property="og:title" content="How to make Nallely understand new MIDI devices · Nallely MIDI" />
+        <meta property="og:description" content="How to add a new MIDI device in Nallely" />
+        <meta property="og:url" content="https://dr-schlange.github.io/nallely-midi/posts/add-new-midi-device/" />
+        <meta property="og:image" content="https://dr-schlange.github.io/nallely-midi/posts/add-new-midi-device/" />
+        <meta property="article:published_time" content="2025-07-10" />
+        <meta property="article:modified_time" content="2025-07-10" />
         <!-- End OpenGraph Metadata -->
 
         <!-- Twitter Metadata -->
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Thoughts - tutorials - experiments · Nallely MIDI" />
-        <meta name="twitter:description" content="Thoughts, posts, tutorials, experimentations, ..." />
-        <meta name="twitter:url" content="https://dr-schlange.github.io/nallely-midi/posts/" />
-        <meta name="twitter:image" content="https://dr-schlange.github.io/nallely-midi/posts/" />
+        <meta name="twitter:title" content="How to make Nallely understand new MIDI devices · Nallely MIDI" />
+        <meta name="twitter:description" content="How to add a new MIDI device in Nallely" />
+        <meta name="twitter:url" content="https://dr-schlange.github.io/nallely-midi/posts/add-new-midi-device/" />
+        <meta name="twitter:image" content="https://dr-schlange.github.io/nallely-midi/posts/add-new-midi-device/" />
         <!-- End Twitter Metadata -->
 
         <!-- Favicon -->
@@ -79,19 +79,38 @@
 </head>
 
 <body>
-        <h1>Thoughts - tutorials - experiments</h1> 
-        <p id="arise-toc">
-        <table id="arise-toc-table">
-        <tr class="arise-toc-tr">
-                <th class="arise-toc-th">Date</th>
-                <th class="arise-toc-th">Title</th>
-                <th class="arise-toc-th">Description</th>
-        </tr>
-<tr class="arise-toc-tr"><td class="arise-toc-td">2025-07-10</td><td class="arise-toc-td"><a href="https://dr-schlange.github.io/nallely-midi/posts/add-new-midi-device/">How to make Nallely understand new MIDI devices</a></td><td class="arise-toc-td">How to add a new MIDI device in Nallely</td></tr>
-<tr class="arise-toc-tr"><td class="arise-toc-td">2025-06-21</td><td class="arise-toc-td"><a href="https://dr-schlange.github.io/nallely-midi/posts/build-vca/">Let&#39;s build a VCA with Nallely</a></td><td class="arise-toc-td">How to build a Voltage Control Amplifier with Nallely from scratch</td></tr>
-<tr class="arise-toc-tr"><td class="arise-toc-td">2025-06-12</td><td class="arise-toc-td"><a href="https://dr-schlange.github.io/nallely-midi/posts/presenting-nallely/">Presenting Nallely</a></td><td class="arise-toc-td">Nallely is an organic living system for MIDI</td></tr>
-        </table>
-        </p>
+<p class="date">// 2025-07-10 <i>by Dr. Schlange</i></p>
+<h1 id="how-to-add-a-new-midi-device-in-nallely">How to add a new MIDI
+device in Nallely</h1>
+<p>By default, Nallely understands few MIDI devices:</p>
+<ul>
+<li>Korg NTS-1,</li>
+<li>Korg Minilogue,</li>
+<li>Akai MPD32 (specific configuration).</li>
+</ul>
+<p>This doesn’t mean that Nallely cannot understand other MIDI devices,
+it just means that we need to manually add new MIDI devices to Nallely.
+Nallely works by reflecting on an abstraction of the MIDI device through
+a Python API that is dedicated to each MIDI device. The Python API is an
+internal Python DSL that allows you to describe in a declarative way the
+MIDI device. All the goal to make a new MIDI device understood by
+Nallely is to produce this Python API. There is basically 3 ways of
+doing it:</p>
+<ol type="1">
+<li>generate the Python API using Nallely from a YAML description,</li>
+<li>generate the Python API using Nallely from a CSV description coming
+from the <a href="https://midi.guide/">MIDI CC &amp; NRPN
+database</a>,</li>
+<li>write the Python API by hand.</li>
+</ol>
+<p>In this article, we will review the three methods so you can decide
+which one fits you the best.</p>
+<p><strong>NOTE</strong>: Among the three methods, there is no “best
+method”. Each of them is valid, it’s just a matter of taste, but the one
+that generates from the CSV provided by the
+<code>MIDI CC &amp; NRPN database</code> might require a little bit of
+attention as - despite the effort made by the author to hamronize the
+description - some CSV descriptions are not exactly well formed.</p>
 
         <!-- Page Footer -->
         <div class="footer">
