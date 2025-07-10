@@ -89,8 +89,8 @@ Generated configuration for the {brand} - {device}
                     )
                 else:
                     cc = config["cc"]
-                    min, max = config["min"], config["max"]
-                    init = config["init"]
+                    min, max = config.get("min", 0), config.get("max", 127)
+                    init = config.get("init", 0)
                     if init == 0:
                         init = ""
                     else:
