@@ -82,6 +82,7 @@
 <p class="date">// 2025-07-10 <i>by Dr. Schlange</i></p>
 <h1 id="how-to-add-a-new-midi-device-in-nallely">How to add a new MIDI
 device in Nallely</h1>
+<p><strong>The article is still a draft</strong></p>
 <p>By default, Nallely understands few MIDI devices:</p>
 <ul>
 <li>Korg NTS-1,</li>
@@ -103,14 +104,157 @@ from the <a href="https://midi.guide/">MIDI CC &amp; NRPN
 database</a>,</li>
 <li>write the Python API by hand.</li>
 </ol>
-<p>In this article, we will review the three methods so you can decide
-which one fits you the best.</p>
+<p>In this article, we make Nallely understand the Roland S-1 mini
+synth. We review the three methods so you can decide which one fits you
+the best. For each method we show a brief overview of the process -
+“from a file to a living neuron in Nallely” - we then show the specific
+syntaxes involved in the form of a small tutorial, and we finally
+reflect on the key points related to this method.</p>
 <p><strong>NOTE</strong>: Among the three methods, there is no “best
 method”. Each of them is valid, it’s just a matter of taste, but the one
 that generates from the CSV provided by the
 <code>MIDI CC &amp; NRPN database</code> might require a little bit of
-attention as - despite the effort made by the author to hamronize the
-description - some CSV descriptions are not exactly well formed.</p>
+attention as - despite the efforts made by the authors to harmonize the
+descriptions - some CSV descriptions are not entirely well formed.</p>
+<p><strong>Limitations</strong>: the current version of the Python
+internal DSL for describing MIDI devices supports LSB CC description,
+keyboard, and pitchwheel. Currently MSB CC and sysex messages are not
+supported, but they will in future version. More importantly, the Python
+internal DSL to describe MIDI devices will always be retro compatible.
+If for some reasons, in the future, the internal DSL changes, automatic
+converters will be provided (it should be only a matter of doing AST
+transformation, so not a big deal).</p>
+<h2 id="generate-the-python-api-from-a-yaml-description">Generate the
+Python API from a YAML description</h2>
+<p>This method is perhaps the simplest in the sense that you just have
+to write a YAML file, by referring to the MIDI implementation chart of
+your device. In this section we focus on the Roland S-1. We first
+describe the process at coarse granularity, then we write a first
+incomplete version that we directly integrate into Nallely, then we
+interate on our first version to get the full MIDI device’s Python API
+generated. Finally, we conclude over this methods, the gotchas and
+important points to consider.</p>
+<h3 id="process-overview">Process overview</h3>
+<p>This method considers as entry point a YAML description. This
+description is the main and only artifact that needs to be written by
+hand. This YAML description is then fed to the API code generator
+provided by Nallely, which will produce the Python API in a dedicated
+Python module which can be directly added to a Nallely session.</p>
+<pre><code>YAML file --(nallely generate)--&gt; dedicated Python API</code></pre>
+<p>If some adjustments needs to be done, the generated Python module
+shouldn’t be modified by hand, only the YAML description should, then
+the code should be generated again using Nallely.</p>
+<h4 id="yaml-format-understood-by-nallely">YAML format understood by
+Nallely</h4>
+<p>Nallely uses a specific structured format for the YAML description as
+we can see in the following snippet.</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">manufacturer name</span><span class="kw">:</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">MIDI device name</span><span class="kw">:</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">section 1</span><span class="kw">:</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="fu">parameter name</span><span class="kw">:</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="fu">cc</span><span class="kw">:</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="fu">description</span><span class="kw">:</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="fu">min</span><span class="kw">:</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="fu">max</span><span class="kw">:</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="fu">init</span><span class="kw">:</span></span></code></pre></div>
+<p>The <code>manufacturer name</code> is the name of the company that
+built the device. This entry is currently not really used, but will be
+in the future. It will help to sort various devices and search them by
+manufacturer name (for example). If you have multiple devices of this
+brand, it’s better to use the same name each time, just for harmony
+purpose.</p>
+<p>As sub-section of the <code>manufacturer name</code>, we have the
+device name. This information is used in the generated code to try to
+automatically connect the device to a MIDI I/O port. To choose this name
+properly, if you use MIDI-USB, the best is to check the device name when
+connected to you machine and use a fragment of this name as the
+<code>device name</code>.</p>
+<p>When you have described the <code>manufacturer name</code> and the
+<code>device name</code>, then you can add multiple sections, and in
+each section, multiple <code>parameter names</code> configured by:</p>
+<ul>
+<li>their CC number,</li>
+<li>their min and max value (default values are <code>0</code> for min
+and and <code>127</code> for max),</li>
+<li>their init value (which value has this parameter when the unit is
+freshly powered, default value is <code>0</code>)</li>
+<li>their description.</li>
+</ul>
+<p>Some of those configurations entry are optional, the only important
+mandatory one is the <code>CC</code> number. The other can be omitted if
+they are not different from the default values.</p>
+<h3 id="a-first-version-for-the-roland-s-1">A first version for the
+Roland S-1</h3>
+<p>When we write a new YAML description (configuration), we need to have
+first the MIDI implementation chart. This is something that is provided
+by all manufacturer about their product, if the device supports MIDI,
+obviously. For the Roland S-1, we can find the implementation chart <a
+href="">here in html</a> in their website.</p>
+<p>Now that we have a implementation chart, we need to read it a little
+bit to check how it’s structured and to decide what are the different
+sections that we should add. All MIDI implementation charts are not
+structured the same, some already have sections for the parameters,
+others no (usually they don’t), so it’s your responsibility to decide in
+which section you want to sort your parameters and how you want to name
+them.</p>
+<p>In the implementation chart for the S-1, we can quickly identify at
+least a section for the oscillators. For a first version, we will then
+only add two sections: one for the oscillators, and a section that is
+never explicitly added in those charts (as implicit) the keys
+section.</p>
+<p>Here is a first small version of the YAML and description for Roland
+S-1.</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">Roland</span><span class="kw">:</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">S-1</span><span class="kw">:</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="fu">oscillators</span><span class="kw">:</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="fu">keys</span><span class="kw">:</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="fu">notes</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;keys_or_pads&quot;</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="fu">pitchwheel</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;pitchwheel&quot;</span></span></code></pre></div>
+<p>As you probably notice, the parameters in the <code>keys</code>
+section are a little bit special. The <code>notes</code> parameter is
+not defined by a <code>CC</code>, but is defined by
+<code>"keys_or_pads</code>“, and <code>pitchwheel</code> is defined by
+<code>"pitchwheel"</code>. These are specific parameters. Nallely will
+know how to generate the right code for the keys to let you patch later
+either the full keyboard, or specific keys. The pitchwheel will be
+generated as a special element also, to let you patch the pitchwheel.
+Those are necessary as, under the hood they imply:</p>
+<ul>
+<li>different MIDI messages that need to be sent to the MIDI
+device,</li>
+<li>different hooks that needs to be injected in the interruption
+table,</li>
+<li>and it also gives more information about the parameter, which will
+imply a specific callback compilation at run time when those ports are
+patched with any other port.</li>
+</ul>
+<p>Now that we have a first version, even minimal, we can generate the
+code using Nallely and we can directly add it to a Nallely session:</p>
+<pre><code>nallely generate -i s1.yaml -o s1.py # generate the API in s1.py
+nallely run -l s1.py # add it to a new session</code></pre>
+<p>That’s it, the device is now here and working, we can start to use
+it, patch it with virtual devices, and patch it with other MIDI
+devices.</p>
+<h2 id="generate-the-python-api-from-a-cvs-description">Generate the
+Python API from a CVS description</h2>
+<h3 id="overview">Overview</h3>
+<h3 id="with-a-well-formatted-csv">With a well formatted CSV</h3>
+<h3 id="with-a-badly-formatted-csv">With a badly formatted CSV</h3>
+<h3 id="bootstrap-from-csv-work-on-yaml">Bootstrap from CSV, work on
+YAML</h3>
+<h2 id="write-the-python-api-by-hand">Write the Python API by hand</h2>
+<h3 id="process-overview-1">Process overview</h3>
+<h3 id="conclusion-gotchas">Conclusion, gotchas</h3>
+<p>This way of doing, while not being complicated, is perhaps the less
+recommended. The internal Python DSL is not hard to understand and to
+use, but it feels just a little bit tedious to me to have to</p>
+<h2 id="what-could-be-improved">What could be improved?</h2>
+<h3 id="make-it-interactive">Make it interactive?</h3>
+<h3 id="automatic-fetch-configuration-files-from-a-remote-db">Automatic
+fetch configuration files from a remote DB?</h3>
 
         <!-- Page Footer -->
         <div class="footer">
