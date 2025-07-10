@@ -37,7 +37,7 @@ This method is perhaps the simplest in the sense that you just have to write a Y
 
 This method considers as entry point a YAML description. This description is the main and only artifact that needs to be written by hand. This YAML description is then fed to the API code generator provided by Nallely, which will produce the Python API in a dedicated Python module which can be directly added to a Nallely session.
 
-```
+```markdown
 YAML file --(nallely generate)--> dedicated Python API
 ```
 
@@ -103,7 +103,7 @@ As you probably notice, the parameters in the `keys` section are a little bit sp
 
 Now that we have a first version, even minimal, we can generate the code using Nallely and we can directly add it to a Nallely session:
 
-```
+```markdown
 # generate the API in s1.py
 nallely generate -i s1.yaml -o s1.py
 # add it to a new session
@@ -162,7 +162,7 @@ Roland:
 
 Once we have everything, we generate the new Python API and we can include it in a Nallely session as we did earlier:
 
-```
+```markdown
 nallely generate -i s1.yaml -o s1.py # generate the API in s1.py
 nallely run --with-trevor --serve-ui -l s1.py # add it to a new session
 ```
@@ -187,7 +187,7 @@ This way of generating the Python API uses existing kind of harmonized descripti
 
 The process considers an already CSV file as input (or your own manually crafted CSV file if you want, that you could derive from a xlsx sheet). The CSV is passed as input of the Nallely's generator, and the corresponding Python API module is generated, as well as the YAML description in the format previously described.
 
-```
+```markdown
 CSV file --(nallely generate)--> dedicated Python API
                              +-> YAML description file
 ```
@@ -198,7 +198,7 @@ If some adjustments needs to be done, the generated Python module shouldn't be m
 
 If we have a well formated CSV, as the one for the [Korg NTS-1](https://midi.guide/d/korg/nts-1/) or [Korg Minilogue](https://midi.guide/d/korg/minilogue/), then life is easy. We just download the corresponding CSV file, then we generate the code, *et voilà*, we can include it in a Nallely session:
 
-```
+```markdown
 nallely generate -i nts1.csv -o nts1.py
 nallely run --with-trevor --serve-ui -l nts1.py
 ```
@@ -210,7 +210,7 @@ If you load this freshly generated module in a session, you'll see however that 
 All the problem of this method is really this case... What happens when we have a badly formatted CSV? The [CSV for the Roland S-1](https://midi.guide/d/roland/s-1/) is a good example. It seems that it was directly produced from the html MIDI implementation chart from Roland's website, but it doesn't conform to the [syntax/format recommended by the MIDI CC & NRPN database](https://raw.githubusercontent.com/pencilresearch/midi/main/template.csv).
 Let's generate the code and see what's happening:
 
-```
+```markdown
 $ nallely generate -i s1.csv -o bads1.py
 $ cat bads1.py
 ""
@@ -242,7 +242,7 @@ This method is not complicated per say, but it implies to manipulate the interna
 
 This method removes the need to generate code from a YAML/CSV description. You basically cut the middle man and just manually describe your MIDI device configuration using the internal Python DSL. As you are directly writing the Python module, you can directly load your code in a Nallely session:
 
-```
+```markdown
 Python module file --(manual modification)--> new version of the dedicated Python API
 ```
 
