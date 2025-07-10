@@ -13,7 +13,7 @@
     </image>
     <atom:link href="https://dr-schlange.github.io/nallely-midi/rss.xml" rel="self" type="application/rss+xml"/>
         <ttl>60</ttl>
-<lastBuildDate>Thu, 10 Jul 2025 15:19:55 +0000</lastBuildDate>
+<lastBuildDate>Thu, 10 Jul 2025 17:43:25 +0000</lastBuildDate>
         <item>
         <title>How to make Nallely understand new MIDI devices</title>
         <dc:creator>Dr. Schlange</dc:creator>
