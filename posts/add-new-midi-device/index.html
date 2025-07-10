@@ -140,7 +140,8 @@ description is the main and only artifact that needs to be written by
 hand. This YAML description is then fed to the API code generator
 provided by Nallely, which will produce the Python API in a dedicated
 Python module which can be directly added to a Nallely session.</p>
-<pre><code>YAML file --(nallely generate)--&gt; dedicated Python API</code></pre>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode markdown"><code class="sourceCode markdown"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>YAML file --(nallely generate)--&gt; dedicated Python API</span></code></pre></div>
 <p>If some adjustments needs to be done later, the generated Python
 module shouldn’t be modified by hand, only the YAML description should,
 then the code have to be generated again using Nallely.</p>
@@ -245,10 +246,11 @@ generation code</a>).</li>
 </ul>
 <p>Now that we have a first version, even minimal, we can generate the
 code using Nallely and we can directly add it to a Nallely session:</p>
-<pre><code># generate the API in s1.py
-nallely generate -i s1.yaml -o s1.py
-# add it to a new session
-nallely run --with-trevor --serve-ui -l s1.py</code></pre>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode markdown"><code class="sourceCode markdown"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu"># generate the API in s1.py</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>nallely generate -i s1.yaml -o s1.py</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu"># add it to a new session</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>nallely run --with-trevor --serve-ui -l s1.py</span></code></pre></div>
 <p>That’s it, the device is now here and working, we can start to use
 it, patch it with virtual devices, and patch it with other MIDI
 devices.</p>
@@ -308,8 +310,9 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb5-1"><a href="
 <span id="cb5-36"><a href="#cb5-36" aria-hidden="true" tabindex="-1"></a><span class="co">      # ... other parameters</span></span></code></pre></div>
 <p>Once we have everything, we generate the new Python API and we can
 include it in a Nallely session as we did earlier:</p>
-<pre><code>nallely generate -i s1.yaml -o s1.py # generate the API in s1.py
-nallely run --with-trevor --serve-ui -l s1.py # add it to a new session</code></pre>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode markdown"><code class="sourceCode markdown"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>nallely generate -i s1.yaml -o s1.py # generate the API in s1.py</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>nallely run --with-trevor --serve-ui -l s1.py # add it to a new session</span></code></pre></div>
 <figure>
 <img src="imgs/02.png"
 alt="We have now all the sections and parameters for the S-1" />
@@ -351,8 +354,9 @@ manually crafted CSV file if you want, that you could derive from a xlsx
 sheet). The CSV is passed as input of the Nallely’s generator, and the
 corresponding Python API module is generated, as well as the YAML
 description in the format previously described.</p>
-<pre><code>CSV file --(nallely generate)--&gt; dedicated Python API
-                             +-&gt; YAML description file</code></pre>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode markdown"><code class="sourceCode markdown"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>CSV file --(nallely generate)--&gt; dedicated Python API</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>                             +-&gt; YAML description file</span></code></pre></div>
 <p>If some adjustments needs to be done, the generated Python module
 shouldn’t be modified by hand, the YAML or CSV description should. Then
 the code is generated again using Nallely. You have the choice to modify
@@ -366,8 +370,9 @@ href="https://midi.guide/d/korg/minilogue/">Korg Minilogue</a>, then
 life is easy. We just download the corresponding CSV file, then we
 generate the code, <em>et voilà</em>, we can include it in a Nallely
 session:</p>
-<pre><code>nallely generate -i nts1.csv -o nts1.py
-nallely run --with-trevor --serve-ui -l nts1.py</code></pre>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode markdown"><code class="sourceCode markdown"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>nallely generate -i nts1.csv -o nts1.py</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>nallely run --with-trevor --serve-ui -l nts1.py</span></code></pre></div>
 <p>If you load this freshly generated module in a session, you’ll see
 however that there is a small catch: there is no <code>keys</code>
 section. This is due to the fact that the CSV description doesn’t embed
@@ -389,17 +394,18 @@ the <a
 href="https://raw.githubusercontent.com/pencilresearch/midi/main/template.csv">syntax/format
 recommended by the MIDI CC &amp; NRPN database</a>. Let’s generate the
 code and see what’s happening:</p>
-<pre><code>$ nallely generate -i s1.csv -o bads1.py
-$ cat bads1.py
-&quot;&quot;
-Generated configuration for the Roland - S-1
-&quot;&quot;&quot;
-import nallely
-
-class All_ccsSection(nallely.Module):
-    modulation_wheel = nallely.ModuleParameter(1)
-    lfo_rate_(lfo_[rate]_knob) = nallely.ModuleParameter(3)
-    # ...</code></pre>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode markdown"><code class="sourceCode markdown"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>$ nallely generate -i s1.csv -o bads1.py</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>$ cat bads1.py</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>&quot;&quot;</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>Generated configuration for the Roland - S-1</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>&quot;&quot;&quot;</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>import nallely</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>class All_ccsSection(nallely.Module):</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>    modulation_wheel = nallely.ModuleParameter(1)</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>    lfo_rate_(lfo_<span class="co">[</span><span class="ot">rate</span><span class="co">]</span>_knob) = nallely.ModuleParameter(3)</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>    # ...</span></code></pre></div>
 <p>… that’s not great.. We can see that the name of the class that will
 represent a section is weird, and that the names of the parameters are
 sometimes wrong (they have <code>(</code> and other special characters).
@@ -436,7 +442,8 @@ description. You basically cut the middle man and just manually describe
 your MIDI device configuration using the internal Python DSL. As you are
 directly writing the Python module, you can directly load your code in a
 Nallely session:</p>
-<pre><code>Python module file --(manual modification)--&gt; new version of the dedicated Python API</code></pre>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode markdown"><code class="sourceCode markdown"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>Python module file --(manual modification)--&gt; new version of the dedicated Python API</span></code></pre></div>
 <h3 id="describing-your-device">Describing your device</h3>
 <p>Without entering in too much details (please refer to the in-depth <a
 href="https://github.com/dr-schlange/nallely-midi/blob/main/docs/main.md#define-a-new-configuration-for-a-device-programmatically">documentation</a>
