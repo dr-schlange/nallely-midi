@@ -164,3 +164,150 @@ class Arpegiator(VirtualDevice):
                 self.index = random.randint(0, len_notes - 1)
                 if self.index != prev_index:
                     break
+
+
+class Looper(VirtualDevice):
+    output1_cv = VirtualParameter("output1", range=(0, 127))
+    output2_cv = VirtualParameter("output2", range=(0, 127))
+    output3_cv = VirtualParameter("output3", range=(0, 127))
+
+    input_cv = VirtualParameter("input", range=(0, 127))
+
+    record_cv = VirtualParameter("record", range=(0, 1))
+    reset_cv = VirtualParameter("reset", range=(0, 1))
+
+    @property
+    def range(self):
+        return 0, 127
+
+    def __init__(self, **kwargs):
+        self.recording = False
+        self.loop = []
+        self.loop_start = 0
+        self.playing = False
+        self.last_assigned_channel = -1
+        self.outputs = [
+            self.output_cv,
+            self.output1_cv,
+            self.output2_cv,
+            self.output3_cv,
+        ]
+        self.input = 0
+        self.record = 0
+        self.reset = 0
+        for i in range(1, 4):
+            setattr(self, f"output{i}", 0)
+        self.active_notes = {}
+        self.current_index = 0
+        super().__init__(**kwargs)
+
+    def normalize_loop(self):
+        if self.loop:
+            first_ts = self.loop[0][0]
+            self.loop = [(ts - first_ts, group) for ts, group in self.loop]
+
+    @on(record_cv, edge="rising")
+    def start_recording(self, value, ctx):
+        if self.debug:
+            print("+ START RECORDING")
+        self.recording = True
+        self.playing = False
+        self.loop.clear()
+        self.loop_start = self.current_time_ms()
+        self.current_index = 0
+
+    @on(record_cv, edge="falling")
+    def stop_recording(self, value, ctx):
+        if self.debug:
+            print("+ STOP RECORDING")
+        self.recording = False
+        now = self.current_time_ms()
+
+        if self.loop:
+            self.loop_duration = now - self.loop_start
+            self.normalize_loop()
+            self.playing = True
+
+    @on(reset_cv, edge="rising")
+    def on_reset(self, value, ctx):
+        if self.debug:
+            print("  RESET")
+        self.loop.clear()
+        self.playing = False
+        self.recording = False
+        return 0, self.outputs
+
+    @on(input_cv, edge="any")
+    def on_input(self, value, ctx):
+        if not self.recording:
+            return
+        if value == 0:
+            return
+
+        if len(self.loop) == 0:
+            self.loop_start = self.current_time_ms()
+
+        timestamp = self.current_time_ms() - self.loop_start
+
+        if value in self.active_notes:
+            channel = self.active_notes[value]
+            if self.loop and abs(self.loop[-1][0] - timestamp) < 10:
+                self.loop[-1][1].append((0, channel))
+            else:
+                self.last_assigned_channel = (self.last_assigned_channel + 1) % len(
+                    self.outputs
+                )
+                self.loop.append((timestamp, [(0, channel)]))
+            del self.active_notes[value]
+            return
+
+        if self.loop and abs(self.loop[-1][0] - timestamp) < 10:
+            channel = self.loop[-1][1][0][1]
+            self.loop[-1][1].append((value, channel))
+        else:
+            self.last_assigned_channel = (self.last_assigned_channel + 1) % len(
+                self.outputs
+            )
+            channel = self.last_assigned_channel
+            self.loop.append((timestamp, [(value, channel)]))
+
+        self.active_notes[value] = channel
+        if self.debug:
+            print(f"  NOTE ON {value=} assigned to {channel=} at {timestamp}ms")
+
+    def current_time_ms(self):
+        import time
+
+        return int(time.monotonic() * 1000)
+
+    def main(self, ctx):
+        if not self.playing or not self.loop:
+            yield from self.sleep(10)
+            return
+
+        now = self.current_time_ms()
+
+        if self.current_index == 0:
+            self.play_start_time = now
+
+        if self.current_index >= len(self.loop):
+            elapsed = now - self.play_start_time
+            remaining = self.loop_duration - elapsed
+            if self.debug:
+                print(f"  REMAINING {remaining}ms")
+            if remaining > 0:
+                yield from self.sleep(remaining)
+            self.current_index = 0
+            self.play_start_time = self.current_time_ms()
+            return
+
+        ts, group = self.loop[self.current_index]
+        wait_time = ts - (now - self.play_start_time)
+
+        if wait_time > 0:
+            yield from self.sleep(wait_time)
+
+        for value, channel in group:
+            yield value, [self.outputs[channel]]
+
+        self.current_index += 1
