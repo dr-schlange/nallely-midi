@@ -175,6 +175,7 @@ class Looper(VirtualDevice):
 
     record_cv = VirtualParameter("record", range=(0, 1))
     reset_cv = VirtualParameter("reset", range=(0, 1))
+    speed_cv = VirtualParameter("speed", range=(0, 127))
     reverse_cv = VirtualParameter("reverse", range=(0, 1))
 
     @property
@@ -201,6 +202,7 @@ class Looper(VirtualDevice):
             setattr(self, f"output{i}", 0)
         self.active_notes = {}
         self.current_index = 0
+        self.speed = 1.0
         super().__init__(**kwargs)
 
     def normalize_loop(self):
@@ -238,6 +240,12 @@ class Looper(VirtualDevice):
         self.playing = False
         self.recording = False
         return 0, self.outputs
+
+    @on(speed_cv, edge="any")
+    def on_speed_change(self, value, ctx):
+        self.speed = max(0.01, value)
+        if self.debug:
+            print(f"  SPEED set to {self.speed}x")
 
     @on(input_cv, edge="any")
     def on_input(self, value, ctx):
@@ -307,7 +315,7 @@ class Looper(VirtualDevice):
             # Horloge inverse : le moment "logique" de ce point, depuis la fin
             target_time = self.loop_duration - ts
             elapsed = now - self.play_start_time
-            wait_time = target_time - elapsed
+            wait_time = (target_time - elapsed) / self.speed
 
             if wait_time > 0:
                 yield from self.sleep(wait_time)
@@ -319,7 +327,7 @@ class Looper(VirtualDevice):
         else:
             if self.current_index >= len(self.loop):
                 elapsed = now - self.play_start_time
-                remaining = self.loop_duration - elapsed
+                remaining = (self.loop_duration - elapsed) / self.speed
                 if self.debug:
                     print(f"  REMAINING {remaining}ms")
                 if remaining > 0:
@@ -329,7 +337,7 @@ class Looper(VirtualDevice):
                 return
 
             ts, group = self.loop[self.current_index]
-            wait_time = ts - (now - self.play_start_time)
+            wait_time = (ts - (now - self.play_start_time)) / self.speed
 
             if wait_time > 0:
                 yield from self.sleep(wait_time)
