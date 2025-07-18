@@ -175,6 +175,7 @@ class Looper(VirtualDevice):
 
     record_cv = VirtualParameter("record", range=(0, 1))
     reset_cv = VirtualParameter("reset", range=(0, 1))
+    clear_cv = VirtualParameter("clear", range=(0, 1))
     speed_cv = VirtualParameter("speed", range=(0, 127))
     reverse_cv = VirtualParameter("reverse", range=(0, 1))
 
@@ -196,6 +197,7 @@ class Looper(VirtualDevice):
         ]
         self.input = 0
         self.record = 0
+        self.clear = 0
         self.reset = 0
         self.reverse = 0
         for i in range(1, 4):
@@ -232,14 +234,23 @@ class Looper(VirtualDevice):
             self.normalize_loop()
             self.playing = True
 
-    @on(reset_cv, edge="rising")
-    def on_reset(self, value, ctx):
+    @on(clear_cv, edge="rising")
+    def on_clear(self, value, ctx):
         if self.debug:
-            print("  RESET")
+            print("  CLEAR")
         self.loop.clear()
         self.playing = False
         self.recording = False
         return 0, self.outputs
+
+    @on(reset_cv, edge="rising")
+    def on_reset(self, value, ctx):
+        if self.debug:
+            print("  RESET")
+        if self.reverse:
+            self.current_index = len(self.loop)
+        else:
+            self.current_index = 0
 
     @on(speed_cv, edge="any")
     def on_speed_change(self, value, ctx):
