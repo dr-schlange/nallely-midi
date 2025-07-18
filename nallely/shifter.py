@@ -175,6 +175,7 @@ class Looper(VirtualDevice):
 
     record_cv = VirtualParameter("record", range=(0, 1))
     reset_cv = VirtualParameter("reset", range=(0, 1))
+    reverse_cv = VirtualParameter("reverse", range=(0, 1))
 
     @property
     def range(self):
@@ -195,6 +196,7 @@ class Looper(VirtualDevice):
         self.input = 0
         self.record = 0
         self.reset = 0
+        self.reverse = 0
         for i in range(1, 4):
             setattr(self, f"output{i}", 0)
         self.active_notes = {}
@@ -290,24 +292,49 @@ class Looper(VirtualDevice):
         if self.current_index == 0:
             self.play_start_time = now
 
-        if self.current_index >= len(self.loop):
+        if self.reverse:
+            rev_index = len(self.loop) - 1 - self.current_index
+            if rev_index < 0:
+                elapsed = now - self.play_start_time
+                remaining = self.loop_duration - elapsed
+                if remaining > 0:
+                    yield from self.sleep(remaining)
+                self.current_index = 0
+                self.play_start_time = self.current_time_ms()
+                return
+
+            ts, group = self.loop[rev_index]
+            # Horloge inverse : le moment "logique" de ce point, depuis la fin
+            target_time = self.loop_duration - ts
             elapsed = now - self.play_start_time
-            remaining = self.loop_duration - elapsed
-            if self.debug:
-                print(f"  REMAINING {remaining}ms")
-            if remaining > 0:
-                yield from self.sleep(remaining)
-            self.current_index = 0
-            self.play_start_time = self.current_time_ms()
-            return
+            wait_time = target_time - elapsed
 
-        ts, group = self.loop[self.current_index]
-        wait_time = ts - (now - self.play_start_time)
+            if wait_time > 0:
+                yield from self.sleep(wait_time)
 
-        if wait_time > 0:
-            yield from self.sleep(wait_time)
+            for value, channel in group:
+                yield value, [self.outputs[channel]]
 
-        for value, channel in group:
-            yield value, [self.outputs[channel]]
+            self.current_index += 1
+        else:
+            if self.current_index >= len(self.loop):
+                elapsed = now - self.play_start_time
+                remaining = self.loop_duration - elapsed
+                if self.debug:
+                    print(f"  REMAINING {remaining}ms")
+                if remaining > 0:
+                    yield from self.sleep(remaining)
+                self.current_index = 0
+                self.play_start_time = self.current_time_ms()
+                return
 
-        self.current_index += 1
+            ts, group = self.loop[self.current_index]
+            wait_time = ts - (now - self.play_start_time)
+
+            if wait_time > 0:
+                yield from self.sleep(wait_time)
+
+            for value, channel in group:
+                yield value, [self.outputs[channel]]
+
+            self.current_index += 1
