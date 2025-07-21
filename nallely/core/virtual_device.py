@@ -212,6 +212,7 @@ class VirtualDevice(threading.Thread):
         if self.paused or param in self.closed_ports:
             return
         try:
+            self.store_input(param, value)
             self.input_queues[param].put_nowait((value, ctx or ThreadContext()))
         except Full:
             print(
@@ -325,7 +326,6 @@ class VirtualDevice(threading.Thread):
                         value, inner_ctx = input_queue.get_nowait()
                         changed.add(param)
                         self._param_last_values[param] = getattr(self, param, None)
-                        self.store_input(param, value)
                         input_queue.task_done()
                     except Empty:
                         break

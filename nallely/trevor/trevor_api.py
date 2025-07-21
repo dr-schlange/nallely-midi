@@ -1,3 +1,4 @@
+from decimal import Decimal
 from itertools import chain
 from typing import Any
 
@@ -191,8 +192,8 @@ class TrevorAPI:
 
     def set_virtual_value(self, device_id, parameter, value):
         device: VirtualDevice = self.get_device_instance(device_id)  # type: ignore
-        if "." in str(value):
-            value = float(value)
+        if "." in str(value) or "," in str(value):
+            value = Decimal(str(value).replace(",", "."))
         else:
             try:
                 value = int(value)
