@@ -212,8 +212,12 @@ class VirtualDevice(threading.Thread):
         if self.paused or param in self.closed_ports:
             return
         try:
+            try:
+                previous = getattr(self, param)
+            except:
+                previous = None
             self.store_input(param, value)
-            self.input_queues[param].put_nowait((value, ctx or ThreadContext()))
+            self.input_queues[param].put_nowait((value, previous, ctx or ThreadContext()))
         except Full:
             print(
                 f"Warning: input_queue full for {self.uid()}[{param}] — dropping message {value}"
@@ -323,9 +327,9 @@ class VirtualDevice(threading.Thread):
                 batch_size = min(max_batch_size, max(1, int(queue_level / 100)))
                 for _ in range(batch_size):
                     try:
-                        value, inner_ctx = input_queue.get_nowait()
+                        value, previous, inner_ctx = input_queue.get_nowait()
                         changed.add(param)
-                        self._param_last_values[param] = getattr(self, param, None)
+                        self._param_last_values[param] = previous
                         input_queue.task_done()
                     except Empty:
                         break
