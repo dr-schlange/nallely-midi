@@ -200,6 +200,7 @@ class Looper(VirtualDevice):
         self.clear = 0
         self.reset = 0
         self.reverse = 0
+        self._stopping = False
         for i in range(1, 4):
             setattr(self, f"output{i}", 0)
         self.active_notes = {}
@@ -238,10 +239,7 @@ class Looper(VirtualDevice):
     def on_clear(self, value, ctx):
         if self.debug:
             print("  CLEAR")
-        self.loop.clear()
-        self.playing = False
-        self.recording = False
-        return 0, self.outputs
+        self._stopping = True
 
     @on(reset_cv, edge="rising")
     def on_reset(self, value, ctx):
@@ -302,6 +300,13 @@ class Looper(VirtualDevice):
         return int(time.monotonic() * 1000)
 
     def main(self, ctx):
+        if self._stopping:
+            self._stopping = False
+            self.loop.clear()
+            self.playing = False
+            self.recording = False
+            return 0, self.outputs
+
         if not self.playing or not self.loop:
             return
 
