@@ -303,7 +303,6 @@ class Looper(VirtualDevice):
 
     def main(self, ctx):
         if not self.playing or not self.loop:
-            yield from self.sleep(10)
             return
 
         now = self.current_time_ms()
@@ -323,7 +322,6 @@ class Looper(VirtualDevice):
                 return
 
             ts, group = self.loop[rev_index]
-            # Horloge inverse : le moment "logique" de ce point, depuis la fin
             target_time = self.loop_duration - ts
             elapsed = now - self.play_start_time
             wait_time = (target_time - elapsed) / self.speed

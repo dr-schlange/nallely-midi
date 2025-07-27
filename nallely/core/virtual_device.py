@@ -148,7 +148,7 @@ class VirtualDevice(threading.Thread):
         instance._number = instance._id[cls]  # type: ignore
         return instance
 
-    def __init__(self, target_cycle_time: float = 0.005, autoconnect: bool = False):
+    def __init__(self, target_cycle_time: float = 0.002, autoconnect: bool = False):
         from ..utils import ThreadSafeDefaultDict
         from .links import Link
 
@@ -216,8 +216,10 @@ class VirtualDevice(threading.Thread):
                 previous = getattr(self, param)
             except:
                 previous = None
-            self.store_input(param, value)
-            self.input_queues[param].put_nowait((value, previous, ctx or ThreadContext()))
+            self.store_input(param, value)  # We store for immediate feedback
+            self.input_queues[param].put_nowait(
+                (value, previous, ctx or ThreadContext())
+            )
         except Full:
             print(
                 f"Warning: input_queue full for {self.uid()}[{param}] — dropping message {value}"
@@ -321,7 +323,7 @@ class VirtualDevice(threading.Thread):
             inner_ctx = {}
             for param, input_queue in list(self.input_queues.items()):
                 # Process a batch of inputs per cycle (to avoid backlog)
-                max_batch_size = 10  # Maximum number of items to process per cycle
+                max_batch_size = 1  # Maximum number of items to process per cycle
                 queue_level = input_queue.qsize()
                 # We adjust the batch size dynamically based on queue pressure
                 batch_size = min(max_batch_size, max(1, int(queue_level / 100)))
@@ -329,6 +331,7 @@ class VirtualDevice(threading.Thread):
                     try:
                         value, previous, inner_ctx = input_queue.get_nowait()
                         changed.add(param)
+                        self.store_input(param, value)
                         self._param_last_values[param] = previous
                         input_queue.task_done()
                     except Empty:
