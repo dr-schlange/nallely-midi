@@ -308,6 +308,9 @@ class Looper(VirtualDevice):
             return 0, self.outputs
 
         if not self.playing or not self.loop:
+            if self.recording and not self.playing:
+                # Allow other events to come in while idle in recording mode
+                yield from self.sleep(10)
             return
 
         now = self.current_time_ms()
