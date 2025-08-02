@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Nallely WebSocket Demo</title>
+</head>
+
+<body>
+
+    <h1>Nallely External Device Demo</h1>
+
+    <div id="status">Status: <span id="connection-status">Disconnected</span></div>
+
+    <div>
+        <label for="paramInput">Parameter:</label>
+        <input type="text" id="paramInput" value="exampleParam" />
+    </div>
+    <div>
+        <label for="valueInput">Value:</label>
+        <input type="text" id="valueInput" value="123" />
+    </div>
+    <button id="sendBtn">Send Message</button>
+
+    <h2>Received Data</h2>
+    <pre id="output">Waiting for data...</pre>
+
+    <script src="nallely-websocket.js"></script>
+    <script>
+        const parameters = {
+            exampleParam: { min: 0, max: 100 },
+            anotherParam: { min: -50, max: 50 }
+        };
+        const config = {
+            exampleParam: 0,
+            anotherParam: 0
+        };
+
+        // Register a service
+        const device = NallelyWebsocketBus.register('demo', 'mydemo', parameters, config);
+
+        // Update connection status based on WebSocket events
+        function updateStatus(status) {
+            document.getElementById('connection-status').textContent = status;
+        }
+
+        // Hook into the WebSocket to update status and display data
+        device.onopen = () => updateStatus('Connected')
+        device.onclose = () => updateStatus('Disconnected')
+        device.onerror = () => updateStatus('Error')
+
+        // Update received data display every time config changes
+        function updateOutput() {
+            output.textContent = `anotherParam: ${config.anotherParam}\nexampleParam: ${config.exampleParam}`;
+        }
+
+        device.onmessage = (data) => updateOutput();
+
+        // Send message on button click
+        document.getElementById('sendBtn').addEventListener('click', () => {
+            const param = document.getElementById('paramInput').value;
+            const val = document.getElementById('valueInput').value;
+            device.send(param, val);
+        });
+    </script>
+</body>
+
+</html>
