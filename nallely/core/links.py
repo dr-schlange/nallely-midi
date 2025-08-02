@@ -278,18 +278,20 @@ class Link:
         dest = cast(ParameterInstance, self.dest)
 
         is_blocking_consummer = dest.parameter.consumer
-        src_section = getattr(src.device, src.parameter.section_name)
-        src_param = src.parameter.name
-        chain = self.chain or (lambda x: x)
+        # src_section = getattr(src.device, src.parameter.section_name)
+        # src_param = src.parameter.name
+        # chain = self.chain or (lambda x: x)
         if is_blocking_consummer:
-            return lambda _, ctx: dest.device.receiving(
-                chain(getattr(src_section, src_param)),
+            return lambda value, ctx: dest.device.receiving(
+                # chain(getattr(src_section, src_param)),
+                value,
                 on=dest.parameter.name,
                 ctx=ThreadContext({**ctx, "param": src.parameter.name}),
             )
         else:
-            return lambda _, ctx: dest.device.set_parameter(
-                dest.parameter.name, chain(getattr(src_section, src_param)), ctx
+            return lambda value, ctx: dest.device.set_parameter(
+                # dest.parameter.name, chain(getattr(src_section, src_param)), ctx
+                dest.parameter.name, value, ctx
             )
 
     # MIDI key/pad -> MIDI key/pad
@@ -399,11 +401,6 @@ class Link:
                         velocity=ctx.get("velocity", DEFAULT_VELOCITY),
                         type="note_on",
                     )
-                    # dest.device.note(
-                    #     note=0,
-                    #     velocity=ctx.get("velocity", DEFAULT_VELOCITY),
-                    #     type="note_off",
-                    # )
                 if previous:
                     dest.device.note(
                         note=previous,
