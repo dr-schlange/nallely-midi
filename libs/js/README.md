@@ -41,7 +41,7 @@ Where:
     param2: {min: -10, max: 30}
 }
 ```
-* `config` is an object where all the received values for paramters will be updated. This object has to be mutable (obviously) and shared by all the parts of the code that requires to have the values updated.
+* `config` is an object where all the received values for paramters will be updated. This object has to be mutable (obviously) and shared by all the parts of the code that requires to have the values updated. This object needs to have, at least, the keys of the `parameters` object (it can have more, but at least those ones).
 
 
 That's pretty much it for a basic usage. The `config` object will be updated automatically when messages will handled by the registerd device.
