@@ -13,11 +13,12 @@ class NallelyService {
     autoRegister() {
         const ws = new WebSocket(this.url)
         ws.addEventListener('open', () => {
+            const data = Object.entries(this.parameters).map(([name, conf]) => { return { name, range: [conf.min, conf.max] } })
             ws.send(JSON.stringify({
                 kind: this.kind,
-                parameters: Object.entries(this.parameters).map(([name, conf]) => { return { name, range: [conf.min, conf.max] } })
+                parameters: data
             }))
-            this.onopen?.()
+            this.onopen?.(data)
         })
 
         ws.addEventListener('close', (e) => {
@@ -25,12 +26,12 @@ class NallelyService {
             setTimeout(() => {
                 this.autoRegister();
             }, 1000);
-            this.onclose?.()
+            this.onclose?.(e)
         })
 
         ws.addEventListener('error', (err) => {
             console.error('Socket encountered error: ', err.message, 'Closing socket');
-            this.onerror?.()
+            this.onerror?.(err)
             if (ws) {
                 ws.close();
             }
@@ -49,7 +50,9 @@ class NallelyService {
 
     send(parameter, value) {
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-            this.ws.send(JSON.stringify({ on: parameter, value }));
+            const data = JSON.stringify({ on: parameter, value })
+            this.onsend?.(data)
+            this.ws.send(data)
             return
         }
         console.warn('WebSocket not open, cannot send:', parameter, value);
