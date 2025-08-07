@@ -8,7 +8,7 @@ from typing import Any
 from nallely.core import ThreadContext, VirtualDevice, VirtualParameter, on
 
 
-class MyArpegiator(VirtualDevice):
+class ClaudeArpegiator(VirtualDevice):
     """
     An arpegiator that takes note inputs and plays them in sequence according to various patterns.
     Unlike a traditional arpegiator, this one maintains a note buffer and cycles through it.
@@ -200,7 +200,7 @@ class MyArpegiator(VirtualDevice):
         return (0, 127)
 
 
-class DualRouter(VirtualDevice):
+class ClaudeDualRouter(VirtualDevice):
     """
     A routing device that takes two inputs and routes one of them to the output
     based on a selector. Similar to Switch but with explicit dual inputs.
@@ -312,7 +312,7 @@ class DualRouter(VirtualDevice):
         return (0, 127)
 
 
-class StepSequencer8(VirtualDevice):
+class ClaudeStepSequencer8(VirtualDevice):
     """
     An 8-step sequencer with individual control over each step's note, velocity, gate, and active state.
     Includes transport controls (play/pause, reset) and tempo control.

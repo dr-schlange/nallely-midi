@@ -5,7 +5,7 @@ AI-generated Virtual Devices: Simple Arpeggiator and DualInputSwitch
 import random
 from nallely.core import ThreadContext, VirtualDevice, VirtualParameter, on
 
-class SimpleArpeggiator(VirtualDevice):
+class GPT41Arpeggiator(VirtualDevice):
     """
     A basic arpeggiator that cycles through held notes in a fixed pattern (up).
     No port management, just note buffer and main loop.
@@ -73,7 +73,7 @@ class SimpleArpeggiator(VirtualDevice):
         return (0, 127)
 
 
-class DualInputSwitch(VirtualDevice):
+class GPT41DualInputSwitch(VirtualDevice):
     """
     A device that takes two inputs and routes one to the output based on a selector, similar to a Switch.
     """
@@ -110,7 +110,7 @@ class DualInputSwitch(VirtualDevice):
         return (0, 127)
 
 
-class StepSequencer8(VirtualDevice):
+class GPT41StepSequencer8(VirtualDevice):
     """
     An 8-step sequencer with per-step note, velocity, gate, and active controls.
     Includes play, reset, tempo, step length, and swing parameters.
