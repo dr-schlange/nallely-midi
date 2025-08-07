@@ -54,7 +54,12 @@ def step_create_device_with_params(context, device_type, label, param_string):
         raise ValueError(f"Unknown module type: {device_type}")
 
     try:
-        device = device_cls(**params)
+        device = device_cls()
+        for key, value in params.items():
+            if hasattr(device, key):
+                setattr(device, key, value)
+            else:
+                raise ValueError(f"Parameter {key} is not valid for {device_type}")
     except Exception:
         raise ValueError(f"Error while instanciating the device: {device_type}")
 
@@ -136,14 +141,14 @@ def compare_value(context, device, parameter, comparator, value):
     dev_value = getattr(dev, parameter)
     value = float(value)
     if comparator == "eq":
-        assert dev_value == value
+        assert dev_value == value, f"{device}.{parameter} == {dev_value}, expected {comparator} {value}"
     elif comparator == "ne":
-        assert dev_value != value
+        assert dev_value != value, f"{device}.{parameter} == {dev_value}, expected {comparator} {value}"
     elif comparator == "gt":
-        assert dev_value > value
+        assert dev_value > value, f"{device}.{parameter} == {dev_value}, expected {comparator} {value}"
     elif comparator == "ge":
-        assert dev_value >= value
+        assert dev_value >= value,f"{device}.{parameter} == {dev_value}, expected {comparator} {value}"
     elif comparator == "lt":
-        assert dev_value < value
+        assert dev_value < value, f"{device}.{parameter} == {dev_value}, expected {comparator} {value}"
     elif comparator == "le":
-        assert dev_value <= value
+        assert dev_value <= value, f"{device}.{parameter} == {dev_value}, expected {comparator} {value}"
