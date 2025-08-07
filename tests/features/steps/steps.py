@@ -1,9 +1,10 @@
 import re
-from shutil import ExecError
 import time
-from behave import *  # type: ignore
-import nallely
+from shutil import ExecError
 
+from behave import *  # type: ignore
+
+import nallely
 
 converter = {"LFO": {"frequency": "speed", "shape": "waveform"}}
 

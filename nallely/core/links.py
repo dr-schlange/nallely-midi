@@ -291,7 +291,9 @@ class Link:
         else:
             return lambda value, ctx: dest.device.set_parameter(
                 # dest.parameter.name, chain(getattr(src_section, src_param)), ctx
-                dest.parameter.name, value, ctx
+                dest.parameter.name,
+                value,
+                ctx,
             )
 
     # MIDI key/pad -> MIDI key/pad
