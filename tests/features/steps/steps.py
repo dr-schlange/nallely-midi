@@ -1,6 +1,5 @@
 import re
 import time
-from shutil import ExecError
 
 from behave import *  # type: ignore
 
@@ -135,20 +134,57 @@ def wait(context, ms):
     time.sleep(float(ms) / 1000)
 
 
+@then("{device}'s {parameter} is between {lower} and {upper}")
+def compare_value_between(context, device, parameter, lower, upper):
+    dev = lookup(context, device)
+    dev_value = getattr(dev, parameter)
+    lower = float(lower)
+    upper = float(upper)
+    assert (
+        dev_value >= lower and dev_value <= upper
+    ), f"{device}.{parameter} == {dev_value}, expected between {lower} and {upper}"
+
+
 @then("{device}'s {parameter} is {comparator} {value}")
 def compare_value(context, device, parameter, comparator, value):
     dev = lookup(context, device)
     dev_value = getattr(dev, parameter)
     value = float(value)
     if comparator == "eq":
-        assert dev_value == value, f"{device}.{parameter} == {dev_value}, expected {comparator} {value}"
+        assert (
+            dev_value == value
+        ), f"{device}.{parameter} == {dev_value}, expected {comparator} {value}"
     elif comparator == "ne":
-        assert dev_value != value, f"{device}.{parameter} == {dev_value}, expected {comparator} {value}"
+        assert (
+            dev_value != value
+        ), f"{device}.{parameter} == {dev_value}, expected {comparator} {value}"
     elif comparator == "gt":
-        assert dev_value > value, f"{device}.{parameter} == {dev_value}, expected {comparator} {value}"
+        assert (
+            dev_value > value
+        ), f"{device}.{parameter} == {dev_value}, expected {comparator} {value}"
     elif comparator == "ge":
-        assert dev_value >= value,f"{device}.{parameter} == {dev_value}, expected {comparator} {value}"
+        assert (
+            dev_value >= value
+        ), f"{device}.{parameter} == {dev_value}, expected {comparator} {value}"
     elif comparator == "lt":
-        assert dev_value < value, f"{device}.{parameter} == {dev_value}, expected {comparator} {value}"
+        assert (
+            dev_value < value
+        ), f"{device}.{parameter} == {dev_value}, expected {comparator} {value}"
     elif comparator == "le":
-        assert dev_value <= value, f"{device}.{parameter} == {dev_value}, expected {comparator} {value}"
+        assert (
+            dev_value <= value
+        ), f"{device}.{parameter} == {dev_value}, expected {comparator} {value}"
+
+
+@given("{label}'s {parameter} is set to {value}")
+def set_device_parameter(context, label, parameter, value):
+    device = lookup(context, label)
+    # Try to convert value to float or int if possible
+    try:
+        if "." in value:
+            value = float(value)
+        else:
+            value = int(value)
+    except Exception:
+        value = str(value)
+    device.set_parameter(parameter, value)
