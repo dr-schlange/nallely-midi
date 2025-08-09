@@ -459,8 +459,6 @@ class VirtualDevice(threading.Thread):
             return
         self.running = False
         self.pause_event.set()
-        if self.is_alive():
-            self.join()  # Wait for the thread to finish
         if clear_queues:
             # Clear input_queue
             for inqueue in self.input_queues.values():
@@ -470,6 +468,8 @@ class VirtualDevice(threading.Thread):
                         inqueue.task_done()
                     except Empty:
                         break
+        if self.is_alive():
+            self.join()  # Wait for the thread to finish
 
     def pause(self, duration=None):
         """Pause the LFO, optionally for a specific duration."""
