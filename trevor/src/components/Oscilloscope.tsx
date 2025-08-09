@@ -137,10 +137,11 @@ export const Scope = ({ id, onClose }: ScopeProps) => {
 	const [walker, setWalker] = useState(false);
 	const [autoPaused, setAutoPaused] = useState(false);
 	const [displayMode, setDisplayMode] = useState<DisplayModes>("line");
-	const [followMode, setFollowMode] = useState<FollowModes>("cyclic");
-	const followModeRef = useRef<FollowModes>("cyclic");
+	const [followMode, setFollowMode] = useState<FollowModes>("linear");
+	const followModeRef = useRef<FollowModes>(followMode);
 	const [chartKey, setChartKey] = useState(0);
 	const elapsed = useRef(0);
+	const firstValue = useRef(false);
 
 	const [options, setOptions] = useState<uPlot.Options>(
 		buildOptions(
@@ -153,7 +154,6 @@ export const Scope = ({ id, onClose }: ScopeProps) => {
 		),
 	);
 
-	// Only update options when display mode or label changes
 	useEffect(() => {
 		setOptions(
 			buildOptions(
@@ -173,16 +173,11 @@ export const Scope = ({ id, onClose }: ScopeProps) => {
 
 	const toggleCyclicFollowMode = () => {
 		const newMode = followMode === "cyclic" ? "linear" : "cyclic";
-		// Update mode state and ref first
 		setFollowMode(newMode);
 		followModeRef.current = newMode;
-		// Clear the current chart reference to force recreation
 		chartRef.current = null;
-		// Reset everything for the new mode (now using the new mode)
-		resetBounds(bufferSize, newMode);
-		// Reset elapsed to appropriate starting value for the new mode
+		resetBounds(newMode);
 		elapsed.current = 0;
-		// Force a complete chart recreation by incrementing key again
 		setChartKey((k) => k + 2);
 	};
 
@@ -194,10 +189,9 @@ export const Scope = ({ id, onClose }: ScopeProps) => {
 		onClose?.(id);
 	};
 
-	const resetBounds = (buffSize, mode) => {
+	const resetBounds = (mode) => {
 		upperBound.current = undefined;
 		lowerBound.current = undefined;
-		// Properly reset buffer for the target mode
 		if (mode === "cyclic") {
 			bufferRef.current.x = Array.from(
 				{ length: bufferSizeRef.current },
@@ -223,25 +217,8 @@ export const Scope = ({ id, onClose }: ScopeProps) => {
 	};
 
 	useEffect(() => {
-		// Only update options when display mode, label change
-		// Buffer size and follow mode changes are handled separately
-		setOptions(
-			buildOptions(
-				displayMode,
-				label,
-				upperBound.current,
-				lowerBound.current,
-				bufferSize,
-				followModeRef.current,
-			),
-		);
-	}, [displayMode, label]);
-
-	// Handle buffer size changes separately
-	useEffect(() => {
-		// Reset buffer when bufferSize changes, maintaining current mode
 		bufferSizeRef.current = bufferSize;
-		resetBounds(bufferSize, followMode);
+		resetBounds(followMode);
 	}, [bufferSize]);
 
 	const commitBufferSize = (value) => {
@@ -274,6 +251,7 @@ export const Scope = ({ id, onClose }: ScopeProps) => {
 						parameters: [{ name: "data", stream: true }],
 					}),
 				);
+				firstValue.current = false;
 			};
 
 			ws.onmessage = (event) => {
@@ -309,11 +287,17 @@ export const Scope = ({ id, onClose }: ScopeProps) => {
 					}
 				}
 
+				let update = false;
 				if (upperBound.current === undefined || newValue > upperBound.current) {
 					upperBound.current = newValue;
+					update = true;
 				}
 				if (lowerBound.current === undefined || newValue < lowerBound.current) {
 					lowerBound.current = newValue;
+					update = true;
+				}
+				if (update) {
+					setChartKey((k) => k + 1);
 				}
 
 				if (!updateScheduled.current) {
@@ -324,6 +308,10 @@ export const Scope = ({ id, onClose }: ScopeProps) => {
 						}
 						updateScheduled.current = false;
 					});
+				}
+				if (firstValue.current === false) {
+					firstValue.current = true;
+					resetBounds(followMode);
 				}
 			};
 
@@ -401,7 +389,7 @@ export const Scope = ({ id, onClose }: ScopeProps) => {
 				/>
 				<Button
 					text="r"
-					onClick={() => resetBounds(bufferSize, followMode)}
+					onClick={() => resetBounds(followMode)}
 					tooltip="Reset"
 				/>
 				<Button
@@ -421,10 +409,7 @@ export const Scope = ({ id, onClose }: ScopeProps) => {
 			<UplotReact
 				key={chartKey}
 				options={options}
-				data={[
-					bufferRef.current.x.slice(), // Create a copy to avoid mutations during render
-					bufferRef.current.y.slice(),
-				]}
+				data={[bufferRef.current.x, bufferRef.current.y]}
 				onCreate={(chart) => {
 					chartRef.current = chart;
 				}}
