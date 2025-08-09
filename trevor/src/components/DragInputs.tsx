@@ -7,6 +7,7 @@ interface DragNumberInputProps {
 	value: string;
 	disabled?: boolean;
 	width?: string;
+	style?: React.CSSProperties;
 }
 
 export default function DragNumberInput({
@@ -15,6 +16,7 @@ export default function DragNumberInput({
 	range,
 	value,
 	disabled,
+	style = {},
 	width = "50%",
 }: DragNumberInputProps) {
 	const [isDragging, setIsDragging] = useState(false);
@@ -141,6 +143,7 @@ export default function DragNumberInput({
 				userSelect: "none",
 				maxWidth: width,
 				width: width,
+				...style,
 			}}
 		/>
 	);

@@ -6,7 +6,7 @@ import walkerSprites from "../assets/walker.png";
 import DragNumberInput from "./DragInputs";
 
 const RECO_DELAY = 5000;
-const BUFFER_SIZE = 200;
+const BUFFER_SIZE = 100;
 const BUFFER_UPPER = 2000;
 const BUFFER_LOWER = 10;
 
@@ -113,13 +113,12 @@ const buildOptions = (
 			},
 		},
 	};
-	console.debug("buildOptions:", followMode, opts.scales.x.range);
-
 	return opts;
 };
 
 export const Scope = ({ id, onClose }: ScopeProps) => {
 	const [bufferSize, setBufferSize] = useState<number>(BUFFER_SIZE);
+	const bufferSizeRef = useRef<number>(BUFFER_SIZE);
 	const bufferRef = useRef<{ x: number[]; y: number[] }>({
 		x: Array.from({ length: bufferSize }, (_, i) => i),
 		y: new Array(bufferSize).fill(0),
@@ -138,7 +137,8 @@ export const Scope = ({ id, onClose }: ScopeProps) => {
 	const [walker, setWalker] = useState(false);
 	const [autoPaused, setAutoPaused] = useState(false);
 	const [displayMode, setDisplayMode] = useState<DisplayModes>("line");
-	const [followMode, setFollowMode] = useState<FollowModes>("linear");
+	const [followMode, setFollowMode] = useState<FollowModes>("cyclic");
+	const followModeRef = useRef<FollowModes>("cyclic");
 	const [chartKey, setChartKey] = useState(0);
 	const elapsed = useRef(0);
 
@@ -149,10 +149,11 @@ export const Scope = ({ id, onClose }: ScopeProps) => {
 			upperBound.current,
 			lowerBound.current,
 			bufferSize,
-			followMode,
+			followModeRef.current,
 		),
 	);
 
+	// Only update options when display mode or label changes
 	useEffect(() => {
 		setOptions(
 			buildOptions(
@@ -161,19 +162,28 @@ export const Scope = ({ id, onClose }: ScopeProps) => {
 				upperBound.current,
 				lowerBound.current,
 				bufferSize,
-				followMode,
+				followModeRef.current,
 			),
 		);
-	}, [displayMode, label, bufferSize, followMode]);
+	}, [displayMode, label]);
 
 	const togglePointMode = () => {
 		setDisplayMode((prev) => (prev === "line" ? "points" : "line"));
 	};
 
 	const toggleCyclicFollowMode = () => {
-		resetBounds(bufferSize, followMode === "cyclic" ? "linear" : "cyclic");
+		const newMode = followMode === "cyclic" ? "linear" : "cyclic";
+		// Update mode state and ref first
+		setFollowMode(newMode);
+		followModeRef.current = newMode;
+		// Clear the current chart reference to force recreation
+		chartRef.current = null;
+		// Reset everything for the new mode (now using the new mode)
+		resetBounds(bufferSize, newMode);
+		// Reset elapsed to appropriate starting value for the new mode
 		elapsed.current = 0;
-		setFollowMode((prev) => (prev === "cyclic" ? "linear" : "cyclic"));
+		// Force a complete chart recreation by incrementing key again
+		setChartKey((k) => k + 2);
 	};
 
 	const toggleWalker = () => {
@@ -187,9 +197,17 @@ export const Scope = ({ id, onClose }: ScopeProps) => {
 	const resetBounds = (buffSize, mode) => {
 		upperBound.current = undefined;
 		lowerBound.current = undefined;
-		bufferRef.current.x =
-			mode === "cyclic" ? Array.from({ length: buffSize }, (_, i) => i) : [];
-		bufferRef.current.y = mode === "cyclic" ? new Array(buffSize).fill(0) : [];
+		// Properly reset buffer for the target mode
+		if (mode === "cyclic") {
+			bufferRef.current.x = Array.from(
+				{ length: bufferSizeRef.current },
+				(_, i) => i,
+			);
+			bufferRef.current.y = new Array(bufferSizeRef.current).fill(0);
+		} else {
+			bufferRef.current.x = [];
+			bufferRef.current.y = [];
+		}
 		elapsed.current = 0;
 		setOptions(
 			buildOptions(
@@ -197,30 +215,37 @@ export const Scope = ({ id, onClose }: ScopeProps) => {
 				label,
 				upperBound.current,
 				lowerBound.current,
-				buffSize,
-				mode,
+				bufferSizeRef.current,
+				followModeRef.current,
 			),
 		);
 		setChartKey((k) => k + 1);
 	};
 
 	useEffect(() => {
-		bufferRef.current = {
-			x:
-				followMode === "cyclic"
-					? Array.from({ length: bufferSize }, (_, i) => i)
-					: [],
-			y: followMode === "cyclic" ? new Array(bufferSize).fill(0) : [],
-		};
-		elapsed.current = 0;
-		upperBound.current = undefined;
-		lowerBound.current = undefined;
-		setChartKey((k) => k + 1);
+		// Only update options when display mode, label change
+		// Buffer size and follow mode changes are handled separately
+		setOptions(
+			buildOptions(
+				displayMode,
+				label,
+				upperBound.current,
+				lowerBound.current,
+				bufferSize,
+				followModeRef.current,
+			),
+		);
+	}, [displayMode, label]);
+
+	// Handle buffer size changes separately
+	useEffect(() => {
+		// Reset buffer when bufferSize changes, maintaining current mode
+		bufferSizeRef.current = bufferSize;
+		resetBounds(bufferSize, followMode);
 	}, [bufferSize]);
 
 	const commitBufferSize = (value) => {
 		const bufSize = Math.round(Number.parseFloat(value));
-		console.log("Setting buffer size to", bufSize);
 		if (bufSize <= 0) {
 			setBufferSize((_) => BUFFER_LOWER);
 			return;
@@ -232,19 +257,6 @@ export const Scope = ({ id, onClose }: ScopeProps) => {
 		setBufferSize((_) => bufSize);
 		elapsed.current = 0;
 	};
-
-	useEffect(() => {
-		setChartKey((k) => k + 1);
-	}, [displayMode, followMode, bufferSize]);
-
-	useEffect(() => {
-		if (followMode === "linear") {
-			// Pour éviter x qui croît trop
-			if (elapsed.current > bufferSize) {
-				elapsed.current = bufferSize; // limite max
-			}
-		}
-	}, [followMode, bufferSize]);
 
 	useEffect(() => {
 		function connect() {
@@ -282,17 +294,16 @@ export const Scope = ({ id, onClose }: ScopeProps) => {
 				setLabel(data.on);
 
 				const buf = bufferRef.current;
-				elapsed.current = elapsed.current + 1;
-				if (followMode === "cyclic") {
-					if (elapsed.current > bufferSize) {
-						elapsed.current = 0;
-					}
-					// buf.x[elapsed.current] = elapsed.current;
+				const mode = followModeRef.current;
+				const size = bufferSizeRef.current;
+				if (mode === "cyclic") {
+					elapsed.current = (elapsed.current + 1) % size;
 					buf.y[elapsed.current] = newValue;
 				} else {
+					elapsed.current = elapsed.current + 1;
 					buf.x.push(elapsed.current);
 					buf.y.push(newValue);
-					if (buf.x.length > bufferSize) {
+					if (buf.x.length > size) {
 						buf.x.shift();
 						buf.y.shift();
 					}
@@ -368,6 +379,26 @@ export const Scope = ({ id, onClose }: ScopeProps) => {
 					gap: "4px",
 				}}
 			>
+				<DragNumberInput
+					range={[10, 200]}
+					width="20px"
+					value={bufferSize.toString()}
+					onChange={(value) => setBufferSize((_) => Number.parseFloat(value))}
+					onBlur={commitBufferSize}
+					style={{
+						height: "10px",
+						color: "gray",
+						fontSize: "14px",
+						textAlign: "right",
+						boxShadow: "unset",
+					}}
+				/>
+				<Button
+					text="c"
+					activated={followMode === "cyclic"}
+					onClick={toggleCyclicFollowMode}
+					tooltip="Toggle cyclic mode"
+				/>
 				<Button
 					text="r"
 					onClick={() => resetBounds(bufferSize, followMode)}
@@ -380,30 +411,20 @@ export const Scope = ({ id, onClose }: ScopeProps) => {
 					tooltip="Toggle points mode"
 				/>
 				<Button
-					text="f"
-					activated={followMode === "cyclic"}
-					onClick={toggleCyclicFollowMode}
-					tooltip="Toggle cyclic follow mode"
-				/>
-				<Button
 					text="w"
 					activated={walker}
 					onClick={toggleWalker}
 					tooltip="Invoke the walker"
 				/>
 				<Button text="x" onClick={closeScope} tooltip="Close oscilloscope" />
-				<DragNumberInput
-					range={[10, 200]}
-					width="20px"
-					value={bufferSize.toString()}
-					onChange={(value) => setBufferSize((_) => Number.parseFloat(value))}
-					onBlur={commitBufferSize}
-				/>
 			</div>
 			<UplotReact
 				key={chartKey}
 				options={options}
-				data={[bufferRef.current.x, bufferRef.current.y]}
+				data={[
+					bufferRef.current.x.slice(), // Create a copy to avoid mutations during render
+					bufferRef.current.y.slice(),
+				]}
 				onCreate={(chart) => {
 					chartRef.current = chart;
 				}}
