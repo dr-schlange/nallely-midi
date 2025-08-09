@@ -8,7 +8,7 @@ import DragNumberInput from "./DragInputs";
 const RECO_DELAY = 5000;
 const BUFFER_SIZE = 100;
 const BUFFER_UPPER = 2000;
-const BUFFER_LOWER = 10;
+const BUFFER_LOWER = 2;
 
 const Walker = ({ fps = 8, paused = false }) => {
 	const duration = 5 / fps;
@@ -227,10 +227,6 @@ export const Scope = ({ id, onClose }: ScopeProps) => {
 			setBufferSize((_) => BUFFER_LOWER);
 			return;
 		}
-		if (bufSize > BUFFER_UPPER) {
-			setBufferSize((_) => BUFFER_UPPER);
-			return;
-		}
 		setBufferSize((_) => bufSize);
 		elapsed.current = 0;
 	};
@@ -318,12 +314,14 @@ export const Scope = ({ id, onClose }: ScopeProps) => {
 			ws.onclose = () => {
 				if (!isUnmounted.current) {
 					console.warn("WebSocket closed, scheduling reconnect...");
+					firstValue.current = false;
 					retryTimeoutRef.current = setTimeout(connect, RECO_DELAY);
 				}
 			};
 
 			ws.onerror = (err) => {
 				console.error("WebSocket error: ", err);
+				firstValue.current = false;
 				ws.close();
 			};
 		}
@@ -369,7 +367,7 @@ export const Scope = ({ id, onClose }: ScopeProps) => {
 			>
 				<DragNumberInput
 					range={[10, 200]}
-					width="20px"
+					width="30px"
 					value={bufferSize.toString()}
 					onChange={(value) => setBufferSize((_) => Number.parseFloat(value))}
 					onBlur={commitBufferSize}
