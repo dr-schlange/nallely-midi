@@ -21,12 +21,20 @@ const Walker = ({ fps = 8, paused = false }) => {
 	);
 };
 
-const Button = ({ activated = false, onClick = undefined, text }) => {
+const Button = ({
+	activated = false,
+	onClick = undefined,
+	text,
+	tooltip = undefined,
+}: {
+	activated?: boolean;
+	onClick?: () => void;
+	text: string;
+	tooltip: undefined | string;
+}) => {
 	const [clickColor, setClickColor] = useState<string | undefined>(undefined);
 
 	return (
-		// biome-ignore lint/a11y/noStaticElementInteractions: <explanation>
-		// biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
 		<div
 			style={{
 				color: "gray",
@@ -37,13 +45,12 @@ const Button = ({ activated = false, onClick = undefined, text }) => {
 				cursor: "pointer",
 				border: "2px solid gray",
 			}}
-			onMouseDown={() => {
-				setClickColor((_) => "orange");
-			}}
+			onMouseDown={() => setClickColor("orange")}
 			onMouseUp={() => {
-				setClickColor((_) => undefined);
+				setClickColor(undefined);
 				onClick?.();
 			}}
+			title={tooltip}
 		>
 			{text}
 		</div>
@@ -55,6 +62,41 @@ interface ScopeProps {
 	onClose?: (id: number) => void;
 }
 
+type DisplayModes = "line" | "points";
+
+const buildOptions = (
+	mode: DisplayModes,
+	label: string,
+	upper?: number,
+	lower?: number,
+): uPlot.Options => ({
+	height: 115,
+	width: 170,
+	cursor: { drag: { setScale: false } },
+	axes: [{ show: false }, { show: false }],
+	legend: { show: false },
+	series: [
+		{ show: true },
+		{
+			label,
+			stroke: mode === "line" ? "orange" : null,
+			width: mode === "line" ? 3 : 0,
+			points:
+				mode === "points"
+					? { show: true, size: 3, stroke: "orange", fill: "orange" }
+					: { show: false },
+		},
+	],
+	scales: {
+		x: { time: false },
+		y: {
+			auto: upper === undefined || lower === undefined,
+			range:
+				upper !== undefined && lower !== undefined ? [lower, upper] : undefined,
+		},
+	},
+});
+
 export const Scope = ({ id, onClose }: ScopeProps) => {
 	const bufferRef = useRef<{ x: number[]; y: number[] }>({ x: [], y: [] });
 	const startTimeRef = useRef<number>(Date.now());
@@ -63,39 +105,30 @@ export const Scope = ({ id, onClose }: ScopeProps) => {
 	const isUnmounted = useRef(false);
 	const chartRef = useRef<uPlot | null>(null);
 	const updateScheduled = useRef(false);
-
-	const [upperBound, setUpperBound] = useState(0);
-	const [label, setLabel] = useState("");
-
-	const [walker, setWalker] = useState(false);
-	const [autoPaused, setAutoPaused] = useState(false);
 	const inactivityTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-	const initialData: [number[], number[]] = [[], []];
+	const [upperBound, setUpperBound] = useState<number | undefined>(undefined);
+	const [lowerBound, setLowerBound] = useState<number | undefined>(undefined);
+	const [label, setLabel] = useState("");
+	const [walker, setWalker] = useState(false);
+	const [autoPaused, setAutoPaused] = useState(false);
+	const [displayMode, setDisplayMode] = useState<DisplayModes>("line");
+	const [chartKey, setChartKey] = useState(0);
 
-	const options: uPlot.Options = {
-		height: 115,
-		width: 170,
-		cursor: {
-			drag: { setScale: false },
-		},
-		axes: [{ show: false }, { show: false }],
-		legend: { show: false },
-		series: [
-			{ show: true },
-			{
-				label: label,
-				stroke: "orange",
-				width: 4,
-			},
-		],
-		scales: {
-			x: { time: false },
-			y: {
-				auto: true,
-				range: [0, upperBound],
-			},
-		},
+	useEffect(() => {
+		setChartKey((k) => k + 1);
+	}, [displayMode, label, upperBound, lowerBound]);
+
+	const [options, setOptions] = useState<uPlot.Options>(
+		buildOptions(displayMode, label, upperBound, lowerBound),
+	);
+
+	useEffect(() => {
+		setOptions(buildOptions(displayMode, label, upperBound, lowerBound));
+	}, [displayMode, label, upperBound, lowerBound]);
+
+	const togglePointMode = () => {
+		setDisplayMode((prev) => (prev === "line" ? "points" : "line"));
 	};
 
 	const toggleWalker = () => {
@@ -104,6 +137,14 @@ export const Scope = ({ id, onClose }: ScopeProps) => {
 
 	const closeScope = () => {
 		onClose?.(id);
+	};
+
+	const resetBounds = () => {
+		setUpperBound(undefined);
+		setLowerBound(undefined);
+		bufferRef.current.x = [];
+		bufferRef.current.y = [];
+		setChartKey((k) => k + 1);
 	};
 
 	useEffect(() => {
@@ -152,7 +193,12 @@ export const Scope = ({ id, onClose }: ScopeProps) => {
 					buf.y.shift();
 				}
 
-				setUpperBound((prev) => (newValue > prev ? newValue : prev));
+				// setUpperBound((prev) =>
+				// 	prev === undefined || newValue > prev ? newValue : prev,
+				// );
+				// setLowerBound((prev) =>
+				// 	prev === undefined || newValue < prev ? newValue : prev,
+				// );
 
 				if (!updateScheduled.current) {
 					updateScheduled.current = true;
@@ -217,12 +263,25 @@ export const Scope = ({ id, onClose }: ScopeProps) => {
 					gap: "4px",
 				}}
 			>
-				<Button text="w" activated={walker} onClick={toggleWalker} />
-				<Button text="x" onClick={closeScope} />
+				<Button text="r" onClick={resetBounds} tooltip="reset" />
+				<Button
+					text="p"
+					activated={displayMode === "points"}
+					onClick={togglePointMode}
+					tooltip="toggle points mode"
+				/>
+				<Button
+					text="w"
+					activated={walker}
+					onClick={toggleWalker}
+					tooltip="invoke the walker"
+				/>
+				<Button text="x" onClick={closeScope} tooltip="close oscilloscope" />
 			</div>
 			<UplotReact
+				key={chartKey}
 				options={options}
-				data={initialData}
+				data={[bufferRef.current.x, bufferRef.current.y]}
 				onCreate={(chart) => {
 					chartRef.current = chart;
 				}}
