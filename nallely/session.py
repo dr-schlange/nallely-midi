@@ -114,11 +114,24 @@ class Session:
         for serialized_link in content.get("connections"):
             src = serialized_link["src"]
             dest = serialized_link["dest"]
+            src_device = src.get("device")
+            dest_device = dest.get("device")
             src_param = src["parameter"]
             dest_param = dest["parameter"]
+            if not src_device:
+                errors.append(
+                    f"Dangling reference: Device with id {src_device} couldn't been found, skipping the patch between {src_param} -> {dest_param}"
+                )
+                continue
+            if not dest_device:
+                errors.append(
+                    f"Dangling reference: Device with id {src_device} couldn't been found, skipping the patch between {src_param} -> {dest_param}"
+                )
+                continue
             if src_param.get("mode") == "note":
                 src_param_name = src_param["note"]
             else:
+                # check if we are in presence of a virtual device or not
                 src_param_name = (
                     src_param["cv_name"]
                     if src_param["section_name"] == VirtualParameter.section_name
@@ -127,13 +140,14 @@ class Session:
             if dest_param.get("mode") == "note":
                 dest_param_name = dest_param["note"]
             else:
+                # check if we are in presence of a virtual device or not
                 dest_param_name = (
                     dest_param["cv_name"]
                     if dest_param["section_name"] == VirtualParameter.section_name
                     else dest_param["name"]
                 )
-            src_path = f"{device_map[src['device']]}::{src_param['section_name']}::{src_param_name}"
-            dest_path = f"{device_map[dest['device']]}::{dest_param['section_name']}::{dest_param_name}"
+            src_path = f"{device_map[src_device]}::{src_param['section_name']}::{src_param_name}"
+            dest_path = f"{device_map[dest_device]}::{dest_param['section_name']}::{dest_param_name}"
             with_chain = src.get("chain", None)
             link = self.trevor.associate_parameters(
                 src_path, dest_path, with_scaler=with_chain
