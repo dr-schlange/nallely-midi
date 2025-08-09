@@ -24,7 +24,7 @@ const Walker = ({ fps = 8, paused = false }) => {
 	);
 };
 
-const Button = ({
+export const Button = ({
 	activated = false,
 	onClick = undefined,
 	text,
@@ -366,7 +366,7 @@ export const Scope = ({ id, onClose }: ScopeProps) => {
 				}}
 			>
 				<DragNumberInput
-					range={[10, 200]}
+					range={[BUFFER_LOWER, BUFFER_UPPER]}
 					width="30px"
 					value={bufferSize.toString()}
 					onChange={(value) => setBufferSize((_) => Number.parseFloat(value))}

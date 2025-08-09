@@ -16,6 +16,7 @@ interface RackRowWidget {
 
 const WidgetComponents = {
 	Scope,
+	XYScope,
 };
 
 const findFirstMissingValue = (arr: number[]): number => {
@@ -146,6 +147,7 @@ import {
 	useSensor,
 	useSensors,
 } from "@dnd-kit/core";
+import { XYScope } from "./XYScope";
 
 const SortableWidget = ({
 	id,
