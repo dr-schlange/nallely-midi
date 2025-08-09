@@ -1,6 +1,6 @@
 import { forwardRef, useImperativeHandle, useState } from "react";
 import { Scope } from "./Oscilloscope";
-
+import { XYScope } from "./XYScope";
 interface WidgetRackProps {
 	onRackScroll?: () => void;
 	horizontal?: boolean;
@@ -17,6 +17,7 @@ interface RackRowWidget {
 const WidgetComponents = {
 	Scope,
 	XYScope,
+	XYZScope,
 };
 
 const findFirstMissingValue = (arr: number[]): number => {
@@ -147,7 +148,7 @@ import {
 	useSensor,
 	useSensors,
 } from "@dnd-kit/core";
-import { XYScope } from "./XYScope";
+import { XYZScope } from "./XYZScope";
 
 const SortableWidget = ({
 	id,
