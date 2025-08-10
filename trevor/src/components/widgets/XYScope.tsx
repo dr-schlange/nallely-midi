@@ -1,19 +1,15 @@
 import { useEffect, useRef, useState } from "react";
-import { Button } from "./Oscilloscope";
-import DragNumberInput from "./DragInputs";
+import DragNumberInput from "../DragInputs";
+import { Button, WidgetProps } from "./BaseComponents";
 
-const BUFFER_SIZE_MAX = 1000;
+const BUFFER_SIZE_MAX = 10000;
 const BUFFER_SIZE_MIN = 2;
 const BUFFER_SIZE = 500;
 const MARGIN_PX = 5;
 
-interface XYScopeProps {
-	id: number;
-	onClose?: (id: number) => void;
-}
-
-export const XYScope = ({ id, onClose }: XYScopeProps) => {
+export const XYScope = ({ id, onClose }: WidgetProps) => {
 	const containerRef = useRef<HTMLDivElement | null>(null);
+	const [expanded, setExpanded] = useState(false);
 	const canvasRef = useRef<HTMLCanvasElement | null>(null);
 	const wsRef = useRef<WebSocket | null>(null);
 	const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -156,6 +152,17 @@ export const XYScope = ({ id, onClose }: XYScopeProps) => {
 		drawPoints();
 	};
 
+	const expand = () => {
+		setExpanded((prev) => !prev);
+		if (expanded) {
+			containerRef.current.style.height = "";
+			containerRef.current.style.width = "";
+		} else {
+			containerRef.current.style.height = "100%";
+			containerRef.current.style.width = "100%";
+		}
+	};
+
 	// Resize canvas to match container size
 	useEffect(() => {
 		const resizeCanvas = () => {
@@ -269,13 +276,7 @@ export const XYScope = ({ id, onClose }: XYScopeProps) => {
 	}, [id]);
 
 	return (
-		<div
-			ref={containerRef}
-			style={{
-				position: "relative",
-			}}
-			className="scope"
-		>
+		<div ref={containerRef} className="scope">
 			<div
 				style={{
 					position: "absolute",
@@ -305,6 +306,12 @@ export const XYScope = ({ id, onClose }: XYScopeProps) => {
 						textAlign: "right",
 						boxShadow: "unset",
 					}}
+				/>
+				<Button
+					text={"+"}
+					activated={expanded}
+					onClick={expand}
+					tooltip="Expand widget"
 				/>
 				<Button text="r" onClick={reset} tooltip="Reset" />
 				<Button text="f" onClick={zoomToFit} tooltip="Zoom to Fit" />

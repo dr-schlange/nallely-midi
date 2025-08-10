@@ -323,7 +323,7 @@ class VirtualDevice(threading.Thread):
             inner_ctx = {}
             for param, input_queue in list(self.input_queues.items()):
                 # Process a batch of inputs per cycle (to avoid backlog)
-                max_batch_size = 1  # Maximum number of items to process per cycle
+                max_batch_size = 10  # Maximum number of items to process per cycle
                 queue_level = input_queue.qsize()
                 # We adjust the batch size dynamically based on queue pressure
                 batch_size = min(max_batch_size, max(1, int(queue_level / 100)))

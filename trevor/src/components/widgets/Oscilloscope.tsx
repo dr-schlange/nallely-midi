@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import "uplot/dist/uPlot.min.css";
 import type uPlot from "uplot";
 import UplotReact from "uplot-react";
-import walkerSprites from "../assets/walker.png";
-import DragNumberInput from "./DragInputs";
+import walkerSprites from "../../assets/walker.png";
+import DragNumberInput from "../DragInputs";
+import { Button, WidgetProps } from "./BaseComponents";
 
 const RECO_DELAY = 5000;
 const BUFFER_SIZE = 100;
@@ -23,47 +24,6 @@ const Walker = ({ fps = 8, paused = false }) => {
 		/>
 	);
 };
-
-export const Button = ({
-	activated = false,
-	onClick = undefined,
-	text,
-	tooltip = undefined,
-}: {
-	activated?: boolean;
-	onClick?: () => void;
-	text: string;
-	tooltip: undefined | string;
-}) => {
-	const [clickColor, setClickColor] = useState<string | undefined>(undefined);
-
-	return (
-		<div
-			style={{
-				color: "gray",
-				zIndex: 1,
-				backgroundColor: clickColor || (activated ? "yellow" : "#e0e0e0"),
-				width: "12px",
-				textAlign: "center",
-				cursor: "pointer",
-				border: "2px solid gray",
-			}}
-			onMouseDown={() => setClickColor("orange")}
-			onMouseUp={() => {
-				setClickColor(undefined);
-				onClick?.();
-			}}
-			title={tooltip}
-		>
-			{text}
-		</div>
-	);
-};
-
-interface ScopeProps {
-	id: number;
-	onClose?: (id: number) => void;
-}
 
 type DisplayModes = "line" | "points";
 type FollowModes = "cyclic" | "linear";
@@ -116,7 +76,7 @@ const buildOptions = (
 	return opts;
 };
 
-export const Scope = ({ id, onClose }: ScopeProps) => {
+export const Scope = ({ id, onClose }: WidgetProps) => {
 	const [bufferSize, setBufferSize] = useState<number>(BUFFER_SIZE);
 	const bufferSizeRef = useRef<number>(BUFFER_SIZE);
 	const bufferRef = useRef<{ x: number[]; y: number[] }>({

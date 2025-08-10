@@ -221,6 +221,177 @@ class Morton(VirtualDevice):
         return self.interleave16(self.x, value)
 
 
+class BuddhabrotProjector(VirtualDevice):
+    freq_cv = VirtualParameter("freq", range=(0.1, 1000))
+    x_cv = VirtualParameter("x")
+    y_cv = VirtualParameter("y")
+    xnorm_cv = VirtualParameter("xnorm", range=(-2, 2))
+    ynorm_cv = VirtualParameter("ynorm", range=(-2, 2))
+    max_iter_cv = VirtualParameter("max_iter", range=(10, 5000))
+    reset_cv = VirtualParameter("reset", range=(0, 1))
+
+    real_min_cv = VirtualParameter("real_min", range=(-3, 3))
+    real_max_cv = VirtualParameter("real_max", range=(-3, 3))
+    imag_min_cv = VirtualParameter("imag_min", range=(-3, 3))
+    imag_max_cv = VirtualParameter("imag_max", range=(-3, 3))
+
+    def __init__(
+        self,
+        freq=10,
+        max_iter=5000,
+        real_min=-2,
+        real_max=1,
+        imag_min=-1.5,
+        imag_max=1.5,
+        history_len=200,
+        **kwargs,
+    ):
+        self.freq = freq
+        self.max_iter = max_iter
+
+        self.real_min = real_min
+        self.real_max = real_max
+        self.imag_min = imag_min
+        self.imag_max = imag_max
+
+        self.history_x = deque(maxlen=history_len)
+        self.history_y = deque(maxlen=history_len)
+
+        self.reset = 0
+
+        self.traj = []
+        self.idx = 0
+
+        super().__init__(**kwargs)
+
+    def normalize_to_range(self, v, history, target_min=-2, target_max=2):
+        history.append(v)
+        min_v = min(history)
+        max_v = max(history)
+        if max_v == min_v:
+            return target_min
+        return target_min + (v - min_v) * (target_max - target_min) / (max_v - min_v)
+
+    def sample_c(self):
+        return complex(
+            random.uniform(self.real_min, self.real_max),
+            random.uniform(self.imag_min, self.imag_max),
+        )
+
+    def trace_trajectory(self, c, max_iter):
+        z = 0 + 0j
+        traj = []
+        for _ in range(max_iter):
+            z = z * z + c
+            traj.append((z.real, z.imag))
+            if abs(z) > 2:
+                return traj
+        return None
+
+    @property
+    def range(self):
+        return (-2, 2)
+
+    @on(reset_cv, edge="rising")
+    def on_reset_history_change(self, value, ctx: ThreadContext):
+        self.history_x.clear()
+        self.history_y.clear()
+
+    def main(self, ctx: ThreadContext):
+        if not self.traj or self.idx >= len(self.traj):
+            c = self.sample_c()
+            self.traj = self.trace_trajectory(c, self.max_iter)
+            self.idx = 0
+
+        if self.traj:
+            x, y = self.traj[self.idx]
+            self.idx += 1
+
+            yield x, [self.x_cv]
+            yield y, [self.y_cv]
+
+            xnorm = self.normalize_to_range(x, self.history_x)
+            ynorm = self.normalize_to_range(y, self.history_y)
+            yield xnorm, [self.xnorm_cv]
+            yield ynorm, [self.ynorm_cv]
+
+        yield from self.sleep((1 / self.freq) * 1000)
+
+
+class MandelbrotProjector(VirtualDevice):
+    freq_cv = VirtualParameter("freq", range=(0.1, 1000))
+    x_cv = VirtualParameter("x")
+    y_cv = VirtualParameter("y")
+    z_cv = VirtualParameter("z")
+    max_iter_cv = VirtualParameter("max_iter", range=(10, 2000))
+
+    real_min_cv = VirtualParameter("real_min", range=(-3, 3))
+    real_max_cv = VirtualParameter("real_max", range=(-3, 3))
+    imag_min_cv = VirtualParameter("imag_min", range=(-3, 3))
+    imag_max_cv = VirtualParameter("imag_max", range=(-3, 3))
+
+    def __init__(
+        self,
+        freq=20,
+        max_iter=1000,
+        real_min=-2,
+        real_max=1,
+        imag_min=-1.5,
+        imag_max=1.5,
+        **kwargs,
+    ):
+        self.freq = freq
+        self.max_iter = max_iter
+
+        self.real_min = real_min
+        self.real_max = real_max
+        self.imag_min = imag_min
+        self.imag_max = imag_max
+
+        self.current_point = None
+        self.iteration = 0
+
+        super().__init__(**kwargs)
+
+    def sample_c(self):
+        return complex(
+            random.uniform(self.real_min, self.real_max),
+            random.uniform(self.imag_min, self.imag_max),
+        )
+
+    def mandelbrot_iterate(self, c, max_iter):
+        z = 0 + 0j
+        for i in range(max_iter):
+            z = z * z + c
+            if abs(z) > 2:
+                return i, z.real, z.imag
+        return max_iter, z.real, z.imag
+
+    @property
+    def range(self):
+        return (-2, 2)
+
+    def main(self, ctx: ThreadContext):
+        if self.current_point is None or self.iteration >= self.max_iter:
+            self.current_point = self.sample_c()
+            self.iteration = 0
+
+        z = 0 + 0j
+        for _ in range(self.iteration + 1):
+            z = z * z + self.current_point
+
+        x, y = z.real, z.imag
+        iter_norm = self.iteration / self.max_iter
+
+        self.iteration += 1
+
+        yield x, [self.x_cv]
+        yield y, [self.y_cv]
+        yield iter_norm, [self.z_cv]
+
+        yield from self.sleep((1 / self.freq) * 1000)
+
+
 #  Mackey–Glass (
 # # buffer contains (t_i,x_i) sorted by t
 # x_tau = interp(t - tau, buffer_times, buffer_values)

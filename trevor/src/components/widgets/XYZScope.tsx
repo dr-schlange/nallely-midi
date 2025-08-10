@@ -1,19 +1,15 @@
 import { useEffect, useRef, useState } from "react";
-import { Button } from "./Oscilloscope";
-import DragNumberInput from "./DragInputs";
+import DragNumberInput from "../DragInputs";
+import { Button, WidgetProps } from "./BaseComponents";
 
-const BUFFER_SIZE_MAX = 1000;
+const BUFFER_SIZE_MAX = 10000;
 const BUFFER_SIZE_MIN = 2;
 const BUFFER_SIZE = 500;
 const MARGIN_PX = 5;
 
-interface XYZScopeProps {
-	id: number;
-	onClose?: (id: number) => void;
-}
-
-export const XYZScope = ({ id, onClose }: XYZScopeProps) => {
+export const XYZScope = ({ id, onClose }: WidgetProps) => {
 	const containerRef = useRef<HTMLDivElement | null>(null);
+	const [expanded, setExpanded] = useState(false);
 	const canvasRef = useRef<HTMLCanvasElement | null>(null);
 	const wsRef = useRef<WebSocket | null>(null);
 	const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -383,15 +379,19 @@ export const XYZScope = ({ id, onClose }: XYZScopeProps) => {
 		rotationY.current += 0.1;
 		drawPoints();
 	};
+	const expand = () => {
+		setExpanded((prev) => !prev);
+		if (expanded) {
+			containerRef.current.style.height = "";
+			containerRef.current.style.width = "";
+		} else {
+			containerRef.current.style.height = "100%";
+			containerRef.current.style.width = "100%";
+		}
+	};
 
 	return (
-		<div
-			ref={containerRef}
-			style={{
-				position: "relative",
-			}}
-			className="scope"
-		>
+		<div ref={containerRef} className="scope">
 			<div
 				style={{
 					position: "absolute",
@@ -422,12 +422,22 @@ export const XYZScope = ({ id, onClose }: XYZScopeProps) => {
 						boxShadow: "unset",
 					}}
 				/>
-				<Button text="r" onClick={reset} tooltip="Reset" />
+				<Button
+					text={"+"}
+					activated={expanded}
+					onClick={expand}
+					tooltip="Expand widget"
+				/>
+				{expanded && (
+					<>
+						<Button text="↑" onClick={tiltUp} tooltip="Tilt Up" />
+						<Button text="↓" onClick={tiltDown} tooltip="Tilt Down" />
+						<Button text="←" onClick={rotateLeft} tooltip="Rotate Left" />
+						<Button text="→" onClick={rotateRight} tooltip="Rotate Right" />
+					</>
+				)}
 				<Button text="f" onClick={zoomToFit} tooltip="Zoom to Fit" />
-				<Button text="↑" onClick={tiltUp} tooltip="Tilt Up" />
-				<Button text="↓" onClick={tiltDown} tooltip="Tilt Down" />
-				<Button text="←" onClick={rotateLeft} tooltip="Rotate Left" />
-				<Button text="→" onClick={rotateRight} tooltip="Rotate Right" />
+				<Button text="r" onClick={reset} tooltip="Reset" />
 				<Button
 					text="x"
 					onClick={() => onClose?.(id)}

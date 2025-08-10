@@ -1,6 +1,8 @@
 import { forwardRef, useImperativeHandle, useState } from "react";
-import { Scope } from "./Oscilloscope";
-import { XYScope } from "./XYScope";
+import { Scope } from "./widgets/Oscilloscope";
+import { XYScope } from "./widgets/XYScope";
+import { XYZScope } from "./widgets/XYZScope";
+
 interface WidgetRackProps {
 	onRackScroll?: () => void;
 	horizontal?: boolean;
@@ -22,12 +24,12 @@ const WidgetComponents = {
 
 const findFirstMissingValue = (arr: number[]): number => {
 	if (arr.length === 0) return 0;
+	console.debug("Finding first missing value in", arr);
 
-	const min = Math.min(...arr);
 	const max = Math.max(...arr);
 	const set = new Set(arr);
 
-	for (let i = min; i <= max; i++) {
+	for (let i = 0; i <= max; i++) {
 		if (!set.has(i)) {
 			return i;
 		}
@@ -39,26 +41,36 @@ const findFirstMissingValue = (arr: number[]): number => {
 export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 	({ onRackScroll, horizontal }: WidgetRackProps, ref) => {
 		const [widgets, setWidgets] = useState<
-			{ id: number; component: React.FC<any> }[]
+			{ id: string; type: string; component: React.FC<any> }[]
 		>([]);
+		const [typeIds, setTypeIds] = useState<Record<string, number>>({});
 
 		const sensors = useSensors(
 			useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
 		);
 
-		const addWidget = (Component) => {
-			setWidgets([
-				...widgets,
-				{
-					id: findFirstMissingValue(widgets.map((w) => w.id)),
-					component: Component,
-				},
-			]);
+		const addWidget = (Component, widgetType: string) => {
+			setWidgets((oldWidgets) => {
+				const idsUsed = oldWidgets
+					.filter((w) => w.type === widgetType)
+					.map((w) => Number.parseInt(w.id.split("-")[1]));
+				const nextId = findFirstMissingValue(idsUsed);
+				console.debug("Adding widget", widgetType, "with ID", nextId);
+				return [
+					...oldWidgets,
+					{
+						id: `${widgetType}-${nextId}`,
+						type: widgetType,
+						component: Component,
+					},
+				];
+			});
 		};
 
 		useImperativeHandle(ref, () => ({
 			resetAll() {
 				setWidgets([]);
+				setTypeIds({});
 			},
 		}));
 
@@ -71,7 +83,8 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 			setWidgets(arrayMove(widgets, oldIndex, newIndex));
 		};
 
-		const closeWidget = (id: number) => {
+		const closeWidget = (id: string) => {
+			console.debug("Closing widget with ID", id);
 			setWidgets((prev) => prev.filter((w) => w.id !== id));
 		};
 
@@ -85,7 +98,7 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 				]}
 			>
 				<SortableContext
-					items={widgets.map((w) => w.id)}
+					items={widgets.map((w) => `${w.type}-${w.id}`)} // unique string ids
 					strategy={
 						horizontal
 							? horizontalListSortingStrategy
@@ -101,7 +114,9 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 							title="Adds a new widget to the system"
 							onChange={(e) => {
 								const val = e.target.value;
-								addWidget(WidgetComponents[val]);
+								if (val && WidgetComponents[val]) {
+									addWidget(WidgetComponents[val], val);
+								}
 							}}
 						>
 							<option value={""}>--</option>
@@ -112,7 +127,7 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 							))}
 						</select>
 
-						{widgets.map(({ id, component: Widget }) => (
+						{widgets.map(({ id, type, component: Widget }) => (
 							<SortableWidget key={id} id={id}>
 								<Widget id={id} onClose={closeWidget} />
 							</SortableWidget>
@@ -148,13 +163,12 @@ import {
 	useSensor,
 	useSensors,
 } from "@dnd-kit/core";
-import { XYZScope } from "./XYZScope";
 
 const SortableWidget = ({
 	id,
 	children,
 }: {
-	id: number;
+	id: string;
 	children: React.ReactNode;
 }) => {
 	const { attributes, listeners, setNodeRef, transform, transition } =
