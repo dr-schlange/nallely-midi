@@ -191,6 +191,98 @@ class BarnsleyProjector(VirtualDevice):
         yield from self.sleep((1 / self.freq) * 1000)
 
 
+class RosslerProjector(VirtualDevice):
+    a_cv = VirtualParameter("a", range=(0.1, 0.5))
+    b_cv = VirtualParameter("b", range=(0.1, 0.5))
+    c_cv = VirtualParameter("c", range=(3, 10))
+    x_cv = VirtualParameter("x", range=(-15, 15))
+    y_cv = VirtualParameter("y", range=(-15, 15))
+    z_cv = VirtualParameter("z", range=(0, 30))
+    xnorm_cv = VirtualParameter("xnorm", range=(0, 127))
+    ynorm_cv = VirtualParameter("ynorm", range=(0, 127))
+    znorm_cv = VirtualParameter("znorm", range=(0, 127))
+    freq_cv = VirtualParameter("freq", range=(0.01, 5000))
+
+    @property
+    def range(self):
+        return (None, None)
+
+    def __init__(
+        self,
+        a=0.2,
+        b=0.2,
+        c=5.7,
+        x0=0.1,
+        y0=0.0,
+        z0=0.0,
+        dt=0.01,
+        freq=1,
+        **kwargs,
+    ):
+        self.a = a
+        self.b = b
+        self.c = c
+        self.x = x0
+        self.y = y0
+        self.z = z0
+        self.xnorm = x0
+        self.ynorm = y0
+        self.znorm = z0
+        self.dt = dt
+        self.freq = freq
+        self.history_x = deque(maxlen=200)
+        self.history_y = deque(maxlen=200)
+        self.history_z = deque(maxlen=200)
+        super().__init__(**kwargs)
+
+    def normalize(self, v, history, target_min=0, target_max=127, window_size=50):
+        history.append(v)
+        recent_history = list(history)[-window_size:]
+        if not recent_history:
+            return (target_min + target_max) / 2
+
+        sorted_hist = sorted(recent_history)
+        n = len(sorted_hist)
+
+        idx_low = max(0, int(n * 0.05))
+        idx_high = min(n - 1, int(n * 0.95))
+
+        lower = sorted_hist[idx_low]
+        upper = sorted_hist[idx_high]
+
+        filtered = [x for x in sorted_hist if lower <= x <= upper]
+        if not filtered:
+            filtered = sorted_hist
+
+        min_v = min(filtered)
+        max_v = max(filtered)
+
+        if max_v == min_v:
+            return (target_min + target_max) / 2
+
+        return target_min + (v - min_v) * (target_max - target_min) / (max_v - min_v)
+
+    def next_value(self):
+        dx = -self.y - self.z
+        dy = self.x + self.a * self.y
+        dz = self.b + self.z * (self.x - self.c)
+        self.x += dx * self.dt
+        self.y += dy * self.dt
+        self.z += dz * self.dt
+
+        return self.x, self.y, self.z
+
+    def main(self, ctx: ThreadContext):
+        x, y, z = self.next_value()
+        yield x, [self.output_cv, self.x_cv]
+        yield y, [self.y_cv]
+        yield z, [self.z_cv]
+        yield self.normalize(x, self.history_x), [self.xnorm_cv]
+        yield self.normalize(y, self.history_y), [self.ynorm_cv]
+        yield self.normalize(z, self.history_z), [self.znorm_cv]
+        yield from self.sleep((1 / self.freq) * 1000)
+
+
 class Morton(VirtualDevice):
     x_cv = VirtualParameter("x", range=(0, 127))
     y_cv = VirtualParameter("y", range=(0, 127))

@@ -2,12 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import DragNumberInput from "../DragInputs";
 import { Button, WidgetProps } from "./BaseComponents";
 
-const BUFFER_SIZE_MAX = 10000;
+const BUFFER_SIZE_MAX = 5000;
 const BUFFER_SIZE_MIN = 2;
 const BUFFER_SIZE = 500;
 const MARGIN_PX = 5;
 
-export const XYZScope = ({ id, onClose }: WidgetProps) => {
+export const XYZScope = ({ id, onClose, num }: WidgetProps) => {
 	const containerRef = useRef<HTMLDivElement | null>(null);
 	const [expanded, setExpanded] = useState(false);
 	const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -268,7 +268,7 @@ export const XYZScope = ({ id, onClose }: WidgetProps) => {
 			if (isUnmounted.current) return;
 
 			const ws = new WebSocket(
-				`ws://${window.location.hostname}:6789/XYZscope${id}/autoconfig`,
+				`ws://${window.location.hostname}:6789/XYZscope${num}/autoconfig`,
 			);
 			wsRef.current = ws;
 

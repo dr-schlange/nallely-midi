@@ -41,7 +41,7 @@ const findFirstMissingValue = (arr: number[]): number => {
 export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 	({ onRackScroll, horizontal }: WidgetRackProps, ref) => {
 		const [widgets, setWidgets] = useState<
-			{ id: string; type: string; component: React.FC<any> }[]
+			{ num: number; id: string; type: string; component: React.FC<any> }[]
 		>([]);
 		const [typeIds, setTypeIds] = useState<Record<string, number>>({});
 
@@ -53,13 +53,14 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 			setWidgets((oldWidgets) => {
 				const idsUsed = oldWidgets
 					.filter((w) => w.type === widgetType)
-					.map((w) => Number.parseInt(w.id.split("-")[1]));
+					.map((w) => w.num);
 				const nextId = findFirstMissingValue(idsUsed);
 				console.debug("Adding widget", widgetType, "with ID", nextId);
 				return [
 					...oldWidgets,
 					{
 						id: `${widgetType}-${nextId}`,
+						num: nextId,
 						type: widgetType,
 						component: Component,
 					},
@@ -127,9 +128,9 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 							))}
 						</select>
 
-						{widgets.map(({ id, type, component: Widget }) => (
+						{widgets.map(({ id, num, component: Widget }) => (
 							<SortableWidget key={id} id={id}>
-								<Widget id={id} onClose={closeWidget} />
+								<Widget id={id} num={num} onClose={closeWidget} />
 							</SortableWidget>
 						))}
 

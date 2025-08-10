@@ -38,5 +38,6 @@ export const Button = ({
 
 export interface WidgetProps {
 	id: string;
+	num: number;
 	onClose?: (id: string) => void;
 }

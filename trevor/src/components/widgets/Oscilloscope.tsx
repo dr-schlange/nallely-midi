@@ -76,7 +76,7 @@ const buildOptions = (
 	return opts;
 };
 
-export const Scope = ({ id, onClose }: WidgetProps) => {
+export const Scope = ({ id, onClose, num }: WidgetProps) => {
 	const [bufferSize, setBufferSize] = useState<number>(BUFFER_SIZE);
 	const bufferSizeRef = useRef<number>(BUFFER_SIZE);
 	const bufferRef = useRef<{ x: number[]; y: number[] }>({
@@ -196,7 +196,7 @@ export const Scope = ({ id, onClose }: WidgetProps) => {
 			if (isUnmounted.current) return;
 
 			const ws = new WebSocket(
-				`ws://${window.location.hostname}:6789/scope${id}/autoconfig`,
+				`ws://${window.location.hostname}:6789/scope${num}/autoconfig`,
 			);
 			wsRef.current = ws;
 
