@@ -482,12 +482,3 @@ class MandelbrotProjector(VirtualDevice):
         yield iter_norm, [self.z_cv]
 
         yield from self.sleep((1 / self.freq) * 1000)
-
-
-#  Mackey–Glass (
-# # buffer contains (t_i,x_i) sorted by t
-# x_tau = interp(t - tau, buffer_times, buffer_values)
-# dx = beta * x_tau / (1 + x_tau**n) - gamma * x_now
-# x_next = x_now + dx * dt
-# append_to_buffer(t+dt, x_next)
-# Delay logistic / discrete delayed
