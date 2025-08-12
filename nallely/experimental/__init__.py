@@ -1,7 +1,7 @@
 from .harmonizer import Harmonizer
+from .maths import BarnsleyProjector, HenonProjector, LorenzProjector, Morton
 from .mono2poly import Mono2Poly
 from .random_patchers import InstanceCreator, RandomPatcher
-from .maths import HenonProjector, LorenzProjector, BarnsleyProjector, Morton
 
 __all__ = [
     "Harmonizer",

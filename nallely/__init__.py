@@ -18,7 +18,7 @@ from .core import (
     virtual_device_classes,
     virtual_devices,
 )
-from .eg import VCA, ADSREnvelope, Gate, Switch
+from .eg import VCA, ADSREnvelope, Gate, SampleHold, Switch
 from .lfos import LFO, Cycler
 from .shifter import Arpegiator, Looper, Modulo, PitchShifter
 from .websocket_bus import WebSocketBus
@@ -53,4 +53,5 @@ __all__ = [
     "Modulo",
     "Arpegiator",
     "Looper",
+    "SampleHold",
 ]

@@ -1,9 +1,9 @@
-from collections import deque
-from nallely import on, VirtualParameter, VirtualDevice
-from nallely.core.world import ThreadContext
 import math
 import random
+from collections import deque
 
+from nallely import VirtualDevice, VirtualParameter, on
+from nallely.core.world import ThreadContext
 
 MAX_ABS = 1e6  # valeur max avant clamp
 

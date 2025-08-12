@@ -162,6 +162,31 @@ class Gate(VirtualDevice):
         return 0
 
 
+class SampleHold(VirtualDevice):
+    input_cv = VirtualParameter(name="input", range=(0, 127))
+    trigger_cv = VirtualParameter(name="trigger", range=(0, 1))
+    reset_cv = VirtualParameter(name="reset", range=(0, 1))
+
+    def __init__(self, **kwargs):
+        self.input = 0
+        self.trigger = 0
+        self.reset = 0
+        self.hold = None
+        super().__init__(target_cycle_time=0.005, **kwargs)
+
+    @on(trigger_cv, edge="rising")
+    def hold_value(self, value, ctx):
+        if self.hold is not None:
+            yield 0
+        self.hold = self.input
+        return self.hold
+
+    @on(reset_cv, edge="rising")
+    def reset_input(self, value, ctx):
+        self.hold = None
+        return 0
+
+
 class Switch(VirtualDevice):
     output2_cv = VirtualParameter(name="output2", range=(0, 127))
     input_cv = VirtualParameter(name="input", range=(0, 127))
