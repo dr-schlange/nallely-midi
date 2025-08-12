@@ -1,0 +1,58 @@
+name: Build Nallely Binary for Windows x86
+
+on:
+  push:
+    branches: [32b]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python 32-bit version (x86)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13.3'
+          architecture: x86
+
+      - name: Install Visual Studio Build Tools
+        run: choco install visualstudio2019buildtools --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools --quiet --norestart"
+
+      - name: Upgrade pip and setuptools
+        run: python -m pip install --upgrade pip setuptools wheel
+
+      - name: Install python-rtmidi from source
+        run: pip install python-rtmidi --no-binary python-rtmidi
+
+      - name: Install required dependencies
+        run: |
+          pip install pyinstaller
+          pip install -e .
+
+      - name: Install Yarn
+        run: npm install -g yarn
+
+      - name: Prepare Trevor-UI
+        shell: pwsh
+        run: |
+          $DEST_FOLDER = "trevor-ui"
+          mkdir $DEST_FOLDER
+          Remove-Item -Recurse -Force trevor\node_modules -ErrorAction SilentlyContinue
+          cd trevor
+          yarn install
+          yarn build
+          cd ..
+          Copy-Item trevor\dist\* $DEST_FOLDER -Recurse -Force
+          Copy-Item visuals $DEST_FOLDER -Recurse -Force
+
+      - name: Build with PyInstaller
+        run: |
+          pyinstaller nallely.spec
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nallely-windows-x86
+          path: dist/nallely.bin.exe
