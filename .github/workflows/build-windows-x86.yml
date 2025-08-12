@@ -15,6 +15,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.13.3'
+          architecture: x86
 
       - name: Install dependencies
         run: |
@@ -45,5 +46,5 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: nallely-windows-x64
+          name: nallely-windows-x86
           path: dist/nallely.bin.exe
