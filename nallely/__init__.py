@@ -20,7 +20,7 @@ from .core import (
 )
 from .eg import VCA, ADSREnvelope, Gate, SampleHold, Switch
 from .lfos import LFO, Cycler
-from .shifter import Arpegiator, Looper, Modulo, PitchShifter
+from .shifter import Arpegiator, Looper, Modulo, PitchShifter, ShiftRegister
 from .websocket_bus import WebSocketBus
 
 __all__ = [
@@ -54,4 +54,5 @@ __all__ = [
     "Arpegiator",
     "Looper",
     "SampleHold",
+    "ShiftRegister",
 ]

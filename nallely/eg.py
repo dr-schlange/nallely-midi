@@ -176,14 +176,15 @@ class SampleHold(VirtualDevice):
 
     @on(trigger_cv, edge="rising")
     def hold_value(self, value, ctx):
-        if self.hold is not None:
-            yield 0
-        self.hold = self.input
-        return self.hold
+        # if self.hold is not None:
+        #     yield 0
+        # self.hold = self.input
+        # return self.hold
+        return self.input
 
     @on(reset_cv, edge="rising")
     def reset_input(self, value, ctx):
-        self.hold = None
+        # self.hold = None
         return 0
 
 

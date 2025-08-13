@@ -410,6 +410,13 @@ class Link:
                         type="note_off",
                     )
                 previous = value
+            else:
+                dest.device.note(
+                    note=previous,
+                    velocity=ctx.get("velocity", DEFAULT_VELOCITY),
+                    type="note_off",
+                )
+                previous = None
 
         return foo
 
