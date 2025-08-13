@@ -171,20 +171,14 @@ class SampleHold(VirtualDevice):
         self.input = 0
         self.trigger = 0
         self.reset = 0
-        self.hold = None
         super().__init__(target_cycle_time=0.005, **kwargs)
 
     @on(trigger_cv, edge="rising")
     def hold_value(self, value, ctx):
-        # if self.hold is not None:
-        #     yield 0
-        # self.hold = self.input
-        # return self.hold
         return self.input
 
     @on(reset_cv, edge="rising")
     def reset_input(self, value, ctx):
-        # self.hold = None
         return 0
 
 
