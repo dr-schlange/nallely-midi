@@ -394,6 +394,7 @@ const DevicePatching = () => {
 		);
 		if (connection) {
 			displayConnectionMenu(connection);
+			return;
 		}
 		setInformation(undefined);
 	}, [tempValues, midi_devices, virtual_devices, allConnections, channels]);
