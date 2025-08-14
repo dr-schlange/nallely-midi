@@ -236,6 +236,7 @@ class PadOrKey:
     cc_note: int = -1
     mode: str = "note"
     description: str | None = None
+    channel: int | None = None
     range: tuple[int, int] = (0, 127)
 
     @property

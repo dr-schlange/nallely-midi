@@ -9,7 +9,7 @@ from .parameter_instances import (
     PitchwheelInstance,
 )
 from .scaler import Scaler
-from .virtual_device import VirtualDevice
+from .virtual_device import VirtualDevice, VirtualParameter
 from .world import ThreadContext
 
 DEFAULT_VELOCITY = 64
@@ -105,6 +105,14 @@ class Link:
     @property
     def is_stream(self):
         return self.dest.parameter.stream
+
+    # @staticmethod
+    # def get_channel(prop: Int | PadOrKey | PadsOrKeysInstance | PitchwheelInstance):
+    #     return (
+    #         prop.parameter.channel
+    #         if prop.parameter.channel is not None
+    #         else prop.device.channel
+    #     )
 
     def _dispatch(self, domain):
         src_cls = (
@@ -307,6 +315,7 @@ class Link:
     def _compile_PadOrKey__PadOrKey(self):
         src = cast(PadOrKey, self.src)
         dest = cast(PadOrKey, self.dest)
+        # get_channel = self.get_channel
 
         self.cleanup_callback = lambda: dest.device.all_notes_off()
 
@@ -314,6 +323,7 @@ class Link:
             ctx.get("type", "note_off" if ctx.raw_value else "note_on"),
             dest.parameter.cc_note,
             ctx.velocity,
+            channel=dest.parameter.channel,
         )
 
     # MIDI CC -> MIDI key/pad
@@ -327,6 +337,7 @@ class Link:
     def _compile_Int__PadOrKey(self):
         src = cast(Int, self.src)
         dest = cast(PadOrKey, self.dest)
+        # get_channel = self.get_channel
 
         self.cleanup_callback = lambda: dest.device.all_notes_off()
 
@@ -334,6 +345,7 @@ class Link:
             "note_on" if value > 0 else "note_off",
             note=dest.parameter.cc_note,
             velocity=value,
+            channel=dest.parameter.channel,
         )
 
     # MIDI pads/keys -> MIDI pads/keys
@@ -347,6 +359,7 @@ class Link:
     def _compile_PadsOrKeysInstance__PadsOrKeysInstance(self):
         src = cast(PadsOrKeysInstance, self.src)
         dest = cast(PadsOrKeysInstance, self.dest)
+        # get_channel = self.get_channel
 
         self.cleanup_callback = lambda: dest.device.all_notes_off()
 
@@ -354,6 +367,7 @@ class Link:
             note=value,
             velocity=ctx.get("velocity", DEFAULT_VELOCITY),
             type=ctx.get("type", "note_off" if ctx.raw_value else "note_on"),
+            channel=dest.parameter.channel,
         )
 
     # MIDI pad/key -> MIDI pads/keys
@@ -367,6 +381,7 @@ class Link:
     def _compile_PadOrKey__PadsOrKeysInstance(self):
         src = cast(PadOrKey, self.src)
         dest = cast(PadsOrKeysInstance, self.dest)
+        # get_channel = self.get_channel
 
         self.cleanup_callback = lambda: dest.device.all_notes_off()
 
@@ -374,6 +389,7 @@ class Link:
             note=value,
             velocity=ctx.get("velocity", DEFAULT_VELOCITY),
             type=ctx.get("type", "note_off" if ctx.raw_value else "note_on"),
+            channel=dest.parameter.channel,
         )
 
     # Virtual device output -> MIDI pads/keys
@@ -392,22 +408,26 @@ class Link:
         lower_range_value, _ = dest.parameter.range
 
         previous = None
+        # get_channel = self.get_channel
 
         def foo(value, ctx):
             value = int(value)
             nonlocal previous
+            # nonlocal get_channel
             if previous != value:
                 if lower_range_value != value and ctx.raw_value != 0:
                     dest.device.note(
                         note=value,
                         velocity=ctx.get("velocity", DEFAULT_VELOCITY),
                         type="note_on",
+                        channel=dest.parameter.channel,
                     )
                 if previous:
                     dest.device.note(
                         note=previous,
                         velocity=ctx.get("velocity", DEFAULT_VELOCITY),
                         type="note_off",
+                        channel=dest.parameter.channel,
                     )
                 previous = value
             else:
@@ -415,6 +435,7 @@ class Link:
                     note=previous,
                     velocity=ctx.get("velocity", DEFAULT_VELOCITY),
                     type="note_off",
+                    channel=dest.parameter.channel,
                 )
                 previous = None
 
@@ -435,22 +456,26 @@ class Link:
         self.cleanup_callback = lambda: dest.device.all_notes_off()
 
         previous = None
+        # get_channel = self.get_channel
 
         def foo(value, ctx):
             value = int(value)
             nonlocal previous
+            # nonlocal get_channel
             if previous != value:
                 if int(ctx.raw_value) != 0:
                     dest.device.note(
                         note=value,
                         velocity=ctx.get("velocity", DEFAULT_VELOCITY),
                         type="note_on",
+                        channel=dest.parameter.channel,
                     )
                 if previous:
                     dest.device.note(
                         note=previous,
                         velocity=ctx.get("velocity", DEFAULT_VELOCITY),
                         type="note_off",
+                        channel=dest.parameter.channel,
                     )
                 previous = value
 
@@ -486,22 +511,26 @@ class Link:
         self.cleanup_callback = lambda: dest.device.all_notes_off()
 
         previous = None
+        # get_channel = self.get_channel
 
         def foo(value, ctx):
             value = int(value)
             nonlocal previous
+            # nonlocal get_channel
             if previous != value:
                 if int(ctx.raw_value) != 0:
                     dest.device.note(
                         note=value,
                         velocity=ctx.get("velocity", DEFAULT_VELOCITY),
                         type="note_on",
+                        channel=dest.parameter.channel,
                     )
                 if previous:
                     dest.device.note(
                         note=previous,
                         velocity=ctx.get("velocity", DEFAULT_VELOCITY),
                         type="note_off",
+                        channel=dest.parameter.channel,
                     )
                 previous = value
 
@@ -542,10 +571,15 @@ class Link:
     def _compile_PitchwheelInstance__PitchwheelInstance(self):
         src = cast(PitchwheelInstance, self.src)
         dest = cast(PitchwheelInstance, self.dest)
+        # get_channel = self.get_channel
 
-        self.cleanup_callback = lambda: dest.device.pitchwheel(0)
+        self.cleanup_callback = lambda: dest.device.pitchwheel(
+            0, channel=dest.parameter.channel
+        )
 
-        return lambda value, ctx: dest.device.pitchwheel(value)
+        return lambda value, ctx: dest.device.pitchwheel(
+            value, channel=dest.parameter.channel
+        )
 
     # MIDI CC -> MIDI Pitchwheel
     def _install_Int__PitchwheelInstance(self):
@@ -558,10 +592,15 @@ class Link:
     def _compile_Int__PitchwheelInstance(self):
         src = cast(Int, self.src)
         dest = cast(PitchwheelInstance, self.dest)
+        # get_channel = self.get_channel
 
-        self.cleanup_callback = lambda: dest.device.pitchwheel(0)
+        self.cleanup_callback = lambda: dest.device.pitchwheel(
+            0, channel=dest.parameter.channel
+        )
 
-        return lambda value, ctx: dest.device.pitchwheel(value)
+        return lambda value, ctx: dest.device.pitchwheel(
+            value, channel=dest.parameter.channel
+        )
 
     # MIDI key/pad -> MIDI Pitchwheel
     def _install_PadOrKey__PitchwheelInstance(self):
@@ -574,10 +613,15 @@ class Link:
     def _compile_PadOrKey__PitchwheelInstance(self):
         src = cast(PadOrKey, self.src)
         dest = cast(PitchwheelInstance, self.dest)
+        # get_channel = self.get_channel
 
-        self.cleanup_callback = lambda: dest.device.pitchwheel(0)
+        self.cleanup_callback = lambda: dest.device.pitchwheel(
+            0, channel=dest.parameter.channel
+        )
 
-        return lambda value, ctx: dest.device.pitchwheel(value)
+        return lambda value, ctx: dest.device.pitchwheel(
+            value, channel=dest.parameter.channel
+        )
 
     # MIDI pads/keys -> MIDI Pitchwheel
     def _install_PadsOrKeysInstance__PitchwheelInstance(self):
@@ -590,10 +634,15 @@ class Link:
     def _compile_PadsOrKeysInstance__PitchwheelInstance(self):
         src = cast(PadsOrKeysInstance, self.src)
         dest = cast(PitchwheelInstance, self.dest)
+        # get_channel = self.get_channel
 
-        self.cleanup_callback = lambda: dest.device.pitchwheel(0)
+        self.cleanup_callback = lambda: dest.device.pitchwheel(
+            0, channel=dest.parameter.channel
+        )
 
-        return lambda value, ctx: dest.device.pitchwheel(value)
+        return lambda value, ctx: dest.device.pitchwheel(
+            value, channel=dest.parameter.channel
+        )
 
     # Virtual output -> MIDI Pitchwheel
     def _install_ParameterInstance__PitchwheelInstance(self):
@@ -606,16 +655,12 @@ class Link:
     def _compile_ParameterInstance__PitchwheelInstance(self):
         src = cast(ParameterInstance, self.src)
         dest = cast(PitchwheelInstance, self.dest)
+        # get_channel = self.get_channel
 
-        self.cleanup_callback = lambda: dest.device.pitchwheel(0)
+        self.cleanup_callback = lambda: dest.device.pitchwheel(
+            0, channel=dest.parameter.channel
+        )
 
-        return lambda value, ctx: dest.device.pitchwheel(value)
-
-
-# def debug(l):
-#     def foo(value, ctx):
-#         print("->", value, ctx)
-#         r = l(value, ctx)
-#         return r
-
-#     return foo
+        return lambda value, ctx: dest.device.pitchwheel(
+            value, channel=dest.parameter.channel
+        )

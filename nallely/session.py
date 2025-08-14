@@ -59,10 +59,13 @@ class Session:
             try:
                 cls = find_class(device_class_name)
                 devices = all_devices()
+                channel = device.get("channel", 0)
                 try:
                     autoconnect = common_port or False
                     mididev: MidiDevice = cls(
-                        device_name=common_port, autoconnect=autoconnect
+                        device_name=common_port,
+                        channel=channel,
+                        autoconnect=autoconnect,
                     )
                 except DeviceNotFound:
                     # If there is a problem we remove the auto-connection
@@ -72,7 +75,7 @@ class Session:
                     )
                     if diff:
                         diff.stop()
-                    mididev = cls(autoconnect=False)
+                    mididev = cls(channel=channel, autoconnect=False)
                     errors.append(
                         f'MIDI device ports "{common_port}" for {device_class_name} could not be found. Is your device connected or MIDI ports existing? Your device was still created, but it was not connected to any MIDI port.'
                     )

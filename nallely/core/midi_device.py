@@ -24,7 +24,7 @@ NOT_INIT = "uninitialized"
 class ModuleParameter:
     type = "control_change"
     cc_note: int
-    channel: int = 0
+    channel: int | None = None
     name: str = NOT_INIT
     section_name: str = NOT_INIT
     init_value: int = 0
@@ -84,13 +84,14 @@ class ModuleParameter:
         to_module.state[self.name].update(feeder)
 
     def basic_set(self, device: "MidiDevice", value):
+        # TODO update later when we will deal with multi-channels instruments
         getattr(device.modules, self.section_name).state[self.name].update(value)
 
 
 @dataclass
 class ModulePadsOrKeys:
     type = "note"
-    channel: int = 0
+    channel: int | None = None
     keys: dict[int, PadOrKey] = field(default_factory=dict)
     section_name: str = NOT_INIT
     name: str = NOT_INIT
@@ -121,7 +122,7 @@ class ModulePadsOrKeys:
 @dataclass
 class ModulePitchwheel:
     type = "pitchwheel"
-    channel: int = 0
+    channel: int | None = None
     section_name: str = NOT_INIT
     name: str = NOT_INIT
     cc_note: int = -1
@@ -268,13 +269,15 @@ class DeviceState:
             moduleInstance = ModuleCls(device)
             init_modules[state_name] = moduleInstance
             for param in moduleInstance.meta.parameters:
-                device.reverse_map[("control_change", param.cc_note)] = param
-            if moduleInstance.meta.pads_or_keys:
-                device.reverse_map[("note", None)] = moduleInstance.meta.pads_or_keys
-            if moduleInstance.meta.pitchwheel:
-                device.reverse_map[("pitchwheel", None)] = (
-                    moduleInstance.meta.pitchwheel
+                device.reverse_map[("control_change", param.cc_note, param.channel)] = (
+                    param
                 )
+            if moduleInstance.meta.pads_or_keys:
+                param = moduleInstance.meta.pads_or_keys
+                device.reverse_map[("note", None, param.channel)] = param
+            if moduleInstance.meta.pitchwheel:
+                param = moduleInstance.meta.pitchwheel
+                device.reverse_map[("pitchwheel", None, param.channel)] = param
         self.modules = init_modules
 
     def __getattr__(self, name):
@@ -328,6 +331,7 @@ class MidiDevice:
     outport: mido.ports.BaseOutput | None = None
     inport: mido.ports.BaseInput | None = None
     debug: bool = False
+    channel: int = 0
     on_midi_message: (
         Callable[["MidiDevice", mido.Message, ModuleParameter | None], None] | None
     ) = None
@@ -342,7 +346,9 @@ class MidiDevice:
         if self not in connected_devices:
             connected_devices.append(self)
         self.reverse_map = {}
-        self.links: defaultdict[tuple[str, int], list[Link]] = defaultdict(list)
+        self.links: defaultdict[tuple[str, int, int | None], list[Link]] = defaultdict(
+            list
+        )  # if the channel is None, we consider the device channel
         self.links_registry: dict[tuple[str, str], Link] = {}
         if self.modules_descr is None:
             self.modules_descr = {
@@ -419,11 +425,11 @@ class MidiDevice:
 
     stop = close
 
-    def _get_control(self, cc):
-        return self.reverse_map.get(("control_change", cc))
+    def _get_control(self, cc, channel):
+        return self.reverse_map.get(("control_change", cc, channel))
 
     def _update_state(self, cc, value, msg):
-        control: ModuleParameter | None = self._get_control(cc)
+        control: ModuleParameter | None = self._get_control(cc, msg.channel)
         if control:
             control.basic_set(self, value)
             if self.on_midi_message:
@@ -434,13 +440,16 @@ class MidiDevice:
 
     def _sync_state(self, msg):
         if msg.type == "clock":
+            # TODO create special clock/sync hook
             return
         if self.debug:
             print(msg)
+        # None marks the device channel
+        channel = None if msg.channel == self.channel else msg.channel
         if msg.type == "control_change":
             control = msg.control
             try:
-                for link in self.links.get((msg.type, control), []):
+                for link in self.links.get((msg.type, control, channel), []):
                     value = msg.value
                     ctx = ThreadContext({"debug": self.debug})
                     link.trigger(value, ctx)
@@ -448,10 +457,10 @@ class MidiDevice:
             except:
                 traceback.print_exc()
         if msg.type == "note_on" or msg.type == "note_off":
+            note = msg.note
             try:
                 # We look first if there are links at the "global level" for keys
-                for link in self.links.get(("note", -1), []):
-                    value = msg.note
+                for link in self.links.get(("note", -1, channel), []):
                     ctx = ThreadContext(
                         {
                             "debug": self.debug,
@@ -459,9 +468,8 @@ class MidiDevice:
                             "velocity": msg.velocity,
                         }
                     )
-                    link.trigger(value, ctx)
-                for link in self.links.get(("note", msg.note), []):
-                    value = msg.note
+                    link.trigger(note, ctx)
+                for link in self.links.get(("note", note, channel), []):
                     ctx = ThreadContext(
                         {
                             "debug": self.debug,
@@ -469,25 +477,27 @@ class MidiDevice:
                             "velocity": msg.velocity,
                         }
                     )
-                    link.trigger(value, ctx)
-                for link in self.links.get(("velocity", msg.note), []):
+                    link.trigger(note, ctx)
+                for link in self.links.get(("velocity", note, channel), []):
+                    ctx = ThreadContext(
+                        {
+                            "debug": self.debug,
+                            "type": msg.type,
+                            "note": note,
+                        }
+                    )
                     value = msg.velocity
-                    ctx = ThreadContext(
-                        {
-                            "debug": self.debug,
-                            "type": msg.type,
-                            "note": msg.note,
-                        }
-                    )
                     link.trigger(value, ctx)
-                pads: ModulePadsOrKeys | None = self.reverse_map.get(("note", None))
+                pads: ModulePadsOrKeys | None = self.reverse_map.get(
+                    ("note", None, channel)
+                )
                 if pads:
-                    pads.basic_send(msg.type, msg.note, msg.velocity)
+                    pads.basic_send(msg.type, note, msg.velocity)
             except:
                 traceback.print_exc()
         if msg.type == "pitchwheel":
             try:
-                for link in self.links.get((msg.type, -1), []):
+                for link in self.links.get((msg.type, -1, channel), []):
                     pitch = msg.pitch
                     ctx = ThreadContext({"debug": self.debug, "type": msg.type})
                     link.trigger(pitch, ctx)
@@ -499,12 +509,14 @@ class MidiDevice:
             return
         self.outport.send(msg)
 
-    def note(self, type, note, velocity=127 // 2, channel=0):
+    def note(self, type, note, velocity=127 // 2, channel=None):
+        channel = channel if channel is not None else self.channel
         getattr(self, type)(note, velocity=velocity, channel=channel)
 
-    def note_on(self, note, velocity=127 // 2, channel=0):
+    def note_on(self, note, velocity=127 // 2, channel=None):
         if not self.outport:
             return
+        channel = channel if channel is not None else self.channel
         note = int(note)
         if note > 127:
             note = 127
@@ -518,9 +530,10 @@ class MidiDevice:
             for _ in range(20):
                 self.note_off(note, velocity=0)
 
-    def note_off(self, note, velocity=127 // 2, channel=0):
+    def note_off(self, note, velocity=127 // 2, channel=None):
         if not self.outport:
             return
+        channel = channel if channel is not None else self.channel
         note = int(note)
         if note > 127:
             note = 127
@@ -532,9 +545,10 @@ class MidiDevice:
         if self.played_notes[note]:
             self.played_notes[note] -= 1
 
-    def pitchwheel(self, pitch, channel=0):
+    def pitchwheel(self, pitch, channel=None):
         if not self.outport:
             return
+        channel = channel if channel is not None else self.channel
         pitch = int(pitch)
         if pitch > 8191:
             pitch = 8191
@@ -553,9 +567,10 @@ class MidiDevice:
             for note in range(0, 128):
                 self.note_off(note, velocity=0)
 
-    def control_change(self, control, value=0, channel=0):
+    def control_change(self, control, value=0, channel=None):
         if not self.outport:
             return
+        channel = channel if channel is not None else self.channel
         value = int(value)
         if value > 127:
             value = 127
@@ -576,7 +591,8 @@ class MidiDevice:
     def bind_link(self, link):
         type = link.src.parameter.type
         cc_note = link.src.parameter.cc_note
-        self.links[(type, cc_note)].append(link)
+        channel = link.src.parameter.channel
+        self.links[(type, cc_note, channel)].append(link)
         self.links_registry[(link.src_repr(), link.dest_repr())] = link
 
     def bounce_link(self, from_, value, ctx):
@@ -597,7 +613,10 @@ class MidiDevice:
             for key in to_remove:
                 del self.links_registry[key]
             for link in link_to_remove:
-                self.links[(from_.parameter.type, from_.parameter.cc_note)].remove(link)
+                type = from_.parameter.type
+                cc_note = from_.parameter.cc_note
+                channel = from_.parameter.channel
+                self.links[(type, cc_note, channel)].remove(link)
                 link.cleanup()
             return
         if target is None:
@@ -626,7 +645,10 @@ class MidiDevice:
             return
 
         del self.links_registry[key]
-        self.links[(from_.parameter.type, from_.parameter.cc_note)].remove(link)
+        type = from_.parameter.type
+        cc_note = from_.parameter.cc_note
+        channel = from_.parameter.channel
+        self.links[(type, cc_note, channel)].remove(link)
         link.cleanup()
 
     def __isub__(self, other):
@@ -662,6 +684,7 @@ class MidiDevice:
                 "input": self.inport.name if self.inport else None,
                 "output": self.outport.name if self.outport else None,
             },
+            "channel": self.channel,
             "meta": {
                 "name": self.__class__.__name__,
                 "sections": [

@@ -8,8 +8,8 @@ import nallely
 
 class DeviceSimulator:
     def __init__(self, name):
-        self.port = mido.open_output(name, virtual=True)
-        self.input = mido.open_input(name, virtual=True)
+        self.port = mido.open_output(name, virtual=True)  # type: ignore
+        self.input = mido.open_input(name, virtual=True)  # type: ignore
 
     def close(self):
         self.port.close()
@@ -52,9 +52,9 @@ def let_time_to_react(t=0.01):
 
 @dataclass
 class SenderModule(nallely.Module):
-    button1 = nallely.ModuleParameter(45, channel=0)
-    button2 = nallely.ModuleParameter(20, channel=0)
-    keys = nallely.ModulePadsOrKeys(channel=0)
+    button1 = nallely.ModuleParameter(45)
+    button2 = nallely.ModuleParameter(20)
+    keys = nallely.ModulePadsOrKeys()
 
 
 class MidiSender(nallely.MidiDevice):

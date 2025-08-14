@@ -401,15 +401,15 @@ def test__remove_keys_from_one_to_full_section_midi_midi(sender, receiver):
     receiver.modules.main[:] = sender.modules.main[2]
 
     assert len(sender.links) == 2
-    assert len(sender.links[("note", 1)]) == 128
-    assert len(sender.links[("note", 2)]) == 128
+    assert len(sender.links[("note", 1, None)]) == 128
+    assert len(sender.links[("note", 2, None)]) == 128
     assert len(receiver.links) == 0
 
     receiver.modules.main -= sender.modules.main[1]
 
     assert len(sender.links) == 2  # there is still the key in the map, but no callbacks
-    assert len(sender.links[("note", 1)]) == 0
-    assert len(sender.links[("note", 2)]) == 128
+    assert len(sender.links[("note", 1, None)]) == 0
+    assert len(sender.links[("note", 2, None)]) == 128
     assert len(receiver.links) == 0
 
 
@@ -423,11 +423,11 @@ def test__remove_keys_from_all_to_all_section_midi_midi(sender, receiver):
     receiver.modules.main[:] = sender.modules.main[:]
 
     assert len(sender.links) == 128
-    assert len(sender.links[("note", 0)]) == 1
-    assert len(sender.links[("note", 1)]) == 1
-    assert len(sender.links[("note", 2)]) == 1
-    assert len(sender.links[("note", 126)]) == 1
-    assert len(sender.links[("note", 127)]) == 1
+    assert len(sender.links[("note", 0, None)]) == 1
+    assert len(sender.links[("note", 1, None)]) == 1
+    assert len(sender.links[("note", 2, None)]) == 1
+    assert len(sender.links[("note", 126, None)]) == 1
+    assert len(sender.links[("note", 127, None)]) == 1
     assert len(receiver.links) == 0
 
     receiver.modules.main -= sender.modules.main[1]
@@ -435,8 +435,8 @@ def test__remove_keys_from_all_to_all_section_midi_midi(sender, receiver):
     assert (
         len(sender.links) == 128
     )  # there is still the key in the map, but no callbacks
-    assert len(sender.links[("note", 1)]) == 0
-    assert len(sender.links[("note", 2)]) == 1
+    assert len(sender.links[("note", 1, None)]) == 0
+    assert len(sender.links[("note", 2, None)]) == 1
     assert len(receiver.links) == 0
 
     receiver.modules.main -= sender.modules.main[:]
@@ -444,8 +444,8 @@ def test__remove_keys_from_all_to_all_section_midi_midi(sender, receiver):
     assert (
         len(sender.links) == 128
     )  # there is still the key in the map, but no callbacks
-    assert len(sender.links[("note", 1)]) == 0
-    assert len(sender.links[("note", 2)]) == 0
+    assert len(sender.links[("note", 1, None)]) == 0
+    assert len(sender.links[("note", 2, None)]) == 0
     assert len(receiver.links) == 0
 
 
@@ -459,13 +459,13 @@ def test__remove_keys_from_all_to_all_section_midi_midi_direct(sender, receiver)
     receiver.modules.main.keys_sink = sender.modules.main.keys
 
     assert len(sender.links) == 1
-    assert len(sender.links[("note", -1)]) == 1
+    assert len(sender.links[("note", -1, None)]) == 1
     assert len(receiver.links) == 0
 
     receiver.modules.main -= sender.modules.main.keys
 
     assert len(sender.links) == 1  # there is still the key in the map, but no callbacks
-    assert len(sender.links[("note", -1)]) == 0
+    assert len(sender.links[("note", -1, None)]) == 0
     assert len(receiver.links) == 0
 
 
@@ -500,13 +500,13 @@ def test__mapping_single_to_all(sender, receiver):
     receiver.modules.main.keys_sink = sender.modules.main[1]
 
     assert len(sender.links) == 1
-    assert len(sender.links[("note", 1)]) == 1
+    assert len(sender.links[("note", 1, None)]) == 1
     assert len(receiver.links) == 0
 
     receiver.modules.main.keys_sink -= sender.modules.main[1]
 
     assert len(sender.links) == 1  # there is still the key in the map, but no callbacks
-    assert len(sender.links[("note", 1)]) == 0
+    assert len(sender.links[("note", 1, None)]) == 0
     assert len(receiver.links) == 0
 
 
@@ -520,13 +520,13 @@ def test__mapping_single_to_all2(sender, receiver):
     receiver.modules.main.keys_sink = sender.modules.main[1]
 
     assert len(sender.links) == 1
-    assert len(sender.links[("note", 1)]) == 1
+    assert len(sender.links[("note", 1, None)]) == 1
     assert len(receiver.links) == 0
 
     receiver.modules.main -= sender.modules.main[1]
 
     assert len(sender.links) == 1  # there is still the key in the map, but no callbacks
-    assert len(sender.links[("note", 1)]) == 0
+    assert len(sender.links[("note", 1, None)]) == 0
     assert len(receiver.links) == 0
 
 
@@ -562,13 +562,13 @@ def test__mapping_cc_to_all(sender, receiver):
     receiver.modules.main.keys_sink = sender.modules.main.button1
 
     assert len(sender.links) == 1
-    assert len(sender.links[("control_change", 45)]) == 1
+    assert len(sender.links[("control_change", 45, None)]) == 1
     assert len(receiver.links) == 0
 
     receiver.modules.main -= sender.modules.main.button1
 
     assert len(sender.links) == 1  # there is still the key in the map, but no callbacks
-    assert len(sender.links[("control_change", 45)]) == 0
+    assert len(sender.links[("control_change", 45, None)]) == 0
     assert len(receiver.links) == 0
 
 
@@ -583,14 +583,14 @@ def test__mapping_pad_to_virtual(sender):
     lfo.speed_cv = sender.modules.main[1]
 
     assert len(sender.links) == 1
-    assert len(sender.links[("note", 1)]) == 1
+    assert len(sender.links[("note", 1, None)]) == 1
     assert len(lfo.nonstream_links) == 0
     assert len(lfo.stream_links) == 0
 
     lfo.speed_cv -= sender.modules.main[1]
 
     assert len(sender.links) == 1  # there is still the key in the map, but no callbacks
-    assert len(sender.links[("note", 1)]) == 0
+    assert len(sender.links[("note", 1, None)]) == 0
     assert len(lfo.nonstream_links) == 0
     assert len(lfo.stream_links) == 0
 
@@ -604,18 +604,18 @@ def test__mapping_cc_to_cc__then__unbind(sender, receiver):
     receiver.modules.main.sink2 = sender.modules.main.button1
 
     let_time_to_react()
-    assert len(sender.links[("control_change", 45)]) == 2
-    assert len(sender.links[("control_change", 20)]) == 0
-    assert sender.links[("control_change", 45)][0].dest.parameter.name == "sink1"
-    assert sender.links[("control_change", 45)][1].dest.parameter.name == "sink2"
+    assert len(sender.links[("control_change", 45, None)]) == 2
+    assert len(sender.links[("control_change", 20, None)]) == 0
+    assert sender.links[("control_change", 45, None)][0].dest.parameter.name == "sink1"
+    assert sender.links[("control_change", 45, None)][1].dest.parameter.name == "sink2"
 
     receiver.modules.main.sink2 -= sender.modules.main.button1
     receiver.modules.main.sink2 = sender.modules.main.button2
 
     # button1 = CC #45
     # button2 = CC #20
-    assert len(sender.links[("control_change", 45)]) == 1
-    assert sender.links[("control_change", 45)][0].dest.parameter.name == "sink1"
+    assert len(sender.links[("control_change", 45, None)]) == 1
+    assert sender.links[("control_change", 45, None)][0].dest.parameter.name == "sink1"
 
-    assert len(sender.links[("control_change", 20)]) == 1
-    assert sender.links[("control_change", 20)][0].dest.parameter.name == "sink2"
+    assert len(sender.links[("control_change", 20, None)]) == 1
+    assert sender.links[("control_change", 20, None)][0].dest.parameter.name == "sink2"
