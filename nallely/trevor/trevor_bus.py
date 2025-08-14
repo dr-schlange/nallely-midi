@@ -441,6 +441,11 @@ class TrevorBus(VirtualDevice):
 
     def set_parameter_value(self, device_id, section_name, parameter_name, value):
         self.trevor.set_parameter_value(device_id, section_name, parameter_name, value)
+        return self.full_state()
+
+    def set_device_channel(self, device_id, channel):
+        self.trevor.set_device_channel(device_id, channel)
+        return self.full_state()
 
 
 def resource_path(relative_path):

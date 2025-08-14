@@ -3,7 +3,7 @@ import {
 	useSelector,
 	type TypedUseSelectorHook,
 } from "react-redux";
-import { configureStore } from "@reduxjs/toolkit";
+import { configureStore, createSelector } from "@reduxjs/toolkit";
 import trevorSlice from "./trevorSlice";
 import runTimeSlice from "./runtimeSlice";
 import generalSlice, { initialGeneralState } from "./generalSlice";
@@ -63,3 +63,18 @@ export type AppDispatch = typeof store.dispatch;
  */
 export const useTrevorDispatch = () => useDispatch<AppDispatch>();
 export const useTrevorSelector: TypedUseSelectorHook<RootState> = useSelector;
+
+export const selectChannels = createSelector(
+	(state) => state.nallely.midi_devices,
+	(devices) => {
+		const newvalue = devices.reduce(
+			(acc, device) => {
+				acc[device.id] = device.channel || 0;
+				return acc;
+			},
+			{} as Record<number, number>,
+		);
+		console.debug("selectChannels", newvalue);
+		return newvalue;
+	},
+);

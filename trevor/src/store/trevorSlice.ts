@@ -1,4 +1,8 @@
-import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import {
+	createSelector,
+	createSlice,
+	type PayloadAction,
+} from "@reduxjs/toolkit";
 import type { NallelyState } from "../model";
 
 const initialState: NallelyState = {

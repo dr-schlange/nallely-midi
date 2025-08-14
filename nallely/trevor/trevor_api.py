@@ -1,6 +1,6 @@
 from decimal import Decimal
 from itertools import chain
-from typing import Any
+from typing import Any, cast
 
 from ..core import (
     MidiDevice,
@@ -221,3 +221,8 @@ class TrevorAPI:
     def set_parameter_value(self, device_id, section_name, parameter_name, value):
         dev = self.get_device_instance(device_id)
         setattr(getattr(dev, section_name), parameter_name, value)
+
+    def set_device_channel(self, device_id, channel):
+        dev = cast(MidiDevice, self.get_device_instance(device_id))
+        dev.force_all_notes_off()
+        dev.channel = channel

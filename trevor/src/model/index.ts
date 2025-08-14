@@ -49,6 +49,7 @@ export interface MidiDevice {
 		input: string | null;
 		output: string | null;
 	};
+	channel: number;
 }
 
 // export interface MidiConfigValue {

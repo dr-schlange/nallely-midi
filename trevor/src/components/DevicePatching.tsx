@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, type ReactElement } from "react";
 import { RackRow } from "./RackRow";
-import { useTrevorSelector } from "../store";
+import { selectChannels, useTrevorSelector } from "../store";
 
 import type {
 	MidiConnection,
@@ -68,6 +68,7 @@ const DevicePatching = () => {
 	const [tempValues, setTempValues] = useState<
 		Record<number, Record<string, string | undefined>>
 	>({});
+	const channels = useTrevorSelector(selectChannels);
 	const widgetRack = useRef<RackRowWidgetRef>(null);
 	const ccsRack = useRef<RackRowCCRef>(null);
 	const [isExpanded, setIsExpanded] = useState<boolean>(true);
@@ -304,6 +305,7 @@ const DevicePatching = () => {
 			);
 			return;
 		}
+		// Device information on the right panel
 		setInformation(
 			<>
 				<p style={{ marginLeft: "5px" }}>{device.repr}</p>
@@ -314,6 +316,37 @@ const DevicePatching = () => {
 				>
 					random preset
 				</button>
+				<hr />
+				<label
+					style={{
+						width: "100%",
+						display: "flex",
+						marginLeft: "10px",
+						alignItems: "center",
+					}}
+				>
+					<p
+						style={{
+							margin: "0px",
+							width: "50%",
+							overflowInline: "auto",
+						}}
+					>
+						channel
+					</p>
+					<input
+						type="number"
+						onChange={(e) => {
+							trevorSocket?.setDeviceChannel(
+								device,
+								Number.parseInt(e.target.value) || 0,
+							);
+						}}
+						min={0}
+						max={16}
+						value={channels[device.id]}
+					/>
+				</label>
 				<hr />
 				{device.meta.sections?.map((section) => (
 					<button
@@ -362,7 +395,8 @@ const DevicePatching = () => {
 		if (connection) {
 			displayConnectionMenu(connection);
 		}
-	}, [tempValues, midi_devices, virtual_devices, allConnections]);
+		setInformation(undefined);
+	}, [tempValues, midi_devices, virtual_devices, allConnections, channels]);
 
 	const handleParameterClick = (
 		device: VirtualDevice,
@@ -523,6 +557,9 @@ const DevicePatching = () => {
 	};
 
 	const handleMidiDeviceClick = (device: MidiDevice) => {
+		setCurrentSelected(device.id);
+		setSelectedConnection(undefined);
+		setSelectedSections([]);
 		updateInfo(device);
 	};
 

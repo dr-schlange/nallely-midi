@@ -347,6 +347,14 @@ class TrevorWebSocket {
 		});
 	}
 
+	setDeviceChannel(device: MidiDevice, channel: number) {
+		this.sendJsonMessage({
+			command: "set_device_channel",
+			device_id: device.id,
+			channel,
+		});
+	}
+
 	setScalerValue(
 		scalerId: number,
 		parameter: string,
