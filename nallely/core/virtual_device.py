@@ -258,8 +258,8 @@ class VirtualDevice(threading.Thread):
                 return_value, selected_outputs = return_value
             else:
                 selected_outputs = [self.output_cv]
-            if self.debug:
-                print(f"out: {selected_outputs}")
+            # if self.debug:
+            #     print(f"out: {selected_outputs}")
             self.send_out(
                 return_value,
                 ctx,
@@ -420,6 +420,8 @@ class VirtualDevice(threading.Thread):
             links = self.stream_links.get(output, [])
             for link in links:
                 try:
+                    if self.debug:
+                        print(f"[{output}]", value, ctx)
                     link.trigger(value, ctx)
                 except Exception as e:
                     traceback.print_exc()
@@ -431,6 +433,8 @@ class VirtualDevice(threading.Thread):
                 links = self.nonstream_links.get(output, [])
                 for link in links:
                     try:
+                        if self.debug:
+                            print(f"[{output}]", value, ctx)
                         link.trigger(value, ctx)
                     except Exception as e:
                         traceback.print_exc()
