@@ -1,6 +1,7 @@
-from decimal import Decimal, DecimalTuple
+import time
+from decimal import Decimal
 
-from .core import ThreadContext, VirtualDevice, VirtualParameter, on
+from .core import VirtualDevice, VirtualParameter, on
 
 # class FlexibleClock(VirtualDevice):
 #     tempo_cv = VirtualParameter("tempo", range=(20, 600))  # BPM
@@ -188,6 +189,7 @@ class FlexibleClock(VirtualDevice):
         self._play = 0
         self.reset = 0
         self.tick_min_ms = Decimal(tick_min_ms)
+        self.next_tick_time = time.perf_counter()
 
         self.phases = {
             "lead": Decimal(0),
@@ -244,24 +246,36 @@ class FlexibleClock(VirtualDevice):
         for k in self.phases:
             self.phases[k] = Decimal(0)
 
-    def main(self, ctx: ThreadContext):
-        quater_note_ms = Decimal(60000) / self.tempo
-        tick_ms = min(self.tick_min_ms, quater_note_ms / self.smallest_subdivision)
+    def main(self, ctx):
+        quarter_note_s = 60 / float(self.tempo)
+        tick_s = max(
+            float(self.tick_min_ms) / 1000,
+            quarter_note_s / float(self.smallest_subdivision),
+        )
 
         if self.play:
             to_pulse = []
-
             for name in self.phases:
-                self.phases[name] += self.ratios[name] * (tick_ms / quater_note_ms)
-                while self.phases[name] >= Decimal(1.0):
-                    self.phases[name] -= Decimal(1.0)
+                self.phases[name] += Decimal(self.ratios[name]) * Decimal(
+                    tick_s / quarter_note_s
+                )
+                while self.phases[name] >= 1:
+                    self.phases[name] -= 1
                     to_pulse.append(name)
 
             if to_pulse:
-                pulse_width_ms = min(5, max(1, float(quater_note_ms / 128)))
+                pulse_width_ms = min(5, max(1, float(quarter_note_s * 1000 / 128)))
                 outputs = [getattr(self, f"{name}_cv") for name in to_pulse]
                 yield 1, outputs
-                yield from self.sleep(pulse_width_ms, consider_target_time=True)
+                yield from self.sleep(pulse_width_ms, consider_target_time=False)
                 yield 0, outputs
 
-        yield from self.sleep(float(tick_ms), consider_target_time=True)
+        # Plan next tick
+        self.next_tick_time += tick_s
+        delay = self.next_tick_time - time.perf_counter()
+
+        if delay > 0:
+            yield from self.sleep(delay * 1000, consider_target_time=False)
+        else:
+            # We are late, we hurry to compensate
+            self.next_tick_time = time.perf_counter()
