@@ -223,6 +223,11 @@ class TrevorAPI:
         setattr(getattr(dev, section_name), parameter_name, value)
 
     def set_device_channel(self, device_id, channel):
+        channel = int(channel)
+        if channel < 0:
+            channel = 0
+        elif channel > 15:
+            channel = 15
         dev = cast(MidiDevice, self.get_device_instance(device_id))
         dev.force_all_notes_off()
         dev.channel = channel
