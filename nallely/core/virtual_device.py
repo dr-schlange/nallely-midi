@@ -243,8 +243,8 @@ class VirtualDevice(threading.Thread):
     #     # print(f"Finished sleeping at {time.time_ns()}")
     #     yield
 
-    def sleep(self, t):
-        if self.target_cycle_time > 0:
+    def sleep(self, t, consider_target_time=False):
+        if self.target_cycle_time > 0 and consider_target_time:
             t = min(float(t), self.target_cycle_time * 1000)
         else:
             t = float(t)

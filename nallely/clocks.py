@@ -261,7 +261,7 @@ class FlexibleClock(VirtualDevice):
                 pulse_width_ms = min(5, max(1, float(quater_note_ms / 128)))
                 outputs = [getattr(self, f"{name}_cv") for name in to_pulse]
                 yield 1, outputs
-                yield from self.sleep(pulse_width_ms)
+                yield from self.sleep(pulse_width_ms, consider_target_time=True)
                 yield 0, outputs
 
-        yield from self.sleep(float(tick_ms))
+        yield from self.sleep(float(tick_ms), consider_target_time=True)
