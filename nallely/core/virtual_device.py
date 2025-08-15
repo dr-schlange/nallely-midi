@@ -229,18 +229,38 @@ class VirtualDevice(threading.Thread):
     def store_input(self, param: str, value):
         setattr(self, param, value)
 
+    # def sleep(self, t):
+    #     if t < self.target_cycle_time * 1000:
+    #         # print(f"Fits {t=} in the current time of {self.target_cycle_time * 1000}ms")
+    #         time.sleep(float(t) / 1000)
+    #         yield
+    #         return
+    #     next_tick = time.time_ns() + t * 1_000_000
+    #     # print(f"Sleeping for {t}ms until {next_tick}")
+    #     while time.time_ns() < next_tick:
+    #         # print(f"Still sleeping... now={time.time_ns()}")
+    #         yield "__suspend__"
+    #     # print(f"Finished sleeping at {time.time_ns()}")
+    #     yield
+
     def sleep(self, t):
-        if t < self.target_cycle_time * 1000:
-            # print(f"Fits {t=} in the current time of {self.target_cycle_time * 1000}ms")
-            time.sleep(float(t) / 1000)
-            yield
-            return
-        next_tick = time.time_ns() + t * 1_000_000
-        # print(f"Sleeping for {t}ms until {next_tick}")
-        while time.time_ns() < next_tick:
-            # print(f"Still sleeping... now={time.time_ns()}")
+        if self.target_cycle_time > 0:
+            t = min(float(t), self.target_cycle_time * 1000)
+        else:
+            t = float(t)
+
+        end_time = time.time() + t / 1000.0
+
+        while True:
+            remaining = end_time - time.time()
+            if remaining <= 0:
+                break
+            if remaining > 0.002:
+                time.sleep(remaining / 2)
+            else:
+                time.sleep(0)
             yield "__suspend__"
-        # print(f"Finished sleeping at {time.time_ns()}")
+
         yield
 
     def run(self):
