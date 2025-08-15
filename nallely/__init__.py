@@ -1,3 +1,4 @@
+from .clocks import FlexibleClock
 from .core import (
     DeviceNotFound,
     MidiDevice,
@@ -20,7 +21,7 @@ from .core import (
 )
 from .eg import VCA, ADSREnvelope, Gate, SampleHold, Switch
 from .lfos import LFO, Cycler
-from .shifter import Arpegiator, Looper, Modulo, PitchShifter, ShiftRegister, Quantizer
+from .shifter import Arpegiator, Looper, Modulo, PitchShifter, Quantizer, ShiftRegister
 from .websocket_bus import WebSocketBus
 
 __all__ = [
@@ -56,4 +57,5 @@ __all__ = [
     "SampleHold",
     "ShiftRegister",
     "Quantizer",
+    "FlexibleClock",
 ]
