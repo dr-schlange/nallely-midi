@@ -1,4 +1,4 @@
-from decimal import Decimal
+from decimal import Decimal, DecimalTuple
 
 from .core import ThreadContext, VirtualDevice, VirtualParameter, on
 
@@ -167,6 +167,7 @@ from .core import ThreadContext, VirtualDevice, VirtualParameter, on
 
 
 class FlexibleClock(VirtualDevice):
+    smallest_subdivision = Decimal(32)
     tempo_cv = VirtualParameter("tempo", range=(20, 600))  # BPM
     play_cv = VirtualParameter("play", range=(0, 1))
     reset_cv = VirtualParameter("reset", range=(0, 1))
@@ -211,8 +212,9 @@ class FlexibleClock(VirtualDevice):
             "mul3": Decimal(3),
             "mul7": Decimal(7),
         }
-
-        super().__init__(target_cycle_time=0.001, **kwargs)
+        super().__init__(
+            target_cycle_time=self._compute_target_cycle(self.tempo), **kwargs
+        )
 
     @property
     def play(self):
@@ -224,16 +226,18 @@ class FlexibleClock(VirtualDevice):
 
     @property
     def tempo(self):
-        return self._tempo
+        return Decimal(self._tempo)
+
+    def _compute_target_cycle(self, tempo):
+        quater_note_ms = Decimal(60000) / Decimal(tempo)
+        tick_ms = quater_note_ms / self.smallest_subdivision / Decimal(1000)
+
+        return max(0.001, float(tick_ms))
 
     @tempo.setter
     def tempo(self, value):
         self._tempo = value
-        quater_note_ms = Decimal(60000) / value
-        smallest_subdivision = Decimal(64)
-        tick_ms = quater_note_ms / smallest_subdivision
-
-        self.target_cycle_time = max(0.001, float(tick_ms))
+        self.target_cycle_time = self._compute_target_cycle(value)
 
     @on(reset_cv, edge="rising")
     def reset_all(self, value, ctx):
@@ -241,15 +245,15 @@ class FlexibleClock(VirtualDevice):
             self.phases[k] = Decimal(0)
 
     def main(self, ctx: ThreadContext):
-        quater_note_ms = Decimal(60000) / self._tempo
-        tick_ms = min(self.tick_min_ms, quater_note_ms / Decimal(64))
+        quater_note_ms = Decimal(60000) / self.tempo
+        tick_ms = min(self.tick_min_ms, quater_note_ms / self.smallest_subdivision)
 
         if self.play:
             to_pulse = []
 
             for name in self.phases:
                 self.phases[name] += self.ratios[name] * (tick_ms / quater_note_ms)
-                if self.phases[name] >= Decimal(1.0):
+                while self.phases[name] >= Decimal(1.0):
                     self.phases[name] -= Decimal(1.0)
                     to_pulse.append(name)
 
