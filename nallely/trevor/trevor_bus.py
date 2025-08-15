@@ -102,8 +102,8 @@ class TrevorBus(VirtualDevice):
         self.meta_trevor = MetaTrevorAPI(self.exec_context)
         self.session = Session(self)
         self.redirector = OutputCapture(self.send_message)
-        self.cc_update_interval = 0.05e9  # every X ns
-        self.next_cc_update_time = time.time_ns() + self.cc_update_interval
+        self.cc_update_interval = int(0.05e9)  # every X ns
+        self.next_cc_update_time = time.perf_counter_ns() + self.cc_update_interval
         self.cc_update_package = defaultdict(make_ccvalues)
 
     @staticmethod
@@ -286,12 +286,12 @@ class TrevorBus(VirtualDevice):
         ]
         if msg.value != current_parameter[control.name]:
             current_parameter[control.name] = msg.value
-        if time.time_ns() > self.next_cc_update_time:
+        if time.perf_counter_ns() > self.next_cc_update_time:
             self.send_message(
                 {"command": "RuntimeAPI::updateCCValues", "arg": self.cc_update_package}
             )
             self.cc_update_package.clear()
-            self.next_cc_update_time = time.time_ns() + self.cc_update_interval
+            self.next_cc_update_time = time.perf_counter_ns() + self.cc_update_interval
 
     def send_update(self, device=None):
         connected_devices = self.connected["trevor"]
