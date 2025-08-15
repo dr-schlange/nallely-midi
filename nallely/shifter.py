@@ -1,9 +1,7 @@
 import bisect
 import random
-from collections import defaultdict, deque
+from collections import deque
 from decimal import Decimal
-
-from matplotlib.image import NEAREST
 
 from .core.virtual_device import VirtualDevice, VirtualParameter, on
 
