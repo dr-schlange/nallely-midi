@@ -2,14 +2,13 @@ import json
 import threading
 import time
 import traceback
-from collections import defaultdict
+from collections import defaultdict, deque
 from dataclasses import asdict, dataclass
 from decimal import Decimal
-from functools import partial
 from pathlib import Path
 from queue import Empty, Full, Queue
 from types import GeneratorType
-from typing import Any, Callable, Iterable, Literal, Sequence, Type
+from typing import Any, Callable, Literal, Sequence, Type
 
 from .parameter_instances import ParameterInstance
 from .scaler import Scaler
@@ -249,10 +248,10 @@ class VirtualDevice(threading.Thread):
         else:
             t = float(t)
 
-        end_time = time.time() + t / 1000.0
+        end_time = time.perf_counter() + t / 1000.0
 
         while True:
-            remaining = end_time - time.time()
+            remaining = end_time - time.perf_counter()
             if remaining <= 0:
                 break
             if remaining > 0.002:
