@@ -729,27 +729,51 @@ class VirtualDevice(threading.Thread):
             self.store_input(parameter.name, rand(min, max))  # type: ignore
 
 
+SUBDIVISIONS = {
+    "4/1": Decimal("0.25"),
+    "2/1": Decimal("0.5"),
+    "1/1": 1,
+    "1/2": 2,
+    "1/4": 4,
+    "1/8": 8,
+    "1/16": 16,
+    "1/32": 32,
+    "1/1t": Decimal(3) / Decimal(2),
+    "1/2t": 2 * Decimal(3) / Decimal(2),
+    "1/4t": 4 * Decimal(3) / Decimal(2),
+    "1/8t": 8 * Decimal(3) / Decimal(2),
+    "1/16t": 16 * Decimal(3) / Decimal(2),
+    "1/32t": 32 * Decimal(3) / Decimal(2),
+}
+
+
 @no_registration
 class TimeBasedDevice(VirtualDevice):
     speed_cv = VirtualParameter("speed", range=(0, 10.0))
     phase_cv = VirtualParameter("phase", range=(0.0, 1.0))
     sync_cv = VirtualParameter("sync")
+    subdiv_cv = VirtualParameter("subdiv", accepted_values=(tuple(SUBDIVISIONS.keys())))
     sampling_rate_cv = VirtualParameter("sampling_rate", range=(0.001, None))
 
     def __init__(
         self,
-        speed: int | float = 1.0,
+        speed: int | float | Decimal = 1.0,
         sampling_rate: int | Literal["auto"] = "auto",
         **kwargs,
     ):
-        self._speed = speed
+        self._speed = Decimal(speed)
         self.auto_sampling_rate = sampling_rate == "auto"
         self._sampling_rate = (
             self.compute_sampling_rate() if sampling_rate == "auto" else sampling_rate
         )
         self.time_step = Decimal(speed) / self._sampling_rate
-        self.phase = 0.0
+        self.phase = Decimal(0.0)
         self.sync = None
+        self.window_size = 4
+        self.smoothing = Decimal("0.1")
+        self.last_sync_time = time.perf_counter()
+        self.sync_intervals = deque(maxlen=self.window_size)
+        self._subdiv = "1/1"
         super().__init__(target_cycle_time=1 / self._sampling_rate, **kwargs)
 
     @property
@@ -758,7 +782,7 @@ class TimeBasedDevice(VirtualDevice):
 
     @speed.setter
     def speed(self, value):
-        self._speed = value
+        self._speed = Decimal(value)
         if self.auto_sampling_rate:
             self._sampling_rate = self.compute_sampling_rate()
         self.time_step = Decimal(value) / self._sampling_rate
@@ -779,20 +803,51 @@ class TimeBasedDevice(VirtualDevice):
             return 50  # we sample 50 point, enough as it's slow
         return int(self.speed * 20)  # we sample 20 times faster than the speed
 
+    @property
+    def subdiv(self):
+        return self._subdiv
+
+    @subdiv.setter
+    def subdiv(self, value):
+        if isinstance(value, (int, float, Decimal)):
+            accepted_values = self.subdiv_cv.parameter.accepted_values
+            value = accepted_values[int(value % len(accepted_values))]
+        self._subdiv = value
+
     def generate_value(self, t, ticks) -> Any: ...
 
     def setup(self):
-        return ThreadContext({"t": Decimal(0), "ticks": 0})
+        return ThreadContext()
 
+    @on(sync_cv, edge="rising")
     def on_sync(self, value, ctx):
-        if value > 0:
-            ctx.t = 0
+        now = time.perf_counter()
+
+        subdivision_factor = SUBDIVISIONS[self.subdiv]
+
+        if self.last_sync_time is not None:
+            interval = now - self.last_sync_time
+            self.sync_intervals.append(interval)
+            avg_interval = sum(self.sync_intervals) / len(self.sync_intervals)
+            snap_frequency = (
+                Decimal(1.0) / Decimal(avg_interval) * Decimal(subdivision_factor)
+            )
+            self.speed = snap_frequency
+
+            # Estimated BPM for a quater note
+            ctx.sync_bpm = float(60.0 / avg_interval)
+        else:
+            self.speed = Decimal(self._speed) * Decimal(subdivision_factor)
+            ctx.sync_bpm = float(self._speed * 60)
+
+        # Reset phase
+        # print(f"Set freq={self.speed} for estimated bpm={ctx.sync_bpm}")
+        self.phase = Decimal(0)
+        self.last_sync_time = now
 
     def main(self, ctx: ThreadContext):
-        t = ctx.t
-        ticks = ctx.ticks
-        generated_value = self.generate_value((t + Decimal(self.phase)) % 1, ticks)
-        t += self.time_step
-        ctx.t = t % 1
-        ctx.ticks += 1
+        # Compute t using measured time
+        elapsed = Decimal(time.perf_counter() - self.last_sync_time)
+        t = (self.speed * elapsed + Decimal(self.phase)) % 1
+        generated_value = self.generate_value(t, None)
         return generated_value

@@ -41,7 +41,7 @@ class LFO(TimeBasedDevice):
         waveform="sine",
         min_value: int | float | Decimal = 0,
         max_value: int | float | Decimal = 127.0,
-        speed: int | float = 0.01,
+        speed: int | float | Decimal = 0.01,
         sampling_rate: int | Literal["auto"] = "auto",
         **kwargs,
     ):
