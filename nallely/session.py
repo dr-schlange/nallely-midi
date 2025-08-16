@@ -149,6 +149,11 @@ class Session:
                     if dest_param["section_name"] == VirtualParameter.section_name
                     else dest_param["name"]
                 )
+            if src_device not in device_map or dest_device not in device_map:
+                msg = f"Dangling reference: Device with id {src_device} couldn't been found, skipping the patch {src_param['section_name']}::{src_param_name} -> {dest_param['section_name']}::{dest_param_name}"
+                errors.append(msg)
+                print(msg)
+                continue
             src_path = f"{device_map[src_device]}::{src_param['section_name']}::{src_param_name}"
             dest_path = f"{device_map[dest_device]}::{dest_param['section_name']}::{dest_param_name}"
             with_chain = src.get("chain", None)
