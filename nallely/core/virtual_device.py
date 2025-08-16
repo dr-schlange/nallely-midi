@@ -817,7 +817,7 @@ class TimeBasedDevice(VirtualDevice):
     def generate_value(self, t, ticks) -> Any: ...
 
     def setup(self):
-        return ThreadContext()
+        return ThreadContext({"ticks": 0, "t": 0})
 
     @on(sync_cv, edge="rising")
     def on_sync(self, value, ctx):
@@ -849,5 +849,7 @@ class TimeBasedDevice(VirtualDevice):
         # Compute t using measured time
         elapsed = Decimal(time.perf_counter() - self.last_sync_time)
         t = (self.speed * elapsed + Decimal(self.phase)) % 1
-        generated_value = self.generate_value(t, None)
+        generated_value = self.generate_value(t, ctx.ticks)
+        ctx.ticks += 1
+        ctx.t = t
         return generated_value
