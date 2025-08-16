@@ -426,6 +426,7 @@ class MidiDevice:
     stop = close
 
     def _get_control(self, cc, channel):
+        channel = None if channel == self.channel else channel
         return self.reverse_map.get(("control_change", cc, channel))
 
     def _update_state(self, cc, value, msg):
