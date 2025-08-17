@@ -113,7 +113,10 @@ You can then navigate to [http://localhost:3000](http://localhost:3000) or [http
 
 ## Documentation
 
+A first version of the [UI documentation](./docs/gui-trevorui.md) gives you a tour of the main features of Nallely and Trevor-UI, and how to start your first patches in a visual way.
+
 A first draft about how Nallely can help you declare your devices and map them using the current API can be find in the [documentation](./docs/main.md). The documentation has not been updated with the latest capabilities of the API, but it should be retrocompatible, unless I really missed something.
+
 
 
 ## Trevor, Nallely's companion
