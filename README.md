@@ -4,6 +4,11 @@ Nallely (pronounced "Nayeli") is an organic platform for experimentation around 
 
 Think about Nallely as a small brain, where each device is a neurone (nothing related to AI) that received signals and emit signals. All those small neurons can connects to each other in various ways. Connecting neurons as you want, you might connect some that in a normal running brain would not communicate, a little bit as if you had a brain under psychedelic influences, mapped in an unusual way, producing unexpected results. Some dedicated neurons (MIDI devices) are abstraction of the physical world and can create sound physically using a MIDI device (the voice), or get impulses from external MIDI devices, while visuals could be seen as visual mental imageries, influenced by how the small neurons are connected. Soon modules to introduce impluses from webcam and audio will arrive, giving this small muscial brain the capacity to see and hear.
 
+| Control multiple MIDI devices |  Patch your devices  |  Monitor the signals | Change settings
+:-------------------------:|:-------------------------:|:-----:|:-------:
+![Control multiple MIDI devices](https://github.com/user-attachments/assets/df545edc-6fa8-424f-9039-dd2046a9f406) | ![Patch in a graphical way](https://github.com/user-attachments/assets/d5d96809-159d-4cbb-81e2-5a1b7c3f9452) | ![See the signal at any point](https://github.com/user-attachments/assets/94e8cb6b-44a8-407b-acdb-1b66a148ad71) | ![Change any settings](https://github.com/user-attachments/assets/3509e077-cc97-424f-ac52-3c382e0fbaaa)
+
+
 Features:
 * programmatic seemless API to your MIDI Device,
 * virtual devices (LFOs for example) you can connect to your MIDI devices (as source or target),
@@ -143,12 +148,12 @@ yarn dev
 nallely run --with-trevor
 ```
 
-### Screenshots/videos of Trevor UI
+### Old Screenshots/videos of Trevor UI
 ![Screenshot vertical](https://github.com/user-attachments/assets/ba1203f4-c870-4805-9c73-40380e400bed)
 
 https://github.com/user-attachments/assets/fb94513a-bee0-442a-b809-fc60ed7c3ab2
 
-### Screenshots of Trevor UI (old)
+### Screenshots of Trevor UI (really old)
 
 ![trevor1](https://github.com/user-attachments/assets/aa611b38-4e12-4437-a0d3-d6079966dc7a)
 ![trevor2](https://github.com/user-attachments/assets/9baa2a96-5359-458b-abdd-7bf6f13e7eb6)
