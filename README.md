@@ -36,12 +36,7 @@ Features:
 * (currently disabled) _bind/unbind any Python function to any control/pad/key of your MIDI Device_,
 
 Planned:
-* handle multiple banks per device/per section,
-* scaler that explicitally maps (vs implicit as right now) to a list of elements, or to true/false (boolean scaler), useful for external services,
-* program change support for devices that do not support them (to change banks for example),
-* some new virtual devices:
-  * arpegiator
-  * sequencer
+Browser the [Issues section](https://github.com/dr-schlange/nallely-midi/issues) of the repository to see what's planned.
 
 ## Architecture and Quickstart
 
