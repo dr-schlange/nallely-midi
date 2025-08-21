@@ -1,4 +1,4 @@
-from .clocks import FlexibleClock
+from .clocks import Clock
 from .core import (
     DeviceNotFound,
     MidiDevice,
@@ -23,6 +23,9 @@ from .eg import VCA, ADSREnvelope, Gate, SampleHold, Switch
 from .lfos import LFO, Cycler
 from .shifter import Arpegiator, Looper, Modulo, PitchShifter, Quantizer, ShiftRegister
 from .websocket_bus import WebSocketBus
+
+# For retrocompatibility of some patchs
+FlexibleClock = Clock
 
 __all__ = [
     "stop_all_connected_devices",
@@ -58,4 +61,5 @@ __all__ = [
     "ShiftRegister",
     "Quantizer",
     "FlexibleClock",
+    "Clock",
 ]
