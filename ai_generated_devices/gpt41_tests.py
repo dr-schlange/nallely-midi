@@ -5,11 +5,13 @@ AI-generated Virtual Devices: Simple Arpeggiator and DualInputSwitch
 import random
 from nallely.core import ThreadContext, VirtualDevice, VirtualParameter, on
 
+
 class GPT41Arpeggiator(VirtualDevice):
     """
     A basic arpeggiator that cycles through held notes in a fixed pattern (up).
     No port management, just note buffer and main loop.
     """
+
     note_cv = VirtualParameter("note", range=(0, 127))
     gate_cv = VirtualParameter("gate", range=(0, 1))
     tempo_cv = VirtualParameter("tempo", range=(30, 400))
@@ -77,6 +79,7 @@ class GPT41DualInputSwitch(VirtualDevice):
     """
     A device that takes two inputs and routes one to the output based on a selector, similar to a Switch.
     """
+
     input_a_cv = VirtualParameter("input_a", range=(0, 127))
     input_b_cv = VirtualParameter("input_b", range=(0, 127))
     selector_cv = VirtualParameter("selector", range=(0, 1))  # 0 = A, 1 = B
@@ -115,6 +118,7 @@ class GPT41StepSequencer8(VirtualDevice):
     An 8-step sequencer with per-step note, velocity, gate, and active controls.
     Includes play, reset, tempo, step length, and swing parameters.
     """
+
     play_cv = VirtualParameter("play", range=(0, 1))
     reset_cv = VirtualParameter("reset", range=(0, 1))
     tempo_cv = VirtualParameter("tempo", range=(20, 600))
@@ -122,38 +126,39 @@ class GPT41StepSequencer8(VirtualDevice):
     swing_cv = VirtualParameter("swing", range=(0.0, 1.0))
 
     # Step controls
-    step1_note_cv = VirtualParameter("step1_note", range=(0, 127))
-    step1_velocity_cv = VirtualParameter("step1_velocity", range=(0, 127))
-    step1_gate_cv = VirtualParameter("step1_gate", range=(0.0, 1.0))
-    step1_active_cv = VirtualParameter("step1_active", range=(0, 1))
-    step2_note_cv = VirtualParameter("step2_note", range=(0, 127))
-    step2_velocity_cv = VirtualParameter("step2_velocity", range=(0, 127))
-    step2_gate_cv = VirtualParameter("step2_gate", range=(0.0, 1.0))
-    step2_active_cv = VirtualParameter("step2_active", range=(0, 1))
-    step3_note_cv = VirtualParameter("step3_note", range=(0, 127))
-    step3_velocity_cv = VirtualParameter("step3_velocity", range=(0, 127))
-    step3_gate_cv = VirtualParameter("step3_gate", range=(0.0, 1.0))
-    step3_active_cv = VirtualParameter("step3_active", range=(0, 1))
-    step4_note_cv = VirtualParameter("step4_note", range=(0, 127))
-    step4_velocity_cv = VirtualParameter("step4_velocity", range=(0, 127))
-    step4_gate_cv = VirtualParameter("step4_gate", range=(0.0, 1.0))
-    step4_active_cv = VirtualParameter("step4_active", range=(0, 1))
-    step5_note_cv = VirtualParameter("step5_note", range=(0, 127))
-    step5_velocity_cv = VirtualParameter("step5_velocity", range=(0, 127))
-    step5_gate_cv = VirtualParameter("step5_gate", range=(0.0, 1.0))
-    step5_active_cv = VirtualParameter("step5_active", range=(0, 1))
-    step6_note_cv = VirtualParameter("step6_note", range=(0, 127))
-    step6_velocity_cv = VirtualParameter("step6_velocity", range=(0, 127))
-    step6_gate_cv = VirtualParameter("step6_gate", range=(0.0, 1.0))
-    step6_active_cv = VirtualParameter("step6_active", range=(0, 1))
-    step7_note_cv = VirtualParameter("step7_note", range=(0, 127))
-    step7_velocity_cv = VirtualParameter("step7_velocity", range=(0, 127))
-    step7_gate_cv = VirtualParameter("step7_gate", range=(0.0, 1.0))
-    step7_active_cv = VirtualParameter("step7_active", range=(0, 1))
+    output_cv = None
     step8_note_cv = VirtualParameter("step8_note", range=(0, 127))
     step8_velocity_cv = VirtualParameter("step8_velocity", range=(0, 127))
     step8_gate_cv = VirtualParameter("step8_gate", range=(0.0, 1.0))
     step8_active_cv = VirtualParameter("step8_active", range=(0, 1))
+    step7_note_cv = VirtualParameter("step7_note", range=(0, 127))
+    step7_velocity_cv = VirtualParameter("step7_velocity", range=(0, 127))
+    step7_gate_cv = VirtualParameter("step7_gate", range=(0.0, 1.0))
+    step7_active_cv = VirtualParameter("step7_active", range=(0, 1))
+    step6_note_cv = VirtualParameter("step6_note", range=(0, 127))
+    step6_velocity_cv = VirtualParameter("step6_velocity", range=(0, 127))
+    step6_gate_cv = VirtualParameter("step6_gate", range=(0.0, 1.0))
+    step6_active_cv = VirtualParameter("step6_active", range=(0, 1))
+    step5_note_cv = VirtualParameter("step5_note", range=(0, 127))
+    step5_velocity_cv = VirtualParameter("step5_velocity", range=(0, 127))
+    step5_gate_cv = VirtualParameter("step5_gate", range=(0.0, 1.0))
+    step5_active_cv = VirtualParameter("step5_active", range=(0, 1))
+    step4_note_cv = VirtualParameter("step4_note", range=(0, 127))
+    step4_velocity_cv = VirtualParameter("step4_velocity", range=(0, 127))
+    step4_gate_cv = VirtualParameter("step4_gate", range=(0.0, 1.0))
+    step4_active_cv = VirtualParameter("step4_active", range=(0, 1))
+    step3_note_cv = VirtualParameter("step3_note", range=(0, 127))
+    step3_velocity_cv = VirtualParameter("step3_velocity", range=(0, 127))
+    step3_gate_cv = VirtualParameter("step3_gate", range=(0.0, 1.0))
+    step3_active_cv = VirtualParameter("step3_active", range=(0, 1))
+    step2_note_cv = VirtualParameter("step2_note", range=(0, 127))
+    step2_velocity_cv = VirtualParameter("step2_velocity", range=(0, 127))
+    step2_gate_cv = VirtualParameter("step2_gate", range=(0.0, 1.0))
+    step2_active_cv = VirtualParameter("step2_active", range=(0, 1))
+    step1_note_cv = VirtualParameter("step1_note", range=(0, 127))
+    step1_velocity_cv = VirtualParameter("step1_velocity", range=(0, 127))
+    step1_gate_cv = VirtualParameter("step1_gate", range=(0.0, 1.0))
+    step1_active_cv = VirtualParameter("step1_active", range=(0, 1))
 
     def __init__(self, **kwargs):
         self.play = 0
@@ -162,7 +167,9 @@ class GPT41StepSequencer8(VirtualDevice):
         self.step_length = 8
         self.swing = 0.0
         # Default step values
-        for i, (note, vel) in enumerate(zip([60,62,64,65,67,69,71,72],[100]*8), 1):
+        for i, (note, vel) in enumerate(
+            zip([60, 62, 64, 65, 67, 69, 71, 72], [100] * 8), 1
+        ):
             setattr(self, f"step{i}_note", note)
             setattr(self, f"step{i}_velocity", vel)
             setattr(self, f"step{i}_gate", 0.8)

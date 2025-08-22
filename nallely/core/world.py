@@ -76,6 +76,8 @@ def get_all_virtual_parameters(cls):
             # if not k.startswith("__") and not callable(v):
             if isinstance(v, VirtualParameter):
                 out[k] = v
+            # elif v is None and k == "output_cv":
+            #     del out["output_cv"]
     return out
 
 

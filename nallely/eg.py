@@ -183,11 +183,12 @@ class SampleHold(VirtualDevice):
 
 
 class Switch(VirtualDevice):
-    output2_cv = VirtualParameter(name="output2", range=(0, 127))
     input_cv = VirtualParameter(name="input", range=(0, 127))
     selector_cv = VirtualParameter(name="selector", range=(0, 1))
     type_cv = VirtualParameter(name="type", accepted_values=("toggle", "absolute"))
     hold_last_cv = VirtualParameter(name="hold_last")
+
+    output2_cv = VirtualParameter(name="output2", range=(0, 127))
 
     def __init__(self, **kwargs):
         self.input = 0

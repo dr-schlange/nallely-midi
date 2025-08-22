@@ -11,15 +11,16 @@ class Clock(VirtualDevice):
     reset_cv = VirtualParameter("reset", range=(0, 1))
 
     # clock outputs we consider the main output_cv as not used
-    lead_cv = VirtualParameter("lead", range=(0, 1))  # /1 (quater note)
+    output_cv = None
+    mul7_cv = VirtualParameter("mul7", range=(0, 1))  # x7
+    mul3_cv = VirtualParameter("mul3", range=(0, 1))  # x3
+    div5_cv = VirtualParameter("div5", range=(0, 1))  # /5
+    div3_cv = VirtualParameter("div3", range=(0, 1))  # /3
+    mul4_cv = VirtualParameter("mul4", range=(0, 1))  # x4
+    mul2_cv = VirtualParameter("mul2", range=(0, 1))  # x2
     div2_cv = VirtualParameter("div2", range=(0, 1))  # /2
     div4_cv = VirtualParameter("div4", range=(0, 1))  # /4
-    mul2_cv = VirtualParameter("mul2", range=(0, 1))  # x2
-    mul4_cv = VirtualParameter("mul4", range=(0, 1))  # x4
-    div3_cv = VirtualParameter("div3", range=(0, 1))  # /3
-    div5_cv = VirtualParameter("div5", range=(0, 1))  # /5
-    mul3_cv = VirtualParameter("mul3", range=(0, 1))  # x3
-    mul7_cv = VirtualParameter("mul7", range=(0, 1))  # x7
+    lead_cv = VirtualParameter("lead", range=(0, 1))  # /1 (quater note)
 
     def __init__(self, tick_min_ms=5, **kwargs):
         self.tempo = Decimal(120)

@@ -51,15 +51,17 @@ const collectAllParameters = (device: MidiDevice | VirtualDevice) => {
 	return collectAllMidiParameters(device);
 };
 
+interface PatchingModalProps {
+	onClose: () => void;
+	firstSection: MidiDeviceWithSection | VirtualDeviceWithSection | null;
+	secondSection: MidiDeviceWithSection | VirtualDeviceWithSection | null;
+}
+
 const PatchingModal = ({
 	onClose,
 	firstSection,
 	secondSection,
-}: {
-	onClose: () => void;
-	firstSection: MidiDeviceWithSection | VirtualDeviceWithSection | null;
-	secondSection: MidiDeviceWithSection | VirtualDeviceWithSection | null;
-}) => {
+}: PatchingModalProps) => {
 	const [refresh, setRefresh] = useState(0);
 	const [selectedParameters, setSelectedParameters] = useState<
 		{
@@ -314,14 +316,25 @@ const PatchingModal = ({
 		)
 		.map((c) => parameterUUID(c.src.device, c.src.parameter));
 
-	const getSectionParameters = (sectionWrapper) => {
+	const getSectionParameters = (sectionWrapper, reverseOrder = false) => {
 		if (!sectionWrapper) {
 			return [];
 		}
 		const pitchwheel = sectionWrapper.section.pitchwheel
 			? [sectionWrapper.section.pitchwheel]
 			: [];
-		return [...sectionWrapper.section.parameters, ...pitchwheel];
+		const mainOutputIndex = sectionWrapper.section.parameters.findIndex(
+			(e) => e.name === "output_cv",
+		);
+		const params = [...sectionWrapper.section.parameters];
+		if (mainOutputIndex !== -1) {
+			const output = params.splice(mainOutputIndex, 1);
+			params.push(...output);
+		}
+		if (reverseOrder) {
+			return [...params.reverse(), ...pitchwheel];
+		}
+		return [...params, ...pitchwheel];
 	};
 
 	return (
@@ -354,7 +367,7 @@ const PatchingModal = ({
 								</div>
 							)}
 							{/* {firstSection?.section.parameters.map((param) => { */}
-							{getSectionParameters(firstSection).map((param) => {
+							{getSectionParameters(firstSection, true).map((param) => {
 								const incoming = srcAllIncoming.includes(
 									parameterUUID(firstSection.device.id, param),
 								);

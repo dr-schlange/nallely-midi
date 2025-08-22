@@ -16,13 +16,14 @@ class ClaudeArpegiator(VirtualDevice):
 
     note_cv = VirtualParameter("note", range=(0, 127))
     gate_cv = VirtualParameter("gate", range=(0, 1))
+    reset_cv = VirtualParameter("reset", range=(0, 1))
     tempo_cv = VirtualParameter("tempo", range=(20, 600))  # BPM
-    pattern_cv = VirtualParameter("pattern", accepted_values=[
-        "up", "down", "up_down", "down_up", "random", "played_order"
-    ])
+    pattern_cv = VirtualParameter(
+        "pattern",
+        accepted_values=["up", "down", "up_down", "down_up", "random", "played_order"],
+    )
     octave_range_cv = VirtualParameter("octave_range", range=(1, 4))
     hold_cv = VirtualParameter("hold", range=(0, 1))
-    reset_cv = VirtualParameter("reset", range=(0, 1))
 
     def __init__(self, **kwargs):
         self.note = 0
@@ -35,9 +36,9 @@ class ClaudeArpegiator(VirtualDevice):
 
         # Internal state
         self._note_buffer = []  # Notes currently being held
-        self._arp_notes = []    # Notes with octaves applied
+        self._arp_notes = []  # Notes with octaves applied
         self._current_index = 0
-        self._direction = 1     # For up_down/down_up patterns
+        self._direction = 1  # For up_down/down_up patterns
         self._last_tick = 0
         self._is_playing = False
 
@@ -325,12 +326,16 @@ class ClaudeStepSequencer8(VirtualDevice):
 
     # Pattern controls
     step_length_cv = VirtualParameter("step_length", range=(1, 8))
-    swing_cv = VirtualParameter("swing", range=(0.0, 1.0))  # 0 = no swing, 1 = max swing
+    swing_cv = VirtualParameter(
+        "swing", range=(0.0, 1.0)
+    )  # 0 = no swing, 1 = max swing
 
     # Step 1 controls
     step1_note_cv = VirtualParameter("step1_note", range=(0, 127))
     step1_velocity_cv = VirtualParameter("step1_velocity", range=(0, 127))
-    step1_gate_cv = VirtualParameter("step1_gate", range=(0.0, 1.0))  # Gate length as fraction
+    step1_gate_cv = VirtualParameter(
+        "step1_gate", range=(0.0, 1.0)
+    )  # Gate length as fraction
     step1_active_cv = VirtualParameter("step1_active", range=(0, 1))
 
     # Step 2 controls
@@ -385,46 +390,48 @@ class ClaudeStepSequencer8(VirtualDevice):
         self.step_length = 8
         self.swing = 0.0
 
+        output_cv = None
+
         # Initialize all steps with default values
-        self.step1_note = 60  # Middle C
-        self.step1_velocity = 100
-        self.step1_gate = 0.8
-        self.step1_active = 1
-
-        self.step2_note = 62
-        self.step2_velocity = 100
-        self.step2_gate = 0.8
-        self.step2_active = 1
-
-        self.step3_note = 64
-        self.step3_velocity = 100
-        self.step3_gate = 0.8
-        self.step3_active = 1
-
-        self.step4_note = 65
-        self.step4_velocity = 100
-        self.step4_gate = 0.8
-        self.step4_active = 1
-
-        self.step5_note = 67
-        self.step5_velocity = 100
-        self.step5_gate = 0.8
-        self.step5_active = 1
-
-        self.step6_note = 69
-        self.step6_velocity = 100
-        self.step6_gate = 0.8
-        self.step6_active = 1
+        self.step8_note = 72
+        self.step8_velocity = 100
+        self.step8_gate = 0.8
+        self.step8_active = 1
 
         self.step7_note = 71
         self.step7_velocity = 100
         self.step7_gate = 0.8
         self.step7_active = 1
 
-        self.step8_note = 72
-        self.step8_velocity = 100
-        self.step8_gate = 0.8
-        self.step8_active = 1
+        self.step6_note = 69
+        self.step6_velocity = 100
+        self.step6_gate = 0.8
+        self.step6_active = 1
+
+        self.step5_note = 67
+        self.step5_velocity = 100
+        self.step5_gate = 0.8
+        self.step5_active = 1
+
+        self.step4_note = 65
+        self.step4_velocity = 100
+        self.step4_gate = 0.8
+        self.step4_active = 1
+
+        self.step3_note = 64
+        self.step3_velocity = 100
+        self.step3_gate = 0.8
+        self.step3_active = 1
+
+        self.step2_note = 62
+        self.step2_velocity = 100
+        self.step2_gate = 0.8
+        self.step2_active = 1
+
+        self.step1_note = 60  # Middle C
+        self.step1_velocity = 100
+        self.step1_gate = 0.8
+        self.step1_active = 1
 
         # Internal sequencer state
         self._current_step = 0

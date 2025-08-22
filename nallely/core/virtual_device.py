@@ -611,7 +611,9 @@ class VirtualDevice(threading.Thread):
 
     def repr(self):
         # We are called because of the default output
-        return self.output_cv.repr()
+        if self.output_cv:
+            return self.output_cv.repr()
+        return ""
 
     def bind(self, target):
         from .links import Link
@@ -750,9 +752,9 @@ SUBDIVISIONS = {
 @no_registration
 class TimeBasedDevice(VirtualDevice):
     speed_cv = VirtualParameter("speed", range=(0, 10.0))
-    phase_cv = VirtualParameter("phase", range=(0.0, 1.0))
     sync_cv = VirtualParameter("sync")
     subdiv_cv = VirtualParameter("subdiv", accepted_values=(tuple(SUBDIVISIONS.keys())))
+    phase_cv = VirtualParameter("phase", range=(0.0, 1.0))
     sampling_rate_cv = VirtualParameter("sampling_rate", range=(0.001, None))
 
     def __init__(

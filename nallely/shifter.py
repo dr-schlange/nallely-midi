@@ -169,17 +169,17 @@ class Arpegiator(VirtualDevice):
 
 
 class Looper(VirtualDevice):
-    output1_cv = VirtualParameter("output1", range=(0, 127))
-    output2_cv = VirtualParameter("output2", range=(0, 127))
-    output3_cv = VirtualParameter("output3", range=(0, 127))
-
     input_cv = VirtualParameter("input", range=(0, 127))
 
     record_cv = VirtualParameter("record", range=(0, 1))
-    reset_cv = VirtualParameter("reset", range=(0, 1))
     clear_cv = VirtualParameter("clear", range=(0, 1))
+    reset_cv = VirtualParameter("reset", range=(0, 1))
     speed_cv = VirtualParameter("speed", range=(0, 127))
     reverse_cv = VirtualParameter("reverse", range=(0, 1))
+
+    output3_cv = VirtualParameter("output3", range=(0, 127))
+    output2_cv = VirtualParameter("output2", range=(0, 127))
+    output1_cv = VirtualParameter("output1", range=(0, 127))
 
     @property
     def range(self):
@@ -370,15 +370,17 @@ class Looper(VirtualDevice):
 class ShiftRegister(VirtualDevice):
     input_cv = VirtualParameter("input", range=(0, 127))
     trigger_cv = VirtualParameter("trigger", range=(0, 1))
-    output0_cv = VirtualParameter("output0", range=(0, 127))
-    output1_cv = VirtualParameter("output1", range=(0, 127))
-    output2_cv = VirtualParameter("output2", range=(0, 127))
-    output3_cv = VirtualParameter("output3", range=(0, 127))
-    output4_cv = VirtualParameter("output4", range=(0, 127))
-    output5_cv = VirtualParameter("output5", range=(0, 127))
-    output6_cv = VirtualParameter("output6", range=(0, 127))
-    output7_cv = VirtualParameter("output7", range=(0, 127))
     reset_cv = VirtualParameter("reset", range=(0, 1))
+
+    output_cv = None
+    output7_cv = VirtualParameter("output7", range=(0, 127))
+    output6_cv = VirtualParameter("output6", range=(0, 127))
+    output5_cv = VirtualParameter("output5", range=(0, 127))
+    output4_cv = VirtualParameter("output4", range=(0, 127))
+    output3_cv = VirtualParameter("output3", range=(0, 127))
+    output2_cv = VirtualParameter("output2", range=(0, 127))
+    output1_cv = VirtualParameter("output1", range=(0, 127))
+    output0_cv = VirtualParameter("output0", range=(0, 127))
 
     def __init__(self, **kwargs):
         self.input = 0
@@ -436,11 +438,11 @@ SCALES = {
 
 class Quantizer(VirtualDevice):
     input_cv = VirtualParameter("input", range=(0, 127))
+    trigger_cv = VirtualParameter("trigger", range=(0, 1))
+    reset_cv = VirtualParameter("reset", range=(0, 1))
     root_cv = VirtualParameter("root", accepted_values=NOTE_NAMES)
     scale__cv = VirtualParameter("scale_", accepted_values=tuple(INTERVALS.keys()))
     type_cv = VirtualParameter("type", accepted_values=("sample&hold", "free"))
-    trigger_cv = VirtualParameter("trigger", range=(0, 1))
-    reset_cv = VirtualParameter("reset", range=(0, 1))
 
     def __init__(self, **kwargs):
         self.input = 0
