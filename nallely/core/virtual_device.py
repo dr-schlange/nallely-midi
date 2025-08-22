@@ -164,7 +164,9 @@ class VirtualDevice(threading.Thread):
         object.__setattr__(self, "device", self)  # to be polymorphic with Int
         object.__setattr__(self, "__virtual__", self)  # to have a fake section
         if disable_output:
-            self.output_cv.parameter.hidden = True
+            self.__class__.output_cv = VirtualParameter(
+                name="output", range=(0, 127), hidden=True
+            )
         self.links: tuple[
             defaultdict[str, list[Link]], defaultdict[str, list[Link]]
         ] = (
