@@ -246,3 +246,24 @@ export const mergeDevicesPreservingOrder = <T extends HasId>(
 
 	return [...ordered, ...remaining];
 };
+
+export const incrDecrFilename = (
+	filename: string,
+	increment: boolean = false,
+) => {
+	const match = filename.match(/^(.*?)-(\d+)$/);
+	if (!match) {
+		return `${filename}-001`;
+	}
+
+	const base = match[1];
+	const numStr = match[2];
+	const width = numStr.length;
+	let num = parseInt(numStr, 10);
+
+	num = increment ? num + 1 : num - 1;
+	if (num < 0) num = 0;
+
+	const newNumStr = num.toString().padStart(width, "0");
+	return `${base}-${newNumStr}`;
+};

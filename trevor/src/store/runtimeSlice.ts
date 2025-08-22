@@ -2,7 +2,7 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { RunTimeState, ClassCode, CCValues } from "../model";
 import { setFullState } from "./trevorSlice";
 
-export const initialGeneralState: RunTimeState = {
+export const initialRunTimeState: RunTimeState = {
 	logMode: false,
 	loggedComponent: undefined,
 	patchFilename: "patch",
@@ -22,7 +22,7 @@ interface CCState {
 
 const runtimeSlice = createSlice({
 	name: "runTime",
-	initialState: initialGeneralState,
+	initialState: initialRunTimeState,
 	reducers: {
 		setLogMode: (state, action: PayloadAction<boolean>) => {
 			state.logMode = action.payload;
