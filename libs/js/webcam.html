@@ -41,7 +41,7 @@
             indexFingerUp: 0.1,
         }
         // Register the device/service
-        const device = NallelyWebsocketBus.register('webcam', 'webcam', configParameters, config);
+        const device = NallelyWebsocketBus.register('webcam', 'cam', configParameters, config);
 
         // Update connection status based on WebSocket events
         function updateStatus(status) {
@@ -91,10 +91,6 @@
 
                             const avgBrightness = total / len;
                             brightnessDisplay.textContent = avgBrightness.toFixed(2);
-                            // ws.send(JSON.stringify({
-                            //     on: "brightness",
-                            //     value: avgBrightness
-                            // }))
                             device.send("brightness", avgBrightness)
                         }, 200);
                     });
