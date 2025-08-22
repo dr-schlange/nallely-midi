@@ -390,8 +390,6 @@ class ClaudeStepSequencer8(VirtualDevice):
         self.step_length = 8
         self.swing = 0.0
 
-        output_cv = None
-
         # Initialize all steps with default values
         self.step8_note = 72
         self.step8_velocity = 100
@@ -439,7 +437,7 @@ class ClaudeStepSequencer8(VirtualDevice):
         self._step_start_time = 0
         self._in_gate_phase = False
 
-        super().__init__(**kwargs)
+        super().__init__(disable_output=True, **kwargs)
 
     def setup(self) -> ThreadContext:
         return super().setup()

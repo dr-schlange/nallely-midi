@@ -34,6 +34,7 @@ class VirtualParameter:
     cv_name: str | None = None
     section_name: str = "__virtual__"
     cc_note: int = -1
+    hidden: bool = False
 
     def __post_init__(self):
         if self.accepted_values and self.range == (None, None):
@@ -147,7 +148,12 @@ class VirtualDevice(threading.Thread):
         instance._number = instance._id[cls]  # type: ignore
         return instance
 
-    def __init__(self, target_cycle_time: float = 0.002, autoconnect: bool = False):
+    def __init__(
+        self,
+        target_cycle_time: float = 0.002,
+        autoconnect: bool = False,
+        disable_output: bool = False,
+    ):
         from ..utils import ThreadSafeDefaultDict
         from .links import Link
 
@@ -157,6 +163,8 @@ class VirtualDevice(threading.Thread):
         virtual_devices.append(self)
         object.__setattr__(self, "device", self)  # to be polymorphic with Int
         object.__setattr__(self, "__virtual__", self)  # to have a fake section
+        if disable_output:
+            self.output_cv.parameter.hidden = True
         self.links: tuple[
             defaultdict[str, list[Link]], defaultdict[str, list[Link]]
         ] = (
@@ -428,7 +436,7 @@ class VirtualDevice(threading.Thread):
         # True -> stream; False -> non stream
         outputs = None
         if selected_outputs:
-            outputs = [e.repr() for e in selected_outputs if e is not None]
+            outputs = [e.repr() for e in selected_outputs]
             # perform internal routing. I don't like it
             # please refactor at some point with the
             # logic of the vparam -> vparam link
@@ -611,9 +619,7 @@ class VirtualDevice(threading.Thread):
 
     def repr(self):
         # We are called because of the default output
-        if self.output_cv:
-            return self.output_cv.repr()
-        return ""
+        return self.output_cv.repr()
 
     def bind(self, target):
         from .links import Link
@@ -668,13 +674,12 @@ class VirtualDevice(threading.Thread):
     def to_dict(self, save_defaultvalues=False):
         virtual_parameters = self.all_parameters()
         config = self.current_preset()
-        # del config["output"]
         return {
             "id": id(self),
             "repr": self.uid(),
             "meta": {
                 "name": self.__class__.__name__,
-                "parameters": [asdict(p) for p in virtual_parameters],
+                "parameters": [asdict(p) for p in virtual_parameters if not p.hidden],
             },
             "paused": self.paused,
             "running": self.running,

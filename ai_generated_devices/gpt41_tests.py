@@ -126,7 +126,6 @@ class GPT41StepSequencer8(VirtualDevice):
     swing_cv = VirtualParameter("swing", range=(0.0, 1.0))
 
     # Step controls
-    output_cv = None
     step8_note_cv = VirtualParameter("step8_note", range=(0, 127))
     step8_velocity_cv = VirtualParameter("step8_velocity", range=(0, 127))
     step8_gate_cv = VirtualParameter("step8_gate", range=(0.0, 1.0))
@@ -178,7 +177,7 @@ class GPT41StepSequencer8(VirtualDevice):
         self._is_playing = False
         self._step_start_time = 0
         self._in_gate_phase = False
-        super().__init__(**kwargs)
+        super().__init__(disable_output=True, **kwargs)
 
     def store_input(self, param: str, value):
         if param in ("play", "reset") or param.endswith("_active"):

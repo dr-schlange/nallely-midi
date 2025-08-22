@@ -17,9 +17,10 @@ def safe_val(v):
 class HenonProjector(VirtualDevice):
     a_cv = VirtualParameter("a")
     b_cv = VirtualParameter("b")
-    x_cv = VirtualParameter("x")
-    y_cv = VirtualParameter("y")
     freq_cv = VirtualParameter("freq", range=(0.01, 1000))
+
+    y_cv = VirtualParameter("y")
+    x_cv = VirtualParameter("x")
 
     @property
     def range(self):
@@ -31,7 +32,7 @@ class HenonProjector(VirtualDevice):
         self.x = 0.1
         self.y = 0.1
         self.freq = freq
-        super().__init__(**kwargs)
+        super().__init__(disable_output=True, **kwargs)
 
     def next_value(self):
         new_x = 1 - self.a * self.x * self.x + self.y
@@ -61,13 +62,15 @@ class LorenzProjector(VirtualDevice):
     sigma_cv = VirtualParameter("sigma", range=(5, 20))
     rho_cv = VirtualParameter("rho", range=(10, 50))
     beta_cv = VirtualParameter("b", range=(1, 5))
-    x_cv = VirtualParameter("x")
-    y_cv = VirtualParameter("y")
-    z_cv = VirtualParameter("z")
-    xnorm_cv = VirtualParameter("xnorm", range=(0, 127))
-    ynorm_cv = VirtualParameter("ynorm", range=(0, 127))
-    znorm_cv = VirtualParameter("znorm", range=(0, 127))
     freq_cv = VirtualParameter("freq", range=(0.01, 5000))
+
+    z_cv = VirtualParameter("z")
+    y_cv = VirtualParameter("y")
+    x_cv = VirtualParameter("x")
+
+    znorm_cv = VirtualParameter("znorm", range=(0, 127))
+    ynorm_cv = VirtualParameter("ynorm", range=(0, 127))
+    xnorm_cv = VirtualParameter("xnorm", range=(0, 127))
 
     @property
     def range(self):
@@ -99,7 +102,7 @@ class LorenzProjector(VirtualDevice):
         self.history_x = deque(maxlen=200)
         self.history_y = deque(maxlen=200)
         self.history_z = deque(maxlen=200)
-        super().__init__(**kwargs)
+        super().__init__(disable_output=True, **kwargs)
 
     def normalize(self, v, history, target_min=0, target_max=127):
         history.append(v)
@@ -132,10 +135,11 @@ class LorenzProjector(VirtualDevice):
 
 class BarnsleyProjector(VirtualDevice):
     freq_cv = VirtualParameter("freq", range=(0.01, 5000))
-    x_cv = VirtualParameter("x")
+
     y_cv = VirtualParameter("y")
-    xnorm_cv = VirtualParameter("xnorm", range=(0, 127))
+    x_cv = VirtualParameter("x")
     ynorm_cv = VirtualParameter("ynorm", range=(0, 127))
+    xnorm_cv = VirtualParameter("xnorm", range=(0, 127))
 
     @property
     def range(self):
@@ -160,7 +164,7 @@ class BarnsleyProjector(VirtualDevice):
             (-0.15, 0.28, 0.26, 0.24, 0.0, 0.44, 0.07),
         ]
 
-        super().__init__(**kwargs)
+        super().__init__(disable_output=True, **kwargs)
 
     def normalize(self, v, history, target_min=0, target_max=127):
         history.append(v)
@@ -192,16 +196,18 @@ class BarnsleyProjector(VirtualDevice):
 
 
 class RosslerProjector(VirtualDevice):
-    a_cv = VirtualParameter("a", range=(0.1, 0.5))
-    b_cv = VirtualParameter("b", range=(0.1, 0.5))
-    c_cv = VirtualParameter("c", range=(3, 10))
-    x_cv = VirtualParameter("x", range=(-15, 15))
-    y_cv = VirtualParameter("y", range=(-15, 15))
-    z_cv = VirtualParameter("z", range=(0, 30))
-    xnorm_cv = VirtualParameter("xnorm", range=(0, 127))
-    ynorm_cv = VirtualParameter("ynorm", range=(0, 127))
-    znorm_cv = VirtualParameter("znorm", range=(0, 127))
     freq_cv = VirtualParameter("freq", range=(0.01, 5000))
+
+    c_cv = VirtualParameter("c", range=(3, 10))
+    b_cv = VirtualParameter("b", range=(0.1, 0.5))
+    a_cv = VirtualParameter("a", range=(0.1, 0.5))
+    z_cv = VirtualParameter("z", range=(0, 30))
+    y_cv = VirtualParameter("y", range=(-15, 15))
+    x_cv = VirtualParameter("x", range=(-15, 15))
+
+    znorm_cv = VirtualParameter("znorm", range=(0, 127))
+    ynorm_cv = VirtualParameter("ynorm", range=(0, 127))
+    xnorm_cv = VirtualParameter("xnorm", range=(0, 127))
 
     @property
     def range(self):
@@ -233,7 +239,7 @@ class RosslerProjector(VirtualDevice):
         self.history_x = deque(maxlen=200)
         self.history_y = deque(maxlen=200)
         self.history_z = deque(maxlen=200)
-        super().__init__(**kwargs)
+        super().__init__(disable_output=True, **kwargs)
 
     def normalize(self, v, history, target_min=0, target_max=127, window_size=50):
         history.append(v)
@@ -315,17 +321,19 @@ class Morton(VirtualDevice):
 
 class BuddhabrotProjector(VirtualDevice):
     freq_cv = VirtualParameter("freq", range=(0.1, 1000))
-    x_cv = VirtualParameter("x")
-    y_cv = VirtualParameter("y")
-    xnorm_cv = VirtualParameter("xnorm", range=(-2, 2))
-    ynorm_cv = VirtualParameter("ynorm", range=(-2, 2))
-    max_iter_cv = VirtualParameter("max_iter", range=(10, 5000))
     reset_cv = VirtualParameter("reset", range=(0, 1))
+    max_iter_cv = VirtualParameter("max_iter", range=(10, 5000))
 
     real_min_cv = VirtualParameter("real_min", range=(-3, 3))
     real_max_cv = VirtualParameter("real_max", range=(-3, 3))
     imag_min_cv = VirtualParameter("imag_min", range=(-3, 3))
     imag_max_cv = VirtualParameter("imag_max", range=(-3, 3))
+
+    # outputs
+    y_cv = VirtualParameter("y")
+    x_cv = VirtualParameter("x")
+    ynorm_cv = VirtualParameter("ynorm", range=(-2, 2))
+    xnorm_cv = VirtualParameter("xnorm", range=(-2, 2))
 
     def __init__(
         self,
@@ -412,15 +420,16 @@ class BuddhabrotProjector(VirtualDevice):
 
 class MandelbrotProjector(VirtualDevice):
     freq_cv = VirtualParameter("freq", range=(0.1, 1000))
-    x_cv = VirtualParameter("x")
-    y_cv = VirtualParameter("y")
-    z_cv = VirtualParameter("z")
     max_iter_cv = VirtualParameter("max_iter", range=(10, 2000))
 
     real_min_cv = VirtualParameter("real_min", range=(-3, 3))
     real_max_cv = VirtualParameter("real_max", range=(-3, 3))
     imag_min_cv = VirtualParameter("imag_min", range=(-3, 3))
     imag_max_cv = VirtualParameter("imag_max", range=(-3, 3))
+
+    z_cv = VirtualParameter("z")
+    y_cv = VirtualParameter("y")
+    x_cv = VirtualParameter("x")
 
     def __init__(
         self,
@@ -443,7 +452,7 @@ class MandelbrotProjector(VirtualDevice):
         self.current_point = None
         self.iteration = 0
 
-        super().__init__(**kwargs)
+        super().__init__(disable_output=True, **kwargs)
 
     def sample_c(self):
         return complex(

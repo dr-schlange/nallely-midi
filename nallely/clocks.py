@@ -11,7 +11,6 @@ class Clock(VirtualDevice):
     reset_cv = VirtualParameter("reset", range=(0, 1))
 
     # clock outputs we consider the main output_cv as not used
-    output_cv = None
     mul7_cv = VirtualParameter("mul7", range=(0, 1))  # x7
     mul3_cv = VirtualParameter("mul3", range=(0, 1))  # x3
     div5_cv = VirtualParameter("div5", range=(0, 1))  # /5
@@ -53,7 +52,9 @@ class Clock(VirtualDevice):
             "mul7": Decimal(7),
         }
         super().__init__(
-            target_cycle_time=self._compute_target_cycle(self.tempo), **kwargs
+            target_cycle_time=self._compute_target_cycle(self.tempo),
+            disable_output=True,
+            **kwargs,
         )
 
     @property

@@ -372,7 +372,6 @@ class ShiftRegister(VirtualDevice):
     trigger_cv = VirtualParameter("trigger", range=(0, 1))
     reset_cv = VirtualParameter("reset", range=(0, 1))
 
-    output_cv = None
     output7_cv = VirtualParameter("output7", range=(0, 127))
     output6_cv = VirtualParameter("output6", range=(0, 127))
     output5_cv = VirtualParameter("output5", range=(0, 127))
@@ -391,7 +390,7 @@ class ShiftRegister(VirtualDevice):
         for i in range(8):
             setattr(self, f"output{i}", 0)
             self.outputs[i] = getattr(self, f"output{i}_cv")
-        super().__init__(**kwargs)
+        super().__init__(disable_output=True, **kwargs)
 
     @on(trigger_cv, edge="rising")
     def trigger_next_step(self, value, ctx):
