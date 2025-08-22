@@ -754,7 +754,7 @@ button.active {
 	border-bottom: 2px solid #808080;
 	display: flex;
 	flex-direction: column;
-	align-items: flex-start;
+	align-items: flex-start !important;
 	justify-content: flex-start;
 	padding: 10px;
 	overflow-y: auto;
@@ -763,6 +763,7 @@ button.active {
 		inset -1px -1px 0px #ffffff,
 		inset 1px 1px 0px #000000;
 	overflow-x: auto;
+	position: relative !important;
 }
 
 .top-left-panel h3 {
@@ -788,7 +789,7 @@ button.active {
 	border-bottom: 2px solid #808080;
 	display: flex;
 	flex-direction: column;
-	align-items: flex-start;
+	align-items: flex-start !important;
 	justify-content: flex-start;
 	padding: 10px;
 	overflow-y: auto; /* Allow scrolling if content overflows */
@@ -796,6 +797,7 @@ button.active {
 	box-shadow:
 		inset -1px -1px 0px #ffffff,
 		inset 1px 1px 0px #000000;
+	position: relative !important;
 }
 
 .bottom-left-panel h3 {
@@ -1622,6 +1624,31 @@ button.active {
 
 	.device-patching-svg.horizontal {
 		width: 100%;
+	}
+
+	.top-left-panel select,
+	.bottom-left-panel select {
+		align-self: flex-start;
+		margin-bottom: 10px;
+	}
+
+	.panel-dropdown {
+		position: absolute !important;
+		left: 5px !important;
+		top: 5px !important;
+		z-index: 9999 !important;
+	}
+
+	.top-left-panel .panel-dropdown {
+		top: 5px !important;
+		left: 5px !important;
+		bottom: auto !important;
+	}
+
+	.bottom-left-panel .panel-dropdown {
+		top: auto !important;
+		bottom: -5px !important;
+		left: 5px !important;
 	}
 }
 
