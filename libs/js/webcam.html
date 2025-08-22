@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nallely External Device Webcam Integration Demo</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/dr-schlange/nallely-midi@main/libs/js/nallely-websocket.js"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Nallely External Device Webcam Integration Demo</h1>
+
+    <div id="status">Status: <span id="connection-status">Disconnected</span></div>
+
+    <video id="camera-feed" autoplay></video>
+    <canvas id="canvas" style="display:none;"></canvas>
+    <p>Brightness avg: <span id="brightness">0</span></p>
+    <p>Index finger angle: <span id="finger">0</span></p>
+    <script>
+
+        const configParameters = {
+            brightness: { min: 0.0, max: 255.01 },
+            indexFingerUp: { min: 0.1, max: 1 },
+        }
+        const config = {
+            brightness: 0.0,
+            indexFingerUp: 0.1,
+        }
+        // Register the device/service
+        const device = NallelyWebsocketBus.register('webcam', 'webcam', configParameters, config);
+
+        // Update connection status based on WebSocket events
+        function updateStatus(status) {
+            document.getElementById('connection-status').textContent = status;
+        }
+
+        // Hook into the WebSocket to update status and display data
+        device.onopen = () => updateStatus('Connected')
+        device.onclose = () => updateStatus('Disconnected')
+        device.onerror = () => updateStatus('Error')
+
+        // Compute brightness from webcam feed
+        const video = document.getElementById('camera-feed');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const brightnessDisplay = document.getElementById('brightness');
+        const fingerDisplay = document.getElementById('finger');
+
+        window.addEventListener('load', function startCamera() {
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(stream => {
+                    video.srcObject = stream;
+
+                    video.addEventListener('loadeddata', () => {
+                        canvas.width = video.videoWidth;
+                        canvas.height = video.videoHeight;
+
+                        // Measure brightness every 200ms
+                        setInterval(() => {
+                            // capture the current frame
+                            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                            const data = imageData.data;
+
+                            let total = 0;
+                            const len = data.length / 4;
+
+                            // compute average brightness
+                            for (let i = 0; i < data.length; i += 4) {
+                                const r = data[i];
+                                const g = data[i + 1];
+                                const b = data[i + 2];
+
+                                const brightness = 0.299 * r + 0.587 * g + 0.114 * b;
+                                total += brightness;
+                            }
+
+                            const avgBrightness = total / len;
+                            brightnessDisplay.textContent = avgBrightness.toFixed(2);
+                            // ws.send(JSON.stringify({
+                            //     on: "brightness",
+                            //     value: avgBrightness
+                            // }))
+                            device.send("brightness", avgBrightness)
+                        }, 200);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error accessing camera:', error);
+                });
+        });
+
+        // Hand tracking with MediaPipe
+        const hands = new Hands({
+            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
+        });
+
+        hands.setOptions({
+            maxNumHands: 2,
+            modelComplexity: 1,
+            minDetectionConfidence: 0.7,
+            minTrackingConfidence: 0.5
+        });
+
+        function isIndexUp(landmarks) {
+            const tip = landmarks[8];     // Index tip
+            const mcp = landmarks[5];     // Index base
+
+            return tip.y < mcp.y;
+        }
+
+        function getIndexAngle(landmarks) {
+            const mcp = landmarks[5];  // base
+            const pip = landmarks[6];  // First knuckle
+            const tip = landmarks[8];  // fingertip
+
+            const vecA = {
+                x: mcp.x - pip.x,
+                y: mcp.y - pip.y,
+                z: mcp.z - pip.z
+            };
+
+            const vecB = {
+                x: tip.x - pip.x,
+                y: tip.y - pip.y,
+                z: tip.z - pip.z
+            };
+
+            const dot = vecA.x * vecB.x + vecA.y * vecB.y + vecA.z * vecB.z;
+            const magA = Math.sqrt(vecA.x ** 2 + vecA.y ** 2 + vecA.z ** 2);
+            const magB = Math.sqrt(vecB.x ** 2 + vecB.y ** 2 + vecB.z ** 2);
+
+            const angleRad = Math.acos(dot / (magA * magB));
+            const angleDeg = angleRad * (180 / Math.PI);
+            return angleDeg;
+        }
+
+        function getIndexLiftingRatio(angleDeg) {
+            const min = 60;  // closed fist
+            const max = 170; // fully extended finger
+            return Math.min(1, Math.max(0, (angleDeg - min) / (max - min)));
+        }
+
+        function onResults(results) {
+            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                const landmarks = results.multiHandLandmarks[0]; // main 0
+                const angle = getIndexAngle(landmarks);
+                const ratio = getIndexLiftingRatio(angle);
+
+                fingerDisplay.textContent = Number.parseFloat(ratio.toFixed(2));
+                device.send("indexFingerUp", Number.parseFloat(ratio.toFixed(2)))
+            }
+        }
+
+
+        hands.onResults(onResults);
+
+
+        // Associate the camera feed with MediaPipe Hands
+        const camera = new Camera(video, {
+            onFrame: async () => {
+                await hands.send({ image: video });
+            },
+            width: 640,
+            height: 480
+        });
+        camera.start();
+
+
+    </script>
+
+</body>
+
+</html>

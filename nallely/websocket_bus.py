@@ -105,7 +105,7 @@ class WebSocketBus(VirtualDevice):
         self.connected = defaultdict(list)
         self.known_services = {}
         self.to_update = None
-        super().__init__(target_cycle_time=10, **kwargs)
+        super().__init__(target_cycle_time=10, disable_output=True, **kwargs)
 
     def __getattr__(self, key):
         # print(f"[DEBUG] Create a waitingRoom for {key}")
@@ -183,7 +183,11 @@ class WebSocketBus(VirtualDevice):
                         value = float(json_message["value"])
                         # print(f"[DEBUG] INTERNAL ROUTING {param_name} with {value}")
                         setattr(self, param_name, value)
-                        self.send_out(value, ThreadContext(), selected_outputs=[output])
+                        self.send_out(
+                            value,
+                            ThreadContext({"last_values": {}}),
+                            selected_outputs=[output],
+                        )
                     except Exception as e:
                         print(
                             f"Couldn't parse the message and broadcast {message} to local instances: {e}"
