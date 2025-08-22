@@ -428,7 +428,7 @@ class VirtualDevice(threading.Thread):
         # True -> stream; False -> non stream
         outputs = None
         if selected_outputs:
-            outputs = [e.repr() for e in selected_outputs]
+            outputs = [e.repr() for e in selected_outputs if e is not None]
             # perform internal routing. I don't like it
             # please refactor at some point with the
             # logic of the vparam -> vparam link
