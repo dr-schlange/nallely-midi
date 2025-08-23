@@ -175,13 +175,13 @@ function SortableComponent<T extends HasId>({
 	const style: React.CSSProperties = {
 		transform: CSS.Transform.toString(transform),
 		transition,
-		touchAction: "none",
 		position: "relative",
 	} as const satisfies React.CSSProperties;
 
 	return (
-		<div ref={setNodeRef} style={style} {...attributes}>
+		<div ref={setNodeRef} style={style}>
 			<div
+				{...attributes}
 				{...listeners}
 				style={{
 					position: "absolute",
@@ -191,6 +191,12 @@ function SortableComponent<T extends HasId>({
 					cursor: "grab",
 					fontSize: "23px",
 					color: "gray",
+					width: "20px",
+					height: "20px",
+					display: "flex",
+					alignItems: "center",
+					justifyContent: "center",
+					touchAction: "none",
 				}}
 			>
 				=

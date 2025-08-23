@@ -45,7 +45,11 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 		const [typeIds, setTypeIds] = useState<Record<string, number>>({});
 
 		const sensors = useSensors(
-			useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+			useSensor(PointerSensor, {
+				activationConstraint: {
+					distance: 8,
+				},
+			}),
 		);
 
 		const addWidget = (Component, widgetType: string) => {
@@ -175,13 +179,13 @@ const SortableWidget = ({
 	const style = {
 		transform: CSS.Transform.toString(transform),
 		transition,
-		touchAction: "none",
 		position: "relative",
 	} as const satisfies React.CSSProperties;
 
 	return (
-		<div ref={setNodeRef} style={style} {...attributes}>
+		<div ref={setNodeRef} style={style}>
 			<div
+				{...attributes}
 				{...listeners}
 				style={{
 					position: "absolute",
@@ -191,6 +195,12 @@ const SortableWidget = ({
 					cursor: "grab",
 					fontSize: "23px",
 					color: "gray",
+					width: "20px",
+					height: "20px",
+					display: "flex",
+					alignItems: "center",
+					justifyContent: "center",
+					touchAction: "none",
 				}}
 			>
 				=
