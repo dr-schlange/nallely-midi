@@ -328,18 +328,26 @@ const DevicePatching = () => {
 			return;
 		}
 		if (section) {
+			// MIDI device click
+			setDisplayedSection({ device, section });
 			setInformation(
 				<>
 					<p style={{ marginLeft: "5px" }}>
 						{device.repr} {section?.name}
 					</p>
 					{section?.parameters.map((param) => (
-						<label>
-							<p
-								key={param.name}
-								style={{ marginTop: 0, marginBottom: 0, marginLeft: "10px" }}
-							>
-								{""}
+						<label
+							key={param.name}
+							style={{
+								display: "flex",
+
+								flexDirection: "row",
+								justifyContent: "space-between",
+								alignItems: "center",
+								width: "99%",
+							}}
+						>
+							<p style={{ marginTop: 0, marginBottom: 0, marginLeft: "10px" }}>
 								{param.name}
 							</p>
 							{createMidiParameterInput(device, param)}
@@ -421,6 +429,7 @@ const DevicePatching = () => {
 		setInformation(undefined);
 	};
 
+	// Updates depending on the new devices or connections
 	useEffect(() => {
 		const device = [...midi_devices, ...virtual_devices].find(
 			(d) => d.id === currentSelected,
@@ -430,6 +439,7 @@ const DevicePatching = () => {
 				[...midi_devices, ...virtual_devices].find(
 					(d) => d.id === currentSelected,
 				),
+				displayedSection?.section as MidiDeviceSection,
 			);
 			return;
 		}
@@ -486,10 +496,10 @@ const DevicePatching = () => {
 		section: MidiDeviceSection,
 	) => {
 		setSelectedConnection(undefined);
-		setDisplayedSection(undefined);
 		if (!associateMode) {
 			updateInfo(device, section);
 			setCurrentSelected(device.id);
+			setDisplayedSection({ device, section });
 			return;
 		}
 		if (
@@ -627,16 +637,6 @@ const DevicePatching = () => {
 						justifyContent: "space-evenly",
 					}}
 				>
-					{/* <button
-						type="button"
-						className={"associate-button}"}
-						onClick={() => {
-							// setSelectedSections()
-							setIsModalOpen(true);
-						}}
-					>
-						Open
-					</button> */}
 					{srcDevice && destDevice && (
 						<button
 							type="button"
@@ -699,7 +699,7 @@ const DevicePatching = () => {
 	const [displayedSection, setDisplayedSection] = useState<
 		MidiDeviceWithSection | VirtualDeviceWithSection | undefined
 	>(undefined);
-	const handleGearClick = (
+	const handleSettingsClick = (
 		device: MidiDeviceWithSection | VirtualDeviceWithSection,
 	) => {
 		if (
@@ -947,7 +947,7 @@ const DevicePatching = () => {
 					onClose={closeModal}
 					firstSection={selectedSection.firstSection}
 					secondSection={selectedSection.secondSection}
-					onSettingsClick={handleGearClick}
+					onSettingsClick={handleSettingsClick}
 					selectedSettings={displayedSection}
 					onSectionChange={(deviceSection) => {
 						if (!isExpanded) {
