@@ -34,6 +34,8 @@
     <video id="camera-feed" autoplay></video>
     <canvas id="canvas" style="display:none;"></canvas>
     <p>Brightness avg: <span id="brightness">0</span></p>
+    <p>Dominant color: <span id="dominant">0, 0, 0</span></p>
+    <p>Average color: <span id="average">0, 0, 0</span></p>
     <p>Index finger angle: <span id="finger">0</span></p>
     <script>
         const addressInput = document.getElementById('address');
@@ -41,11 +43,23 @@
 
         const configParameters = {
             brightness: { min: 0.0, max: 255.01 },
+            average_R: { min: 0.0, max: 255.01 },
+            average_G: { min: 0.0, max: 255.01 },
+            average_B: { min: 0.0, max: 255.01 },
+            dominant_R: { min: 0.0, max: 255.01 },
+            dominant_G: { min: 0.0, max: 255.01 },
+            dominant_B: { min: 0.0, max: 255.01 },
             indexFingerAngle: { min: 0.1, max: 1 },
         }
         const config = {
             brightness: 0.0,
             indexFingerAngle: 0.1,
+            average_R: 0.0,
+            average_G: 0.0,
+            average_B: 0.0,
+            dominant_R: 0.0,
+            dominant_G: 0.0,
+            dominant_B: 0.0,
         }
 
         // connect to a given websocket bus address
@@ -90,12 +104,72 @@
             document.getElementById('connection-status').textContent = status;
         }
 
-        // Compute brightness from webcam feed
+        // Compute brightness, average color and dominant color from webcam feed
         const video = document.getElementById('camera-feed');
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         const brightnessDisplay = document.getElementById('brightness');
+        const dominantDisplay = document.getElementById('dominant');
+        const averageDisplay = document.getElementById('average');
         const fingerDisplay = document.getElementById('finger');
+
+        function getAverageColor(data) {
+            let r = 0, g = 0, b = 0;
+            let count = 0;
+
+            // step by 4 because data = [r, g, b, a, r, g, b, a, ...]
+            for (let i = 0; i < data.length; i += 4) {
+                r += data[i];
+                g += data[i + 1];
+                b += data[i + 2];
+                count++;
+            }
+
+            return {
+                r: Math.round(r / count),
+                g: Math.round(g / count),
+                b: Math.round(b / count)
+            };
+        }
+
+        function getDominantColor(data, step = 32) {
+            const counts = {};
+            let maxKey = null;
+
+            for (let i = 0; i < data.length; i += 4) {
+                // Quantize to reduce noise
+                const r = Math.round(data[i] / step) * step;
+                const g = Math.round(data[i + 1] / step) * step;
+                const b = Math.round(data[i + 2] / step) * step;
+
+                const key = `${r},${g},${b}`;
+                counts[key] = (counts[key] || 0) + 1;
+
+                if (!maxKey || counts[key] > counts[maxKey]) {
+                    maxKey = key;
+                }
+            }
+
+            const [r, g, b] = maxKey.split(",").map(Number);
+            return { r, g, b };
+        }
+
+        function computeBrightness(data) {
+            let total = 0;
+            const len = data.length / 4;
+
+            // compute average brightness
+            for (let i = 0; i < data.length; i += 4) {
+                const r = data[i];
+                const g = data[i + 1];
+                const b = data[i + 2];
+
+                const brightness = 0.299 * r + 0.587 * g + 0.114 * b;
+                total += brightness;
+            }
+
+            return total / len;
+        }
 
         window.addEventListener('load', function startCamera() {
             navigator.mediaDevices.getUserMedia({ video: true })
@@ -113,22 +187,46 @@
                             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                             const data = imageData.data;
 
-                            let total = 0;
-                            const len = data.length / 4;
-
-                            // compute average brightness
-                            for (let i = 0; i < data.length; i += 4) {
-                                const r = data[i];
-                                const g = data[i + 1];
-                                const b = data[i + 2];
-
-                                const brightness = 0.299 * r + 0.587 * g + 0.114 * b;
-                                total += brightness;
-                            }
-
-                            const avgBrightness = total / len;
+                            // Brightness
+                            const avgBrightness = computeBrightness(data)
                             brightnessDisplay.textContent = avgBrightness.toFixed(2);
                             device.send("brightness", avgBrightness)
+
+                            // Average color
+                            const avg = getAverageColor(data);
+                            averageDisplay.textContent = `${avg.r}, ${avg.g}, ${avg.b}`;
+                            averageDisplay.style.color = `rgb(${avg.r}, ${avg.g}, ${avg.b})`;
+                            if (avg.r !== config.average_R) {
+                                config.average_R = avg.r;
+                                device.send("average_R", avg.r);
+                            }
+                            if (avg.g !== config.average_G) {
+                                config.average_G = avg.g;
+                                device.send("average_G", avg.g);
+                            }
+                            if (avg.b !== config.average_B) {
+                                config.average_B = avg.b;
+                                device.send("average_B", avg.b);
+                            }
+
+
+                            // Dominant color
+                            const dom = getDominantColor(data);
+                            dominantDisplay.textContent = `${dom.r}, ${dom.g}, ${dom.b}`;
+                            dominantDisplay.style.color = `rgb(${dom.r}, ${dom.g}, ${dom.b})`;
+                            if (dom.r !== config.dominant_R) {
+                                config.dominant_R = dom.r;
+                                device.send("dominant_R", dom.r);
+                            }
+                            if (dom.g !== config.dominant_G) {
+                                config.dominant_G = dom.g;
+                                device.send("dominant_G", dom.g);
+                            }
+                            if (dom.b !== config.dominant_B) {
+                                config.dominant_B = dom.b;
+                                device.send("dominant_B", dom.b);
+                            }
+
                         }, 200);
                     });
                 })
