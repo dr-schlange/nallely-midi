@@ -24,6 +24,11 @@
 <body>
     <h1>Nallely External Device Webcam Integration Demo</h1>
 
+    <div>
+        <label for="address">Server Address:</label>
+        <input type="text" id="address" value="" placeholder="hostname:port" />
+        <button id="connect-btn">Connect</button>
+    </div>
     <div id="status">Status: <span id="connection-status">Disconnected</span></div>
 
     <video id="camera-feed" autoplay></video>
@@ -31,27 +36,59 @@
     <p>Brightness avg: <span id="brightness">0</span></p>
     <p>Index finger angle: <span id="finger">0</span></p>
     <script>
+        const addressInput = document.getElementById('address');
+        const connectBtn = document.getElementById('connect-btn');
 
         const configParameters = {
             brightness: { min: 0.0, max: 255.01 },
-            indexFingerUp: { min: 0.1, max: 1 },
+            indexFingerAngle: { min: 0.1, max: 1 },
         }
         const config = {
             brightness: 0.0,
-            indexFingerUp: 0.1,
+            indexFingerAngle: 0.1,
         }
-        // Register the device/service
-        const device = NallelyWebsocketBus.register('webcam', 'cam', configParameters, config);
+
+        // connect to a given websocket bus address
+        let device = null;
+        function connectToAddress(address) {
+            if (device) {
+                device.dispose();
+            }
+
+            updateStatus(`Connecting on ${address}...`);
+
+            device = NallelyWebsocketBus.register('webcam', 'cam', configParameters, config, address);
+
+            device.onopen = () => updateStatus('Connected');
+            device.onclose = () => updateStatus('Disconnected');
+            device.onerror = () => updateStatus('Error');
+        }
+
+        addressInput.value = `${window.location.hostname}:6789`;
+        connectToAddress(addressInput.value);
+
+        function handleConnect() {
+            const address = addressInput.value.trim();
+            if (!address) {
+                addressInput.value = `${window.location.hostname}:6789`;
+                connectToAddress(addressInput.value);
+            } else {
+                connectToAddress(address);
+            }
+        }
+
+        connectBtn.addEventListener('click', handleConnect);
+        addressInput.addEventListener('change', handleConnect);
+        addressInput.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') {
+                handleConnect();
+            }
+        });
 
         // Update connection status based on WebSocket events
         function updateStatus(status) {
             document.getElementById('connection-status').textContent = status;
         }
-
-        // Hook into the WebSocket to update status and display data
-        device.onopen = () => updateStatus('Connected')
-        device.onclose = () => updateStatus('Disconnected')
-        device.onerror = () => updateStatus('Error')
 
         // Compute brightness from webcam feed
         const video = document.getElementById('camera-feed');
@@ -158,7 +195,7 @@
                 const ratio = getIndexLiftingRatio(angle);
 
                 fingerDisplay.textContent = Number.parseFloat(ratio.toFixed(2));
-                device.send("indexFingerUp", Number.parseFloat(ratio.toFixed(2)))
+                device.send("indexFingerAngle", Number.parseFloat(ratio.toFixed(2)))
             }
         }
 

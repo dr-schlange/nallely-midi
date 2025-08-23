@@ -1,87 +1,166 @@
-
 class NallelyService {
-    constructor(kind, name, parameters, config, url = undefined, register = undefined) {
-        this.kind = kind
-        this.name = name
-        this.parameters = parameters
-        this.config = config
-        this.url = url || `ws://${window.location.hostname}:6789/${name}/autoconfig`
-        this.register = register
-        this.autoRegister()
-    }
+	constructor(
+		kind,
+		name,
+		parameters,
+		config,
+		address = undefined,
+		register = undefined,
+	) {
+		this.kind = kind;
+		this.name = name;
+		this.parameters = parameters;
+		this.config = config;
+		this.url = address
+			? `ws://${address}/${name}/autoconfig`
+			: `ws://${window.location.hostname}:6789/${name}/autoconfig`;
+		this.register = register;
+		this.autoRegister();
+	}
 
-    autoRegister() {
-        const ws = new WebSocket(this.url)
-        ws.addEventListener('open', () => {
-            const data = Object.entries(this.parameters).map(([name, conf]) => { return { name, range: [conf.min, conf.max] } })
-            ws.send(JSON.stringify({
-                kind: this.kind,
-                parameters: data
-            }))
-            this.onopen?.(data)
-        })
+	autoRegister() {
+		// Clean up WebSocket if it exists
+		if (this.ws) {
+			this.ws.removeEventListener("open", this._onOpen);
+			this.ws.removeEventListener("close", this._onClose);
+			this.ws.removeEventListener("error", this._onError);
+			this.ws.removeEventListener("message", this._onMessage);
+			if (
+				this.ws.readyState === WebSocket.OPEN ||
+				this.ws.readyState === WebSocket.CONNECTING
+			) {
+				this.ws.close();
+			}
+			this.ws = null;
+		}
 
-        ws.addEventListener('close', (e) => {
-            console.log('Socket is closed. Reconnect will be attempted in 1 second.', e.reason);
-            setTimeout(() => {
-                this.autoRegister();
-            }, 1000);
-            this.onclose?.(e)
-        })
+		// Clear any reconnection timeout
+		if (this._reconnectTimeout) {
+			clearTimeout(this._reconnectTimeout);
+			this._reconnectTimeout = null;
+		}
 
-        ws.addEventListener('error', (err) => {
-            console.error('Socket encountered error: ', err.message, 'Closing socket');
-            this.onerror?.(err)
-            if (ws) {
-                ws.close();
-            }
-            setTimeout(() => {
-                this.autoRegister();
-            }, 1000);
-        })
+		const ws = new WebSocket(this.url);
 
-        ws.addEventListener('message', (event) => {
-            const data = JSON.parse(event.data);
-            this.config[data.on] = data.value
-            this.onmessage?.(data)
-        })
-        this.ws = ws
-    }
+		this._onOpen = () => {
+			const data = Object.entries(this.parameters).map(([name, conf]) => {
+				return { name, range: [conf.min, conf.max] };
+			});
+			ws.send(
+				JSON.stringify({
+					kind: this.kind,
+					parameters: data,
+				}),
+			);
+			this.onopen?.(data);
+		};
 
-    send(parameter, value) {
-        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-            const data = JSON.stringify({ on: parameter, value })
-            this.onsend?.(data)
-            this.ws.send(data)
-            return
-        }
-        console.warn('WebSocket not open, cannot send:', parameter, value);
-    }
+		this._onClose = (e) => {
+			console.log(
+				"Socket is closed. Reconnect will be attempted in few seconds.",
+				e.reason,
+			);
+			this._reconnectTimeout = setTimeout(() => {
+				this.autoRegister();
+			}, 1000);
+			this.onclose?.(e);
+		};
+
+		this._onError = (err) => {
+			console.error(
+				"Socket encountered error: ",
+				err.message,
+				"Closing socket",
+			);
+			this.onerror?.(err);
+			if (
+				ws &&
+				(ws.readyState === WebSocket.OPEN ||
+					ws.readyState === WebSocket.CONNECTING)
+			) {
+				ws.close();
+			}
+			this._reconnectTimeout = setTimeout(() => {
+				this.autoRegister();
+			}, 1000);
+		};
+
+		this._onMessage = (event) => {
+			const data = JSON.parse(event.data);
+			this.config[data.on] = data.value;
+			this.onmessage?.(data);
+		};
+
+		ws.addEventListener("open", this._onOpen);
+		ws.addEventListener("close", this._onClose);
+		ws.addEventListener("error", this._onError);
+		ws.addEventListener("message", this._onMessage);
+
+		this.ws = ws;
+	}
+
+	send(parameter, value) {
+		if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+			const data = JSON.stringify({ on: parameter, value });
+			this.onsend?.(data);
+			this.ws.send(data);
+			return;
+		}
+		console.warn("WebSocket not open, cannot send:", parameter, value);
+	}
+
+	dispose() {
+		if (this._reconnectTimeout) {
+			clearTimeout(this._reconnectTimeout);
+			this._reconnectTimeout = null;
+		}
+
+		if (this.ws) {
+			this.ws.removeEventListener("open", this._onOpen);
+			this.ws.removeEventListener("close", this._onClose);
+			this.ws.removeEventListener("error", this._onError);
+			this.ws.removeEventListener("message", this._onMessage);
+			if (
+				this.ws.readyState === WebSocket.OPEN ||
+				this.ws.readyState === WebSocket.CONNECTING
+			) {
+				this.ws.close();
+			}
+			this.ws = null;
+		}
+	}
 }
 
 class _NallelyWebsocketBus {
-    constructor() {
-        this.registered = {}
-    }
+	constructor() {
+		this.registered = {};
+	}
 
-    _buildUUID(kind, name) {
-        return `${kind}::${name}`
-    }
+	_buildUUID(kind, name) {
+		return `${kind}::${name}`;
+	}
 
-    register(kind, name, parameters, config, url = undefined) {
-        const service = new NallelyService(kind, name, parameters, config, url, this)
-        this.registered[this._buildUUID(kind, name)] = service
-        return service
-    }
+	register(kind, name, parameters, config, address = undefined) {
+		const service = new NallelyService(
+			kind,
+			name,
+			parameters,
+			config,
+			address,
+			this,
+		);
+		this.registered[this._buildUUID(kind, name)] = service;
+		return service;
+	}
 
-    _insert(kind, name, ws) {
-        this.registered[this._buildUUID(kind, name)] = ws
-    }
+	_insert(kind, name, ws) {
+		this.registered[this._buildUUID(kind, name)] = ws;
+	}
 
-    send(kind, name, parameter, value) {
-        this.registered[this._buildUUID(kind, name)].send(parameter, value)
-    }
+	send(kind, name, parameter, value) {
+		this.registered[this._buildUUID(kind, name)].send(parameter, value);
+	}
 }
 
-const NallelyWebsocketBus = new _NallelyWebsocketBus()
-window.NallelyWebsocketBus = NallelyWebsocketBus
+const NallelyWebsocketBus = new _NallelyWebsocketBus();
+window.NallelyWebsocketBus = NallelyWebsocketBus;
