@@ -652,6 +652,38 @@ const DevicePatching = () => {
 		trevorSocket.saveAll(patchFilename, saveDefaultValue);
 	};
 
+	const [displayedSection, setDisplayedSection] = useState<
+		MidiDeviceWithSection | VirtualDeviceWithSection | undefined
+	>(undefined);
+	const handleGearClick = (
+		device: MidiDeviceWithSection | VirtualDeviceWithSection,
+	) => {
+		// setIsExpanded((prev) => !prev);
+		// if (isExpanded && currentSelected === device.device.id) {
+		// 	setIsExpanded(false);
+		// 	setInformation(undefined);
+		// 	setCurrentSelected(undefined);
+		// }
+		if (
+			isExpanded &&
+			displayedSection?.device.id === device.device.id &&
+			displayedSection?.section.name === device.section.name
+		) {
+			setIsExpanded(false);
+			setInformation(undefined);
+			setDisplayedSection(undefined);
+			return;
+		}
+		setIsExpanded(true);
+		setDisplayedSection(device);
+		updateInfo(
+			device.device,
+			isVirtualDevice(device.device)
+				? undefined
+				: (device.section as MidiDeviceSection),
+		);
+	};
+
 	return (
 		<div
 			className={`device-patching ${orientation === VERTICAL ? "vertical" : ""}`}
@@ -699,7 +731,13 @@ const DevicePatching = () => {
 			<div
 				style={
 					isExpanded
-						? { minWidth: "262px", overflowY: "auto", height: "100%" }
+						? {
+								minWidth: "262px",
+								overflowY: "auto",
+								height: "100%",
+								backgroundColor: "rgb(192, 192, 192)",
+								zIndex: 20,
+							}
 						: {}
 				}
 			>
@@ -869,6 +907,20 @@ const DevicePatching = () => {
 					onClose={closeModal}
 					firstSection={selectedSection.firstSection}
 					secondSection={selectedSection.secondSection}
+					onSettingsClick={handleGearClick}
+					selectedSettings={displayedSection}
+					onSectionChange={(deviceSection) => {
+						if (!isExpanded) {
+							return;
+						}
+						setDisplayedSection(deviceSection);
+						updateInfo(
+							deviceSection.device,
+							isVirtualDevice(deviceSection.device)
+								? undefined
+								: (deviceSection.section as MidiDeviceSection),
+						);
+					}}
 				/>
 			)}
 			{isAboutOpen && <AboutModal onClose={closeModal} />}

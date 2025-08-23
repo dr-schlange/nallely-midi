@@ -25,6 +25,7 @@ import {
 	parameterUUID,
 } from "../../utils/utils";
 import { MidiGrid } from "../MidiGrid";
+import { Button } from "../widgets/BaseComponents";
 
 const collectAllVirtualParameters = (device: VirtualDevice) => {
 	return device.meta.parameters.map((p) => parameterUUID(device.id, p));
@@ -55,12 +56,25 @@ interface PatchingModalProps {
 	onClose: () => void;
 	firstSection: MidiDeviceWithSection | VirtualDeviceWithSection | null;
 	secondSection: MidiDeviceWithSection | VirtualDeviceWithSection | null;
+	onSettingsClick?: (
+		device: MidiDeviceWithSection | VirtualDeviceWithSection,
+	) => void;
+	selectedSettings?:
+		| MidiDeviceWithSection
+		| VirtualDeviceWithSection
+		| undefined;
+	onSectionChange?: (
+		section: MidiDeviceWithSection | VirtualDeviceWithSection,
+	) => void;
 }
 
 const PatchingModal = ({
 	onClose,
 	firstSection,
 	secondSection,
+	onSettingsClick,
+	selectedSettings,
+	onSectionChange,
 }: PatchingModalProps) => {
 	const [refresh, setRefresh] = useState(0);
 	const [selectedParameters, setSelectedParameters] = useState<
@@ -383,29 +397,51 @@ const PatchingModal = ({
 
 	const buildDropDown = (currentSection, setSection) => {
 		return (
-			<select
-				className="panel-dropdown"
-				value={`${currentSection.device.id}::${currentSection.section.name}`}
-				title="Change tab section"
-				onChange={(e) => {
-					const change = e.target.value;
-					const selected = allSections.find(
-						(s) => `${s.device.id}::${s.section.name}` === change,
-					);
-					setSection(selected);
+			<div
+				style={{
+					textAlign: "center",
+					cursor: "pointer",
+					display: "flex",
+					justifyContent: "flex-end",
+					flexDirection: "row",
+					gap: "4px",
 				}}
+				className="panel-dropdown"
 			>
-				{allSections.map((s) => (
-					<option
-						key={`${s.device.id}::${s.section.name}`}
-						value={`${s.device.id}::${s.section.name}`}
-					>
-						{s.section.name
-							? `${s.device.repr} - ${s.section.name}`
-							: `${s.device.repr}`}
-					</option>
-				))}
-			</select>
+				<Button
+					text="⚙"
+					activated={
+						selectedSettings?.device.id === currentSection?.device.id &&
+						selectedSettings.section.name === currentSection?.section.name
+					}
+					onClick={() => onSettingsClick?.(currentSection)}
+					tooltip="Toggle cyclic mode"
+					variant="big"
+				/>
+				<select
+					value={`${currentSection.device.id}::${currentSection.section.name}`}
+					title="Change tab section"
+					onChange={(e) => {
+						const change = e.target.value;
+						const selected = allSections.find(
+							(s) => `${s.device.id}::${s.section.name}` === change,
+						);
+						setSection(selected);
+						onSectionChange?.(selected);
+					}}
+				>
+					{allSections.map((s) => (
+						<option
+							key={`${s.device.id}::${s.section.name}`}
+							value={`${s.device.id}::${s.section.name}`}
+						>
+							{s.section.name
+								? `${s.device.repr} - ${s.section.name}`
+								: `${s.device.repr}`}
+						</option>
+					))}
+				</select>
+			</div>
 		);
 	};
 

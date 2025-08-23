@@ -5,11 +5,13 @@ export const Button = ({
 	onClick = undefined,
 	text,
 	tooltip = undefined,
+	variant = "small",
 }: {
 	activated?: boolean;
 	onClick?: () => void;
 	text: string;
 	tooltip: undefined | string;
+	variant: "big" | "small";
 }) => {
 	const [clickColor, setClickColor] = useState<string | undefined>(undefined);
 
@@ -19,7 +21,8 @@ export const Button = ({
 				color: "gray",
 				zIndex: 1,
 				backgroundColor: clickColor || (activated ? "yellow" : "#e0e0e0"),
-				width: "12px",
+				width: variant === "small" ? "12px" : "23px",
+				height: variant === "small" ? "12px" : "23px",
 				textAlign: "center",
 				cursor: "pointer",
 				border: "2px solid gray",
