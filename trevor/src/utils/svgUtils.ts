@@ -48,6 +48,7 @@ export const drawConnection = (
 	bouncy = false,
 	linkId?: number | undefined,
 	clickHandler?: (event: MouseEvent) => void,
+	setMouseInteracting?: (value: boolean) => void,
 ) => {
 	if (!fromElement || !toElement) return;
 
@@ -117,29 +118,7 @@ export const drawConnection = (
 		return line;
 	};
 
-	if (linkId) {
-		const hitLine = drawLine(`${fromElement.id}-${toElement.id}-hit`, {
-			stroke: "transparent",
-			strokeWidth: 18,
-			strokeOpacity: "0",
-			pointerEvents: "stroke",
-		});
-
-		if (clickHandler) hitLine.addEventListener("click", clickHandler);
-		hitLine.addEventListener("touchstart", (e) =>
-			setDebugMode(e, linkId, true),
-		);
-		hitLine.addEventListener("touchend", (e) => setDebugMode(e, linkId, false));
-		hitLine.addEventListener("mouseenter", (e) =>
-			setDebugMode(e, linkId, true),
-		);
-		hitLine.addEventListener("mouseleave", (e) =>
-			setDebugMode(e, linkId, false),
-		);
-		svg.appendChild(hitLine);
-	}
-
-	// 2. Draw actual visible line
+	// Draw actual visible line
 	const color = selected ? "blue" : bouncy ? "green" : "gray";
 	const marker = selected
 		? "url(#selected-retro-arrowhead)"
@@ -154,6 +133,40 @@ export const drawConnection = (
 		markerEnd: marker,
 	});
 
-	// Append both: hit line below visible line
+	// Append visible line first, then hit line on top for click handling
 	svg.appendChild(visibleLine);
+
+	if (linkId) {
+		const hitLine = drawLine(`${fromElement.id}-${toElement.id}-hit`, {
+			stroke: "transparent",
+			strokeWidth: 18,
+			strokeOpacity: "0",
+			pointerEvents: "stroke",
+		});
+
+		if (clickHandler) {
+			hitLine.addEventListener("mousedown", () => {
+				setMouseInteracting?.(true);
+			});
+
+			hitLine.addEventListener("mouseup", () => {
+				setTimeout(() => setMouseInteracting?.(false), 100);
+			});
+
+			hitLine.addEventListener("click", clickHandler);
+		}
+
+		hitLine.addEventListener("touchstart", (e) =>
+			setDebugMode(e, linkId, true),
+		);
+		hitLine.addEventListener("touchend", (e) => setDebugMode(e, linkId, false));
+		hitLine.addEventListener("mouseenter", (e) =>
+			setDebugMode(e, linkId, true),
+		);
+		hitLine.addEventListener("mouseleave", (e) =>
+			setDebugMode(e, linkId, false),
+		);
+
+		svg.appendChild(hitLine);
+	}
 };

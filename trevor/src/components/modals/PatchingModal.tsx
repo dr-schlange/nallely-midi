@@ -98,6 +98,7 @@ const PatchingModal = ({
 	const [selectedConnection, setSelectedConnection] = useState<string | null>(
 		null,
 	);
+	const [isMouseInteracting, setIsMouseInteracting] = useState(false);
 	const allMidiDeviceSection = useTrevorSelector((state) =>
 		state.nallely.midi_devices
 			// .filter(
@@ -257,6 +258,10 @@ const PatchingModal = ({
 	};
 
 	const updateConnections = () => {
+		if (isMouseInteracting) {
+			return;
+		}
+
 		if (!svgRef.current) return;
 
 		const svg = svgRef.current;
@@ -278,6 +283,11 @@ const PatchingModal = ({
 				connectionId(connection) === selectedConnection,
 				connection.bouncy,
 				connection.id,
+				(event) => {
+					event.stopPropagation();
+					handleConnectionClick(connection);
+				},
+				setIsMouseInteracting,
 			);
 		}
 	};

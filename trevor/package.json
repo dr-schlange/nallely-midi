@@ -6,7 +6,8 @@
 	"scripts": {
 		"dev": "vite",
 		"build": "tsc -b && vite build",
-		"format": "biome format src --fix",
+		"format": "yarn format-trevor && yarn format-jslib",
+		"format-trevor": "biome format src --fix",
 		"format-jslib": "biome format src --fix ../libs/js",
 		"preview": "vite preview",
 		"deploy:gh": "GH=true yarn build && gh-pages -d dist",

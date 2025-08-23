@@ -24,7 +24,6 @@ const WidgetComponents = {
 
 const findFirstMissingValue = (arr: number[]): number => {
 	if (arr.length === 0) return 0;
-	console.debug("Finding first missing value in", arr);
 
 	const max = Math.max(...arr);
 	const set = new Set(arr);
@@ -55,7 +54,6 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 					.filter((w) => w.type === widgetType)
 					.map((w) => w.num);
 				const nextId = findFirstMissingValue(idsUsed);
-				console.debug("Adding widget", widgetType, "with ID", nextId);
 				return [
 					...oldWidgets,
 					{
@@ -85,7 +83,6 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 		};
 
 		const closeWidget = (id: string) => {
-			console.debug("Closing widget with ID", id);
 			setWidgets((prev) => prev.filter((w) => w.id !== id));
 		};
 

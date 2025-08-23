@@ -113,7 +113,6 @@ export const selectChannels = createSelector(
 			},
 			{} as Record<number, number>,
 		);
-		console.debug("selectChannels", newvalue);
 		return newvalue;
 	},
 );
