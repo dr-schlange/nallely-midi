@@ -27,7 +27,7 @@ const incrDecrFilename = (filename: string, increment: boolean = false) => {
 	if (num < 0) num = 0;
 
 	const newNumStr = num.toString().padStart(width, "0");
-	return `${base}::${newNumStr}`;
+	return `${base}-${newNumStr}`;
 };
 
 // Loads general settings from the local storage
