@@ -79,14 +79,12 @@
         }
 
         addressInput.value = `${window.location.hostname}:6789`;
-        addressInput.value = `192.168.1.74:6789`;
         connectToAddress(addressInput.value);
 
         function handleConnect() {
             const address = addressInput.value.trim();
             if (!address) {
-                // addressInput.value = `${window.location.hostname}:6789`;
-                addressInput.value = `192.168.1.74:6789`;
+                addressInput.value = `${window.location.hostname}:6789`;
                 connectToAddress(addressInput.value);
             } else {
                 connectToAddress(address);
