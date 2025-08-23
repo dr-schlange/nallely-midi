@@ -7,6 +7,7 @@ import type {
 	MidiDevice,
 	MidiDeviceSection,
 	MidiDeviceWithSection,
+	MidiParameter,
 	VirtualDevice,
 	VirtualDeviceSection,
 	VirtualDeviceWithSection,
@@ -104,7 +105,11 @@ const DevicePatching = () => {
 				!(event.target as HTMLElement).classList.contains("section-box") &&
 				!(event.target as HTMLElement).classList.contains("section-name")
 			) {
+				if (displayedSection && isExpanded) {
+					return;
+				}
 				setSelectedSections([]); // Deselect sections when clicking outside or on non-section elements
+				setDisplayedSection(undefined);
 			}
 		};
 
@@ -117,6 +122,7 @@ const DevicePatching = () => {
 	const toggleAssociateMode = () => {
 		setAssociateMode((prev) => !prev);
 		setSelectedSections([]); // Reset selections when toggling mode
+		setDisplayedSection(undefined);
 	};
 
 	const openAboutModal = () => {
@@ -131,7 +137,7 @@ const DevicePatching = () => {
 		setIsPlaygroundOpen(true);
 	};
 
-	const createInput = (
+	const createVirtualInput = (
 		device: VirtualDevice,
 		parameter: VirtualParameter,
 		value: string | number | boolean,
@@ -217,6 +223,41 @@ const DevicePatching = () => {
 		}
 	};
 
+	const createMidiParameterInput = (
+		device: MidiDevice,
+		parameter: MidiParameter,
+	) => {
+		const tempDevice = tempValues[device.id] || {};
+		const tempValue = tempDevice[parameter.name];
+		const currentValue =
+			tempValue ?? device.config[parameter.name]?.toString() ?? "";
+		return (
+			<DragNumberInput
+				value={currentValue}
+				onBlur={(value) => {
+					if (!Number.isNaN(Number.parseInt(value))) {
+						trevorSocket?.setParameterValue(
+							device.id,
+							parameter.section_name,
+							parameter.name,
+							Number.parseInt(value),
+						);
+					}
+				}}
+				onChange={(value) => {
+					setTempValues({
+						...tempValues,
+						[device.id]: {
+							...tempValues[device.id],
+							[parameter.name]: value,
+						},
+					});
+				}}
+				range={parameter.range}
+			/>
+		);
+	};
+
 	const updateInfo = (
 		device: VirtualDevice | MidiDevice | undefined,
 		section: MidiDeviceSection | undefined = undefined,
@@ -270,7 +311,7 @@ const DevicePatching = () => {
 								>
 									{param.name}
 								</p>
-								{createInput(device, param, device.config[param.name])}
+								{createVirtualInput(device, param, device.config[param.name])}
 							</label>
 						</div>
 					))}
@@ -293,13 +334,16 @@ const DevicePatching = () => {
 						{device.repr} {section?.name}
 					</p>
 					{section?.parameters.map((param) => (
-						<p
-							key={param.name}
-							style={{ marginTop: 0, marginBottom: 0, marginLeft: "10px" }}
-						>
-							{""}
-							{param.name}: {device.config[param.section_name]?.[param.name]}
-						</p>
+						<label>
+							<p
+								key={param.name}
+								style={{ marginTop: 0, marginBottom: 0, marginLeft: "10px" }}
+							>
+								{""}
+								{param.name}
+							</p>
+							{createMidiParameterInput(device, param)}
+						</label>
 					))}
 				</>,
 			);
@@ -399,11 +443,9 @@ const DevicePatching = () => {
 		setInformation(undefined);
 	}, [tempValues, midi_devices, virtual_devices, allConnections, channels]);
 
-	const handleParameterClick = (
-		device: VirtualDevice,
-		// parameter: VirtualParameter,
-	) => {
+	const handleParameterClick = (device: VirtualDevice) => {
 		setSelectedConnection(undefined);
+		setDisplayedSection(undefined);
 		if (!associateMode) {
 			updateInfo(device);
 			setCurrentSelected(device.id);
@@ -415,12 +457,8 @@ const DevicePatching = () => {
 					return { ...e, name: e.cv_name };
 				}),
 			} as VirtualDeviceSection;
-			const newSelection = [
-				...selectedSections,
-				{ device, section: virtualSection },
-			];
-			// @ts-expect-error objects are not fully polymorphic, but that's ok here
-			setSelectedSections(newSelection);
+			const newElement = { device, section: virtualSection };
+			const newSelection = [...selectedSections, newElement];
 
 			if (newSelection.length === 2) {
 				setSelectedSection({
@@ -435,8 +473,11 @@ const DevicePatching = () => {
 				);
 				setIsModalOpen(true);
 			} else {
+				// @ts-expect-error objects are not fully polymorphic, but that's ok here
+				setSelectedSections((_) => newSelection);
 				updateInfo(device);
 				setCurrentSelected(device.id);
+				setDisplayedSection(newElement);
 			}
 		}
 	};
@@ -446,6 +487,7 @@ const DevicePatching = () => {
 		section: MidiDeviceSection,
 	) => {
 		setSelectedConnection(undefined);
+		setDisplayedSection(undefined);
 		if (!associateMode) {
 			updateInfo(device, section);
 			setCurrentSelected(device.id);
@@ -480,6 +522,7 @@ const DevicePatching = () => {
 			} else {
 				updateInfo(device, section);
 				setCurrentSelected(device.id);
+				setDisplayedSection({ device, section });
 			}
 		}
 	};
@@ -555,12 +598,14 @@ const DevicePatching = () => {
 
 	const handleNonSectionClick = () => {
 		setSelectedSections([]); // Deselect sections
+		setDisplayedSection(undefined);
 	};
 
 	const handleMidiDeviceClick = (device: MidiDevice) => {
 		setCurrentSelected(device.id);
 		setSelectedConnection(undefined);
 		setSelectedSections([]);
+		setDisplayedSection(undefined);
 		updateInfo(device);
 	};
 
@@ -698,7 +743,7 @@ const DevicePatching = () => {
 					onSectionClick={handleSectionClick}
 					onNonSectionClick={handleNonSectionClick}
 					selectedSections={selectedSections.map(
-						(d) => `${d.device.id}-${d.section.parameters[0]?.section_name}`,
+						(d) => `${d.device.id}::${d.section.parameters[0]?.section_name}`,
 					)}
 					onSectionScroll={updateConnections}
 					onDeviceClick={handleMidiDeviceClick}
@@ -711,9 +756,11 @@ const DevicePatching = () => {
 					)}
 					onParameterClick={handleParameterClick}
 					onNonSectionClick={handleNonSectionClick}
-					selectedSections={selectedSections.map(
-						(d) => `${d.device.id}-${d.section.parameters[0]?.section_name}`,
-					)}
+					selectedSections={(() => {
+						return selectedSections.map(
+							(d) => `${d.device.id}::${d.section.parameters[0]?.section_name}`,
+						);
+					})()}
 					onSectionScroll={updateConnections}
 					horizontal={orientation === HORIZONTAL}
 					onDeviceDrop={updateConnections}

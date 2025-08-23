@@ -15,7 +15,10 @@ import { setClassCodeMode } from "../store/runtimeSlice";
 export interface VirtualDeviceComponentProps {
 	margin?: number;
 	device: VirtualDevice;
-	onParameterClick?: (parameter: VirtualParameter) => void;
+	onParameterClick?: (
+		device: VirtualDevice,
+		parameter: VirtualParameter,
+	) => void;
 	onDeviceClick?: (device: VirtualDevice) => void;
 	selectedSections?: string[];
 	classConnections?: boolean;
@@ -106,7 +109,10 @@ const VirtualDeviceComponent = ({
 				borderColor: isSelected ? "yellow" : "",
 			}}
 			id={`${device.id}-__virtual__`}
-			onClick={() => handleDeviceClick(device)}
+			onClick={(event) => {
+				event.stopPropagation();
+				handleDeviceClick(device);
+			}}
 			onMouseEnter={(e) => setDebugMode(e, device.id, true)}
 			onMouseLeave={(e) => setDebugMode(e, device.id, false)}
 			onTouchStart={(e) => setDebugMode(e, device.id, true)}
@@ -143,7 +149,7 @@ const VirtualDeviceComponent = ({
 								className={`device-section ${selected ? "selected" : ""}`}
 								onClick={(event) => {
 									event.stopPropagation();
-									onParameterClick?.(parameter);
+									onParameterClick?.(device, parameter);
 								}}
 							>
 								<div
@@ -176,7 +182,7 @@ const VirtualDeviceComponent = ({
 								className={`device-section ${selected ? "selected" : ""}`}
 								onClick={(event) => {
 									event.stopPropagation();
-									onParameterClick?.(parameter);
+									onParameterClick?.(device, parameter);
 								}}
 							>
 								<span

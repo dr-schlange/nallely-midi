@@ -16,7 +16,7 @@ import { mergeDevicesPreservingOrder, saveDeviceOrder } from "../utils/utils";
 interface RackRowVirtualProps {
 	devices: VirtualDevice[];
 	onDeviceDrop?: (draggedDevice: VirtualDevice, targetIndex: number) => void;
-	onParameterClick: (device: VirtualDevice, section?: VirtualParameter) => void;
+	onParameterClick: (device: VirtualDevice) => void;
 	selectedSections: string[];
 	onNonSectionClick: () => void;
 	onSectionScroll?: () => void;
@@ -119,9 +119,7 @@ export const RackRowVirtual = ({
 						<SortableVirtualDeviceComponent
 							key={device.id}
 							device={device}
-							onParameterClick={(parameter) =>
-								onParameterClick(device, parameter)
-							}
+							onParameterClick={(device) => onParameterClick(device)}
 							onDeviceClick={(device) => onParameterClick(device)}
 							selectedSections={selectedSections}
 							onSectionScroll={onSectionScroll}
@@ -151,7 +149,10 @@ type SortableComponentProps = {
 	onDeviceClick?: (device: VirtualDevice) => void;
 	selectedSections: string[];
 	onSectionScroll?: () => void;
-	onParameterClick?: (parameter: VirtualParameter) => void;
+	onParameterClick?: (
+		device: VirtualDevice,
+		parameter: VirtualParameter,
+	) => void;
 };
 
 function SortableVirtualDeviceComponent<T extends HasId>({

@@ -11,7 +11,7 @@ export const Button = ({
 	onClick?: () => void;
 	text: string;
 	tooltip: undefined | string;
-	variant: "big" | "small";
+	variant?: "big" | "small";
 }) => {
 	const [clickColor, setClickColor] = useState<string | undefined>(undefined);
 
