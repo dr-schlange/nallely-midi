@@ -109,7 +109,6 @@ const DevicePatching = () => {
 					return;
 				}
 				setSelectedSections([]); // Deselect sections when clicking outside or on non-section elements
-				setDisplayedSection(undefined);
 			}
 		};
 
@@ -122,7 +121,6 @@ const DevicePatching = () => {
 	const toggleAssociateMode = () => {
 		setAssociateMode((prev) => !prev);
 		setSelectedSections([]); // Reset selections when toggling mode
-		setDisplayedSection(undefined);
 	};
 
 	const openAboutModal = () => {
@@ -230,7 +228,7 @@ const DevicePatching = () => {
 		const tempDevice = tempValues[device.id] || {};
 		const tempValue = tempDevice[parameter.name];
 		const currentValue =
-			tempValue ?? device.config[parameter.name]?.toString() ?? "";
+			tempValue ?? device.config[parameter.name]?.toString() ?? "?";
 		return (
 			<DragNumberInput
 				value={currentValue}
@@ -468,18 +466,20 @@ const DevicePatching = () => {
 			} as VirtualDeviceSection;
 			const newElement = { device, section: virtualSection };
 			const newSelection = [...selectedSections, newElement];
+			setDisplayedSection(undefined);
 
 			if (newSelection.length === 2) {
 				setSelectedSection({
 					firstSection: newSelection[0],
 					secondSection: newSelection[1],
 				});
-				setInformation(
-					<p>
-						Associating {newSelection[0].section.name} with{" "}
-						{newSelection[1].section.name}
-					</p>,
-				);
+				if (isExpanded) {
+					setDisplayedSection(newSelection[0]);
+					updateInfo(
+						newSelection[0].device,
+						newSelection[0].section as MidiDeviceSection,
+					);
+				}
 				setIsModalOpen(true);
 			} else {
 				// @ts-expect-error objects are not fully polymorphic, but that's ok here
@@ -513,25 +513,25 @@ const DevicePatching = () => {
 				),
 			);
 		}
+
 		if (selectedSections.length < 2) {
 			const newSelection = [...selectedSections, { device, section }];
 			setSelectedSections(newSelection);
+			setDisplayedSection(undefined);
+
 			if (newSelection.length === 2) {
 				setSelectedSection({
 					firstSection: newSelection[0],
 					secondSection: newSelection[1],
 				});
-				setInformation(
-					<p>
-						Associating {newSelection[0].section.name} with{" "}
-						{newSelection[1].section.name}
-					</p>,
-				);
+				if (isExpanded) {
+					setDisplayedSection(newSelection[0]);
+					updateInfo(newSelection[0].device, newSelection[0].section);
+				}
 				setIsModalOpen(true);
 			} else {
 				updateInfo(device, section);
 				setCurrentSelected(device.id);
-				setDisplayedSection({ device, section });
 			}
 		}
 	};
