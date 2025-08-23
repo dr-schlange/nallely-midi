@@ -601,42 +601,42 @@ const DevicePatching = () => {
 							))),
 				connection.bouncy,
 				connection.id,
-				(event) => {
-					// event.stopPropagation();
-					// const allDevices = [...midi_devices, ...virtual_devices];
-					// const src = allDevices.find((d) => d.id === connection.src.device);
-					// const srcSection = connection.src.parameter.section_name;
-					// console.debug("Found src", srcSection);
-					// const dest = allDevices.find((d) => d.id === connection.dest.device);
-					// const destSection = connection.dest.parameter.section_name;
-					// if (isVirtualDevice(src)) {
-					// 	console.debug("Clicking src virtual", src);
-					// 	handleParameterClick(src);
-					// } else {
-					// 	handleSectionClick(
-					// 		src,
-					// 		src.meta.sections.find(
-					// 			(s) =>
-					// 				s.parameters[0]?.name === srcSection ||
-					// 				s.pads_or_keys?.section_name === srcSection,
-					// 		),
-					// 	);
-					// }
-					// if (isVirtualDevice(dest)) {
-					// 	console.debug("Clicking dest virtual", dest);
-					// 	handleParameterClick(dest);
-					// } else {
-					// 	handleSectionClick(
-					// 		dest,
-					// 		dest.meta.sections.find(
-					// 			(s) =>
-					// 				s.parameters[0]?.name === destSection ||
-					// 				s.pads_or_keys?.section_name === destSection,
-					// 		),
-					// 	);
-					// }
-				},
-				setLinkMouseInteraction,
+				// (event) => {
+				// 	// event.stopPropagation();
+				// 	// const allDevices = [...midi_devices, ...virtual_devices];
+				// 	// const src = allDevices.find((d) => d.id === connection.src.device);
+				// 	// const srcSection = connection.src.parameter.section_name;
+				// 	// console.debug("Found src", srcSection);
+				// 	// const dest = allDevices.find((d) => d.id === connection.dest.device);
+				// 	// const destSection = connection.dest.parameter.section_name;
+				// 	// if (isVirtualDevice(src)) {
+				// 	// 	console.debug("Clicking src virtual", src);
+				// 	// 	handleParameterClick(src);
+				// 	// } else {
+				// 	// 	handleSectionClick(
+				// 	// 		src,
+				// 	// 		src.meta.sections.find(
+				// 	// 			(s) =>
+				// 	// 				s.parameters[0]?.name === srcSection ||
+				// 	// 				s.pads_or_keys?.section_name === srcSection,
+				// 	// 		),
+				// 	// 	);
+				// 	// }
+				// 	// if (isVirtualDevice(dest)) {
+				// 	// 	console.debug("Clicking dest virtual", dest);
+				// 	// 	handleParameterClick(dest);
+				// 	// } else {
+				// 	// 	handleSectionClick(
+				// 	// 		dest,
+				// 	// 		dest.meta.sections.find(
+				// 	// 			(s) =>
+				// 	// 				s.parameters[0]?.name === destSection ||
+				// 	// 				s.pads_or_keys?.section_name === destSection,
+				// 	// 		),
+				// 	// 	);
+				// 	// }
+				// },
+				// setLinkMouseInteraction,
 			);
 		}
 	};
