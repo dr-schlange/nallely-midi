@@ -96,7 +96,7 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 				]}
 			>
 				<SortableContext
-					items={widgets.map((w) => `${w.type}::${w.id}`)} // unique string ids
+					items={widgets.map((w) => w.id)}
 					strategy={
 						horizontal
 							? horizontalListSortingStrategy
