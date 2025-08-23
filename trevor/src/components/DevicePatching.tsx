@@ -37,18 +37,15 @@ const HORIZONTAL = "⇅";
 
 const DevicePatching = () => {
 	const mainSectionRef = useRef(null);
-	const [rackRowHeight, setRackRowHeight] = useState(150); // Default height
 	const [associateMode, setAssociateMode] = useState(true);
-	const [selectedSections, setSelectedSections] = useState<
-		MidiDeviceWithSection[]
-	>([]);
+	const [selection, setSelection] = useState<MidiDeviceWithSection[]>([]);
 	const [isModalOpen, setIsModalOpen] = useState(false);
 	const [isAboutOpen, setIsAboutOpen] = useState(false);
 	const [isSaveOpen, setIsSaveOpen] = useState(false);
 	const [isLoadOpen, setIsLoadOpen] = useState(false);
 	const [isPlaygroundOpen, setIsPlaygroundOpen] = useState(false);
 
-	const [selectedSection, setSelectedSection] = useState<{
+	const [selectedSections, setSelectedSections] = useState<{
 		firstSection: MidiDeviceWithSection | VirtualDeviceWithSection | null;
 		secondSection: MidiDeviceWithSection | VirtualDeviceWithSection | null;
 	}>({ firstSection: null, secondSection: null });
@@ -108,7 +105,7 @@ const DevicePatching = () => {
 				if (displayedSection && isExpanded) {
 					return;
 				}
-				setSelectedSections([]); // Deselect sections when clicking outside or on non-section elements
+				setSelection([]); // Deselect sections when clicking outside or on non-section elements
 			}
 		};
 
@@ -120,7 +117,7 @@ const DevicePatching = () => {
 
 	const toggleAssociateMode = () => {
 		setAssociateMode((prev) => !prev);
-		setSelectedSections([]); // Reset selections when toggling mode
+		setSelection([]); // Reset selections when toggling mode
 	};
 
 	const openAboutModal = () => {
@@ -427,6 +424,10 @@ const DevicePatching = () => {
 		setInformation(undefined);
 	};
 
+	useEffect(() => {
+		updateConnections();
+	}, [selection]);
+
 	// Updates depending on the new devices or connections
 	useEffect(() => {
 		const device = [...midi_devices, ...virtual_devices].find(
@@ -455,35 +456,34 @@ const DevicePatching = () => {
 		setSelectedConnection(undefined);
 		if (!associateMode) {
 			updateInfo(device);
-			setCurrentSelected(device.id);
+			setCurrentSelected((_) => device.id);
 			return;
 		}
-		if (selectedSections.length < 2) {
+		if (selection.length < 2) {
 			const virtualSection = {
 				parameters: device.meta.parameters.map((e) => {
 					return { ...e, name: e.cv_name };
 				}),
 			} as VirtualDeviceSection;
 			const newElement = { device, section: virtualSection };
-			const newSelection = [...selectedSections, newElement];
-			setDisplayedSection(undefined);
+			setDisplayedSection((_) => undefined);
 
-			if (newSelection.length === 2) {
-				setSelectedSection({
-					firstSection: newSelection[0],
-					secondSection: newSelection[1],
-				});
+			if (selection.length === 1) {
+				setSelectedSections((_) => ({
+					firstSection: selection[0],
+					secondSection: newElement,
+				}));
 				if (isExpanded) {
-					setDisplayedSection(newSelection[0]);
+					setDisplayedSection((_) => selection[0]);
 					updateInfo(
-						newSelection[0].device,
-						newSelection[0].section as MidiDeviceSection,
+						selection[0].device,
+						selection[0].section as MidiDeviceSection,
 					);
 				}
 				setIsModalOpen(true);
 			} else {
 				// @ts-expect-error objects are not fully polymorphic, but that's ok here
-				setSelectedSections((_) => newSelection);
+				setSelection((prev) => [...prev, newElement]);
 				updateInfo(device);
 				setCurrentSelected(device.id);
 				setDisplayedSection(newElement);
@@ -499,39 +499,39 @@ const DevicePatching = () => {
 		if (!associateMode) {
 			updateInfo(device, section);
 			setCurrentSelected(device.id);
-			setDisplayedSection({ device, section });
+			setDisplayedSection((_) => ({ device, section }));
 			return;
 		}
 		if (
-			selectedSections.find(
+			selection.find(
 				(e) => e.device.id === device.id && e.section.name === section.name,
 			)
 		) {
-			setSelectedSections(
-				selectedSections.filter(
+			setSelection((_) =>
+				selection.filter(
 					(s) => s.device.id !== device.id || s.section.name !== section.name,
 				),
 			);
 		}
 
-		if (selectedSections.length < 2) {
-			const newSelection = [...selectedSections, { device, section }];
-			setSelectedSections(newSelection);
+		if (selection.length < 2) {
 			setDisplayedSection(undefined);
+			const newElement = { device, section };
 
-			if (newSelection.length === 2) {
-				setSelectedSection({
-					firstSection: newSelection[0],
-					secondSection: newSelection[1],
-				});
+			if (selection.length === 1) {
+				setSelectedSections((_) => ({
+					firstSection: selection[0],
+					secondSection: newElement,
+				}));
 				if (isExpanded) {
-					setDisplayedSection(newSelection[0]);
-					updateInfo(newSelection[0].device, newSelection[0].section);
+					setDisplayedSection((_) => selection[0]);
+					updateInfo(selection[0].device, selection[0].section);
 				}
 				setIsModalOpen(true);
 			} else {
 				updateInfo(device, section);
 				setCurrentSelected(device.id);
+				setSelection((prev) => [...prev, newElement]);
 			}
 		}
 	};
@@ -539,14 +539,19 @@ const DevicePatching = () => {
 	const closeModal = () => {
 		setIsModalOpen(false);
 		setIsAboutOpen(false);
-		setSelectedSections([]);
+		setSelection([]);
 		setIsSaveOpen(false);
 		setIsPlaygroundOpen(false);
 		setIsLoadOpen(false);
 		// setAssociateMode(false);
 	};
 
+	const [linkMouseInteraction, setLinkMouseInteraction] = useState(false);
 	const updateConnections = () => {
+		if (linkMouseInteraction) {
+			return;
+		}
+
 		const svg = svgRef.current;
 		if (!svg) return;
 
@@ -576,12 +581,62 @@ const DevicePatching = () => {
 			);
 			const fromElement = document.querySelector(`[id="${srcId}"]`);
 			const toElement = document.querySelector(`[id="${destId}"]`);
+			const highlightConnected = selection.length === 1;
+			const firstSelected = selection[0];
+			const firstSelectedSection =
+				firstSelected?.section.parameters[0]?.section_name ||
+				firstSelected?.section.pads_or_keys?.section_name;
+			const connectionRepr = connectionId(connection);
 			drawConnection(
 				svg,
 				fromElement,
 				toElement,
-				connectionId(connection) === selectedConnection,
+				connectionRepr === selectedConnection ||
+					(highlightConnected &&
+						(connectionRepr.startsWith(
+							`${firstSelected?.device.id}::${firstSelectedSection}`,
+						) ||
+							connectionRepr.includes(
+								`-${firstSelected?.device.id}::${firstSelectedSection}`,
+							))),
 				connection.bouncy,
+				connection.id,
+				(event) => {
+					// event.stopPropagation();
+					// const allDevices = [...midi_devices, ...virtual_devices];
+					// const src = allDevices.find((d) => d.id === connection.src.device);
+					// const srcSection = connection.src.parameter.section_name;
+					// console.debug("Found src", srcSection);
+					// const dest = allDevices.find((d) => d.id === connection.dest.device);
+					// const destSection = connection.dest.parameter.section_name;
+					// if (isVirtualDevice(src)) {
+					// 	console.debug("Clicking src virtual", src);
+					// 	handleParameterClick(src);
+					// } else {
+					// 	handleSectionClick(
+					// 		src,
+					// 		src.meta.sections.find(
+					// 			(s) =>
+					// 				s.parameters[0]?.name === srcSection ||
+					// 				s.pads_or_keys?.section_name === srcSection,
+					// 		),
+					// 	);
+					// }
+					// if (isVirtualDevice(dest)) {
+					// 	console.debug("Clicking dest virtual", dest);
+					// 	handleParameterClick(dest);
+					// } else {
+					// 	handleSectionClick(
+					// 		dest,
+					// 		dest.meta.sections.find(
+					// 			(s) =>
+					// 				s.parameters[0]?.name === destSection ||
+					// 				s.pads_or_keys?.section_name === destSection,
+					// 		),
+					// 	);
+					// }
+				},
+				setLinkMouseInteraction,
 			);
 		}
 	};
@@ -606,14 +661,14 @@ const DevicePatching = () => {
 	}, [allConnections, selectedConnection]);
 
 	const handleNonSectionClick = () => {
-		setSelectedSections([]); // Deselect sections
+		setSelection([]); // Deselect sections
 		setDisplayedSection(undefined);
 	};
 
 	const handleMidiDeviceClick = (device: MidiDevice) => {
 		setCurrentSelected(device.id);
 		setSelectedConnection(undefined);
-		setSelectedSections([]);
+		setSelection([]);
 		setDisplayedSection(undefined);
 		updateInfo(device);
 	};
@@ -735,7 +790,7 @@ const DevicePatching = () => {
 					devices={midi_devices}
 					onSectionClick={handleSectionClick}
 					onNonSectionClick={handleNonSectionClick}
-					selectedSections={selectedSections.map(
+					selectedSections={selection.map(
 						(d) => `${d.device.id}::${d.section.parameters[0]?.section_name}`,
 					)}
 					onSectionScroll={updateConnections}
@@ -751,7 +806,7 @@ const DevicePatching = () => {
 					onParameterClick={handleParameterClick}
 					onNonSectionClick={handleNonSectionClick}
 					selectedSections={(() => {
-						return selectedSections.map(
+						return selection.map(
 							(d) => `${d.device.id}::${d.section.parameters[0]?.section_name}`,
 						);
 					})()}
@@ -948,8 +1003,8 @@ const DevicePatching = () => {
 			{isModalOpen && (
 				<PatchingModal
 					onClose={closeModal}
-					firstSection={selectedSection.firstSection}
-					secondSection={selectedSection.secondSection}
+					firstSection={selectedSections.firstSection}
+					secondSection={selectedSections.secondSection}
 					onSettingsClick={handleSettingsClick}
 					selectedSettings={displayedSection}
 					onSectionChange={(deviceSection) => {
