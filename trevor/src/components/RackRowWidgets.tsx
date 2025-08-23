@@ -57,7 +57,7 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 				return [
 					...oldWidgets,
 					{
-						id: `${widgetType}-${nextId}`,
+						id: `${widgetType}::${nextId}`,
 						num: nextId,
 						type: widgetType,
 						component: Component,
@@ -96,7 +96,7 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 				]}
 			>
 				<SortableContext
-					items={widgets.map((w) => `${w.type}-${w.id}`)} // unique string ids
+					items={widgets.map((w) => `${w.type}::${w.id}`)} // unique string ids
 					strategy={
 						horizontal
 							? horizontalListSortingStrategy

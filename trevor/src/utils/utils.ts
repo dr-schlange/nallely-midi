@@ -45,14 +45,14 @@ export const buildParameterId = (
 ) => {
 	const isVirtual = (parameter as VirtualParameter).consumer !== undefined;
 	if (isVirtual) {
-		return `${device}-__virtual__-${(parameter as VirtualParameter).cv_name}`;
+		return `${device}::__virtual__::${(parameter as VirtualParameter).cv_name}`;
 	}
 	const paramName = forceParameterName || parameter.name;
-	return `${device}-${(parameter as MidiParameter).section_name}-${paramName}`;
+	return `${device}::${(parameter as MidiParameter).section_name}::${paramName}`;
 };
 
 export const buildSectionId = (device: number, section: string) => {
-	return `${device}-${section}`;
+	return `${device}::${section}`;
 };
 
 export const parameterUUID = (

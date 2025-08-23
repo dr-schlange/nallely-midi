@@ -22,7 +22,7 @@ export const Button = ({
 				zIndex: 1,
 				backgroundColor: clickColor || (activated ? "yellow" : "#e0e0e0"),
 				width: variant === "small" ? "12px" : "23px",
-				height: variant === "small" ? "12px" : "23px",
+				height: variant === "small" ? "18px" : "23px",
 				textAlign: "center",
 				cursor: "pointer",
 				border: "2px solid gray",

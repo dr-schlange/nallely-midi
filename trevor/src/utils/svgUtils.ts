@@ -36,7 +36,7 @@ export const findSvgConnection = (
 		return null;
 	}
 	return document.querySelector(
-		`[id="${fromElement.id}-${toElement.id}"]`,
+		`[id="${fromElement.id}::${toElement.id}"]`,
 	) as SVGElement;
 };
 
@@ -126,7 +126,7 @@ export const drawConnection = (
 			? "url(#bouncy-retro-arrowhead)"
 			: "url(#retro-arrowhead)";
 
-	const visibleLine = drawLine(`${fromElement.id}-${toElement.id}`, {
+	const visibleLine = drawLine(`${fromElement.id}::${toElement.id}`, {
 		stroke: color,
 		strokeWidth: selected ? 2.5 : 2,
 		strokeOpacity: "1",
@@ -137,7 +137,7 @@ export const drawConnection = (
 	svg.appendChild(visibleLine);
 
 	if (linkId) {
-		const hitLine = drawLine(`${fromElement.id}-${toElement.id}-hit`, {
+		const hitLine = drawLine(`${fromElement.id}::${toElement.id}-hit`, {
 			stroke: "transparent",
 			strokeWidth: 18,
 			strokeOpacity: "0",

@@ -445,7 +445,6 @@ const DevicePatching = () => {
 
 	const handleParameterClick = (device: VirtualDevice) => {
 		setSelectedConnection(undefined);
-		setDisplayedSection(undefined);
 		if (!associateMode) {
 			updateInfo(device);
 			setCurrentSelected(device.id);
@@ -703,12 +702,6 @@ const DevicePatching = () => {
 	const handleGearClick = (
 		device: MidiDeviceWithSection | VirtualDeviceWithSection,
 	) => {
-		// setIsExpanded((prev) => !prev);
-		// if (isExpanded && currentSelected === device.device.id) {
-		// 	setIsExpanded(false);
-		// 	setInformation(undefined);
-		// 	setCurrentSelected(undefined);
-		// }
 		if (
 			isExpanded &&
 			displayedSection?.device.id === device.device.id &&

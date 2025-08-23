@@ -72,7 +72,7 @@ export const MidiGrid = ({
 		<div className={`midi-container ${isOpen ? "open" : ""}`}>
 			<div
 				className="midi-header"
-				id={`${device.id}-${section.pads_or_keys?.section_name}-closed`}
+				id={`${device.id}::${section.pads_or_keys?.section_name}::closed`}
 			>
 				{isOpen ? (
 					<>
@@ -118,7 +118,7 @@ export const MidiGrid = ({
 							{octaveNotes.map((note) => (
 								// biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
 								<div
-									id={`${device.id}-${section.pads_or_keys?.section_name}-${note.name}`}
+									id={`${device.id}::${section.pads_or_keys?.section_name}::${note.name}`}
 									key={note.name}
 									className={`note-box ${highlight === note.number ? "selected" : ""}`}
 									title={`${note.name} - MIDI ${note.number}`}
