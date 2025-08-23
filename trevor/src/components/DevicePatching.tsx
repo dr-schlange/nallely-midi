@@ -742,6 +742,7 @@ const DevicePatching = () => {
 					onDeviceClick={handleMidiDeviceClick}
 					horizontal={orientation === HORIZONTAL}
 					onDeviceDrop={updateConnections}
+					onDragEnd={updateConnections}
 				/>
 				<RackRowVirtual
 					devices={virtual_devices.filter(
@@ -757,6 +758,7 @@ const DevicePatching = () => {
 					onSectionScroll={updateConnections}
 					horizontal={orientation === HORIZONTAL}
 					onDeviceDrop={updateConnections}
+					onDragEnd={updateConnections}
 				/>
 				<svg
 					className={`device-patching-svg ${orientation === HORIZONTAL ? "horizontal" : ""}`}
@@ -765,6 +767,7 @@ const DevicePatching = () => {
 				<RackRowWidgets
 					ref={widgetRack}
 					horizontal={orientation === HORIZONTAL}
+					onDragEnd={updateConnections}
 				/>
 			</div>
 

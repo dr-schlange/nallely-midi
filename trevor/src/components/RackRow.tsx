@@ -16,6 +16,7 @@ import { mergeDevicesPreservingOrder, saveDeviceOrder } from "../utils/utils";
 interface RackRowProps {
 	devices: MidiDevice[];
 	onDeviceDrop?: (draggedDevice: MidiDevice, targetIndex: number) => void;
+	onDragEnd?: () => void;
 	onSectionClick: (device: MidiDevice, section: MidiDeviceSection) => void;
 	selectedSections: string[];
 	onNonSectionClick: () => void;
@@ -27,6 +28,7 @@ interface RackRowProps {
 export const RackRow = ({
 	devices,
 	onDeviceDrop,
+	onDragEnd,
 	onSectionClick,
 	selectedSections,
 	onNonSectionClick,
@@ -49,12 +51,22 @@ export const RackRow = ({
 
 	const handleDragEnd = (event) => {
 		const { active, over } = event;
-		if (!over || active.id === over.id) return;
+		if (!over || active.id === over.id) {
+			setTimeout(() => {
+				onDragEnd?.();
+			}, 10);
+			return;
+		}
 
 		const draggedIndex = localDeviceOrder.findIndex((d) => d.id === active.id);
 		const targetIndex = localDeviceOrder.findIndex((d) => d.id === over.id);
 
-		if (draggedIndex === -1 || targetIndex === -1) return;
+		if (draggedIndex === -1 || targetIndex === -1) {
+			setTimeout(() => {
+				onDragEnd?.();
+			}, 10);
+			return;
+		}
 
 		const newOrder = arrayMove(localDeviceOrder, draggedIndex, targetIndex);
 		setLocalDeviceOrder(newOrder);
@@ -64,7 +76,11 @@ export const RackRow = ({
 			newOrder.map((d) => d.id),
 		);
 
-		onDeviceDrop?.(localDeviceOrder[targetIndex], targetIndex);
+		// Add delay to allow DOM to settle after drag operation
+		setTimeout(() => {
+			onDeviceDrop?.(localDeviceOrder[targetIndex], targetIndex);
+			onDragEnd?.();
+		}, 10);
 	};
 
 	useEffect(() => {

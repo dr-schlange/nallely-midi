@@ -16,6 +16,7 @@ import { mergeDevicesPreservingOrder, saveDeviceOrder } from "../utils/utils";
 interface RackRowVirtualProps {
 	devices: VirtualDevice[];
 	onDeviceDrop?: (draggedDevice: VirtualDevice, targetIndex: number) => void;
+	onDragEnd?: () => void;
 	onParameterClick: (device: VirtualDevice) => void;
 	selectedSections: string[];
 	onNonSectionClick: () => void;
@@ -26,6 +27,7 @@ interface RackRowVirtualProps {
 export const RackRowVirtual = ({
 	devices,
 	onDeviceDrop,
+	onDragEnd,
 	onParameterClick,
 	selectedSections,
 	onNonSectionClick,
@@ -49,12 +51,22 @@ export const RackRowVirtual = ({
 
 	const handleDragEnd = (event) => {
 		const { active, over } = event;
-		if (!over || active.id === over.id) return;
+		if (!over || active.id === over.id) {
+			setTimeout(() => {
+				onDragEnd?.();
+			}, 10);
+			return;
+		}
 
 		const draggedIndex = localDeviceOrder.findIndex((d) => d.id === active.id);
 		const targetIndex = localDeviceOrder.findIndex((d) => d.id === over.id);
 
-		if (draggedIndex === -1 || targetIndex === -1) return;
+		if (draggedIndex === -1 || targetIndex === -1) {
+			setTimeout(() => {
+				onDragEnd?.();
+			}, 10);
+			return;
+		}
 
 		const newOrder = arrayMove(localDeviceOrder, draggedIndex, targetIndex);
 		setLocalDeviceOrder(newOrder);
@@ -64,7 +76,11 @@ export const RackRowVirtual = ({
 			newOrder.map((d) => d.id),
 		);
 
+		// Add delay to allow DOM to settle after drag operation
 		onDeviceDrop?.(localDeviceOrder[targetIndex], targetIndex);
+		setTimeout(() => {
+			onDragEnd?.();
+		}, 10);
 	};
 
 	useEffect(() => {

@@ -5,6 +5,7 @@ import { XYZScope } from "./widgets/XYZScope";
 
 interface WidgetRackProps {
 	onRackScroll?: () => void;
+	onDragEnd?: () => void;
 	horizontal?: boolean;
 }
 
@@ -38,7 +39,7 @@ const findFirstMissingValue = (arr: number[]): number => {
 };
 
 export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
-	({ onRackScroll, horizontal }: WidgetRackProps, ref) => {
+	({ onRackScroll, onDragEnd, horizontal }: WidgetRackProps, ref) => {
 		const [widgets, setWidgets] = useState<
 			{ num: number; id: string; type: string; component: React.FC<any> }[]
 		>([]);
@@ -84,8 +85,13 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 			const oldIndex = widgets.findIndex((w) => w.id === active.id);
 			const newIndex = widgets.findIndex((w) => w.id === over.id);
 			setWidgets(arrayMove(widgets, oldIndex, newIndex));
-		};
 
+			// Call the callback to update connections with a small delay
+			// to allow DOM to settle after drag operation
+			setTimeout(() => {
+				onDragEnd?.();
+			}, 10);
+		};
 		const closeWidget = (id: string) => {
 			setWidgets((prev) => prev.filter((w) => w.id !== id));
 		};
