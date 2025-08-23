@@ -34,8 +34,8 @@
     <video id="camera-feed" autoplay></video>
     <canvas id="canvas" style="display:none;"></canvas>
     <p>Brightness avg: <span id="brightness">0</span></p>
-    <p>Dominant color: <span id="dominant">0, 0, 0</span></p>
     <p>Average color: <span id="average">0, 0, 0</span></p>
+    <p>H,S,V average: <span id="dominant">0, 0, 0</span></p>
     <p>Index finger angle: <span id="finger">0</span></p>
     <script>
         const addressInput = document.getElementById('address');
@@ -46,9 +46,9 @@
             average_R: { min: 0.0, max: 255.01 },
             average_G: { min: 0.0, max: 255.01 },
             average_B: { min: 0.0, max: 255.01 },
-            dominant_R: { min: 0.0, max: 255.01 },
-            dominant_G: { min: 0.0, max: 255.01 },
-            dominant_B: { min: 0.0, max: 255.01 },
+            average_H: { min: 0, max: 1.01 },
+            average_S: { min: 0.0, max: 1.01 },
+            average_V: { min: 0.0, max: 1.01 },
             indexFingerAngle: { min: 0.1, max: 1 },
         }
         const config = {
@@ -57,9 +57,9 @@
             average_R: 0.0,
             average_G: 0.0,
             average_B: 0.0,
-            dominant_R: 0.0,
-            dominant_G: 0.0,
-            dominant_B: 0.0,
+            average_H: 0.0,
+            average_S: 0.0,
+            average_V: 0.0,
         }
 
         // connect to a given websocket bus address
@@ -79,12 +79,14 @@
         }
 
         addressInput.value = `${window.location.hostname}:6789`;
+        addressInput.value = `192.168.1.74:6789`;
         connectToAddress(addressInput.value);
 
         function handleConnect() {
             const address = addressInput.value.trim();
             if (!address) {
-                addressInput.value = `${window.location.hostname}:6789`;
+                // addressInput.value = `${window.location.hostname}:6789`;
+                addressInput.value = `192.168.1.74:6789`;
                 connectToAddress(addressInput.value);
             } else {
                 connectToAddress(address);
@@ -107,7 +109,7 @@
         // Compute brightness, average color and dominant color from webcam feed
         const video = document.getElementById('camera-feed');
         const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
         const brightnessDisplay = document.getElementById('brightness');
         const dominantDisplay = document.getElementById('dominant');
         const averageDisplay = document.getElementById('average');
@@ -132,27 +134,33 @@
             };
         }
 
-        function getDominantColor(data, step = 32) {
-            const counts = {};
-            let maxKey = null;
+        // function getDominantColor(data, step = 16, skip = 10) {
+        //     const counts = {};
+        //     let maxKey = null;
 
-            for (let i = 0; i < data.length; i += 4) {
-                // Quantize to reduce noise
-                const r = Math.round(data[i] / step) * step;
-                const g = Math.round(data[i + 1] / step) * step;
-                const b = Math.round(data[i + 2] / step) * step;
+        //     for (let i = 0; i < data.length; i += 4 * skip) {
+        //         const alpha = data[i + 3];
+        //         if (alpha < 128) continue; // Ignore pixels transparents
 
-                const key = `${r},${g},${b}`;
-                counts[key] = (counts[key] || 0) + 1;
+        //         const r = Math.round(data[i] / step) * step;
+        //         const g = Math.round(data[i + 1] / step) * step;
+        //         const b = Math.round(data[i + 2] / step) * step;
 
-                if (!maxKey || counts[key] > counts[maxKey]) {
-                    maxKey = key;
-                }
-            }
+        //         const key = `${r},${g},${b}`;
+        //         counts[key] = (counts[key] || 0) + 1;
 
-            const [r, g, b] = maxKey.split(",").map(Number);
-            return { r, g, b };
-        }
+        //         if (!maxKey || counts[key] > counts[maxKey]) {
+        //             maxKey = key;
+        //         }
+        //     }
+
+        //     if (!maxKey) return { r: 0, g: 0, b: 0 };
+        //     const [r, g, b] = maxKey.split(",").map(Number);
+        //     console.log("Dominant color counts:", r, g, b);
+
+        //     return { r, g, b };
+        // }
+
 
         function computeBrightness(data) {
             let total = 0;
@@ -169,6 +177,24 @@
             }
 
             return total / len;
+        }
+
+        function rgbToHsv(r, g, b) {
+            r /= 255; g /= 255; b /= 255;
+            let max = Math.max(r, g, b), min = Math.min(r, g, b);
+            let h, s, v = max;
+            let d = max - min;
+            s = max === 0 ? 0 : d / max;
+            if (max === min) h = 0;
+            else {
+                switch (max) {
+                    case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                    case g: h = (b - r) / d + 2; break;
+                    case b: h = (r - g) / d + 4; break;
+                }
+                h /= 6;
+            }
+            return { h, s, v };
         }
 
         window.addEventListener('load', function startCamera() {
@@ -210,21 +236,21 @@
                             }
 
 
-                            // Dominant color
-                            const dom = getDominantColor(data);
-                            dominantDisplay.textContent = `${dom.r}, ${dom.g}, ${dom.b}`;
-                            dominantDisplay.style.color = `rgb(${dom.r}, ${dom.g}, ${dom.b})`;
-                            if (dom.r !== config.dominant_R) {
-                                config.dominant_R = dom.r;
-                                device.send("dominant_R", dom.r);
+                            // Hue
+                            const hue = rgbToHsv(avg.r, avg.g, avg.b);
+                            dominantDisplay.textContent = `${hue.h.toFixed(2)}, ${hue.s.toFixed(2)}, ${hue.v.toFixed(2)}`;
+                            dominantDisplay.style.color = `rgb(${hue.h * 255}, ${hue.s * 255}, ${hue.v * 255})`;
+                            if (hue.h !== config.average_H) {
+                                config.average_H = hue.h;
+                                device.send("average_H", hue.r);
                             }
-                            if (dom.g !== config.dominant_G) {
-                                config.dominant_G = dom.g;
-                                device.send("dominant_G", dom.g);
+                            if (hue.s !== config.average_S) {
+                                config.average_S = hue.s;
+                                device.send("average_S", hue.g);
                             }
-                            if (dom.b !== config.dominant_B) {
-                                config.dominant_B = dom.b;
-                                device.send("dominant_B", dom.b);
+                            if (hue.v !== config.average_V) {
+                                config.average_V = hue.v;
+                                device.send("average_V", hue.b);
                             }
 
                         }, 200);
