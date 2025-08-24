@@ -97,6 +97,7 @@ export interface PadOrKey {
 	name: string;
 	type: string;
 	mode: string;
+	range: [number, number];
 }
 
 export interface MidiParameter {

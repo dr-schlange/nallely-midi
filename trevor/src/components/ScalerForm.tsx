@@ -85,7 +85,7 @@ export const ScalerForm = ({ connection }: ScalerFormProps) => {
 						width="100%"
 						disabled={!scalerEnabled}
 						value={min.toString()}
-						range={[null, null]} // or set appropriate bounds
+						range={connection.dest.parameter.range}
 						onChange={(val) => setMin(val)}
 						onBlur={(val) =>
 							trevorSocket?.setScalerValue(
@@ -121,7 +121,7 @@ export const ScalerForm = ({ connection }: ScalerFormProps) => {
 						width="85%"
 						disabled={!scalerEnabled}
 						value={max.toString()}
-						range={[null, null]} // or set appropriate bounds
+						range={connection.dest.parameter.range}
 						onChange={(val) => setMax(val)}
 						onBlur={(val) =>
 							trevorSocket?.setScalerValue(

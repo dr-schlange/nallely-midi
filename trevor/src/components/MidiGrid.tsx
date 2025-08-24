@@ -130,6 +130,7 @@ export const MidiGrid = ({
 											name: note.name,
 											mode: "note",
 											type: "note",
+											range: [0, 127],
 										})
 									}
 								>
