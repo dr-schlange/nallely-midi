@@ -223,9 +223,12 @@ const DevicePatching = () => {
 		parameter: MidiParameter,
 	) => {
 		const tempDevice = tempValues[device.id] || {};
-		const tempValue = tempDevice[parameter.name];
+		const key = `${parameter.section_name}::${parameter.name}`;
+		const tempValue = tempDevice[key];
 		const currentValue =
-			tempValue ?? device.config[parameter.name]?.toString() ?? "?";
+			tempValue ??
+			device.config[parameter.section_name]?.[parameter.name]?.toString() ??
+			"0";
 		return (
 			<DragNumberInput
 				value={currentValue}
@@ -244,7 +247,7 @@ const DevicePatching = () => {
 						...tempValues,
 						[device.id]: {
 							...tempValues[device.id],
-							[parameter.name]: value,
+							[key]: value,
 						},
 					});
 				}}
@@ -324,30 +327,36 @@ const DevicePatching = () => {
 		}
 		if (section) {
 			// MIDI device click
-			setDisplayedSection({ device, section });
+			if (displayedSection?.section?.name !== section.name) {
+				setDisplayedSection({ device, section });
+			}
 			setInformation(
 				<>
 					<p style={{ marginLeft: "5px" }}>
 						{device.repr} {section?.name}
 					</p>
-					{section?.parameters.map((param) => (
-						<label
-							key={param.name}
-							style={{
-								display: "flex",
+					{section?.parameters.map((param) => {
+						return (
+							<label
+								key={param.name}
+								style={{
+									display: "flex",
 
-								flexDirection: "row",
-								justifyContent: "space-between",
-								alignItems: "center",
-								width: "99%",
-							}}
-						>
-							<p style={{ marginTop: 0, marginBottom: 0, marginLeft: "10px" }}>
-								{param.name}
-							</p>
-							{createMidiParameterInput(device, param)}
-						</label>
-					))}
+									flexDirection: "row",
+									justifyContent: "space-between",
+									alignItems: "center",
+									width: "99%",
+								}}
+							>
+								<p
+									style={{ marginTop: 0, marginBottom: 0, marginLeft: "10px" }}
+								>
+									{param.name}
+								</p>
+								{createMidiParameterInput(device, param)}
+							</label>
+						);
+					})}
 				</>,
 			);
 			return;
@@ -427,6 +436,32 @@ const DevicePatching = () => {
 	useEffect(() => {
 		updateConnections();
 	}, [selection]);
+
+	useEffect(() => {
+		const newTempvalues = { ...tempValues };
+		for (const device of midi_devices) {
+			const config = newTempvalues[device.id] || {};
+			for (const [section, parameter] of Object.entries(device.config)) {
+				for (const [parameterName, parameterValue] of Object.entries(
+					parameter,
+				)) {
+					const key = `${section}::${parameterName}`;
+					config[key] = parameterValue.toString();
+				}
+			}
+			newTempvalues[device.id] = config;
+		}
+		for (const device of virtual_devices) {
+			const config = newTempvalues[device.id] || {};
+			for (const [parameterName, parameterValue] of Object.entries(
+				device.config,
+			)) {
+				config[parameterName] = parameterValue.toString();
+			}
+			newTempvalues[device.id] = config;
+		}
+		setTempValues(newTempvalues);
+	}, [midi_devices, virtual_devices]);
 
 	// Updates depending on the new devices or connections
 	useEffect(() => {
@@ -601,42 +636,6 @@ const DevicePatching = () => {
 							))),
 				connection.bouncy,
 				connection.id,
-				// (event) => {
-				// 	// event.stopPropagation();
-				// 	// const allDevices = [...midi_devices, ...virtual_devices];
-				// 	// const src = allDevices.find((d) => d.id === connection.src.device);
-				// 	// const srcSection = connection.src.parameter.section_name;
-				// 	// console.debug("Found src", srcSection);
-				// 	// const dest = allDevices.find((d) => d.id === connection.dest.device);
-				// 	// const destSection = connection.dest.parameter.section_name;
-				// 	// if (isVirtualDevice(src)) {
-				// 	// 	console.debug("Clicking src virtual", src);
-				// 	// 	handleParameterClick(src);
-				// 	// } else {
-				// 	// 	handleSectionClick(
-				// 	// 		src,
-				// 	// 		src.meta.sections.find(
-				// 	// 			(s) =>
-				// 	// 				s.parameters[0]?.name === srcSection ||
-				// 	// 				s.pads_or_keys?.section_name === srcSection,
-				// 	// 		),
-				// 	// 	);
-				// 	// }
-				// 	// if (isVirtualDevice(dest)) {
-				// 	// 	console.debug("Clicking dest virtual", dest);
-				// 	// 	handleParameterClick(dest);
-				// 	// } else {
-				// 	// 	handleSectionClick(
-				// 	// 		dest,
-				// 	// 		dest.meta.sections.find(
-				// 	// 			(s) =>
-				// 	// 				s.parameters[0]?.name === destSection ||
-				// 	// 				s.pads_or_keys?.section_name === destSection,
-				// 	// 		),
-				// 	// 	);
-				// 	// }
-				// },
-				// setLinkMouseInteraction,
 			);
 		}
 	};
