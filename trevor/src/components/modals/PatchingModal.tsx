@@ -298,6 +298,17 @@ const PatchingModal = ({
 				connection.bouncy,
 				connection.id,
 				(event) => {
+					const x = event.clientX;
+					const y = event.clientY;
+					const elements = document.elementsFromPoint(x, y);
+					const underDiv = elements.find((el) =>
+						el.id.match(/^\d+::\w+::\w+$/),
+					);
+					if (underDiv instanceof HTMLElement) {
+						underDiv.click();
+						return;
+					}
+
 					event.stopPropagation();
 					handleConnectionClick(connection);
 				},

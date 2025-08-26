@@ -158,10 +158,10 @@ export const setDebugMode = (
 	componentId: number | string,
 	activate: boolean,
 ) => {
+	const trevorSocket = useTrevorWebSocket();
 	if (!isLogMode()) {
 		return;
 	}
-	const trevorSocket = useTrevorWebSocket();
 	event.stopPropagation();
 	if (activate) {
 		trevorSocket.startCaptureSTDOUT(componentId);

@@ -141,7 +141,7 @@ export const drawConnection = (
 			stroke: "transparent",
 			strokeWidth: 18,
 			strokeOpacity: "0",
-			pointerEvents: "stroke",
+			pointerEvents: clickHandler ? "stroke" : "none",
 		});
 
 		if (clickHandler) {
