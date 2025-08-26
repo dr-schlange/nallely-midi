@@ -4,6 +4,7 @@ import type { MidiDevice, MidiDeviceSection } from "../model";
 import {
 	buildSectionId,
 	generateAcronym,
+	internalSectionName,
 	isLogMode,
 	setDebugMode,
 } from "../utils/utils";
@@ -16,12 +17,6 @@ const collectAllSections = (device: MidiDevice) => {
 	}
 	return sections.map((s) => buildSectionId(device.id, s));
 };
-
-const internalSectionName = (section) =>
-	section.parameters?.[0]?.section_name ||
-	section.pads_or_keys?.section_name ||
-	section.pitchwheel?.section_name ||
-	"unknown";
 
 const MidiDeviceComponent = ({
 	device,

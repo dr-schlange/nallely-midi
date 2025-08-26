@@ -2,10 +2,12 @@ import { useEffect } from "react";
 import type {
 	MidiConnection,
 	MidiDevice,
+	MidiDeviceSection,
 	MidiParameter,
 	PadOrKey,
 	PadsOrKeys,
 	VirtualDevice,
+	VirtualDeviceSection,
 	VirtualParameter,
 } from "../model";
 import { store } from "../store";
@@ -267,3 +269,11 @@ export const incrDecrFilename = (
 	const newNumStr = num.toString().padStart(width, "0");
 	return `${base}-${newNumStr}`;
 };
+
+export const internalSectionName = (
+	section: MidiDeviceSection | VirtualDeviceSection,
+) =>
+	section.parameters?.[0]?.section_name ||
+	section.pads_or_keys?.section_name ||
+	section.pitchwheel?.section_name ||
+	"unknown";

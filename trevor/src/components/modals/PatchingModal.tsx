@@ -20,6 +20,7 @@ import {
 	buildParameterId,
 	connectionId,
 	connectionsOfInterest,
+	internalSectionName,
 	isPadsOrdKeys,
 	isVirtualDevice,
 	parameterUUID,
@@ -406,7 +407,11 @@ const PatchingModal = ({
 		return [...params, ...pitchwheel];
 	};
 
-	const buildDropDown = (currentSection, setSection) => {
+	const buildDropDown = (
+		currentSection: MidiDeviceWithSection | VirtualDeviceWithSection,
+		setSection,
+		otherSection: MidiDeviceWithSection | VirtualDeviceWithSection,
+	) => {
 		return (
 			<div
 				style={{
@@ -441,16 +446,33 @@ const PatchingModal = ({
 						onSectionChange?.(selected);
 					}}
 				>
-					{allSections.map((s) => (
-						<option
-							key={`${s.device.id}::${s.section.name}`}
-							value={`${s.device.id}::${s.section.name}`}
-						>
-							{s.section.name
-								? `${s.device.repr} - ${s.section.name}`
-								: `${s.device.repr}`}
-						</option>
-					))}
+					{allSections.map((s) => {
+						const links = allConnections.filter(
+							(c) =>
+								(c.src.device === otherSection.device.id &&
+									c.src.parameter.section_name ===
+										internalSectionName(otherSection.section) &&
+									c.dest.parameter.section_name ===
+										internalSectionName(s.section) &&
+									c.dest.device === s.device.id) ||
+								(c.dest.device === otherSection.device.id &&
+									c.dest.parameter.section_name ===
+										internalSectionName(otherSection.section) &&
+									c.src.parameter.section_name ===
+										internalSectionName(s.section) &&
+									c.src.device === s.device.id),
+						);
+						return (
+							<option
+								key={`${s.device.id}::${s.section.name}`}
+								value={`${s.device.id}::${s.section.name}`}
+							>
+								{s.section.name
+									? `${s.device.repr} - ${s.section.name} ${links.length > 0 ? `[*]` : ""}`
+									: `${s.device.repr} ${links.length > 0 ? `[*]` : ""}`}
+							</option>
+						);
+					})}
 				</select>
 			</div>
 		);
@@ -473,7 +495,11 @@ const PatchingModal = ({
 							{currentFirstSection?.device.repr}{" "}
 							{currentFirstSection?.section.name}
 						</h3> */}
-						{buildDropDown(currentFirstSection, setCurrentFirstSection)}
+						{buildDropDown(
+							currentFirstSection,
+							setCurrentFirstSection,
+							currentSecondSection,
+						)}
 
 						<div className="parameters-grid left">
 							{currentFirstSection?.section.pads_or_keys && (
@@ -530,7 +556,11 @@ const PatchingModal = ({
 							{currentSecondSection?.device.repr}{" "}
 							{currentSecondSection?.section.name}
 						</h3> */}
-						{buildDropDown(currentSecondSection, setCurrentSecondSection)}
+						{buildDropDown(
+							currentSecondSection,
+							setCurrentSecondSection,
+							currentFirstSection,
+						)}
 						<div className="parameters-grid right">
 							{currentSecondSection?.section.pads_or_keys && (
 								<div className="right-midi">
