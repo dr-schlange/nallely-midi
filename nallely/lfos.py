@@ -231,8 +231,7 @@ class LFO(TimeBasedDevice):
 
     def store_input(self, param, value):
         if param == "waveform" and isinstance(value, (int, float, Decimal)):
-            accepted_values = getattr(self.__class__, "waveform_cv").accepted_values
-            value = accepted_values[int(value % len(accepted_values))]
+            value = self.waveform_cv.parameter.map2accepted_values(value)
         super().store_input(param, value)
 
     def __add__(self, lfo):

@@ -1,4 +1,4 @@
-from .clocks import Clock
+from .clocks import Clock, Comparator
 from .core import (
     DeviceNotFound,
     MidiDevice,
@@ -62,4 +62,5 @@ __all__ = [
     "Quantizer",
     "FlexibleClock",
     "Clock",
+    "Comparator",
 ]

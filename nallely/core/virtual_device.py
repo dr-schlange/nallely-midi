@@ -53,6 +53,10 @@ class VirtualParameter:
             assert self.cv_name
             value.bind(getattr(device, self.cv_name))
 
+    def map2accepted_values(self, value):
+        accepted_values = self.accepted_values
+        return accepted_values[int(value % len(accepted_values))]
+
 
 class OnChange:
     conditions = {

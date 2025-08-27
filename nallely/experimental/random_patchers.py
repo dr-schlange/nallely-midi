@@ -71,8 +71,8 @@ class RandomPatcher(VirtualDevice):
             "--",
             *(list(d.__class__.__name__ for d in all_devices())),
         ]
-        self.__class__.exclude_device_cv.accepted_values = accepted_values
-        self.__class__.exclude_device_cv.range = (0, len(accepted_values))
+        self.exclude_device_cv.parameter.accepted_values = accepted_values
+        self.exclude_device_cv.parameter.range = (0, len(accepted_values))
 
         if self.trigger == 1:
             self.trigger = 0
