@@ -154,7 +154,7 @@ class Comparator(VirtualDevice):
             value = self.comparator_cv.parameter.map2accepted_values(value)
         super().store_input(param, value)
 
-    def __init__(self, a=None, b=None, comparator="=", type="ondemand", **kwargs):
+    def __init__(self, a=0, b=0, comparator="=", type="ondemand", **kwargs):
         self.a = a
         self.b = b
         self.comparator = comparator
