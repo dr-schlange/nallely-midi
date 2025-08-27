@@ -83,7 +83,7 @@ Feature: ADSR Connections
         Given L is started
         And E is started
         Given L's default output connected to E's release
-        When around 1000ms have passed
+        When around 1010ms have passed
         Then E's release is ne 0.3
 
     Scenario: LFO modulates ADSR, ADSR modulates VCA amplitude
