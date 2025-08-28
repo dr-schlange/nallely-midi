@@ -24,7 +24,7 @@ class ParameterInstance:
         return self.parameter.name
 
     def repr(self):
-        return f"{id(self.device)}::{self.parameter.section_name}::{self.parameter.cv_name}"
+        return f"{self.device.uuid}::{self.parameter.section_name}::{self.parameter.cv_name}"
 
     def bind(self, target):
         from .links import Link
@@ -125,7 +125,7 @@ class Int(int):
 
     def repr(self):
         return (
-            f"{id(self.device)}::{self.parameter.section_name}::{self.parameter.name}"
+            f"{self.device.uuid}::{self.parameter.section_name}::{self.parameter.name}"
         )
 
 
@@ -136,7 +136,7 @@ class PadsOrKeysInstance:
 
     def repr(self):
         return (
-            f"{id(self.device)}::{self.parameter.section_name}::{self.parameter.name}"
+            f"{self.device.uuid}::{self.parameter.section_name}::{self.parameter.name}"
         )
 
     def bind(self, target):
@@ -180,7 +180,7 @@ class PitchwheelInstance:
 
     def repr(self):
         return (
-            f"{id(self.device)}::{self.parameter.section_name}::{self.parameter.name}"
+            f"{self.device.uuid}::{self.parameter.section_name}::{self.parameter.name}"
         )
 
     def __isub__(self, other):
@@ -264,7 +264,7 @@ class PadOrKey:
 
     def repr(self):
         return (
-            f"{id(self.device)}::{self.parameter.section_name}::{self.parameter.name}"
+            f"{self.device.uuid}::{self.parameter.section_name}::{self.parameter.name}"
         )
 
     def bind(self, target):

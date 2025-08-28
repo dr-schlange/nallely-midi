@@ -324,6 +324,7 @@ class DeviceState:
 @dataclass
 class MidiDevice:
     device_name: str
+    uuid: int = 0
     modules_descr: dict[str, Type[Module]] | None = None
     autoconnect: InitVar[bool] = True
     read_input_only: InitVar[bool] = False
@@ -342,6 +343,9 @@ class MidiDevice:
 
     def __post_init__(self, autoconnect, read_input_only):
         from .links import Link
+
+        if not self.uuid:
+            self.uuid = id(self)
 
         if self not in connected_devices:
             connected_devices.append(self)
@@ -679,7 +683,7 @@ class MidiDevice:
 
     def to_dict(self, save_defaultvalues=False):
         d = {
-            "id": id(self),
+            "id": self.uuid,
             "repr": self.uid(),
             "ports": {
                 "input": self.inport.name if self.inport else None,

@@ -88,7 +88,7 @@ class RandomPatcher(VirtualDevice):
         for device in all_devices():
             if device.__class__ in [TrevorBus]:
                 continue
-            all_parameters.extend((id(device), p) for p in device.all_parameters())
+            all_parameters.extend((device.uuid, p) for p in device.all_parameters())
             device.random_preset()
 
         encoded_parameters = [

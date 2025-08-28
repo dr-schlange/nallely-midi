@@ -34,10 +34,13 @@ def need_registration(cls):
 
 
 def stop_all_virtual_devices(skip_unregistered=False):
+    device = None
     for device in list(virtual_devices):
         if skip_unregistered and getattr(device, "forever", False):
             continue
         device.stop()
+    if device:
+        device._devices_count.clear()
 
 
 def stop_all_connected_devices(skip_unregistered=False, force_note_off=True):
@@ -82,7 +85,7 @@ def get_all_virtual_parameters(cls):
 def all_links() -> dict[int, "Link"]:
     links = {}
     for vdev in all_devices():
-        links.update({id(link): link for link in vdev.links_registry.values()})
+        links.update({link.uuid: link for link in vdev.links_registry.values()})
     return links
 
 

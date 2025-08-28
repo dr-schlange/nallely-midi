@@ -44,11 +44,13 @@ class Link:
         dest: (
             Int | PadOrKey | PadsOrKeysInstance | ParameterInstance | PitchwheelInstance
         ),
+        uuid: int = 0,
         bouncy: bool = False,
     ):
         self.src_feeder = src_feeder
         self.dest = dest
         self.bouncy = bouncy
+        self.uuid = uuid if uuid else id(self)
         self.__post_init__()
 
     @classmethod

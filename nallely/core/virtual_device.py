@@ -140,7 +140,7 @@ def on(
 
 
 class VirtualDevice(threading.Thread):
-    _id: dict[Type, int] = defaultdict(int)
+    _devices_count: dict[Type, int] = defaultdict(int)
     output_cv = VirtualParameter(name="output", range=(0, 127))
 
     # We use a consumer to bypass the input queue
@@ -148,12 +148,13 @@ class VirtualDevice(threading.Thread):
 
     def __new__(cls, *args, **kwargs):
         instance = super().__new__(cls)
-        instance._id[cls] += 1
-        instance._number = instance._id[cls]  # type: ignore
+        instance._devices_count[cls] += 1
+        instance._number = instance._devices_count[cls]  # type: ignore
         return instance
 
     def __init__(
         self,
+        uuid: int = 0,
         target_cycle_time: float = 0.002,
         autoconnect: bool = False,
         disable_output: bool = False,
@@ -162,6 +163,7 @@ class VirtualDevice(threading.Thread):
         from .links import Link
 
         super().__init__(daemon=True)
+        self.uuid = uuid if uuid else id(self)
         self.debug = False
         self.output = None
         virtual_devices.append(self)
@@ -681,7 +683,7 @@ class VirtualDevice(threading.Thread):
         virtual_parameters = self.all_parameters()
         config = self.current_preset()
         return {
-            "id": id(self),
+            "id": self.uuid,
             "repr": self.uid(),
             "meta": {
                 "name": self.__class__.__name__,

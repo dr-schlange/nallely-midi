@@ -22,7 +22,7 @@ class TrevorAPI:
     @staticmethod
     def get_device_instance(device_id) -> VirtualDevice | MidiDevice:
         return next(
-            (device for device in all_devices() if id(device) == int(device_id))
+            (device for device in all_devices() if device.uuid == int(device_id))
         )
 
     @classmethod

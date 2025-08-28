@@ -281,7 +281,7 @@ class TrevorBus(VirtualDevice):
         if not control:
             # If we are here, the control is not bind in the system, so we don't send updates
             return
-        current_parameter = self.cc_update_package[id(device)][device.uid()][
+        current_parameter = self.cc_update_package[device.uuid][device.uid()][
             control.section_name
         ]
         if msg.value != current_parameter[control.name]:

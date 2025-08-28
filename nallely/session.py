@@ -60,6 +60,8 @@ class Session:
                 cls = find_class(device_class_name)
                 devices = all_devices()
                 channel = device.get("channel", 0)
+                uuid = device.get("id", 0)
+                print("Force ID", uuid)
                 try:
                     autoconnect = common_port or False
                     mididev: MidiDevice = cls(
@@ -67,6 +69,8 @@ class Session:
                         channel=channel,
                         autoconnect=autoconnect,
                     )
+                    if uuid:
+                        mididev.uuid = uuid
                 except DeviceNotFound:
                     # If there is a problem we remove the auto-connection
                     diff = next(
@@ -76,10 +80,13 @@ class Session:
                     if diff:
                         diff.stop()
                     mididev = cls(channel=channel, autoconnect=False)
+                    if uuid:
+                        mididev.uuid = uuid
                     errors.append(
                         f'MIDI device ports "{common_port}" for {device_class_name} could not be found. Is your device connected or MIDI ports existing? Your device was still created, but it was not connected to any MIDI port.'
                     )
-                device_map[device["id"]] = id(mididev)
+                # device_map[device["id"]] = id(mididev)
+                device_map[device["id"]] = mididev.uuid
                 if self.trevor_bus:
                     mididev.on_midi_message = self.trevor_bus.send_control_value_update
                 mididev.load_preset(dct=device["config"])
@@ -95,10 +102,16 @@ class Session:
                 continue
             try:
                 cls = find_class(cls_name)
+                uuid = device.get("id", 0)
+
                 vdev: VirtualDevice = cls()
+                if uuid:
+                    vdev.uuid = uuid
+                print("Force ID", uuid, vdev.uuid)
                 if self.trevor_bus:
                     vdev.to_update = self.trevor_bus  # type: ignore
-                device_map[device["id"]] = id(vdev)
+                # device_map[device["id"]] = id(vdev)
+                device_map[device["id"]] = vdev.uuid
                 if device.get("running", False):
                     vdev.start()  # We start the device
                     vdev.pause()  # We pause it right away before we do the patch
@@ -123,12 +136,12 @@ class Session:
             dest_param = dest["parameter"]
             if not src_device:
                 errors.append(
-                    f"Dangling reference: Device with id {src_device} couldn't been found, skipping the patch between {src_param} -> {dest_param}"
+                    f"Dangling reference: Source device with id {src_device} couldn't been found, skipping the patch between {src_param} -> {dest_param}"
                 )
                 continue
             if not dest_device:
                 errors.append(
-                    f"Dangling reference: Device with id {src_device} couldn't been found, skipping the patch between {src_param} -> {dest_param}"
+                    f"Dangling reference: Destination device with id {src_device} couldn't been found, skipping the patch between {src_param} -> {dest_param}"
                 )
                 continue
             if src_param.get("mode") == "note":
@@ -161,6 +174,9 @@ class Session:
                 src_path, dest_path, with_scaler=with_chain
             )
             if link:
+                uuid = serialized_link.get("id", 0)
+                if uuid:
+                    link.uuid = uuid
                 # If the above condition is false (we are *not* in this if), we are in probably in a case when reloading,
                 # the websocket bus is not fully initialized
                 # i.e: it doesn't have all the services from before registered yet (they are in waiting room)
@@ -202,8 +218,10 @@ class Session:
             if scaler is None:
                 return None
             return {
-                "id": id(scaler),
-                "device": id(scaler.data.device),
+                "id": id(
+                    scaler
+                ),  # Scaler doesn't need to have an enforced UUID at the moment
+                "device": scaler.data.device.uuid,
                 "to_min": scaler.to_min,
                 "to_max": scaler.to_max,
                 "auto": scaler.auto,
@@ -238,9 +256,9 @@ class Session:
 
                 connections.append(
                     {
-                        "id": id(link),
+                        "id": link.uuid,
                         "src": {
-                            "device": id(link.src.device),
+                            "device": link.src.device.uuid,
                             "repr": link.src.device.uid(),
                             "parameter": from_,
                             "explicit": src.cc_note,
@@ -252,7 +270,7 @@ class Session:
                             ),
                         },
                         "dest": {
-                            "device": id(link.dest.device),
+                            "device": link.dest.device.uuid,
                             "repr": link.dest.device.uid(),
                             "parameter": to_,
                             "explicit": src.cc_note,
