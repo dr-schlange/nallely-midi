@@ -126,7 +126,7 @@ class Comparator(VirtualDevice):
     a_cv = VirtualParameter(name="a", range=(None, None))
     b_cv = VirtualParameter(name="b", range=(None, None))
     comparator_cv = VirtualParameter(
-        name="comparator", accepted_values=("=", ">", ">=", "<", "<=", "!=")
+        name="comparator", accepted_values=("=", ">", ">=", "<", "<=", "<>")
     )
     type_cv = VirtualParameter(name="type", accepted_values=("ondemand", "continuous"))
 
