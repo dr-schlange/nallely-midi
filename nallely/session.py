@@ -61,7 +61,6 @@ class Session:
                 devices = all_devices()
                 channel = device.get("channel", 0)
                 uuid = device.get("id", 0)
-                print("Force ID", uuid)
                 try:
                     autoconnect = common_port or False
                     mididev: MidiDevice = cls(
@@ -107,7 +106,6 @@ class Session:
                 vdev: VirtualDevice = cls()
                 if uuid:
                     vdev.uuid = uuid
-                print("Force ID", uuid, vdev.uuid)
                 if self.trevor_bus:
                     vdev.to_update = self.trevor_bus  # type: ignore
                 # device_map[device["id"]] = id(vdev)

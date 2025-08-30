@@ -134,3 +134,20 @@ class ThreadSafeDefaultDict(collections.defaultdict):
     def __contains__(self, key):
         with self._lock:
             return super().__contains__(key)
+
+
+def force_off_everywhere(times=2, verbose=False):
+    import mido
+
+    for port in mido.get_output_names():
+        outport = mido.open_output(port, autoreset=True)
+        if verbose:
+            print(f" - port {port}, forcing note off on all channels...", end="")
+        for channel in range(16):
+            for _ in range(times + 1):
+                for note in range(0, 128):
+                    outport.send(
+                        mido.Message("note_off", channel=channel, note=note, velocity=0)
+                    )
+        if verbose:
+            print("[OK]")
