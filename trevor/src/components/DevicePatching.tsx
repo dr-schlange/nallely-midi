@@ -754,25 +754,27 @@ const DevicePatching = () => {
 		MidiDeviceWithSection | VirtualDeviceWithSection | undefined
 	>(undefined);
 	const handleSettingsClick = (
-		device: MidiDeviceWithSection | VirtualDeviceWithSection,
+		deviceSection: MidiDeviceWithSection | VirtualDeviceWithSection,
 	) => {
 		if (
 			isExpanded &&
-			displayedSection?.device.id === device.device.id &&
-			displayedSection?.section.name === device.section.name
+			displayedSection?.device.id === deviceSection.device.id &&
+			displayedSection?.section.name === deviceSection.section.name
 		) {
 			setIsExpanded(false);
 			setInformation(undefined);
 			setDisplayedSection(undefined);
+			setCurrentSelected(undefined);
 			return;
 		}
 		setIsExpanded(true);
-		setDisplayedSection(device);
+		setDisplayedSection(deviceSection);
+		setCurrentSelected(deviceSection.device.id);
 		updateInfo(
-			device.device,
-			isVirtualDevice(device.device)
+			deviceSection.device,
+			isVirtualDevice(deviceSection.device)
 				? undefined
-				: (device.section as MidiDeviceSection),
+				: (deviceSection.section as MidiDeviceSection),
 		);
 	};
 
@@ -1011,6 +1013,7 @@ const DevicePatching = () => {
 							return;
 						}
 						setDisplayedSection(deviceSection);
+						setCurrentSelected(deviceSection.device.id);
 						updateInfo(
 							deviceSection.device,
 							isVirtualDevice(deviceSection.device)
