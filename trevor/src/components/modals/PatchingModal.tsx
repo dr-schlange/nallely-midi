@@ -447,29 +447,33 @@ const PatchingModal = ({
 					}}
 				>
 					{allSections.map((s) => {
-						const links = allConnections.filter(
+						const incomingLinks = allConnections.filter(
 							(c) =>
-								(c.src.device === otherSection.device.id &&
-									c.src.parameter.section_name ===
-										internalSectionName(otherSection.section) &&
-									c.dest.parameter.section_name ===
-										internalSectionName(s.section) &&
-									c.dest.device === s.device.id) ||
-								(c.dest.device === otherSection.device.id &&
-									c.dest.parameter.section_name ===
-										internalSectionName(otherSection.section) &&
-									c.src.parameter.section_name ===
-										internalSectionName(s.section) &&
-									c.src.device === s.device.id),
+								c.src.device === otherSection.device.id &&
+								c.src.parameter.section_name ===
+									internalSectionName(otherSection.section) &&
+								c.dest.parameter.section_name ===
+									internalSectionName(s.section) &&
+								c.dest.device === s.device.id,
 						);
+						const outgoingLinks = allConnections.filter(
+							(c) =>
+								c.dest.device === otherSection.device.id &&
+								c.dest.parameter.section_name ===
+									internalSectionName(otherSection.section) &&
+								c.src.parameter.section_name ===
+									internalSectionName(s.section) &&
+								c.src.device === s.device.id,
+						);
+						const linkNumbers = incomingLinks.length + outgoingLinks.length;
 						return (
 							<option
 								key={`${s.device.id}::${s.section.name}`}
 								value={`${s.device.id}::${s.section.name}`}
 							>
 								{s.section.name
-									? `${s.device.repr} - ${s.section.name} ${links.length > 0 ? `[*]` : ""}`
-									: `${s.device.repr} ${links.length > 0 ? `[*]` : ""}`}
+									? `${s.device.repr} - ${s.section.name} ${linkNumbers > 0 ? `[in${incomingLinks.length}-out${outgoingLinks.length}]` : ""}`
+									: `${s.device.repr} ${linkNumbers > 0 ? `[in${incomingLinks.length}-out${outgoingLinks.length}]` : ""}`}
 							</option>
 						);
 					})}
