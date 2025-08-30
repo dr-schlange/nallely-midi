@@ -97,56 +97,57 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 		};
 
 		return (
-			<DndContext
-				sensors={sensors}
-				collisionDetection={closestCenter}
-				onDragEnd={handleDragEnd}
-				modifiers={[
-					horizontal ? restrictToHorizontalAxis : restrictToVerticalAxis,
-				]}
+			<div
+				className={`rack-row ${horizontal ? "horizontal" : ""}`}
+				onScroll={() => onRackScroll?.()}
 			>
-				<SortableContext
-					items={widgets.map((w) => w.id)}
-					strategy={
-						horizontal
-							? horizontalListSortingStrategy
-							: verticalListSortingStrategy
-					}
+				<select
+					value={""}
+					title="Adds a new widget to the system"
+					onChange={(e) => {
+						const val = e.target.value;
+						if (val && WidgetComponents[val]) {
+							addWidget(WidgetComponents[val], val);
+						}
+					}}
 				>
-					<div
-						className={`rack-row ${horizontal ? "horizontal" : ""}`}
-						onScroll={() => onRackScroll?.()}
+					<option value={""}>--</option>
+					{Object.keys(WidgetComponents).map((name) => (
+						<option key={name} value={name}>
+							{name}
+						</option>
+					))}
+				</select>
+				<DndContext
+					sensors={sensors}
+					collisionDetection={closestCenter}
+					onDragEnd={handleDragEnd}
+					modifiers={[
+						horizontal ? restrictToHorizontalAxis : restrictToVerticalAxis,
+					]}
+				>
+					<SortableContext
+						items={widgets.map((w) => w.id)}
+						strategy={
+							horizontal
+								? horizontalListSortingStrategy
+								: verticalListSortingStrategy
+						}
 					>
-						<select
-							value={""}
-							title="Adds a new widget to the system"
-							onChange={(e) => {
-								const val = e.target.value;
-								if (val && WidgetComponents[val]) {
-									addWidget(WidgetComponents[val], val);
-								}
-							}}
-						>
-							<option value={""}>--</option>
-							{Object.keys(WidgetComponents).map((name) => (
-								<option key={name} value={name}>
-									{name}
-								</option>
+						<div className={"inner-rack-row"} onScroll={() => onRackScroll?.()}>
+							{widgets.map(({ id, num, component: Widget }) => (
+								<SortableWidget key={id} id={id}>
+									<Widget id={id} num={num} onClose={closeWidget} />
+								</SortableWidget>
 							))}
-						</select>
 
-						{widgets.map(({ id, num, component: Widget }) => (
-							<SortableWidget key={id} id={id}>
-								<Widget id={id} num={num} onClose={closeWidget} />
-							</SortableWidget>
-						))}
-
-						{widgets.length === 0 && (
-							<p style={{ color: "#808080" }}>Widgets</p>
-						)}
-					</div>
-				</SortableContext>
-			</DndContext>
+							{widgets.length === 0 && (
+								<p style={{ color: "#808080" }}>Widgets</p>
+							)}
+						</div>
+					</SortableContext>
+				</DndContext>
+			</div>
 		);
 	},
 );

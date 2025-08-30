@@ -440,6 +440,15 @@ input[type="text"]:disabled {
 	min-width: 200px;
 }
 
+.inner-rack-row {
+	display: inherit;
+	align-items: inherit;
+	justify-content: flex-start;
+	overflow-x: inherit;
+	gap: inherit;
+	flex-direction: inherit;
+}
+
 .rack-row[data-slot]:hover {
 	background-color: #d0d0d0; /* Highlight slot during drag-over */
 	border: 2px dashed #808080; /* Dashed border for drop area */

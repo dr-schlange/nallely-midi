@@ -88,65 +88,67 @@ export const RackRowVirtual = ({
 	}, [devices]);
 
 	return (
-		<DndContext
-			sensors={sensors}
-			collisionDetection={closestCenter}
-			onDragEnd={handleDragEnd}
-			onDragMove={onSectionScroll}
-			modifiers={[
-				horizontal ? restrictToHorizontalAxis : restrictToVerticalAxis,
-				restrictToParentElement,
-			]}
+		<div
+			className={`rack-row ${horizontal ? "horizontal" : ""}`}
+			onScroll={() => onSectionScroll()}
+			onClick={(event) => {
+				if (
+					!(event.target as HTMLElement).classList.contains(
+						"rack-section-box",
+					) &&
+					!(event.target as HTMLElement).classList.contains("rack-section-name")
+				) {
+					onNonSectionClick();
+				}
+			}}
 		>
-			<SortableContext items={localDeviceOrder.map((d) => d.id)}>
-				{/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
-				<div
-					className={`rack-row ${horizontal ? "horizontal" : ""}`}
-					onScroll={() => onSectionScroll()}
-					onClick={(event) => {
-						if (
-							!(event.target as HTMLElement).classList.contains(
-								"rack-section-box",
-							) &&
-							!(event.target as HTMLElement).classList.contains(
-								"rack-section-name",
-							)
-						) {
-							onNonSectionClick();
-						}
-					}}
-				>
-					<select
-						value={""}
-						title="Adds a virtual device to the system"
-						onChange={(e) => {
-							const val = e.target.value;
-							handleDeviceClassClick(val);
-						}}
+			<select
+				value={""}
+				title="Adds a virtual device to the system"
+				onChange={(e) => {
+					const val = e.target.value;
+					handleDeviceClassClick(val);
+				}}
+			>
+				<option value={""}>--</option>
+				{virtualClasses.map((cls) => (
+					<option key={cls} value={cls}>
+						{cls}
+					</option>
+				))}
+			</select>
+			<DndContext
+				sensors={sensors}
+				collisionDetection={closestCenter}
+				onDragEnd={handleDragEnd}
+				onDragMove={onSectionScroll}
+				modifiers={[
+					horizontal ? restrictToHorizontalAxis : restrictToVerticalAxis,
+					restrictToParentElement,
+				]}
+			>
+				<SortableContext items={localDeviceOrder.map((d) => d.id)}>
+					<div
+						className={"inner-rack-row"}
+						onScroll={() => onSectionScroll?.()}
 					>
-						<option value={""}>--</option>
-						{virtualClasses.map((cls) => (
-							<option key={cls} value={cls}>
-								{cls}
-							</option>
+						{localDeviceOrder.map((device, i) => (
+							<SortableVirtualDeviceComponent
+								key={device.id}
+								device={device}
+								onParameterClick={(device) => onParameterClick(device)}
+								onDeviceClick={(device) => onParameterClick(device)}
+								selectedSections={selectedSections}
+								onSectionScroll={onSectionScroll}
+							/>
 						))}
-					</select>
-					{localDeviceOrder.map((device, i) => (
-						<SortableVirtualDeviceComponent
-							key={device.id}
-							device={device}
-							onParameterClick={(device) => onParameterClick(device)}
-							onDeviceClick={(device) => onParameterClick(device)}
-							selectedSections={selectedSections}
-							onSectionScroll={onSectionScroll}
-						/>
-					))}
-					{devices.length === 0 && (
-						<p style={{ color: "#808080" }}>Virtual devices</p>
-					)}
-				</div>
-			</SortableContext>
-		</DndContext>
+						{devices.length === 0 && (
+							<p style={{ color: "#808080" }}>Virtual devices</p>
+						)}
+					</div>
+				</SortableContext>
+			</DndContext>
+		</div>
 	);
 };
 

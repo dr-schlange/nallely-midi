@@ -88,67 +88,68 @@ export const RackRow = ({
 	}, [devices]);
 
 	return (
-		<DndContext
-			sensors={sensors}
-			collisionDetection={closestCenter}
-			onDragEnd={handleDragEnd}
-			onDragMove={onSectionScroll}
-			modifiers={[
-				horizontal ? restrictToHorizontalAxis : restrictToVerticalAxis,
-				restrictToParentElement,
-			]}
+		<div
+			className={`rack-row ${horizontal ? "horizontal" : ""}`}
+			onScroll={() => onSectionScroll?.()}
+			onClick={(event) => {
+				if (
+					!(event.target as HTMLElement).classList.contains(
+						"rack-section-box",
+					) &&
+					!(event.target as HTMLElement).classList.contains("rack-section-name")
+				) {
+					onNonSectionClick();
+				}
+			}}
 		>
-			<SortableContext items={localDeviceOrder.map((d) => d.id)}>
-				{/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
-				<div
-					className={`rack-row ${horizontal ? "horizontal" : ""}`}
-					onScroll={() => onSectionScroll?.()}
-					onClick={(event) => {
-						if (
-							!(event.target as HTMLElement).classList.contains(
-								"rack-section-box",
-							) &&
-							!(event.target as HTMLElement).classList.contains(
-								"rack-section-name",
-							)
-						) {
-							onNonSectionClick();
-						}
-					}}
-				>
-					<select
-						value=""
-						title="Adds a MIDI device to the system"
-						onChange={(e) => {
-							const val = e.target.value;
-							if (val) handleDeviceClassClick(val);
-						}}
+			<select
+				value=""
+				title="Adds a MIDI device to the system"
+				onChange={(e) => {
+					const val = e.target.value;
+					if (val) handleDeviceClassClick(val);
+				}}
+			>
+				<option value="">--</option>
+				{midiClasses.map((cls) => (
+					<option key={cls} value={cls}>
+						{cls}
+					</option>
+				))}
+			</select>
+			<DndContext
+				sensors={sensors}
+				collisionDetection={closestCenter}
+				onDragEnd={handleDragEnd}
+				onDragMove={onSectionScroll}
+				modifiers={[
+					horizontal ? restrictToHorizontalAxis : restrictToVerticalAxis,
+					restrictToParentElement,
+				]}
+			>
+				<SortableContext items={localDeviceOrder.map((d) => d.id)}>
+					<div
+						className={"inner-rack-row"}
+						onScroll={() => onSectionScroll?.()}
 					>
-						<option value="">--</option>
-						{midiClasses.map((cls) => (
-							<option key={cls} value={cls}>
-								{cls}
-							</option>
+						{localDeviceOrder.map((device) => (
+							<SortableComponent
+								component={MidiDeviceComponent}
+								key={device.id}
+								device={device}
+								onSectionClick={(section) => onSectionClick(device, section)}
+								selectedSections={selectedSections}
+								onDeviceClick={onDeviceClick}
+							/>
 						))}
-					</select>
 
-					{localDeviceOrder.map((device) => (
-						<SortableComponent
-							component={MidiDeviceComponent}
-							key={device.id}
-							device={device}
-							onSectionClick={(section) => onSectionClick(device, section)}
-							selectedSections={selectedSections}
-							onDeviceClick={onDeviceClick}
-						/>
-					))}
-
-					{localDeviceOrder.length === 0 && (
-						<p style={{ color: "#808080" }}>MIDI devices</p>
-					)}
-				</div>
-			</SortableContext>
-		</DndContext>
+						{localDeviceOrder.length === 0 && (
+							<p style={{ color: "#808080" }}>MIDI devices</p>
+						)}
+					</div>
+				</SortableContext>
+			</DndContext>
+		</div>
 	);
 };
 
