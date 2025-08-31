@@ -38,6 +38,24 @@ export const ScalerForm = ({ connection }: ScalerFormProps) => {
 			<label>
 				<input
 					type="checkbox"
+					checked={connection.muted}
+					onChange={(e) => {
+						const src = connection.src;
+						const dst = connection.dest;
+						trevorSocket?.muteLink(
+							src.device,
+							src.parameter,
+							dst.device,
+							dst.parameter,
+							e.target.checked,
+						);
+					}}
+				/>
+				Mute
+			</label>
+			<label>
+				<input
+					type="checkbox"
 					checked={connection.bouncy}
 					onChange={(e) => {
 						const src = connection.src;

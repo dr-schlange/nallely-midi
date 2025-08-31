@@ -294,6 +294,29 @@ class TrevorWebSocket {
 		});
 	}
 
+	muteLink(
+		fromDevice: MidiDevice | VirtualDevice | number,
+		fromParameter: MidiParameter | VirtualParameter,
+		toDevice: MidiDevice | VirtualDevice | number,
+		toParameter: MidiParameter | VirtualParameter,
+		muted: boolean,
+	) {
+		const srcId = typeof fromDevice === "number" ? fromDevice : fromDevice.id;
+		const dstId = typeof toDevice === "number" ? toDevice : toDevice.id;
+		const fromP = isVirtualParameter(fromParameter)
+			? fromParameter.cv_name
+			: fromParameter.name;
+		const toP = isVirtualParameter(toParameter)
+			? toParameter.cv_name
+			: toParameter.name;
+		this.sendJsonMessage({
+			command: "mute_link",
+			from_parameter: `${srcId}::${fromParameter.section_name}::${fromP}`,
+			to_parameter: `${dstId}::${toParameter.section_name}::${toP}`,
+			muted,
+		});
+	}
+
 	associatePort(device: MidiDevice, port: string, direction: string) {
 		this.sendJsonMessage({
 			command: "associate_midi_port",

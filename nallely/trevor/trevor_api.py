@@ -91,6 +91,15 @@ class TrevorAPI:
         if link:
             link.bouncy = bouncy
 
+    def mute_link(self, from_parameter, to_parameter, muted):
+        from_device, _, _ = from_parameter.split("::")
+
+        src_device = self.get_device_instance(from_device)
+
+        link = src_device.links_registry.get((from_parameter, to_parameter))
+        if link:
+            link.muted = muted
+
     def reset_all(self, skip_unregistered=True):
         stop_all_connected_devices(skip_unregistered)
 

@@ -327,6 +327,10 @@ class TrevorBus(VirtualDevice):
         self.trevor.make_link_bouncy(from_parameter, to_parameter, bouncy)
         return self.full_state()
 
+    def mute_link(self, from_parameter, to_parameter, muted):
+        self.trevor.mute_link(from_parameter, to_parameter, muted)
+        return self.full_state()
+
     def reset_all(self):
         self.trevor.reset_all()
         return self.full_state()

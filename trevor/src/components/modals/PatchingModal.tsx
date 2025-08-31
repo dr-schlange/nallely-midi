@@ -296,7 +296,7 @@ const PatchingModal = ({
 				fromElement,
 				toElement,
 				connectionId(connection) === selectedConnection,
-				connection.bouncy,
+				{ bouncy: connection.bouncy, muted: connection.muted },
 				connection.id,
 				(event) => {
 					const x = event.clientX;

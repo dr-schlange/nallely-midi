@@ -45,7 +45,7 @@ export const drawConnection = (
 	fromElement: Element | null,
 	toElement: Element | null,
 	selected = false,
-	bouncy = false,
+	opts = { bouncy: false, muted: false },
 	linkId?: number | undefined,
 	clickHandler?: (event: MouseEvent) => void,
 	setMouseInteracting?: (value: boolean) => void,
@@ -98,6 +98,7 @@ export const drawConnection = (
 			strokeOpacity: string;
 			pointerEvents?: string;
 			markerEnd?: string;
+			dashed?: boolean;
 		},
 	) => {
 		const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
@@ -108,6 +109,9 @@ export const drawConnection = (
 		line.setAttribute("stroke", options.stroke);
 		line.setAttribute("stroke-width", options.strokeWidth.toString());
 		line.setAttribute("stroke-opacity", options.strokeOpacity);
+		if (options.dashed) {
+			line.setAttribute("stroke-dasharray", "5, 5");
+		}
 		if (options.pointerEvents) {
 			line.setAttribute("pointer-events", options.pointerEvents);
 		}
@@ -119,10 +123,10 @@ export const drawConnection = (
 	};
 
 	// Draw actual visible line
-	const color = selected ? "blue" : bouncy ? "green" : "gray";
+	const color = selected ? "blue" : opts.bouncy ? "green" : "gray";
 	const marker = selected
 		? "url(#selected-retro-arrowhead)"
-		: bouncy
+		: opts.bouncy
 			? "url(#bouncy-retro-arrowhead)"
 			: "url(#retro-arrowhead)";
 
@@ -131,6 +135,7 @@ export const drawConnection = (
 		strokeWidth: selected ? 2.5 : 2,
 		strokeOpacity: "1",
 		markerEnd: marker,
+		dashed: opts.muted,
 	});
 
 	// Append visible line first, then hit line on top for click handling

@@ -634,7 +634,7 @@ const DevicePatching = () => {
 							connectionRepr.includes(
 								`-${firstSelected?.device.id}::${firstSelectedSection}`,
 							))),
-				connection.bouncy,
+				{ bouncy: connection.bouncy, muted: connection.muted },
 				connection.id,
 			);
 		}
