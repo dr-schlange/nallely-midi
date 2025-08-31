@@ -82,15 +82,15 @@ export const SaveModal = ({ onClose }: SaveModalProps) => {
 						/>
 					</label>
 					<Button
-						text="+"
-						tooltip="decrement file name"
-						onClick={incrementFilename}
-						variant="big"
-					/>
-					<Button
 						text="-"
 						tooltip="increment file name"
 						onClick={decrementFilename}
+						variant="big"
+					/>
+					<Button
+						text="+"
+						tooltip="decrement file name"
+						onClick={incrementFilename}
 						variant="big"
 					/>
 				</div>
