@@ -196,7 +196,7 @@ export const Scope = ({ id, onClose, num }: WidgetProps) => {
 			if (isUnmounted.current) return;
 
 			const ws = new WebSocket(
-				`ws://${window.location.hostname}:6789/scope${num}/autoconfig`,
+				`ws://${window.location.hostname}:6789/${id}/autoconfig`,
 			);
 			wsRef.current = ws;
 

@@ -1,4 +1,4 @@
-import { forwardRef, useImperativeHandle, useState } from "react";
+import { forwardRef, ReactElement, useImperativeHandle, useState } from "react";
 import { Scope } from "./widgets/Oscilloscope";
 import { XYScope } from "./widgets/XYScope";
 import { XYZScope } from "./widgets/XYZScope";
@@ -7,6 +7,7 @@ interface WidgetRackProps {
 	onRackScroll?: () => void;
 	onDragEnd?: () => void;
 	horizontal?: boolean;
+	onAddWidget?: (id: string, component: ReactElement) => void;
 }
 
 export interface RackRowWidgetRef {
@@ -39,7 +40,10 @@ const findFirstMissingValue = (arr: number[]): number => {
 };
 
 export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
-	({ onRackScroll, onDragEnd, horizontal }: WidgetRackProps, ref) => {
+	(
+		{ onRackScroll, onDragEnd, horizontal, onAddWidget }: WidgetRackProps,
+		ref,
+	) => {
 		const [widgets, setWidgets] = useState<
 			{ num: number; id: string; type: string; component: React.FC<any> }[]
 		>([]);
@@ -59,10 +63,14 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 					.filter((w) => w.type === widgetType)
 					.map((w) => w.num);
 				const nextId = findFirstMissingValue(idsUsed);
+				const widgetId = `${widgetType}::${nextId}`;
+				setTimeout(() => {
+					onAddWidget?.(widgetId, Component);
+				}, 10);
 				return [
 					...oldWidgets,
 					{
-						id: `${widgetType}::${nextId}`,
+						id: widgetId,
 						num: nextId,
 						type: widgetType,
 						component: Component,
@@ -93,7 +101,12 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 			}, 10);
 		};
 		const closeWidget = (id: string) => {
-			setWidgets((prev) => prev.filter((w) => w.id !== id));
+			setWidgets((prev) =>
+				prev.filter((w) => w.id !== id && w.id.replace("::", "") !== id),
+			);
+			setTimeout(() => {
+				onDragEnd?.();
+			}, 10);
 		};
 
 		return (
@@ -107,7 +120,7 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 					onChange={(e) => {
 						const val = e.target.value;
 						if (val && WidgetComponents[val]) {
-							addWidget(WidgetComponents[val], val);
+							addWidget(WidgetComponents[val], val.toLocaleLowerCase());
 						}
 					}}
 				>
@@ -122,6 +135,7 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 					sensors={sensors}
 					collisionDetection={closestCenter}
 					onDragEnd={handleDragEnd}
+					onDragMove={onRackScroll}
 					modifiers={[
 						horizontal ? restrictToHorizontalAxis : restrictToVerticalAxis,
 					]}
@@ -137,7 +151,11 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 						<div className={"inner-rack-row"} onScroll={() => onRackScroll?.()}>
 							{widgets.map(({ id, num, component: Widget }) => (
 								<SortableWidget key={id} id={id}>
-									<Widget id={id} num={num} onClose={closeWidget} />
+									<Widget
+										id={id.replace("::", "")}
+										num={num}
+										onClose={closeWidget}
+									/>
 								</SortableWidget>
 							))}
 
@@ -190,7 +208,7 @@ const SortableWidget = ({
 	} as const satisfies React.CSSProperties;
 
 	return (
-		<div ref={setNodeRef} style={style} id={id}>
+		<div ref={setNodeRef} style={style} id={id.replace("::", "")}>
 			<div
 				{...attributes}
 				{...listeners}

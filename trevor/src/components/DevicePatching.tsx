@@ -622,21 +622,43 @@ const DevicePatching = () => {
 				firstSelected?.section.parameters[0]?.section_name ||
 				firstSelected?.section.pads_or_keys?.section_name;
 			const connectionRepr = connectionId(connection);
+			const highlighted =
+				connectionRepr === selectedConnection ||
+				(highlightConnected &&
+					(connectionRepr.startsWith(
+						`${firstSelected?.device.id}::${firstSelectedSection}`,
+					) ||
+						connectionRepr.includes(
+							`-${firstSelected?.device.id}::${firstSelectedSection}`,
+						)));
 			drawConnection(
 				svg,
 				fromElement,
 				toElement,
-				connectionRepr === selectedConnection ||
-					(highlightConnected &&
-						(connectionRepr.startsWith(
-							`${firstSelected?.device.id}::${firstSelectedSection}`,
-						) ||
-							connectionRepr.includes(
-								`-${firstSelected?.device.id}::${firstSelectedSection}`,
-							))),
+				highlighted,
 				{ bouncy: connection.bouncy, muted: connection.muted },
 				connection.id,
 			);
+
+			// specific code to draw connections with the widgets (scopes, etc)
+			if (connection.src.repr.includes("WebSocketBus")) {
+				const port = (connection.src.parameter as VirtualParameter).cv_name;
+				const widgetId = port.split(/_/)[0];
+				const widgetTarget = document.querySelector(`[id="${widgetId}"]`);
+				drawConnection(svg, widgetTarget, fromElement, highlighted, {
+					bouncy: false,
+					muted: true,
+				});
+			}
+			if (connection.dest.repr.includes("WebSocketBus")) {
+				const port = (connection.dest.parameter as VirtualParameter).cv_name;
+				const widgetId = port.split(/_/)[0];
+				const widgetTarget = document.querySelector(`[id="${widgetId}"]`);
+				drawConnection(svg, toElement, widgetTarget, highlighted, {
+					bouncy: false,
+					muted: true,
+				});
+			}
 		}
 	};
 
@@ -818,8 +840,10 @@ const DevicePatching = () => {
 				/>
 				<RackRowWidgets
 					ref={widgetRack}
+					onAddWidget={updateConnections}
 					horizontal={orientation === HORIZONTAL}
 					onDragEnd={updateConnections}
+					onRackScroll={updateConnections}
 				/>
 				<svg
 					className={`device-patching-svg ${orientation === HORIZONTAL ? "horizontal" : ""}`}
