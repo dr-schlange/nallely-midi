@@ -62,6 +62,7 @@ export interface MidiConnection {
 	src: MidiConnectionEnd;
 	dest: MidiConnectionEnd;
 	bouncy: boolean;
+	muted: boolean;
 	id: number;
 }
 

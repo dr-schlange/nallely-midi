@@ -26,8 +26,8 @@ export const ScalerForm = ({ connection }: ScalerFormProps) => {
 	}, [connection]);
 
 	const switchMinMax = () => {
-		trevorSocket?.setScalerValue(scalerId!, "to_min", max);
-		trevorSocket?.setScalerValue(scalerId!, "to_max", min);
+		trevorSocket?.setScalerValue(scalerId, "to_min", max);
+		trevorSocket?.setScalerValue(scalerId, "to_max", min);
 		setMax(min);
 		setMin(max);
 	};
@@ -89,7 +89,7 @@ export const ScalerForm = ({ connection }: ScalerFormProps) => {
 						onChange={(val) => setMin(val)}
 						onBlur={(val) =>
 							trevorSocket?.setScalerValue(
-								scalerId!,
+								scalerId,
 								"to_min",
 								Number.parseFloat(val),
 							)
@@ -125,7 +125,7 @@ export const ScalerForm = ({ connection }: ScalerFormProps) => {
 						onChange={(val) => setMax(val)}
 						onBlur={(val) =>
 							trevorSocket?.setScalerValue(
-								scalerId!,
+								scalerId,
 								"to_max",
 								Number.parseFloat(val),
 							)
@@ -141,7 +141,7 @@ export const ScalerForm = ({ connection }: ScalerFormProps) => {
 					onChange={(e) => {
 						const val = e.target.value;
 						setMethod(val);
-						trevorSocket?.setScalerValue(scalerId!, "method", val);
+						trevorSocket?.setScalerValue(scalerId, "method", val);
 					}}
 				>
 					<option value="lin">Lin</option>
@@ -156,7 +156,7 @@ export const ScalerForm = ({ connection }: ScalerFormProps) => {
 					onChange={(e) => {
 						const value = e.target.checked;
 						setAsInt(value);
-						trevorSocket?.setScalerValue(scalerId!, "as_int", value);
+						trevorSocket?.setScalerValue(scalerId, "as_int", value);
 					}}
 				/>
 				As integer

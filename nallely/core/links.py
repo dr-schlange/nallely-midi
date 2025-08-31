@@ -1,6 +1,7 @@
-from dataclasses import dataclass
+from dataclasses import asdict
 from typing import cast
 
+from ..utils import get_note_name
 from .parameter_instances import (
     Int,
     PadOrKey,
@@ -46,11 +47,13 @@ class Link:
         ),
         uuid: int = 0,
         bouncy: bool = False,
+        muted: bool = False,
     ):
         self.src_feeder = src_feeder
         self.dest = dest
         self.bouncy = bouncy
         self.uuid = uuid if uuid else id(self)
+        self.muted = muted
         self.__post_init__()
 
     @classmethod
@@ -87,6 +90,8 @@ class Link:
         self.cleanup_callback()
 
     def trigger(self, value, ctx):
+        if self.muted:
+            return
         assert self.callback
         ctx.raw_value = value
         if self.chain:
@@ -115,6 +120,65 @@ class Link:
     #         if prop.parameter.channel is not None
     #         else prop.device.channel
     #     )
+
+    def to_dict(self):
+        src = self.src.parameter
+        if isinstance(src, PadOrKey):
+            from_ = {
+                "note": src.cc_note,
+                "type": src.type,
+                "name": get_note_name(src.cc_note),
+                "section_name": src.pads_or_keys.section_name,
+                "mode": src.mode,
+            }
+        else:
+            from_ = asdict(src)
+        dst = self.dest.parameter
+        if isinstance(dst, PadOrKey):
+            to_ = {
+                "note": dst.cc_note,
+                "type": dst.type,
+                "name": get_note_name(dst.cc_note),
+                "section_name": dst.pads_or_keys.section_name,
+                "mode": dst.mode,
+            }
+        else:
+            to_ = asdict(dst)
+        return {
+            "id": self.uuid,
+            "src": {
+                "device": self.src.device.uuid,
+                "repr": self.src.device.uid(),
+                "parameter": from_,
+                "explicit": src.cc_note,
+                "chain": self.scaler_as_dict(),
+                "type": ("virtual" if isinstance(src, VirtualParameter) else src.type),
+            },
+            "dest": {
+                "device": self.dest.device.uuid,
+                "repr": self.dest.device.uid(),
+                "parameter": to_,
+                "explicit": src.cc_note,
+                "type": ("virtual" if isinstance(dst, VirtualParameter) else dst.type),
+            },
+            "bouncy": self.bouncy,
+            "muted": self.muted,
+        }
+
+    def scaler_as_dict(self):
+        scaler = self.chain
+        if not scaler:
+            return None
+        # Scaler (chain) doesn't need to have an enforced UUID at the moment
+        return {
+            "id": id(scaler),
+            "device": self.src.device.uuid,
+            "to_min": scaler.to_min,
+            "to_max": scaler.to_max,
+            "auto": scaler.auto,
+            "method": scaler.method,
+            "as_int": scaler.as_int,
+        }
 
     def _dispatch(self, domain):
         src_cls = (

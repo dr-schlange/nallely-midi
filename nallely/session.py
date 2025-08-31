@@ -1,5 +1,4 @@
 import json
-from dataclasses import asdict
 from pathlib import Path
 
 import mido
@@ -7,7 +6,6 @@ import mido
 from .core import (
     DeviceNotFound,
     MidiDevice,
-    PadOrKey,
     VirtualDevice,
     VirtualParameter,
     all_devices,
@@ -211,77 +209,9 @@ class Session:
     @classmethod
     def all_connections_as_dict(cls):
         connections = []
-
-        def scaler_as_dict(scaler):
-            if scaler is None:
-                return None
-            return {
-                "id": id(
-                    scaler
-                ),  # Scaler doesn't need to have an enforced UUID at the moment
-                "device": scaler.data.device.uuid,
-                "to_min": scaler.to_min,
-                "to_max": scaler.to_max,
-                "auto": scaler.auto,
-                "method": scaler.method,
-                "as_int": scaler.as_int,
-            }
-
         for device in all_devices():
             for link in device.links_registry.values():
-                src = link.src.parameter
-                if isinstance(src, PadOrKey):
-                    from_ = {
-                        "note": src.cc_note,
-                        "type": src.type,
-                        "name": get_note_name(src.cc_note),
-                        "section_name": src.pads_or_keys.section_name,
-                        "mode": src.mode,
-                    }
-                else:
-                    from_ = asdict(src)
-                dst = link.dest.parameter
-                if isinstance(dst, PadOrKey):
-                    to_ = {
-                        "note": dst.cc_note,
-                        "type": dst.type,
-                        "name": get_note_name(dst.cc_note),
-                        "section_name": dst.pads_or_keys.section_name,
-                        "mode": dst.mode,
-                    }
-                else:
-                    to_ = asdict(dst)
-
-                connections.append(
-                    {
-                        "id": link.uuid,
-                        "src": {
-                            "device": link.src.device.uuid,
-                            "repr": link.src.device.uid(),
-                            "parameter": from_,
-                            "explicit": src.cc_note,
-                            "chain": scaler_as_dict(link.chain),
-                            "type": (
-                                "virtual"
-                                if isinstance(src, VirtualParameter)
-                                else src.type
-                            ),
-                        },
-                        "dest": {
-                            "device": link.dest.device.uuid,
-                            "repr": link.dest.device.uid(),
-                            "parameter": to_,
-                            "explicit": src.cc_note,
-                            "type": (
-                                "virtual"
-                                if isinstance(dst, VirtualParameter)
-                                else dst.type
-                            ),
-                        },
-                        "bouncy": link.bouncy,
-                    }
-                )
-
+                connections.append(link.to_dict())
         return connections
 
     def snapshot(self, save_defaultvalues=False):
