@@ -477,19 +477,14 @@ const PatchingModal = ({
 									internalSectionName(s.section) &&
 								c.src.device === s.device.id,
 						);
-						// const linkNumbers = incomingLinks.length + outgoingLinks.length;
-						// let linkageStatus = `[⭨${allIncoming.length}-⭧${allOutgoing.length}]`;
-						let linkageStatus = `⭨${allIncoming.length}`;
+						let linkageStatus = `⬊${allIncoming.length}`;
 						if (incomingLinks.length > 0) {
 							linkageStatus += `(${incomingLinks.length})`;
 						}
-						linkageStatus += `-⭧${allOutgoing.length}`;
+						linkageStatus += `-⬈${allOutgoing.length}`;
 						if (outgoingLinks.length > 0) {
 							linkageStatus += `(${outgoingLinks.length})`;
 						}
-						// if (linkNumbers > 0) {
-						// 	linkageStatus = `[⭨${allIncoming.length}(${incomingLinks.length})-⭧${allOutgoing.length}(${outgoingLinks.length})]`;
-						// }
 
 						return (
 							<option
@@ -498,7 +493,7 @@ const PatchingModal = ({
 							>
 								{s.section.name
 									? `${s.device.repr} - ${s.section.name} [${linkageStatus}]`
-									: `${s.device.repr} ${s.section.name} [${linkageStatus}]`}
+									: `${s.device.repr} [${linkageStatus}]`}
 							</option>
 						);
 					})}
