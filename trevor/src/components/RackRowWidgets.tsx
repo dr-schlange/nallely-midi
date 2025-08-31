@@ -190,7 +190,7 @@ const SortableWidget = ({
 	} as const satisfies React.CSSProperties;
 
 	return (
-		<div ref={setNodeRef} style={style}>
+		<div ref={setNodeRef} style={style} id={id}>
 			<div
 				{...attributes}
 				{...listeners}

@@ -816,14 +816,16 @@ const DevicePatching = () => {
 					onDeviceDrop={updateConnections}
 					onDragEnd={updateConnections}
 				/>
-				<svg
-					className={`device-patching-svg ${orientation === HORIZONTAL ? "horizontal" : ""}`}
-					ref={svgRef}
-				/>
 				<RackRowWidgets
 					ref={widgetRack}
 					horizontal={orientation === HORIZONTAL}
 					onDragEnd={updateConnections}
+				/>
+				<svg
+					className={`device-patching-svg ${orientation === HORIZONTAL ? "horizontal" : ""}`}
+					ref={svgRef}
+					// width={mainSectionRef.current?.scrollWidth}
+					// height={mainSectionRef.current?.scrollHeight}
 				/>
 			</div>
 

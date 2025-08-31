@@ -1438,13 +1438,13 @@ button.active {
 	}
 
 	.device-patching-svg {
-		width: 140%;
+		width: 100%;
 		height: 100%;
 	}
 
 	.device-patching-svg.horizontal {
 		width: 100%;
-		height: 140%;
+		height: 200%;
 	}
 }
 
@@ -1629,11 +1629,13 @@ button.active {
 	}
 
 	.device-patching-svg {
-		width: 140%;
+		width: 200%;
+		height: 100%;
 	}
 
 	.device-patching-svg.horizontal {
 		width: 100%;
+		height: 100%;
 	}
 
 	.top-left-panel select,
