@@ -131,24 +131,25 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 						</option>
 					))}
 				</select>
-				<DndContext
-					sensors={sensors}
-					collisionDetection={closestCenter}
-					onDragEnd={handleDragEnd}
-					onDragMove={onRackScroll}
-					modifiers={[
-						horizontal ? restrictToHorizontalAxis : restrictToVerticalAxis,
-					]}
-				>
-					<SortableContext
-						items={widgets.map((w) => w.id)}
-						strategy={
-							horizontal
-								? horizontalListSortingStrategy
-								: verticalListSortingStrategy
-						}
+				<div className={"inner-rack-row"} onScroll={() => onRackScroll?.()}>
+					<DndContext
+						sensors={sensors}
+						collisionDetection={closestCenter}
+						onDragEnd={handleDragEnd}
+						onDragMove={onRackScroll}
+						modifiers={[
+							horizontal ? restrictToHorizontalAxis : restrictToVerticalAxis,
+							restrictToParentElement,
+						]}
 					>
-						<div className={"inner-rack-row"} onScroll={() => onRackScroll?.()}>
+						<SortableContext
+							items={widgets.map((w) => w.id)}
+							strategy={
+								horizontal
+									? horizontalListSortingStrategy
+									: verticalListSortingStrategy
+							}
+						>
 							{widgets.map(({ id, num, component: Widget }) => (
 								<SortableWidget key={id} id={id}>
 									<Widget
@@ -162,9 +163,9 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 							{widgets.length === 0 && (
 								<p style={{ color: "#808080" }}>Widgets</p>
 							)}
-						</div>
-					</SortableContext>
-				</DndContext>
+						</SortableContext>
+					</DndContext>
+				</div>
 			</div>
 		);
 	},
@@ -181,6 +182,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import {
 	restrictToHorizontalAxis,
+	restrictToParentElement,
 	restrictToVerticalAxis,
 } from "@dnd-kit/modifiers";
 import {

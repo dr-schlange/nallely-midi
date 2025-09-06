@@ -444,7 +444,7 @@ input[type="text"]:disabled {
 	display: inherit;
 	align-items: inherit;
 	justify-content: flex-start;
-	/* overflow-x: inherit; */
+	overflow-x: inherit;
 	gap: inherit;
 	flex-direction: inherit;
 }

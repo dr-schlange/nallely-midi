@@ -9,7 +9,12 @@ import {
 	useSensors,
 	PointerSensor,
 } from "@dnd-kit/core";
-import { SortableContext, arrayMove } from "@dnd-kit/sortable";
+import {
+	SortableContext,
+	arrayMove,
+	horizontalListSortingStrategy,
+	verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import { useEffect, useState } from "react";
 import { mergeDevicesPreservingOrder, saveDeviceOrder } from "../utils/utils";
 
@@ -117,20 +122,24 @@ export const RackRow = ({
 					</option>
 				))}
 			</select>
-			<DndContext
-				sensors={sensors}
-				collisionDetection={closestCenter}
-				onDragEnd={handleDragEnd}
-				onDragMove={onSectionScroll}
-				modifiers={[
-					horizontal ? restrictToHorizontalAxis : restrictToVerticalAxis,
-					restrictToParentElement,
-				]}
-			>
-				<SortableContext items={localDeviceOrder.map((d) => d.id)}>
-					<div
-						className={"inner-rack-row"}
-						onScroll={() => onSectionScroll?.()}
+			<div className={"inner-rack-row"} onScroll={() => onSectionScroll?.()}>
+				<DndContext
+					sensors={sensors}
+					collisionDetection={closestCenter}
+					onDragEnd={handleDragEnd}
+					onDragMove={onSectionScroll}
+					modifiers={[
+						horizontal ? restrictToHorizontalAxis : restrictToVerticalAxis,
+						restrictToParentElement,
+					]}
+				>
+					<SortableContext
+						items={localDeviceOrder.map((d) => d.id)}
+						strategy={
+							horizontal
+								? horizontalListSortingStrategy
+								: verticalListSortingStrategy
+						}
 					>
 						{localDeviceOrder.map((device) => (
 							<SortableComponent
@@ -146,9 +155,9 @@ export const RackRow = ({
 						{localDeviceOrder.length === 0 && (
 							<p style={{ color: "#808080" }}>MIDI devices</p>
 						)}
-					</div>
-				</SortableContext>
-			</DndContext>
+					</SortableContext>
+				</DndContext>
+			</div>
 		</div>
 	);
 };

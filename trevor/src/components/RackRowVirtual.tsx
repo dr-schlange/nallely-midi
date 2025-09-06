@@ -10,7 +10,12 @@ import {
 	useSensor,
 	useSensors,
 } from "@dnd-kit/core";
-import { arrayMove, SortableContext } from "@dnd-kit/sortable";
+import {
+	arrayMove,
+	horizontalListSortingStrategy,
+	SortableContext,
+	verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import { mergeDevicesPreservingOrder, saveDeviceOrder } from "../utils/utils";
 
 interface RackRowVirtualProps {
@@ -117,20 +122,24 @@ export const RackRowVirtual = ({
 					</option>
 				))}
 			</select>
-			<DndContext
-				sensors={sensors}
-				collisionDetection={closestCenter}
-				onDragEnd={handleDragEnd}
-				onDragMove={onSectionScroll}
-				modifiers={[
-					horizontal ? restrictToHorizontalAxis : restrictToVerticalAxis,
-					restrictToParentElement,
-				]}
-			>
-				<SortableContext items={localDeviceOrder.map((d) => d.id)}>
-					<div
-						className={"inner-rack-row"}
-						onScroll={() => onSectionScroll?.()}
+			<div className={"inner-rack-row"} onScroll={() => onSectionScroll?.()}>
+				<DndContext
+					sensors={sensors}
+					collisionDetection={closestCenter}
+					onDragEnd={handleDragEnd}
+					onDragMove={onSectionScroll}
+					modifiers={[
+						horizontal ? restrictToHorizontalAxis : restrictToVerticalAxis,
+						restrictToParentElement,
+					]}
+				>
+					<SortableContext
+						items={localDeviceOrder.map((d) => d.id)}
+						strategy={
+							horizontal
+								? horizontalListSortingStrategy
+								: verticalListSortingStrategy
+						}
 					>
 						{localDeviceOrder.map((device, i) => (
 							<SortableVirtualDeviceComponent
@@ -145,9 +154,9 @@ export const RackRowVirtual = ({
 						{devices.length === 0 && (
 							<p style={{ color: "#808080" }}>Virtual devices</p>
 						)}
-					</div>
-				</SortableContext>
-			</DndContext>
+					</SortableContext>
+				</DndContext>
+			</div>
 		</div>
 	);
 };
