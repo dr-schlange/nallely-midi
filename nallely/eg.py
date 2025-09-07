@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from nallely.core.world import ThreadContext
 
 from .core import VirtualDevice, VirtualParameter, on
@@ -238,6 +240,7 @@ class SeqSwitch(VirtualDevice):
     trigger_cv = VirtualParameter("trigger", range=(0, 127))
     reset_cv = VirtualParameter("reset", range=(0, 1))
     steps_cv = VirtualParameter("steps", range=(2, 4))
+    mode_cv = VirtualParameter("mode", accepted_values=("IOs->OI", "OI->IOs"))
 
     io4_cv = VirtualParameter("io4", range=(0, 127))
     io3_cv = VirtualParameter("io3", range=(0, 127))
@@ -253,53 +256,38 @@ class SeqSwitch(VirtualDevice):
         self.io2 = 0
         self.io3 = 0
         self.io4 = 0
-        self.mode = "1i4o"  # or "4i1o"
+        self.mode = self.mode_cv.parameter.accepted_values[0]
         self.step = 0
         self.steps = 4
         self.ios = [self.io1_cv, self.io2_cv, self.io3_cv, self.io4_cv]
         super().__init__(disable_output=True, **kwargs)
 
-    @on(oi_cv, edge="any")
-    def mode_oi(self, value, ctx):
-        self.mode = "1i4o"
-
-    @on(io1_cv, edge="any")
-    def mode_io1(self, value, ctx):
-        self.mode = "4i1o"
-
-    @on(io2_cv, edge="any")
-    def mode_io2(self, value, ctx):
-        self.mode = "4i1o"
-
-    @on(io3_cv, edge="any")
-    def mode_io3(self, value, ctx):
-        self.mode = "4i1o"
-
-    @on(io4_cv, edge="any")
-    def mode_io4(self, value, ctx):
-        self.mode = "4i1o"
+    def store_input(self, param: str, value):
+        if param == "mode" and isinstance(value, (float, int, Decimal)):
+            value = self.mode_cv.parameter.map2accepted_values(value)
+        return super().store_input(param, value)
 
     def next_step(self, _, ctx):
-        if self.mode == "1i4o":
+        if self.mode == "OI->IOs":
             yield self.oi, [self.ios[self.step]]
             prev = (self.step - 1) % self.steps
             self.step = (self.step + 1) % self.steps
-            return 0, [self.ios[prev]]
+            yield 0, [self.ios[prev]]
         else:
             value = getattr(self, self.ios[self.step].name)
             self.step = (self.step + 1) % self.steps
-            return value, [self.oi_cv]
+            yield value, [self.oi_cv]
 
     @on(trigger_cv, edge="rising")
     def trigger_next_step(self, _, ctx):
         yield from self.next_step(_, ctx)
 
     @on(reset_cv, edge="rising")
-    def reset_step(self, value, ctx):
+    def reset_step(self, _, ctx):
         self.step = 0
-        self.next_step(0, ctx)  # value is ignored in next_step
+        self.next_step(_, ctx)  # value is ignored in next_step
 
     @on(steps_cv, edge="any")
     def reset_outputs(self, value, ctx):
-        if self.mode == "1i4o":
+        if self.mode == "OI->IOs":
             return 0, self.ios

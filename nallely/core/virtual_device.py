@@ -53,7 +53,7 @@ class VirtualParameter:
             assert self.cv_name
             value.bind(getattr(device, self.cv_name))
 
-    def map2accepted_values(self, value):
+    def map2accepted_values(self, value: int | float | Decimal):
         accepted_values = self.accepted_values
         return accepted_values[int(value % len(accepted_values))]
 
