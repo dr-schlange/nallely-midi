@@ -19,7 +19,7 @@ from .core import (
     virtual_device_classes,
     virtual_devices,
 )
-from .eg import VCA, ADSREnvelope, Gate, SampleHold, Switch
+from .eg import VCA, ADSREnvelope, Gate, SampleHold, SeqSwitch, Switch
 from .lfos import LFO, Cycler
 from .shifter import Arpegiator, Looper, Modulo, PitchShifter, Quantizer, ShiftRegister
 from .websocket_bus import WebSocketBus
@@ -63,4 +63,5 @@ __all__ = [
     "FlexibleClock",
     "Clock",
     "Comparator",
+    "SeqSwitch",
 ]

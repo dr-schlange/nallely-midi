@@ -232,3 +232,74 @@ class Switch(VirtualDevice):
             if not self.hold_last:
                 yield 0, [self.outputs[old_out]]
             return self.input, [self.outputs[self.out_num]]
+
+
+class SeqSwitch(VirtualDevice):
+    trigger_cv = VirtualParameter("trigger", range=(0, 127))
+    reset_cv = VirtualParameter("reset", range=(0, 1))
+    steps_cv = VirtualParameter("steps", range=(2, 4))
+
+    io4_cv = VirtualParameter("io4", range=(0, 127))
+    io3_cv = VirtualParameter("io3", range=(0, 127))
+    io2_cv = VirtualParameter("io2", range=(0, 127))
+    io1_cv = VirtualParameter("io1", range=(0, 127))
+    oi_cv = VirtualParameter("oi", range=(0, 127))
+
+    def __init__(self, **kwargs):
+        self.oi = 0
+        self.trigger = 0
+        self.reset = 0
+        self.io1 = 0
+        self.io2 = 0
+        self.io3 = 0
+        self.io4 = 0
+        self.mode = "1i4o"  # or "4i1o"
+        self.step = 0
+        self.steps = 4
+        self.ios = [self.io1_cv, self.io2_cv, self.io3_cv, self.io4_cv]
+        super().__init__(disable_output=True, **kwargs)
+
+    @on(oi_cv, edge="any")
+    def mode_oi(self, value, ctx):
+        self.mode = "1i4o"
+
+    @on(io1_cv, edge="any")
+    def mode_io1(self, value, ctx):
+        self.mode = "4i1o"
+
+    @on(io2_cv, edge="any")
+    def mode_io2(self, value, ctx):
+        self.mode = "4i1o"
+
+    @on(io3_cv, edge="any")
+    def mode_io3(self, value, ctx):
+        self.mode = "4i1o"
+
+    @on(io4_cv, edge="any")
+    def mode_io4(self, value, ctx):
+        self.mode = "4i1o"
+
+    def next_step(self, _, ctx):
+        if self.mode == "1i4o":
+            yield self.oi, [self.ios[self.step]]
+            prev = (self.step - 1) % self.steps
+            self.step = (self.step + 1) % self.steps
+            return 0, [self.ios[prev]]
+        else:
+            value = getattr(self, self.ios[self.step].name)
+            self.step = (self.step + 1) % self.steps
+            return value, [self.oi_cv]
+
+    @on(trigger_cv, edge="rising")
+    def trigger_next_step(self, _, ctx):
+        yield from self.next_step(_, ctx)
+
+    @on(reset_cv, edge="rising")
+    def reset_step(self, value, ctx):
+        self.step = 0
+        self.next_step(0, ctx)  # value is ignored in next_step
+
+    @on(steps_cv, edge="any")
+    def reset_outputs(self, value, ctx):
+        if self.mode == "1i4o":
+            return 0, self.ios
