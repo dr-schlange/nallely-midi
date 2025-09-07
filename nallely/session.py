@@ -1,4 +1,5 @@
 import json
+from collections import Counter
 from pathlib import Path
 
 import mido
@@ -237,3 +238,19 @@ class Session:
             },
             "playground_code": self.code,
         }
+
+
+def extract_infos(filename):
+    file = Path(filename)
+    with file.open("r", encoding="utf-8") as f:
+        content = json.load(f)
+    midi_classes = Counter(dev["class"] for dev in content["midi_devices"])
+    virtual_classes_count = Counter(dev["class"] for dev in content["virtual_devices"])
+    patches = len(content["connections"])
+    playground_code = content.get("playground_code")
+    return {
+        "midi": midi_classes,
+        "virtual": virtual_classes_count,
+        "patches": patches,
+        "playground_code": bool(playground_code),
+    }

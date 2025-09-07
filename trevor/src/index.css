@@ -1334,6 +1334,27 @@ button.active {
 	background-color: #a0a0a0;
 }
 
+p.details,
+li.details {
+	font-size: 12px !important;
+}
+
+ul.details {
+	padding-left: 16px;
+	margin-top: 5px;
+	margin-bottom: 5px;
+}
+
+p.details {
+	margin-top: 5px;
+	margin-bottom: 5px;
+}
+
+h3.details {
+	margin-top: 10px;
+	margin-bottom: 10px;
+}
+
 @media (max-height: 450px) {
 	h3 {
 		font-size: 20px;

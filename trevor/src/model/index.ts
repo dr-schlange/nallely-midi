@@ -168,9 +168,17 @@ export interface RunTimeState {
 	classCodeMode: boolean;
 	classCode: ClassCode;
 	ccValues: CCValues;
+	patchDetails: PatchDetails | undefined;
 }
 
 export interface ClassCode {
 	className: string;
 	methods: Record<string, string>;
+}
+
+export interface PatchDetails {
+	midi: Record<string, number>;
+	virtual: Record<string, number>;
+	patches: number;
+	playground_code: boolean;
 }

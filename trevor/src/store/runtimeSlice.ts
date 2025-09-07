@@ -1,5 +1,5 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { RunTimeState, ClassCode, CCValues } from "../model";
+import type { RunTimeState, ClassCode, CCValues, PatchDetails } from "../model";
 import { setFullState } from "./trevorSlice";
 
 export const initialRunTimeState: RunTimeState = {
@@ -10,6 +10,7 @@ export const initialRunTimeState: RunTimeState = {
 	classCodeMode: false,
 	classCode: undefined,
 	ccValues: {},
+	patchDetails: undefined,
 };
 
 interface CCState {
@@ -83,6 +84,12 @@ const runtimeSlice = createSlice({
 		resetCCState: (state) => {
 			state.ccValues = {};
 		},
+		setPatchDetails: (state, action: PayloadAction<PatchDetails>) => {
+			state.patchDetails = action.payload;
+		},
+		resetPatchDetails: (state) => {
+			state.patchDetails = undefined;
+		},
 	},
 	extraReducers: (builder) => {
 		builder.addCase(setFullState, (state, action) => {
@@ -108,6 +115,8 @@ export const {
 	updateCCState,
 	resetCCState,
 	updateCCValues,
+	setPatchDetails,
+	resetPatchDetails,
 } = runtimeSlice.actions;
 
 export default runtimeSlice.reducer;

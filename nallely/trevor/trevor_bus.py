@@ -34,6 +34,7 @@ from ..core import (
     virtual_devices,
 )
 from ..core.midi_device import MidiDevice, ModuleParameter
+from ..session import extract_infos
 from ..utils import StateEncoder, force_off_everywhere, load_modules
 from ..websocket_bus import (  # noqa, we keep it so it's loaded in this namespace
     WebSocketBus,
@@ -453,6 +454,10 @@ class TrevorBus(VirtualDevice):
     def set_device_channel(self, device_id, channel):
         self.trevor.set_device_channel(device_id, channel)
         return self.full_state()
+
+    def fetch_path_infos(self, filename):
+        details = extract_infos(filename)
+        self.send_message({"command": "RuntimeAPI::setPatchDetails", "arg": details})
 
 
 def resource_path(relative_path):

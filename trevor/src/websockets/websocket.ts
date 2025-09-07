@@ -480,6 +480,13 @@ class TrevorWebSocket {
 			value,
 		});
 	}
+
+	fetchPathInfos(filename: string) {
+		this.sendJsonMessage({
+			command: "fetch_path_infos",
+			filename,
+		});
+	}
 }
 
 let websocket: TrevorWebSocket | null = null;
