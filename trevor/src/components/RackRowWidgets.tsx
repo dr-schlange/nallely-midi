@@ -24,21 +24,6 @@ const WidgetComponents = {
 	XYZScope,
 };
 
-const findFirstMissingValue = (arr: number[]): number => {
-	if (arr.length === 0) return 0;
-
-	const max = Math.max(...arr);
-	const set = new Set(arr);
-
-	for (let i = 0; i <= max; i++) {
-		if (!set.has(i)) {
-			return i;
-		}
-	}
-
-	return max + 1;
-};
-
 export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 	(
 		{ onRackScroll, onDragEnd, horizontal, onAddWidget }: WidgetRackProps,
@@ -192,6 +177,7 @@ import {
 	useSensor,
 	useSensors,
 } from "@dnd-kit/core";
+import { findFirstMissingValue } from "../utils/utils";
 
 const SortableWidget = ({
 	id,

@@ -4,9 +4,10 @@ import { Provider } from "react-redux";
 import { store, useTrevorSelector } from "./store";
 import { connectWebSocket } from "./websockets/websocket";
 import { ErrorModal } from "./components/modals/ErrorModal";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { WelcomeModal } from "./components/modals/WelcomeModal";
 import { NotificationBar } from "./components/NotificationBar";
+import { PatchingDevice3D } from "./components/3d/PatchingDevice3D";
 
 const App = () => {
 	useMemo(() => {
@@ -23,75 +24,82 @@ const App = () => {
 const Main = () => {
 	const errors = useTrevorSelector((state) => state.general.errors);
 	const firstLaunch = useTrevorSelector((state) => state.general.firstLaunch);
+	const [mode, setMode] = useState<string>("2D");
+
+	const swith3DOn = (activate: boolean) => {
+		setMode(activate ? "3D" : "2D");
+	};
 
 	return (
-		<div className="app-layout">
-			<div className="top-section">
-				<InstanceCreation />
+		(mode === "2D" && (
+			<div className="app-layout">
+				<div className="top-section">
+					<InstanceCreation />
+				</div>
+				<div className="bottom-section">
+					<DevicePatching open3DView={swith3DOn} />
+				</div>
+				{errors && errors.length > 0 && <ErrorModal errors={errors} />}
+				{firstLaunch && <WelcomeModal />}
+				<svg style={{ height: "0px", width: "0px" }}>
+					<title>Global definitions</title>
+					<defs>
+						<marker
+							id="retro-arrowhead"
+							markerWidth="6"
+							markerHeight="6"
+							refX="5"
+							refY="3"
+							orient="auto"
+							markerUnits="strokeWidth"
+						>
+							<polygon
+								points="0,0 5,3 0,6"
+								fill="gray"
+								stroke="white"
+								strokeWidth="1"
+								strokeOpacity="0.3"
+							/>
+						</marker>
+						<marker
+							id="selected-retro-arrowhead"
+							markerWidth="6"
+							markerHeight="6"
+							refX="5"
+							refY="3"
+							orient="auto"
+							markerUnits="strokeWidth"
+						>
+							<polygon
+								points="0,0 5,3 0,6"
+								fill="blue"
+								stroke="white"
+								strokeWidth="1"
+								strokeOpacity="0.8"
+							/>
+						</marker>
+						<marker
+							id="bouncy-retro-arrowhead"
+							markerWidth="6"
+							markerHeight="6"
+							refX="5"
+							refY="3"
+							orient="auto"
+							markerUnits="strokeWidth"
+						>
+							<polygon
+								points="0,0 5,3 0,6"
+								fill="green"
+								stroke="white"
+								strokeWidth="1"
+								strokeOpacity="0.8"
+							/>
+						</marker>
+					</defs>
+				</svg>
+				<NotificationBar />
 			</div>
-			<div className="bottom-section">
-				<DevicePatching />
-			</div>
-			{errors && errors.length > 0 && <ErrorModal errors={errors} />}
-			{firstLaunch && <WelcomeModal />}
-			<svg style={{ height: "0px", width: "0px" }}>
-				<title>Global definitions</title>
-				<defs>
-					<marker
-						id="retro-arrowhead"
-						markerWidth="6"
-						markerHeight="6"
-						refX="5"
-						refY="3"
-						orient="auto"
-						markerUnits="strokeWidth"
-					>
-						<polygon
-							points="0,0 5,3 0,6"
-							fill="gray"
-							stroke="white"
-							strokeWidth="1"
-							strokeOpacity="0.3"
-						/>
-					</marker>
-					<marker
-						id="selected-retro-arrowhead"
-						markerWidth="6"
-						markerHeight="6"
-						refX="5"
-						refY="3"
-						orient="auto"
-						markerUnits="strokeWidth"
-					>
-						<polygon
-							points="0,0 5,3 0,6"
-							fill="blue"
-							stroke="white"
-							strokeWidth="1"
-							strokeOpacity="0.8"
-						/>
-					</marker>
-					<marker
-						id="bouncy-retro-arrowhead"
-						markerWidth="6"
-						markerHeight="6"
-						refX="5"
-						refY="3"
-						orient="auto"
-						markerUnits="strokeWidth"
-					>
-						<polygon
-							points="0,0 5,3 0,6"
-							fill="green"
-							stroke="white"
-							strokeWidth="1"
-							strokeOpacity="0.8"
-						/>
-					</marker>
-				</defs>
-			</svg>
-			<NotificationBar />
-		</div>
+		)) || <PatchingDevice3D onCloseView={() => swith3DOn(false)} />
 	);
 };
 

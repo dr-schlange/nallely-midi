@@ -24,8 +24,10 @@
 		"@uiw/react-codemirror": "^4.23.12",
 		"react": "^19.1.0",
 		"react-dom": "^19.1.0",
+		"react-force-graph-3d": "^1.29.0",
 		"react-redux": "^9.2.0",
 		"react-uplot": "^0.0.9",
+		"three-spritetext": "^1.10.0",
 		"uplot": "^1.6.32",
 		"uplot-react": "^1.2.2"
 	},

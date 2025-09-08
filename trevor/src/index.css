@@ -1355,6 +1355,19 @@ h3.details {
 	margin-bottom: 10px;
 }
 
+.flat-select {
+	color: gray;
+	z-index: 1;
+	background-color: #e0e0e0;
+	width: 50px;
+	margin: 0px;
+	text-align: center;
+	cursor: pointer;
+	border: 2px solid gray;
+	justify-content: center;
+	box-shadow: unset;
+}
+
 @media (max-height: 450px) {
 	h3 {
 		font-size: 20px;

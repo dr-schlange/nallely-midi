@@ -26,6 +26,9 @@ export const Button = ({
 				textAlign: "center",
 				cursor: "pointer",
 				border: "2px solid gray",
+				display: "flex",
+				flexDirection: "column",
+				justifyContent: "center",
 			}}
 			onMouseDown={() => setClickColor("orange")}
 			onMouseUp={() => {

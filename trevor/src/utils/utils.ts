@@ -277,3 +277,18 @@ export const internalSectionName = (
 	section.pads_or_keys?.section_name ||
 	section.pitchwheel?.section_name ||
 	"unknown";
+
+export const findFirstMissingValue = (arr: number[]): number => {
+	if (arr.length === 0) return 0;
+
+	const max = Math.max(...arr);
+	const set = new Set(arr);
+
+	for (let i = 0; i <= max; i++) {
+		if (!set.has(i)) {
+			return i;
+		}
+	}
+
+	return max + 1;
+};

@@ -35,7 +35,11 @@ import { type RackRowCCRef, RackRowCCs } from "./RackRowCC";
 const VERTICAL = "⇄";
 const HORIZONTAL = "⇅";
 
-const DevicePatching = () => {
+interface DevicePatchingProps {
+	open3DView?: (open: boolean) => void;
+}
+
+const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 	const mainSectionRef = useRef(null);
 	const [associateMode, setAssociateMode] = useState(true);
 	const [selection, setSelection] = useState<MidiDeviceWithSection[]>([]);
@@ -69,7 +73,7 @@ const DevicePatching = () => {
 	const channels = useTrevorSelector(selectChannels);
 	const widgetRack = useRef<RackRowWidgetRef>(null);
 	const ccsRack = useRef<RackRowCCRef>(null);
-	const [isExpanded, setIsExpanded] = useState<boolean>(true);
+	const [isExpanded, setIsExpanded] = useState<boolean>(false);
 	const [orientation, setOrientation] = useState<string>(
 		window.innerHeight < 450 ? HORIZONTAL : VERTICAL,
 	);
@@ -1009,7 +1013,9 @@ const DevicePatching = () => {
 						</div>
 					</div>
 				)) || (
-					<>
+					<div
+						style={{ display: "flex", flexDirection: "column", width: "50px" }}
+					>
 						<button
 							className="rightbar-button"
 							type="button"
@@ -1024,7 +1030,14 @@ const DevicePatching = () => {
 						>
 							💾
 						</button>
-					</>
+						<button
+							className="rightbar-button"
+							type="button"
+							onClick={() => open3DView?.(true)}
+						>
+							🌐
+						</button>
+					</div>
 				)}
 			</div>
 			{isModalOpen && (
