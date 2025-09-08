@@ -1359,12 +1359,11 @@ h3.details {
 	color: gray;
 	z-index: 1;
 	background-color: #e0e0e0;
-	width: 50px;
+	width: 40px;
 	margin: 0px;
-	text-align: center;
+	text-align: left;
 	cursor: pointer;
 	border: 2px solid gray;
-	justify-content: center;
 	box-shadow: unset;
 }
 

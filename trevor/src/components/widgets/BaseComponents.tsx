@@ -16,6 +16,7 @@ export const Button = ({
 	const [clickColor, setClickColor] = useState<string | undefined>(undefined);
 
 	return (
+		// biome-ignore lint/a11y/noStaticElementInteractions: <explanation>
 		<div
 			style={{
 				color: "gray",

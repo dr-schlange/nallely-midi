@@ -4,7 +4,7 @@ import type uPlot from "uplot";
 import UplotReact from "uplot-react";
 import walkerSprites from "../../assets/walker.png";
 import DragNumberInput from "../DragInputs";
-import { Button, WidgetProps } from "./BaseComponents";
+import { Button, type WidgetProps } from "./BaseComponents";
 
 const RECO_DELAY = 5000;
 const BUFFER_SIZE = 100;

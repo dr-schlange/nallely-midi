@@ -248,6 +248,16 @@ class TrevorWebSocket {
 		});
 	}
 
+	associate(srcParameterId: string, dstParameterId: string, unbind: boolean) {
+		this.sendJsonMessage({
+			command: "associate_parameters",
+			from_parameter: srcParameterId,
+			to_parameter: dstParameterId,
+			unbind,
+			with_scaler: true,
+		});
+	}
+
 	createScaler(
 		fromDevice: MidiDevice | VirtualDevice | number,
 		fromParameter: MidiParameter | VirtualParameter,

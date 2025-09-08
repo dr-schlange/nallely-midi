@@ -6,6 +6,7 @@ import {
 	findFirstMissingValue,
 } from "../../utils/utils";
 import SpriteText from "three-spritetext";
+import * as THREE from "three";
 import {
 	CSS3DRenderer,
 	CSS3DObject,
@@ -16,6 +17,7 @@ import { Scope } from "../widgets/Oscilloscope";
 import { createPortal } from "react-dom";
 import { XYScope } from "../widgets/XYScope";
 import { XYZScope } from "../widgets/XYZScope";
+import { useTrevorWebSocket } from "../../websockets/websocket";
 
 interface PatchingDevice3DProps {
 	onCloseView?: () => void;
@@ -27,7 +29,15 @@ const WidgetComponents = {
 	XYZScope,
 };
 
+const computeLineWidth = (link) => link?.meta?.width;
+const computeArrow = (link) => (link?.meta?.arrow ? 20 : 0);
+const computeEmitParticle = (link) => (link?.meta?.emitParticles ? 5 : 0);
+
 export const PatchingDevice3D = ({ onCloseView }: PatchingDevice3DProps) => {
+	const virtualClasses = useTrevorSelector(
+		(state) => state.nallely.classes.virtual,
+	);
+	const midiClasses = useTrevorSelector((state) => state.nallely.classes.midi);
 	const midiDevices = useTrevorSelector((state) => state.nallely.midi_devices);
 	const virtualDevices = useTrevorSelector(
 		(state) => state.nallely.virtual_devices,
@@ -43,10 +53,15 @@ export const PatchingDevice3D = ({ onCloseView }: PatchingDevice3DProps) => {
 	const cssRenderRef = useRef(new CSS3DRenderer());
 	const containerRef = useRef<HTMLDivElement>(null);
 	const cssNodesRef = useRef<Map<string, HTMLDivElement>>(new Map());
-
 	const [widgets, setWidgets] = useState<
 		{ num: number; id: string; type: string; component: React.FC<any> }[]
 	>([]);
+	const [displayLabels, setDisplayLabels] = useState(false);
+	const [selection, setSelection] = useState<string[]>([]);
+	const trevorSocket = useTrevorWebSocket();
+	const handleDeviceClassClick = (deviceClass: string) => {
+		trevorSocket?.createDevice(deviceClass);
+	};
 
 	useEffect(() => {
 		const updateSize = () => {
@@ -74,6 +89,17 @@ export const PatchingDevice3D = ({ onCloseView }: PatchingDevice3DProps) => {
 		cssRenderRef.current.setSize(dimensions.width, dimensions.height);
 	}, [dimensions]);
 
+	const closeWidget = (id) => {
+		setWidgets((prev) =>
+			prev.filter((w) => w.id !== id && w.id.replace("::", "") !== id),
+		);
+		cssNodesRef.current.delete(id);
+		setGraphData((prev) => ({
+			nodes: prev.nodes?.filter((n) => n.id !== id) || [],
+			links: prev.links?.filter((l) => l.target !== id) || [],
+		}));
+	};
+
 	const portals = useMemo(
 		() =>
 			widgets.map((w) => {
@@ -82,7 +108,7 @@ export const PatchingDevice3D = ({ onCloseView }: PatchingDevice3DProps) => {
 					return null;
 				}
 				return createPortal(
-					<w.component id={w.id} num={w.num} />,
+					<w.component id={w.id} num={w.num} onClose={closeWidget} />,
 					container,
 					w.id,
 				);
@@ -101,7 +127,8 @@ export const PatchingDevice3D = ({ onCloseView }: PatchingDevice3DProps) => {
 			// Create the container for the widget
 			if (!cssNodesRef.current.has(widgetId)) {
 				const container = document.createElement("div");
-				// container.style.pointerEvents = "auto";
+				container.style.width = "250px";
+				container.style.height = "200px";
 				cssNodesRef.current.set(widgetId, container);
 			}
 
@@ -155,7 +182,7 @@ export const PatchingDevice3D = ({ onCloseView }: PatchingDevice3DProps) => {
 		(node) => {
 			if (mode === "navigation") {
 				// Aim at node from outside it
-				const distance = 40;
+				const distance = 80;
 				const distRatio = 1 + distance / Math.hypot(node.x, node.y, node.z);
 
 				fgRef.current.cameraPosition(
@@ -167,10 +194,29 @@ export const PatchingDevice3D = ({ onCloseView }: PatchingDevice3DProps) => {
 					node, // lookAt ({ x, y, z })
 					3000, // ms transition duration
 				);
-			} else {
+				return;
+			}
+			// We are in normal association mode
+			if (selection.length === 0) {
+				setSelection([node.id]);
+				return;
+			} else if (selection.length === 1) {
+				if (selection[0] === node.id) {
+					setSelection([]);
+					return;
+				}
+				// second selection, create connection if valid
+				const srcParam = selection[0];
+				const dstParam = node.id;
+				const unbind = graphData.links.find(
+					(l) => l.source === srcParam && l.target === dstParam,
+				);
+				trevorSocket?.associate(srcParam, dstParam, Boolean(unbind));
+				setSelection([]);
+				return;
 			}
 		},
-		[fgRef, mode],
+		[mode, selection],
 	);
 
 	const buildMidiNodes = () => {
@@ -206,6 +252,9 @@ export const PatchingDevice3D = ({ onCloseView }: PatchingDevice3DProps) => {
 						name: param.name,
 						val: 5,
 						group: "midiDeviceParameter",
+						meta: {
+							type: "midiParameter",
+						},
 					});
 					links.push({
 						source: sid,
@@ -222,6 +271,9 @@ export const PatchingDevice3D = ({ onCloseView }: PatchingDevice3DProps) => {
 						name: section.pads_or_keys.name,
 						val: 5,
 						group: "midiDeviceKeys",
+						meta: {
+							type: "midiParameter",
+						},
 					});
 					links.push({
 						source: sid,
@@ -238,6 +290,9 @@ export const PatchingDevice3D = ({ onCloseView }: PatchingDevice3DProps) => {
 						name: section.pitchwheel.name,
 						val: 5,
 						group: "midiDevicePitchwheel",
+						meta: {
+							type: "midiParameter",
+						},
 					});
 					links.push({
 						source: sid,
@@ -375,21 +430,6 @@ export const PatchingDevice3D = ({ onCloseView }: PatchingDevice3DProps) => {
 		update3DView();
 	}, [midiDevices, virtualDevices, connections, widgets]);
 
-	const computeLineWidth = useCallback(
-		(link) => link?.meta?.width,
-		[midiDevices, virtualDevices, connections],
-	);
-
-	const computeArrow = useCallback(
-		(link) => (link?.meta?.arrow ? 20 : 0),
-		[midiDevices, virtualDevices, connections],
-	);
-
-	const computeEmitParticle = useCallback(
-		(link) => (link?.meta?.emitParticles ? 5 : 0),
-		[midiDevices, virtualDevices, connections],
-	);
-
 	const handleModeSwitch = () => {
 		setMode((prev) => (prev === "navigation" ? "association" : "navigation"));
 	};
@@ -431,11 +471,38 @@ export const PatchingDevice3D = ({ onCloseView }: PatchingDevice3DProps) => {
 							sprite.fontFace = "TopazPlusA1200";
 							return sprite;
 						}
+						if (
+							node?.meta?.type === "midiParameter" ||
+							node?.meta?.type === "virtualParameter"
+						) {
+							let shape = null;
+							if (selection.includes(node.id)) {
+								const sphere = new THREE.SphereGeometry(6);
+								const material = new THREE.MeshBasicMaterial({
+									color: "yellow",
+								});
+								material.wireframe = true;
+								const mesh = new THREE.Mesh(sphere, material);
+								shape = mesh;
+							}
+							if (displayLabels) {
+								const sprite = new SpriteText(node.name);
+								sprite.color = "white";
+								sprite.textHeight = 4;
+								sprite.fontFace = "TopazPlusA1200";
+								if (shape) {
+									shape.add(sprite);
+								} else {
+									shape = sprite;
+								}
+							}
+							return shape;
+						}
 						if (node?.group === "widget") {
 							const id = node.id;
 							const container = cssNodesRef.current.get(id);
 							const obj = new CSS3DObject(container);
-							obj.scale.set(0.5, 0.5, 0.5);
+							obj.scale.set(0.3, 0.3, 0.3);
 							return obj;
 						}
 						return false;
@@ -468,20 +535,71 @@ export const PatchingDevice3D = ({ onCloseView }: PatchingDevice3DProps) => {
 					activated={mode === "navigation"}
 					onClick={handleModeSwitch}
 				/>
+				<Button
+					text="L"
+					tooltip="Display parameter labels"
+					variant="big"
+					activated={displayLabels}
+					onClick={() => setDisplayLabels((prev) => !prev)}
+				/>
+				<Button
+					text="F"
+					tooltip="Fit to view"
+					variant="big"
+					onClick={() => fgRef.current.zoomToFit(500, 0)}
+				/>
+
 				{/* <Button
-					text="A"
-					tooltip="Add widget"
+					text="R"
+					tooltip="Reset view"
 					variant="big"
 					onClick={() =>
-						addWidget(
-							WidgetComponents.Scope,
-							WidgetComponents.Scope.name.toLocaleLowerCase(),
+						fgRef.current.cameraPosition(
+							{ x: 0, y: 0, z: -1000 },
+							{ x: 0, y: 0, z: 0 },
+							500,
 						)
 					}
 				/> */}
 				<select
 					className="flat-select"
+					value=""
+					title="Adds a MIDI device to the system"
+					onChange={(e) => {
+						const val = e.target.value;
+						if (val) {
+							handleDeviceClassClick(val);
+						}
+					}}
+				>
+					<option value="">M</option>
+					{midiClasses.map((cls) => (
+						<option key={cls} value={cls}>
+							{cls}
+						</option>
+					))}
+				</select>
+				<select
+					className="flat-select"
 					value={""}
+					title="Adds a virtual device to the system"
+					onChange={(e) => {
+						const val = e.target.value;
+						if (val) {
+							handleDeviceClassClick(val);
+						}
+					}}
+				>
+					<option value={""}>V</option>
+					{virtualClasses.map((cls) => (
+						<option key={cls} value={cls}>
+							{cls}
+						</option>
+					))}
+				</select>
+				<select
+					className="flat-select"
+					value={"wdg"}
 					title="Adds a new widget to the system"
 					onChange={(e) => {
 						const val = e.target.value;
@@ -490,11 +608,9 @@ export const PatchingDevice3D = ({ onCloseView }: PatchingDevice3DProps) => {
 						}
 					}}
 				>
-					<option className="flat-option" value={""}>
-						--
-					</option>
+					<option value={""}>W</option>
 					{Object.keys(WidgetComponents).map((name) => (
-						<option className="flat-option" key={name} value={name}>
+						<option key={name} value={name}>
 							{name}
 						</option>
 					))}
