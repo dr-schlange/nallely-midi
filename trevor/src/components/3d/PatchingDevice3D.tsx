@@ -3,6 +3,7 @@ import ForceGraph3D from "react-force-graph-3d";
 import {
 	buildParameterId,
 	buildSectionId,
+	connectionId,
 	findFirstMissingValue,
 } from "../../utils/utils";
 import SpriteText from "three-spritetext";
@@ -18,6 +19,8 @@ import { createPortal } from "react-dom";
 import { XYScope } from "../widgets/XYScope";
 import { XYZScope } from "../widgets/XYZScope";
 import { useTrevorWebSocket } from "../../websockets/websocket";
+import { ScalerForm } from "../ScalerForm";
+import { MidiConnection } from "../../model";
 
 interface PatchingDevice3DProps {
 	onCloseView?: () => void;
@@ -32,6 +35,192 @@ const WidgetComponents = {
 const computeLineWidth = (link) => link?.meta?.width;
 const computeArrow = (link) => (link?.meta?.arrow ? 20 : 0);
 const computeEmitParticle = (link) => (link?.meta?.emitParticles ? 5 : 0);
+const buildMidiNodes = (midiDevices) => {
+	const nodes = [];
+	const links = [];
+	for (const midiDevice of midiDevices) {
+		nodes.push({
+			id: midiDevice.id.toString(),
+			name: midiDevice.repr,
+			val: 50,
+			group: "midiDevice",
+		});
+		for (const section of midiDevice.meta.sections) {
+			const sid = buildSectionId(midiDevice.id, section.name);
+			nodes.push({
+				id: sid,
+				name: section.name,
+				val: 25,
+				group: "midiDeviceSection",
+			});
+			links.push({
+				source: midiDevice.id.toString(),
+				target: sid,
+				meta: {
+					type: "internal",
+					width: 5,
+				},
+			});
+			for (const param of section.parameters) {
+				const pid = buildParameterId(midiDevice.id, param);
+				nodes.push({
+					id: pid,
+					name: param.name,
+					val: 5,
+					group: "midiDeviceParameter",
+					meta: {
+						type: "midiParameter",
+					},
+				});
+				links.push({
+					source: sid,
+					target: pid,
+					meta: {
+						type: "internal",
+						width: 5,
+					},
+				});
+			}
+			if (section.pads_or_keys) {
+				nodes.push({
+					id: buildParameterId(midiDevice.id, section.pads_or_keys),
+					name: section.pads_or_keys.name,
+					val: 5,
+					group: "midiDeviceKeys",
+					meta: {
+						type: "midiParameter",
+					},
+				});
+				links.push({
+					source: sid,
+					target: buildParameterId(midiDevice.id, section.pads_or_keys),
+					meta: {
+						type: "internal",
+						width: 5,
+					},
+				});
+			}
+			if (section.pitchwheel) {
+				nodes.push({
+					id: buildParameterId(midiDevice.id, section.pitchwheel),
+					name: section.pitchwheel.name,
+					val: 5,
+					group: "midiDevicePitchwheel",
+					meta: {
+						type: "midiParameter",
+					},
+				});
+				links.push({
+					source: sid,
+					target: buildParameterId(midiDevice.id, section.pitchwheel),
+					meta: {
+						type: "internal",
+						width: 5,
+					},
+				});
+			}
+		}
+	}
+	return { nodes, links };
+};
+
+const buildVirtualNodes = (virtualDevices) => {
+	const nodes = [];
+	const links = [];
+	for (const device of virtualDevices) {
+		if (device.meta.name === "TrevorBus") {
+			continue;
+		}
+		nodes.push({
+			id: device.id.toString(),
+			name: device.repr,
+			val: 50,
+			meta: {
+				type: "virtual",
+				object: device,
+			},
+			group: device.meta.name,
+		});
+		for (const parameter of device.meta.parameters) {
+			const pid = buildParameterId(device.id, parameter);
+			const isExternalPort = parameter.cv_name.match(/\w+\d+_.*/);
+			const external =
+				device.meta.name === "WebSocketBus" && isExternalPort
+					? "externalParameter"
+					: "virtualDeviceParameter";
+			nodes.push({
+				id: pid,
+				name: parameter.cv_name,
+				val: 5,
+				meta: {
+					type: "virtualParameter",
+					object: parameter,
+					id: isExternalPort
+						? parameter.cv_name.replace(/_.*/, "")
+						: parameter.cv_name,
+				},
+				group: external,
+			});
+			links.push({
+				source: device.id.toString(),
+				target: pid,
+				meta: {
+					type: "internal",
+					width: 5,
+				},
+			});
+		}
+	}
+
+	return { nodes, links };
+};
+
+const buildLinks = (connections) => {
+	const links = [];
+	for (const connection of connections) {
+		links.push({
+			meta: {
+				type: "link",
+				object: connection,
+				width: 1.5,
+				arrow: true,
+				emitParticles: true,
+				id: connectionId(connection),
+			},
+			source: buildParameterId(connection.src.device, connection.src.parameter),
+			target: buildParameterId(
+				connection.dest.device,
+				connection.dest.parameter,
+			),
+		});
+	}
+
+	return links;
+};
+
+const getWidgetNodes = (data) => {
+	return data.nodes?.filter((n) => n.group === "widget") || [];
+};
+
+const buildWidgetPortLinks = (widgets, nodes) => {
+	const widgetLinks = [];
+	for (const w of widgets) {
+		const parameters = nodes?.filter(
+			(n) => n?.meta?.id === `${w.id}` && n.group === "externalParameter",
+		);
+		for (const p of parameters) {
+			widgetLinks.push({
+				source: p.id,
+				target: w.id,
+				meta: {
+					type: "internal-link",
+					width: 1,
+				},
+			});
+		}
+	}
+	return widgetLinks;
+};
 
 export const PatchingDevice3D = ({ onCloseView }: PatchingDevice3DProps) => {
 	const virtualClasses = useTrevorSelector(
@@ -55,6 +244,9 @@ export const PatchingDevice3D = ({ onCloseView }: PatchingDevice3DProps) => {
 	const cssNodesRef = useRef<Map<string, HTMLDivElement>>(new Map());
 	const [widgets, setWidgets] = useState<
 		{ num: number; id: string; type: string; component: React.FC<any> }[]
+	>([]);
+	const [settings, setSettings] = useState<
+		{ id: string; component: React.FC<any>; object: MidiConnection }[]
 	>([]);
 	const [displayLabels, setDisplayLabels] = useState(false);
 	const [selection, setSelection] = useState<string[]>([]);
@@ -100,7 +292,7 @@ export const PatchingDevice3D = ({ onCloseView }: PatchingDevice3DProps) => {
 		}));
 	};
 
-	const portals = useMemo(
+	const widgetPortals = useMemo(
 		() =>
 			widgets.map((w) => {
 				const container = cssNodesRef.current.get(w.id);
@@ -114,6 +306,27 @@ export const PatchingDevice3D = ({ onCloseView }: PatchingDevice3DProps) => {
 				);
 			}),
 		[widgets],
+	);
+
+	const settingsPortals = useMemo(
+		() =>
+			settings.map((s) => {
+				const container = cssNodesRef.current.get(s.id);
+				if (!container) {
+					return null;
+				}
+				const connection = connections.find((c) => connectionId(c) === s.id);
+				return createPortal(
+					<s.component
+						id={s.id}
+						connection={connection}
+						onClose={closeWidget}
+					/>,
+					container,
+					s.id,
+				);
+			}),
+		[settings, connections],
 	);
 
 	const addWidget = (Component, widgetType: string) => {
@@ -149,9 +362,6 @@ export const PatchingDevice3D = ({ onCloseView }: PatchingDevice3DProps) => {
 						},
 					});
 				}
-				// setTimeout(() => {
-				// 	update3DView();
-				// }, 1000);
 				return {
 					nodes: [
 						...prev.nodes,
@@ -178,7 +388,7 @@ export const PatchingDevice3D = ({ onCloseView }: PatchingDevice3DProps) => {
 		});
 	};
 
-	const handleClick = useCallback(
+	const handleNodeClick = useCallback(
 		(node) => {
 			if (mode === "navigation") {
 				// Aim at node from outside it
@@ -197,221 +407,82 @@ export const PatchingDevice3D = ({ onCloseView }: PatchingDevice3DProps) => {
 				return;
 			}
 			// We are in normal association mode
-			if (selection.length === 0) {
-				setSelection([node.id]);
-				return;
-			} else if (selection.length === 1) {
-				if (selection[0] === node.id) {
+			if (
+				node.meta?.type === "midiParameter" ||
+				node.meta?.type === "virtualParameter"
+			) {
+				// We handle the association
+				if (selection.length === 0) {
+					setSelection([node.id]);
+					return;
+				} else if (selection.length === 1) {
+					if (selection[0] === node.id) {
+						setSelection([]);
+						return;
+					}
+					// second selection, create connection if valid
+					const srcParam = selection[0];
+					const dstParam = node.id;
+					const unbind = graphData.links.find(
+						(l) => l.source.id === srcParam && l.target.id === dstParam,
+					);
+					trevorSocket?.associate(srcParam, dstParam, Boolean(unbind));
 					setSelection([]);
 					return;
 				}
-				// second selection, create connection if valid
-				const srcParam = selection[0];
-				const dstParam = node.id;
-				const unbind = graphData.links.find(
-					(l) => l.source === srcParam && l.target === dstParam,
-				);
-				trevorSocket?.associate(srcParam, dstParam, Boolean(unbind));
-				setSelection([]);
-				return;
+			}
+			if (node.group === "midiDeviceSection" || node.group === "virtual") {
 			}
 		},
 		[mode, selection],
 	);
 
-	const buildMidiNodes = () => {
-		const nodes = [];
-		const links = [];
-		for (const midiDevice of midiDevices) {
-			nodes.push({
-				id: midiDevice.id.toString(),
-				name: midiDevice.repr,
-				val: 50,
-				group: "midiDevice",
-			});
-			for (const section of midiDevice.meta.sections) {
-				const sid = buildSectionId(midiDevice.id, section.name);
-				nodes.push({
-					id: sid,
-					name: section.name,
-					val: 25,
-					group: "midiDeviceSection",
-				});
-				links.push({
-					source: midiDevice.id.toString(),
-					target: sid,
-					meta: {
-						type: "internal",
-						width: 5,
-					},
-				});
-				for (const param of section.parameters) {
-					const pid = buildParameterId(midiDevice.id, param);
-					nodes.push({
-						id: pid,
-						name: param.name,
-						val: 5,
-						group: "midiDeviceParameter",
-						meta: {
-							type: "midiParameter",
-						},
-					});
-					links.push({
-						source: sid,
-						target: pid,
-						meta: {
-							type: "internal",
-							width: 5,
-						},
-					});
-				}
-				if (section.pads_or_keys) {
-					nodes.push({
-						id: buildParameterId(midiDevice.id, section.pads_or_keys),
-						name: section.pads_or_keys.name,
-						val: 5,
-						group: "midiDeviceKeys",
-						meta: {
-							type: "midiParameter",
-						},
-					});
-					links.push({
-						source: sid,
-						target: buildParameterId(midiDevice.id, section.pads_or_keys),
-						meta: {
-							type: "internal",
-							width: 5,
-						},
-					});
-				}
-				if (section.pitchwheel) {
-					nodes.push({
-						id: buildParameterId(midiDevice.id, section.pitchwheel),
-						name: section.pitchwheel.name,
-						val: 5,
-						group: "midiDevicePitchwheel",
-						meta: {
-							type: "midiParameter",
-						},
-					});
-					links.push({
-						source: sid,
-						target: buildParameterId(midiDevice.id, section.pitchwheel),
-						meta: {
-							type: "internal",
-							width: 5,
-						},
-					});
-				}
+	const handleLinkClick = useCallback(
+		(link) => {
+			if (link.meta.type !== "link") {
+				return;
 			}
-		}
-		return { nodes, links };
-	};
-
-	const buildVirtualNodes = () => {
-		const nodes = [];
-		const links = [];
-		for (const device of virtualDevices) {
-			if (device.meta.name === "TrevorBus") {
-				continue;
+			const form = settings.find((s) => s.id === link.meta.id);
+			if (form) {
+				cssNodesRef.current.delete(link.meta.id);
+				setSettings((prev) => prev.filter((s) => s.id !== link.meta.id));
+				return;
 			}
-			nodes.push({
-				id: device.id.toString(),
-				name: device.repr,
-				val: 50,
-				meta: {
-					type: "virtual",
-					object: device,
+			const container = document.createElement("div");
+			container.style.width = "250px";
+			container.style.height = "200px";
+			cssNodesRef.current.set(link.meta.id, container);
+			setSettings((prev) => [
+				...prev,
+				{
+					id: link.meta.id,
+					component: ScalerForm,
+					object: link.meta.object,
 				},
-				group: device.meta.name,
-			});
-			for (const parameter of device.meta.parameters) {
-				const pid = buildParameterId(device.id, parameter);
-				const isExternalPort = parameter.cv_name.match(/\w+\d+_.*/);
-				const external =
-					device.meta.name === "WebSocketBus" && isExternalPort
-						? "externalParameter"
-						: "virtualDeviceParameter";
-				nodes.push({
-					id: pid,
-					name: parameter.cv_name,
-					val: 5,
-					meta: {
-						type: "virtualParameter",
-						object: parameter,
-						id: isExternalPort
-							? parameter.cv_name.replace(/_.*/, "")
-							: parameter.cv_name,
-					},
-					group: external,
-				});
-				links.push({
-					source: device.id.toString(),
-					target: pid,
-					meta: {
-						type: "internal",
-						width: 5,
-					},
-				});
-			}
-		}
+			]);
+			const obj = new CSS3DObject(container);
+			obj.scale.set(0.2, 0.2, 0.2);
 
-		return { nodes, links };
-	};
-
-	const buildLinks = () => {
-		const links = [];
-		for (const connection of connections) {
-			links.push({
-				meta: {
-					type: "link",
-					object: connection,
-					width: 1,
-					arrow: true,
-					emitParticles: true,
-				},
-				source: buildParameterId(
-					connection.src.device,
-					connection.src.parameter,
-				),
-				target: buildParameterId(
-					connection.dest.device,
-					connection.dest.parameter,
-				),
-			});
-		}
-
-		return links;
-	};
-
-	const getWidgetNodes = (data) => {
-		return data.nodes?.filter((n) => n.group === "widget") || [];
-	};
-
-	const buildWidgetPortLinks = (widgets, nodes) => {
-		const widgetLinks = [];
-		for (const w of widgets) {
-			const parameters = nodes?.filter(
-				(n) => n?.meta?.id === `${w.id}` && n.group === "externalParameter",
-			);
-			for (const p of parameters) {
-				widgetLinks.push({
-					source: p.id,
-					target: w.id,
-					meta: {
-						type: "internal-link",
-						width: 1,
-					},
-				});
-			}
-		}
-		return widgetLinks;
-	};
+			const midX = (link.source.x + link.target.x) / 2;
+			const midY = (link.source.y + link.target.y) / 2 - 35;
+			const midZ = (link.source.z + link.target.z) / 2;
+			obj.position.set(midX, midY, midZ);
+			// const dir = new THREE.Vector3(
+			// 	link.target.x - link.source.x,
+			// 	link.target.y - link.source.y,
+			// 	link.target.z - link.source.z,
+			// ).normalize();
+			const camera = fgRef.current.camera();
+			obj.rotation.copy(camera.rotation);
+			fgRef.current.scene().add(obj);
+		},
+		[settings],
+	);
 
 	const update3DView = () => {
-		const midiNodes = buildMidiNodes();
-		const virtualNodes = buildVirtualNodes();
-		const interDeviceLinks = buildLinks();
+		const midiNodes = buildMidiNodes(midiDevices);
+		const virtualNodes = buildVirtualNodes(virtualDevices);
+		const interDeviceLinks = buildLinks(connections);
 		const nodes = [...midiNodes.nodes, ...virtualNodes.nodes];
 		const links = [
 			...midiNodes.links,
@@ -456,7 +527,8 @@ export const PatchingDevice3D = ({ onCloseView }: PatchingDevice3DProps) => {
 					linkDirectionalParticleSpeed={0.005}
 					linkDirectionalParticleWidth={5}
 					nodeAutoColorBy="group"
-					onNodeClick={handleClick}
+					onNodeClick={handleNodeClick}
+					onLinkClick={handleLinkClick}
 					width={dimensions.width}
 					height={dimensions.height}
 					nodeThreeObjectExtend={(node) => node?.group !== "widget"}
@@ -486,6 +558,7 @@ export const PatchingDevice3D = ({ onCloseView }: PatchingDevice3DProps) => {
 								shape = mesh;
 							}
 							if (displayLabels) {
+								console.debug(node, node.name);
 								const sprite = new SpriteText(node.name);
 								sprite.color = "white";
 								sprite.textHeight = 4;
@@ -503,6 +576,10 @@ export const PatchingDevice3D = ({ onCloseView }: PatchingDevice3DProps) => {
 							const container = cssNodesRef.current.get(id);
 							const obj = new CSS3DObject(container);
 							obj.scale.set(0.3, 0.3, 0.3);
+							const camera = fgRef.current?.camera();
+							if (camera) {
+								obj.rotation.copy(camera.rotation);
+							}
 							return obj;
 						}
 						return false;
@@ -616,7 +693,8 @@ export const PatchingDevice3D = ({ onCloseView }: PatchingDevice3DProps) => {
 					))}
 				</select>
 			</div>
-			{portals}
+			{widgetPortals}
+			{settingsPortals}
 		</div>
 	);
 };
