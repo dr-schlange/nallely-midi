@@ -248,6 +248,7 @@ export const PatchingDevice3D = ({ onCloseView }: PatchingDevice3DProps) => {
 	const [settings, setSettings] = useState<
 		{ id: string; component: React.FC<any>; object: MidiConnection }[]
 	>([]);
+	const [alwaysFaceMe, setAlwaysFaceMe] = useState(false);
 	const [displayLabels, setDisplayLabels] = useState(false);
 	const [selection, setSelection] = useState<string[]>([]);
 	const trevorSocket = useTrevorWebSocket();
@@ -446,6 +447,10 @@ export const PatchingDevice3D = ({ onCloseView }: PatchingDevice3DProps) => {
 			if (form) {
 				cssNodesRef.current.delete(link.meta.id);
 				setSettings((prev) => prev.filter((s) => s.id !== link.meta.id));
+				const obj = fgRef.current.scene().getObjectByName(link.meta.id);
+				if (obj) {
+					fgRef.current.scene().remove(obj);
+				}
 				return;
 			}
 			const container = document.createElement("div");
@@ -467,6 +472,7 @@ export const PatchingDevice3D = ({ onCloseView }: PatchingDevice3DProps) => {
 			const midY = (link.source.y + link.target.y) / 2 - 35;
 			const midZ = (link.source.z + link.target.z) / 2;
 			obj.position.set(midX, midY, midZ);
+			obj.name = link.meta.id;
 			// const dir = new THREE.Vector3(
 			// 	link.target.x - link.source.x,
 			// 	link.target.y - link.source.y,
@@ -575,6 +581,7 @@ export const PatchingDevice3D = ({ onCloseView }: PatchingDevice3DProps) => {
 							const id = node.id;
 							const container = cssNodesRef.current.get(id);
 							const obj = new CSS3DObject(container);
+							obj.name = id;
 							obj.scale.set(0.3, 0.3, 0.3);
 							const camera = fgRef.current?.camera();
 							if (camera) {
@@ -586,6 +593,35 @@ export const PatchingDevice3D = ({ onCloseView }: PatchingDevice3DProps) => {
 					}}
 					extraRenderers={[cssRenderRef.current]}
 					backgroundColor="rgba(34, 34, 33, 1)"
+					linkPositionUpdate={(linkObject, { start, end }, link) => {
+						if (!link?.meta?.id) {
+							return;
+						}
+						const scene = fgRef.current.scene();
+						const obj = scene.getObjectByName(link.meta.id);
+						if (obj) {
+							obj.position.set(
+								(start.x + end.x) / 2,
+								(start.y + end.y) / 2 - 35,
+								(start.z + end.z) / 2,
+							);
+							if (alwaysFaceMe) {
+								const camera = fgRef.current?.camera();
+								obj.rotation.copy(camera.rotation);
+							}
+						} else {
+							console.debug("Cannot find object for link", link.meta.id);
+						}
+					}}
+					nodePositionUpdate={(nodeObject, { x, y, z }, node) => {
+						if (alwaysFaceMe && node?.group === "widget") {
+							const obj = nodeObject;
+							const camera = fgRef.current?.camera();
+							if (camera) {
+								obj.rotation.copy(camera.rotation);
+							}
+						}
+					}}
 				/>
 			</div>
 			<div
@@ -626,18 +662,15 @@ export const PatchingDevice3D = ({ onCloseView }: PatchingDevice3DProps) => {
 					onClick={() => fgRef.current.zoomToFit(500, 0)}
 				/>
 
-				{/* <Button
-					text="R"
-					tooltip="Reset view"
+				<Button
+					text="A"
+					tooltip="Widgets always face me"
 					variant="big"
-					onClick={() =>
-						fgRef.current.cameraPosition(
-							{ x: 0, y: 0, z: -1000 },
-							{ x: 0, y: 0, z: 0 },
-							500,
-						)
-					}
-				/> */}
+					activated={alwaysFaceMe}
+					onClick={() => {
+						setAlwaysFaceMe((prev) => !prev);
+					}}
+				/>
 				<select
 					className="flat-select"
 					value=""
