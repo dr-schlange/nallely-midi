@@ -1367,6 +1367,37 @@ h3.details {
 	box-shadow: unset;
 }
 
+.flat-form {
+	z-index: 1;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	justify-content: right;
+	height: fit-content;
+	padding: 10px;
+	width: 250px;
+	align-content: flex-start;
+	flex-wrap: wrap;
+	gap: 5px;
+	margin-left: 15px;
+	background-color: rgb(224, 224, 224);
+	border: 5px solid #808080;
+}
+
+.flat-entry {
+	display: flex;
+	flex-direction: row;
+	gap: 5px;
+	align-items: center;
+	justify-content: left;
+	font-size: 15px;
+	width: 100%;
+}
+
+.flat-label {
+	color: gray;
+}
+
 @media (max-height: 450px) {
 	h3 {
 		font-size: 20px;

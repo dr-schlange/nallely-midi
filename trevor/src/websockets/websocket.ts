@@ -24,7 +24,7 @@ export const WsStatus = {
 	CONNECTING: "connecting",
 };
 
-class TrevorWebSocket {
+export class TrevorWebSocket {
 	socket: WebSocket | null = null;
 	private reconnectInterval = 1 * 1000;
 	isConnected = false;
