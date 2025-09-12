@@ -21,7 +21,7 @@ from .core import (
 )
 from .eg import VCA, ADSREnvelope, Gate, SampleHold, SeqSwitch, Switch
 from .lfos import LFO, Cycler
-from .logicals import Comparator
+from .logicals import Comparator, WindowDetector
 from .shifter import Arpegiator, Looper, Modulo, PitchShifter, Quantizer, ShiftRegister
 from .websocket_bus import WebSocketBus
 
@@ -65,4 +65,5 @@ __all__ = [
     "Clock",
     "Comparator",
     "SeqSwitch",
+    "WindowDetector",
 ]

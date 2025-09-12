@@ -62,3 +62,57 @@ class Comparator(VirtualDevice):
         if self.type != "continuous":
             return
         return self.comparators_map[self.comparator](self.a, self.b)
+
+
+class WindowDetector(VirtualDevice):
+    input_cv = VirtualParameter(name="input", range=(None, None))
+    upperbound_cv = VirtualParameter(name="upperbound", range=(None, None))
+    lowerbound_cv = VirtualParameter(name="lowerbound", range=(None, None))
+
+    type_cv = VirtualParameter(name="type", accepted_values=("ondemand", "continuous"))
+
+    @property
+    def min_range(self):
+        return 0
+
+    @property
+    def max_range(self):
+        return 1
+
+    def store_input(self, param, value):
+        if param == "type" and isinstance(value, (int, float, Decimal)):
+            value = self.type_cv.parameter.map2accepted_values(value)
+        super().store_input(param, value)
+
+    def __init__(
+        self, input=0, upperbound=127, lowerbound=0, type="ondemand", **kwargs
+    ):
+        self.input = input
+        self.upperbound = upperbound
+        self.lowerbound = lowerbound
+        self.type = type
+        super().__init__(**kwargs)
+
+    @staticmethod
+    def _in_window(lower, value, upper):
+        return int(lower <= value <= upper)
+
+    @on(input_cv, edge="any")
+    def input_variation(self, value, ctx):
+        if self.type == "ondemand":
+            return self._in_window(self.lowerbound, value, self.upperbound)
+
+    @on(lowerbound_cv, edge="any")
+    def lowerbound_variation(self, value, ctx):
+        if self.type == "ondemand":
+            return self._in_window(value, self.input, self.upperbound)
+
+    @on(upperbound_cv, edge="any")
+    def upperbound_variation(self, value, ctx):
+        if self.type == "ondemand":
+            return self._in_window(self.lowerbound, self.input, value)
+
+    def main(self, ctx: ThreadContext):
+        if self.type != "continuous":
+            return
+        return self._in_window(self.lowerbound, self.input, self.upperbound)
