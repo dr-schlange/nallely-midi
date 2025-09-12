@@ -114,3 +114,92 @@ class MultiPoleFilter(VirtualDevice):
 
         self._states = states
         return states[self.poles - 1]  # output last pole
+
+
+class Waveshaper(VirtualDevice):
+    input_cv = VirtualParameter(name="input", range=(-5, 5))
+    mode_cv = VirtualParameter(
+        name="mode",
+        accepted_values=("linear", "exp", "log", "sigmoid", "fold", "quantize"),
+    )
+    amount_cv = VirtualParameter(name="amount", range=(0, 1))
+    symmetry_cv = VirtualParameter(name="symmetry", range=(-1, 1))
+    bias_cv = VirtualParameter(name="bias", range=(0, 5))
+    exp_power_cv = VirtualParameter(name="exp_power", range=(0.1, 50))
+    log_scale_cv = VirtualParameter(name="log_scale", range=(1, 30))
+    sigmoid_gain_cv = VirtualParameter(name="sigmoid_gain", range=(0.5, 20))
+    fold_gain_cv = VirtualParameter(name="fold_gain", range=(0.5, 10))
+    quantize_steps_cv = VirtualParameter(
+        name="quantize_steps", range=(2, 64), conversion_policy="round"
+    )
+    type_cv = VirtualParameter(name="type", accepted_values=("ondemand", "continuous"))
+
+    def __init__(self, *args, **kwargs):
+        self.mode = "linear"
+        self.bias = 0
+        self.symmetry = 0
+        self.input = 0
+        self.amount = 0.5
+        self.quantize_steps = 8
+        self.log_scale = 4
+        self.sigmoid_gain = 3
+        self.fold_gain = 1
+        self.type = "ondemand"
+        self.exp_power = 2
+        super().__init__(*args, **kwargs)
+
+    def process(self):
+        # Normalize input to -1..1
+        norm = self.input / 5.0
+        norm = max(-1.0, min(1.0, norm))
+
+        # Apply bias in normalized space (-1..1)
+        bias_norm = self.bias / 5.0
+        x = norm + bias_norm
+        x = max(-1.0, min(1.0, x))
+
+        # Apply shaping function
+        y = self.apply_shaping(x, self.mode)
+
+        # Apply symmetry
+        if y >= 0:
+            y *= 1 + self.symmetry
+        else:
+            y *= 1 - self.symmetry
+        y = max(-1.0, min(1.0, y))
+
+        # Dry/Wet blending (0 = wet, 1 = dry)
+        blended = self.amount * norm + (1 - self.amount) * y
+
+        # Map back to 0..5V output
+        output = (blended + 1) * 5 / 2
+        return output
+
+    def apply_shaping(self, x, mode):
+        if mode == "linear":
+            return x
+        elif mode == "exp":
+            return math.copysign(abs(x) ** self.exp_power, x)
+        elif mode == "log":
+            return math.copysign(
+                math.log1p(abs(x) * self.log_scale) / math.log1p(self.log_scale), x
+            )
+        elif mode == "sigmoid":
+            return math.tanh(self.sigmoid_gain * x)
+        elif mode == "fold":
+            return abs(((x * self.fold_gain + 1) % 2) - 1) * 2 - 1
+        elif mode == "quantize":
+            steps = int(self.quantize_steps)
+            if steps == 0:
+                steps = 0.001
+            return round(x * steps) / steps
+        return x
+
+    @on(input_cv, edge="any")
+    def compute_input(self, value, ctx):
+        if self.type == "ondemand":
+            return self.process()
+
+    def main(self, ctx):
+        if self.type == "continuous":
+            return self.process()

@@ -20,7 +20,7 @@ from .core import (
     virtual_devices,
 )
 from .eg import VCA, ADSREnvelope, Gate, SampleHold, SeqSwitch, Switch
-from .filters import MultiPoleFilter
+from .filters import MultiPoleFilter, Waveshaper
 from .lfos import LFO, Cycler
 from .logicals import Bitwise, Comparator, Logical, Operator, WindowDetector
 from .shifter import Arpegiator, Looper, Modulo, PitchShifter, Quantizer, ShiftRegister
@@ -71,4 +71,5 @@ __all__ = [
     "Bitwise",
     "WindowDetector",
     "MultiPoleFilter",
+    "Waveshaper",
 ]
