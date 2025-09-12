@@ -237,7 +237,7 @@ class Switch(VirtualDevice):
 
 
 class SeqSwitch(VirtualDevice):
-    trigger_cv = VirtualParameter("trigger", range=(0, 127))
+    trigger_cv = VirtualParameter("trigger", range=(0, 1))
     reset_cv = VirtualParameter("reset", range=(0, 1))
     steps_cv = VirtualParameter("steps", range=(2, 4))
     mode_cv = VirtualParameter("mode", accepted_values=("IOs->OI", "OI->IOs"))
@@ -285,7 +285,7 @@ class SeqSwitch(VirtualDevice):
     @on(reset_cv, edge="rising")
     def reset_step(self, _, ctx):
         self.step = 0
-        self.next_step(_, ctx)  # value is ignored in next_step
+        yield from self.next_step(_, ctx)  # value is ignored in next_step
 
     @on(steps_cv, edge="any")
     def reset_outputs(self, value, ctx):
