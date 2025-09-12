@@ -125,7 +125,10 @@ const VirtualDeviceComponent = ({
 				<button
 					type="button"
 					className="amiga-button play-pause-button center-button"
-					onClick={() => pauseResume(device)}
+					onClick={(event) => {
+						event.stopPropagation();
+						pauseResume(device);
+					}}
 				>
 					{!device.running || device.paused ? "▶" : "⏸"}
 				</button>
