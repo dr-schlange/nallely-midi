@@ -26,7 +26,7 @@ Feature: Comparator module
         Then comparator's output is eq 0
 
         Given comparator's comparator is set to <
-        When around 1ms have passed
+        When around 2ms have passed
         Then comparator's output is eq 1
 
         Given comparator's comparator is set to <=

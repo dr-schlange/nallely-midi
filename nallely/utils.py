@@ -8,8 +8,6 @@ from dataclasses import asdict
 from decimal import Decimal
 from pathlib import Path
 
-from .core import ParameterInstance
-
 
 def longest_common_substring(s1: str, s2: str) -> str:
     if not s1 or not s2:
@@ -67,6 +65,8 @@ class StateEncoder(json.JSONEncoder):
     def default(self, o):
         if isinstance(o, Decimal):
             return float(str(o))
+        from .core import ParameterInstance
+
         if isinstance(o, ParameterInstance):
             return asdict(o.parameter)
         return super().default(o)
@@ -151,3 +151,69 @@ def force_off_everywhere(times=2, verbose=False):
                     )
         if verbose:
             print("[OK]")
+
+
+# See if the micro-optimization trick actually is usefull or if it's useless
+def map2values_cv_property(dev, param, getattr=getattr, setattr=setattr):
+    attr_name = f"_{param.name}"
+    setattr(dev, attr_name, getattr(dev, param.name, None))
+
+    def getter(self):
+        return getattr(self, attr_name)
+
+    def setter(self, value):
+        if isinstance(value, (int, float, Decimal)):
+            value = param.map2accepted_values(value)
+        setattr(self, attr_name, value)
+
+    setattr(dev.__class__, param.name, property(getter, setter))
+
+
+def round_cv_property(dev, param, getattr=getattr, setattr=setattr):
+    attr_name = f"_{param.name}"
+    setattr(dev, attr_name, getattr(dev, param.name, None))
+
+    def getter(self):
+        return getattr(self, attr_name)
+
+    def setter(self, value):
+        value = round(value)
+        setattr(self, attr_name, value)
+
+    setattr(dev.__class__, param.name, property(getter, setter))
+
+
+def sup0_cv_property(dev, param, getattr=getattr, setattr=setattr):
+    attr_name = f"_{param.name}"
+    lower, upper = param.range
+    if lower is None:
+        lower = 0
+    if upper is None:
+        upper = 1
+
+    def getter(self):
+        return getattr(self, attr_name)
+
+    def setter(self, value):
+        value = upper if value > lower else lower
+        setattr(self, attr_name, value)
+
+    setattr(dev.__class__, param.name, property(getter, setter))
+
+
+def diff0_cv_property(dev, param, getattr=getattr, setattr=setattr):
+    attr_name = f"_{param.name}"
+    lower, upper = param.range
+    if lower is None:
+        lower = 0
+    if upper is None:
+        upper = 1
+
+    def getter(self):
+        return getattr(self, attr_name)
+
+    def setter(self, value):
+        value = upper if value != lower else lower
+        setattr(self, attr_name, value)
+
+    setattr(dev.__class__, param.name, property(getter, setter))

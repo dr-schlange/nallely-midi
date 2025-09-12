@@ -84,10 +84,10 @@ class Arpegiator(VirtualDevice):
     def range(self):
         return 24, 108
 
-    def store_input(self, param: str, value):
-        if param == "direction" and isinstance(value, (int, float, Decimal)):
-            value = self.direction_cv.parameter.map2accepted_values(value)
-        return super().store_input(param, value)
+    # def store_input(self, param: str, value):
+    #     if param == "direction" and isinstance(value, (int, float, Decimal)):
+    #         value = self.direction_cv.parameter.map2accepted_values(value)
+    #     return super().store_input(param, value)
 
     def __init__(self, **kwargs):
         self.input = None
@@ -438,8 +438,10 @@ class Quantizer(VirtualDevice):
     input_cv = VirtualParameter("input", range=(0, 127))
     trigger_cv = VirtualParameter("trigger", range=(0, 1))
     reset_cv = VirtualParameter("reset", range=(0, 1))
-    root_cv = VirtualParameter("root", accepted_values=NOTE_NAMES)
-    scale__cv = VirtualParameter("scale_", accepted_values=tuple(INTERVALS.keys()))
+    root_cv = VirtualParameter("root", accepted_values=NOTE_NAMES, disable_policy=True)
+    scale__cv = VirtualParameter(
+        "scale_", accepted_values=tuple(INTERVALS.keys()), disable_policy=True
+    )
     type_cv = VirtualParameter("type", accepted_values=("sample&hold", "free"))
 
     def __init__(self, **kwargs):
@@ -464,8 +466,8 @@ class Quantizer(VirtualDevice):
             if isinstance(value, (int, float, Decimal)):
                 value = accepted_values[int(value % len(accepted_values))]
             self.update_nearest_table(NOTES[self.root], SCALES[value])
-        elif param == "type" and isinstance(value, (int, float, Decimal)):
-            value = self.type_cv.parameter.map2accepted_values(value)
+        # elif param == "type" and isinstance(value, (int, float, Decimal)):
+        #     value = self.type_cv.parameter.map2accepted_values(value)
         elif param == "trigger" or param == "reset":
             value = 1 if value > 0 else 0
         return super().store_input(param, value)

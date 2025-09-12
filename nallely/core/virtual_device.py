@@ -10,6 +10,12 @@ from queue import Empty, Full, Queue
 from types import GeneratorType
 from typing import Any, Callable, Literal, Sequence, Type
 
+from ..utils import (
+    diff0_cv_property,
+    map2values_cv_property,
+    round_cv_property,
+    sup0_cv_property,
+)
 from .parameter_instances import ParameterInstance
 from .scaler import Scaler
 from .world import (
@@ -31,6 +37,8 @@ class VirtualParameter:
     description: str | None = None
     range: tuple[int | float | None, int | float | None] = (None, None)
     accepted_values: Sequence[Any] = ()
+    conversion_policy: Literal[">0", "!=0", "round"] | None = None
+    disable_policy: bool = False
     cv_name: str | None = None
     section_name: str = "__virtual__"
     cc_note: int = -1
@@ -189,12 +197,24 @@ class VirtualDevice(threading.Thread):
         self.ready_event = threading.Event()
         self.closed_ports = set()
         self._param_last_values = {}
+        self.internal_setup()
         if autoconnect:
             self.start()
 
     def __init_subclass__(cls) -> None:
         virtual_device_classes.append(cls)
         super().__init_subclass__()
+
+    def internal_setup(self):
+        for parameter in self.all_parameters():
+            if parameter.accepted_values and not parameter.disable_policy:
+                map2values_cv_property(self, parameter)
+            elif parameter.conversion_policy == ">0":
+                sup0_cv_property(self, parameter)
+            elif parameter.conversion_policy == "!=0":
+                diff0_cv_property(self, parameter)
+            elif parameter.conversion_policy == "round":
+                round_cv_property(self, parameter)
 
     def setup(self) -> ThreadContext:
         return ThreadContext()
@@ -280,6 +300,7 @@ class VirtualDevice(threading.Thread):
 
     def run(self):
         self.ready_event.set()
+        # self.internal_setup()
         ctx = self.setup()
         ctx.parent = self
         ctx.last_values = {}
@@ -709,6 +730,8 @@ class VirtualDevice(threading.Thread):
         for parameter in self.all_parameters():
             try:
                 value = object.__getattribute__(self, parameter.name)
+                # if (isinstance(value, property)):
+                #     value = getattr(self, parameter.name)
                 if value is not None:
                     d[parameter.name] = value
             except AttributeError:

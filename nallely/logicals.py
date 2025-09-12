@@ -29,12 +29,12 @@ class Comparator(VirtualDevice):
         "<>": lambda a, b: 1 if a != b else 0,
     }
 
-    def store_input(self, param, value):
-        if param == "type" and isinstance(value, (int, float, Decimal)):
-            value = self.type_cv.parameter.map2accepted_values(value)
-        elif param == "comparator" and isinstance(value, (int, float, Decimal)):
-            value = self.comparator_cv.parameter.map2accepted_values(value)
-        super().store_input(param, value)
+    # def store_input(self, param, value):
+    #     if param == "type" and isinstance(value, (int, float, Decimal)):
+    #         value = self.type_cv.parameter.map2accepted_values(value)
+    #     elif param == "comparator" and isinstance(value, (int, float, Decimal)):
+    #         value = self.comparator_cv.parameter.map2accepted_values(value)
+    #     super().store_input(param, value)
 
     def __init__(self, a=0, b=0, comparator="=", type="ondemand", **kwargs):
         self.a = a
@@ -79,10 +79,10 @@ class WindowDetector(VirtualDevice):
     def max_range(self):
         return 1
 
-    def store_input(self, param, value):
-        if param == "type" and isinstance(value, (int, float, Decimal)):
-            value = self.type_cv.parameter.map2accepted_values(value)
-        super().store_input(param, value)
+    # def store_input(self, param, value):
+    #     if param == "type" and isinstance(value, (int, float, Decimal)):
+    #         value = self.type_cv.parameter.map2accepted_values(value)
+    #     super().store_input(param, value)
 
     def __init__(
         self, input=0, upperbound=127, lowerbound=0, type="ondemand", **kwargs
@@ -158,11 +158,11 @@ class Operator(VirtualDevice):
     }
 
     def store_input(self, param, value):
-        if param == "type" and isinstance(value, (int, float, Decimal)):
-            value = self.type_cv.parameter.map2accepted_values(value)
-        elif param == "operator" and isinstance(value, (int, float, Decimal)):
-            value = self.operator_cv.parameter.map2accepted_values(value)
-        elif param == "b" and self.operator == "/" and value == 0:
+        # if param == "type" and isinstance(value, (int, float, Decimal)):
+        #     value = self.type_cv.parameter.map2accepted_values(value)
+        # elif param == "operator" and isinstance(value, (int, float, Decimal)):
+        #     value = self.operator_cv.parameter.map2accepted_values(value)
+        if param == "b" and self.operator == "/" and value == 0:
             value = 0.0001  # avoid division by 0
         super().store_input(param, value)
 
@@ -195,8 +195,8 @@ class Operator(VirtualDevice):
 
 
 class Logical(VirtualDevice):
-    a_cv = VirtualParameter(name="a", range=(0, 1))
-    b_cv = VirtualParameter(name="b", range=(0, 1))
+    a_cv = VirtualParameter(name="a", range=(0, 1), conversion_policy=">0")
+    b_cv = VirtualParameter(name="b", range=(0, 1), conversion_policy=">0")
     operator_cv = VirtualParameter(
         name="operator",
         accepted_values=("and", "or", "xor", "nand", "nor", "xnor", "not"),
@@ -221,12 +221,12 @@ class Logical(VirtualDevice):
         "not": lambda a, _: int(not bool(a)),
     }
 
-    def store_input(self, param, value):
-        if param == "operator" and isinstance(value, (int, float, Decimal)):
-            value = self.operator_cv.parameter.map2accepted_values(value)
-        elif param == "a" or param == "b":
-            value = 1 if value > 0 else 0
-        super().store_input(param, value)
+    # def store_input(self, param, value):
+    #     if param == "operator" and isinstance(value, (int, float, Decimal)):
+    #         value = self.operator_cv.parameter.map2accepted_values(value)
+    #     elif param == "a" or param == "b":
+    #         value = 1 if value > 0 else 0
+    #     super().store_input(param, value)
 
     def __init__(self, a=0, b=0, operator="and", type="ondemand", **kwargs):
         self.a = a
@@ -257,8 +257,8 @@ class Logical(VirtualDevice):
 
 
 class Bitwise(VirtualDevice):
-    a_cv = VirtualParameter(name="a", range=(None, None))
-    b_cv = VirtualParameter(name="b", range=(None, None))
+    a_cv = VirtualParameter(name="a", range=(None, None), conversion_policy="round")
+    b_cv = VirtualParameter(name="b", range=(None, None), conversion_policy="round")
     operator_cv = VirtualParameter(
         name="operator",
         accepted_values=("and", "or", "xor", "not", ">>", "<<"),
@@ -282,12 +282,12 @@ class Bitwise(VirtualDevice):
         "<<": lambda a, b: a << b,
     }
 
-    def store_input(self, param, value):
-        if param == "operator" and isinstance(value, (int, float, Decimal)):
-            value = self.operator_cv.parameter.map2accepted_values(value)
-        elif param == "a" or param == "b":
-            value = round(value)
-        super().store_input(param, value)
+    # def store_input(self, param, value):
+    #     if param == "operator" and isinstance(value, (int, float, Decimal)):
+    #         value = self.operator_cv.parameter.map2accepted_values(value)
+    #     elif param == "a" or param == "b":
+    #         value = round(value)
+    #     super().store_input(param, value)
 
     def __init__(self, a=0, b=0, operator="and", type="ondemand", **kwargs):
         self.a = a

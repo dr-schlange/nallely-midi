@@ -46,7 +46,6 @@ def test__virtual_device_current_preset():
     l = nallely.LFO(waveform="sine", min_value=20, max_value=1000, speed=50)
 
     d = l.current_preset()
-
     assert len(d) == 11
     assert d["max_value"] == 1000
     assert d["min_value"] == 20

@@ -6,7 +6,7 @@ from .core import VirtualDevice, VirtualParameter, on
 
 
 class ADSREnvelope(VirtualDevice):
-    gate_cv = VirtualParameter(name="gate", range=(0, 1))
+    gate_cv = VirtualParameter(name="gate", range=(0, 1), conversion_policy="!=0")
     attack_cv = VirtualParameter(name="attack", range=(0.0, 1.0))
     decay_cv = VirtualParameter(name="decay", range=(0.0, 1.0))
     sustain_cv = VirtualParameter(name="sustain", range=(0.0, 1.0))
@@ -20,10 +20,10 @@ class ADSREnvelope(VirtualDevice):
         self.gate = 0  # False
         super().__init__(**kwargs)
 
-    def store_input(self, param, value):
-        if param == "gate":
-            return super().store_input(param, 1 if value != 0 else 0)
-        super().store_input(param, value)
+    # def store_input(self, param, value):
+    #     if param == "gate":
+    #         return super().store_input(param, 1 if value != 0 else 0)
+    #     super().store_input(param, value)
 
     def setup(self):
         ctx = super().setup()
@@ -203,11 +203,11 @@ class Switch(VirtualDevice):
         super().__init__(target_cycle_time=1 / 100, **kwargs)
 
     def store_input(self, param: str, value):
-        if param == "type" and isinstance(value, (int, float)):
-            value = self.type_cv.parameter.accepted_values[
-                int(value) % len(self.outputs)
-            ]
-        elif param == "hold_last":
+        # if param == "type" and isinstance(value, (int, float)):
+        #     value = self.type_cv.parameter.accepted_values[
+        #         int(value) % len(self.outputs)
+        #     ]
+        if param == "hold_last":
             value = bool(value)
         return super().store_input(param, value)
 
@@ -262,10 +262,10 @@ class SeqSwitch(VirtualDevice):
         self.ios = [self.io1_cv, self.io2_cv, self.io3_cv, self.io4_cv]
         super().__init__(disable_output=True, **kwargs)
 
-    def store_input(self, param: str, value):
-        if param == "mode" and isinstance(value, (float, int, Decimal)):
-            value = self.mode_cv.parameter.map2accepted_values(value)
-        return super().store_input(param, value)
+    # def store_input(self, param: str, value):
+    #     if param == "mode" and isinstance(value, (float, int, Decimal)):
+    #         value = self.mode_cv.parameter.map2accepted_values(value)
+    #     return super().store_input(param, value)
 
     def next_step(self, _, ctx):
         if self.mode == "OI->IOs":

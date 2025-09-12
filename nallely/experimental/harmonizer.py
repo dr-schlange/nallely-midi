@@ -38,14 +38,14 @@ class Harmonizer(VirtualDevice):
 
         super().__init__(*args, **kwargs)
 
-    def store_input(self, param: str, value):
-        if param == "key" and isinstance(value, (int, float, Decimal)):
-            accepted_values = getattr(self.__class__, "key_cv").accepted_values
-            value = accepted_values[int(value % len(accepted_values))]
-        elif param == "scale_" and isinstance(value, (int, float, Decimal)):
-            accepted_values = getattr(self.__class__, "scale_cv").accepted_values
-            value = accepted_values[int(value % len(accepted_values))]
-        return super().store_input(param, value)
+    # def store_input(self, param: str, value):
+    #     if param == "key" and isinstance(value, (int, float, Decimal)):
+    #         accepted_values = getattr(self.__class__, "key_cv").accepted_values
+    #         value = accepted_values[int(value % len(accepted_values))]
+    #     elif param == "scale_" and isinstance(value, (int, float, Decimal)):
+    #         accepted_values = getattr(self.__class__, "scale_cv").accepted_values
+    #         value = accepted_values[int(value % len(accepted_values))]
+    #     return super().store_input(param, value)
 
     def get_scale_for_key(self, key, scale_type):
         scale = self.scales[scale_type]
