@@ -192,3 +192,126 @@ class Operator(VirtualDevice):
         if self.type != "continuous":
             return
         return self.operator_map[self.operator](self.a, self.b)
+
+
+class Logical(VirtualDevice):
+    a_cv = VirtualParameter(name="a", range=(0, 1))
+    b_cv = VirtualParameter(name="b", range=(0, 1))
+    operator_cv = VirtualParameter(
+        name="operator",
+        accepted_values=("and", "or", "xor", "nand", "nor", "xnor", "not"),
+    )
+    type_cv = VirtualParameter(name="type", accepted_values=("ondemand", "continuous"))
+
+    @property
+    def min_range(self):
+        return 0
+
+    @property
+    def max_range(self):
+        return 1
+
+    operator_map = {
+        "and": lambda a, b: int(bool(a) and bool(b)),
+        "or": lambda a, b: int(bool(a) or bool(b)),
+        "xor": lambda a, b: int(bool(a) ^ bool(b)),
+        "nand": lambda a, b: int(not (bool(a) and bool(b))),
+        "nor": lambda a, b: int(not (bool(a) or bool(b))),
+        "xnor": lambda a, b: int(not (bool(a) ^ bool(b))),
+        "not": lambda a, _: int(not bool(a)),
+    }
+
+    def store_input(self, param, value):
+        if param == "operator" and isinstance(value, (int, float, Decimal)):
+            value = self.operator_cv.parameter.map2accepted_values(value)
+        elif param == "a" or param == "b":
+            value = 1 if value > 0 else 0
+        super().store_input(param, value)
+
+    def __init__(self, a=0, b=0, operator="and", type="ondemand", **kwargs):
+        self.a = a
+        self.b = b
+        self.operator = operator
+        self.type = type
+        super().__init__(**kwargs)
+
+    @on(operator_cv, edge="any")
+    def change_operator(self, value, ctx):
+        if self.type == "ondemand":
+            return self.operator_map[value](self.a, self.b)
+
+    @on(a_cv, edge="any")
+    def operation_a2b(self, value, ctx):
+        if self.type == "ondemand":
+            return self.operator_map[self.operator](value, self.b)
+
+    @on(b_cv, edge="any")
+    def operation_b2a(self, value, ctx):
+        if self.type == "ondemand" and self.operator != "not":
+            return self.operator_map[self.operator](self.a, value)
+
+    def main(self, ctx: ThreadContext):
+        if self.type != "continuous":
+            return
+        return self.operator_map[self.operator](self.a, self.b)
+
+
+class Bitwise(VirtualDevice):
+    a_cv = VirtualParameter(name="a", range=(None, None))
+    b_cv = VirtualParameter(name="b", range=(None, None))
+    operator_cv = VirtualParameter(
+        name="operator",
+        accepted_values=("and", "or", "xor", "not", ">>", "<<"),
+    )
+    type_cv = VirtualParameter(name="type", accepted_values=("ondemand", "continuous"))
+
+    @property
+    def min_range(self):
+        return None
+
+    @property
+    def max_range(self):
+        return None
+
+    operator_map = {
+        "and": lambda a, b: a & b,
+        "or": lambda a, b: a | b,
+        "xor": lambda a, b: a ^ b,
+        "not": lambda a, _: ~a,
+        ">>": lambda a, b: a >> b,
+        "<<": lambda a, b: a << b,
+    }
+
+    def store_input(self, param, value):
+        if param == "operator" and isinstance(value, (int, float, Decimal)):
+            value = self.operator_cv.parameter.map2accepted_values(value)
+        elif param == "a" or param == "b":
+            value = round(value)
+        super().store_input(param, value)
+
+    def __init__(self, a=0, b=0, operator="and", type="ondemand", **kwargs):
+        self.a = a
+        self.b = b
+        self.operator = operator
+        self.type = type
+        super().__init__(**kwargs)
+
+    @on(operator_cv, edge="any")
+    def change_operator(self, value, ctx):
+        if self.type == "ondemand":
+            return self.operator_map[value](self.a, self.b)
+
+    @on(a_cv, edge="any")
+    def operation_a2b(self, value, ctx):
+        if self.type == "ondemand":
+            return self.operator_map[self.operator](value, self.b)
+
+    @on(b_cv, edge="any")
+    def operation_b2a(self, value, ctx):
+        if self.type == "ondemand" and self.operator != "not":
+            return self.operator_map[self.operator](self.a, value)
+
+    def main(self, ctx: ThreadContext):
+        if self.type != "continuous":
+            return
+        return self.operator_map[self.operator](self.a, self.b)
