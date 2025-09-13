@@ -335,3 +335,29 @@ class Latch(VirtualDevice):
 
     def main(self, ctx):
         return self.output
+
+
+class FlipFlop(VirtualDevice):
+    data_toggle_cv = VirtualParameter(
+        name="data_toggle", range=(0, 1), conversion_policy="round"
+    )
+    clock_cv = VirtualParameter(name="clock", range=(0, 1), conversion_policy=">0")
+    reset_cv = VirtualParameter(name="reset", range=(0, 1), conversion_policy="round")
+    mode_cv = VirtualParameter(name="mode", accepted_values=("data", "toggle"))
+
+    def __post_init__(self, **kwargs):
+        return {"target_cycle_time": 0.01}
+
+    @on(clock_cv, edge="rising")
+    def rising_clock(self, value, ctx):
+        if self.mode == "data":  # type: ignore
+            return self.data_toggle  # type: ignore
+        elif self.data_toggle > 0:  # type: ignore
+            return 1 - self.output  # type: ignore
+
+    @on(reset_cv, edge="rising")
+    def reset_out(self, value, ctx):
+        return 0
+
+    def main(self, ctx):
+        return self.output

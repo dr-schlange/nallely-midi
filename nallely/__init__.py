@@ -22,7 +22,15 @@ from .core import (
 from .eg import VCA, ADSREnvelope, EnvelopeSlew, Gate, SampleHold
 from .filters import MultiPoleFilter, Waveshaper
 from .lfos import LFO, Cycler
-from .logicals import Bitwise, Comparator, Latch, Logical, Operator, WindowDetector
+from .logicals import (
+    Bitwise,
+    Comparator,
+    FlipFlop,
+    Latch,
+    Logical,
+    Operator,
+    WindowDetector,
+)
 from .shifter import Arpegiator, Looper, Modulo, PitchShifter, Quantizer
 from .switchs import BitCounter, RingCounter, SeqSwitch, ShiftRegister, Switch
 from .websocket_bus import WebSocketBus
@@ -78,4 +86,5 @@ __all__ = [
     "BernoulliTrigger",
     "EnvelopeSlew",
     "Latch",
+    "FlipFlop",
 ]
