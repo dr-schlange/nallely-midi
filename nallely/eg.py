@@ -183,22 +183,33 @@ class SampleHold(VirtualDevice):
         return 0
 
 
-class EnvelopeFollower(VirtualDevice):
+class EnvelopeSlew(VirtualDevice):
     input_cv = VirtualParameter(name="input", range=(0, 127))
     attack_cv = VirtualParameter(name="attack", range=(0.0, 99.99), default=50.0)
     release_cv = VirtualParameter(name="release", range=(0.0, 99.99), default=50.0)
+    type_cv = VirtualParameter(name="type", accepted_values=("envelope", "slew"))
     mode_cv = VirtualParameter(name="mode", accepted_values=("ondemand", "continuous"))
 
     def __post_init__(self, **kwargs):
         self.prev_value = 0
 
     def compute(self):
-        value = abs(self.input)  # type: ignore
+        half = self.input_cv.parameter.range[1] / 2  # type: ignore
+        if self.type == "envelope":  # type: ignore
+            rectified_input = abs(self.input)  # type: ignore
+        else:
+            rectified_input = self.input - half  # type: ignore
         prev_value = self.prev_value
-        smoothing = 1.0 - ((self.attack if value > prev_value else self.release) / 100.0)  # type: ignore
-        result = prev_value + smoothing * (value - prev_value)
-        self.prev_value = result
-        return result
+
+        delta = rectified_input - prev_value
+        smoothing = 1.0 - ((self.attack if delta > 0 else self.release) / 100.0)  # type: ignore
+        output = prev_value + smoothing * delta
+        self.prev_value = output
+
+        # We need to rectify for the slew
+        if self.type == "slew":  # type: ignore
+            output += half
+        return output
 
     @on(input_cv, edge="any")
     def change_input(self, value, ctx):
