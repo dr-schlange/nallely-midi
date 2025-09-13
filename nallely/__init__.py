@@ -19,7 +19,7 @@ from .core import (
     virtual_device_classes,
     virtual_devices,
 )
-from .eg import VCA, ADSREnvelope, Gate, SampleHold
+from .eg import VCA, ADSREnvelope, EnvelopeFollower, Gate, SampleHold
 from .filters import MultiPoleFilter, Waveshaper
 from .lfos import LFO, Cycler
 from .logicals import Bitwise, Comparator, Logical, Operator, WindowDetector
@@ -76,4 +76,5 @@ __all__ = [
     "RingCounter",
     "BitCounter",
     "BernoulliTrigger",
+    "EnvelopeFollower",
 ]

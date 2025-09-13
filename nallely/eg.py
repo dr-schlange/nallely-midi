@@ -1,3 +1,5 @@
+from typing import Any
+
 from .core import VirtualDevice, VirtualParameter, on
 from .core.world import ThreadContext
 
@@ -179,3 +181,30 @@ class SampleHold(VirtualDevice):
     @on(reset_cv, edge="rising")
     def reset_input(self, value, ctx):
         return 0
+
+
+class EnvelopeFollower(VirtualDevice):
+    input_cv = VirtualParameter(name="input", range=(0, 127))
+    attack_cv = VirtualParameter(name="attack", range=(0.0, 99.99), default=50.0)
+    release_cv = VirtualParameter(name="release", range=(0.0, 99.99), default=50.0)
+    mode_cv = VirtualParameter(name="mode", accepted_values=("ondemand", "continuous"))
+
+    def __post_init__(self, **kwargs):
+        self.prev_value = 0
+
+    def compute(self):
+        value = abs(self.input)  # type: ignore
+        prev_value = self.prev_value
+        smoothing = 1.0 - ((self.attack if value > prev_value else self.release) / 100.0)  # type: ignore
+        result = prev_value + smoothing * (value - prev_value)
+        self.prev_value = result
+        return result
+
+    @on(input_cv, edge="any")
+    def change_input(self, value, ctx):
+        if self.mode == "ondemand":  # type: ignore
+            return self.compute()
+
+    def main(self, ctx):
+        if self.mode == "continuous":  # type: ignore
+            return self.compute()
