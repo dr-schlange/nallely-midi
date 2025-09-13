@@ -1,4 +1,5 @@
 from decimal import Decimal
+from typing import Any
 
 from .core import VirtualDevice, VirtualParameter, on
 from .core.world import ThreadContext
@@ -315,3 +316,22 @@ class Bitwise(VirtualDevice):
         if self.type != "continuous":
             return
         return self.operator_map[self.operator](self.a, self.b)
+
+
+class Latch(VirtualDevice):
+    set_cv = VirtualParameter(name="set", range=(0, 1), conversion_policy="round")
+    reset_cv = VirtualParameter(name="reset", range=(0, 1), conversion_policy="round")
+
+    def __post_init__(self, **kwargs):
+        return {"target_cycle_time": 0.01}
+
+    @on(set_cv, edge="rising")
+    def set_rising(self, value, ctx):
+        return 1
+
+    @on(reset_cv, edge="rising")
+    def reset_state(self, value, ctx):
+        return 0
+
+    def main(self, ctx):
+        return self.output
