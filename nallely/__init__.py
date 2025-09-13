@@ -1,4 +1,4 @@
-from .clocks import Clock
+from .clocks import BernoulliTrigger, Clock
 from .core import (
     DeviceNotFound,
     MidiDevice,
@@ -75,4 +75,5 @@ __all__ = [
     "Waveshaper",
     "RingCounter",
     "BitCounter",
+    "BernoulliTrigger",
 ]

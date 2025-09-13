@@ -1,5 +1,7 @@
 import time
 from decimal import Decimal
+from fractions import Fraction
+from random import random
 
 from .core import VirtualDevice, VirtualParameter, on
 
@@ -118,3 +120,39 @@ class Clock(VirtualDevice):
         else:
             # We are late, we hurry to compensate
             self.next_tick_time = time.perf_counter()
+
+
+class BernoulliTrigger(VirtualDevice):
+    trigger_cv = VirtualParameter(name="trigger", range=(0, 1), conversion_policy=">0")
+    probability_cv = VirtualParameter(name="probability", range=(0.0, 1.0), default=0.5)
+    bias_cv = VirtualParameter(name="bias", range=(0.0, 1.0))
+    quantized_cv = VirtualParameter(
+        name="quantized",
+        accepted_values=("off", "1/8", "1/6", "1/5", "1/4", "1/3", "1/2", "2/3", "3/4"),
+    )
+
+    def __post_init__(self, **kwargs):
+        self.quantize_scale = [
+            0,
+            *(
+                float(Fraction(x))
+                for x in self.quantized_cv.parameter.accepted_values[1:]
+            ),
+            1,
+        ]
+
+    @on(trigger_cv, edge="rising")
+    def on_trigger(self, value, ctx):
+        b = self.bias  #  type: ignore
+        p = self.probability  # type: ignore
+        pbias = p + b * (1 - p)
+        pquant = min(self.quantize_scale, key=lambda x: abs(x - pbias))
+        if self.quantized != "off":  # type: ignore
+            pquant = min(self.quantize_scale, key=lambda x: abs(x - pbias))
+        else:
+            pquant = pbias
+
+        trigger = 1 if random() < pquant else 0
+        if trigger:
+            yield 1
+        yield 0
