@@ -19,11 +19,12 @@ from .core import (
     virtual_device_classes,
     virtual_devices,
 )
-from .eg import VCA, ADSREnvelope, Gate, SampleHold, SeqSwitch, Switch
+from .eg import VCA, ADSREnvelope, Gate, SampleHold
 from .filters import MultiPoleFilter, Waveshaper
 from .lfos import LFO, Cycler
 from .logicals import Bitwise, Comparator, Logical, Operator, WindowDetector
-from .shifter import Arpegiator, Looper, Modulo, PitchShifter, Quantizer, ShiftRegister
+from .shifter import Arpegiator, Looper, Modulo, PitchShifter, Quantizer
+from .switchs import RingCounter, SeqSwitch, ShiftRegister, Switch
 from .websocket_bus import WebSocketBus
 
 # For retrocompatibility of some patchs
@@ -72,4 +73,5 @@ __all__ = [
     "WindowDetector",
     "MultiPoleFilter",
     "Waveshaper",
+    "RingCounter",
 ]

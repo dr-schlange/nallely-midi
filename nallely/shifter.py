@@ -1,6 +1,5 @@
 import bisect
 import random
-from collections import deque
 from decimal import Decimal
 
 from .core.virtual_device import VirtualDevice, VirtualParameter, on
@@ -364,46 +363,6 @@ class Looper(VirtualDevice):
                 yield value, [self.outputs[channel]]
 
             self.current_index += 1
-
-
-class ShiftRegister(VirtualDevice):
-    input_cv = VirtualParameter("input", range=(0, 127))
-    trigger_cv = VirtualParameter("trigger", range=(0, 1))
-    reset_cv = VirtualParameter("reset", range=(0, 1))
-
-    output7_cv = VirtualParameter("output7", range=(0, 127))
-    output6_cv = VirtualParameter("output6", range=(0, 127))
-    output5_cv = VirtualParameter("output5", range=(0, 127))
-    output4_cv = VirtualParameter("output4", range=(0, 127))
-    output3_cv = VirtualParameter("output3", range=(0, 127))
-    output2_cv = VirtualParameter("output2", range=(0, 127))
-    output1_cv = VirtualParameter("output1", range=(0, 127))
-    output0_cv = VirtualParameter("output0", range=(0, 127))
-
-    def __init__(self, **kwargs):
-        self.input = 0
-        self.trigger = 0
-        self.reset = 0
-        self.registers: deque[int | None] = deque([None] * 8, maxlen=8)
-        self.outputs = [None] * 8
-        for i in range(8):
-            setattr(self, f"output{i}", 0)
-            self.outputs[i] = getattr(self, f"output{i}_cv")
-        super().__init__(disable_output=True, **kwargs)
-
-    @on(trigger_cv, edge="rising")
-    def trigger_next_step(self, value, ctx):
-        self.registers.appendleft(self.input)
-        for i, (register, output) in enumerate(zip(self.registers, self.outputs)):
-            if register is not None:
-                outputs = [self.output_cv, output] if i == 0 else [output]
-                yield register, outputs
-
-    @on(reset_cv, edge="rising")
-    def reset_values(self, value, ctx):
-        for i in range(8):
-            self.registers[i] = None
-        yield 0, self.outputs
 
 
 NOTES = {
