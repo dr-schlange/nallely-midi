@@ -2,7 +2,7 @@
 
 Nallely (pronounced "Nayeli") is an organic platform for experimentation around the idea of MIDI meta-synth for live coding, generative music, and multimodal art, built for hacker/musicians, inspired by Smalltalk. Nallely is a MIDI companion to help you easily map MIDI controllers/instruments together, as well as create/use virtual devices (LFOs, EGs), compose them, and the possibility to expose/create remote services with parameters on which you can map your MIDI controllers/instruments or virtual devices.
 
-Think about Nallely as a small brain, where each device is a neurone (nothing related to AI) that received signals and emit signals. All those small neurons can connects to each other in various ways. Connecting neurons as you want, you might connect some that in a normal running brain would not communicate, a little bit as if you had a brain under psychedelic influences, mapped in an unusual way, producing unexpected results. Some dedicated neurons (MIDI devices) are abstraction of the physical world and can create sound physically using a MIDI device (the voice), or get impulses from external MIDI devices, while visuals could be seen as visual mental imageries, influenced by how the small neurons are connected. Soon modules to introduce impluses from webcam and audio will arrive, giving this small muscial brain the capacity to see and hear.
+Think about Nallely as a small brain, where each device is a neurone (nothing related to AI) that received signals and emit signals. All those small neurons can connects to each other in various ways. Connecting neurons as you want, you might connect some that in a normal running brain would not communicate, a little bit as if you had a brain under psychedelic influences, mapped in an unusual way, producing unexpected results. Some dedicated neurons (MIDI devices) are abstraction of the physical world and can create sound physically using a MIDI device (the voice), or get impulses from external MIDI devices, while visuals could be seen as visual mental imageries, influenced by how the small neurons are connected. You can also get impulses from other devices, as example a pure javascript module lets you get impulses/statistics from your running webcam to use it as a source signal. This small module are the first "eyes" of this small musical brain. Soon modules for audio will arrive, giving the capacity to hear (to react to sound).
 
 | Control multiple MIDI devices |  Patch your devices  |  Monitor the signals | Change settings
 :-------------------------:|:-------------------------:|:-----:|:-------:
@@ -144,18 +144,22 @@ nallely run --with-trevor
 ```
 
 ### Old Screenshots/videos of Trevor UI
-![Screenshot vertical](https://github.com/user-attachments/assets/ba1203f4-c870-4805-9c73-40380e400bed)
+<details>
+  <summary>I want to see them, so much memories...</summary>
 
-https://github.com/user-attachments/assets/fb94513a-bee0-442a-b809-fc60ed7c3ab2
+  ![Screenshot vertical](https://github.com/user-attachments/assets/ba1203f4-c870-4805-9c73-40380e400bed)
 
-### Screenshots of Trevor UI (really old)
+  https://github.com/user-attachments/assets/fb94513a-bee0-442a-b809-fc60ed7c3ab2
 
-![trevor1](https://github.com/user-attachments/assets/aa611b38-4e12-4437-a0d3-d6079966dc7a)
-![trevor2](https://github.com/user-attachments/assets/9baa2a96-5359-458b-abdd-7bf6f13e7eb6)
-![trevor-shot1](https://github.com/user-attachments/assets/011adf5c-47d4-4786-9375-bb337008b3cd)
-![trevor-shot2](https://github.com/user-attachments/assets/e2955fd9-9ab4-4e6a-876b-aa6e9e1f2280)
-![trevor-shot3](https://github.com/user-attachments/assets/5243180f-3e48-45e5-a21c-d5a05c4d7504)
+  ### Screenshots of Trevor UI (really old)
 
+  ![trevor1](https://github.com/user-attachments/assets/aa611b38-4e12-4437-a0d3-d6079966dc7a)
+  ![trevor2](https://github.com/user-attachments/assets/9baa2a96-5359-458b-abdd-7bf6f13e7eb6)
+  ![trevor-shot1](https://github.com/user-attachments/assets/011adf5c-47d4-4786-9375-bb337008b3cd)
+  ![trevor-shot2](https://github.com/user-attachments/assets/e2955fd9-9ab4-4e6a-876b-aa6e9e1f2280)
+  ![trevor-shot3](https://github.com/user-attachments/assets/5243180f-3e48-45e5-a21c-d5a05c4d7504)
+
+</details>
 
 ## Launch the example
 
