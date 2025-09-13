@@ -43,6 +43,8 @@ class VirtualParameter:
     section_name: str = "__virtual__"
     cc_note: int = -1
     hidden: bool = False
+    default: Any | None = None
+    no_init: bool = False
 
     def __post_init__(self):
         if self.accepted_values and self.range == (None, None):
@@ -64,6 +66,18 @@ class VirtualParameter:
     def map2accepted_values(self, value: int | float | Decimal):
         accepted_values = self.accepted_values
         return accepted_values[int(value % len(accepted_values))]
+
+    def get_default(self):
+        if self.default is not None:
+            return self.default
+        if self.accepted_values:
+            try:
+                return self.accepted_values[0]
+            except IndexError:
+                raise AttributeError(
+                    f"Accepted values for {self.cv_name}[{self.name}] is empty"
+                )
+        return 0
 
 
 class OnChange:
@@ -152,7 +166,9 @@ class VirtualDevice(threading.Thread):
     output_cv = VirtualParameter(name="output", range=(0, 127))
 
     # We use a consumer to bypass the input queue
-    set_pause_cv = VirtualParameter(name="set_pause", range=(0, 1), consumer=True)
+    set_pause_cv = VirtualParameter(
+        name="set_pause", range=(0, 1), consumer=True, no_init=True
+    )
 
     def __new__(cls, *args, **kwargs):
         instance = super().__new__(cls)
@@ -201,8 +217,31 @@ class VirtualDevice(threading.Thread):
         if autoconnect:
             self.start()
 
+    def __post_init__(self): ...
+
     def __init_subclass__(cls) -> None:
+        # we register the cls as a known virtual device in Nallely's world
         virtual_device_classes.append(cls)
+
+        # build a signature and __init__ dynamically
+        # if __init__ already exists, so we keep it
+        if "__init__" in cls.__dict__:
+            return
+
+        params = cls.all_parameters()
+
+        def __init__(self, **kwargs):
+            for param in params:
+                if param.no_init:
+                    continue
+                setattr(self, param.name, kwargs.pop(param.name, param.get_default()))
+            additional_kargs = self.__post_init__(**kwargs)
+            if additional_kargs is not None:
+                kwargs |= additional_kargs
+            super(cls, self).__init__(**kwargs)
+
+        cls.__init__ = __init__  # type ignore
+
         super().__init_subclass__()
 
     def internal_setup(self):
