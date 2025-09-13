@@ -144,14 +144,14 @@ class RingCounter(VirtualDevice):
     length_cv = VirtualParameter(name="length", range=(2, 8), conversion_policy="round")
     reset_cv = VirtualParameter(name="reset", range=(0, 1), conversion_policy="round")
 
-    out0_cv = VirtualParameter(name="out0", range=(0, 127))
-    out1_cv = VirtualParameter(name="out1", range=(0, 127))
-    out2_cv = VirtualParameter(name="out2", range=(0, 127))
-    out3_cv = VirtualParameter(name="out3", range=(0, 127))
-    out4_cv = VirtualParameter(name="out4", range=(0, 127))
-    out5_cv = VirtualParameter(name="out5", range=(0, 127))
-    out6_cv = VirtualParameter(name="out6", range=(0, 127))
-    out7_cv = VirtualParameter(name="out7", range=(0, 127))
+    out7_cv = VirtualParameter(name="out7", range=(0, 1))
+    out6_cv = VirtualParameter(name="out6", range=(0, 1))
+    out5_cv = VirtualParameter(name="out5", range=(0, 1))
+    out4_cv = VirtualParameter(name="out4", range=(0, 1))
+    out3_cv = VirtualParameter(name="out3", range=(0, 1))
+    out2_cv = VirtualParameter(name="out2", range=(0, 1))
+    out1_cv = VirtualParameter(name="out1", range=(0, 1))
+    out0_cv = VirtualParameter(name="out0", range=(0, 1))
 
     def __post_init__(self, **kwargs):
         self.index = 0
@@ -178,3 +178,73 @@ class RingCounter(VirtualDevice):
         yield 1, [self.outs[self.index]]
         yield 0, [self.outs[self.index]]
         self.index = (self.index + 1) % self.length  # type: ignore "length" exists but as it's dynamic, the IDE cannot see it
+
+
+class BitCounter(VirtualDevice):
+    MAX_BITS = 8
+    trigger_cv = VirtualParameter(name="trigger", range=(0, 1), conversion_policy=">0")
+    length_cv = VirtualParameter(
+        name="length", range=(1, 8), conversion_policy="round", default=8
+    )
+    reset_cv = VirtualParameter(name="reset", range=(0, 1), conversion_policy="round")
+    mode_cv = VirtualParameter(name="mode", accepted_values=("ondemand", "continuous"))
+
+    out7_cv = VirtualParameter(name="out7", range=(0, 1))
+    out6_cv = VirtualParameter(name="out6", range=(0, 1))
+    out5_cv = VirtualParameter(name="out5", range=(0, 1))
+    out4_cv = VirtualParameter(name="out4", range=(0, 1))
+    out3_cv = VirtualParameter(name="out3", range=(0, 1))
+    out2_cv = VirtualParameter(name="out2", range=(0, 1))
+    out1_cv = VirtualParameter(name="out1", range=(0, 1))
+    out0_cv = VirtualParameter(name="out0", range=(0, 1))
+    overflow_cv = VirtualParameter(name="overflow", range=(0, 1))
+
+    def __post_init__(self, **kwargs):
+        self.count = 0
+        self.overflowed = 0
+        self.outs = []
+        self.prev_length = self.length  # type: ignore
+        for i in range(self.MAX_BITS):
+            output_name = f"out{i}"
+            setattr(self, output_name, 0)
+            self.outs.append(getattr(self, f"{output_name}_cv"))
+        return {"disable_output": True}
+
+    @on(reset_cv, edge="rising")
+    def trigger_reset(self, value, ctx):
+        self.count = 0
+        self.overflowed = 0
+
+    @on(length_cv, edge="any")
+    def change_length(self, value, ctx):
+        # we reset in case the new length is after the count
+        if self.count >= value:
+            self.count = value
+        if value <= self.prev_length:
+            yield 0, self.outs[self.prev_length : self.MAX_BITS]
+            self.prev_length = value
+
+    def activate_outputs(self):
+        one_outs, zero_outs = [], []
+        (one_outs if self.overflowed else zero_outs).append(self.overflow_cv)
+        self.overflowed = False
+        for i in range(self.length):  # type: ignore
+            (one_outs if self.count & (1 << i) else zero_outs).append(self.outs[i])
+
+        if one_outs:
+            yield 1, one_outs
+        if zero_outs:
+            yield 0, zero_outs
+
+    @on(trigger_cv, edge="rising")
+    def trigger_output(self, value, ctx):
+        self.count += 1
+        if self.count >= (2**self.length):  # type: ignore
+            self.count = 0
+            self.overflowed = True
+        if self.mode == "ondemand":  # type: ignore
+            yield from self.activate_outputs()
+
+    def main(self, ctx: ThreadContext) -> Any:
+        if self.mode == "continuous":  # type: ignore
+            yield from self.activate_outputs()

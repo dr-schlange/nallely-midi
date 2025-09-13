@@ -24,7 +24,7 @@ from .filters import MultiPoleFilter, Waveshaper
 from .lfos import LFO, Cycler
 from .logicals import Bitwise, Comparator, Logical, Operator, WindowDetector
 from .shifter import Arpegiator, Looper, Modulo, PitchShifter, Quantizer
-from .switchs import RingCounter, SeqSwitch, ShiftRegister, Switch
+from .switchs import BitCounter, RingCounter, SeqSwitch, ShiftRegister, Switch
 from .websocket_bus import WebSocketBus
 
 # For retrocompatibility of some patchs
@@ -74,4 +74,5 @@ __all__ = [
     "MultiPoleFilter",
     "Waveshaper",
     "RingCounter",
+    "BitCounter",
 ]
