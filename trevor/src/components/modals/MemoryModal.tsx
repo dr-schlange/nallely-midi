@@ -178,7 +178,7 @@ export const MemoryModal = ({ onClose, onLoad }: MemoryModalProps) => {
 	};
 
 	useEffect(() => {
-		const addr = usedAddresses.find((a) => a.hex === currentAddress?.hex);
+		const addr = usedAddresses.find((a) => a.hex === selection?.hex);
 		if (addr) {
 			trevorWebSocket?.fetchPathInfos(addr.path);
 		}
