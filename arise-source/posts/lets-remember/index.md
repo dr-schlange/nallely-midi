@@ -69,7 +69,7 @@ We clear the versioning problem, but what about the file names? We still need na
 
 To represent the memory view, a simple grid is used. It's currently enough and gives flexibility to select an address as a pointer to an address in which we will be able to save quickly a session. We can also save the current session to a specific address, and reload a specific address. A question that you probably already have is "what's in my patch"? What did I put in this specific file? That's where the label that you manually put is not enough, and where the addresses are not helping that much. To overcome that, when an address is selected in the interface, Nallely fetches informations about the session and display them to you. As we are using a git repository, then, each "save" triggers a commit on the git repository. This means that all the modifications we made are not versioned, the version is saved, and we can come back to this version any time we want!
 
-![That's a nice retro memory management](https://github.com/user-attachments/assets/e8a6d63c-6a73-4b8b-8dae-98cbcf8101fa)
+![That's a nice retro memory management](imgs/mem.mp4)
 
 You can see that with this spacial representation, it becomes easy to clusterize yourselves the area of the memory that you want to use for a dedicated experimentation, or patchs that are related in ideas. This interface is currently only a first version, newer version will add more information, the possibility to browse the versions of an address, and to rehydrate them.
 
