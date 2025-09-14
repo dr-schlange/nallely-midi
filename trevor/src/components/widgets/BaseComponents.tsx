@@ -21,7 +21,6 @@ export const Button = ({
 		// biome-ignore lint/a11y/noStaticElementInteractions: <explanation>
 		<div
 			style={{
-				...(style ?? {}),
 				color: "gray",
 				zIndex: 1,
 				backgroundColor:
@@ -35,6 +34,7 @@ export const Button = ({
 				display: "flex",
 				flexDirection: "column",
 				justifyContent: "center",
+				...(style ?? {}),
 			}}
 			onMouseDown={() => setClickColor("orange")}
 			onMouseUp={() => {

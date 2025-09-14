@@ -977,7 +977,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 								className={"associate-button"}
 								onClick={() => setIsMemoryOpen?.(true)}
 							>
-								Manage Memory
+								Save/Load Address
 							</button>
 						</div>
 						<div className="device-patching-top-panel">
@@ -1040,7 +1040,9 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 							type="button"
 							onClick={() => setIsMemoryOpen?.(true)}
 						>
-							🝚
+							<p style={{ fontSize: "12px" }}>
+								0x{currentAddress?.hex ?? "????"}
+							</p>
 						</button>
 						<button
 							className="rightbar-button"
@@ -1049,9 +1051,9 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 						>
 							🌐
 						</button>
-						<p style={{ fontSize: "14px", margin: "5px" }}>
+						{/* <p style={{ fontSize: "14px", margin: "5px" }}>
 							0x{currentAddress?.hex ?? "????"}
-						</p>
+						</p> */}
 					</div>
 				)}
 			</div>

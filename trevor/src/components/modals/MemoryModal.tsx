@@ -68,7 +68,7 @@ export const MemoryModal = ({ onClose, onLoad }: MemoryModalProps) => {
 		(state) => state.runTime.saveDefaultValue,
 	);
 	const dispatch = useTrevorDispatch();
-	const [address, setAddress] = useState(currentAddress);
+	// const [address, setAddress] = useState(currentAddress);
 	const [saveDefaultValue, setSaveDefaultValue] = useState(defaultValue);
 	const trevorWebSocket = useTrevorWebSocket();
 	const patchDetails = useTrevorSelector((state) => state.runTime.patchDetails);
@@ -79,24 +79,35 @@ export const MemoryModal = ({ onClose, onLoad }: MemoryModalProps) => {
 		trevorWebSocket?.getUsedAddresses();
 	}, [trevorWebSocket, trevorWebSocket?.socket]);
 
-	const saveConfig = () => {
-		const addr = selection ?? address;
+	const selectAddress = () => {
+		const addr = selection;
 		if (!addr) {
 			return;
 		}
-		setAddress(addr);
+		dispatch(setCurrentAddress(addr));
+	};
+
+	const saveConfig = () => {
+		// const addr = selection ?? address;
+		const addr = selection;
+		if (!addr) {
+			return;
+		}
+		// setAddress(addr);
 		trevorWebSocket?.saveAdress(addr.hex, saveDefaultValue);
 		trevorWebSocket?.getUsedAddresses();
-		dispatch(setCurrentAddress(addr));
+		// dispatch(setCurrentAddress(addr));
 		dispatch(setSaveDefaultValueAction(saveDefaultValue));
 	};
 
 	const loadConfig = () => {
-		const addr = selection ?? address;
+		// const addr = selection ?? address;
+		const addr = selection;
 		if (!addr) {
 			return;
 		}
-		setAddress(addr);
+		// setAddress(addr);
+		setSelection(null);
 		trevorWebSocket?.loadAddress(addr.hex);
 		dispatch(setCurrentAddress(addr));
 		onLoad?.();
@@ -104,12 +115,13 @@ export const MemoryModal = ({ onClose, onLoad }: MemoryModalProps) => {
 	};
 
 	const clearConfig = () => {
-		const addr = selection ?? address;
+		// const addr = selection ?? address;
+		const addr = selection;
 		if (!addr) {
 			return;
 		}
-		trevorWebSocket?.clearAddress(addr?.hex ?? address?.hex);
-		dispatch(setCurrentAddress(addr));
+		trevorWebSocket?.clearAddress(addr.hex);
+		// dispatch(setCurrentAddress(addr));
 		setDetails(<p className="details">Empty address</p>);
 	};
 
@@ -155,7 +167,7 @@ export const MemoryModal = ({ onClose, onLoad }: MemoryModalProps) => {
 		);
 	}, [patchDetails]);
 
-	const selectAddress = (address) => {
+	const setAddressSelection = (address) => {
 		setSelection(address);
 		if (!address.path) {
 			setDetails(<p className="details">Empty address</p>);
@@ -166,7 +178,7 @@ export const MemoryModal = ({ onClose, onLoad }: MemoryModalProps) => {
 	};
 
 	useEffect(() => {
-		const addr = usedAddresses.find((a) => a.hex === address?.hex);
+		const addr = usedAddresses.find((a) => a.hex === currentAddress?.hex);
 		if (addr) {
 			trevorWebSocket?.fetchPathInfos(addr.path);
 		}
@@ -190,13 +202,48 @@ export const MemoryModal = ({ onClose, onLoad }: MemoryModalProps) => {
 				>
 					Close
 				</button>
-				<button type="button" className="close-button" onClick={saveConfig}>
+				<button
+					disabled={!selection}
+					type="button"
+					className="close-button"
+					onClick={selectAddress}
+					style={{
+						...(!selection ? { color: "gray" } : {}),
+					}}
+				>
+					Select
+				</button>
+				<button
+					disabled={!selection}
+					type="button"
+					className="close-button"
+					onClick={saveConfig}
+					style={{
+						...(!selection ? { color: "gray" } : {}),
+					}}
+				>
 					Save
 				</button>
-				<button type="button" className="close-button" onClick={loadConfig}>
+				<button
+					disabled={!selection}
+					type="button"
+					className="close-button"
+					onClick={loadConfig}
+					style={{
+						...(!selection ? { color: "gray" } : {}),
+					}}
+				>
 					Load
 				</button>
-				<button type="button" className="close-button" onClick={clearConfig}>
+				<button
+					disabled={!selection}
+					type="button"
+					className="close-button"
+					onClick={clearConfig}
+					style={{
+						...(!selection ? { color: "gray" } : {}),
+					}}
+				>
 					Clear
 				</button>
 			</div>
@@ -219,7 +266,12 @@ export const MemoryModal = ({ onClose, onLoad }: MemoryModalProps) => {
 						overflowY: "auto",
 					}}
 				>
-					<h3>Memory[0x{selection?.hex ?? address?.hex ?? "????"}]</h3>
+					<h3>Memory[0x{selection?.hex ?? currentAddress?.hex ?? "????"}]</h3>
+					{/* {currentAddress && (
+						<p className="details">
+							selected [0x{currentAddress?.hex ?? "????"}]
+						</p>
+					)} */}
 					{details}
 				</div>
 				<div
@@ -244,20 +296,28 @@ export const MemoryModal = ({ onClose, onLoad }: MemoryModalProps) => {
 								{row.map((ad) => {
 									const label = `0x${ad.hex.padStart(4, "0").toUpperCase()}`;
 									const color = ad.status === "used" ? "#75a759ff" : "#e0e0e0";
-
+									const activated =
+										ad.hex === currentAddress?.hex && selection?.hex !== ad.hex;
+									const borderColor = activated
+										? "3px solid yellow"
+										: selection?.hex === ad.hex
+											? "3px solid orange"
+											: "2px solid gray";
 									return (
 										<Button
 											key={label}
 											text=""
 											tooltip={label}
-											onClick={() => selectAddress(ad)}
-											activated={
-												ad.hex === address?.hex && selection?.hex !== ad.hex
-											}
-											variant={"small"}
+											onClick={() => setAddressSelection(ad)}
+											// activated={
+											// 	ad.hex === currentAddress?.hex &&
+											// 	selection?.hex !== ad.hex
+											// }
+											variant={"big"}
 											style={{
-												backgroundColor:
-													selection?.hex === ad.hex ? "orange" : color,
+												backgroundColor: color,
+												boxSizing: "border-box",
+												border: borderColor,
 											}}
 										/>
 									);
