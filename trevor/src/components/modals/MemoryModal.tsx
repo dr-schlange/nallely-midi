@@ -286,10 +286,9 @@ export const MemoryModal = ({ onClose, onLoad }: MemoryModalProps) => {
 				>
 					<div
 						style={{
-							display: "flex",
-							flexDirection: "row",
+							display: "grid",
+							gridTemplateColumns: "repeat(8, 1fr)",
 							gap: "2px",
-							flexWrap: "wrap",
 						}}
 					>
 						{addresses.map((ad) => {
