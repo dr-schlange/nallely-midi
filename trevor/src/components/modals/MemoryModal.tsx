@@ -280,51 +280,50 @@ export const MemoryModal = ({ onClose, onLoad }: MemoryModalProps) => {
 						flexDirection: "column",
 						gap: "2px",
 						height: "100%",
+						width: "200px",
 						overflowY: "auto",
 					}}
 				>
-					{addresses.map((row, i) => {
-						return (
-							<div
-								key={`0x${i.toString(16)}`}
-								style={{
-									display: "flex",
-									flexDirection: "row",
-									gap: "2px",
-								}}
-							>
-								{row.map((ad) => {
-									const label = `0x${ad.hex.padStart(4, "0").toUpperCase()}`;
-									const color = ad.status === "used" ? "#75a759ff" : "#e0e0e0";
-									const activated =
-										ad.hex === currentAddress?.hex && selection?.hex !== ad.hex;
-									const borderColor = activated
-										? "3px solid yellow"
-										: selection?.hex === ad.hex
-											? "3px solid orange"
-											: "2px solid gray";
-									return (
-										<Button
-											key={label}
-											text=""
-											tooltip={label}
-											onClick={() => setAddressSelection(ad)}
-											// activated={
-											// 	ad.hex === currentAddress?.hex &&
-											// 	selection?.hex !== ad.hex
-											// }
-											variant={"big"}
-											style={{
-												backgroundColor: color,
-												boxSizing: "border-box",
-												border: borderColor,
-											}}
-										/>
-									);
-								})}
-							</div>
-						);
-					})}
+					<div
+						style={{
+							display: "flex",
+							flexDirection: "row",
+							gap: "2px",
+							flexWrap: "wrap",
+						}}
+					>
+						{addresses.map((row) => {
+							return row.map((ad) => {
+								const label = `0x${ad.hex.padStart(4, "0").toUpperCase()}`;
+								const color = ad.status === "used" ? "#75a759ff" : "#e0e0e0";
+								const activated =
+									ad.hex === currentAddress?.hex && selection?.hex !== ad.hex;
+								const borderColor = activated
+									? "3px solid yellow"
+									: selection?.hex === ad.hex
+										? "3px solid orange"
+										: "2px solid gray";
+								return (
+									<Button
+										key={label}
+										text=""
+										tooltip={label}
+										onClick={() => setAddressSelection(ad)}
+										// activated={
+										// 	ad.hex === currentAddress?.hex &&
+										// 	selection?.hex !== ad.hex
+										// }
+										variant={"big"}
+										style={{
+											backgroundColor: color,
+											boxSizing: "border-box",
+											border: borderColor,
+										}}
+									/>
+								);
+							});
+						})}
+					</div>
 				</div>
 			</div>
 		</div>
