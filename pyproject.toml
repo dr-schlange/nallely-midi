@@ -13,7 +13,7 @@ authors = [{ name = "dr-schlange", email = "drcoatl@proton.me" }]
 urls = { "Bug Tracker" = "https://github.com/dr-schlange/nallely-midi", "Homepage" = "https://github.com/dr-schlange/nallely-midi" }
 keywords = ["music", "midi", "midi-device", "midi-controller", "lfo"]
 classifiers = [
-    "Development Status :: 2 - Pre-Alpha",
+    "Development Status :: 4 - Beta",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
