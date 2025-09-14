@@ -261,9 +261,10 @@ class Session:
         virtual_devices = "\n".join(
             f"* {dev}={num}" for dev, num in infos["virtual"].items()
         )
-        message = f"""Snapshot at {address=}
+        session_id = hex(id(self))[2:].upper()
+        message = f"""[0x{address}] Snapshot session 0x{session_id}
 
-SESSION_ID={id(self)}
+SESSION_ID=0x{session_id}
 [MIDI Classes]
 {midi_devices}
 
@@ -343,7 +344,8 @@ playground_code={infos["playground_code"]}
         repo = Repo(location)
         porcelain.add(repo, address_file)
 
-        message = f"""Clear session at {address=}"""
+        session_id = hex(id(self))[2:].upper()
+        message = f"""[0x{address}] Clear session 0x{session_id}"""
         porcelain.commit(repo, author=b"Nallely MIDI <drcoatl@proton.me>", committer=b"dr-schlange <drcoatl@proton.me>", message=message)  # type: ignore
 
 
