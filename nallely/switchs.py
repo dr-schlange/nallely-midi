@@ -106,7 +106,7 @@ class SeqSwitch(VirtualDevice):
     io1_cv = VirtualParameter("io1", range=(0, 127))
     oi_cv = VirtualParameter("oi", range=(0, 127))
 
-    def __post_init__(self):
+    def __post_init__(self, **kwargs):
         self.step = 0
         self.ios = [self.io1_cv, self.io2_cv, self.io3_cv, self.io4_cv]
         return {"disable_output": True}
