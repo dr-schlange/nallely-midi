@@ -27,12 +27,12 @@ Features:
 * Envelope Generator,
 * a web interface relying on a websocket protocol (named Trevor) which allows you to do graphically what you would ask Nallely to do in normal time (map devices, parameters, scalers),
 * interactive code playground in the browser (through Trevor UI) inspired by Smalltalk playground,
-* small web-based widget oscilloscope integrated in the web interface,
-* save/reload preset for any MIDI device,
-* save/reload patch for full connection between MIDI devices and virtual devices,
+* small web-based widget oscilloscopes (1D, 2D, 3D) integrated in the web interface,
+* save/reload preset for any MIDI device at run time,
+* save/reload/manage memory slots: each memory slot contains a snapshot of a Nallely session which is versionned (Nallely memory is now saved as a git repository!),
 * random preset generator for MIDI devices and virtual devices,
 * full random patch generator (basic at the moment) with auto-generative capacity as virtual device (you can control it from MIDI devices or other virtual devices),
-* possibility to send and broadcast messages and information from the external services,
+* possibility to send/receive/broadcast/listen messages and information from the external services,
 * (currently disabled) _bind/unbind any Python function to any control/pad/key of your MIDI Device_,
 
 Planned:
