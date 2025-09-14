@@ -37,8 +37,8 @@ interface AddressBlock {
 
 const generateAddressList = (
 	usedAddresses: Address[],
-	chunkSize = 8,
-): AddressBlock[][] => {
+	// chunkSize = 8,
+): AddressBlock[] => {
 	const addresses = Array.from({ length: 0x03ff }, (_, i) => {
 		const hex = i.toString(16).padStart(4, "0").toUpperCase();
 		const usedAddress = usedAddresses.find((a) => a.hex === hex);
@@ -49,12 +49,12 @@ const generateAddressList = (
 		};
 	});
 
-	const chunks = Array.from(
-		{ length: Math.ceil(addresses.length / chunkSize) },
-		(_, i) => addresses.slice(i * chunkSize, i * chunkSize + chunkSize),
-	);
+	// const chunks = Array.from(
+	// 	{ length: Math.ceil(addresses.length / chunkSize) },
+	// 	(_, i) => addresses.slice(i * chunkSize, i * chunkSize + chunkSize),
+	// );
 
-	return chunks;
+	return addresses;
 };
 
 export const MemoryModal = ({ onClose, onLoad }: MemoryModalProps) => {
@@ -292,36 +292,34 @@ export const MemoryModal = ({ onClose, onLoad }: MemoryModalProps) => {
 							flexWrap: "wrap",
 						}}
 					>
-						{addresses.map((row) => {
-							return row.map((ad) => {
-								const label = `0x${ad.hex.padStart(4, "0").toUpperCase()}`;
-								const color = ad.status === "used" ? "#75a759ff" : "#e0e0e0";
-								const activated =
-									ad.hex === currentAddress?.hex && selection?.hex !== ad.hex;
-								const borderColor = activated
-									? "3px solid yellow"
-									: selection?.hex === ad.hex
-										? "3px solid orange"
-										: "2px solid gray";
-								return (
-									<Button
-										key={label}
-										text=""
-										tooltip={label}
-										onClick={() => setAddressSelection(ad)}
-										// activated={
-										// 	ad.hex === currentAddress?.hex &&
-										// 	selection?.hex !== ad.hex
-										// }
-										variant={"big"}
-										style={{
-											backgroundColor: color,
-											boxSizing: "border-box",
-											border: borderColor,
-										}}
-									/>
-								);
-							});
+						{addresses.map((ad) => {
+							const label = `0x${ad.hex.padStart(4, "0").toUpperCase()}`;
+							const color = ad.status === "used" ? "#75a759ff" : "#e0e0e0";
+							const activated =
+								ad.hex === currentAddress?.hex && selection?.hex !== ad.hex;
+							const borderColor = activated
+								? "3px solid yellow"
+								: selection?.hex === ad.hex
+									? "3px solid orange"
+									: "2px solid gray";
+							return (
+								<Button
+									key={label}
+									text=""
+									tooltip={label}
+									onClick={() => setAddressSelection(ad)}
+									// activated={
+									// 	ad.hex === currentAddress?.hex &&
+									// 	selection?.hex !== ad.hex
+									// }
+									variant={"big"}
+									style={{
+										backgroundColor: color,
+										boxSizing: "border-box",
+										border: borderColor,
+									}}
+								/>
+							);
 						})}
 					</div>
 				</div>
