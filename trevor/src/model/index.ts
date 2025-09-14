@@ -163,12 +163,13 @@ export type CCValues = Record<
 export interface RunTimeState {
 	logMode: boolean;
 	loggedComponent: number | string | undefined;
-	patchFilename: string;
+	currentAddress: Address | undefined;
 	saveDefaultValue: boolean;
 	classCodeMode: boolean;
 	classCode: ClassCode;
 	ccValues: CCValues;
 	patchDetails: PatchDetails | undefined;
+	usedAddresses: Address[];
 }
 
 export interface ClassCode {
@@ -181,4 +182,9 @@ export interface PatchDetails {
 	virtual: Record<string, number>;
 	patches: number;
 	playground_code: boolean;
+}
+
+export interface Address {
+	hex: string;
+	path: string;
 }

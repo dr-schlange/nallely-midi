@@ -344,10 +344,32 @@ export class TrevorWebSocket {
 		});
 	}
 
+	saveAdress(address: string, saveDefaultValue = false) {
+		this.sendJsonMessage({
+			command: "save_address",
+			address,
+			save_defaultvalues: saveDefaultValue,
+		});
+	}
+
 	loadAll(name: string) {
 		this.sendJsonMessage({
 			command: "load_all",
 			name,
+		});
+	}
+
+	loadAddress(address: string) {
+		this.sendJsonMessage({
+			command: "load_address",
+			address,
+		});
+	}
+
+	clearAddress(address: string) {
+		this.sendJsonMessage({
+			command: "clear_address",
+			address,
 		});
 	}
 
@@ -495,6 +517,12 @@ export class TrevorWebSocket {
 		this.sendJsonMessage({
 			command: "fetch_path_infos",
 			filename,
+		});
+	}
+
+	getUsedAddresses() {
+		this.sendJsonMessage({
+			command: "get_used_addresses",
 		});
 	}
 }

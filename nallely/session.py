@@ -1,8 +1,13 @@
 import json
+import os
+import re
 from collections import Counter
+from datetime import datetime
 from pathlib import Path
 
 import mido
+from dulwich import porcelain
+from dulwich.repo import Repo
 
 from .core import (
     DeviceNotFound,
@@ -192,7 +197,7 @@ class Session:
 
         return errors
 
-    def save_all(self, name, save_defaultvalues=False) -> Path:
+    def save_all(self, path, save_defaultvalues=False) -> Path:
         d = self.snapshot(save_defaultvalues=save_defaultvalues)
         del d["input_ports"]
         del d["output_ports"]
@@ -203,9 +208,79 @@ class Session:
         for device in d["virtual_devices"]:
             device["class"] = device["meta"]["name"]
             del device["meta"]
-        file = Path(f"{name}.nly")
+        if isinstance(path, str):
+            file = Path(f"{path}")
+        else:
+            file = path
+        if file.suffix != ".nly":
+            file = file.with_suffix(".nly")
         file.write_text(self.to_json(d, indent=2))
         return file
+
+    ADDRESS_CHECKER = re.compile(r"[0-9a-fA-F]+")
+
+    def save_address(
+        self, address: str, universe="memory", message=None, save_defaultvalues=False
+    ) -> Path:
+        if not address or self.ADDRESS_CHECKER.fullmatch(address) is None:
+            # raise Exception(f"{address=} has an unknown format")
+            print(f"[GIT-STORE] Couldn't parse {address=} has an unknown format")
+            used_addresses = self.get_used_addresses(universe=universe)
+            from random import randint
+
+            while (
+                rand_address := hex(randint(0, 0x03FF))[2:].zfill(4).upper()
+            ) in used_addresses:
+                ...
+            print(f"[GIT-STORE] Take random free address=0x{rand_address.upper()}")
+            address = rand_address
+        address = address.upper()
+
+        location = (Path.cwd() / universe).resolve()
+        if not location.exists():
+            print(
+                f"[GIT-STORE] Creating {location.name} store at {location.absolute()}"
+            )
+            repo = porcelain.init(location)
+        else:
+            print(f"[GIT-STORE] Opening existing store: {location.name}")
+            repo = Repo(location)
+
+        address_file = address2path(universe, address)
+        address_file.parent.mkdir(exist_ok=True, parents=True)
+
+        self.save_all(address_file, save_defaultvalues=save_defaultvalues)
+        print(f"[GIT-STORE] saved {address_file.absolute()}")
+
+        porcelain.add(repo, address_file)
+        current_date = datetime.now()
+        infos = extract_infos(address_file)
+        midi_devices = "\n".join(
+            f"* {dev}={num}\n" for dev, num in infos["midi"].items()
+        )
+        virtual_devices = "\n".join(
+            f"* {dev}={num}" for dev, num in infos["virtual"].items()
+        )
+        message = f"""Snapshot at {address=}
+
+SESSION_ID={id(self)}
+[MIDI Classes]
+{midi_devices}
+
+[Virtual Classes]
+{virtual_devices}
+
+[Stats]
+patchs_number={infos["patches"]}
+playground_code={infos["playground_code"]}
+"""
+        porcelain.commit(repo, message=message)  # type: ignore
+        return address_file
+
+    def load_address(self, address, universe="memory"):
+        address_file = address2path(universe, address)
+        print(f"[GIT-STORE] Loading {address=} from file {address_file.resolve()}")
+        return self.load_all(address_file)
 
     @classmethod
     def all_connections_as_dict(cls):
@@ -239,6 +314,38 @@ class Session:
             "playground_code": self.code,
         }
 
+    def get_used_addresses(self, universe="memory"):
+        cwd = Path.cwd()
+        location = (cwd / universe).resolve()
+        used_addresses = sorted(location.rglob("*.nly"))
+        addresses = [
+            {
+                "path": str(a.relative_to(cwd)),
+                "hex": str(a.relative_to(location).with_suffix(""))
+                .replace(os.sep, "")
+                .upper(),
+            }
+            for a in used_addresses
+        ]
+        return addresses
+
+    def clear_address(self, address, universe="memory"):
+        address_file = address2path(universe, address)
+        print(
+            f"[GIT-STORE] Deleting {address=} by deleting address file {address_file.resolve()}"
+        )
+        try:
+            address_file.unlink()
+        except FileNotFoundError:
+            print(f"[GIT-STORE] {address=} is not used, deleting noting")
+            return
+        location = (Path.cwd() / universe).resolve()
+        repo = Repo(location)
+        porcelain.add(repo, address_file)
+
+        message = f"""Clear session at {address=}"""
+        porcelain.commit(repo, message=message)  # type: ignore
+
 
 def extract_infos(filename):
     file = Path(filename)
@@ -254,3 +361,10 @@ def extract_infos(filename):
         "patches": patches,
         "playground_code": bool(playground_code),
     }
+
+
+def address2path(universe, address):
+    location = (Path.cwd() / universe).resolve()
+    frags = [address[i : i + 2] for i in range(0, len(address), 2)]
+    address_file = location / (Path().with_segments(*frags)).with_suffix(".nly")
+    return address_file

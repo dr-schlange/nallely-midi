@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, type ReactElement } from "react";
 import { RackRow } from "./RackRow";
-import { selectChannels, useTrevorSelector } from "../store";
+import { selectChannels, useTrevorDispatch, useTrevorSelector } from "../store";
 
 import type {
 	MidiConnection,
@@ -26,11 +26,11 @@ import {
 import { ScalerForm } from "./ScalerForm";
 import PatchingModal from "./modals/PatchingModal";
 import { AboutModal } from "./modals/AboutModal";
-import { SaveModal } from "./modals/SaveModal";
 import { Playground } from "./modals/Playground";
 import { RackRowWidgets, type RackRowWidgetRef } from "./RackRowWidgets";
-import { LoadModal } from "./modals/LoadModal";
 import { type RackRowCCRef, RackRowCCs } from "./RackRowCC";
+import { MemoryModal } from "./modals/MemoryModal";
+import { setCurrentAddress } from "../store/runtimeSlice";
 
 const VERTICAL = "⇄";
 const HORIZONTAL = "⇅";
@@ -45,8 +45,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 	const [selection, setSelection] = useState<MidiDeviceWithSection[]>([]);
 	const [isModalOpen, setIsModalOpen] = useState(false);
 	const [isAboutOpen, setIsAboutOpen] = useState(false);
-	const [isSaveOpen, setIsSaveOpen] = useState(false);
-	const [isLoadOpen, setIsLoadOpen] = useState(false);
+	const [isMemoryOpen, setIsMemoryOpen] = useState(false);
 	const [isPlaygroundOpen, setIsPlaygroundOpen] = useState(false);
 
 	const [selectedSections, setSelectedSections] = useState<{
@@ -77,8 +76,8 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 	const [orientation, setOrientation] = useState<string>(
 		window.innerHeight < 450 ? HORIZONTAL : VERTICAL,
 	);
-	const patchFilename = useTrevorSelector(
-		(state) => state.runTime.patchFilename,
+	const currentAddress = useTrevorSelector(
+		(state) => state.runTime.currentAddress,
 	);
 	const saveDefaultValue = useTrevorSelector(
 		(state) => state.runTime.saveDefaultValue,
@@ -126,10 +125,6 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 
 	const openAboutModal = () => {
 		setIsAboutOpen(true);
-	};
-
-	const openSaveModal = () => {
-		setIsSaveOpen(true);
 	};
 
 	const openPlayground = () => {
@@ -579,10 +574,9 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 		setIsModalOpen(false);
 		setIsAboutOpen(false);
 		setSelection([]);
-		setIsSaveOpen(false);
 		setIsPlaygroundOpen(false);
-		setIsLoadOpen(false);
 		// setAssociateMode(false);
+		setIsMemoryOpen(false);
 	};
 
 	const [linkMouseInteraction, setLinkMouseInteraction] = useState(false);
@@ -755,10 +749,6 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 		trevorSocket?.deleteAllConnections();
 	};
 
-	const handleLoadPatch = () => {
-		setIsLoadOpen(true);
-	};
-
 	const handleLoadOk = () => {
 		widgetRack.current?.resetAll();
 		ccsRack.current?.resetAll();
@@ -772,8 +762,32 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 		setOrientation((prev) => (prev === VERTICAL ? HORIZONTAL : VERTICAL));
 	};
 
+	const usedAddresses = useTrevorSelector(
+		(state) => state.runTime.usedAddresses,
+	);
+	const dispatch = useTrevorDispatch();
 	const savePatch = () => {
-		trevorSocket.saveAll(patchFilename, saveDefaultValue);
+		if (currentAddress) {
+			trevorSocket.saveAdress(currentAddress.hex, saveDefaultValue);
+			return;
+		}
+		let addr = 0;
+		let hex = "";
+		// We find the first unused address
+		while (true) {
+			hex = addr.toString(16).padStart(4, "0").toUpperCase();
+			if (!usedAddresses.find((a) => a.hex === hex)) {
+				break;
+			}
+			addr += 1;
+		}
+		dispatch(
+			setCurrentAddress({
+				hex,
+				path: "",
+			}),
+		);
+		trevorSocket.saveAdress(hex, saveDefaultValue);
 	};
 
 	const [displayedSection, setDisplayedSection] = useState<
@@ -894,15 +908,6 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 								Associate
 							</button>
 						</div>
-						<div className="device-patching-top-panel">
-							<button
-								type="button"
-								className={"associate-button"}
-								onClick={handleLoadPatch}
-							>
-								Load
-							</button>
-						</div>
 						<div>
 							<div className="device-patching-middle-panel">
 								<div className="information-panel">
@@ -970,9 +975,9 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 							<button
 								type="button"
 								className={"associate-button"}
-								onClick={openSaveModal}
+								onClick={() => setIsMemoryOpen?.(true)}
 							>
-								Save
+								Manage Memory
 							</button>
 						</div>
 						<div className="device-patching-top-panel">
@@ -1033,10 +1038,20 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 						<button
 							className="rightbar-button"
 							type="button"
+							onClick={() => setIsMemoryOpen?.(true)}
+						>
+							🝚
+						</button>
+						<button
+							className="rightbar-button"
+							type="button"
 							onClick={() => open3DView?.(true)}
 						>
 							🌐
 						</button>
+						<p style={{ fontSize: "14px", margin: "5px" }}>
+							0x{currentAddress?.hex ?? "????"}
+						</p>
 					</div>
 				)}
 			</div>
@@ -1063,9 +1078,10 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 				/>
 			)}
 			{isAboutOpen && <AboutModal onClose={closeModal} />}
-			{isSaveOpen && <SaveModal onClose={closeModal} />}
-			{isLoadOpen && <LoadModal onClose={closeModal} onOk={handleLoadOk} />}
 			{isPlaygroundOpen && <Playground onClose={closeModal} />}
+			{isMemoryOpen && (
+				<MemoryModal onClose={closeModal} onLoad={handleLoadOk} />
+			)}
 		</div>
 	);
 };

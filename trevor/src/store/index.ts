@@ -40,12 +40,6 @@ function loadSettings() {
 		}
 		const parsedSettings = savedSettings ? JSON.parse(savedSettings) : {};
 		const parsedRuntime = savedRuntime ? JSON.parse(savedRuntime) : {};
-		if (parsedRuntime.patchFilename) {
-			parsedRuntime.patchFilename = incrDecrFilename(
-				parsedRuntime.patchFilename,
-				true,
-			);
-		}
 		return {
 			general: {
 				...initialGeneralState,
@@ -80,8 +74,9 @@ store.subscribe(() => {
 	};
 
 	const runtime = {
-		patchFilename: state.runTime.patchFilename,
+		// currentAddress: state.runTime.currentAddress,
 		saveDefaultValue: state.runTime.saveDefaultValue,
+		usedAddresses: state.runTime.usedAddresses,
 	};
 
 	localStorage.setItem(LOCAL_STORAGE_SETTINGS, JSON.stringify(settings));

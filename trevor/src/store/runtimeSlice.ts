@@ -1,16 +1,23 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { RunTimeState, ClassCode, CCValues, PatchDetails } from "../model";
+import type {
+	RunTimeState,
+	ClassCode,
+	CCValues,
+	PatchDetails,
+	Address,
+} from "../model";
 import { setFullState } from "./trevorSlice";
 
 export const initialRunTimeState: RunTimeState = {
 	logMode: false,
 	loggedComponent: undefined,
-	patchFilename: "patch",
+	currentAddress: undefined,
 	saveDefaultValue: false,
 	classCodeMode: false,
 	classCode: undefined,
 	ccValues: {},
 	patchDetails: undefined,
+	usedAddresses: [],
 };
 
 interface CCState {
@@ -34,8 +41,8 @@ const runtimeSlice = createSlice({
 		) => {
 			state.loggedComponent = action.payload;
 		},
-		setPatchFilename: (state, action: PayloadAction<string>) => {
-			state.patchFilename = action.payload;
+		setCurrentAddress: (state, action: PayloadAction<Address>) => {
+			state.currentAddress = action.payload;
 		},
 		setClassCodeMode: (state, action: PayloadAction<boolean>) => {
 			state.classCodeMode = action.payload;
@@ -90,6 +97,12 @@ const runtimeSlice = createSlice({
 		resetPatchDetails: (state) => {
 			state.patchDetails = undefined;
 		},
+		setUsedAddresses: (state, action: PayloadAction<Address[]>) => {
+			state.usedAddresses = action.payload;
+		},
+		resetUsedAddresses: (state) => {
+			state.usedAddresses = [];
+		},
 	},
 	extraReducers: (builder) => {
 		builder.addCase(setFullState, (state, action) => {
@@ -108,7 +121,7 @@ const runtimeSlice = createSlice({
 export const {
 	setLogMode,
 	setLogComponent,
-	setPatchFilename,
+	setCurrentAddress,
 	setClassCodeMode,
 	setClassCode,
 	setSaveDefaultValue,
@@ -117,6 +130,7 @@ export const {
 	updateCCValues,
 	setPatchDetails,
 	resetPatchDetails,
+	setUsedAddresses,
 } = runtimeSlice.actions;
 
 export default runtimeSlice.reducer;

@@ -369,6 +369,29 @@ class TrevorBus(VirtualDevice):
         file = self.session.save_all(name, save_defaultvalues=save_defaultvalues)
         self.send_notification("ok", f"Patch saved in {file.absolute()}")
 
+    def save_address(self, address, universe="memory", save_defaultvalues=False):
+        address_file = self.session.save_address(
+            address, universe=universe, save_defaultvalues=save_defaultvalues
+        )
+        self.send_notification(
+            "ok",
+            f"Patch saved at address 0x{address} in file {address_file.absolute()}",
+        )
+
+    def load_address(self, address, universe="memory"):
+        errors = self.session.load_address(address, universe=universe)
+        if errors:
+            self.send_message({"errors": errors})
+        return self.full_state()
+
+    def clear_address(self, address, universe="memory"):
+        self.session.clear_address(address, universe=universe)
+        self.get_used_addresses(universe=universe)
+
+    def get_used_addresses(self, universe="memory"):
+        addresses = self.session.get_used_addresses(universe=universe)
+        self.send_message({"command": "RuntimeAPI::setUsedAddresses", "arg": addresses})
+
     def resume_device(self, device_id, start):
         self.trevor.resume_device(device_id, start)
         return self.full_state()
