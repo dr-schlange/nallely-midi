@@ -30,9 +30,16 @@ dependencies = ["mido", "websockets", "python-rtmidi", "ruamel.yaml"]
 
 [project.optional-dependencies]
 dev = ["pytest", "build", "pytest-asyncio"]
+git-store = ["dulwich"]
 
 [tool.setuptools]
-packages = ["nallely", "nallely.devices", "nallely.trevor", "nallely.core", "nallely.experimental"]
+packages = [
+    "nallely",
+    "nallely.devices",
+    "nallely.trevor",
+    "nallely.core",
+    "nallely.experimental",
+]
 include-package-data = true
 
 [tool.setuptools.package-data]
