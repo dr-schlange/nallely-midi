@@ -274,7 +274,7 @@ SESSION_ID={id(self)}
 patchs_number={infos["patches"]}
 playground_code={infos["playground_code"]}
 """
-        porcelain.commit(repo, message=message)  # type: ignore
+        porcelain.commit(repo, author=b"Nallely MIDI <drcoatl@proton.me>", committer=b"dr-schlange <drcoatl@proton.me>", message=message)  # type: ignore
         return address_file
 
     def load_address(self, address, universe="memory"):
@@ -344,7 +344,7 @@ playground_code={infos["playground_code"]}
         porcelain.add(repo, address_file)
 
         message = f"""Clear session at {address=}"""
-        porcelain.commit(repo, message=message)  # type: ignore
+        porcelain.commit(repo, author=b"Nallely MIDI <drcoatl@proton.me>", committer=b"dr-schlange <drcoatl@proton.me>", message=message)  # type: ignore
 
 
 def extract_infos(filename):
