@@ -123,6 +123,9 @@ class Int(int):
     def __float__(self):
         return float(self.__wrapped__)
 
+    def __round__(self, ndigits=None) -> int:
+        return round(self.__wrapped__, ndigits)
+
     def repr(self):
         return (
             f"{self.device.uuid}::{self.parameter.section_name}::{self.parameter.name}"
