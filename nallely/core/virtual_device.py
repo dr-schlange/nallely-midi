@@ -919,7 +919,6 @@ class TimeBasedDevice(VirtualDevice):
 
         # Reset phase
         # print(f"Set freq={self.speed} for estimated bpm={ctx.sync_bpm}")
-        self.phase = Decimal(0)
         self.last_sync_time = now
 
     def main(self, ctx: ThreadContext):
