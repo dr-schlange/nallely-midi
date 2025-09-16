@@ -290,13 +290,13 @@ class DeviceState:
             d[name] = module_state
             for parameter in module.meta.parameters:
                 value = getattr(getattr(self, name), parameter.name)
-                value = int(value)
+                value = round(value)
                 if value != parameter.init_value or save_defaultvalues:
-                    module_state[parameter.name] = int(value)
+                    module_state[parameter.name] = value
                 if with_meta:
                     module_state[parameter.name] = {
                         "section_name": parameter.section_name,
-                        "value": int(value),
+                        "value": value,
                     }
             if not module_state:
                 del d[name]
@@ -522,7 +522,7 @@ class MidiDevice:
         if not self.outport:
             return
         channel = channel if channel is not None else self.channel
-        note = int(note)
+        note = round(note)
         if note > 127:
             note = 127
         elif note < 0:
@@ -539,7 +539,7 @@ class MidiDevice:
         if not self.outport:
             return
         channel = channel if channel is not None else self.channel
-        note = int(note)
+        note = round(note)
         if note > 127:
             note = 127
         elif note < 0:
@@ -554,7 +554,7 @@ class MidiDevice:
         if not self.outport:
             return
         channel = channel if channel is not None else self.channel
-        pitch = int(pitch)
+        pitch = round(pitch)
         if pitch > 8191:
             pitch = 8191
         elif pitch < -8192:
@@ -576,7 +576,7 @@ class MidiDevice:
         if not self.outport:
             return
         channel = channel if channel is not None else self.channel
-        value = int(value)
+        value = round(value)
         if value > 127:
             value = 127
         elif value < 0:

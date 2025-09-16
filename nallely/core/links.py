@@ -476,7 +476,7 @@ class Link:
         # get_channel = self.get_channel
 
         def foo(value, ctx):
-            value = int(value)
+            value = round(value)
             nonlocal previous
             # nonlocal get_channel
             if previous != value:
@@ -524,11 +524,11 @@ class Link:
         # get_channel = self.get_channel
 
         def foo(value, ctx):
-            value = int(value)
+            value = round(value)
             nonlocal previous
             # nonlocal get_channel
             if previous != value:
-                if int(ctx.raw_value) != 0:
+                if round(ctx.raw_value) != 0:
                     dest.device.note(
                         note=value,
                         velocity=ctx.get("velocity", DEFAULT_VELOCITY),
@@ -579,11 +579,11 @@ class Link:
         # get_channel = self.get_channel
 
         def foo(value, ctx):
-            value = int(value)
+            value = round(value)
             nonlocal previous
             # nonlocal get_channel
             if previous != value:
-                if int(ctx.raw_value) != 0:
+                if round(ctx.raw_value) != 0:
                     dest.device.note(
                         note=value,
                         velocity=ctx.get("velocity", DEFAULT_VELOCITY),
