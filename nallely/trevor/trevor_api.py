@@ -201,14 +201,15 @@ class TrevorAPI:
 
     def set_virtual_value(self, device_id, parameter, value):
         device: VirtualDevice = self.get_device_instance(device_id)  # type: ignore
-        if "." in str(value) or "," in str(value):
-            # value = Decimal(str(value).replace(",", "."))
-            value = float(Decimal(str(value).replace(",", ".")))
-        else:
-            try:
-                value = int(value)
-            except:
-                ...
+        value = float(Decimal(str(value).replace(",", ".")))
+        # if "." in str(value) or "," in str(value):
+        #     # value = Decimal(str(value).replace(",", "."))
+        #     value = float(Decimal(str(value).replace(",", ".")))
+        # else:
+        #     try:
+        #         value = round(value)
+        #     except:
+        #         ...
         try:
             try:
                 last_value = getattr(device, parameter)
