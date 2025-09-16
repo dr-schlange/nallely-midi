@@ -469,3 +469,153 @@ class Quantizer(VirtualDevice):
     def reset_input(self, value, ctx):
         yield self.hold  # we return the same held note to force a note-off
         self.hold = None
+
+
+ROOT = 0
+FLAT_SECOND = 1
+SECOND = 2
+MINOR_THIRD = 3
+THIRD = 4
+FOURTH = 5
+AUG_FOURTH = 6
+FLAT_FIFTH = AUG_FOURTH
+FIFTH = 7
+AUG_FIFTH = 8
+DIM_SIXTH = AUG_FIFTH
+SIXTH = 9
+AUG_SIXTH = 10
+SEVENTH = AUG_SIXTH
+MAJ_SEVENTH = 11
+OCTAVE = 12
+
+CHORD_INTERVALS = {
+    "maj": (ROOT, THIRD, FIFTH),
+    "min": (ROOT, MINOR_THIRD, FIFTH),
+    "maj7": (ROOT, THIRD, FIFTH, MAJ_SEVENTH),
+    "min7": (ROOT, MINOR_THIRD, FIFTH, SEVENTH),
+    "min7maj": (ROOT, MINOR_THIRD, FIFTH, MAJ_SEVENTH),
+    "7th": (ROOT, THIRD, FIFTH, SEVENTH),
+    "maj7#11": (ROOT, AUG_FOURTH, FIFTH, SEVENTH),
+    "dim": (ROOT, MINOR_THIRD, FLAT_FIFTH, SIXTH),
+    "m7b5": (ROOT, MINOR_THIRD, FLAT_FIFTH, SEVENTH),
+}
+
+NOTES_INTERVALS = {
+    "--": -1,
+    "root": ROOT,
+    "b2": FLAT_SECOND,
+    "2nd": SECOND,
+    "m3": MINOR_THIRD,
+    "3rd": THIRD,
+    "4th": FOURTH,
+    "4+/-5": AUG_FOURTH,
+    "5th": FIFTH,
+    "5+/m6": AUG_FIFTH,
+    "6th": SIXTH,
+    "6+/b7": SEVENTH,
+    "7th": MAJ_SEVENTH,
+    "octave": OCTAVE,
+}
+
+
+class ChordGenerator(VirtualDevice):
+    input_cv = VirtualParameter(name="input", range=(0, 127), conversion_policy="round")
+    chord_cv = VirtualParameter(
+        name="chord",
+        accepted_values=(
+            "maj",
+            "min",
+            "maj7",
+            "min7",
+            "7th",
+            "maj7#11",
+            "dim",
+            "m7b5",
+            "min7maj",
+            "custom",
+        ),
+    )
+    octave_cv = VirtualParameter(
+        name="octave", range=(-4, +4), conversion_policy="round"
+    )
+    custom0_cv = VirtualParameter(
+        name="custom0",
+        accepted_values=tuple(NOTES_INTERVALS.keys()),
+        conversion_policy="round",
+    )
+    custom1_cv = VirtualParameter(
+        name="custom1",
+        accepted_values=tuple(NOTES_INTERVALS.keys()),
+        conversion_policy="round",
+    )
+    custom2_cv = VirtualParameter(
+        name="custom2",
+        accepted_values=tuple(NOTES_INTERVALS.keys()),
+        conversion_policy="round",
+    )
+    custom3_cv = VirtualParameter(
+        name="custom3",
+        accepted_values=tuple(NOTES_INTERVALS.keys()),
+        conversion_policy="round",
+    )
+    custom4_cv = VirtualParameter(
+        name="custom4",
+        accepted_values=tuple(NOTES_INTERVALS.keys()),
+        conversion_policy="round",
+    )
+
+    note4_cv = VirtualParameter(name="note4", range=(0, 127))
+    note3_cv = VirtualParameter(name="note3", range=(0, 127))
+    note2_cv = VirtualParameter(name="note2", range=(0, 127))
+    note1_cv = VirtualParameter(name="note1", range=(0, 127))
+    note0_cv = VirtualParameter(name="note0", range=(0, 127))
+
+    def __post_init__(self, **kwargs):
+        self.outs = [
+            self.note0_cv,
+            self.note1_cv,
+            self.note2_cv,
+            self.note3_cv,
+            self.note4_cv,
+        ]
+        self.custom_interval_computation()
+        return {"disable_output": True}
+
+    def custom_interval_computation(self):
+        self.custom = []
+        for i in range(4):
+            inter = NOTES_INTERVALS[getattr(self, f"custom{i}")]
+            if inter != -1:
+                self.custom.append(inter)
+
+    @on(custom0_cv, edge="any")
+    def recompute0(self, value, ctx):
+        self.custom_interval_computation()
+
+    @on(custom1_cv, edge="any")
+    def recompute1(self, value, ctx):
+        self.custom_interval_computation()
+
+    @on(custom2_cv, edge="any")
+    def recompute2(self, value, ctx):
+        self.custom_interval_computation()
+
+    @on(custom3_cv, edge="any")
+    def recompute3(self, value, ctx):
+        self.custom_interval_computation()
+
+    @on(custom4_cv, edge="any")
+    def recompute4(self, value, ctx):
+        self.custom_interval_computation()
+
+    @on(input_cv, edge="any")
+    def transform_input(self, value, ctx):
+        if value == 0:
+            return 0, self.outs
+        if self.chord == "custom":  # type: ignore
+            intervals = self.custom
+        else:
+            intervals = CHORD_INTERVALS[self.chord]  # type: ignore
+        chord = tuple((value + interval) + self.octave * 12 for interval in intervals)  # type: ignore
+        for note, out in zip(chord, self.outs[: len(chord)]):
+            yield note, [out]

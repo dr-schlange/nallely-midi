@@ -31,7 +31,7 @@ from .logicals import (
     Operator,
     WindowDetector,
 )
-from .shifter import Arpegiator, Looper, Modulo, PitchShifter, Quantizer
+from .shifter import Arpegiator, ChordGenerator, Looper, Modulo, PitchShifter, Quantizer
 from .switchs import BitCounter, RingCounter, SeqSwitch, ShiftRegister, Switch
 from .websocket_bus import WebSocketBus
 
@@ -87,4 +87,5 @@ __all__ = [
     "EnvelopeSlew",
     "Latch",
     "FlipFlop",
+    "ChordGenerator",
 ]
