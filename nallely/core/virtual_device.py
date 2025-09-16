@@ -217,7 +217,7 @@ class VirtualDevice(threading.Thread):
         if autoconnect:
             self.start()
 
-    def __post_init__(self): ...
+    def __post_init__(self, **kwargs): ...
 
     def __init_subclass__(cls) -> None:
         # we register the cls as a known virtual device in Nallely's world

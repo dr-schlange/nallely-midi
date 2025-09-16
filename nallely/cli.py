@@ -50,6 +50,11 @@ def parse_args(argv):
         dest="init_script",
         help="""Path towards an init script/patch to launch. If used with "--with-trevor", the script will be launched *before* Trevor is started; accepted formats=[.py, .nly]""",
     )
+    run_parser.add_argument(
+        "-a",
+        "--address",
+        help="""Address to load from the git-store memory. The format must be XXXX where X is an hexadecimal value.""",
+    )
 
     generate_parser = subparsers.add_parser(
         "generate",
@@ -91,6 +96,7 @@ def main():
                 init_script=args.init_script,
                 serve_ui=args.serve_ui,
                 include_experimental=args.experimental,
+                address=args.address,
             )
         elif args.init_script:
             from nallely.trevor import launch_standalone_script

@@ -562,6 +562,7 @@ def start_trevor(
     init_script: Path | None = None,
     serve_ui=None,
     include_experimental=None,
+    address=None,
 ):
     httpserver = None
     try:
@@ -592,6 +593,8 @@ def start_trevor(
         trevor.start()
         if init_script and init_script.suffix == ".nly":
             trevor.session.load_all(init_script)
+        if address:
+            trevor.session.load_address(address)
         _trevor_menu(loaded_paths, init_script, trevor, serve_ui)
         print("Shutting down...")
     finally:
