@@ -283,19 +283,17 @@ class Link:
         dest = cast(ParameterInstance, self.dest)
 
         # This count is "global" to the link instance only
-        count = set()
+        count = {}
 
         def foo(value, ctx):
             nonlocal count
-            type = ctx.get("type", "note_off" if ctx.raw_value else "note_on")
+            type = ctx.get("type", "note_off" if ctx.raw_value == 0 else "note_on")
             if type == "note_on":
-                count.add(value)
-            elif type == "note_off" and value in count:
-                count.remove(value)
-            if count:
+                count[value] = ctx.get("velocity", DEFAULT_VELOCITY)
                 return dest.device.set_parameter(dest.parameter.name, value, ctx)
-            else:
-                dest.device.set_parameter(dest.parameter.name, value, ctx)
+            elif type == "note_off" and value in count:
+                ctx.velocity = count[value]
+                del count[value]
                 return dest.device.set_parameter(dest.parameter.name, 0, ctx)
 
         return foo
