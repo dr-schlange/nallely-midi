@@ -538,6 +538,12 @@ class ChordGenerator(VirtualDevice):
     octave_cv = VirtualParameter(
         name="octave", range=(-4, +4), conversion_policy="round"
     )
+    inversion_cv = VirtualParameter(
+        name="inversion", accepted_values=("--", "1st", "2nd", "3rd", "4th")
+    )
+    drop_cv = VirtualParameter(name="drop", accepted_values=("--", "drop2", "drop3"))
+    omit_cv = VirtualParameter(name="omit", accepted_values=("--", "omit5", "omit3"))
+
     custom0_cv = VirtualParameter(
         name="custom0",
         accepted_values=tuple(NOTES_INTERVALS.keys()),
@@ -608,6 +614,31 @@ class ChordGenerator(VirtualDevice):
     def recompute4(self, value, ctx):
         self.custom_interval_computation()
 
+    def apply_drop(self, intervals):
+        if len(intervals) < 3:
+            return intervals
+        if self.drop == "drop2":  # type: ignore
+            intervals.insert(0, intervals.pop(1) - OCTAVE)
+        elif self.drop == "drop3":  # type: ignore
+            intervals.insert(0, intervals.pop(2) - OCTAVE)
+        return intervals
+
+    def apply_omit(self, intervals):
+        intervals = list(intervals)
+        if self.chord == "custom":  # type: ignore
+            return intervals
+        if self.omit == "omit5":  # type: ignore
+            del intervals[2]
+        elif self.omit == "omit3":  # type: ignore
+            del intervals[1]
+        return intervals
+
+    def apply_inversion(self, intervals):
+        nb_inversions = self.inversion_cv.parameter.accepted_values.index(self.inversion)  # type: ignore
+        for _ in range(nb_inversions):
+            intervals.append(intervals.pop(0) + OCTAVE)
+        return intervals
+
     @on(input_cv, edge="any")
     def transform_input(self, value, ctx):
         if value == 0:
@@ -616,6 +647,7 @@ class ChordGenerator(VirtualDevice):
             intervals = self.custom
         else:
             intervals = CHORD_INTERVALS[self.chord]  # type: ignore
-        chord = tuple((value + interval) + self.octave * 12 for interval in intervals)  # type: ignore
+        intervals = self.apply_drop(self.apply_inversion(self.apply_omit(intervals)))
+        chord = tuple((value + interval) + self.octave * OCTAVE for interval in intervals)  # type: ignore
         for note, out in zip(chord, self.outs[: len(chord)]):
             yield note, [out]
