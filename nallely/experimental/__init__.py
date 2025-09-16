@@ -1,3 +1,4 @@
+from .delays import Delay
 from .harmonizer import Harmonizer
 from .maths import BarnsleyProjector, HenonProjector, LorenzProjector, Morton
 from .mono2poly import Mono2Poly
@@ -12,4 +13,5 @@ __all__ = [
     "LorenzProjector",
     "BarnsleyProjector",
     "Morton",
+    "Delay",
 ]
