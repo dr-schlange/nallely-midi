@@ -156,3 +156,27 @@ class BernoulliTrigger(VirtualDevice):
         if trigger:
             yield 1
         yield 0
+
+
+class ClockDivider(VirtualDevice):
+    trigger_cv = VirtualParameter(
+        name="trigger", range=(0, 1), conversion_policy=">0", default=0
+    )
+    count_cv = VirtualParameter(
+        name="count", range=(1, None), conversion_policy="round", default=2
+    )
+    reset_cv = VirtualParameter(name="reset", range=(0, 1), conversion_policy=">0")
+
+    def __post_init__(self, **kwargs):
+        self.nb_ticks = 0
+
+    @on(trigger_cv, edge="rising")
+    def count_triggers(self, value, ctx):
+        self.nb_ticks = (self.nb_ticks + 1) % self.count  # type: ignore
+        if self.nb_ticks == 0:
+            yield 1
+            yield 0
+
+    @on(reset_cv, edge="rising")
+    def reset_count(self, value, ctx):
+        self.nb_ticks = 0

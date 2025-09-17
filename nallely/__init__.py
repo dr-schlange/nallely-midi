@@ -1,4 +1,4 @@
-from .clocks import BernoulliTrigger, Clock
+from .clocks import BernoulliTrigger, Clock, ClockDivider
 from .core import (
     DeviceNotFound,
     MidiDevice,
@@ -88,4 +88,5 @@ __all__ = [
     "Latch",
     "FlipFlop",
     "ChordGenerator",
+    "ClockDivider",
 ]
