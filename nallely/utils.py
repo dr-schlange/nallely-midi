@@ -185,6 +185,7 @@ def round_cv_property(dev, param, getattr=getattr, setattr=setattr):
 
 def sup0_cv_property(dev, param, getattr=getattr, setattr=setattr):
     attr_name = f"_{param.name}"
+    setattr(dev, attr_name, getattr(dev, param.name, None))
     lower, upper = param.range
     if lower is None:
         lower = 0
@@ -203,6 +204,7 @@ def sup0_cv_property(dev, param, getattr=getattr, setattr=setattr):
 
 def diff0_cv_property(dev, param, getattr=getattr, setattr=setattr):
     attr_name = f"_{param.name}"
+    setattr(dev, attr_name, getattr(dev, param.name, None))
     lower, upper = param.range
     if lower is None:
         lower = 0

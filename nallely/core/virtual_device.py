@@ -77,6 +77,8 @@ class VirtualParameter:
                 raise AttributeError(
                     f"Accepted values for {self.cv_name}[{self.name}] is empty"
                 )
+        if self.range and self.range[0] is not None:
+            return self.range[0]
         return 0
 
 
