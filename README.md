@@ -8,6 +8,10 @@ Think about Nallely as a small brain, where each device is a neurone (nothing re
 :-------------------------:|:-------------------------:|:-----:|:-------:
 ![Control multiple MIDI devices](https://github.com/user-attachments/assets/df545edc-6fa8-424f-9039-dd2046a9f406) | ![Patch in a graphical way](https://github.com/user-attachments/assets/d5d96809-159d-4cbb-81e2-5a1b7c3f9452) | ![See the signal at any point](https://github.com/user-attachments/assets/94e8cb6b-44a8-407b-acdb-1b66a148ad71) | ![Change any settings](https://github.com/user-attachments/assets/3509e077-cc97-424f-ac52-3c382e0fbaaa)
 
+| Manage your patchs as a versioned memory | Trevor is always here | Get a Smalltalk-like playground | Explore your patch in 3D 
+:-------------------------:|:-------------------------:|:-----:|:-------:
+![Manage your patchs as a versioned memory](https://github.com/user-attachments/assets/177cb536-dee2-4f1d-9275-49cf0805fb13) |  ![Trevor loves you](https://github.com/user-attachments/assets/13b208d3-14b3-44aa-8e28-9344eca69f60) | ![Get a Smalltalk-like playground](https://github.com/user-attachments/assets/e247e41e-8850-4987-80a1-2ce6d98d72b6) | ![Explore your patch in 3D](https://github.com/user-attachments/assets/6d5abee2-73af-4ea8-a68a-7445e64cf0e6)
+
 
 Features:
 * programmatic seemless API to your MIDI Device,
