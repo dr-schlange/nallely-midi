@@ -8,7 +8,7 @@
         <meta name="generator" content="Arise" />
 
         <title>Nallely MIDI · Nallely MIDI</title>
-        <meta name="description" content="Nallely is an experimental organic system for advanced MIDI patching, live coding, generative music, and multimodal art, built for hacker/musicians, developed in Python, inspired by Smalltalk">
+        <meta name="description" content="Nallely is an experimental organic system for advanced MIDI patching, live coding, generative music, and multimodal art, built for hacker/musicians, developed in Python, inspired by Smalltalk and Systems as Living Things">
         <meta name="author" content="Dr. Schlange">
         <!-- End Basic Metadata -->
 
@@ -16,17 +16,17 @@
         <meta property="og:site_name" content="Nallely MIDI" />
         <meta property="og:type" content="article" />
         <meta property="og:title" content="Nallely MIDI · Nallely MIDI" />
-        <meta property="og:description" content="Nallely is an experimental organic system for advanced MIDI patching, live coding, generative music, and multimodal art, built for hacker/musicians, developed in Python, inspired by Smalltalk" />
+        <meta property="og:description" content="Nallely is an experimental organic system for advanced MIDI patching, live coding, generative music, and multimodal art, built for hacker/musicians, developed in Python, inspired by Smalltalk and Systems as Living Things" />
         <meta property="og:url" content="https://dr-schlange.github.io/nallely-midi/" />
         <meta property="og:image" content="https://dr-schlange.github.io/nallely-midi/arise-icon.png" />
         <meta property="article:published_time" content="2025-06-12" />
-        <meta property="article:modified_time" content="2025-06-12" />
+        <meta property="article:modified_time" content="2025-09-17" />
         <!-- End OpenGraph Metadata -->
 
         <!-- Twitter Metadata -->
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Nallely MIDI · Nallely MIDI" />
-        <meta name="twitter:description" content="Nallely is an experimental organic system for advanced MIDI patching, live coding, generative music, and multimodal art, built for hacker/musicians, developed in Python, inspired by Smalltalk" />
+        <meta name="twitter:description" content="Nallely is an experimental organic system for advanced MIDI patching, live coding, generative music, and multimodal art, built for hacker/musicians, developed in Python, inspired by Smalltalk and Systems as Living Things" />
         <meta name="twitter:url" content="https://dr-schlange.github.io/nallely-midi/" />
         <meta name="twitter:image" content="https://dr-schlange.github.io/nallely-midi/arise-icon.png" />
         <!-- End Twitter Metadata -->
@@ -79,64 +79,135 @@
 </head>
 
 <body>
-<h1 id="a-system-for-midi-experimentations">A system for MIDI
-experimentations</h1>
+<h1 id="a-hackable-system-for-midi-experimentations">A Hackable System
+for MIDI Experimentations</h1>
 <p>Nallely - pronounced “Nayeli” - is an organic open-source Python
-platform for experimentation around the idea of MIDI meta-synth for live
-coding, generative music, and multimodal art, built for hacker and
-musicians, inspired by Smalltalk. Nallely is a MIDI companion to help
-you easily map MIDI controllers, MIDI instruments together, as well as
-create or use virtual devices (LFOs, EGs), patch them, cross-modulate
-them, and the possibility to expose and create remote services with
-parameters on which you can map your MIDI controllers, instruments or
-virtual devices. Nallely exposes an extensible core, as well as a bus to
-communicate with the external world and other technologies, letting you
-integrate new capabilities into the system, such as visuals for
-example.</p>
+platform for experimentation around the idea of advanced MIDI signal
+processing for MIDI meta-synth creation. Nallely let’s you customize and
+create your own modular instrument/machine from MIDI devices and
+computers distributed on the same network. Nallely can be used for live
+coding, generative music, multimodal art, and is built for hackers and
+musicians.</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: center;">Control multiple MIDI devices</th>
+<th style="text-align: center;">Patch your devices</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;"><img
+src="https://github.com/user-attachments/assets/df545edc-6fa8-424f-9039-dd2046a9f406"
+alt="Control multiple MIDI devices" /></td>
+<td style="text-align: center;"><img
+src="https://github.com/user-attachments/assets/d5d96809-159d-4cbb-81e2-5a1b7c3f9452"
+alt="Patch in a graphical way" /></td>
+</tr>
+</tbody>
+</table>
 <p>Think about Nallely as a small brain, where each device is kind of
-biological neurone that receives signals and emits signals. All those
-small neurons can connect to each other in various ways. By connecting
-neurons as you want, you might connect some which - in a normal running
-brain - would not usually communicate, a little bit as if you had a
-brain under psychedelics: mapped in an unusual way, producing
-unexpected, but always amazing results. Some dedicated neurons (MIDI
-devices) are abstraction of the physical world and can create sound
-physically using MIDI devices (the voice), or get impulses from external
-MIDI devices, while visuals could be seen as visual mental imageries,
-influenced by how the small neurons are connected. Soon modules to
-introduce impluses from webcam and, or audio will arrive, giving this
-small muscial brain the capacity to see and hear.</p>
-<h2 id="advanced-midi-mapping">Advanced MIDI mapping</h2>
-<p>Anything that is exposed as a parameter of a device is patchable. In
-Nallely, patchs are reified and actors of the system. They are smart
-adaptors between your MIDI devices and any virtual device, performing
-automatic MIDI message conversion on the fly, and auto adapting data
-range to the target. This enables for powerful actions:</p>
+biological neuron that receives signals and emits signals. All those
+small neurons are independent and can connect to each other in various
+ways. By connecting neurons as you want, you might connect some which -
+in a normal running brain - would not usually communicate. Consequently,
+you can build your MIDI brain to work as a normal brain, or you can
+experiment and make it works as if you had a brain under psychedelics,
+i.e: mapped in an unusual way, producing unexpected, but always amazing
+results.</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: center;">Monitor the signals</th>
+<th style="text-align: center;">Explore your patch in 3D</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;"><img
+src="https://github.com/user-attachments/assets/94e8cb6b-44a8-407b-acdb-1b66a148ad71"
+alt="See the signal at any point" /></td>
+<td style="text-align: center;"><img
+src="https://github.com/user-attachments/assets/6d5abee2-73af-4ea8-a68a-7445e64cf0e6"
+alt="Explore your patch in 3D" /></td>
+</tr>
+</tbody>
+</table>
+<p>Inspired by the Systems as Living Things philosophy and Smalltalk,
+Nallely tries to be as dynamic as possible, i.e: you can create your own
+meta-synth, build your custom MIDI brain while it runs, and from any
+computer/phone (touch friendly) from the network. Nallely - developed in
+Python - exposes an extensible core and an easy to use Python API so you
+can create your own neurons without efforts, and have them integrated
+directly in the system in a seemless way.</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: center;">Manage your patchs as a versioned
+memory</th>
+<th style="text-align: center;">Tailor your neurons</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;"><img
+src="https://github.com/user-attachments/assets/177cb536-dee2-4f1d-9275-49cf0805fb13"
+alt="Manage your patchs as a versioned memory" /></td>
+<td style="text-align: center;"><img
+src="https://github.com/user-attachments/assets/3509e077-cc97-424f-ac52-3c382e0fbaaa"
+alt="Change any settings" /></td>
+</tr>
+</tbody>
+</table>
+<p>Nallely is shipped with pre-existing neurons which are:</p>
 <ul>
-<li>with a single MIDI controller you can connect multiple MIDI devices
-having different MIDI implementation without needing to reconfigure your
-controller;</li>
-<li>you can modify the range of data that transit on each patch
-individually;</li>
-<li>you can map the full keyboard of your MIDI device to another;</li>
-<li>you can map only one key note to another key note;</li>
-<li>you can map multiple keys to different target;</li>
-<li>you can map even the full keyboard notes, or velocity, to a CC
-parameter;</li>
-<li>don’t have a controller but two synths? Well, you can patch your
-controls from one of your synth to the other, even if they are not
-implementing the same MIDI CC;</li>
-<li>…</li>
+<li>abstraction of the physical world and can create sound using MIDI
+devices (the voice for your brain);</li>
+<li>signal computational neurons coded to filter, transform, split,
+generate signals;</li>
+<li>network buses where distributed remote neurons coded in any
+technology can register and emit or receive signals;</li>
+<li>meta-neurons which can control, create, modify other neurons.</li>
 </ul>
-<h2 id="connect-visuals">Connect visuals</h2>
-<h2 id="control-from-everywhere">Control from everywhere</h2>
-<h2 id="live-coding">Live-coding</h2>
-<h2 id="enhance-the-system">Enhance the system</h2>
-<h3 id="code-your-own-devices">Code your own devices</h3>
-<h3 id="code-your-own-visuals">Code your own visuals</h3>
-<h2 id="an-organic-system-inspired-by-live-systems">An organic system
-inspired by live systems</h2>
-<h2 id="open-source">Open-source</h2>
+<p>Currently, Nallely embeds few remote neurons coded in Javascript
+introducing 3D visuals (mental imageries for your brain) which can be
+controlled by signals received from your MIDI brain, as well as a
+webcam-aware neuron to emit signals to your small MIDI brain (the eyes
+for your brain).</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: center;">Get a Smalltalk-like playground</th>
+<th style="text-align: center;">Trevor is always here</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;"><img
+src="https://github.com/user-attachments/assets/e247e41e-8850-4987-80a1-2ce6d98d72b6"
+alt="Get a Smalltalk-like playground" /></td>
+<td style="text-align: center;"><img
+src="https://github.com/user-attachments/assets/13b208d3-14b3-44aa-8e28-9344eca69f60"
+alt="Trevor loves you" /></td>
+</tr>
+</tbody>
+</table>
 <p>Nallely is available, open-source, free, and will remain free and
 open-source.</p>
 

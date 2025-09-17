@@ -2,7 +2,7 @@
 <rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:media="http://search.yahoo.com/mrss/" version="2.0">
   <channel>
     <title>Nallely MIDI</title>
-    <description>Nallely is an experimental organic system for advanced MIDI patching, live coding, generative music, and multimodal art, built for hacker/musicians, developed in Python, inspired by Smalltalk</description>
+    <description>Nallely is an experimental organic system for advanced MIDI patching, live coding, generative music, and multimodal art, built for hacker/musicians, developed in Python, inspired by Smalltalk and Systems as Living Things</description>
     <link>https://dr-schlange.github.io/nallely-midi</link>
     <language>en</language>
     <generator>Arise</generator>
@@ -13,7 +13,7 @@
     </image>
     <atom:link href="https://dr-schlange.github.io/nallely-midi/rss.xml" rel="self" type="application/rss+xml"/>
         <ttl>60</ttl>
-<lastBuildDate>Sun, 14 Sep 2025 20:23:34 +0000</lastBuildDate>
+<lastBuildDate>Wed, 17 Sep 2025 19:22:25 +0000</lastBuildDate>
         <item>
         <title>A website for Nallely</title>
         <dc:creator>Dr. Schlange</dc:creator>

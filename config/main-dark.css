@@ -18,7 +18,7 @@ body {
 	line-height: 1.6;
 	font-size: 18px;
 	color: rgb(224, 224, 224);
-	background-color:#121619;
+	background-color: #121619;
 	/* background-color: #c0c0c0; */
 	padding: 0 10px;
 }
@@ -141,6 +141,10 @@ h3 {
 		float: right;
 		margin-left: 30px;
 	}
+}
+
+table {
+	border-spacing: 0.8em;
 }
 
 /********************************/
