@@ -973,11 +973,20 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 						</div>
 						<div className="device-patching-top-panel">
 							<button
+								className={"associate-button"}
+								type="button"
+								onClick={savePatch}
+							>
+								Save at 0x{currentAddress?.hex ?? "????"}
+							</button>
+						</div>
+						<div className="device-patching-top-panel">
+							<button
 								type="button"
 								className={"associate-button"}
 								onClick={() => setIsMemoryOpen?.(true)}
 							>
-								Save/Load Address
+								Manage Addresses
 							</button>
 						</div>
 						<div className="device-patching-top-panel">
