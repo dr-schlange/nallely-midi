@@ -728,5 +728,5 @@ def _print_with_trevor(text):
         t = t.ljust(size) if t else f"{indent}"
         m = m[size:] if m else ""
         final += f"{t}  {m}\n"
-    print('  "Today I took a long sunny nap."')
+    print('  "Today I barked under the rain at a cat in a tree."')
     print(final[:-3])
