@@ -110,6 +110,7 @@ export const MemoryModal = ({ onClose, onLoad }: MemoryModalProps) => {
 		setSelection(null);
 		trevorWebSocket?.loadAddress(addr.hex);
 		dispatch(setCurrentAddress(addr));
+		setDetails(undefined);
 		onLoad?.();
 		onClose?.();
 	};
@@ -211,7 +212,7 @@ export const MemoryModal = ({ onClose, onLoad }: MemoryModalProps) => {
 						...(!selection ? { color: "gray" } : {}),
 					}}
 				>
-					Select
+					Pin
 				</button>
 				<button
 					disabled={!selection}
