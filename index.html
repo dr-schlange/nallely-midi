@@ -79,15 +79,17 @@
 </head>
 
 <body>
-<h1 id="a-hackable-system-for-midi-experimentations">A Hackable System
-for MIDI Experimentations</h1>
+<h1 id="a-hackable-system-for-midi-and-signal-experimentation">A
+Hackable System for MIDI and Signal Experimentation</h1>
 <p>Nallely - pronounced “Nayeli” - is an organic open-source Python
-platform for experimentation around the idea of advanced MIDI signal
-processing for MIDI meta-synth creation. Nallely let’s you customize and
-create your own modular instrument/machine from MIDI devices and
-computers distributed on the same network. Nallely can be used for live
-coding, generative music, multimodal art, and is built for hackers and
-musicians.</p>
+platform for modular signal processing and meta-synth creation. Nallely
+lets you build your own modular instrument or machine from any signal
+producing source: MIDI devices, sensors, webcams, or even other
+computers on the same network. Signals can be generated, transformed,
+filtered, or split, then routed back into MIDI devices or into any
+application registered in a Nallely session. Designed for hackers and
+musicians, Nallely supports live coding, complex MIDI routing,
+generative music, and multimodal art.</p>
 <table>
 <colgroup>
 <col style="width: 50%" />
@@ -110,15 +112,15 @@ alt="Patch in a graphical way" /></td>
 </tr>
 </tbody>
 </table>
-<p>Think about Nallely as a small brain, where each device is kind of
-biological neuron that receives signals and emits signals. All those
-small neurons are independent and can connect to each other in various
-ways. By connecting neurons as you want, you might connect some which -
-in a normal running brain - would not usually communicate. Consequently,
-you can build your MIDI brain to work as a normal brain, or you can
-experiment and make it works as if you had a brain under psychedelics,
-i.e: mapped in an unusual way, producing unexpected, but always amazing
-results.</p>
+<p>Think of Nallely as a small brain, where each device acts a bit like
+a biological neuron by receiving and emitting signals. Each neuron runs
+independently on its own thread, and they can connect in countless ways
+by exchanging messages with each other. By wiring them freely, you can
+link neurons that in a “normal” brain would not usually communicate. The
+result is a small brain that can behave like a regular one, or like a
+brain under psychedelics, mapped in unusual ways, producing unexpected,
+but always amazing results. Nallely is designed for experimentation,
+happy accidents, and emergent behavior.</p>
 <table>
 <colgroup>
 <col style="width: 50%" />
@@ -141,13 +143,14 @@ alt="Explore your patch in 3D" /></td>
 </tr>
 </tbody>
 </table>
-<p>Inspired by the Systems as Living Things philosophy and Smalltalk,
-Nallely tries to be as dynamic as possible, i.e: you can create your own
-meta-synth, build your custom MIDI brain while it runs, and from any
-computer/phone (touch friendly) from the network. Nallely - developed in
-Python - exposes an extensible core and an easy to use Python API so you
-can create your own neurons without efforts, and have them integrated
-directly in the system in a seemless way.</p>
+<p>Inspired by the “Systems as Living Things” philosophy and by
+Smalltalk, Nallely tries to be as dynamic as possible: you can create
+your own meta-synth and build your custom MIDI brain while it’s running,
+from any computer or phone on the network (with a touch-friendly
+interface). Developed in Python, Nallely exposes an extensible core and
+an easy-to-use Python API, so you can create your own neurons without
+efforts, and have them integrated directly into the system in a seemless
+way.</p>
 <table>
 <colgroup>
 <col style="width: 50%" />
@@ -155,9 +158,9 @@ directly in the system in a seemless way.</p>
 </colgroup>
 <thead>
 <tr class="header">
-<th style="text-align: center;">Manage your patchs as a versioned
-memory</th>
-<th style="text-align: center;">Tailor your neurons</th>
+<th style="text-align: center;">Manage your patchs as a memory versioned
+on git</th>
+<th style="text-align: center;">Tweak your neurons</th>
 </tr>
 </thead>
 <tbody>
@@ -171,21 +174,21 @@ alt="Change any settings" /></td>
 </tr>
 </tbody>
 </table>
-<p>Nallely is shipped with pre-existing neurons which are:</p>
+<p>Nallely comes with a set of pre-existing neurons, including:</p>
 <ul>
-<li>abstraction of the physical world and can create sound using MIDI
-devices (the voice for your brain);</li>
-<li>signal computational neurons coded to filter, transform, split,
-generate signals;</li>
-<li>network buses where distributed remote neurons coded in any
+<li>abstraction of the physical world that can create sound using MIDI
+devices (the “voice” for your brain);</li>
+<li>signal-processing neurons that filter, transform, split, or generate
+signals;</li>
+<li>network buses, where distributed remote neurons coded in any
 technology can register and emit or receive signals;</li>
 <li>meta-neurons which can control, create, modify other neurons.</li>
 </ul>
-<p>Currently, Nallely embeds few remote neurons coded in Javascript
-introducing 3D visuals (mental imageries for your brain) which can be
-controlled by signals received from your MIDI brain, as well as a
-webcam-aware neuron to emit signals to your small MIDI brain (the eyes
-for your brain).</p>
+<p>Currently, Nallely includes a few remote neurons coded in JavaScript,
+introducing 3D visuals (mental imagery for your brain) that can be
+controlled by signals received from your Nallely session (your modular
+brain instance). It also includes a webcam-aware neuron, providing
+visual input to your small MIDI brain (the “eyes” for your brain).</p>
 <table>
 <colgroup>
 <col style="width: 50%" />
