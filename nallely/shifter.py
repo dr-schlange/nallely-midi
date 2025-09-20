@@ -536,7 +536,7 @@ class ChordGenerator(VirtualDevice):
         ),
     )
     octave_cv = VirtualParameter(
-        name="octave", range=(-4, +4), conversion_policy="round"
+        name="octave", range=(-4, +4), conversion_policy="round", default=0
     )
     inversion_cv = VirtualParameter(
         name="inversion", accepted_values=("--", "1st", "2nd", "3rd", "4th")
