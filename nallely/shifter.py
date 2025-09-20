@@ -597,22 +597,47 @@ class ChordGenerator(VirtualDevice):
     @on(custom0_cv, edge="any")
     def recompute0(self, value, ctx):
         self.custom_interval_computation()
+        yield from self.process()
 
     @on(custom1_cv, edge="any")
     def recompute1(self, value, ctx):
         self.custom_interval_computation()
+        yield from self.process()
 
     @on(custom2_cv, edge="any")
     def recompute2(self, value, ctx):
         self.custom_interval_computation()
+        yield from self.process()
 
     @on(custom3_cv, edge="any")
     def recompute3(self, value, ctx):
         self.custom_interval_computation()
+        yield from self.process()
 
     @on(custom4_cv, edge="any")
     def recompute4(self, value, ctx):
         self.custom_interval_computation()
+        yield from self.process()
+
+    @on(octave_cv, edge="any")
+    def retrigger_on_octave(self, value, ctx):
+        yield from self.process()
+
+    @on(inversion_cv, edge="any")
+    def retrigger_on_inversion(self, value, ctx):
+        yield from self.process()
+
+    @on(chord_cv, edge="any")
+    def retrigger_on_chord(self, value, ctx):
+        yield from self.process()
+
+    @on(drop_cv, edge="any")
+    def retrigger_on_drop(self, value, ctx):
+        yield from self.process()
+
+    @on(omit_cv, edge="any")
+    def retrigger_on_omit(self, value, ctx):
+        yield from self.process()
 
     def apply_drop(self, intervals):
         if len(intervals) < 3:
@@ -639,9 +664,8 @@ class ChordGenerator(VirtualDevice):
             intervals.append(intervals.pop(0) + OCTAVE)
         return intervals
 
-    @on(input_cv, edge="any")
-    def transform_input(self, value, ctx):
-        if value == 0:
+    def process(self):
+        if self.input == 0:  # type: ignore
             return 0, self.outs
         if self.chord == "custom":  # type: ignore
             intervals = self.custom
@@ -651,3 +675,17 @@ class ChordGenerator(VirtualDevice):
         chord = tuple((value + interval) + self.octave * OCTAVE for interval in intervals)  # type: ignore
         for note, out in zip(chord, self.outs[: len(chord)]):
             yield note, [out]
+
+    @on(input_cv, edge="any")
+    def transform_input(self, value, ctx):
+        yield from self.process()
+        # if value == 0:
+        #     return 0, self.outs
+        # if self.chord == "custom":  # type: ignore
+        #     intervals = self.custom
+        # else:
+        #     intervals = CHORD_INTERVALS[self.chord]  # type: ignore
+        # intervals = self.apply_drop(self.apply_inversion(self.apply_omit(intervals)))
+        # chord = tuple((value + interval) + self.octave * OCTAVE for interval in intervals)  # type: ignore
+        # for note, out in zip(chord, self.outs[: len(chord)]):
+        #     yield note, [out]
