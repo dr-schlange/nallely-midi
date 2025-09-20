@@ -294,7 +294,7 @@ class Link:
             elif type == "note_off" and value in count:
                 ctx.velocity = count[value]
                 del count[value]
-                dest.device.set_parameter(dest.parameter.name, value, ctx)
+                # dest.device.set_parameter(dest.parameter.name, value, ctx)
                 return dest.device.set_parameter(dest.parameter.name, 0, ctx)
 
         return foo
