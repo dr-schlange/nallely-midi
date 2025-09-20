@@ -665,8 +665,8 @@ class ChordGenerator(VirtualDevice):
         return intervals
 
     def process(self):
-        if self.input == 0:  # type: ignore
-            return 0, self.outs
+        # if self.input == 0:  # type: ignore
+        #     return 0, self.outs
         if self.chord == "custom":  # type: ignore
             intervals = self.custom
         else:
@@ -678,6 +678,8 @@ class ChordGenerator(VirtualDevice):
 
     @on(input_cv, edge="any")
     def transform_input(self, value, ctx):
+        if self.input == 0:  # type: ignore
+            return 0, self.outs
         yield from self.process()
         # if value == 0:
         #     return 0, self.outs
