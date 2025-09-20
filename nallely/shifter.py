@@ -665,21 +665,19 @@ class ChordGenerator(VirtualDevice):
         return intervals
 
     def process(self):
-        # if self.input == 0:  # type: ignore
-        #     return 0, self.outs
+        if self.input == 0:  # type: ignore
+            return 0, self.outs
         if self.chord == "custom":  # type: ignore
             intervals = self.custom
         else:
             intervals = CHORD_INTERVALS[self.chord]  # type: ignore
         intervals = self.apply_drop(self.apply_inversion(self.apply_omit(intervals)))
-        chord = tuple((value + interval) + self.octave * OCTAVE for interval in intervals)  # type: ignore
+        chord = tuple((self.input + interval) + self.octave * OCTAVE for interval in intervals)  # type: ignore
         for note, out in zip(chord, self.outs[: len(chord)]):
             yield note, [out]
 
     @on(input_cv, edge="any")
     def transform_input(self, value, ctx):
-        if self.input == 0:  # type: ignore
-            return 0, self.outs
         yield from self.process()
         # if value == 0:
         #     return 0, self.outs
