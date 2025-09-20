@@ -95,9 +95,11 @@ class ShiftRegister(VirtualDevice):
 
 
 class SeqSwitch(VirtualDevice):
-    trigger_cv = VirtualParameter("trigger", range=(0, 1))
-    reset_cv = VirtualParameter("reset", range=(0, 1))
-    steps_cv = VirtualParameter("steps", range=(2, 4), default=4)
+    trigger_cv = VirtualParameter("trigger", range=(0, 1), conversion_policy=">0")
+    reset_cv = VirtualParameter("reset", range=(0, 1), conversion_policy=">0")
+    steps_cv = VirtualParameter(
+        "steps", range=(2, 4), default=4, conversion_policy="round"
+    )
     mode_cv = VirtualParameter("mode", accepted_values=("IOs->OI", "OI->IOs"))
 
     io4_cv = VirtualParameter("io4", range=(0, 127))
