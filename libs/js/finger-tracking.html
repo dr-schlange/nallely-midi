@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nallely Finger Tracking Optimized</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/dr-schlange/nallely-midi@main/libs/js/nallely-websocket.js"></script>
+    <style>
+        body {
+            margin: 0;
+            font-family: sans-serif;
+            background: #222;
+            color: #eee;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #container {
+            position: relative;
+            width: 640px;
+            height: 480px;
+        }
+
+        video,
+        #overlayCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform: scaleX(-1);
+        }
+
+        #controls {
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        input[type=range] {
+            width: 200px;
+        }
+
+        label {
+            margin: 4px;
+        }
+
+        #output {
+            margin-top: 10px;
+            font-size: 16px;
+            white-space: pre;
+        }
+
+        #skeletonSeparate {
+            margin-top: 10px;
+            border: 1px solid #555;
+            display: none;
+            transform: scaleX(1);
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Nallely Finger Tracking Device</h1>
+    <div id="container">
+        <video id="video" width="640" height="480" autoplay muted></video>
+        <canvas id="overlayCanvas" width="640" height="480"></canvas>
+    </div>
+
+    <div id="controls">
+        <label>Finger smoothing factor: <span id="smoothingValue">0.3</span></label>
+        <input type="range" id="smoothing" min="0" max="1" step="0.01" value="0.3">
+
+        <label>Skeleton threshold: <span id="thresholdValue">0.01</span></label>
+        <input type="range" id="skeletonThreshold" min="0" max="0.05" step="0.001" value="0.01">
+
+        <label><input type="checkbox" id="holdWhenNoMovement">Hold value when no movement</label>
+        <label><input type="checkbox" id="showSkeleton" checked> Show skeleton</label>
+        <label><input type="checkbox" id="overlaySkeleton" checked> Overlay skeleton on top of video</label>
+    </div>
+
+    <pre id="output"></pre>
+    <canvas id="skeletonSeparate" width="640" height="480"></canvas>
+
+    <script>
+        const videoElement = document.getElementById('video');
+        const overlayCanvas = document.getElementById('overlayCanvas');
+        const overlayCtx = overlayCanvas.getContext('2d');
+        const skeletonSeparate = document.getElementById('skeletonSeparate');
+        const separateCtx = skeletonSeparate.getContext('2d');
+        const output = document.getElementById('output');
+        const fingerColors = ['#FF0000', '#FF7F00', '#FFFF00', '#00FF00', '#0000FF'];
+        const numFingers = 10;
+
+        // Controls
+        const showSkeleton = document.getElementById('showSkeleton');
+        const overlaySkeleton = document.getElementById('overlaySkeleton');
+        const holdWhenNoMovement = document.getElementById('holdWhenNoMovement');
+
+        // Finger smoothing applying LowPass filter
+        let alpha = parseFloat(document.getElementById('smoothing').value);
+        const smoothedFingerValues = Array(numFingers).fill(0);
+
+        // Skeleton threshold (only for drawing)
+        let skeletonThreshold = parseFloat(document.getElementById('skeletonThreshold').value);
+
+        // Store previous landmarks for threshold comparison
+        // Keep previous landmarks by hand label
+        const lastLandmarks = { Left: null, Right: null };
+        const fingerLabels = [
+            "lhThu", "lhIdx", "lhMid", "lhRng", "lhPnk",
+            "rhThu", "rhIdx", "rhMid", "rhRng", "rhPnk"
+        ]
+        // Indices for fingertip ordering in Mediapipe
+        // thumb, index, middle, ring, pinky
+        const fingertipIndices = [4, 8, 12, 16, 20];
+
+        // Store last sent values to Nallely to avoid sending unchanged values
+        const lastSentValues = Array(numFingers).fill(null);
+
+        // Small epsilon to detect "no movement"
+        const epsilon = 0.0010;
+
+        // Nallely setup
+        const parameters = {};
+        const config = {};
+        for (const fingerLabel of fingerLabels) {
+            parameters[fingerLabel] = { min: 0, max: 1 };
+            config[fingerLabel] = 0
+        }
+
+        const device = NallelyWebsocketBus.register('controller', 'fingers', parameters, config);
+        device.onopen = () => console.log('Nallely connected');
+        device.onclose = () => console.log('Nallely disconnected');
+        device.onerror = () => console.log('Nallely error');
+
+        // Finger computation functions
+        function fingerScalar(landmark) { return (landmark.x + landmark.y) / 2; }
+
+        function filterLandmarks(prev, current) {
+            return current.map((lm, i) => {
+                const p = prev[i] || { x: lm.x, y: lm.y, z: lm.z };
+                const dx = lm.x - p.x;
+                const dy = lm.y - p.y;
+                const dz = lm.z - p.z;
+                const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+                if (dist < skeletonThreshold) return p;
+                return lm;
+            });
+        }
+
+        function drawSkeleton(landmarksList, ctx, mirrored = false) {
+            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+            if (!landmarksList) return;
+            if (mirrored) { ctx.save(); ctx.translate(ctx.canvas.width, 0); ctx.scale(-1, 1); }
+
+            for (const [handIdx, landmarks] of Object.values(landmarksList).entries()) {
+                const skeletonColor = handIdx === 0 ? '#00FF00' : '#00AAFF';
+                drawConnectors(ctx, landmarks, HAND_CONNECTIONS, { color: skeletonColor, lineWidth: 2 });
+                drawLandmarks(ctx, landmarks, { color: skeletonColor, lineWidth: 2 });
+
+                fingertipIndices.forEach((idx, fingerIdx) => {
+                    const lm = landmarks[idx];
+                    ctx.beginPath();
+                    ctx.arc(lm.x * ctx.canvas.width, lm.y * ctx.canvas.height, 8, 0, 2 * Math.PI);
+                    const baseColor = fingerColors[fingerIdx];
+                    ctx.fillStyle = `rgba(${parseInt(baseColor.slice(1, 3), 16)},${parseInt(baseColor.slice(3, 5), 16)},${parseInt(baseColor.slice(5, 7), 16)},0.6)`;
+                    ctx.fill();
+                });
+            }
+
+            if (mirrored) ctx.restore();
+        }
+
+        // Event listeners
+        document.getElementById('smoothing').addEventListener('input', e => { alpha = parseFloat(e.target.value); document.getElementById('smoothingValue').textContent = alpha.toFixed(2); });
+        document.getElementById('skeletonThreshold').addEventListener('input', e => { skeletonThreshold = parseFloat(e.target.value); document.getElementById('thresholdValue').textContent = skeletonThreshold.toFixed(3); });
+        overlaySkeleton.addEventListener('change', e => {
+            skeletonSeparate.style.display = overlaySkeleton.checked ? 'none' : 'block';
+        });
+
+        // Initialize Hands
+        const lastRoundedValues = Array(numFingers).fill(0); // Track last rounded finger values
+        const fingerStopped = Array(numFingers).fill(false);
+        const hands = new Hands({ locateFile: file => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}` });
+        hands.setOptions({ maxNumHands: 2, modelComplexity: 1, minDetectionConfidence: 0.7, minTrackingConfidence: 0.5 });
+
+        function getOrderedFingertipScalars(filteredLandmarks) {
+            const left = filteredLandmarks?.Left;
+            const right = filteredLandmarks?.Right;
+
+            const leftScalars = fingertipIndices.map(i =>
+                (left && left[i]) ? fingerScalar(left[i]) : 0
+            );
+
+            const rightScalars = fingertipIndices.map(i =>
+                (right && right[i]) ? fingerScalar(right[i]) : 0
+            );
+
+            return rightScalars.concat(leftScalars);
+        }
+
+        // Add callback for fingers detection
+        const computeAndSend = (results) => {
+            if (!results.multiHandLandmarks || !results.multiHandedness) return;
+
+            overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+            overlayCtx.drawImage(videoElement, 0, 0, overlayCanvas.width, overlayCanvas.height);
+
+            // Filter landmarks hand-by-hand
+            let filteredLandmarks = {};
+            results.multiHandLandmarks.forEach((landmarks, handIdx) => {
+                const handLabel = results.multiHandedness[handIdx].label; // "Left" or "Right"
+                const prev = lastLandmarks[handLabel] || landmarks;
+                const filtered = filterLandmarks(prev, landmarks);
+                lastLandmarks[handLabel] = filtered;
+                filteredLandmarks[handLabel] = filtered;
+            });
+
+            // Access them explicitly
+            let left = filteredLandmarks["Left"] || null;
+            let right = filteredLandmarks["Right"] || null;
+
+            // Assign left and right based on handedness
+            results.multiHandedness.forEach((h, idx) => {
+                if (h.label === "Left") {
+                    right = filteredLandmarks[idx];
+                } else if (h.label === "Right") {
+                    left = filteredLandmarks[idx];
+                }
+            });
+
+            // Now create sortedLandmarks (always in order: left then right)
+            let sortedLandmarks = [];
+
+            // Left hand first
+            if (left) {
+                fingertipIndices.forEach(i => sortedLandmarks.push(left[i]));
+            }
+
+            // Then right hand
+            if (right) {
+                fingertipIndices.forEach(i => sortedLandmarks.push(right[i]));
+            }
+
+            // Draw skeleton
+            if (showSkeleton.checked) {
+                if (overlaySkeleton.checked) {
+                    drawSkeleton(filteredLandmarks, overlayCtx);
+                    skeletonSeparate.style.display = 'none';
+                } else {
+                    drawSkeleton(filteredLandmarks, separateCtx, true);
+                    skeletonSeparate.style.display = 'block';
+                }
+            } else { separateCtx.clearRect(0, 0, separateCtx.width, separateCtx.height); }
+
+            // Compute finger scalars and apply low pass filter
+            const allFingerScalars = getOrderedFingertipScalars(filteredLandmarks);
+            allFingerScalars.forEach((v, i) => smoothedFingerValues[i] = alpha * v + (1 - alpha) * smoothedFingerValues[i]);
+
+            // Send only if value changed, otherwise 0 if no movement
+            for (let i = 0; i < numFingers; i++) {
+                const rounded = parseFloat(smoothedFingerValues[i].toFixed(3));
+
+                // We try to avoid to have all small finger variations
+                if (Math.abs(rounded - lastRoundedValues[i]) < epsilon) {
+                    // Finger effectively stopped
+                    if (!fingerStopped[i] && !holdWhenNoMovement.checked) {
+                        device.send(fingerLabels[i], 0) // Send 0 only once
+                        lastSentValues[i] = 0;
+                        fingerStopped[i] = true;
+                        // console.debug(`Zero sent for finger ${i}`);
+                    }
+                } else {
+                    // Finger moved
+                    if (lastSentValues[i] !== rounded) {
+                        device.send(fingerLabels[i], rounded);
+                        lastSentValues[i] = rounded;
+                        fingerStopped[i] = false;
+                        // console.debug(`Value sent for finger ${i}`, rounded);
+
+                    }
+                }
+
+                // Always update last rounded value
+                lastRoundedValues[i] = rounded;
+            }
+
+            // Update output
+            const allValues = smoothedFingerValues.filter(v => v).map((v, i) => `${fingerLabels[i]}=${v.toFixed(3)}`)
+            output.textContent = `${allValues.slice(0, 5).join(", ")}\n${allValues.slice(5).join(", ")}`
+        }
+
+        hands.onResults(results => {
+            // orderFingers(results);
+            computeAndSend(results);
+        });
+
+        // Camera
+        const camera = new Camera(videoElement, { onFrame: async () => { await hands.send({ image: videoElement }); }, width: 640, height: 480 });
+        camera.start();
+    </script>
+
+</body>
+
+</html>
