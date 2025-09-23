@@ -5,6 +5,7 @@ Nallely (pronounced "Nayeli") is an organic platform for experimentation around 
 Think about Nallely as a small brain, where each device is a neurone (nothing related to AI) that received signals and emit signals. All those small neurons can connects to each other in various ways. Connecting neurons as you want, you might connect some that in a normal running brain would not communicate, a little bit as if you had a brain under psychedelic influences, mapped in an unusual way, producing unexpected results. Some dedicated neurons (MIDI devices) are abstraction of the physical world and can create sound physically using a MIDI device (the voice), or get impulses from external MIDI devices, while visuals could be seen as visual mental imageries, influenced by how the small neurons are connected. You can also get impulses from other devices, as example a pure javascript module lets you get impulses/statistics from your running webcam to use it as a source signal. This small module are the first "eyes" of this small musical brain. Soon modules for audio will arrive, giving the capacity to hear (to react to sound).
 
 [Nallely's Website](https://dr-schlange.github.io/nallely-midi/)
+[Demo videos (new and old)](https://www.youtube.com/playlist?list=PL0S9whcJCHAgP9Gb_Z3FyaJOYngbdR-mj)
 
 | Control multiple MIDI devices |  Patch your devices  |  Monitor the signals | Change settings
 :-------------------------:|:-------------------------:|:-----:|:-------:
