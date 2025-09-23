@@ -282,7 +282,7 @@ class VirtualDevice(threading.Thread):
         if on == "set_pause":
             self.set_pause = value
         if hasattr(self, "to_update"):
-            self.to_update.send_update()  # type: ignore -> this is set by the trevor bus dynamically
+            self.to_update.send_update()  # type: ignore -> to_update is set by the trevor bus dynamically
 
     def set_parameter(self, param: str, value: Any, ctx: ThreadContext | None = None):
         if self.paused or param in self.closed_ports:

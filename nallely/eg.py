@@ -165,8 +165,10 @@ class Gate(VirtualDevice):
 
 class SampleHold(VirtualDevice):
     input_cv = VirtualParameter(name="input", range=(0, 127))
-    trigger_cv = VirtualParameter(name="trigger", range=(0, 1))
-    reset_cv = VirtualParameter(name="reset", range=(0, 1))
+    trigger_cv = VirtualParameter(
+        name="trigger", range=(0, 1), conversion_policy="round"
+    )
+    reset_cv = VirtualParameter(name="reset", range=(0, 1), conversion_policy=">0")
 
     def __init__(self, **kwargs):
         self.input = 0
