@@ -2,6 +2,7 @@ from .clocks import BernoulliTrigger, Clock, ClockDivider
 from .core import (
     Bridge,
     DeviceNotFound,
+    MIDIBridge,
     MidiDevice,
     Module,
     ModulePadsOrKeys,
@@ -91,4 +92,5 @@ __all__ = [
     "ChordGenerator",
     "ClockDivider",
     "Bridge",
+    "MIDIBridge",
 ]

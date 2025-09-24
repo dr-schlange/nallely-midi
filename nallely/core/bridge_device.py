@@ -14,6 +14,31 @@ from .midi_device import (
     ModuleParameter,
     ModulePitchwheel,
 )
+from .world import no_registration
+
+
+@no_registration
+class Bridge(MidiDevice):
+    instance_number = 0
+
+    def __init__(self, device_name=None, *args, **kwargs):
+        self.virtual_port_name = device_name or f"NallelyBridge{self.instance_number}"
+        kwargs.pop(
+            "autoconnect", None
+        )  # We ditch the auto-connect to avoid connection on the wrong port
+        super().__init__(
+            *args,
+            device_name=self.virtual_port_name,
+            autoconnect=False,
+            **kwargs,
+        )
+        self.instance_uid = self.instance_number
+        self.instance_number += 1
+        self.inport = mido.open_input(f"{self.virtual_port_name}", virtual=True)  # type: ignore mido error
+        self.outport = mido.open_output(f"{self.virtual_port_name}", virtual=True)  # type: ignore mido error
+
+    def uid(self):
+        return f"{self.__class__.__name__}{self.instance_uid}"
 
 
 class X0Section(Module):
@@ -183,7 +208,7 @@ class X7Section(Module):
     cc_127 = ModuleParameter(127)
 
 
-class Bridge(MidiDevice):
+class MIDIBridge(Bridge):
     X0: X0Section  # type: ignore
     X1: X1Section  # type: ignore
     X2: X2Section  # type: ignore
@@ -192,23 +217,13 @@ class Bridge(MidiDevice):
     X5: X5Section  # type: ignore
     X6: X6Section  # type: ignore
     X7: X7Section  # type: ignore
-    instance_number = 0
 
     def __init__(self, device_name=None, *args, **kwargs):
-        self.virtual_port_name = device_name or f"NallelyBridge{self.instance_number}"
-        kwargs.pop(
-            "autoconnect", None
-        )  # We ditch the auto-connect to avoid connection on the wrong port
         super().__init__(
             *args,
-            device_name=self.virtual_port_name,
-            autoconnect=False,
+            device_name=device_name or f"NallelyBridge{self.instance_number}",
             **kwargs,
         )
-        self.instance_uid = self.instance_number
-        self.instance_number += 1
-        self.inport = mido.open_input(f"{self.virtual_port_name}", virtual=True)  # type: ignore mido error
-        self.outport = mido.open_output(f"{self.virtual_port_name}", virtual=True)  # type: ignore mido error
 
     @property
     def X0(self) -> X0Section:
@@ -241,6 +256,3 @@ class Bridge(MidiDevice):
     @property
     def X7(self) -> X7Section:
         return self.modules.X7
-
-    def uid(self):
-        return f"{self.__class__.__name__}{self.instance_uid}"

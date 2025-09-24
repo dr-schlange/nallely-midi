@@ -1,5 +1,5 @@
 Nallely:
-  Bridge:
+  MIDIBridge:
     X0:
       notes: "keys_or_pads"
       pitchwheel: "pitchwheel"

@@ -1,4 +1,4 @@
-from .bridge_device import Bridge
+from .bridge_device import Bridge, MIDIBridge
 from .midi_device import (
     MidiDevice,
     Module,
@@ -61,4 +61,5 @@ __all__ = [
     "on",
     "ModulePitchwheel",
     "Bridge",
+    "MIDIBridge",
 ]
