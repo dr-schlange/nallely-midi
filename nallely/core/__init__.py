@@ -1,3 +1,4 @@
+from .bridge_device import Bridge
 from .midi_device import (
     MidiDevice,
     Module,
@@ -59,4 +60,5 @@ __all__ = [
     "all_links",
     "on",
     "ModulePitchwheel",
+    "Bridge",
 ]

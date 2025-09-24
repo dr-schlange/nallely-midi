@@ -1,0 +1,153 @@
+Nallely:
+  Bridge:
+    X0:
+      notes: "keys_or_pads"
+      pitchwheel: "pitchwheel"
+      cc_1: { cc: 1, description: "", init: 0, max: 127, min: 0 }
+      cc_2: { cc: 2, description: "", init: 0, max: 127, min: 0 }
+      cc_3: { cc: 3, description: "", init: 0, max: 127, min: 0 }
+      cc_4: { cc: 4, description: "", init: 0, max: 127, min: 0 }
+      cc_5: { cc: 5, description: "", init: 0, max: 127, min: 0 }
+      cc_6: { cc: 6, description: "", init: 0, max: 127, min: 0 }
+      cc_7: { cc: 7, description: "", init: 0, max: 127, min: 0 }
+      cc_8: { cc: 8, description: "", init: 0, max: 127, min: 0 }
+      cc_9: { cc: 9, description: "", init: 0, max: 127, min: 0 }
+      cc_10: { cc: 10, description: "", init: 0, max: 127, min: 0 }
+      cc_11: { cc: 11, description: "", init: 0, max: 127, min: 0 }
+      cc_12: { cc: 12, description: "", init: 0, max: 127, min: 0 }
+      cc_13: { cc: 13, description: "", init: 0, max: 127, min: 0 }
+      cc_14: { cc: 14, description: "", init: 0, max: 127, min: 0 }
+      cc_15: { cc: 15, description: "", init: 0, max: 127, min: 0 }
+      cc_16: { cc: 16, description: "", init: 0, max: 127, min: 0 }
+    X1:
+      notes: "keys_or_pads"
+      pitchwheel: "pitchwheel"
+      cc_17: { cc: 17, description: "", init: 0, max: 127, min: 0 }
+      cc_18: { cc: 18, description: "", init: 0, max: 127, min: 0 }
+      cc_19: { cc: 19, description: "", init: 0, max: 127, min: 0 }
+      cc_20: { cc: 20, description: "", init: 0, max: 127, min: 0 }
+      cc_21: { cc: 21, description: "", init: 0, max: 127, min: 0 }
+      cc_22: { cc: 22, description: "", init: 0, max: 127, min: 0 }
+      cc_23: { cc: 23, description: "", init: 0, max: 127, min: 0 }
+      cc_24: { cc: 24, description: "", init: 0, max: 127, min: 0 }
+      cc_25: { cc: 25, description: "", init: 0, max: 127, min: 0 }
+      cc_26: { cc: 26, description: "", init: 0, max: 127, min: 0 }
+      cc_27: { cc: 27, description: "", init: 0, max: 127, min: 0 }
+      cc_28: { cc: 28, description: "", init: 0, max: 127, min: 0 }
+      cc_29: { cc: 29, description: "", init: 0, max: 127, min: 0 }
+      cc_30: { cc: 30, description: "", init: 0, max: 127, min: 0 }
+      cc_31: { cc: 31, description: "", init: 0, max: 127, min: 0 }
+      cc_32: { cc: 32, description: "", init: 0, max: 127, min: 0 }
+    X2:
+      notes: "keys_or_pads"
+      pitchwheel: "pitchwheel"
+      cc_33: { cc: 33, description: "", init: 0, max: 127, min: 0 }
+      cc_34: { cc: 34, description: "", init: 0, max: 127, min: 0 }
+      cc_35: { cc: 35, description: "", init: 0, max: 127, min: 0 }
+      cc_36: { cc: 36, description: "", init: 0, max: 127, min: 0 }
+      cc_37: { cc: 37, description: "", init: 0, max: 127, min: 0 }
+      cc_38: { cc: 38, description: "", init: 0, max: 127, min: 0 }
+      cc_39: { cc: 39, description: "", init: 0, max: 127, min: 0 }
+      cc_40: { cc: 40, description: "", init: 0, max: 127, min: 0 }
+      cc_41: { cc: 41, description: "", init: 0, max: 127, min: 0 }
+      cc_42: { cc: 42, description: "", init: 0, max: 127, min: 0 }
+      cc_43: { cc: 43, description: "", init: 0, max: 127, min: 0 }
+      cc_44: { cc: 44, description: "", init: 0, max: 127, min: 0 }
+      cc_45: { cc: 45, description: "", init: 0, max: 127, min: 0 }
+      cc_46: { cc: 46, description: "", init: 0, max: 127, min: 0 }
+      cc_47: { cc: 47, description: "", init: 0, max: 127, min: 0 }
+      cc_48: { cc: 48, description: "", init: 0, max: 127, min: 0 }
+    X3:
+      notes: "keys_or_pads"
+      pitchwheel: "pitchwheel"
+      cc_49: { cc: 49, description: "", init: 0, max: 127, min: 0 }
+      cc_50: { cc: 50, description: "", init: 0, max: 127, min: 0 }
+      cc_51: { cc: 51, description: "", init: 0, max: 127, min: 0 }
+      cc_52: { cc: 52, description: "", init: 0, max: 127, min: 0 }
+      cc_53: { cc: 53, description: "", init: 0, max: 127, min: 0 }
+      cc_54: { cc: 54, description: "", init: 0, max: 127, min: 0 }
+      cc_55: { cc: 55, description: "", init: 0, max: 127, min: 0 }
+      cc_56: { cc: 56, description: "", init: 0, max: 127, min: 0 }
+      cc_57: { cc: 57, description: "", init: 0, max: 127, min: 0 }
+      cc_58: { cc: 58, description: "", init: 0, max: 127, min: 0 }
+      cc_59: { cc: 59, description: "", init: 0, max: 127, min: 0 }
+      cc_60: { cc: 60, description: "", init: 0, max: 127, min: 0 }
+      cc_61: { cc: 61, description: "", init: 0, max: 127, min: 0 }
+      cc_62: { cc: 62, description: "", init: 0, max: 127, min: 0 }
+      cc_63: { cc: 63, description: "", init: 0, max: 127, min: 0 }
+      cc_64: { cc: 64, description: "", init: 0, max: 127, min: 0 }
+    X4:
+      notes: "keys_or_pads"
+      pitchwheel: "pitchwheel"
+      cc_65: { cc: 65, description: "", init: 0, max: 127, min: 0 }
+      cc_66: { cc: 66, description: "", init: 0, max: 127, min: 0 }
+      cc_67: { cc: 67, description: "", init: 0, max: 127, min: 0 }
+      cc_68: { cc: 68, description: "", init: 0, max: 127, min: 0 }
+      cc_69: { cc: 69, description: "", init: 0, max: 127, min: 0 }
+      cc_70: { cc: 70, description: "", init: 0, max: 127, min: 0 }
+      cc_71: { cc: 71, description: "", init: 0, max: 127, min: 0 }
+      cc_72: { cc: 72, description: "", init: 0, max: 127, min: 0 }
+      cc_73: { cc: 73, description: "", init: 0, max: 127, min: 0 }
+      cc_74: { cc: 74, description: "", init: 0, max: 127, min: 0 }
+      cc_75: { cc: 75, description: "", init: 0, max: 127, min: 0 }
+      cc_76: { cc: 76, description: "", init: 0, max: 127, min: 0 }
+      cc_77: { cc: 77, description: "", init: 0, max: 127, min: 0 }
+      cc_78: { cc: 78, description: "", init: 0, max: 127, min: 0 }
+      cc_79: { cc: 79, description: "", init: 0, max: 127, min: 0 }
+      cc_80: { cc: 80, description: "", init: 0, max: 127, min: 0 }
+    X5:
+      notes: "keys_or_pads"
+      pitchwheel: "pitchwheel"
+      cc_81: { cc: 81, description: "", init: 0, max: 127, min: 0 }
+      cc_82: { cc: 82, description: "", init: 0, max: 127, min: 0 }
+      cc_83: { cc: 83, description: "", init: 0, max: 127, min: 0 }
+      cc_84: { cc: 84, description: "", init: 0, max: 127, min: 0 }
+      cc_85: { cc: 85, description: "", init: 0, max: 127, min: 0 }
+      cc_86: { cc: 86, description: "", init: 0, max: 127, min: 0 }
+      cc_87: { cc: 87, description: "", init: 0, max: 127, min: 0 }
+      cc_88: { cc: 88, description: "", init: 0, max: 127, min: 0 }
+      cc_89: { cc: 89, description: "", init: 0, max: 127, min: 0 }
+      cc_90: { cc: 90, description: "", init: 0, max: 127, min: 0 }
+      cc_91: { cc: 91, description: "", init: 0, max: 127, min: 0 }
+      cc_92: { cc: 92, description: "", init: 0, max: 127, min: 0 }
+      cc_93: { cc: 93, description: "", init: 0, max: 127, min: 0 }
+      cc_94: { cc: 94, description: "", init: 0, max: 127, min: 0 }
+      cc_95: { cc: 95, description: "", init: 0, max: 127, min: 0 }
+      cc_96: { cc: 96, description: "", init: 0, max: 127, min: 0 }
+    X6:
+      notes: "keys_or_pads"
+      pitchwheel: "pitchwheel"
+      cc_97: { cc: 97, description: "", init: 0, max: 127, min: 0 }
+      cc_98: { cc: 98, description: "", init: 0, max: 127, min: 0 }
+      cc_99: { cc: 99, description: "", init: 0, max: 127, min: 0 }
+      cc_100: { cc: 100, description: "", init: 0, max: 127, min: 0 }
+      cc_101: { cc: 101, description: "", init: 0, max: 127, min: 0 }
+      cc_102: { cc: 102, description: "", init: 0, max: 127, min: 0 }
+      cc_103: { cc: 103, description: "", init: 0, max: 127, min: 0 }
+      cc_104: { cc: 104, description: "", init: 0, max: 127, min: 0 }
+      cc_105: { cc: 105, description: "", init: 0, max: 127, min: 0 }
+      cc_106: { cc: 106, description: "", init: 0, max: 127, min: 0 }
+      cc_107: { cc: 107, description: "", init: 0, max: 127, min: 0 }
+      cc_108: { cc: 108, description: "", init: 0, max: 127, min: 0 }
+      cc_109: { cc: 109, description: "", init: 0, max: 127, min: 0 }
+      cc_110: { cc: 110, description: "", init: 0, max: 127, min: 0 }
+      cc_111: { cc: 111, description: "", init: 0, max: 127, min: 0 }
+      cc_112: { cc: 112, description: "", init: 0, max: 127, min: 0 }
+    X7:
+      notes: "keys_or_pads"
+      pitchwheel: "pitchwheel"
+      cc_113: { cc: 113, description: "", init: 0, max: 127, min: 0 }
+      cc_114: { cc: 114, description: "", init: 0, max: 127, min: 0 }
+      cc_115: { cc: 115, description: "", init: 0, max: 127, min: 0 }
+      cc_116: { cc: 116, description: "", init: 0, max: 127, min: 0 }
+      cc_117: { cc: 117, description: "", init: 0, max: 127, min: 0 }
+      cc_118: { cc: 118, description: "", init: 0, max: 127, min: 0 }
+      cc_119: { cc: 119, description: "", init: 0, max: 127, min: 0 }
+      cc_120: { cc: 120, description: "", init: 0, max: 127, min: 0 }
+      cc_121: { cc: 121, description: "", init: 0, max: 127, min: 0 }
+      cc_122: { cc: 122, description: "", init: 0, max: 127, min: 0 }
+      cc_123: { cc: 123, description: "", init: 0, max: 127, min: 0 }
+      cc_124: { cc: 124, description: "", init: 0, max: 127, min: 0 }
+      cc_125: { cc: 125, description: "", init: 0, max: 127, min: 0 }
+      cc_126: { cc: 126, description: "", init: 0, max: 127, min: 0 }
+      cc_127: { cc: 127, description: "", init: 0, max: 127, min: 0 }
