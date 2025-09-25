@@ -7,6 +7,7 @@ from pathlib import Path
 
 import mido
 from dulwich import porcelain
+from dulwich.notes import get_note_path
 from dulwich.repo import Repo
 
 from .core import (
@@ -253,7 +254,6 @@ class Session:
         print(f"[GIT-STORE] saved {address_file.absolute()}")
 
         porcelain.add(repo, address_file)
-        current_date = datetime.now()
         infos = extract_infos(address_file)
         midi_devices = "\n".join(
             f"* {dev}={num}\n" for dev, num in infos["midi"].items()
@@ -276,6 +276,7 @@ patchs_number={infos["patches"]}
 playground_code={infos["playground_code"]}
 """
         porcelain.commit(repo, author=b"Nallely MIDI <drcoatl@proton.me>", committer=b"dr-schlange <drcoatl@proton.me>", message=message)  # type: ignore
+        repo.close()
         return address_file
 
     def load_address(self, address, universe="memory"):
@@ -347,6 +348,7 @@ playground_code={infos["playground_code"]}
         session_id = hex(id(self))[2:].upper()
         message = f"""[0x{address}] Clear session 0x{session_id}"""
         porcelain.commit(repo, author=b"Nallely MIDI <drcoatl@proton.me>", committer=b"dr-schlange <drcoatl@proton.me>", message=message)  # type: ignore
+        repo.close()
 
 
 def extract_infos(filename):
@@ -357,12 +359,24 @@ def extract_infos(filename):
     virtual_classes_count = Counter(dev["class"] for dev in content["virtual_devices"])
     patches = len(content["connections"])
     playground_code = content.get("playground_code")
-    return {
+    repo = Repo(file.parent.parent)
+
+    commit_sha = get_last_commit_hash_for_file(repo, file)
+    if commit_sha:
+        note_id = get_note_path(commit_sha)
+        metadata = json.loads(note_id.decode("utf-8"))
+    else:
+        metadata = {}
+
+    details = {
         "midi": midi_classes,
         "virtual": virtual_classes_count,
         "patches": patches,
         "playground_code": bool(playground_code),
+        "metadata": metadata,
     }
+    repo.close()
+    return details
 
 
 def address2path(universe, address):
@@ -370,3 +384,18 @@ def address2path(universe, address):
     frags = [address[i : i + 2] for i in range(0, len(address), 2)]
     address_file = location / (Path().with_segments(*frags)).with_suffix(".nly")
     return address_file
+
+
+def get_last_commit_hash_for_file(repo, file_path):
+    if not file_path.exists():
+        return None
+    try:
+        walker = repo.get_walker(paths=[f"{file_path}".encode("utf-8")], max_entries=1)
+
+        last_commit = next(iter(walker)).commit
+        return last_commit.id
+    except StopIteration:
+        return None
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return None

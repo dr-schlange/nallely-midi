@@ -182,9 +182,14 @@ export interface PatchDetails {
 	virtual: Record<string, number>;
 	patches: number;
 	playground_code: boolean;
+	metadata: AddressMetadata;
 }
 
 export interface Address {
 	hex: string;
 	path: string;
+}
+
+export interface AddressMetadata {
+	color?: string;
 }
