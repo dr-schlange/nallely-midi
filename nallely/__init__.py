@@ -22,7 +22,7 @@ from .core import (
     virtual_devices,
 )
 from .eg import VCA, ADSREnvelope, EnvelopeSlew, Gate, SampleHold
-from .filters import MultiPoleFilter, Waveshaper
+from .filters import Crossfade, Mixer, MultiPoleFilter, Waveshaper
 from .lfos import LFO, Cycler
 from .logicals import (
     Bitwise,
@@ -93,4 +93,6 @@ __all__ = [
     "ClockDivider",
     "Bridge",
     "MIDIBridge",
+    "Mixer",
+    "Crossfade",
 ]

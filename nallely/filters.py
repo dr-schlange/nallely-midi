@@ -203,3 +203,106 @@ class Waveshaper(VirtualDevice):
     def main(self, ctx):
         if self.type == "continuous":
             return self.process()
+
+
+class Mixer(VirtualDevice):
+    in0_cv = VirtualParameter(name="in0", range=(0, 127))
+    in1_cv = VirtualParameter(name="in1", range=(0, 127))
+    in2_cv = VirtualParameter(name="in2", range=(0, 127))
+    in3_cv = VirtualParameter(name="in3", range=(0, 127))
+
+    level0_cv = VirtualParameter(name="level0", range=(0, 100), default=50)
+    level1_cv = VirtualParameter(name="level1", range=(0, 100), default=50)
+    level2_cv = VirtualParameter(name="level2", range=(0, 100), default=50)
+    level3_cv = VirtualParameter(name="level3", range=(0, 100), default=50)
+
+    nums_cv = VirtualParameter(
+        name="nums", range=(2, 4), conversion_policy="round", default=4
+    )
+    type_cv = VirtualParameter(name="type", accepted_values=("ondemand", "continuous"))
+
+    @on(in0_cv, edge="any")
+    def in0_change(self, value, ctx):
+        if self.type == "ondemand":  # type: ignore
+            return self.process()
+
+    @on(in1_cv, edge="any")
+    def in1_change(self, value, ctx):
+        if self.type == "ondemand":  # type: ignore
+            return self.process()
+
+    @on(in2_cv, edge="any")
+    def in2_change(self, value, ctx):
+        if self.type == "ondemand":  # type: ignore
+            return self.process()
+
+    @on(in3_cv, edge="any")
+    def in3_change(self, value, ctx):
+        if self.type == "ondemand":  # type: ignore
+            return self.process()
+
+    @on(nums_cv, edge="any")
+    def nums_change(self, value, ctx):
+        if self.type == "ondemand":  # type: ignore
+            return self.process()
+
+    def main(self, ctx):
+        if self.type == "continuous":  # type: ignore
+            return self.process()
+
+    def process(self):
+        nums = self.nums  # type: ignore
+        inputs = (getattr(self, f"in{i}") for i in range(nums))
+        levels = (getattr(self, f"level{i}") / 100.0 for i in range(nums))
+        return (1 / nums) * sum(w * x for w, x in zip(levels, inputs))
+
+
+class Crossfade(VirtualDevice):
+    in0_cv = VirtualParameter(name="in0", range=(0, 127))
+    in1_cv = VirtualParameter(name="in1", range=(0, 127))
+    in2_cv = VirtualParameter(name="in2", range=(0, 127))
+    in3_cv = VirtualParameter(name="in3", range=(0, 127))
+    level_cv = VirtualParameter(name="level", range=(0, 100), default=50)
+    type_cv = VirtualParameter(name="type", accepted_values=("ondemand", "continuous"))
+
+    out0_cv = VirtualParameter(name="out0", range=(0, 127))
+    out1_cv = VirtualParameter(name="out1", range=(0, 127))
+
+    def __post_init__(self, **kwargs):
+        return {"disable_output": True}
+
+    @on(in0_cv, edge="any")
+    def in0_change(self, value, ctx):
+        if self.type == "ondemand":  # type: ignore
+            yield from self.process()
+
+    @on(in1_cv, edge="any")
+    def in1_change(self, value, ctx):
+        if self.type == "ondemand":  # type: ignore
+            yield from self.process()
+
+    @on(in2_cv, edge="any")
+    def in2_change(self, value, ctx):
+        if self.type == "ondemand":  # type: ignore
+            yield from self.process()
+
+    @on(in3_cv, edge="any")
+    def in3_change(self, value, ctx):
+        if self.type == "ondemand":  # type: ignore
+            yield from self.process()
+
+    @on(level_cv, edge="any")
+    def level_change(self, value, ctx):
+        if self.type == "ondemand":  # type: ignore
+            yield from self.process()
+
+    def main(self, ctx):
+        if self.type == "continuous":  # type: ignore
+            yield from self.process()
+
+    def process(self):
+        level = self.level  # type: ignore
+        in0, in1, in2, in3 = self.in0, self.in1, self.in2, self.in3  # type: ignore
+        alpha = level / 100.0
+        yield (1 - alpha) * in0 + alpha * in1, [self.out0_cv]
+        yield (1 - alpha) * in2 + alpha * in3, [self.out1_cv]
