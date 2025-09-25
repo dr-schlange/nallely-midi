@@ -396,6 +396,3 @@ def get_last_commit_hash_for_file(repo, file_path):
         return last_commit.id
     except StopIteration:
         return None
-    except Exception as e:
-        print(f"An error occurred: {e}")
-        return None

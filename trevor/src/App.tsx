@@ -24,11 +24,24 @@ const App = () => {
 const Main = () => {
 	const errors = useTrevorSelector((state) => state.general.errors);
 	const firstLaunch = useTrevorSelector((state) => state.general.firstLaunch);
+	// const trevorWebSocket = useTrevorWebSocket();
+	// const interval = useRef(null);
 	const [mode, setMode] = useState<string>("2D");
 
 	const swith3DOn = (activate: boolean) => {
 		setMode(activate ? "3D" : "2D");
 	};
+
+	// useEffect(() => {
+	// 	interval.current = setInterval(() => {
+	// 		trevorWebSocket.pullFullState();
+	// 	}, 1000);
+	// 	return () => {
+	// 		if (interval.current) {
+	// 			clearInterval(interval.current);
+	// 		}
+	// 	};
+	// }, [trevorWebSocket, trevorWebSocket?.socket]);
 
 	return (
 		(mode === "2D" && (
