@@ -246,6 +246,26 @@ class Mixer(VirtualDevice):
         if self.type == "ondemand":  # type: ignore
             return self.process()
 
+    @on(level0_cv, edge="any")
+    def level0_change(self, value, ctx):
+        if self.type == "ondemand":  # type: ignore
+            return self.process()
+
+    @on(level1_cv, edge="any")
+    def level1_change(self, value, ctx):
+        if self.type == "ondemand":  # type: ignore
+            return self.process()
+
+    @on(level2_cv, edge="any")
+    def level2_change(self, value, ctx):
+        if self.type == "ondemand":  # type: ignore
+            return self.process()
+
+    @on(level3_cv, edge="any")
+    def level3_change(self, value, ctx):
+        if self.type == "ondemand":  # type: ignore
+            return self.process()
+
     def main(self, ctx):
         if self.type == "continuous":  # type: ignore
             return self.process()

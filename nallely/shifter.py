@@ -1,4 +1,5 @@
 import bisect
+import math
 import random
 from decimal import Decimal
 
@@ -681,4 +682,77 @@ class ChordGenerator(VirtualDevice):
         if value == 0:
             return 0, self.outs
 
+        yield from self.process()
+
+
+class HarmonicGenerator(VirtualDevice):
+    input_cv = VirtualParameter(name="input", range=(0, 127))
+    nums_cv = VirtualParameter(
+        name="nums", range=(2, 4), conversion_policy="round", default=4
+    )
+    mode_cv = VirtualParameter(name="mode", accepted_values=("cv", "pitch"))
+
+    level1_cv = VirtualParameter(name="level1", range=(0, 100), default=50)
+    level2_cv = VirtualParameter(name="level2", range=(0, 100), default=50)
+    level3_cv = VirtualParameter(name="level3", range=(0, 100), default=50)
+    level4_cv = VirtualParameter(name="level4", range=(0, 100), default=50)
+
+    out1_cv = VirtualParameter(name="out1", range=(0, 127))
+    out2_cv = VirtualParameter(name="out2", range=(0, 127))
+    out3_cv = VirtualParameter(name="out3", range=(0, 127))
+    out4_cv = VirtualParameter(name="out4", range=(0, 127))
+
+    def __post_init__(self, **kwargs):
+        self.phase = 0.0
+        return {"disable_output": True}
+
+    def process(self):
+        nums = self.nums  # type: ignore
+        input = self.input  # type: ignore
+        levels = [getattr(self, f"level{i}") / 100.0 for i in range(1, nums + 1)]
+        mode = self.mode  # type: ignore
+
+        if mode == "cv":
+            base_freq = input / 127.0 * 10.0
+            max_total = sum(levels)
+            self.phase += base_freq * self.target_cycle_time
+            self.phase %= 1.0
+            total = sum(
+                level * math.sin(2 * math.pi * n * self.phase)
+                for n, level in enumerate(levels, start=1)
+            )
+            scaled = (total + max_total) / (2 * max_total) * 127
+            yield scaled, [self.out1_cv]
+        else:
+            for harmo, level in enumerate(levels, start=1):
+                value = harmo * level * input
+                scaled = value / (max(input, 0.0001) * nums) * 127
+                yield scaled, [getattr(self, f"out{harmo}_cv")]
+
+    @on(nums_cv, edge="any")
+    def nums_change(self, value, ctx):
+        yield from self.process()
+
+    @on(mode_cv, edge="any")
+    def mode_change(self, value, ctx):
+        yield from self.process()
+
+    @on(input_cv, edge="any")
+    def input_change(self, value, ctx):
+        yield from self.process()
+
+    @on(level1_cv, edge="any")
+    def level1_change(self, value, ctx):
+        yield from self.process()
+
+    @on(level2_cv, edge="any")
+    def level2_change(self, value, ctx):
+        yield from self.process()
+
+    @on(level3_cv, edge="any")
+    def level3_change(self, value, ctx):
+        yield from self.process()
+
+    @on(level4_cv, edge="any")
+    def level4_change(self, value, ctx):
         yield from self.process()
