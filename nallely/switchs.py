@@ -250,3 +250,29 @@ class BitCounter(VirtualDevice):
     def main(self, ctx: ThreadContext) -> Any:
         if self.mode == "continuous":  # type: ignore
             yield from self.activate_outputs()
+
+
+class ThresholdGate(VirtualDevice):
+    input_cv = VirtualParameter(name="input", range=(0, 127))
+    threshold_cv = VirtualParameter(name="threshold", range=(0, 127))
+
+    mode_cv = VirtualParameter(name="mode", accepted_values=("ondemand", "continuous"))
+
+    def process(self, input, threshold):
+        if input >= threshold:
+            return input
+        return 0
+
+    @on(input_cv, edge="any")
+    def change_input(self, value, ctx):
+        if self.mode == "ondemand":  # type: ignore
+            return self.process(value, self.threshold)  # type: ignore
+
+    @on(threshold_cv, edge="any")
+    def change_threshold(self, value, ctx):
+        if self.mode == "ondemand":  # type: ignore
+            return self.process(self.input, value)  # type: ignore
+
+    def main(self, ctx: ThreadContext) -> Any:
+        if self.mode == "continuous":  # type: ignore
+            return self.process(self.input, self.threshold)  # type: ignore

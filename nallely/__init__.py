@@ -42,7 +42,14 @@ from .shifter import (
     PitchShifter,
     Quantizer,
 )
-from .switchs import BitCounter, RingCounter, SeqSwitch, ShiftRegister, Switch
+from .switchs import (
+    BitCounter,
+    RingCounter,
+    SeqSwitch,
+    ShiftRegister,
+    Switch,
+    ThresholdGate,
+)
 from .websocket_bus import WebSocketBus
 
 # For retrocompatibility of some patchs
@@ -104,4 +111,5 @@ __all__ = [
     "Mixer",
     "Crossfade",
     "HarmonicGenerator",
+    "ThresholdGate",
 ]
