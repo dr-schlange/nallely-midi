@@ -256,23 +256,31 @@ class ThresholdGate(VirtualDevice):
     input_cv = VirtualParameter(name="input", range=(0, 127))
     threshold_cv = VirtualParameter(name="threshold", range=(0, 127))
 
-    mode_cv = VirtualParameter(name="mode", accepted_values=("ondemand", "continuous"))
+    mode_cv = VirtualParameter(name="mode", accepted_values=("gate", "diff"))
+    type_cv = VirtualParameter(name="type", accepted_values=("ondemand", "continuous"))
 
     def process(self, input, threshold):
-        if input >= threshold:
-            return input
-        return 0
+        mode = self.mode  # type: ignore
+        if mode == "gate":
+            return 0 if input < threshold else input
+        else:
+            return max(0, input - threshold)
 
     @on(input_cv, edge="any")
     def change_input(self, value, ctx):
-        if self.mode == "ondemand":  # type: ignore
+        if self.type == "ondemand":  # type: ignore
             return self.process(value, self.threshold)  # type: ignore
 
     @on(threshold_cv, edge="any")
     def change_threshold(self, value, ctx):
-        if self.mode == "ondemand":  # type: ignore
+        if self.type == "ondemand":  # type: ignore
             return self.process(self.input, value)  # type: ignore
 
+    @on(mode_cv, edge="any")
+    def change_mode(self, value, ctx):
+        if self.type == "ondemand":  # type: ignore
+            return self.process(self.input, self.threshold)  # type: ignore
+
     def main(self, ctx: ThreadContext) -> Any:
-        if self.mode == "continuous":  # type: ignore
+        if self.type == "continuous":  # type: ignore
             return self.process(self.input, self.threshold)  # type: ignore
