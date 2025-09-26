@@ -22,6 +22,10 @@ const WidgetComponents = {
 	Scope,
 	XYScope,
 	XYZScope,
+	// WindowWidget: (props) => (
+	// 	<WindowWidget url="http://localhost:8000/finger-tracking.html" {...props} />
+	// ),
+	Sliders,
 };
 
 export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
@@ -178,6 +182,8 @@ import {
 	useSensors,
 } from "@dnd-kit/core";
 import { findFirstMissingValue } from "../utils/utils";
+import { WindowWidget } from "./widgets/BaseWindowWidget";
+import { Sliders } from "./widgets/SlidersWidget";
 
 const SortableWidget = ({
 	id,
