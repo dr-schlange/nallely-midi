@@ -80,14 +80,14 @@ def generate_class_node(
 ):
     cls_def.decorator_list.clear()
     cls_def.bases = [ast.Name("VirtualDevice")]
-    var_names = []
+    var_names = {}
     has_default_range = False
     edges = defaultdict(list)
     has_post_init = False
     for node in cls_def.body:
         match node:
             case ast.Assign(targets=[ast.Name() as n]):
-                var_names.append(n.id)
+                var_names[n.id] = node
             case ast.FunctionDef(
                 decorator_list=[
                     ast.Call(
@@ -116,6 +116,9 @@ def generate_class_node(
     for input in inputs[::-1]:
         if input.cv_name not in var_names:
             cls_def.body.insert(1, input.port_definition_node())
+        else:
+            idx = cls_def.body.index(var_names[input.cv_name])
+            cls_def.body[idx] = input.port_definition_node()
         reactive_methods = input.reactive_method_nodes()
         if input.cv_name not in edges:
             cls_def.body.extend(reactive_methods)
