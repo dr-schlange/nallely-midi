@@ -21,33 +21,6 @@ export const WindowWidget = ({ id, onClose, num, url }: WindowWidgetProps) => {
 		}
 	};
 
-	useEffect(() => {
-		const iframe = iframeRef.current;
-		if (!iframe) return;
-
-		const applySameOriginCSS = () => {
-			try {
-				const doc = iframe.contentDocument; // will throw if cross-origin
-
-				// ✅ Clone all parent <link rel="stylesheet"> and <style> tags
-				document
-					.querySelectorAll('link[rel="stylesheet"], style')
-					.forEach((el) => {
-						doc.head.appendChild(el.cloneNode(true));
-					});
-
-				// ✅ Add a theme class so your CSS can scope overrides
-				// doc.documentElement.classList.add(`theme-${theme}`);
-			} catch {
-				// Cross-origin → use postMessage
-				// iframe.contentWindow?.postMessage({ type: "setTheme", theme }, "*");
-			}
-		};
-
-		iframe.addEventListener("load", applySameOriginCSS);
-		return () => iframe.removeEventListener("load", applySameOriginCSS);
-	}, []);
-
 	return (
 		<div ref={windowRef} className="scope">
 			<div
