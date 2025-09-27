@@ -38,6 +38,7 @@ packages = [
     "nallely.trevor",
     "nallely.core",
     "nallely.experimental",
+    "nallely.codegen",
 ]
 include-package-data = true
 
