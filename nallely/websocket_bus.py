@@ -188,6 +188,7 @@ class WebSocketBus(VirtualDevice):
                             ThreadContext({"last_values": {}}),
                             selected_outputs=[output],
                         )
+                        break
                     except Exception as e:
                         print(
                             f"Couldn't parse the message and broadcast {message} to local instances: {e}"
