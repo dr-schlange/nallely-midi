@@ -12,8 +12,10 @@ def modifyme(cls):
     module = ast.parse(code)
     cls_node: ast.ClassDef = cast(ast.ClassDef, module.body[0])
     cls_node.bases = [ast.Name("VirtualDevice")]
-    inputs, rest = parsedoc(cls)
+    inputs, rest, meta = parsedoc(cls)
     methods = []
+    if meta:
+        cls_node.body.append(meta)
     for input, edges in inputs[::-1]:
         cls_node.body.insert(1, input.body[0])
         var_name = input.body[0].targets[0].id
@@ -58,6 +60,7 @@ def parsedoc(cls):
     doc_iter = iter(doc.split("\n"))
     inputs = []
     outputs = []
+    meta = []
     while (line := next(doc_iter, None)) is not None:
         line = line.strip()
         print(f"line={line}")
@@ -75,6 +78,9 @@ def parsedoc(cls):
                 if cat.startswith("* "):
                     code = cat.rsplit(":", 1)
                     outputs.append(code)
+            line = cat
+        if line.startswith("meta:"):
+            meta.append(line.split(":")[1].strip())
     re_cv_name = "(?P<cv_name>\\w+)"
     re_cv_range = "(?P<cv_range>[^]]+)"
     re_cv_policy = "\\s+(?P<policy>\\w+)"
@@ -98,6 +104,7 @@ def parsedoc(cls):
                 (
                     ast.parse(
                         f"{cv_name} = VirtualParameter(name={name!r}, accepted_values={accepted_values!r})",
+                        f"{(f', description={descr!r}' if descr else '')})",
                         mode="single",
                     ),
                     ["any"],
@@ -115,7 +122,7 @@ def parsedoc(cls):
                 nodes.append(
                     (
                         ast.parse(
-                            f"{cv_name} = VirtualParameter(name={name!r}, range={range!r}{(f', conversion_policy={policy!r}' if policy else '')})",
+                            f"{cv_name} = VirtualParameter(name={name!r},range={range!r}{(f', conversion_policy={policy!r}' if policy else '')}{(f', description={descr!r}' if descr else '')})",
                             mode="single",
                         ),
                         edges,
@@ -129,16 +136,20 @@ def parsedoc(cls):
                 nodes.append(
                     (
                         ast.parse(
-                            f"{cv_name} = VirtualParameter(name={name!r}, accepted_values={accepted_values!r})",
+                            f"{cv_name} = VirtualParameter(name={name!r}, accepted_values={accepted_values!r}){(f', description={descr!r}' if descr else '')})",
                             mode="single",
                         ),
                         ["any"],
                     )
                 )
-    return (nodes, [])
+        if meta == ["disable default output"]:
+            meta = ast.parse(
+                f'\ndef __post_init__(self, **kwargs):\n    return {{\n        "disable_output": True\n    }}\n                             ',
+                mode="exec",
+            ).body[0]
+    return (nodes, [], meta)
 
 
-@modifyme
 class Hold(VirtualDevice):
     """Sample & Hold module
 
@@ -147,7 +158,7 @@ class Hold(VirtualDevice):
         * trigger_cv [0, 127] round <rising>: when activated with a tigger holds the
         * mode_cv [sample&hold, track&hold]: choose betwwen sample & hold and track and hold
     outputs:
-        * output_cv: the sampled value
+        * output_cv [0, 127]: the sampled value
 
     When the trigger is active, the output takes the note the input was when triggered.
 
@@ -164,6 +175,9 @@ class Hold(VirtualDevice):
         name="mode", accepted_values=["sample&hold", " track&hold"]
     )
 
+    def __post_init__(self, **kwargs):
+        return {"disable_output": True}
+
     @on(mode_cv, edge="any")
     def on_mode_cv_any(self, value, ctx): ...
 
@@ -172,3 +186,19 @@ class Hold(VirtualDevice):
 
     @on(input_cv, edge="any")
     def on_input_cv_any(self, value, ctx): ...
+
+
+@modifyme
+class Logical(VirtualDevice):
+    """Logical module
+
+    inputs:
+        * a_cv [0, 1] round <rising>: left hand operand
+        * b_cv [0, 1] round <rising>: right hand operand
+        * operator_cv [and, or, xor]: the operator to apply to a and b (a left, b right)
+    outputs:
+        * output_cv [0, 1]: the boolean operation result
+
+    type: ondemand
+    category: Logical
+    """
