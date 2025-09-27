@@ -24,12 +24,13 @@ const Pad = ({ title, onChange }: { title; onChange }) => {
 				width: "75px",
 			}}
 			onPointerDown={(event) => {
+				event.preventDefault();
 				event.stopPropagation();
 				setPressed(true);
 				onChange(Number(indicator));
-				console.debug("Send", indicator);
 			}}
 			onPointerUp={(event) => {
+				event.preventDefault();
 				event.stopPropagation();
 				setPressed(false);
 				onChange(0);
@@ -78,6 +79,8 @@ const Pad = ({ title, onChange }: { title; onChange }) => {
 					backgroundColor: pressed ? "#ffb732" : "#d0d0d0",
 					height: "75px",
 					width: "75px",
+					touchAction: "none",
+					userSelect: "none",
 				}}
 			/>
 		</div>

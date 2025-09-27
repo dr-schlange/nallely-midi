@@ -4,6 +4,7 @@ import { XYScope } from "./widgets/XYScope";
 import { XYZScope } from "./widgets/XYZScope";
 import { Sliders } from "./widgets/SlidersWidget";
 import { Pads } from "./widgets/PadsWidget";
+import { XYPad } from "./widgets/XYPadWidget";
 interface WidgetRackProps {
 	onRackScroll?: () => void;
 	onDragEnd?: () => void;
@@ -28,6 +29,7 @@ const WidgetComponents = {
 	// ),
 	Sliders,
 	Pads,
+	XYPad,
 };
 
 export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
