@@ -1,5 +1,9 @@
-import { useEffect, useRef, useState } from "react";
-import { Button, type WidgetProps } from "./BaseComponents";
+import { useRef, useState } from "react";
+import {
+	Button,
+	useNallelyRegistration,
+	type WidgetProps,
+} from "./BaseComponents";
 
 const parameters = {
 	s0: { min: 0, max: 127 },
@@ -40,32 +44,26 @@ const Slider = ({ title, onChange }: { title; onChange }) => {
 };
 
 export const Sliders = ({ id, onClose, num }: WidgetProps) => {
-	const [expanded, setExpanded] = useState(false);
+	// const [expanded, setExpanded] = useState(false);
 	const windowRef = useRef<HTMLDivElement>(null);
-	const deviceRef = useRef(null);
+	const configRef = useRef({});
+	const device = useNallelyRegistration(
+		id,
+		parameters,
+		configRef.current,
+		"controls",
+	);
 
-	const expand = () => {
-		setExpanded((prev) => !prev);
-		if (expanded) {
-			windowRef.current.style.height = "";
-			windowRef.current.style.width = "";
-		} else {
-			windowRef.current.style.height = "100%";
-			windowRef.current.style.width = "100%";
-		}
-	};
-
-	useEffect(() => {
-		const config = {};
-
-		// Register a service
-		deviceRef.current = (window as any).NallelyWebsocketBus.register(
-			"controls",
-			id,
-			parameters,
-			config,
-		);
-	}, [id]);
+	// const expand = () => {
+	// 	setExpanded((prev) => !prev);
+	// 	if (expanded) {
+	// 		windowRef.current.style.height = "";
+	// 		windowRef.current.style.width = "";
+	// 	} else {
+	// 		windowRef.current.style.height = "100%";
+	// 		windowRef.current.style.width = "100%";
+	// 	}
+	// };
 
 	return (
 		<div ref={windowRef} className="scope">
@@ -101,22 +99,10 @@ export const Sliders = ({ id, onClose, num }: WidgetProps) => {
 					flexDirection: "column",
 				}}
 			>
-				<Slider
-					title="s0"
-					onChange={(value) => deviceRef.current.send("s0", value)}
-				/>
-				<Slider
-					title="s1"
-					onChange={(value) => deviceRef.current.send("s1", value)}
-				/>
-				<Slider
-					title="s2"
-					onChange={(value) => deviceRef.current.send("s2", value)}
-				/>
-				<Slider
-					title="s3"
-					onChange={(value) => deviceRef.current.send("s3", value)}
-				/>
+				<Slider title="s0" onChange={(value) => device.send("s0", value)} />
+				<Slider title="s1" onChange={(value) => device.send("s1", value)} />
+				<Slider title="s2" onChange={(value) => device.send("s2", value)} />
+				<Slider title="s3" onChange={(value) => device.send("s3", value)} />
 			</div>
 		</div>
 	);

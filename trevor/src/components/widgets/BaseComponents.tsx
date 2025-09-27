@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export const Button = ({
 	activated = false,
@@ -53,3 +53,17 @@ export interface WidgetProps {
 	num: number;
 	onClose?: (id: string) => void;
 }
+
+export const useNallelyRegistration = (id, parameters, config, category) => {
+	const deviceRef = useRef(null);
+	useEffect(() => {
+		// Register a service
+		deviceRef.current = (window as any).NallelyWebsocketBus.register(
+			category,
+			id,
+			parameters,
+			config,
+		);
+	}, [id, parameters, config, category]);
+	return deviceRef.current;
+};
