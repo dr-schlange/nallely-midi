@@ -2,7 +2,8 @@ import { forwardRef, ReactElement, useImperativeHandle, useState } from "react";
 import { Scope } from "./widgets/Oscilloscope";
 import { XYScope } from "./widgets/XYScope";
 import { XYZScope } from "./widgets/XYZScope";
-
+import { Sliders } from "./widgets/SlidersWidget";
+import { Pads } from "./widgets/PadsWidget";
 interface WidgetRackProps {
 	onRackScroll?: () => void;
 	onDragEnd?: () => void;
@@ -26,7 +27,7 @@ const WidgetComponents = {
 	// 	<WindowWidget url="http://localhost:8000/finger-tracking.html" {...props} />
 	// ),
 	Sliders,
-	Buttons,
+	Pads,
 };
 
 export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
@@ -183,9 +184,6 @@ import {
 	useSensors,
 } from "@dnd-kit/core";
 import { findFirstMissingValue } from "../utils/utils";
-import { WindowWidget } from "./widgets/BaseWindowWidget";
-import { Sliders } from "./widgets/SlidersWidget";
-import { Buttons } from "./widgets/TouchButtonsWidget";
 
 const SortableWidget = ({
 	id,

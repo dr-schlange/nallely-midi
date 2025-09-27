@@ -11,7 +11,7 @@ const parameters = {
 	p1: { min: 0, max: 127, fun: (device, value) => device.send("p1", value) },
 };
 
-const TouchButton = ({ title, onChange }: { title; onChange }) => {
+const Pad = ({ title, onChange }: { title; onChange }) => {
 	const [indicator, setIndicator] = useState("127");
 	const [pressed, setPressed] = useState(false);
 	return (
@@ -84,7 +84,7 @@ const TouchButton = ({ title, onChange }: { title; onChange }) => {
 	);
 };
 
-export const Buttons = ({ id, onClose, num }: WidgetProps) => {
+export const Pads = ({ id, onClose, num }: WidgetProps) => {
 	const windowRef = useRef<HTMLDivElement>(null);
 	const configRef = useRef({});
 	const device = useNallelyRegistration(
@@ -128,7 +128,7 @@ export const Buttons = ({ id, onClose, num }: WidgetProps) => {
 				}}
 			>
 				{Object.entries(parameters).map(([key, param]) => (
-					<TouchButton
+					<Pad
 						key={key}
 						title={key}
 						onChange={(value) => param.fun(device, value)}
