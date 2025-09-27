@@ -108,7 +108,7 @@ def main():
                 include_experimental=args.experimental,
             )
     elif args.command == "generate":
-        from nallely.generator import generate_api
+        from nallely.codegen import generate_api
 
         generate_api(args.input, args.output)
 
