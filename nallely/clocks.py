@@ -131,6 +131,9 @@ class BernoulliTrigger(VirtualDevice):
         accepted_values=("off", "1/8", "1/6", "1/5", "1/4", "1/3", "1/2", "2/3", "3/4"),
     )
 
+    outA_cv = VirtualParameter(name="outA", range=(0, 1))
+    outB_cv = VirtualParameter(name="outB", range=(0, 1))
+
     def __post_init__(self, **kwargs):
         self.quantize_scale = [
             0,
@@ -140,13 +143,13 @@ class BernoulliTrigger(VirtualDevice):
             ),
             1,
         ]
+        return {"disable_output": True}
 
     @on(trigger_cv, edge="rising")
     def on_trigger(self, value, ctx):
         b = self.bias  #  type: ignore
         p = self.probability  # type: ignore
         pbias = p + b * (1 - p)
-        pquant = min(self.quantize_scale, key=lambda x: abs(x - pbias))
         if self.quantized != "off":  # type: ignore
             pquant = min(self.quantize_scale, key=lambda x: abs(x - pbias))
         else:
@@ -154,28 +157,75 @@ class BernoulliTrigger(VirtualDevice):
 
         trigger = 1 if random() < pquant else 0
         if trigger:
-            yield 1
-        yield 0
+            yield 1, [self.outA_cv]
+            yield 0, [self.outA_cv]
+        else:
+            yield 1, [self.outB_cv]
+            yield 0, [self.outB_cv]
 
 
 class ClockDivider(VirtualDevice):
-    trigger_cv = VirtualParameter(
-        name="trigger", range=(0, 1), conversion_policy=">0", default=0
-    )
-    count_cv = VirtualParameter(
-        name="count", range=(1, None), conversion_policy="round", default=2
-    )
-    reset_cv = VirtualParameter(name="reset", range=(0, 1), conversion_policy=">0")
+    """Clock Divider
+
+    inputs:
+        * trigger_cv [0, 1] >0 <rising>: Trigger the divider
+        * reset_cv [0, 1] >0 <rising>: Reset the internal count to 0
+        * mode_cv [gate, tick]: Choose between gate (square mode) or tick (short pulse)
+
+    outputs:
+        * div2_cv [0, 1]: /2 output
+        * div3_cv [0, 1]: /3 output
+        * div4_cv [0, 1]: /4 output
+        * div5_cv [0, 1]: /5 output
+        * div6_cv [0, 1]: /6 output
+        * div7_cv [0, 1]: /7 output
+        * div8_cv [0, 1]: /8 output
+        * div16_cv [0, 1]: /16 output
+        * div32_cv [0, 1]: /32 output
+
+    type: ondemand
+    category: clock
+    meta: disable default output
+    """
+
+    trigger_cv = VirtualParameter(name="trigger", range=(0.0, 1.0))
+    reset_cv = VirtualParameter(name="reset", range=(0.0, 1.0))
+    mode_cv = VirtualParameter(name="mode", accepted_values=("gate", "tick"))
+    div32_cv = VirtualParameter(name="div32", range=(0.0, 1.0))
+    div16_cv = VirtualParameter(name="div16", range=(0.0, 1.0))
+    div8_cv = VirtualParameter(name="div8", range=(0.0, 1.0))
+    div7_cv = VirtualParameter(name="div7", range=(0.0, 1.0))
+    div6_cv = VirtualParameter(name="div6", range=(0.0, 1.0))
+    div5_cv = VirtualParameter(name="div5", range=(0.0, 1.0))
+    div4_cv = VirtualParameter(name="div4", range=(0.0, 1.0))
+    div3_cv = VirtualParameter(name="div3", range=(0.0, 1.0))
+    div2_cv = VirtualParameter(name="div2", range=(0.0, 1.0))
 
     def __post_init__(self, **kwargs):
         self.nb_ticks = 0
+        self.outputs = {
+            2: self.div2_cv,
+            3: self.div3_cv,
+            4: self.div4_cv,
+            5: self.div5_cv,
+            6: self.div6_cv,
+            7: self.div7_cv,
+            8: self.div8_cv,
+            16: self.div16_cv,
+            32: self.div32_cv,
+        }
+        return {"disable_output": True}
 
     @on(trigger_cv, edge="rising")
     def count_triggers(self, value, ctx):
-        self.nb_ticks = (self.nb_ticks + 1) % self.count  # type: ignore
-        if self.nb_ticks == 0:
-            yield 1
-            yield 0
+        self.nb_ticks = (self.nb_ticks + 1) % 32
+        for count, output in self.outputs.items():
+            if self.nb_ticks % count == 0:
+                if self.mode == "gate":  # type: ignore
+                    yield 1 - getattr(self, output.name), [output]
+                else:
+                    yield 1, [output]
+                    yield 0, [output]
 
     @on(reset_cv, edge="rising")
     def reset_count(self, value, ctx):
