@@ -26,6 +26,7 @@ const WidgetComponents = {
 	// 	<WindowWidget url="http://localhost:8000/finger-tracking.html" {...props} />
 	// ),
 	Sliders,
+	Buttons,
 };
 
 export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
@@ -184,6 +185,7 @@ import {
 import { findFirstMissingValue } from "../utils/utils";
 import { WindowWidget } from "./widgets/BaseWindowWidget";
 import { Sliders } from "./widgets/SlidersWidget";
+import { Buttons } from "./widgets/TouchButtonsWidget";
 
 const SortableWidget = ({
 	id,

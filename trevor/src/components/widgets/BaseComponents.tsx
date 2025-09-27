@@ -54,16 +54,30 @@ export interface WidgetProps {
 	onClose?: (id: string) => void;
 }
 
-export const useNallelyRegistration = (id, parameters, config, category) => {
-	const deviceRef = useRef(null);
+export const useNallelyRegistration = (
+	id: string,
+	parameters: any,
+	config: any,
+	category: string,
+) => {
+	const deviceRef = useRef<any>(null);
+	const [device, setDevice] = useState<any>(null);
+
 	useEffect(() => {
-		// Register a service
-		deviceRef.current = (window as any).NallelyWebsocketBus.register(
+		const registration = (window as any).NallelyWebsocketBus.register(
 			category,
 			id,
 			parameters,
 			config,
 		);
-	}, [id, parameters, config, category]);
-	return deviceRef.current;
+
+		deviceRef.current = registration;
+		setDevice(registration);
+
+		return () => {
+			deviceRef.current?.dispose();
+		};
+	}, [id, category, parameters, config]);
+
+	return device;
 };
