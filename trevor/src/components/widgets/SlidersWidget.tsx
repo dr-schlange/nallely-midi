@@ -14,7 +14,7 @@ const Slider = ({ title, onChange }: { title; onChange }) => {
 		<div
 			style={{ display: "flex", flexDirection: "row", alignItems: "center" }}
 		>
-			<p style={{ margin: "0", fontSize: "13px" }}>{title}</p>
+			<p style={{ margin: "0", fontSize: "13px", color: "gray" }}>{title}</p>
 			<input
 				type="range"
 				min="0"
@@ -32,7 +32,9 @@ const Slider = ({ title, onChange }: { title; onChange }) => {
 					setIndicator(value);
 				}}
 			/>
-			<p style={{ margin: "0", fontSize: "13px" }}>{indicator}</p>
+			<p style={{ margin: "0", fontSize: "13px", color: "gray" }}>
+				{indicator}
+			</p>
 		</div>
 	);
 };
