@@ -105,14 +105,6 @@ def generate_class_node(
             case ast.FunctionDef(name="__post_init__"):
                 has_post_init = True
     default_output = None
-    for output in outputs:
-        if output.cv_name not in var_names:
-            if output.default_output:
-                default_output = output
-                continue
-            cls_def.body.insert(1, output.port_definition_node())
-    if not has_default_range and default_output:
-        cls_def.body.insert(len(outputs) + 1, default_output.range_method_nodes())
     for input in inputs[::-1]:
         if input.cv_name not in var_names:
             cls_def.body.insert(1, input.port_definition_node())
@@ -130,9 +122,21 @@ def generate_class_node(
                 if m.decorator_list[0].keywords[0].value.value not in existing_edges
             ]
             cls_def.body.extend(missing_methods)
+    for output in outputs:
+        if output.cv_name not in var_names:
+            if output.default_output:
+                default_output = output
+                continue
+            cls_def.body.insert(len(inputs) + 1, output.port_definition_node())
+        else:
+            idx = cls_def.body.index(var_names[output.cv_name])
+            cls_def.body[idx] = output.port_definition_node()
     if not has_post_init and meta:
-        shift = 2 if has_default_range else 1
-        cls_def.body.insert(len(inputs) + len(outputs) + shift, meta)
+        cls_def.body.insert(len(inputs) + len(outputs), meta)
+    if not has_default_range and default_output:
+        cls_def.body.insert(
+            len(inputs) + len(outputs), default_output.range_method_nodes()
+        )
     return cls_def
 
 
