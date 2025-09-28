@@ -14,6 +14,7 @@ const parameters = {
 const Pad = ({ title, onChange }: { title; onChange }) => {
 	const [indicator, setIndicator] = useState("127");
 	const [pressed, setPressed] = useState(false);
+	const [hold, setHold] = useState(false);
 	return (
 		<div
 			style={{
@@ -23,35 +24,38 @@ const Pad = ({ title, onChange }: { title; onChange }) => {
 				gap: "2px",
 				width: "75px",
 			}}
-			onPointerDown={(event) => {
-				event.preventDefault();
-				event.stopPropagation();
-				setPressed(true);
-				onChange(Number(indicator));
-			}}
-			onPointerUp={(event) => {
-				event.preventDefault();
-				event.stopPropagation();
-				setPressed(false);
-				onChange(0);
-			}}
 		>
 			<div
 				style={{
 					display: "flex",
 					flexDirection: "row",
-					alignItems: "baseline",
+					alignItems: "center",
 					justifyContent: "flex-start",
 					width: "100%",
-					gap: "5px",
+					gap: "2px",
+					margin: 0,
 				}}
 			>
+				<Button
+					activated={hold}
+					text="H"
+					tooltip="Hold"
+					onClick={() => {
+						if (hold) {
+							setPressed(false);
+							onChange(0);
+						}
+						setHold((prev) => !prev);
+					}}
+				/>
+
 				<p
 					style={{
 						margin: "0",
-						marginLeft: "3px",
+						marginLeft: "0px",
 						fontSize: "14px",
 						color: "gray",
+						marginTop: "5px",
 					}}
 				>
 					{title}
@@ -81,6 +85,20 @@ const Pad = ({ title, onChange }: { title; onChange }) => {
 					width: "75px",
 					touchAction: "none",
 					userSelect: "none",
+				}}
+				onPointerDown={(event) => {
+					event.preventDefault();
+					event.stopPropagation();
+					setPressed(true);
+					onChange(Number(indicator));
+				}}
+				onPointerUp={(event) => {
+					event.preventDefault();
+					event.stopPropagation();
+					if (!hold) {
+						setPressed(false);
+						onChange(0);
+					}
 				}}
 			/>
 		</div>
