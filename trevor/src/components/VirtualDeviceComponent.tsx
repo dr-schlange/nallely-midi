@@ -103,10 +103,9 @@ const VirtualDeviceComponent = ({
 		<div
 			className="device-component"
 			style={{
-				// width: width - margin * 3,
-				// height: height - margin * 3,
 				boxSizing: "border-box",
 				borderColor: isSelected ? "yellow" : "",
+				userSelect: "none",
 			}}
 			id={`${device.id}-__virtual__`}
 			onClick={(event) => {

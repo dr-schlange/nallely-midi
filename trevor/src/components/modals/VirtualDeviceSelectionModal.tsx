@@ -12,7 +12,7 @@ interface VDeviceSelectionModalProps {
 
 interface ModalProps {
 	onClose: () => void;
-	onOk: () => void;
+	onCancel: () => void;
 	children?;
 }
 
@@ -188,7 +188,7 @@ const VDevice = ({
 	);
 };
 
-const Modal = ({ onClose, onOk, children }: ModalProps) => {
+const Modal = ({ onClose, onCancel, children }: ModalProps) => {
 	return (
 		<div className="modal-vdevice-selection">
 			<div
@@ -208,8 +208,8 @@ const Modal = ({ onClose, onOk, children }: ModalProps) => {
 				<button type="button" className="close-button" onClick={onClose}>
 					Close
 				</button>
-				<button type="button" className="close-button" onClick={onOk}>
-					OK
+				<button type="button" className="close-button" onClick={onCancel}>
+					Cancel
 				</button>
 			</div>
 			<div
@@ -281,12 +281,14 @@ const VDeviceSelectionModal = ({ onClose }: VDeviceSelectionModalProps) => {
 		for (const device of Object.values(selections)) {
 			classes[device.schema.name] = device.count;
 		}
-		trevorSocket.createDevices(classes);
+		if (Object.keys(classes).length > 0) {
+			trevorSocket.createDevices(classes);
+		}
 		onClose?.();
 	};
 
 	return (
-		<Modal onClose={onClose} onOk={commit}>
+		<Modal onClose={commit} onCancel={onClose}>
 			{schemas.length === 0 && <p>Loading available devices...</p>}
 
 			<div className="modal-vdevice-content">

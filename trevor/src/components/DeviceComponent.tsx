@@ -86,6 +86,7 @@ const MidiDeviceComponent = ({
 				boxSizing: "border-box",
 				borderColor: selected ? "yellow" : "",
 				position: "relative",
+				userSelect: "none",
 			}}
 			id={`${device.id}`}
 			onClick={() => handleDeviceClick(device)}
