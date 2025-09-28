@@ -489,7 +489,11 @@ class TrevorBus(VirtualDevice):
         )
 
     def create_devices(self, device_classes):
-        self.trevor.create_devices(device_classes)
+        devices = self.trevor.create_devices(device_classes)
+        for instance in devices:
+            instance.to_update = self
+            if isinstance(instance, MidiDevice):
+                instance.on_midi_message = self.send_control_value_update
         return self.full_state()
 
 

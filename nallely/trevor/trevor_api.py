@@ -249,6 +249,8 @@ class TrevorAPI:
         return [s.schema_as_dict() for s in get_virtual_device_classes()]
 
     def create_devices(self, device_classes):
+        devices = []
         for cls_name, count in device_classes.items():
             for _ in range(count):
-                self.create_device(cls_name)
+                devices.append(self.create_device(cls_name))
+        return devices
