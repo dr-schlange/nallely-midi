@@ -39,6 +39,7 @@ export const RackRowVirtual = ({
 	onSectionScroll,
 	horizontal,
 }: RackRowVirtualProps) => {
+	const [selectorOpened, setSelectorOpened] = useState(false);
 	const virtualClasses = useTrevorSelector(
 		(state) => state.nallely.classes.virtual,
 	);
@@ -93,71 +94,98 @@ export const RackRowVirtual = ({
 	}, [devices]);
 
 	return (
-		<div
-			className={`rack-row ${horizontal ? "horizontal" : ""}`}
-			onScroll={() => onSectionScroll()}
-			onClick={(event) => {
-				if (
-					!(event.target as HTMLElement).classList.contains(
-						"rack-section-box",
-					) &&
-					!(event.target as HTMLElement).classList.contains("rack-section-name")
-				) {
-					onNonSectionClick();
-				}
-			}}
-		>
-			<select
-				value={""}
-				title="Adds a virtual device to the system"
-				onChange={(e) => {
-					const val = e.target.value;
-					handleDeviceClassClick(val);
+		<>
+			<div
+				className={`rack-row ${horizontal ? "horizontal" : ""}`}
+				onScroll={() => onSectionScroll()}
+				onClick={(event) => {
+					if (
+						!(event.target as HTMLElement).classList.contains(
+							"rack-section-box",
+						) &&
+						!(event.target as HTMLElement).classList.contains(
+							"rack-section-name",
+						)
+					) {
+						onNonSectionClick();
+					}
 				}}
 			>
-				<option value={""}>--</option>
-				{virtualClasses.map((cls) => (
-					<option key={cls} value={cls}>
-						{cls}
-					</option>
-				))}
-			</select>
-			<div className={"inner-rack-row"} onScroll={() => onSectionScroll?.()}>
-				<DndContext
-					sensors={sensors}
-					collisionDetection={closestCenter}
-					onDragEnd={handleDragEnd}
-					onDragMove={onSectionScroll}
-					modifiers={[
-						horizontal ? restrictToHorizontalAxis : restrictToVerticalAxis,
-						restrictToParentElement,
-					]}
+				<div
+					style={{
+						display: "flex",
+						flexDirection: "row",
+						width: "100%",
+					}}
 				>
-					<SortableContext
-						items={localDeviceOrder.map((d) => d.id)}
-						strategy={
-							horizontal
-								? horizontalListSortingStrategy
-								: verticalListSortingStrategy
-						}
+					<select
+						value={""}
+						title="Adds a virtual device to the system"
+						onChange={(e) => {
+							const val = e.target.value;
+							handleDeviceClassClick(val);
+						}}
 					>
-						{localDeviceOrder.map((device, i) => (
-							<SortableVirtualDeviceComponent
-								key={device.id}
-								device={device}
-								onParameterClick={(device) => onParameterClick(device)}
-								onDeviceClick={(device) => onParameterClick(device)}
-								selectedSections={selectedSections}
-								onSectionScroll={onSectionScroll}
-							/>
+						<option value={""}>--</option>
+						{virtualClasses.map((cls) => (
+							<option key={cls} value={cls}>
+								{cls}
+							</option>
 						))}
-						{devices.length === 0 && (
-							<p style={{ color: "#808080" }}>Virtual devices</p>
-						)}
-					</SortableContext>
-				</DndContext>
+					</select>
+					<Button
+						text="Add many"
+						tooltip="Add multiple virtual devices at once"
+						variant="small"
+						style={{
+							width: "100%",
+							height: "87%",
+						}}
+						onClick={() => setSelectorOpened((prev) => !prev)}
+					/>
+				</div>
+				<div className={"inner-rack-row"} onScroll={() => onSectionScroll?.()}>
+					<DndContext
+						sensors={sensors}
+						collisionDetection={closestCenter}
+						onDragEnd={handleDragEnd}
+						onDragMove={onSectionScroll}
+						modifiers={[
+							horizontal ? restrictToHorizontalAxis : restrictToVerticalAxis,
+							restrictToParentElement,
+						]}
+					>
+						<SortableContext
+							items={localDeviceOrder.map((d) => d.id)}
+							strategy={
+								horizontal
+									? horizontalListSortingStrategy
+									: verticalListSortingStrategy
+							}
+						>
+							{localDeviceOrder.map((device, i) => (
+								<SortableVirtualDeviceComponent
+									key={device.id}
+									device={device}
+									onParameterClick={(device) => onParameterClick(device)}
+									onDeviceClick={(device) => onParameterClick(device)}
+									selectedSections={selectedSections}
+									onSectionScroll={onSectionScroll}
+								/>
+							))}
+							{devices.length === 0 && (
+								<p style={{ color: "#808080" }}>Virtual devices</p>
+							)}
+						</SortableContext>
+					</DndContext>
+				</div>
 			</div>
-		</div>
+			{selectorOpened && (
+				<VDeviceSelectionModal
+					onClose={() => setSelectorOpened((prev) => !prev)}
+				/>
+			)}
+		</>
 	);
 };
 
@@ -170,6 +198,8 @@ import {
 	restrictToParentElement,
 	restrictToVerticalAxis,
 } from "@dnd-kit/modifiers";
+import { Button } from "./widgets/BaseComponents";
+import VDeviceSelectionModal from "./modals/VirtualDeviceSelectionModal";
 
 type SortableComponentProps = {
 	device: VirtualDevice;

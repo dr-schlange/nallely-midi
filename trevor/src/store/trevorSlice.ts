@@ -1,5 +1,9 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { NallelyState } from "../model";
+import type {
+	MidiDeviceSchema,
+	NallelyState,
+	VirtualDeviceSchema,
+} from "../model";
 
 const initialState: NallelyState = {
 	input_ports: [],
@@ -12,6 +16,8 @@ const initialState: NallelyState = {
 		midi: [],
 	},
 	playground_code: "",
+	virtual_devices_schemas: [],
+	midi_devices_schemas: [],
 };
 
 const trevorSlice = createSlice({
@@ -30,9 +36,25 @@ const trevorSlice = createSlice({
 			};
 			state.playground_code = action.payload.playground_code;
 		},
+		setAllVirtualDeviceSchemas: (
+			state,
+			action: PayloadAction<VirtualDeviceSchema[]>,
+		) => {
+			state.virtual_devices_schemas = action.payload;
+		},
+		setAllMidiDeviceSchemas: (
+			state,
+			action: PayloadAction<MidiDeviceSchema[]>,
+		) => {
+			state.midi_devices_schemas = action.payload;
+		},
 	},
 });
 
-export const { setFullState } = trevorSlice.actions;
+export const {
+	setFullState,
+	setAllVirtualDeviceSchemas,
+	setAllMidiDeviceSchemas,
+} = trevorSlice.actions;
 
 export default trevorSlice.reducer;

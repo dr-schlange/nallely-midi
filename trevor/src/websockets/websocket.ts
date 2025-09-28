@@ -15,6 +15,7 @@ import {
 import { setFullState } from "../store/trevorSlice";
 import { isPadOrdKey, isPadsOrdKeys, isVirtualParameter } from "../utils/utils";
 import * as RuntimeAPI from "../store/runtimeSlice";
+import * as TrevorAPI from "../store/trevorSlice";
 
 // const WEBSOCKET_URL = `ws://${window.location.hostname}:6788/trevor`;
 
@@ -132,6 +133,12 @@ export class TrevorWebSocket {
 				store.dispatch(apiCommand(message.arg));
 				return;
 			}
+			if (message.command.startsWith("TrevorAPI::")) {
+				const apiCommand =
+					TrevorAPI[message.command.replace("TrevorAPI::", "")];
+				store.dispatch(apiCommand(message.arg));
+				return;
+			}
 			if (message.command === "completion" && message.requestId) {
 				const resolve = this.pendingRequests.get(message.requestId);
 				if (resolve) {
@@ -209,6 +216,13 @@ export class TrevorWebSocket {
 		this.sendJsonMessage({
 			command: "create_device",
 			name: deviceClass,
+		});
+	}
+
+	createDevices(deviceClasses: Record<string, number>) {
+		this.sendJsonMessage({
+			command: "create_devices",
+			device_classes: deviceClasses,
 		});
 	}
 
@@ -523,6 +537,12 @@ export class TrevorWebSocket {
 	getUsedAddresses() {
 		this.sendJsonMessage({
 			command: "get_used_addresses",
+		});
+	}
+
+	fetchVirtualDeviceSchemas() {
+		this.sendJsonMessage({
+			command: "all_virtual_schemas",
 		});
 	}
 }

@@ -6,15 +6,25 @@ export interface NallelyState {
 	connections: MidiConnection[];
 	classes: NallelyClasses;
 	playground_code: string;
+	virtual_devices_schemas: VirtualDeviceSchema[];
+	midi_devices_schemas: MidiDeviceSchema[];
 }
+
+export type VirtualDeviceSchema = {
+	name: string;
+	parameters: VirtualParameter[];
+	doc: string;
+};
+
+export type MidiDeviceSchema = {
+	name: string;
+	sections: MidiDeviceSection[];
+};
 
 export interface VirtualDevice {
 	id: number;
 	repr: string;
-	meta: {
-		name: string;
-		parameters: VirtualParameter[];
-	};
+	meta: VirtualDeviceSchema;
 	config: {
 		[key: string]: string | number | boolean;
 	};
@@ -37,10 +47,7 @@ export interface VirtualParameter {
 export interface MidiDevice {
 	id: number;
 	repr: string;
-	meta: {
-		name: string;
-		sections: MidiDeviceSection[];
-	};
+	meta: MidiDeviceSchema;
 	config: {
 		// [key: string]: Record<string, MidiConfigValue>;
 		[key: string]: Record<string, number>;

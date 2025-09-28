@@ -678,6 +678,68 @@ button.active {
 	padding: 0 10px;
 }
 
+.modal-vdevice-selection {
+	position: fixed;
+	width: 80%;
+	height: 60%;
+	z-index: 30;
+	border: 2px solid rgb(128, 128, 128);
+	top: 50%;
+	left: 50%;
+	background-color: white;
+	transform: translate(-50%, -50%);
+	box-shadow: rgba(0, 0, 0, 0.5) 0px 0px 10px;
+	display: flex;
+	flex-direction: column;
+	box-sizing: border-box;
+}
+
+.modal-vdevice-selection-list {
+	padding: 5px;
+	display: grid;
+	min-width: 100px;
+	max-width: 200px;
+	gap: 5px;
+	overflow: auto;
+	background-color: rgb(224, 224, 224);
+	grid-template-columns: repeat(4, 1fr);
+	min-height: 0px;
+	border: 3px solid grey;
+	justify-items: center;
+	align-items: center;
+}
+
+.modal-vdevice-list {
+	display: flex;
+	flex-flow: column wrap;
+	width: 100%;
+	height: 353px;
+	gap: 5px;
+	margin: 0px;
+	overflow: auto;
+	padding: 5px;
+	box-sizing: border-box;
+}
+
+.modal-vdevice-content {
+	flex: 1 1 0%;
+	display: flex;
+	flex-direction: column;
+	min-height: 0px;
+	box-sizing: border-box;
+	overflow: hidden;
+}
+
+.modal-vdevice-bottom {
+	display: flex;
+	flex: 1 1 0%;
+	gap: 5px;
+	min-height: 0px;
+	width: 100%;
+	box-sizing: border-box;
+	overflow: hidden;
+}
+
 .close-button {
 	background-color: #d0d0d0;
 	border: 2px solid #808080;
@@ -1510,8 +1572,41 @@ h3.details {
 		width: 100%;
 		height: 200%;
 	}
+
+	.modal-vdevice-selection {
+		width: 95%;
+		height: 95%;
+	}
+
+	.modal-vdevice-content {
+		flex-direction: row;
+		gap: 5px;
+	}
+
+	.modal-vdevice-list {
+		flex-direction: row;
+		flex: 1;
+		flex-wrap: wrap;
+		min-width: 0;
+	}
+
+	.modal-vdevice-selection-list {
+		/* grid-template-columns: repeat(100, 1fr); */
+		display: flex;
+
+		height: 105px;
+		border: 3px solid gray;
+		min-width: 95%;
+		/* flex: 0.67 1 0%; */
+		flex-direction: row;
+	}
+
+	.modal-vdevice-bottom {
+		flex-direction: column;
+	}
 }
 
+/* portrait */
 @media (max-width: 600px) {
 	h3 {
 		font-size: 20px;
@@ -1725,6 +1820,26 @@ h3.details {
 		top: auto !important;
 		bottom: -5px !important;
 		left: 5px !important;
+	}
+
+	.modal-vdevice-selection {
+		width: 92%;
+		/* height: 90%; */
+		height: 70%;
+	}
+
+	.modal-vdevice-selection-list {
+		grid-template-columns: repeat(2, 1fr);
+		max-width: 100px;
+	}
+
+	.modal-vdevice-list {
+		height: 235px;
+		/* height: 350px; */
+		/* border: 3px solid orange; */
+		background-color: #e0e0e0;
+		margin: 3px;
+		width: 99%;
 	}
 }
 

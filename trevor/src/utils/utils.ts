@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import type {
 	MidiConnection,
 	MidiDevice,
@@ -292,3 +292,42 @@ export const findFirstMissingValue = (arr: number[]): number => {
 
 	return max + 1;
 };
+
+export function useLongPress(
+	callback: () => void,
+	ms: number = 500,
+	onTouchStart?: () => void,
+) {
+	const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const didLongPress = useRef(false);
+
+	const start = useCallback(() => {
+		didLongPress.current = false;
+		timerRef.current = setTimeout(() => {
+			callback();
+			didLongPress.current = true;
+		}, ms);
+	}, [callback, ms]);
+
+	const clear = useCallback(() => {
+		if (timerRef.current) {
+			clearTimeout(timerRef.current);
+			timerRef.current = null;
+		}
+	}, []);
+
+	const touchStartCallback = useCallback(() => {
+		start();
+		onTouchStart?.();
+	}, [onTouchStart, start]);
+
+	return {
+		onMouseDown: touchStartCallback,
+		onTouchStart: touchStartCallback,
+		onMouseUp: clear,
+		onMouseLeave: clear,
+		onTouchEnd: clear,
+		onTouchMove: clear,
+		didLongPress,
+	};
+}
