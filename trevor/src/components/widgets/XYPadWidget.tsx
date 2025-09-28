@@ -15,7 +15,15 @@ const MAX_POINTS = 10;
 const clamp = (value: number, min: number, max: number) =>
 	Math.min(Math.max(value, min), max);
 
-const XYSurface = ({ onChangeX, onChangeY }: { onChangeX; onChangeY }) => {
+const XYSurface = ({
+	onChangeX,
+	onChangeY,
+	hold,
+}: {
+	onChangeX;
+	onChangeY;
+	hold;
+}) => {
 	const [pressed, setPressed] = useState(false);
 	const canvasRef = useRef(null);
 
@@ -81,6 +89,12 @@ const XYSurface = ({ onChangeX, onChangeY }: { onChangeX; onChangeY }) => {
 		ctx.clearRect(0, 0, w, h);
 	};
 
+	if (!hold && !pressed) {
+		clearCanvas();
+		onChangeX(0);
+		onChangeY(0);
+	}
+
 	return (
 		<canvas
 			ref={canvasRef}
@@ -92,6 +106,7 @@ const XYSurface = ({ onChangeX, onChangeY }: { onChangeX; onChangeY }) => {
 				width: "97%",
 				touchAction: "none",
 				userSelect: "none",
+				marginTop: "25px",
 			}}
 			onPointerDown={(event) => {
 				event.preventDefault();
@@ -105,9 +120,11 @@ const XYSurface = ({ onChangeX, onChangeY }: { onChangeX; onChangeY }) => {
 				event.preventDefault();
 				event.stopPropagation();
 				setPressed(false);
-				onChangeX(0);
-				onChangeY(0);
-				clearCanvas();
+				if (!hold) {
+					onChangeX(0);
+					onChangeY(0);
+					clearCanvas();
+				}
 			}}
 			onPointerMove={(event) => {
 				event.preventDefault();
@@ -135,6 +152,8 @@ export const XYPad = ({ id, onClose, num }: WidgetProps) => {
 		configRef.current,
 		"controls",
 	);
+	const [hold, setHold] = useState(false);
+
 	// const [minX, setMinX] = useState("0");
 	// const [maxX, setMaxX] = useState("127");
 	// const [minY, setMinY] = useState("0");
@@ -176,20 +195,23 @@ export const XYPad = ({ id, onClose, num }: WidgetProps) => {
 					flexDirection: "row",
 					gap: "4px",
 					width: "100%",
+					userSelect: "none",
+					position: "absolute",
 				}}
 			>
-				{/* <Button
-					text={"+"}
-					activated={expanded}
-					onClick={expand}
+				<Button
+					text={"h"}
+					activated={hold}
+					onClick={() => setHold((prev) => !prev)}
 					tooltip="Expand widget"
-				/> */}
+				/>
 				<Button text="x" onClick={() => onClose?.(id)} tooltip="Close widget" />
 			</div>
 
 			<XYSurface
 				onChangeX={(value) => parameters.x.fun(device, value)}
 				onChangeY={(value) => parameters.y.fun(device, value)}
+				hold={hold}
 			/>
 		</div>
 	);

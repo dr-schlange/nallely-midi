@@ -32,13 +32,15 @@ const Pad = ({ title, onChange }: { title; onChange }) => {
 					alignItems: "center",
 					justifyContent: "flex-start",
 					width: "100%",
-					gap: "2px",
+					gap: "5px",
 					margin: 0,
+					marginLeft: "15px",
+					marginTop: "9px",
 				}}
 			>
 				<Button
 					activated={hold}
-					text="H"
+					text="h"
 					tooltip="Hold"
 					onClick={() => {
 						if (hold) {
@@ -49,17 +51,6 @@ const Pad = ({ title, onChange }: { title; onChange }) => {
 					}}
 				/>
 
-				<p
-					style={{
-						margin: "0",
-						marginLeft: "0px",
-						fontSize: "14px",
-						color: "gray",
-						marginTop: "5px",
-					}}
-				>
-					{title}
-				</p>
 				<DragNumberInput
 					range={[0, 127]}
 					width="21px"
@@ -76,6 +67,17 @@ const Pad = ({ title, onChange }: { title; onChange }) => {
 						boxShadow: "unset",
 					}}
 				/>
+				<p
+					style={{
+						margin: "0",
+						marginLeft: "1px",
+						fontSize: "12px",
+						color: "gray",
+						marginTop: "5px",
+					}}
+				>
+					{title}
+				</p>
 			</div>
 			<div
 				style={{
