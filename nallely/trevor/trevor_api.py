@@ -14,7 +14,7 @@ from ..core import (
     virtual_device_classes,
     virtual_devices,
 )
-from ..core.world import ThreadContext
+from ..core.world import ThreadContext, get_virtual_device_classes
 
 
 class TrevorAPI:
@@ -244,3 +244,11 @@ class TrevorAPI:
         dev = cast(MidiDevice, self.get_device_instance(device_id))
         dev.force_all_notes_off()
         dev.channel = channel
+
+    def all_virtual_schemas(self):
+        return [s.schema_as_dict() for s in get_virtual_device_classes()]
+
+    def create_devices(self, device_classes):
+        for cls_name, count in device_classes.items():
+            for _ in range(count):
+                self.create_device(cls_name)

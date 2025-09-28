@@ -65,6 +65,18 @@ def all_devices():
     return get_connected_devices() + get_virtual_devices()
 
 
+def get_virtual_device_classes():
+    return virtual_device_classes
+
+
+def get_midi_device_classes():
+    return midi_device_classes
+
+
+def get_all_device_classes():
+    return get_midi_device_classes() + get_virtual_device_classes()
+
+
 def unbind_all():
     for device in all_devices():
         device.unbind_all()

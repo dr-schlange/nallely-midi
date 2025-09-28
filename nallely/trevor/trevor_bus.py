@@ -482,6 +482,16 @@ class TrevorBus(VirtualDevice):
         details = extract_infos(filename)
         self.send_message({"command": "RuntimeAPI::setPatchDetails", "arg": details})
 
+    def all_virtual_schemas(self):
+        schemas = self.trevor.all_virtual_schemas()
+        self.send_message(
+            {"command": "TrevorAPI::setAllVirtualDeviceSchemas", "arg": schemas}
+        )
+
+    def create_devices(self, device_classes):
+        self.trevor.create_devices(device_classes)
+        return self.full_state()
+
 
 def resource_path(relative_path):
     """Get absolute path to resource, works for dev and PyInstaller"""

@@ -742,18 +742,23 @@ class VirtualDevice(threading.Thread):
             return lambda value, ctx: setattr(to_device, to_param.name, value)
 
     def to_dict(self, save_defaultvalues=False):
-        virtual_parameters = self.all_parameters()
         config = self.current_preset()
         return {
             "id": self.uuid,
             "repr": self.uid(),
-            "meta": {
-                "name": self.__class__.__name__,
-                "parameters": [asdict(p) for p in virtual_parameters if not p.hidden],
-            },
+            "meta": self.schema_as_dict(),
             "paused": self.paused,
             "running": self.running,
             "config": config,
+        }
+
+    @classmethod
+    def schema_as_dict(cls):
+        virtual_parameters = cls.all_parameters()
+        return {
+            "name": cls.__name__,
+            "parameters": [asdict(p) for p in virtual_parameters if not p.hidden],
+            "doc": cls.__doc__,
         }
 
     def uid(self):
