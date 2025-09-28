@@ -6,8 +6,8 @@ import {
 } from "./BaseComponents";
 
 const parameters = {
-	x: { min: 0, max: 127, fun: (device, value) => device.send("x", value) },
-	y: { min: 0, max: 127, fun: (device, value) => device.send("y", value) },
+	x: { min: 0, max: 127, fun: (device, value) => device?.send("x", value) },
+	y: { min: 0, max: 127, fun: (device, value) => device?.send("y", value) },
 };
 
 const MAX_POINTS = 10;

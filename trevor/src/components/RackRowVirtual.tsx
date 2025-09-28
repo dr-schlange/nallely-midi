@@ -111,13 +111,7 @@ export const RackRowVirtual = ({
 					}
 				}}
 			>
-				<div
-					style={{
-						display: "flex",
-						flexDirection: "row",
-						width: "100%",
-					}}
-				>
+				<div className="rack-top-bar">
 					<select
 						value={""}
 						title="Adds a virtual device to the system"

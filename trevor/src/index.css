@@ -1460,6 +1460,13 @@ h3.details {
 	color: gray;
 }
 
+.rack-top-bar {
+	display: flex;
+	flex-direction: row;
+	width: 100%;
+}
+
+/* landscape */
 @media (max-height: 450px) {
 	h3 {
 		font-size: 20px;
@@ -1502,6 +1509,21 @@ h3.details {
 		width: 200px;
 		/* height: 100%; */
 		min-width: 200px;
+	}
+
+	.rack-row > button {
+		height: 100% !important;
+		width: 22px !important;
+		writing-mode: vertical-rl;
+		text-orientation: sideways;
+		transform: rotate(-180deg);
+	}
+
+	.rack-row > select {
+		height: 100% !important;
+		writing-mode: vertical-rl;
+		text-orientation: sideways;
+		transform: rotate(-180deg);
 	}
 
 	/* .top-section {
@@ -1585,9 +1607,10 @@ h3.details {
 
 	.modal-vdevice-list {
 		flex-direction: row;
-		flex: 1;
+		flex: 0.8;
 		flex-wrap: wrap;
 		min-width: 0;
+		gap: 20px;
 	}
 
 	.modal-vdevice-selection-list {
@@ -1603,6 +1626,27 @@ h3.details {
 
 	.modal-vdevice-bottom {
 		flex-direction: column;
+	}
+
+	.rack-top-bar {
+		display: flex;
+		flex-direction: column-reverse;
+		height: 100%;
+		width: 17px;
+	}
+
+	.rack-top-bar > div {
+		height: 50% !important;
+		writing-mode: vertical-rl;
+		text-orientation: sideways;
+		transform: rotate(-180deg);
+	}
+
+	.rack-top-bar > select {
+		height: 50% !important;
+		writing-mode: vertical-rl;
+		text-orientation: sideways;
+		transform: rotate(-180deg);
 	}
 }
 

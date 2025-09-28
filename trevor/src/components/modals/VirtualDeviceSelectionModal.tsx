@@ -45,6 +45,7 @@ const Port = ({
 				style={{
 					fontSize: "8px",
 					margin: 0,
+					color: "gray",
 				}}
 				title={parameter.name}
 			>
@@ -137,7 +138,7 @@ const VDevice = ({
 							margin: 0,
 							whiteSpace: "nowrap",
 							fontSize: "14px",
-							color: "gray",
+							color: "black",
 							writingMode: "vertical-rl",
 							textOrientation: "sideways",
 							transform: "rotate(180deg)",
