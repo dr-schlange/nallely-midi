@@ -396,7 +396,7 @@ SCALES = {
 
 class Quantizer(VirtualDevice):
     input_cv = VirtualParameter("input", range=(0, 127))
-    trigger_cv = VirtualParameter("trigger", range=(0, 1))
+    trigger_cv = VirtualParameter("trigger", range=(0, 1), conversion_policy=">0")
     reset_cv = VirtualParameter("reset", range=(0, 1))
     root_cv = VirtualParameter("root", accepted_values=NOTE_NAMES, disable_policy=True)
     scale__cv = VirtualParameter(

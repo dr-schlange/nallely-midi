@@ -76,9 +76,15 @@ class OutputPort(InputPort):
 
 
 def generate_class_node(
-    cls_def, inputs: list[InputPort], outputs: list[OutputPort], meta
+    cls_def,
+    inputs: list[InputPort],
+    outputs: list[OutputPort],
+    meta,
+    remove_decorator=True,
 ):
-    cls_def.decorator_list.clear()
+    if remove_decorator:
+        cls_def.decorator_list.clear()
+
     cls_def.bases = [ast.Name("VirtualDevice")]
     var_names = {}
     has_default_range = False
@@ -141,10 +147,14 @@ def generate_class_node(
 
 
 def updategencode(cls):
-    frame = inspect.currentframe()
-    if frame is None or frame.f_back is None:
-        return cls
-    cls_file = Path(frame.f_back.f_code.co_filename)
+    cls_file = inspect.getsourcefile(cls)
+    if cls_file is None:
+        frame = inspect.currentframe()
+        if frame is None or frame.f_back is None:
+            return cls
+        cls_file = Path(frame.f_back.f_code.co_filename)
+    else:
+        cls_file = Path(cls_file)
     if cls_file not in code_registry:
         print("Transforming", cls_file)
         code_registry.clear()
@@ -191,7 +201,7 @@ def updategencode(cls):
 def parsespec(entries, are_outputs=False):
     re_cv_name = "(?P<cv_name>\\w+)"
     re_cv_range = "(?P<cv_range>[^]]+)"
-    re_cv_policy = "\\s+(?P<policy>\\w+)"
+    re_cv_policy = "\\s+(?P<policy>[^ ]+)"
     re_cv_edge = f"\\s+<(?P<edges>[^>]+)>"
     re_cv_default = f"\\s+init=(?P<default>[^\\s]+)"
     re_input = re.compile(

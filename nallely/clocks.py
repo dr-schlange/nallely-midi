@@ -188,8 +188,10 @@ class ClockDivider(VirtualDevice):
     meta: disable default output
     """
 
-    trigger_cv = VirtualParameter(name="trigger", range=(0.0, 1.0))
-    reset_cv = VirtualParameter(name="reset", range=(0.0, 1.0))
+    trigger_cv = VirtualParameter(
+        name="trigger", range=(0.0, 1.0), conversion_policy=">0"
+    )
+    reset_cv = VirtualParameter(name="reset", range=(0.0, 1.0), conversion_policy=">0")
     mode_cv = VirtualParameter(name="mode", accepted_values=("gate", "tick"))
     div32_cv = VirtualParameter(name="div32", range=(0.0, 1.0))
     div16_cv = VirtualParameter(name="div16", range=(0.0, 1.0))

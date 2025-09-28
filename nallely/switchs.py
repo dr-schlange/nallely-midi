@@ -56,7 +56,7 @@ class Switch(VirtualDevice):
 
 class ShiftRegister(VirtualDevice):
     input_cv = VirtualParameter("input", range=(0, 127))
-    trigger_cv = VirtualParameter("trigger", range=(0, 1))
+    trigger_cv = VirtualParameter("trigger", range=(0, 1), conversion_policy=">0")
     reset_cv = VirtualParameter("reset", range=(0, 1))
 
     output7_cv = VirtualParameter("output7", range=(0, 127))

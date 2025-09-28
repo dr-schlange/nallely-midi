@@ -15,7 +15,7 @@ from nallely.trevor import TrevorAPI, TrevorBus
 
 
 class InstanceCreator(VirtualDevice):
-    trigger_cv = VirtualParameter("trigger", range=(0, 1))
+    trigger_cv = VirtualParameter("trigger", range=(0, 1), conversion_policy=">0")
     instance_number_cv = VirtualParameter("instance_number", range=(0, 3))
 
     def __init__(self, *args, **kwargs):
@@ -49,7 +49,7 @@ class InstanceCreator(VirtualDevice):
 
 
 class RandomPatcher(VirtualDevice):
-    trigger_cv = VirtualParameter("trigger", range=(0, 1))
+    trigger_cv = VirtualParameter("trigger", range=(0, 1), conversion_policy=">0")
     max_patch_cv = VirtualParameter("max_patch", range=(2, 20))
     exclude_device_cv = VirtualParameter("exclude_device", accepted_values=[])
 
