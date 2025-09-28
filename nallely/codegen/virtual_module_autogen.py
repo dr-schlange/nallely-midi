@@ -168,7 +168,9 @@ def updategencode(cls):
         match node:
             case ast.ClassDef(decorator_list=[ast.Name("updategencode")]) as clsdef:
                 print(f" * transforming {clsdef.name}")
-                file_code.body[i] = generate_class_node(clsdef, *parsedoc(node))
+                file_code.body[i] = generate_class_node(
+                    clsdef, *parsedoc(ast.get_docstring(node, clean=True))
+                )
             case ast.ImportFrom(module="nallely"):
                 has_imports = True
             case ast.ImportFrom(module=name) as imp if name and "codegen" in name:
@@ -253,8 +255,7 @@ def parsespec(entries, are_outputs=False):
     return nodes
 
 
-def parsedoc(cls_node: ast.ClassDef):
-    doc = ast.get_docstring(cls_node, clean=True)
+def parsedoc(doc: str | None):
     if doc is None:
         return ([], [], None)
     doc_iter = iter(doc.split("\n"))
