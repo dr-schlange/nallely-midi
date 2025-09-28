@@ -8,7 +8,8 @@ export const findConnectorElement = (connection: MidiConnection) => {
 		connection.dest.parameter,
 	);
 	let fromElement = document.querySelector(`[id="${srcId}"]`);
-	let toElement = document.querySelector(`[id="${destId}"]`);
+	const all = document.querySelectorAll(`[id="${destId}"]`);
+	let toElement = all.length > 0 ? all[all.length - 1] : null;
 	if (!fromElement) {
 		srcId = buildParameterId(
 			connection.src.device,
