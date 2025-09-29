@@ -472,6 +472,36 @@ input[type="text"]:disabled {
 	height: 100%;
 }
 
+.rack-row.horizontal button {
+	height: 100% !important;
+	width: 22px !important;
+	writing-mode: vertical-rl;
+	text-orientation: sideways;
+	transform: rotate(-180deg);
+}
+
+.rack-row.horizontal > select {
+	height: 100%;
+	writing-mode: vertical-rl;
+	text-orientation: sideways;
+	transform: rotate(-180deg);
+}
+
+.rack-row.vertical .rack-top-bar {
+	display: flex;
+	flex-direction: column-reverse;
+	height: 100%;
+	width: 17px;
+}
+
+.rack-row.horizontal .rack-top-bar {
+	height: 100%;
+	width: 17px;
+	writing-mode: vertical-rl;
+	text-orientation: sideways;
+	transform: rotate(-180deg);
+}
+
 .device-patching-main-section.horizontal {
 	flex-direction: column;
 }
@@ -1511,21 +1541,6 @@ h3.details {
 		min-width: 200px;
 	}
 
-	.rack-row > button {
-		height: 100% !important;
-		width: 22px !important;
-		writing-mode: vertical-rl;
-		text-orientation: sideways;
-		transform: rotate(-180deg);
-	}
-
-	.rack-row > select {
-		height: 100% !important;
-		writing-mode: vertical-rl;
-		text-orientation: sideways;
-		transform: rotate(-180deg);
-	}
-
 	/* .top-section {
 		max-height: 90%;
 	} */
@@ -1626,27 +1641,6 @@ h3.details {
 
 	.modal-vdevice-bottom {
 		flex-direction: column;
-	}
-
-	.rack-top-bar {
-		display: flex;
-		flex-direction: column-reverse;
-		height: 100%;
-		width: 17px;
-	}
-
-	.rack-top-bar > div {
-		height: 50% !important;
-		writing-mode: vertical-rl;
-		text-orientation: sideways;
-		transform: rotate(-180deg);
-	}
-
-	.rack-top-bar > select {
-		height: 50% !important;
-		writing-mode: vertical-rl;
-		text-orientation: sideways;
-		transform: rotate(-180deg);
 	}
 }
 
