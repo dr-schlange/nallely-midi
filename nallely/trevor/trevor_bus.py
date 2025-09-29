@@ -276,7 +276,14 @@ class TrevorBus(VirtualDevice):
         instance.to_update = self
         if isinstance(instance, MidiDevice):
             instance.on_midi_message = self.send_control_value_update
+        else:
+            instance.exception_handlers.append(self.exception_handler)
         return self.full_state()
+
+    def exception_handler(self, device, exception, trace):
+        message = f"Exception caught on {device}: {exception}"
+        print(f"[ERROR] {message}\n[ERROR] pausing device")
+        self.send_notification(status="error", message=message)
 
     def send_control_value_update(
         self, device: MidiDevice, msg, control: ModuleParameter | None

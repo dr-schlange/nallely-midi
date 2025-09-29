@@ -384,7 +384,6 @@ playground_code={infos["playground_code"]}
                 print("[DEBUG] Migrating", device)
                 print("[DEBUG] Pause device", device)
                 device.pause()
-                print(f"[DEBUG] Install exception hook", device)
                 old_cls = device.__class__
                 device.__class__ = new_cls
                 virtual_device_classes.remove(old_cls)
