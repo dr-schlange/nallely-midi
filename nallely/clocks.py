@@ -220,7 +220,10 @@ class ClockDivider(VirtualDevice):
 
     @on(trigger_cv, edge="rising")
     def count_triggers(self, value, ctx):
-        self.nb_ticks = (self.nb_ticks + 1) % 32
+        if self.nb_ticks == 32:
+            self.nb_ticks = 0
+        else:
+            self.nb_ticks = (self.nb_ticks + 1) % 32
         for count, output in self.outputs.items():
             if self.nb_ticks % count == 0:
                 if self.mode == "gate":  # type: ignore
