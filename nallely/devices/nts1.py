@@ -48,7 +48,7 @@ class DelaySection(Module):
     type = ModuleParameter(89)
     time = ModuleParameter(30)
     depth = ModuleParameter(31)
-    mix = ModuleParameter(32, init_value=128 // 2)
+    mix = ModuleParameter(33, init_value=128 // 2)
 
 
 @dataclass
