@@ -284,6 +284,7 @@ class TrevorBus(VirtualDevice):
         message = f"Exception caught on {device}: {exception}"
         print(f"[ERROR] {message}\n[ERROR] pausing device")
         self.send_notification(status="error", message=message)
+        self.send_message(self.full_state())
 
     def send_control_value_update(
         self, device: MidiDevice, msg, control: ModuleParameter | None
