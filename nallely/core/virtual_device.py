@@ -190,6 +190,7 @@ class VirtualDevice(threading.Thread):
 
         super().__init__(daemon=True)
         self.uuid = uuid if uuid else id(self)
+        self.exception_handlers = []
         self.debug = False
         self.output = None
         virtual_devices.append(self)
@@ -305,20 +306,6 @@ class VirtualDevice(threading.Thread):
     def store_input(self, param: str, value):
         setattr(self, param, value)
 
-    # def sleep(self, t):
-    #     if t < self.target_cycle_time * 1000:
-    #         # print(f"Fits {t=} in the current time of {self.target_cycle_time * 1000}ms")
-    #         time.sleep(float(t) / 1000)
-    #         yield
-    #         return
-    #     next_tick = time.time_ns() + t * 1_000_000
-    #     # print(f"Sleeping for {t}ms until {next_tick}")
-    #     while time.time_ns() < next_tick:
-    #         # print(f"Still sleeping... now={time.time_ns()}")
-    #         yield "__suspend__"
-    #     # print(f"Finished sleeping at {time.time_ns()}")
-    #     yield
-
     def sleep(self, t, consider_target_time=False):
         if self.target_cycle_time > 0 and consider_target_time:
             t = min(float(t), self.target_cycle_time * 1000)
@@ -408,86 +395,93 @@ class VirtualDevice(threading.Thread):
             self.suspended_tasks = still_pending
 
         while self.running:
-            start_time = time.perf_counter()
-            self.pause_event.wait()  # Block if paused
+            try:
+                start_time = time.perf_counter()
+                self.pause_event.wait()  # Block if paused
 
-            if not self.running:
-                break
+                if not self.running:
+                    break
 
-            resume_suspended_tasks()
+                resume_suspended_tasks()
 
-            changed = set()
-            inner_ctx = {}
-            for param, input_queue in list(self.input_queues.items()):
-                # Process a batch of inputs per cycle (to avoid backlog)
-                max_batch_size = 10  # Maximum number of items to process per cycle
-                queue_level = input_queue.qsize()
-                # We adjust the batch size dynamically based on queue pressure
-                batch_size = min(max_batch_size, max(1, int(queue_level / 100)))
-                for _ in range(batch_size):
-                    try:
-                        value, previous, inner_ctx = input_queue.get_nowait()
-                        changed.add(param)
-                        self.store_input(param, value)
-                        self._param_last_values[param] = previous
-                        input_queue.task_done()
-                    except Empty:
-                        break
+                changed = set()
+                inner_ctx = {}
+                for param, input_queue in list(self.input_queues.items()):
+                    # Process a batch of inputs per cycle (to avoid backlog)
+                    max_batch_size = 10  # Maximum number of items to process per cycle
+                    queue_level = input_queue.qsize()
+                    # We adjust the batch size dynamically based on queue pressure
+                    batch_size = min(max_batch_size, max(1, int(queue_level / 100)))
+                    for _ in range(batch_size):
+                        try:
+                            value, previous, inner_ctx = input_queue.get_nowait()
+                            changed.add(param)
+                            self.store_input(param, value)
+                            self._param_last_values[param] = previous
+                            input_queue.task_done()
+                        except Empty:
+                            break
 
-                # Log queue pressure
-                queue_level = input_queue.qsize()
-                if queue_level > input_queue.maxsize * 0.8:
-                    print(
-                        f"[{self.uid()}] Queue usage: {queue_level}/{input_queue.maxsize}"
-                    )
+                    # Log queue pressure
+                    queue_level = input_queue.qsize()
+                    if queue_level > input_queue.maxsize * 0.8:
+                        print(
+                            f"[{self.uid()}] Queue usage: {queue_level}/{input_queue.maxsize}"
+                        )
 
-            # Run main processing and output
-            # triggered = False
-            if changed:
-                # if any parameter have been impacted
-                for param in changed:
-                    current_value = getattr(self, param)
-                    last_value = self._param_last_values.get(param)
-                    for key in edge_keys:
-                        aliased_name = alias_name(param, key)
-                        if hasattr(self, aliased_name):
-                            success, value = getattr(self, aliased_name)(
-                                current_value, last_value, ctx
-                            )
-                            # triggered = True
-                            if success and self.debug:
-                                print(
-                                    f"TRIGGER {param} {aliased_name} {last_value=} {getattr(self, param)=}"
+                # Run main processing and output
+                # triggered = False
+                if changed:
+                    # if any parameter have been impacted
+                    for param in changed:
+                        current_value = getattr(self, param)
+                        last_value = self._param_last_values.get(param)
+                        for key in edge_keys:
+                            aliased_name = alias_name(param, key)
+                            if hasattr(self, aliased_name):
+                                success, value = getattr(self, aliased_name)(
+                                    current_value, last_value, ctx
                                 )
-                                self.debug_print(ctx)
-                                print()
-                            if not success or value is None:
-                                continue
-                            ctx.update(inner_ctx)
-                            handle_generator_or_output(value, param, ctx)
-            # we call the idle loop
-            # # if not triggered:
-            # value = next(main_gen)
-            if main_gen is None or not isinstance(main_gen, GeneratorType):
-                main_gen = self.main(ctx)
-            finished = handle_generator_or_output(main_gen, "_default_idle", ctx)
-            if finished:
-                main_gen = None
-            # if queue_level > self.input_queue.maxsize * 0.8:
-            #     # Skip sleep to catch up faster
-            #     print(
-            #         f"[{self.uid()}] High queue pressure, skipping sleep for this cycle."
-            #     )
-            # else:
-            #     # Adaptive sleep
-            #     elapsed_time = time.perf_counter() - start_time
-            #     sleep_time = max(0, self.target_cycle_time - elapsed_time)
-            #     time.sleep(sleep_time)
+                                # triggered = True
+                                if success and self.debug:
+                                    print(
+                                        f"TRIGGER {param} {aliased_name} {last_value=} {getattr(self, param)=}"
+                                    )
+                                    self.debug_print(ctx)
+                                    print()
+                                if not success or value is None:
+                                    continue
+                                ctx.update(inner_ctx)
+                                handle_generator_or_output(value, param, ctx)
+                # we call the idle loop
+                # # if not triggered:
+                # value = next(main_gen)
+                if main_gen is None or not isinstance(main_gen, GeneratorType):
+                    main_gen = self.main(ctx)
+                finished = handle_generator_or_output(main_gen, "_default_idle", ctx)
+                if finished:
+                    main_gen = None
+                # if queue_level > self.input_queue.maxsize * 0.8:
+                #     # Skip sleep to catch up faster
+                #     print(
+                #         f"[{self.uid()}] High queue pressure, skipping sleep for this cycle."
+                #     )
+                # else:
+                #     # Adaptive sleep
+                #     elapsed_time = time.perf_counter() - start_time
+                #     sleep_time = max(0, self.target_cycle_time - elapsed_time)
+                #     time.sleep(sleep_time)
 
-            # Adaptive sleep
-            elapsed_time = time.perf_counter() - start_time
-            sleep_time = max(0, self.target_cycle_time - elapsed_time)
-            time.sleep(sleep_time)
+                # Adaptive sleep
+                elapsed_time = time.perf_counter() - start_time
+                sleep_time = max(0, self.target_cycle_time - elapsed_time)
+                time.sleep(sleep_time)
+            except Exception as e:
+                self.pause()
+                self.paused_on_exception = True
+                trace = traceback.format_exc()
+                for handler in self.exception_handlers:
+                    handler(self, e, trace)
 
     def send_out(
         self,

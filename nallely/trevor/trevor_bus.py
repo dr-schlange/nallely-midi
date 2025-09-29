@@ -34,7 +34,6 @@ from ..core import (
     virtual_devices,
 )
 from ..core.midi_device import MidiDevice, ModuleParameter
-from ..session import extract_infos
 from ..utils import StateEncoder, force_off_everywhere, load_modules
 from ..websocket_bus import (  # noqa, we keep it so it's loaded in this namespace
     WebSocketBus,
@@ -479,6 +478,8 @@ class TrevorBus(VirtualDevice):
         return self.full_state()
 
     def fetch_path_infos(self, filename):
+        from ..session import extract_infos
+
         details = extract_infos(filename)
         self.send_message({"command": "RuntimeAPI::setPatchDetails", "arg": details})
 
@@ -565,7 +566,11 @@ def trevor_infos(header, loaded_paths, init_script, ui):
     info += f"  * Connected/existing devices [{len(devices)}]\n"
     if devices:
         for device in all_devices():
-            info += f"    - {device.uid()} <{device.__class__.__name__}>\n"
+
+            info += f"    - {device.uid()} <{device.__class__.__name__}>"
+            if isinstance(device, VirtualDevice) and device.paused:
+                info += f" [paused]"
+            info += "\n"
 
     return info
 
@@ -694,6 +699,7 @@ def _trevor_menu(loaded_paths, init_script, trevor_bus=None, trevor_ui=None):
             devices = [d for d in all_devices() if not isinstance(d, TrevorBus)]
             for num, device in enumerate(devices):
                 menu += f"   {num} - {device.uid()}\n"
+
             menu += "  enter - exit menu\n"
             elprint(menu)
             num = input("> ")
