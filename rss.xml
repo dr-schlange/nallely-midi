@@ -13,20 +13,13 @@
     </image>
     <atom:link href="https://dr-schlange.github.io/nallely-midi/rss.xml" rel="self" type="application/rss+xml"/>
         <ttl>60</ttl>
-<lastBuildDate>Thu, 18 Sep 2025 22:32:58 +0000</lastBuildDate>
+<lastBuildDate>Mon, 29 Sep 2025 21:41:26 +0000</lastBuildDate>
         <item>
-        <title>A website for Nallely</title>
+        <title>Presenting Nallely</title>
         <dc:creator>Dr. Schlange</dc:creator>
-        <description>Nallely and Trevor gets their own website</description>
-        <link>https://dr-schlange.github.io/nallely-midi/news/website-launch/</link>
+        <description>Nallely is an organic living system for MIDI</description>
+        <link>https://dr-schlange.github.io/nallely-midi/posts/presenting-nallely/</link>
         <pubDate>Thu, 12 Jun 2025 00:00:00 +0000</pubDate>
-        </item>
-        <item>
-        <title>How to make Nallely understand new MIDI devices</title>
-        <dc:creator>Dr. Schlange</dc:creator>
-        <description>How to add a new MIDI device in Nallely</description>
-        <link>https://dr-schlange.github.io/nallely-midi/posts/add-new-midi-device/</link>
-        <pubDate>Thu, 10 Jul 2025 00:00:00 +0000</pubDate>
         </item>
         <item>
         <title>Let&#39;s build a VCA with Nallely</title>
@@ -36,11 +29,11 @@
         <pubDate>Sat, 21 Jun 2025 00:00:00 +0000</pubDate>
         </item>
         <item>
-        <title>Presenting Nallely</title>
+        <title>How to make Nallely understand new MIDI devices</title>
         <dc:creator>Dr. Schlange</dc:creator>
-        <description>Nallely is an organic living system for MIDI</description>
-        <link>https://dr-schlange.github.io/nallely-midi/posts/presenting-nallely/</link>
-        <pubDate>Thu, 12 Jun 2025 00:00:00 +0000</pubDate>
+        <description>How to add a new MIDI device in Nallely</description>
+        <link>https://dr-schlange.github.io/nallely-midi/posts/add-new-midi-device/</link>
+        <pubDate>Thu, 10 Jul 2025 00:00:00 +0000</pubDate>
         </item>
         <item>
         <title>Let&#39;s remember the good old patchs</title>
@@ -48,6 +41,13 @@
         <description>Patch management, memory management, versioning and opportunities</description>
         <link>https://dr-schlange.github.io/nallely-midi/posts/lets-remember/</link>
         <pubDate>Sun, 14 Sep 2025 00:00:00 +0000</pubDate>
+        </item>
+        <item>
+        <title>A website for Nallely</title>
+        <dc:creator>Dr. Schlange</dc:creator>
+        <description>Nallely and Trevor gets their own website</description>
+        <link>https://dr-schlange.github.io/nallely-midi/news/website-launch/</link>
+        <pubDate>Thu, 12 Jun 2025 00:00:00 +0000</pubDate>
         </item>
 </channel>
 </rss>
