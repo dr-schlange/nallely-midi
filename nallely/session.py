@@ -1,6 +1,7 @@
 import json
 import os
 import re
+import time
 from collections import Counter
 from datetime import datetime
 from pathlib import Path
@@ -9,6 +10,8 @@ import mido
 from dulwich import porcelain
 from dulwich.notes import get_note_path
 from dulwich.repo import Repo
+
+import nallely
 
 from .core import (
     DeviceNotFound,
@@ -349,6 +352,45 @@ playground_code={infos["playground_code"]}
         message = f"""[0x{address}] Clear session 0x{session_id}"""
         porcelain.commit(repo, author=b"Nallely MIDI <drcoatl@proton.me>", committer=b"dr-schlange <drcoatl@proton.me>", message=message)  # type: ignore
         repo.close()
+
+    def compile_device(self, device_name: str, device_code: str):
+        if not device_code:
+            return None
+
+        co = compile(device_code, filename="<nallely_device>", mode="exec")
+        import nallely
+
+        eval_env = {}
+        glob = {
+            **globals(),
+            "VirtualParameter": nallely.VirtualParameter,
+            "VirtualDevice": nallely.VirtualDevice,
+            "on": nallely.on,
+            "nallely.VirtualParameter": nallely.VirtualParameter,
+            "nallely.VirtualDevice": nallely.VirtualDevice,
+            "nallely.on": nallely.on,
+            "nallely": nallely,
+        }
+        eval(co, globals={**glob, **eval_env}, locals=eval_env)
+        cls = eval_env[device_name]
+        cls.__source__ = device_code
+        return cls
+
+    def migrate_instances(self, device_cls: str, new_cls):
+        for device in all_devices():
+            if device.__class__.__name__ == device_cls:
+                if isinstance(device, MidiDevice):
+                    continue
+                print("[DEBUG] Migrating", device)
+                print("[DEBUG] Pause device", device)
+                device.pause()
+                print(f"[DEBUG] Install exception hook", device)
+                old_cls = device.__class__
+                device.__class__ = new_cls
+                virtual_device_classes.remove(old_cls)
+                virtual_device_classes.append(new_cls)
+                print("[DEBUG] Restart device")
+                device.resume()
 
 
 def extract_infos(filename):

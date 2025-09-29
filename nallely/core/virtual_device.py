@@ -243,7 +243,7 @@ class VirtualDevice(threading.Thread):
                 kwargs |= additional_kargs
             super(cls, self).__init__(**kwargs)
 
-        cls.__init__ = __init__  # type ignore
+        cls.__init__ = __init__  # type: ignore
 
         super().__init_subclass__()
 

@@ -146,31 +146,58 @@ def generate_class_node(
     return cls_def
 
 
-def updategencode(cls):
+def updategencode(cls, save_in=None, verbose=False):
     cls_file = inspect.getsourcefile(cls)
-    if cls_file is None:
-        frame = inspect.currentframe()
-        if frame is None or frame.f_back is None:
+    if save_in is None:
+        if cls_file is None:
+            frame = inspect.currentframe()
+            if frame is None or frame.f_back is None:
+                print(
+                    f"No file found or specified for {cls}, returning {cls} and stop codegen"
+                )
+                return cls
+            else:
+                cls_file = Path(frame.f_back.f_code.co_filename)
+        elif cls_file is not None:
+            cls_file = Path(cls_file)
+        if cls_file not in code_registry:
+            if verbose:
+                print("Transforming", cls_file)
+            code_registry.clear()
+            code_registry.add(cls_file)
+        else:
             return cls
-        cls_file = Path(frame.f_back.f_code.co_filename)
+        file_code = ast.parse(cls_file.read_text("utf-8"))
     else:
-        cls_file = Path(cls_file)
-    if cls_file not in code_registry:
-        print("Transforming", cls_file)
-        code_registry.clear()
-        code_registry.add(cls_file)
-    else:
-        return cls
-    file_code = ast.parse(cls_file.read_text("utf-8"))
+        try:
+            cls_file = Path(save_in)
+            new_class = ast.parse(cls.__source__, filename=cls_file)
+            if cls_file.exists():
+                file_code = ast.parse(cls_file.read_text("utf-8"))
+            else:
+                file_code = new_class
+        except AttributeError:
+            print(
+                f"Class {cls} doesn't have a __source__ attribute, returning {cls} and stop codegen"
+            )
+            return cls
+
     has_imports = False
     autogen_import = None
     for i, node in enumerate(file_code.body):
         match node:
-            case ast.ClassDef(decorator_list=[ast.Name("updategencode")]) as clsdef:
-                print(f" * transforming {clsdef.name}")
+            case ast.ClassDef(name=cls.__name__) as clsdef:
+                if verbose:
+                    print(f" * transforming {clsdef.name}")
+                cls_node = new_class.body[0] if save_in is not None else file_code
                 file_code.body[i] = generate_class_node(
-                    clsdef, *parsedoc(ast.get_docstring(node, clean=True))
+                    cls_node, *parsedoc(ast.get_docstring(cls_node, clean=True))
                 )
+            # case ast.ClassDef(decorator_list=[ast.Name("updategencode")]) as clsdef:
+            #     print(f" * transforming {clsdef.name}")
+            #     file_code.body[i] = generate_class_node(
+            #         clsdef, *parsedoc(ast.get_docstring(node, clean=True))
+            #     )
             case ast.ImportFrom(module="nallely"):
                 has_imports = True
             case ast.ImportFrom(module=name) as imp if name and "codegen" in name:
