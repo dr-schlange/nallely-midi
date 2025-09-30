@@ -6,6 +6,30 @@ from .core import VirtualDevice, VirtualParameter, on
 
 
 class MultiPoleFilter(VirtualDevice):
+    """Multi Pole Filter
+
+    Multiple filters depending on a selected type of filter (lowpass, highpass, bandpass).
+
+
+    inputs:
+    * input_cv [0, 127] <any>: Input signal.
+    * filter_cv [lowpass, highpass, bandpass]: The filter type (default=lowpass).
+    * mode_cv [cutoff, smoothing]: Choose between cutoff control or smoothing control.
+    * cutoff_cv [0.0, 3000.0] init=1.0: Control cutoff frequency.
+    * smoothing_cv [0.0, 1.0] init=0.1: Control smoothing factor.
+    * poles_cv [1, 4] init=1 round: Number of poles for the filter.
+    * reset_cv [0, 1] >0 <rising>: Reset all internal states.
+    * type_cv [ondemand, continuous]: Choose between a ondemand or continuous value production.
+                                      ondemand = value produced when reacting to an input only.
+                                      continuous = value produced at the cycle speed of the module.
+
+    outputs:
+    * output_cv [0, 127]: The filtered signal.
+
+    type: ondemand, continuous
+    category: filter
+    """
+
     MAX_POLES = 4
     input_cv = VirtualParameter(name="input", range=(0, 127))
 
@@ -117,13 +141,39 @@ class MultiPoleFilter(VirtualDevice):
 
 
 class Waveshaper(VirtualDevice):
+    """Waveshaper
+
+    Modulate a signal waveform to reshape it.
+
+    inputs:
+    * input_cv [0, 127] <any>: Input signal.
+    * mode_cv [linear, exp, log, sigmoid, fold, quantize]: Choose how to shape the input waveform.
+    * amount_cv [0, 1]: The filter type (default=lowpass).
+    * symmetry_cv [-1.0, 1] init=0.0: Adjusts the balance between "positive" and "negative" portions of the reshaped waveform.
+    * bias_cv [0.0, 5.0]: Offsets the input signal before applying the shaping function.
+    * exp_power_cv [0.1, 50]: Controls the exponent used in the exponential shaping mode.
+    * log_scale_cv [1, 30]: Scales the input for the logarithmic shaping mode.
+    * sigmoid_gain_cv [0.5, 20]: Determines the steepness of the curve in sigmoid shaping mode.
+    * fold_gain_cv [0.5, 10]: Controls how strongly the input signal is folded in fold mode.
+    * quantize_steps_cv [2, 64]: Sets the number of discrete levels for the quantize shaping mode.
+    * type_cv [ondemand, continuous]: Choose between a ondemand or continuous value production.
+                                      ondemand = value produced when reacting to an input only.
+                                      continuous = value produced at the cycle speed of the module.
+
+    outputs:
+    * output_cv [0, 127]: The reshaped signal.
+
+    type: ondemand, continuous
+    category: filter
+    """
+
     input_cv = VirtualParameter(name="input", range=(-5, 5))
     mode_cv = VirtualParameter(
         name="mode",
         accepted_values=("linear", "exp", "log", "sigmoid", "fold", "quantize"),
     )
     amount_cv = VirtualParameter(name="amount", range=(0, 1))
-    symmetry_cv = VirtualParameter(name="symmetry", range=(-1, 1))
+    symmetry_cv = VirtualParameter(name="symmetry", range=(-1, 1), default=0)
     bias_cv = VirtualParameter(name="bias", range=(0, 5))
     exp_power_cv = VirtualParameter(name="exp_power", range=(0.1, 50))
     log_scale_cv = VirtualParameter(name="log_scale", range=(1, 30))
@@ -206,6 +256,31 @@ class Waveshaper(VirtualDevice):
 
 
 class Mixer(VirtualDevice):
+    """Mixer
+
+    Simple 4-in mixer.
+
+    inputs:
+    * in0_cv [0, 127] <any>: Input signal.
+    * in1_cv [0, 127] <any>: Input signal.
+    * in2_cv [0, 127] <any>: Input signal.
+    * in3_cv [0, 127] <any>: Input signal.
+    * level0_cv [0, 127] <any>: Input signal level.
+    * level1_cv [0, 127] <any>: Input signal level.
+    * level2_cv [0, 127] <any>: Input signal level.
+    * level3_cv [0, 127] <any>: Input signal level.
+    * nums_cv [2, 4] init=4 round <any>: The number of input to consider.
+    * type_cv [ondemand, continuous]: Choose between a ondemand or continuous value production.
+                                      ondemand = value produced when reacting to an input only.
+                                      continuous = value produced at the cycle speed of the module.
+
+    outputs:
+    * output_cv [0, 127]: The filtered signal.
+
+    type: ondemand, continuous
+    category: mixing
+    """
+
     in0_cv = VirtualParameter(name="in0", range=(0, 127))
     in1_cv = VirtualParameter(name="in1", range=(0, 127))
     in2_cv = VirtualParameter(name="in2", range=(0, 127))
@@ -278,6 +353,29 @@ class Mixer(VirtualDevice):
 
 
 class Crossfade(VirtualDevice):
+    """Dual crossfader
+
+    Dual crossfader, proposes 2 inputs and 2 outputs.
+
+    inputs:
+    * in0_cv [0, 127] <any>: Input signal.
+    * in1_cv [0, 127] <any>: Input signal.
+    * in2_cv [0, 127] <any>: Input signal.
+    * in3_cv [0, 127] <any>: Input signal.
+    * level_cv [0, 127] <any>: Crossfader level.
+    * type_cv [ondemand, continuous]: Choose between a ondemand or continuous value production.
+                                      ondemand = value produced when reacting to an input only.
+                                      continuous = value produced at the cycle speed of the module.
+
+    outputs:
+    * out0_cv [0, 127]: The crossfaded signal for in0 and in1.
+    * out1_cv [0, 127]: The filtered signal for in2 and in3.
+
+    type: ondemand, continuous
+    category: filter
+    meta: disable default output
+    """
+
     in0_cv = VirtualParameter(name="in0", range=(0, 127))
     in1_cv = VirtualParameter(name="in1", range=(0, 127))
     in2_cv = VirtualParameter(name="in2", range=(0, 127))

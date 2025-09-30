@@ -248,7 +248,7 @@ class EnvelopeSlew(VirtualDevice):
                                       continuous = value produced at the cycle speed of the module.
 
     outputs:
-    * output_cv [0, 127]: The filtered value.
+    * output_cv [0, 127]: The filtered signal.
 
     type: ondemand, continuous
     category: filter
