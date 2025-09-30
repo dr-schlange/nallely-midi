@@ -7,13 +7,43 @@ from .core import VirtualDevice, VirtualParameter, on
 
 
 class Clock(VirtualDevice):
+    """Clock
+
+    Simple clock that produces a tick depending on a tempo (BPM) for various divisions.
+
+    inputs:
+    * tempo_cv [20, 600] init=120: Clock BPM
+    * play_cv [0, 1] init=0 >0: Control if the clock must be started or not (1 = start, 0 = stop).
+                                By default, the clock is stopped.
+    * reset_cv [0, 1] >0 <rising>: Reset the clock to 0
+
+    outputs:
+    * lead_cv [0, 1]: quater note output
+    * div4_cv [0, 1]: /4 output (whole note)
+    * div2_cv [0, 1]: /2 output (half note)
+    * mul2_cv [0, 1]: x2 output (eighth note)
+    * mul4_cv [0, 1]: x4 output (sixteenth note)
+    * div3_cv [0, 1]: /3 output (1 tick all 3 quater notes)
+    * div5_cv [0, 1]: /5 output (1 tick all 5 quater notes)
+    * mul3_cv [0, 1]: x3 output (3 ticks per 1 quater note)
+    * mul5_cv [0, 1]: x5 output (5 ticks per 1 quater note)
+    * mul7_cv [0, 1]: x3 output (5 ticks per 1 quater note)
+
+    type: continuous
+    category: clock
+    meta: disable default output
+    """
+
     smallest_subdivision = Decimal(32)
     tempo_cv = VirtualParameter("tempo", range=(20, 600))  # BPM
-    play_cv = VirtualParameter("play", range=(0, 1))
-    reset_cv = VirtualParameter("reset", range=(0, 1))
+    play_cv = VirtualParameter(
+        "play", range=(0, 1)
+    )  # conversion is done in the @property
+    reset_cv = VirtualParameter("reset", range=(0, 1), conversion_policy=">0")
 
     # clock outputs we consider the main output_cv as not used
     mul7_cv = VirtualParameter("mul7", range=(0, 1))  # x7
+    mul5_cv = VirtualParameter("mul5", range=(0, 1))  # x5
     mul3_cv = VirtualParameter("mul3", range=(0, 1))  # x3
     div5_cv = VirtualParameter("div5", range=(0, 1))  # /5
     div3_cv = VirtualParameter("div3", range=(0, 1))  # /3
@@ -39,6 +69,7 @@ class Clock(VirtualDevice):
             "div3": Decimal(0),
             "div5": Decimal(0),
             "mul3": Decimal(0),
+            "mul5": Decimal(0),
             "mul7": Decimal(0),
         }
 
@@ -51,6 +82,7 @@ class Clock(VirtualDevice):
             "div3": Decimal(1) / Decimal(3),
             "div5": Decimal("0.2"),
             "mul3": Decimal(3),
+            "mul5": Decimal(5),
             "mul7": Decimal(7),
         }
         super().__init__(
@@ -168,20 +200,20 @@ class ClockDivider(VirtualDevice):
     """Clock Divider
 
     inputs:
-        * trigger_cv [0, 1] >0 <rising>: Trigger the divider
-        * reset_cv [0, 1] >0 <rising>: Reset the internal count to 0
-        * mode_cv [gate, tick]: Choose between gate (square mode) or tick (short pulse)
+    * trigger_cv [0, 1] >0 <rising>: Trigger the divider
+    * reset_cv [0, 1] >0 <rising>: Reset the internal count to 0
+    * mode_cv [gate, tick]: Choose between gate (square mode) or tick (short pulse)
 
     outputs:
-        * div2_cv [0, 1]: /2 output
-        * div3_cv [0, 1]: /3 output
-        * div4_cv [0, 1]: /4 output
-        * div5_cv [0, 1]: /5 output
-        * div6_cv [0, 1]: /6 output
-        * div7_cv [0, 1]: /7 output
-        * div8_cv [0, 1]: /8 output
-        * div16_cv [0, 1]: /16 output
-        * div32_cv [0, 1]: /32 output
+    * div2_cv [0, 1]: /2 output
+    * div3_cv [0, 1]: /3 output
+    * div4_cv [0, 1]: /4 output
+    * div5_cv [0, 1]: /5 output
+    * div6_cv [0, 1]: /6 output
+    * div7_cv [0, 1]: /7 output
+    * div8_cv [0, 1]: /8 output
+    * div16_cv [0, 1]: /16 output
+    * div32_cv [0, 1]: /32 output
 
     type: ondemand
     category: clock

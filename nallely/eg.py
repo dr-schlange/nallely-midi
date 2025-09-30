@@ -5,24 +5,40 @@ from .core.world import ThreadContext
 
 
 class ADSREnvelope(VirtualDevice):
-    gate_cv = VirtualParameter(name="gate", range=(0, 1), conversion_policy="!=0")
-    attack_cv = VirtualParameter(name="attack", range=(0.0, 1.0))
-    decay_cv = VirtualParameter(name="decay", range=(0.0, 1.0))
-    sustain_cv = VirtualParameter(name="sustain", range=(0.0, 1.0))
-    release_cv = VirtualParameter(name="release", range=(0.0, 1.0))
+    """ADSR Envelope Generator
 
-    def __init__(self, attack=0.1, decay=0.2, sustain=0.7, release=0.3, **kwargs):
+    Simple envelope generator with attack, decay, sustain, release.
+    Generates an envelope from a gate:
+      - when the gate is up -> triggers the envelope generation
+      - when the gate is down -> closes the envelope
+
+    inputs:
+    * gate_cv [0, 1] !=0 <rising, falling>: Gate/control voltage input
+    * attack_cv [0.0, 5.0] init=0.5: Attack time control in seconds
+    * decay_cv [0.0, 5.0] init=1.0: Decay time control in seconds
+    * sustain_cv [0.0, 1.0] init=0.7: Sustain level control (0 -> 0%, 1 -> 100%)
+    * release_cv [0.0, 5.0] init=1.5: Release time control in seconds
+
+    outputs:
+    * output_cv [0, 1]: the generated envelope
+
+    type: continuous
+    category: envelope-generator
+    """
+
+    gate_cv = VirtualParameter(name="gate", range=(0, 1), conversion_policy="!=0")
+    attack_cv = VirtualParameter(name="attack", range=(0.0, 5.0))
+    decay_cv = VirtualParameter(name="decay", range=(0.0, 5.0))
+    sustain_cv = VirtualParameter(name="sustain", range=(0.0, 1.0))
+    release_cv = VirtualParameter(name="release", range=(0.0, 5.0))
+
+    def __init__(self, attack=0.5, decay=1.0, sustain=0.7, release=1.5, **kwargs):
         self.attack = attack
         self.decay = decay
         self.sustain = sustain
         self.release = release
         self.gate = 0  # False
         super().__init__(**kwargs)
-
-    # def store_input(self, param, value):
-    #     if param == "gate":
-    #         return super().store_input(param, 1 if value != 0 else 0)
-    #     super().store_input(param, value)
 
     def setup(self):
         ctx = super().setup()
@@ -102,6 +118,22 @@ class ADSREnvelope(VirtualDevice):
 
 
 class VCA(VirtualDevice):
+    """Voltage Controled Amplifier
+
+    Simple VCA implementation with gain
+
+    inputs:
+    * input_cv [0, 127] <both>: Input signal
+    * amplitude_cv [0.0, 1.0] init=0.0 <rising, falling>: Signal amplitude (0.0 -> 0%, 1.0 -> 100%)
+    * gain_cv [1.0, 2.0] init=1.0: Signal gain (default is 1.0)
+
+    outputs:
+    * output_cv [0, 127]: The amplified signal
+
+    type: ondemand
+    category: amplitude-modulation
+    """
+
     input_cv = VirtualParameter("input", range=(0, 127))
     amplitude_cv = VirtualParameter("amplitude", range=(0.0, 1.0))
     gain_cv = VirtualParameter("gain", range=(1.0, 2.0))
@@ -164,6 +196,22 @@ class Gate(VirtualDevice):
 
 
 class SampleHold(VirtualDevice):
+    """Sample & Hold
+
+    Samples a value and hold it when the trigger input is rising.
+
+    inputs:
+    * input_cv [0, 127] <both>: Input signal
+    * trigger_cv [0, 1] >0 <rising>: Signal amplitude (0.0 -> 0%, 1.0 -> 100%)
+    * reset_cv [0, 1] >0 <rising>: Signal gain (default is 1.0)
+
+    outputs:
+    * output_cv [0, 127]: The sampled value
+
+    type: ondemand
+    category: modulation
+    """
+
     input_cv = VirtualParameter(name="input", range=(0, 127))
     trigger_cv = VirtualParameter(name="trigger", range=(0, 1), conversion_policy=">0")
     reset_cv = VirtualParameter(name="reset", range=(0, 1), conversion_policy=">0")
@@ -184,6 +232,28 @@ class SampleHold(VirtualDevice):
 
 
 class EnvelopeSlew(VirtualDevice):
+    """Envelope Follower & Slew Limiter
+
+    Envelope Follower or Slew Limiter depending on the chosen type.
+    The Envelope Follower tracks the amplitude of an input signal, producing a smooth envelope.
+    The Slew Limiter restricts how quickly the signal can change, smoothing rapid variations.
+
+    inputs:
+    * input_cv [0, 127] <any>: Input signal.
+    * attack_cv [0, 99.99] init=50.0: Attack control in %.
+    * release_cv [0, 99.99] init=50.0: Release control in %.
+    * type_cv [envelope, slew]: Choose between Envelope Follower and Slew Limiter
+    * mode_cv [ondemand, continuous]: Choose between a ondemand or continuous value production.
+                                      ondemand = value produced when reacting to an input only.
+                                      continuous = value produced at the cycle speed of the module.
+
+    outputs:
+    * output_cv [0, 127]: The filtered value.
+
+    type: ondemand, continuous
+    category: filter
+    """
+
     input_cv = VirtualParameter(name="input", range=(0, 127))
     attack_cv = VirtualParameter(name="attack", range=(0.0, 99.99), default=50.0)
     release_cv = VirtualParameter(name="release", range=(0.0, 99.99), default=50.0)
