@@ -84,11 +84,6 @@ class Arpegiator(VirtualDevice):
     def range(self):
         return 24, 108
 
-    # def store_input(self, param: str, value):
-    #     if param == "direction" and isinstance(value, (int, float, Decimal)):
-    #         value = self.direction_cv.parameter.map2accepted_values(value)
-    #     return super().store_input(param, value)
-
     def __init__(self, **kwargs):
         self.input = None
         self.reset = 0
@@ -426,8 +421,6 @@ class Quantizer(VirtualDevice):
             if isinstance(value, (int, float, Decimal)):
                 value = accepted_values[int(value % len(accepted_values))]
             self.update_nearest_table(NOTES[self.root], SCALES[value])
-        # elif param == "type" and isinstance(value, (int, float, Decimal)):
-        #     value = self.type_cv.parameter.map2accepted_values(value)
         elif param == "trigger" or param == "reset":
             value = 1 if value > 0 else 0
         return super().store_input(param, value)
