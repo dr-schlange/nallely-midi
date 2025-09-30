@@ -14,10 +14,10 @@ class ADSREnvelope(VirtualDevice):
 
     inputs:
     * gate_cv [0, 1] !=0 <rising, falling>: Gate/control voltage input
-    * attack_cv [0.0, 5.0] init=0.5: Attack time control in seconds
-    * decay_cv [0.0, 5.0] init=1.0: Decay time control in seconds
+    * attack_cv [0.0, 1.0] init=0.1: Attack time control in seconds
+    * decay_cv [0.0, 1.0] init=0.2: Decay time control in seconds
     * sustain_cv [0.0, 1.0] init=0.7: Sustain level control (0 -> 0%, 1 -> 100%)
-    * release_cv [0.0, 5.0] init=1.5: Release time control in seconds
+    * release_cv [0.0, 1.0] init=0.3: Release time control in seconds
 
     outputs:
     * output_cv [0, 1]: the generated envelope
@@ -27,12 +27,12 @@ class ADSREnvelope(VirtualDevice):
     """
 
     gate_cv = VirtualParameter(name="gate", range=(0, 1), conversion_policy="!=0")
-    attack_cv = VirtualParameter(name="attack", range=(0.0, 5.0))
-    decay_cv = VirtualParameter(name="decay", range=(0.0, 5.0))
+    attack_cv = VirtualParameter(name="attack", range=(0.0, 1.0))
+    decay_cv = VirtualParameter(name="decay", range=(0.0, 1.0))
     sustain_cv = VirtualParameter(name="sustain", range=(0.0, 1.0))
-    release_cv = VirtualParameter(name="release", range=(0.0, 5.0))
+    release_cv = VirtualParameter(name="release", range=(0.0, 1.0))
 
-    def __init__(self, attack=0.5, decay=1.0, sustain=0.7, release=1.5, **kwargs):
+    def __init__(self, attack=0.1, decay=0.2, sustain=0.7, release=0.3, **kwargs):
         self.attack = attack
         self.decay = decay
         self.sustain = sustain
