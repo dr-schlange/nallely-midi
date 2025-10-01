@@ -114,7 +114,7 @@ const XYSurface = ({
 				setPressed(true);
 				const { x, y } = pointerToXY(event);
 				onChangeX(x);
-				onChangeY(y);
+				onChangeY(127 - y);
 			}}
 			onPointerUp={(event) => {
 				event.preventDefault();
@@ -134,7 +134,7 @@ const XYSurface = ({
 				}
 				const { x, y } = pointerToXY(event);
 				onChangeX(x);
-				onChangeY(y);
+				onChangeY(127 - y);
 				addPoint(x, y);
 				drawTrace();
 			}}
