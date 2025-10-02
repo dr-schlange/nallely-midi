@@ -123,8 +123,8 @@ class VCA(VirtualDevice):
     Simple VCA implementation with gain
 
     inputs:
-    * input_cv [0, 127] <both>: Input signal
-    * amplitude_cv [0.0, 1.0] init=0.0 <rising, falling>: Signal amplitude (0.0 -> 0%, 1.0 -> 100%)
+    * input_cv [0, 127] <any>: Input signal
+    * amplitude_cv [0.0, 1.0] init=0.0 <any>: Signal amplitude (0.0 -> 0%, 1.0 -> 100%)
     * gain_cv [1.0, 2.0] init=1.0: Signal gain (default is 1.0)
 
     outputs:
@@ -139,30 +139,21 @@ class VCA(VirtualDevice):
     gain_cv = VirtualParameter("gain", range=(1.0, 2.0))
 
     @property
-    def range(self):
-        return (0.0, 127.0)
+    def min_range(self):
+        return 0.0
 
-    def __init__(self, **kwargs):
-        self.input = 0.0
-        self.amplitude = 0.0
-        self.gain = 1.0
-        super().__init__(**kwargs)
+    @property
+    def max_range(self):
+        return 127.0
 
-    def setup(self) -> ThreadContext:
-        self._close_port("input")
-        return super().setup()
-
-    @on(input_cv, edge="both")
+    @on(input_cv, edge="any")
     def sending_modulated_input(self, value, ctx):
-        return value * self.amplitude * self.gain
+        return value * self.amplitude * self.gain  # type: ignore
 
-    @on(amplitude_cv, edge="rising")
-    def opening(self, value, ctx):
-        self._open_port("input")
-
-    @on(amplitude_cv, edge="falling")
-    def closing(self, value, ctx):
-        self._close_port("input")
+    @on(amplitude_cv, edge="any")
+    def change_amplitude(self, value, ctx):
+        if self.amplitude > 0:  # type: ignore
+            return self.input * self.amplitude * self.gain  # type: ignore
         return 0
 
 
