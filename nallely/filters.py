@@ -265,10 +265,10 @@ class Mixer(VirtualDevice):
     * in1_cv [0, 127] <any>: Input signal.
     * in2_cv [0, 127] <any>: Input signal.
     * in3_cv [0, 127] <any>: Input signal.
-    * level0_cv [0, 127] <any>: Input signal level.
-    * level1_cv [0, 127] <any>: Input signal level.
-    * level2_cv [0, 127] <any>: Input signal level.
-    * level3_cv [0, 127] <any>: Input signal level.
+    * level0_cv [0, 100] <any>: Input signal level.
+    * level1_cv [0, 100] <any>: Input signal level.
+    * level2_cv [0, 100] <any>: Input signal level.
+    * level3_cv [0, 100] <any>: Input signal level.
     * nums_cv [2, 4] init=4 round <any>: The number of input to consider.
     * type_cv [ondemand, continuous]: Choose between a ondemand or continuous value production.
                                       ondemand = value produced when reacting to an input only.
@@ -362,7 +362,7 @@ class Crossfade(VirtualDevice):
     * in1_cv [0, 127] <any>: Input signal.
     * in2_cv [0, 127] <any>: Input signal.
     * in3_cv [0, 127] <any>: Input signal.
-    * level_cv [0, 127] <any>: Crossfader level.
+    * level_cv [0, 100] <any>: Crossfader level.
     * type_cv [ondemand, continuous]: Choose between a ondemand or continuous value production.
                                       ondemand = value produced when reacting to an input only.
                                       continuous = value produced at the cycle speed of the module.
