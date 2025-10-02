@@ -1957,12 +1957,13 @@ h3.details {
 	.parameters-grid.right .parameter {
 		display: inline-flex;
 		flex-direction: column;
-		align-items: flex-start;
+		align-items: center;
 		vertical-align: top;
 		height: auto;
 		min-height: unset;
 		padding-bottom: 2px;
 		margin-bottom: 0;
+		gap: 5px !important;
 	}
 	.parameters-grid.left .parameter {
 		display: inline-flex;
