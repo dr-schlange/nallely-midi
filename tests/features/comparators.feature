@@ -5,15 +5,15 @@ Feature: Comparator module
         And comparator is started
         And comparator's a is set to 50
         And comparator's b is set to 50
-        When around 1ms have passed
+        When around 5ms have passed
         Then comparator's output is eq 1
 
         Given comparator's a is set to 10
-        When around 1ms have passed
+        When around 5ms have passed
         Then comparator's output is eq 0
 
         Given comparator's comparator is set to <>
-        When around 1ms have passed
+        When around 5ms have passed
         Then comparator's output is eq 1
 
 
@@ -22,7 +22,7 @@ Feature: Comparator module
         Then comparator's output is eq 0
 
         Given comparator's comparator is set to >
-        When around 1ms have passed
+        When around 5ms have passed
         Then comparator's output is eq 0
 
         Given comparator's comparator is set to <
@@ -30,7 +30,7 @@ Feature: Comparator module
         Then comparator's output is eq 1
 
         Given comparator's comparator is set to <=
-        When around 1ms have passed
+        When around 5ms have passed
         Then comparator's output is eq 1
 
     Scenario: Comparion equality on fixed values in ondemand mode
