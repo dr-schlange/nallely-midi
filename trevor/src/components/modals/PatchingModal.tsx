@@ -77,6 +77,23 @@ const PatchingModal = ({
 	selectedSettings,
 	onSectionChange,
 }: PatchingModalProps) => {
+	const portraitMode = useRef(
+		window.matchMedia("(orientation: portrait)").matches,
+	);
+	useEffect(() => {
+		const handleOrientationChange = () => {
+			portraitMode.current = window.matchMedia(
+				"(orientation: portrait)",
+			).matches;
+			updateConnections();
+		};
+
+		window.addEventListener("orientationchange", handleOrientationChange);
+		return () => {
+			window.removeEventListener("orientationchange", handleOrientationChange);
+		};
+	});
+
 	const [refresh, setRefresh] = useState(0);
 	const [selectedParameters, setSelectedParameters] = useState<
 		{
@@ -293,8 +310,8 @@ const PatchingModal = ({
 			const [fromElement, toElement] = findConnectorElement(connection);
 			drawConnection(
 				svg,
-				fromElement,
-				toElement,
+				fromElement?.children?.[0],
+				toElement?.children?.[0],
 				connectionId(connection) === selectedConnection,
 				{ bouncy: connection.bouncy, muted: connection.muted },
 				connection.id,
@@ -314,6 +331,7 @@ const PatchingModal = ({
 					handleConnectionClick(connection);
 				},
 				setIsMouseInteracting,
+				portraitMode.current ? "vertical" : "horizontal",
 			);
 		}
 	};
@@ -525,7 +543,7 @@ const PatchingModal = ({
 							currentSecondSection,
 						)}
 
-						<div className="parameters-grid left">
+						<div className="parameters-grid left" onScroll={updateConnections}>
 							{currentFirstSection?.section.pads_or_keys && (
 								<div className="left-midi">
 									<MidiGrid
@@ -566,6 +584,7 @@ const PatchingModal = ({
 									>
 										<div
 											className={`parameter-box ${incoming || outgoing ? "occupied" : ""}`}
+											id={`${buildParameterId(currentSecondSection.device.id, param)}-box`}
 										/>
 										<div className="text-wrapper">
 											<span className="parameter-name left">{param.name}</span>
@@ -585,7 +604,7 @@ const PatchingModal = ({
 							setCurrentSecondSection,
 							currentFirstSection,
 						)}
-						<div className="parameters-grid right">
+						<div className="parameters-grid right" onScroll={updateConnections}>
 							{currentSecondSection?.section.pads_or_keys && (
 								<div className="right-midi">
 									<MidiGrid
@@ -634,6 +653,7 @@ const PatchingModal = ({
 									>
 										<div
 											className={`parameter-box ${incoming || outgoing ? "occupied" : ""}`}
+											id={`${buildParameterId(currentSecondSection.device.id, param)}-box`}
 										/>
 										<span className="parameter-name right">{param.name}</span>
 									</div>

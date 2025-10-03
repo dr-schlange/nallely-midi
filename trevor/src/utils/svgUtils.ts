@@ -50,6 +50,7 @@ export const drawConnection = (
 	linkId?: number | undefined,
 	clickHandler?: (event: MouseEvent) => void,
 	setMouseInteracting?: (value: boolean) => void,
+	orientation?: "horizontal" | "vertical" | undefined,
 ) => {
 	if (!fromElement || !toElement) return;
 
@@ -62,33 +63,103 @@ export const drawConnection = (
 	const toCenterX = toRect.left + toRect.width / 2;
 	const toCenterY = toRect.top + toRect.height / 2;
 
-	const deltaX = toCenterX - fromCenterX;
-	const deltaY = toCenterY - fromCenterY;
-
 	let fromX: number;
 	let fromY: number;
 	let toX: number;
 	let toY: number;
 
-	if (Math.abs(deltaY) < 100 && Math.abs(deltaX) >= 20) {
-		fromX =
-			deltaX < 0 ? fromRect.left - svgRect.left : fromRect.right - svgRect.left;
-		fromY = fromCenterY - svgRect.top;
-		toX = deltaX < 0 ? toRect.right - svgRect.left : toRect.left - svgRect.left;
-		toY = toCenterY - svgRect.top;
-	} else if (Math.abs(deltaX) < 20) {
-		fromX = fromCenterX - svgRect.left;
-		fromY =
-			deltaY < 0 ? fromRect.top - svgRect.top : fromRect.bottom - svgRect.top;
-		toX = toCenterX - svgRect.left;
-		toY = deltaY < 0 ? toRect.bottom - svgRect.top : toRect.top - svgRect.top;
+	if (orientation === "horizontal") {
+		// If elements are vertically aligned (X overlap), connect top/bottom faces; else, connect left/right faces
+		const xThreshold = Math.min(fromRect.width, toRect.width) / 2;
+		const xOverlap =
+			fromRect.left <= toRect.right - xThreshold &&
+			fromRect.right >= toRect.left + xThreshold;
+		if (xOverlap && fromRect.top !== toRect.top) {
+			// Connect top/bottom faces
+			if (fromCenterY < toCenterY) {
+				fromX = (fromRect.left + fromRect.right) / 2 - svgRect.left;
+				fromY = fromRect.bottom - svgRect.top;
+				toX = (toRect.left + toRect.right) / 2 - svgRect.left;
+				toY = toRect.top - svgRect.top;
+			} else {
+				fromX = (fromRect.left + fromRect.right) / 2 - svgRect.left;
+				fromY = fromRect.top - svgRect.top;
+				toX = (toRect.left + toRect.right) / 2 - svgRect.left;
+				toY = toRect.bottom - svgRect.top;
+			}
+		} else {
+			// Default: connect left/right faces
+			if (fromCenterX < toCenterX) {
+				fromX = fromRect.right - svgRect.left;
+				fromY = (fromRect.top + fromRect.bottom) / 2 - svgRect.top;
+				toX = toRect.left - svgRect.left;
+				toY = (toRect.top + toRect.bottom) / 2 - svgRect.top;
+			} else {
+				fromX = fromRect.left - svgRect.left;
+				fromY = (fromRect.top + fromRect.bottom) / 2 - svgRect.top;
+				toX = toRect.right - svgRect.left;
+				toY = (toRect.top + toRect.bottom) / 2 - svgRect.top;
+			}
+		}
+	} else if (orientation === "vertical") {
+		// If elements are horizontally aligned (Y overlap), connect left/right faces; else, connect top/bottom faces
+		const yThreshold = Math.min(fromRect.height, toRect.height) / 2;
+		const yOverlap =
+			fromRect.top <= toRect.bottom - yThreshold &&
+			fromRect.bottom >= toRect.top + yThreshold;
+		if (yOverlap && fromRect.left !== toRect.left) {
+			// Connect left/right faces
+			if (fromCenterX < toCenterX) {
+				fromX = fromRect.right - svgRect.left;
+				fromY = (fromRect.top + fromRect.bottom) / 2 - svgRect.top;
+				toX = toRect.left - svgRect.left;
+				toY = (toRect.top + toRect.bottom) / 2 - svgRect.top;
+			} else {
+				fromX = fromRect.left - svgRect.left;
+				fromY = (fromRect.top + fromRect.bottom) / 2 - svgRect.top;
+				toX = toRect.right - svgRect.left;
+				toY = (toRect.top + toRect.bottom) / 2 - svgRect.top;
+			}
+		} else {
+			// Default: connect top/bottom faces
+			if (fromCenterY < toCenterY) {
+				fromX = fromCenterX - svgRect.left;
+				fromY = fromRect.bottom - svgRect.top;
+				toX = toCenterX - svgRect.left;
+				toY = toRect.top - svgRect.top;
+			} else {
+				fromX = fromCenterX - svgRect.left;
+				fromY = fromRect.top - svgRect.top;
+				toX = toCenterX - svgRect.left;
+				toY = toRect.bottom - svgRect.top;
+			}
+		}
 	} else {
-		fromX = fromCenterX - svgRect.left;
-		fromY =
-			deltaY < 0 ? fromRect.top - svgRect.top : fromRect.bottom - svgRect.top;
-
-		toX = deltaX < 0 ? toRect.right - svgRect.left : toRect.left - svgRect.left;
-		toY = toCenterY - svgRect.top;
+		const deltaX = toCenterX - fromCenterX;
+		const deltaY = toCenterY - fromCenterY;
+		if (Math.abs(deltaY) < 100 && Math.abs(deltaX) >= 20) {
+			fromX =
+				deltaX < 0
+					? fromRect.left - svgRect.left
+					: fromRect.right - svgRect.left;
+			fromY = fromCenterY - svgRect.top;
+			toX =
+				deltaX < 0 ? toRect.right - svgRect.left : toRect.left - svgRect.left;
+			toY = toCenterY - svgRect.top;
+		} else if (Math.abs(deltaX) < 20) {
+			fromX = fromCenterX - svgRect.left;
+			fromY =
+				deltaY < 0 ? fromRect.top - svgRect.top : fromRect.bottom - svgRect.top;
+			toX = toCenterX - svgRect.left;
+			toY = deltaY < 0 ? toRect.bottom - svgRect.top : toRect.top - svgRect.top;
+		} else {
+			fromX = fromCenterX - svgRect.left;
+			fromY =
+				deltaY < 0 ? fromRect.top - svgRect.top : fromRect.bottom - svgRect.top;
+			toX =
+				deltaX < 0 ? toRect.right - svgRect.left : toRect.left - svgRect.left;
+			toY = toCenterY - svgRect.top;
+		}
 	}
 
 	const drawLine = (
