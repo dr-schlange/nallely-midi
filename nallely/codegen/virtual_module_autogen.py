@@ -189,7 +189,7 @@ def updategencode(cls, save_in=None, verbose=False):
             case ast.ClassDef(name=cls.__name__) as clsdef:
                 if verbose:
                     print(f" * transforming {clsdef.name}")
-                cls_node = new_class.body[0] if save_in is not None else file_code
+                cls_node = new_class.body[0] if save_in is not None else clsdef
                 file_code.body[i] = generate_class_node(
                     cls_node, *parsedoc(ast.get_docstring(cls_node, clean=True))
                 )
