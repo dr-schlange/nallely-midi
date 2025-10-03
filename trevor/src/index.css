@@ -1794,7 +1794,7 @@ h3.details {
 		max-height: 30%;
 	}
 
-	.parameters-grid.left {
+	/* .parameters-grid.left {
 		display: block;
 		overflow-x: auto;
 		white-space: nowrap;
@@ -1805,7 +1805,7 @@ h3.details {
 		margin-bottom: 0;
 		padding-top: 0;
 		padding-bottom: 0;
-	}
+	} */
 
 	.parameter-box {
 		width: 20px;
@@ -1828,7 +1828,31 @@ h3.details {
 		margin-bottom: 10px;
 	}
 
-	.parameters-grid.left .parameter {
+	.parameters-grid.left {
+		display: flex;
+		flex-direction: row;
+		justify-content: space-around;
+		align-items: flex-end;
+		overflow-x: auto;
+		width: 100%;
+		min-width: 0;
+		white-space: nowrap;
+		padding-left: 0;
+		height: auto;
+		min-height: unset;
+		margin-top: 0;
+		margin-bottom: 0;
+		padding-top: 0;
+		padding-bottom: 0;
+	}
+
+	.parameters-grid.left .parameter,
+	.parameters-grid.right .parameter {
+		flex: 1 1 0;
+		min-width: 8px;
+		box-sizing: border-box;
+		margin: 0 8px;
+		gap: 5px;
 		display: inline-flex;
 		flex-direction: column;
 		align-items: center;
@@ -1943,38 +1967,15 @@ h3.details {
 	}
 
 	.parameters-grid.right {
-		display: block;
+		display: flex;
+		flex-direction: row;
+		justify-content: space-around;
+		align-items: flex-start;
 		overflow-x: auto;
-		white-space: nowrap;
-		padding-right: 0;
-		height: auto;
-		min-height: unset;
-		margin-top: 0;
-		margin-bottom: 0;
-		padding-top: 0;
-		padding-bottom: 0;
+		width: 100%;
+		min-width: 0;
 	}
-	.parameters-grid.right .parameter {
-		display: inline-flex;
-		flex-direction: column;
-		align-items: center;
-		vertical-align: top;
-		height: auto;
-		min-height: unset;
-		padding-bottom: 2px;
-		margin-bottom: 0;
-		gap: 5px !important;
-	}
-	.parameters-grid.left .parameter {
-		display: inline-flex;
-		flex-direction: column;
-		align-items: center;
-		vertical-align: bottom;
-		height: auto;
-		min-height: unset;
-		padding-bottom: 2px;
-		margin-bottom: 0;
-	}
+
 	.parameters-grid.right .parameter-box {
 		order: 0;
 		margin-bottom: 0;
