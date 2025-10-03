@@ -205,6 +205,7 @@ class ClockDivider(VirtualDevice):
     * mode_cv [gate, tick]: Choose between gate (square mode) or tick (short pulse)
 
     outputs:
+    * div1_cv [0, 1]: /1 output -> usefull to get a gate from a clock
     * div2_cv [0, 1]: /2 output
     * div3_cv [0, 1]: /3 output
     * div4_cv [0, 1]: /4 output
@@ -234,10 +235,12 @@ class ClockDivider(VirtualDevice):
     div4_cv = VirtualParameter(name="div4", range=(0.0, 1.0))
     div3_cv = VirtualParameter(name="div3", range=(0.0, 1.0))
     div2_cv = VirtualParameter(name="div2", range=(0.0, 1.0))
+    div1_cv = VirtualParameter(name="div1", range=(0.0, 1.0))
 
     def __post_init__(self, **kwargs):
         self.nb_ticks = 0
         self.outputs = {
+            1: self.div1_cv,
             2: self.div2_cv,
             3: self.div3_cv,
             4: self.div4_cv,
