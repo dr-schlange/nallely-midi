@@ -285,19 +285,44 @@ class Link:
         # This count is "global" to the link instance only
         count = {}
 
-        def foo(value, ctx):
-            nonlocal count
-            type = ctx.get("type", "note_off" if ctx.raw_value == 0 else "note_on")
-            if type == "note_on":
-                count[value] = ctx.get("velocity", DEFAULT_VELOCITY)
-                return dest.device.set_parameter(dest.parameter.name, value, ctx)
-            elif type == "note_off" and value in count:
-                ctx.velocity = count[value]
-                del count[value]
-                # dest.device.set_parameter(dest.parameter.name, value, ctx)
-                return dest.device.set_parameter(dest.parameter.name, 0, ctx)
+        is_blocking_consummer = dest.parameter.consumer
+        if is_blocking_consummer:
 
-        return foo
+            def foo(value, ctx):
+                nonlocal count
+                type = ctx.get("type", "note_off" if ctx.raw_value == 0 else "note_on")
+                if type == "note_on":
+                    count[value] = ctx.get("velocity", DEFAULT_VELOCITY)
+                    return dest.device.receiving(
+                        on=dest.parameter.name,
+                        value=value,
+                        ctx=ThreadContext({**ctx, "param": src.parameter.name}),
+                    )
+                elif type == "note_off" and value in count:
+                    ctx.velocity = count[value]
+                    del count[value]
+                    return dest.device.receiving(
+                        on=dest.parameter.name,
+                        value=0,
+                        ctx=ThreadContext({**ctx, "param": src.parameter.name}),
+                    )
+
+            return foo
+        else:
+
+            def foo(value, ctx):
+                nonlocal count
+                type = ctx.get("type", "note_off" if ctx.raw_value == 0 else "note_on")
+                if type == "note_on":
+                    count[value] = ctx.get("velocity", DEFAULT_VELOCITY)
+                    return dest.device.set_parameter(dest.parameter.name, value, ctx)
+                elif type == "note_off" and value in count:
+                    ctx.velocity = count[value]
+                    del count[value]
+                    # dest.device.set_parameter(dest.parameter.name, value, ctx)
+                    return dest.device.set_parameter(dest.parameter.name, 0, ctx)
+
+            return foo
 
     # MIDI pad/key -> Virtual device input
     def _install_PadOrKey__ParameterInstance(self):
