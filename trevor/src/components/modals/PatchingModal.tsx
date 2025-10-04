@@ -310,8 +310,8 @@ const PatchingModal = ({
 			const [fromElement, toElement] = findConnectorElement(connection);
 			drawConnection(
 				svg,
-				fromElement?.children?.[0],
-				toElement?.children?.[0],
+				fromElement,
+				toElement,
 				connectionId(connection) === selectedConnection,
 				{ bouncy: connection.bouncy, muted: connection.muted },
 				connection.id,
@@ -584,7 +584,7 @@ const PatchingModal = ({
 									>
 										<div
 											className={`parameter-box ${incoming || outgoing ? "occupied" : ""}`}
-											id={`${buildParameterId(currentSecondSection.device.id, param)}-box`}
+											id={`${buildParameterId(currentSecondSection.device.id, param)}`}
 										/>
 										<div className="text-wrapper">
 											<span className="parameter-name left">{param.name}</span>
@@ -653,7 +653,7 @@ const PatchingModal = ({
 									>
 										<div
 											className={`parameter-box ${incoming || outgoing ? "occupied" : ""}`}
-											id={`${buildParameterId(currentSecondSection.device.id, param)}-box`}
+											id={`${buildParameterId(currentSecondSection.device.id, param)}`}
 										/>
 										<span className="parameter-name right">{param.name}</span>
 									</div>

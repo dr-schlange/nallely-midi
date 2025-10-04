@@ -1940,7 +1940,7 @@ h3.details {
 	}
 
 	.top-left-panel {
-		flex-direction: row-reverse;
+		/* flex-direction: row-reverse; */
 		align-items: flex-end !important;
 	}
 
