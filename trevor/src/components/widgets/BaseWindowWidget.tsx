@@ -50,10 +50,12 @@ export const WindowWidget = ({ id, onClose, num, url }: WindowWidgetProps) => {
 			<iframe
 				ref={iframeRef}
 				src={url}
-				title="sfsdf"
-				width="100%"
-				height="100%"
-				style={{ borderStyle: "none" }}
+				title="Window"
+				style={{
+					height: "100%",
+					width: "100%",
+					border: "unset",
+				}}
 			/>
 		</div>
 	);

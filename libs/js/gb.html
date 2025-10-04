@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>GBEmu</title>
+</head>
+
+<body class="bg-light text-dark">
+  <div style="display: flex; flex-direction: column;">
+    <canvas id="canvas" class="d-block w-100"
+      style="image-rendering: crisp-edges; image-rendering: pixelated; margin-left: -8px"></canvas>
+    <label for="romFileInput" class="custom-file-upload"
+      style="border: 1px solid black; padding: 2px; width: fit-content; margin-bottom: 4px; cursor: pointer; height: fit-content;">
+      Load
+    </label>
+    <input id="romFileInput" type="file" accept=".gb, .gbc" style="display: none;">
+  </div>
+
+  <script src="https://gemuboi.danwsong.com/js/cpu.js"></script>
+  <script src="https://gemuboi.danwsong.com/js/display.js"></script>
+  <script src="https://gemuboi.danwsong.com/js/sound.js"></script>
+  <script src="https://gemuboi.danwsong.com/js/timer.js"></script>
+  <script src="https://gemuboi.danwsong.com/js/joypad.js"></script>
+  <script src="https://gemuboi.danwsong.com/js/serial.js"></script>
+  <script src="https://gemuboi.danwsong.com/js/cartridge.js"></script>
+  <script src="https://gemuboi.danwsong.com/js/rtc.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/dr-schlange/nallely-midi@main/libs/js/nallely-websocket.js"></script>
+
+  <script>
+    let gb;
+    let cycles;
+    let next;
+    let paused = false;
+    let running = false;
+
+    function update() {
+      if (paused || !running) {
+        return;
+      }
+      if (gb.cartridge.hasRTC) {
+        gb.cartridge.rtc.updateTime();
+      }
+      while (cycles < Display.cpuCyclesPerFrame) {
+        try {
+          cycles += gb.cycle();
+        } catch (error) {
+          console.error(error);
+          running = false;
+          return;
+        }
+      }
+      cycles -= Display.cpuCyclesPerFrame;
+      next += Display.frameInterval;
+      setTimeout(update, next - performance.now());
+    }
+
+    function loadAndStart(rom) {
+      gb = new GameBoy();
+      try {
+        gb.cartridge.load(rom);
+        running = true;
+        next = performance.now();
+        cycles = 0;
+        update();
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    addEventListener('beforeunload', () => {
+      if (running) {
+        gb.cartridge.save();
+      }
+    });
+
+    document.addEventListener('visibilitychange', () => {
+      if (running) {
+        if (document.hidden) {
+          paused = true;
+        } else {
+          paused = false;
+          next = performance.now();
+          update();
+        }
+      }
+    });
+
+    document.addEventListener('focus', () => {
+      document.activeElement.blur();
+    }, true);
+
+    document.addEventListener('click', () => {
+      if (Sound.ctx.state != 'running') {
+        Sound.ctx.resume();
+      }
+    });
+
+    const romFileInput = document.getElementById('romFileInput');
+    romFileInput.addEventListener('change', () => {
+      if (running) {
+        gb.cartridge.save();
+        running = false;
+      }
+      const reader = new FileReader();
+      reader.addEventListener('load', () => {
+        loadAndStart(new Uint8Array(reader.result));
+      });
+      reader.readAsArrayBuffer(romFileInput.files[0]);
+    });
+
+    // Register a service
+    const parameters = {
+      start: { min: 0, max: 1 },
+      select: { min: 0, max: 1 },
+      up: { min: 0, max: 1 },
+      down: { min: 0, max: 1 },
+      left: { min: 0, max: 1 },
+      right: { min: 0, max: 1 },
+      a: { min: 0, max: 1 },
+      b: { min: 0, max: 1 },
+      volume: { min: 0, max: 1 },
+      color1: { min: 0, max: 127 },
+      color2: { min: 0, max: 127 },
+      color3: { min: 0, max: 127 },
+      color4: { min: 0, max: 127 },
+    };
+
+    const config = {
+      start: 0,
+      select: 0,
+      up: 0,
+      down: 0,
+      left: 0,
+      right: 0,
+      a: 0,
+      b: 0,
+      sound: 1,
+      color1: 0,
+      color2: 0,
+      color3: 0,
+      color4: 0,
+    };
+    const device = NallelyWebsocketBus.register('emulator', 'gb', parameters, config);
+
+    const previous = {
+      start: 0,
+      select: 0,
+      up: 0,
+      down: 0,
+      left: 0,
+      right: 0,
+      a: 0,
+      b: 0,
+    }
+
+    const triggerButton = (button, trigger) => {
+      gb.joypad[button] = trigger;
+    }
+
+    const colorRange = {
+      color1: [0x222222, 0xee55ee],
+      color2: [0xff8800, 0x00ffff],
+      color3: [0x00ff00, 0xff00ff],
+      color4: [0xff0000, 0xffff00],
+    };
+    function lerpColor(color1, color2, t) {
+      t = Math.max(0, Math.min(1, t));
+
+      const c1 = {
+        r: (color1 >> 16) & 0xff,
+        g: (color1 >> 8) & 0xff,
+        b: color1 & 0xff
+      };
+      const c2 = {
+        r: (color2 >> 16) & 0xff,
+        g: (color2 >> 8) & 0xff,
+        b: color2 & 0xff
+      };
+
+      const r = Math.round(c1.r + (c2.r - c1.r) * t);
+      const g = Math.round(c1.g + (c2.g - c1.g) * t);
+      const b = Math.round(c1.b + (c2.b - c1.b) * t);
+
+      return (r << 16) | (g << 8) | b;
+    }
+
+    function mapColorRange(value, min, max, colorStart, colorEnd) {
+      const t = (value - min) / (max - min);
+      return lerpColor(colorStart, colorEnd, t);
+    }
+
+    const changeColor = (color, value) => {
+      const [a, b] = colorRange[color];
+      const cc = (0xFF000000 | mapColorRange(value, 0, 127, a, b)) >>> 0
+      Display.palette[color.replace('color', '') - 1] = cc;
+    }
+
+    function updateOutput(data) {
+      if (data.on === 'volume') {
+        gb.sound.gainNode.gain.value = data.value
+        return;
+      }
+      if (["color1", "color2", "color3", "color4"].includes(data.on)) {
+        changeColor(data.on, data.value);
+        return;
+      }
+      if (previous[data.on] === data.value) {
+        triggerButton(data.on, false);
+        previous[data.on] = 0;
+      } else {
+        triggerButton(data.on, data.value > 0);
+        previous[data.on] = data.value;
+      }
+    }
+
+    device.onmessage = updateOutput;
+
+  </script>
+</body>
+
+</html>

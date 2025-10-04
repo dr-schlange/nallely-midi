@@ -5,6 +5,8 @@ import { XYZScope } from "./widgets/XYZScope";
 import { Sliders } from "./widgets/SlidersWidget";
 import { Pads } from "./widgets/PadsWidget";
 import { XYPad } from "./widgets/XYPadWidget";
+import { WindowWidget } from "./widgets/BaseWindowWidget";
+
 interface WidgetRackProps {
 	onRackScroll?: () => void;
 	onDragEnd?: () => void;
@@ -24,12 +26,15 @@ const WidgetComponents = {
 	Scope,
 	XYScope,
 	XYZScope,
-	// WindowWidget: (props) => (
-	// 	<WindowWidget url="http://localhost:8000/finger-tracking.html" {...props} />
-	// ),
-	Sliders,
 	Pads,
 	XYPad,
+	Sliders,
+	GBEmu: (props) => (
+		<WindowWidget
+			url={`http://${window.location.hostname}:3000/gb.html`}
+			{...props}
+		/>
+	),
 };
 
 export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
