@@ -3,3 +3,4 @@ websockets
 plotext
 wrapt
 dulwich --config-settings "--build-option=--pure"
+pynput

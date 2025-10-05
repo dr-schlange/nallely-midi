@@ -23,7 +23,7 @@ NOT_INIT = "uninitialized"
 @dataclass
 class ModuleParameter:
     type = "control_change"
-    cc_note: int
+    cc_note: int | str
     channel: int | None = None
     name: str = NOT_INIT
     section_name: str = NOT_INIT
@@ -350,8 +350,8 @@ class MidiDevice:
         if self not in connected_devices:
             connected_devices.append(self)
         self.reverse_map = {}
-        self.links: defaultdict[tuple[str, int, int | None], list[Link]] = defaultdict(
-            list
+        self.links: defaultdict[tuple[str, int | str, int | None], list[Link]] = (
+            defaultdict(list)
         )  # if the channel is None, we consider the device channel
         self.links_registry: dict[tuple[str, str], Link] = {}
         if self.modules_descr is None:
@@ -404,6 +404,7 @@ class MidiDevice:
                 except StopIteration:
                     raise DeviceNotFound(self.device_name)
             self.inport.callback = self._sync_state  # type: ignore
+            self.listening = True
 
     def close_out(self):
         if self.outport:

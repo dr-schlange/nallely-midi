@@ -1,3 +1,8 @@
+try:
+    from .keyboard_device import Keyboard
+except ImportError:
+    pass
+
 from .bridge_device import Bridge, MIDIBridge
 from .midi_device import (
     MidiDevice,
@@ -62,4 +67,5 @@ __all__ = [
     "ModulePitchwheel",
     "Bridge",
     "MIDIBridge",
+    "Keyboard",
 ]

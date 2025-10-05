@@ -30,6 +30,7 @@ dependencies = ["mido", "websockets", "python-rtmidi", "ruamel.yaml", "dulwich"]
 
 [project.optional-dependencies]
 dev = ["pytest", "build", "pytest-asyncio"]
+keyboard = ["pynput"]
 
 [tool.setuptools]
 packages = [
