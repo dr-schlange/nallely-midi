@@ -749,3 +749,72 @@ class HarmonicGenerator(VirtualDevice):
     @on(level4_cv, edge="any")
     def level4_change(self, value, ctx):
         yield from self.process()
+
+
+class VoiceAllocator(VirtualDevice):
+    """Takes a flow of values and "split" it in multiple voices (allocate a voice)
+    following multiple allocation algorithms.
+
+    inputs:
+    * input_cv [0, 127] round <any>: Input flow of values
+    # * mode_cv [round-robin, unison, last note]: Choose voice allocation mode
+    # * steal_mode_cv [oldest, quietest, r-robin cont., last note]: Mode for the way the voice is stolen
+
+    outputs:
+    * out0_cv [0, 127]: 1st voice
+    * out1_cv [0, 127]: 2nd voice
+    * out2_cv [0, 127]: 3rd voice
+    * out3_cv [0, 127]: 4th voice
+
+    type: ondemand
+    category: Voices
+    meta: disable default output
+    """
+
+    input_cv = VirtualParameter(
+        name="input", range=(0.0, 127.0), conversion_policy="round"
+    )
+    # mode_cv = VirtualParameter(
+    #     name="mode", accepted_values=["round-robin", "unison", "last note"]
+    # )
+    # steal_mode_cv = VirtualParameter(
+    #     name="steal_mode",
+    #     accepted_values=["oldest", "quietest", "r-robin cont.", "last note"],
+    # )
+    out3_cv = VirtualParameter(name="out3", range=(0.0, 127.0))
+    out2_cv = VirtualParameter(name="out2", range=(0.0, 127.0))
+    out1_cv = VirtualParameter(name="out1", range=(0.0, 127.0))
+    out0_cv = VirtualParameter(name="out0", range=(0.0, 127.0))
+
+    def __post_init__(self, **kwargs):
+        self.allocated = [None] * 4
+        self.voices = [self.out0_cv, self.out1_cv, self.out2_cv, self.out3_cv]
+        self.idx = 0
+        return {"disable_output": True}
+
+    # @on(steal_mode_cv, edge="any")
+    # def on_steal_mode_any(self, value, ctx): ...
+
+    # @on(mode_cv, edge="any")
+    # def on_mode_any(self, value, ctx): ...
+
+    @on(input_cv, edge="any")
+    def on_input_any(self, value, ctx):
+        raw_value = ctx.raw_value
+        if raw_value in self.allocated:
+            # if one of the voice already has the value (note off)
+            idx = self.allocated.index(raw_value)
+            self.allocated[idx] = None
+            yield 0, [self.voices[idx]]
+            self.idx = idx  # we consider this slot for next value
+            return
+        if self.idx == len(self.allocated):
+            # if all the voices have been allocated
+            self.idx = 0
+        if self.allocated[self.idx] is not None:
+            # if the voice is already allocated
+            self.allocated[self.idx] = None
+            yield 0, [self.voices[self.idx]]
+        self.allocated[self.idx] = value
+        yield value, [self.voices[self.idx]]
+        self.idx += 1

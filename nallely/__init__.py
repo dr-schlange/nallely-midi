@@ -42,6 +42,7 @@ from .shifter import (
     Modulo,
     PitchShifter,
     Quantizer,
+    VoiceAllocator,
 )
 from .switchs import (
     BitCounter,
@@ -114,4 +115,5 @@ __all__ = [
     "HarmonicGenerator",
     "ThresholdGate",
     "Sequencer",
+    "VoiceAllocator",
 ]
