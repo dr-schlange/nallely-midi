@@ -143,9 +143,9 @@ class Keyboard(MidiDevice):
 
     def __init__(self, log_in_file: bool | Path | None = None, *args, **kwargs):
         kwargs["autoconnect"] = False
+        kwargs["device_name"] = "GenericKeyboard"
         super().__init__(
             *args,
-            device_name="GenericKeyboard",
             **kwargs,
         )
         if isinstance(log_in_file, bool):
