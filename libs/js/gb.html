@@ -27,6 +27,74 @@
   <script src="https://cdn.jsdelivr.net/gh/dr-schlange/nallely-midi@main/libs/js/nallely-websocket.js"></script>
 
   <script>
+    // Patch emulator
+    let previousFreq = {
+      ch1_freq: 0,
+      ch2_freq: 0,
+      ch3_freq: 0,
+      ch4_freq: 0,
+    }
+
+    const patchChannelRegistry = (gb, instr, channel, disablePreviousNote) => {
+      const reg = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(gb.sound), instr).set;
+      Object.defineProperty(gb.sound, instr, {
+        set(value) {
+          reg.call(this, value);
+          const now = Sound.ctx.currentTime;
+          const nowPlusDelay = now + Sound.latency;
+
+          const scheduledTime = this.nextPush || nowPlusDelay;
+          if (this[`channel${channel}Trigger`]) {
+            const freqHz = 131072 / (2048 - this[`channel${channel}Frequency`]);
+            const midi = Math.round(69 + 12 * Math.log2(freqHz / 440));
+            setTimeout(() => {
+              if (disablePreviousNote && previousFreq[`ch${channel}_freq`] === midi) {
+                device.send(`ch${channel}_freq`, 0)
+              }
+              previousFreq[`ch${channel}_freq`] = midi
+
+              device.send(`ch${channel}_freq`, midi)
+            }, (scheduledTime - now + Sound.bufferDuration) * 1000);
+          }
+        },
+      });
+    }
+
+    const gbNoiseToMidi = (shiftClockFreq, divisionRatio) => {
+      const divValues = [2, 4, 8, 12, 16, 20, 24, 28];
+      const div = divValues[divisionRatio];
+      if (div === undefined) return 0;
+      const f_noise = 524288 / (div * Math.pow(2, shiftClockFreq + 1)); // Hz
+      const midi = 69 + 12 * Math.log2(f_noise / 440);
+      return Math.max(0, Math.min(127, Math.round(midi))); // clamp to MIDI range
+    }
+
+    const patchChannel4 = (gb, instr) => {
+      const nr44 = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(gb.sound), instr).set;
+      Object.defineProperty(gb.sound, instr, {
+        set(value) {
+          nr44.call(this, value);
+          const now = Sound.ctx.currentTime;
+          const nowPlusDelay = now + Sound.latency;
+
+          const scheduledTime = this.nextPush || nowPlusDelay;
+          if (this.channel4Trigger) {
+            const midi = gbNoiseToMidi(this.channel4ShiftClockFrequency, this.channel4DivisionRatio);
+
+            setTimeout(() => {
+              const signal = (~this.channel4LFSR & 0b1);
+              // if (previousFreq["ch4_freq"] === midi) {
+              //   device.send("ch4_freq", 0)
+              // }
+              device.send("ch4_freq", midi)
+              previousFreq["ch4_freq"] = midi
+            }, (scheduledTime - now + Sound.bufferDuration) * 1000);
+          }
+        },
+      });
+    }
+
+    // main setup
     let gb;
     let cycles;
     let next;
@@ -56,6 +124,12 @@
 
     function loadAndStart(rom) {
       gb = new GameBoy();
+
+      patchChannelRegistry(gb, "nr14", 1, false);
+      patchChannelRegistry(gb, "nr24", 2, true);
+      patchChannelRegistry(gb, "nr34", 3, true);
+      patchChannel4(gb, "nr44")
+
       try {
         gb.cartridge.load(rom);
         running = true;
@@ -123,6 +197,10 @@
       color2: { min: 0, max: 127 },
       color3: { min: 0, max: 127 },
       color4: { min: 0, max: 127 },
+      ch1_freq: { min: 0, max: 127 },
+      ch2_freq: { min: 0, max: 127 },
+      ch3_freq: { min: 0, max: 127 },
+      ch4_freq: { min: 0, max: 127 },
     };
 
     const config = {
@@ -139,6 +217,10 @@
       color2: 0,
       color3: 0,
       color4: 0,
+      ch1_freq: 0,
+      ch2_freq: 0,
+      ch3_freq: 0,
+      ch4_freq: 0,
     };
     const device = NallelyWebsocketBus.register('emulator', 'gb', parameters, config);
 
@@ -154,6 +236,9 @@
     }
 
     const triggerButton = (button, trigger) => {
+      if (!gb) {
+        return
+      }
       gb.joypad[button] = trigger;
     }
 
