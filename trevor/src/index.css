@@ -618,7 +618,7 @@ input[type="text"]:disabled {
 		inset 1px 1px 0px #000000;
 }
 
-.associate-button {
+.ugly-button {
 	width: 100%;
 	height: 100%;
 	background-color: #d0d0d0;
@@ -631,11 +631,11 @@ input[type="text"]:disabled {
 		inset 1px 1px 0px #000000; /* Amiga-style 3D effect */
 }
 
-.associate-button:hover {
+.ugly-button:hover {
 	background-color: orange; /* Highlight in orange on hover */
 }
 
-.associate-button.active {
+.ugly-button.active {
 	background-color: yellow;
 	box-shadow:
 		inset 1px 1px 0px #808080,
@@ -1525,7 +1525,7 @@ h3.details {
 		font-size: 16px !important;
 	}
 
-	.associate-button {
+	.ugly-button {
 		font-size: 19px;
 	}
 
@@ -1719,7 +1719,7 @@ h3.details {
 		font-size: 16px !important;
 	}
 
-	.associate-button {
+	.ugly-button {
 		font-size: 19px;
 	}
 

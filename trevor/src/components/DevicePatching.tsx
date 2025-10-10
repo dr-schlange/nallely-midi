@@ -279,7 +279,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 					</p>
 					<button
 						type="button"
-						className={"associate-button"}
+						className={"ugly-button"}
 						onClick={() => trevorSocket?.randomPreset(device.id)}
 					>
 						random preset
@@ -313,14 +313,31 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 							</label>
 						</div>
 					))}
-					<hr />
-					<button
-						type="button"
-						className={"associate-button"}
-						onClick={() => trevorSocket?.killDevice(device.id)}
-					>
-						Kill device
-					</button>
+					{!device.proxy ? (
+						<>
+							<hr />
+							<button
+								type="button"
+								className={"ugly-button"}
+								onClick={() => {
+									trevorSocket?.killDevice(device.id);
+								}}
+							>
+								Kill device
+							</button>
+						</>
+					) : (
+						<>
+							<hr />
+							<button
+								type="button"
+								className={"ugly-button"}
+								onClick={() => {}}
+							>
+								Unregister device (soon)
+							</button>
+						</>
+					)}
 				</>,
 			);
 			return;
@@ -367,7 +384,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 				<p style={{ marginLeft: "5px" }}>{device.repr}</p>
 				<button
 					type="button"
-					className={"associate-button"}
+					className={"ugly-button"}
 					onClick={() => trevorSocket?.randomPreset(device.id)}
 				>
 					random preset
@@ -408,7 +425,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 					<button
 						key={section.name}
 						type="button"
-						className={"associate-button"}
+						className={"ugly-button"}
 						onClick={() => updateInfo(device, section)}
 					>
 						{section.name}
@@ -417,7 +434,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 				<hr />
 				<button
 					type="button"
-					className={"associate-button"}
+					className={"ugly-button"}
 					onClick={() => trevorSocket?.killDevice(device.id)}
 				>
 					Kill device
@@ -715,7 +732,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 					{srcDevice && destDevice && (
 						<button
 							type="button"
-							className={"associate-button}"}
+							className={"ugly-button}"}
 							onClick={() => {
 								setSelectedConnection(undefined);
 								trevorSocket?.associateParameters(
@@ -906,7 +923,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 						<div className="device-patching-top-panel">
 							<button
 								type="button"
-								className={`associate-button ${associateMode ? "active" : ""}`}
+								className={`ugly-button ${associateMode ? "active" : ""}`}
 								onClick={toggleAssociateMode}
 							>
 								Associate
@@ -964,7 +981,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 								{allConnections?.length > 0 && (
 									<button
 										type="button"
-										className={"associate-button"}
+										className={"ugly-button"}
 										onClick={deleteAllConnections}
 										style={{
 											height: "auto",
@@ -977,7 +994,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 						</div>
 						<div className="device-patching-top-panel">
 							<button
-								className={"associate-button"}
+								className={"ugly-button"}
 								type="button"
 								onClick={savePatch}
 							>
@@ -987,7 +1004,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 						<div className="device-patching-top-panel">
 							<button
 								type="button"
-								className={"associate-button"}
+								className={"ugly-button"}
 								onClick={() => setIsMemoryOpen?.(true)}
 							>
 								Manage Addresses
@@ -996,7 +1013,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 						<div className="device-patching-top-panel">
 							<button
 								type="button"
-								className={"associate-button"}
+								className={"ugly-button"}
 								onClick={resetAll}
 							>
 								Reset All
@@ -1005,7 +1022,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 						<div className="device-patching-top-panel">
 							<button
 								type="button"
-								className={"associate-button"}
+								className={"ugly-button"}
 								onClick={() => trevorSocket?.pullFullState()}
 							>
 								Full State
@@ -1014,7 +1031,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 						<div className="device-patching-top-panel">
 							<button
 								type="button"
-								className={"associate-button"}
+								className={"ugly-button"}
 								onClick={openPlayground}
 							>
 								Playground
@@ -1023,7 +1040,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 						<div className="device-patching-top-panel">
 							<button
 								type="button"
-								className={"associate-button"}
+								className={"ugly-button"}
 								onClick={openAboutModal}
 							>
 								About
