@@ -20,6 +20,7 @@ import {
 	buildParameterId,
 	connectionId,
 	connectionsOfInterest,
+	devUID,
 	internalSectionName,
 	isPadsOrdKeys,
 	isVirtualDevice,
@@ -453,13 +454,17 @@ const PatchingModal = ({
 					variant="big"
 				/>
 				<select
-					value={`${currentSection.device.id}::${currentSection.section.name}`}
+					value={`${devUID(currentSection.device)}::${currentSection.section.name ?? currentSection.device.repr}`}
 					title="Change tab section"
 					onChange={(e) => {
 						const change = e.target.value;
-						const selected = allSections.find(
-							(s) => `${s.device.id}::${s.section.name}` === change,
-						);
+						const selected = allSections
+							.filter((s) => !s.device.repr.includes("WebSocketBus"))
+							.find(
+								(s) =>
+									`${devUID(s.device)}::${s.section.name ?? s.device.repr}` ===
+									change,
+							);
 						setSection(selected);
 						onSectionChange?.(selected);
 					}}
@@ -504,11 +509,11 @@ const PatchingModal = ({
 							linkageStatus += `(${outgoingLinks.length})`;
 						}
 
-						let sectionName = s.section.name ?? s.device.repr;
+						const sectionName = s.section.name ?? s.device.repr;
 						return (
 							<option
-								key={`${s.device.id}::${sectionName}`}
-								value={`${s.device.id}::${sectionName}`}
+								key={`${devUID(s.device)}::${sectionName}`}
+								value={`${devUID(s.device)}::${sectionName}`}
 							>
 								{s.section.name
 									? `${s.device.repr} - ${s.section.name} [${linkageStatus}]`
