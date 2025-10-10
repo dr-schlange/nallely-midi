@@ -16,7 +16,11 @@ import {
 	SortableContext,
 	verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { mergeDevicesPreservingOrder, saveDeviceOrder } from "../utils/utils";
+import {
+	mergeDevicesPreservingOrder,
+	saveDeviceOrder,
+	devUID,
+} from "../utils/utils";
 
 interface RackRowVirtualProps {
 	devices: VirtualDevice[];
@@ -64,8 +68,12 @@ export const RackRowVirtual = ({
 			return;
 		}
 
-		const draggedIndex = localDeviceOrder.findIndex((d) => d.id === active.id);
-		const targetIndex = localDeviceOrder.findIndex((d) => d.id === over.id);
+		const draggedIndex = localDeviceOrder.findIndex(
+			(d) => devUID(d) === active.id,
+		);
+		const targetIndex = localDeviceOrder.findIndex(
+			(d) => devUID(d) === over.id,
+		);
 
 		if (draggedIndex === -1 || targetIndex === -1) {
 			setTimeout(() => {
@@ -79,7 +87,7 @@ export const RackRowVirtual = ({
 
 		saveDeviceOrder(
 			"virtuals",
-			newOrder.map((d) => d.id),
+			newOrder.map((d) => devUID(d)),
 		);
 
 		// Add delay to allow DOM to settle after drag operation
@@ -151,7 +159,7 @@ export const RackRowVirtual = ({
 						]}
 					>
 						<SortableContext
-							items={localDeviceOrder.map((d) => d.id)}
+							items={localDeviceOrder.map((d) => devUID(d))}
 							strategy={
 								horizontal
 									? horizontalListSortingStrategy
@@ -160,7 +168,7 @@ export const RackRowVirtual = ({
 						>
 							{localDeviceOrder.map((device, i) => (
 								<SortableVirtualDeviceComponent
-									key={device.id}
+									key={devUID(device)}
 									device={device}
 									onParameterClick={(device) => onParameterClick(device)}
 									onDeviceClick={(device) => onParameterClick(device)}
@@ -215,7 +223,9 @@ function SortableVirtualDeviceComponent<T extends HasId>({
 	onParameterClick,
 }: SortableComponentProps) {
 	const { attributes, listeners, setNodeRef, transform, transition } =
-		useSortable({ id: device.id });
+		useSortable({
+			id: devUID(device),
+		});
 
 	const style: React.CSSProperties = {
 		transform: CSS.Transform.toString(transform),

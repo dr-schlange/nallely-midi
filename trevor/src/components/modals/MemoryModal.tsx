@@ -103,7 +103,7 @@ export const MemoryModal = ({ onClose, onLoad }: MemoryModalProps) => {
 	const loadConfig = () => {
 		// const addr = selection ?? address;
 		const addr = selection;
-		if (!addr) {
+		if (!addr || addr.status === "empty") {
 			return;
 		}
 		// setAddress(addr);
@@ -185,6 +185,11 @@ export const MemoryModal = ({ onClose, onLoad }: MemoryModalProps) => {
 		}
 	}, [usedAddresses]);
 
+	const checkLoad = () => {
+		console.log("DD", !selection || selection.status === "empty");
+		return !selection || selection.status === "empty";
+	};
+
 	return (
 		<div
 			className="save-modal"
@@ -226,7 +231,7 @@ export const MemoryModal = ({ onClose, onLoad }: MemoryModalProps) => {
 					Save
 				</button>
 				<button
-					disabled={!selection}
+					disabled={checkLoad()}
 					type="button"
 					className="close-button"
 					onClick={loadConfig}

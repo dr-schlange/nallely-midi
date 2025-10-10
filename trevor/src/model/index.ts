@@ -30,6 +30,7 @@ export interface VirtualDevice {
 	};
 	paused: boolean;
 	running: boolean;
+	proxy: boolean;
 }
 
 export interface VirtualParameter {
@@ -57,6 +58,7 @@ export interface MidiDevice {
 		output: string | null;
 	};
 	channel: number;
+	proxy: false;
 }
 
 // export interface MidiConfigValue {

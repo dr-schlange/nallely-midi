@@ -504,10 +504,11 @@ const PatchingModal = ({
 							linkageStatus += `(${outgoingLinks.length})`;
 						}
 
+						let sectionName = s.section.name ?? s.device.repr;
 						return (
 							<option
-								key={`${s.device.id}::${s.section.name}`}
-								value={`${s.device.id}::${s.section.name}`}
+								key={`${s.device.id}::${sectionName}`}
+								value={`${s.device.id}::${sectionName}`}
 							>
 								{s.section.name
 									? `${s.device.repr} - ${s.section.name} [${linkageStatus}]`

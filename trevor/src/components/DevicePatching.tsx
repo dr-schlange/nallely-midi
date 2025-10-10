@@ -21,6 +21,7 @@ import {
 	buildConnectionName,
 	buildSectionId,
 	connectionId,
+	devUID,
 	isVirtualDevice,
 } from "../utils/utils";
 import { ScalerForm } from "./ScalerForm";
@@ -842,13 +843,16 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 				/>
 				<RackRowVirtual
 					devices={virtual_devices.filter(
-						(device) => !device.meta.name.includes("TrevorBus"),
+						(device) =>
+							!device.meta.name.includes("TrevorBus") &&
+							!device.meta.name.includes("WebSocketBus"),
 					)}
 					onParameterClick={handleParameterClick}
 					onNonSectionClick={handleNonSectionClick}
 					selectedSections={(() => {
 						return selection.map(
-							(d) => `${d.device.id}::${d.section.parameters[0]?.section_name}`,
+							(d) =>
+								`${devUID(d.device)}::${d.section.parameters[0]?.section_name}`,
 						);
 					})()}
 					onSectionScroll={updateConnections}

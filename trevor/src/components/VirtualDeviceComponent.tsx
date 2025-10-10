@@ -7,6 +7,7 @@ import {
 	buildSectionId,
 	generateAcronym,
 	setDebugMode,
+	devUID,
 } from "../utils/utils";
 import { useTrevorDispatch, useTrevorSelector } from "../store";
 import { ClassBrowser } from "./modals/ClassBrowser";
@@ -97,7 +98,7 @@ const VirtualDeviceComponent = ({
 
 	const isSelected =
 		selectedSections?.length > 0 &&
-		selectedSections.some((s) => s.startsWith(device.id.toString()));
+		selectedSections.some((s) => s.startsWith(devUID(device)));
 	return (
 		// biome-ignore lint/a11y/useKeyWithClickEvents: TODO
 		<div
@@ -107,7 +108,7 @@ const VirtualDeviceComponent = ({
 				borderColor: isSelected ? "yellow" : "",
 				userSelect: "none",
 			}}
-			id={`${device.id}-__virtual__`}
+			id={`${devUID(device)}-__virtual__`}
 			onClick={(event) => {
 				event.stopPropagation();
 				handleDeviceClick(device);
@@ -120,18 +121,20 @@ const VirtualDeviceComponent = ({
 			<div className={`device-name ${isNameOnLeft ? "left" : "right"}`}>
 				{device.repr}
 			</div>
-			<div className="center-wrapper">
-				<button
-					type="button"
-					className="amiga-button play-pause-button center-button"
-					onClick={(event) => {
-						event.stopPropagation();
-						pauseResume(device);
-					}}
-				>
-					{!device.running || device.paused ? "▶" : "⏸"}
-				</button>
-			</div>
+			{!device.proxy && (
+				<div className="center-wrapper">
+					<button
+						type="button"
+						className="amiga-button play-pause-button center-button"
+						onClick={(event) => {
+							event.stopPropagation();
+							pauseResume(device);
+						}}
+					>
+						{!device.running || device.paused ? "▶" : "⏸"}
+					</button>
+				</div>
+			)}
 
 			<div className="device-sections" onScroll={onSectionScroll}>
 				{/* Left side sections */}

@@ -232,7 +232,7 @@ export const mergeDevicesPreservingOrder = <T extends HasId>(
 ): T[] => {
 	const savedOrder = loadDeviceOrder(rack);
 	const incomingById = new Map<string | number, T>(
-		incoming.map((d) => [d.id, d]),
+		incoming.map((d) => [devUID(d), d]),
 	);
 
 	const ordered: T[] = [];
@@ -331,3 +331,7 @@ export function useLongPress(
 		didLongPress,
 	};
 }
+
+export const devUID = (device) => {
+	return `${device.id}${device.proxy ? `_${device.repr}` : ""}`;
+};
