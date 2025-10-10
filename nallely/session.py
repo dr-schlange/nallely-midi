@@ -295,7 +295,16 @@ playground_code={infos["playground_code"]}
                 connections.append(link.to_dict())
         return connections
 
-    def snapshot(self, save_defaultvalues=False):
+    def snapshot(self, save_defaultvalues=False, spread_registered_services=False):
+        vdevs = []
+        for device in virtual_devices:
+            vdevs.append(device.to_dict(save_defaultvalues=save_defaultvalues))
+            dev = device.spread_registered_services()
+            if spread_registered_services:
+                if not dev:
+                    continue
+                vdevs.extend(dev)
+
         return {
             "input_ports": [
                 name for name in mido.get_input_names() if "RtMidi" not in name  # type: ignore type issue with mido
@@ -307,10 +316,7 @@ playground_code={infos["playground_code"]}
                 device.to_dict(save_defaultvalues=save_defaultvalues)
                 for device in connected_devices
             ],
-            "virtual_devices": [
-                device.to_dict(save_defaultvalues=save_defaultvalues)
-                for device in virtual_devices
-            ],
+            "virtual_devices": vdevs,
             "connections": self.all_connections_as_dict(),
             "classes": {
                 "virtual": [cls.__name__ for cls in virtual_device_classes],

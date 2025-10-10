@@ -17,6 +17,7 @@ from .core import (
     VirtualParameter,
 )
 from .core.parameter_instances import PadsOrKeysInstance
+from .core.world import no_registration
 
 
 @dataclass
@@ -97,6 +98,7 @@ class WSWaitingRoom:
         return out_entry
 
 
+@no_registration
 class WebSocketBus(VirtualDevice):
 
     def __init__(self, host="0.0.0.0", port=6789, **kwargs):
@@ -309,3 +311,44 @@ class WebSocketBus(VirtualDevice):
         self.known_services[name] = virtual_parameters
         if self.to_update:
             self.to_update.send_update(self)
+
+    def spread_registered_services(self):
+        instances = defaultdict(list)
+        for param in self.__class__.__dict__.values():
+            if (
+                isinstance(param, VirtualParameter)
+                and param.cv_name
+                and "_" in param.cv_name
+            ):
+                instance, cv_name = param.name.split("_", 1)
+                instances[instance].append(param)
+
+        result = []
+        for instance, params in instances.items():
+            inst_name = instance.upper()
+            result.append(
+                {
+                    # "id": f"{self.uuid}_{inst_name}",
+                    "id": self.uuid,
+                    "repr": inst_name,
+                    "meta": self._schema_as_dict(inst_name, params, "No doc"),
+                    "paused": False,
+                    "running": True,
+                    "config": {},
+                    "proxy": True,
+                }
+            )
+
+        return result
+
+
+# class ProxyVDevice:
+#     id: int
+#     repr: str
+#     meta: dict[str, Any]
+#     paused: bool = False
+#     running: bool = True
+#     config: dict = {}
+#     proxy: bool = True
+
+#     def to_dict()

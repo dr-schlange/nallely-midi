@@ -108,6 +108,12 @@ class TrevorBus(VirtualDevice):
         self.cc_update_interval = int(0.05e9)  # every X ns
         self.next_cc_update_time = time.perf_counter_ns() + self.cc_update_interval
         self.cc_update_package = defaultdict(make_ccvalues)
+        self.create_ws_bus()
+
+    def create_ws_bus(self):
+        self.ws = WebSocketBus()
+        self.ws.to_update = self  # type: ignore
+        self.ws.start()
 
     @staticmethod
     def to_json(obj, **kwargs):
@@ -184,7 +190,7 @@ class TrevorBus(VirtualDevice):
         )
 
     def full_state(self):
-        return self.session.snapshot()
+        return self.session.snapshot(spread_registered_services=True)
 
     def random_preset(self, device_id):  # type: ignore
         self.trevor.random_preset(device_id)
@@ -341,6 +347,7 @@ class TrevorBus(VirtualDevice):
 
     def reset_all(self):
         self.trevor.reset_all()
+        self.create_ws_bus()
         return self.full_state()
 
     def associate_parameters(

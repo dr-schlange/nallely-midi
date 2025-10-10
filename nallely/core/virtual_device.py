@@ -735,6 +735,9 @@ class VirtualDevice(threading.Thread):
         else:
             return lambda value, ctx: setattr(to_device, to_param.name, value)
 
+    def spread_registered_services(self):
+        return []
+
     def to_dict(self, save_defaultvalues=False):
         config = self.current_preset()
         return {
@@ -744,15 +747,25 @@ class VirtualDevice(threading.Thread):
             "paused": self.paused,
             "running": self.running,
             "config": config,
+            "proxy": False,
         }
 
     @classmethod
     def schema_as_dict(cls):
         virtual_parameters = cls.all_parameters()
+        # return {
+        #     "name": cls.__name__,
+        #     "parameters": [asdict(p) for p in virtual_parameters if not p.hidden],
+        #     "doc": cls.__doc__,
+        # }
+        return cls._schema_as_dict(cls.__name__, virtual_parameters, cls.__doc__)
+
+    @classmethod
+    def _schema_as_dict(cls, name, parameters, doc):
         return {
-            "name": cls.__name__,
-            "parameters": [asdict(p) for p in virtual_parameters if not p.hidden],
-            "doc": cls.__doc__,
+            "name": name,
+            "parameters": [asdict(p) for p in parameters if not p.hidden],
+            "doc": doc,
         }
 
     def uid(self):
