@@ -13,7 +13,7 @@
     </image>
     <atom:link href="https://dr-schlange.github.io/nallely-midi/rss.xml" rel="self" type="application/rss+xml"/>
         <ttl>60</ttl>
-<lastBuildDate>Mon, 29 Sep 2025 21:41:26 +0000</lastBuildDate>
+<lastBuildDate>Sat, 11 Oct 2025 19:34:50 +0000</lastBuildDate>
         <item>
         <title>Presenting Nallely</title>
         <dc:creator>Dr. Schlange</dc:creator>
@@ -34,6 +34,13 @@
         <description>How to add a new MIDI device in Nallely</description>
         <link>https://dr-schlange.github.io/nallely-midi/posts/add-new-midi-device/</link>
         <pubDate>Thu, 10 Jul 2025 00:00:00 +0000</pubDate>
+        </item>
+        <item>
+        <title>Listen to your Game Boy with style</title>
+        <dc:creator>Dr. Schlange</dc:creator>
+        <description>Let&#39;s hack a Game Boy emulator sound system and listen to it on an external synth with Nallely</description>
+        <link>https://dr-schlange.github.io/nallely-midi/posts/gb-sound-hack/</link>
+        <pubDate>Fri, 10 Oct 2025 00:00:00 +0000</pubDate>
         </item>
         <item>
         <title>Let&#39;s remember the good old patchs</title>

@@ -1,0 +1,1038 @@
+<!doctype html>
+
+<html lang="en">
+
+<head>
+        <!-- Basic Metadata -->
+        <meta charset="utf-8" />
+        <meta name="HandheldFriendly" content="True" />
+        <meta name="generator" content="Arise" />
+
+        <title>Listen to your Game Boy with style · Nallely MIDI</title>
+        <meta name="description" content="Let&#39;s hack a Game Boy emulator sound system and listen to it on an external synth with Nallely">
+        <meta name="author" content="Dr. Schlange">
+        <!-- End Basic Metadata -->
+
+        <!-- OpenGraph Metadata -->
+        <meta property="og:site_name" content="Nallely MIDI" />
+        <meta property="og:type" content="article" />
+        <meta property="og:title" content="Listen to your Game Boy with style · Nallely MIDI" />
+        <meta property="og:description" content="Let&#39;s hack a Game Boy emulator sound system and listen to it on an external synth with Nallely" />
+        <meta property="og:url" content="https://dr-schlange.github.io/nallely-midi/posts/gb-sound-hack/" />
+        <meta property="og:image" content="https://dr-schlange.github.io/nallely-midi/posts/gb-sound-hack/" />
+        <meta property="article:published_time" content="2025-10-10" />
+        <meta property="article:modified_time" content="2025-10-10" />
+        <!-- End OpenGraph Metadata -->
+
+        <!-- Twitter Metadata -->
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Listen to your Game Boy with style · Nallely MIDI" />
+        <meta name="twitter:description" content="Let&#39;s hack a Game Boy emulator sound system and listen to it on an external synth with Nallely" />
+        <meta name="twitter:url" content="https://dr-schlange.github.io/nallely-midi/posts/gb-sound-hack/" />
+        <meta name="twitter:image" content="https://dr-schlange.github.io/nallely-midi/posts/gb-sound-hack/" />
+        <!-- End Twitter Metadata -->
+
+        <!-- Favicon -->
+        <link rel="apple-touch-icon" sizes="180x180" href="/nallely-midi/config/favicon/apple-touch-icon.png">
+        <link rel="icon" type="image/png" sizes="32x32" href="/nallely-midi/config/favicon/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/nallely-midi/config/favicon/favicon-16x16.png">
+        <link rel="manifest" href="/nallely-midi/config/favicon/site.webmanifest">
+        <link rel="mask-icon" href="/nallely-midi/config/favicon/safari-pinned-tab.svg" color="#5bbad5">
+        <link rel="shortcut icon" href="/nallely-midi/config/favicon/favicon.ico">
+        <meta name="msapplication-TileColor" content="#00aba9">
+        <meta name="msapplication-config" content="/config/favicon/browserconfig.xml">
+        <meta name="theme-color" content="#ffffff">
+        <!-- End Favicon -->
+
+        <!-- Styesheet+Logo -->
+        <style>
+                html * {
+                        font-family: monospace, sans-serif;
+                }
+
+                body {
+                        background-color: #121619;
+                        margin: 40px auto;
+                        max-width: 650px;
+                        padding: 0 10px;
+                        color: #65f85a;
+                }
+
+                a {
+                        color: #b8f1b4;
+                }
+
+                hr {
+                        color: #65f85a;
+                }
+
+                .topbar a {
+                        color: #65f85a;
+                }
+        </style>
+        <link rel="stylesheet" href="/nallely-midi/config/highlight.css">
+        <link rel="stylesheet" href="/nallely-midi/config/main.css">
+        <div class="logo"><a href="/nallely-midi">
+                        <pre id="logo">
+
+  ██████   █████           ████  ████           ████                ██████   ██████ █████ ██████████   █████
+░░██████ ░░███           ░░███ ░░███          ░░███               ░░██████ ██████ ░░███ ░░███░░░░███ ░░███
+ ░███░███ ░███   ██████   ░███  ░███   ██████  ░███  █████ ████    ░███░█████░███  ░███  ░███   ░░███ ░███
+ ░███░░███░███  ░░░░░███  ░███  ░███  ███░░███ ░███ ░░███ ░███     ░███░░███ ░███  ░███  ░███    ░███ ░███
+ ░███ ░░██████   ███████  ░███  ░███ ░███████  ░███  ░███ ░███     ░███ ░░░  ░███  ░███  ░███    ░███ ░███
+ ░███  ░░█████  ███░░███  ░███  ░███ ░███░░░   ░███  ░███ ░███     ░███      ░███  ░███  ░███    ███  ░███
+  █████  ░░█████░░████████ █████ █████░░██████  █████ ░░███████     █████     █████ █████ ██████████   █████
+░░░░░    ░░░░░  ░░░░░░░░ ░░░░░ ░░░░░  ░░░░░░  ░░░░░   ░░░░░███    ░░░░░     ░░░░░ ░░░░░ ░░░░░░░░░░   ░░░░░
+          ███ ░███
+        ░░██████
+                                                      ░░░░░░                                               </pre>
+                </a></div>
+
+        <!-- End Styles+Logo -->
+
+        <!-- Navigation -->
+        <nav class="topbar">
+                <a href="/nallely-midi">Home</a> ⟛ <a href="/nallely-midi/news">News</a> ⟛ <a
+                        href="/nallely-midi/posts">Posts</a> ⟛ <a
+                        href="https://www.youtube.com/playlist?list=PL0S9whcJCHAgP9Gb_Z3FyaJOYngbdR-mj">Demos</a> ⟛ <a
+                        href="https://github.com/dr-schlange/nallely-midi">GitHub</a> ⟛ <a
+                        href="https://github.com/dr-schlange/nallely-midi/releases/latest">Download</a>
+        </nav>
+        <!-- End Navigation -->
+</head>
+
+<body><p class="date">// 2025-10-10 <i>by Dr. Schlange</i></p>
+<h1 id="listen-to-your-game-boy-with-style">Listen to your Game Boy with
+style</h1>
+<p>So, I wondered if it would be possible to listen to the Game Boy on
+my synths, and to orchestrate the different channels on different
+synths. Let’s be clear, I’m not speaking about routing the sound of the
+Game Boy by channel to an external audio source, I’m speaking about
+decoding the notes that will be played by each channel and send them as
+MIDI note to an external synth connected via MIDI/USB-MIDI. As useless
+as it sound, well, it is useless, but it’s also fun. A good way to add a
+small Game Boy demoscene rom browser to <a
+href="https://github.com/dr-schlange/nallely-midi">Nallely</a> and play
+with the produces signals, or to play to Super Mario Land or Pokemon
+with style. In this article we will see go in the experiment of hacking
+an existing JavaScript Game Boy emulator to extract what we need and
+connect it to Nallely. All the capabilities of the GB are not exploited
+here. It’s more a small PoC and a fun use case.</p>
+<h2 id="why-javascript-why-a-game-boy">Why JavaScript, why a Game
+Boy?</h2>
+<p>Ok, time for a small story, if you don’t care about why, just skip
+this section, and if you only want to see the final result: <a
+href="#final-demo">go to this section</a> for the final video and link
+toward the source code (I’ll not be sad). While continuing to iterate on
+Nallely to meet what I have in mind - I’m still far from it… - I
+realised that for quick experimentation, when I’m not working on the
+core of the system, I’m developing more and more small external modules
+in JavaScript. I’m really not a big fan of JS in general, I dislike a
+lot of things inside of it: at the language level, and the tooling
+level. However, I have to admit that for quick feedbacks and to be able
+to quickly use some devices, it’s just amazing. It’s trivial to gain
+access to the webcam, it’s trivialish to gain access to the audio, it’s
+easy to just script + reload while Nallely is still running, you have UI
+elements you can manipulate, and also, it distributes a part of the
+computation on another machine on the network. On top of this, most of
+the modern connected devices (phones, tablet, machine with UI) have a JS
+capable browser, so it’s easy to make it work almost everywhere. The
+cherry on the cake is if you manage to have all in a single standalone
+HTML page: dependencies will load during the loading of the page, no
+installation, no command to run, so perfect for experimentations. This
+said, I’m open to change my mind on this, if you have simpler
+alternative, feel free to share!.</p>
+<blockquote>
+<p>By the way, hot reload in a Smalltalk fashion for pure Python modules
+(virtual devices in Nallely) will arrive soon, first steps are here.
+This will let you code directly to create, modify, and/or object-centric
+debug your Python device (threads) from TrevorUI in a running Nallely
+session without any need to reload, but shhhh, that’s another story.
+Hopefully I’ll be able to achieve the level of technical smoothness I
+have in mind, I still need to reflect more on this in term of usability,
+especially for mobile devices.</p>
+</blockquote>
+<p>So, having external devices (I call the devices neurons) is
+practical. For example the oscilloscopes are coded as external devices.
+This way the browser receives information and takes the load of
+displaying them without disturbing a running Nallely session. One thing
+I totally forgot though is that few months ago I let the capabilities
+for them to not only receive information, but also to send information…
+You know, you do stuffs and you forget what you did… I know you’ll
+argue, and you would be right: that’s why documentation exists! I guess
+I forgot this feature as it was a way less big deal to implement
+compared to what I was expecting in the first place. Anyway, so after
+having introduced some new widgets in TrevorUI, I realized that the
+widgets (scopes, pads, etc) are the only one that have a different
+specific UI compared to the other neurons, and for a good reasons. All
+the other neurons try to be as “the same” as possible as UI so they can
+be integrated in the system without any intervention. However, the
+widgets are built not from what they can do (a Python neuron could do
+the same), but they are built from what they could look like.
+Consequently, it’s more a moment where you think about the UI and how
+you’ll interact with it more than in pure CV signal processing. Knowing
+that, I thought that an game system emulator could be fun to play with.
+You can control it with the keyboard, so you could emulate button
+presses with LFOs, you could build strategies with shift registers, you
+could filter them in some cases, etc. Don’t forget that playing with CV
+in a modular synth is like programming a small modular computer. On top
+of that, you might be able to get a signal from it, from the sound
+engine. You can use it as CV or as note sequences, to sum up, you can
+have a source material to build from using the notes of the sound
+engine. That’s great! There is just one thing to do then, take an
+emulator and get the notes that are played by the emulator. That’s all!
+So let’s do it!</p>
+<h2 id="finding-the-right-gb-emulator">Finding the right GB
+emulator</h2>
+<p>Having to hack into a GB emulator to get the notes that are played
+wasn’t as easy as I was expecting. There is dozens of GB emulator
+developed in JS, but they all have different degree of maturity, and,
+believe it or not, but the trickiest part of the GB emulation is
+actually the sound on a timing point of view… My requirements for this
+PoC were, what I thought, simple:</p>
+<ol type="1">
+<li>the emulator have to be written in pure JS, no TypeScript, I don’t
+want to have to compile nothing, I want a direct standalone file;</li>
+<li>the emulator needs to have an API so I can at least access some
+parameters (registers, memory, …);</li>
+<li>the emulator needs to be accessible directly from online somewhere
+so there is nothing to install;</li>
+<li>the emulator needs to have sound (that’s the most complicated
+requirement apparently).</li>
+</ol>
+<p>I browsed github looking for an emulator that would match my needs.
+There is a lot, but they really don’t all have the same capabilities.
+After a dozen of pages, I found one that was partially meeting my
+requirements: <a
+href="https://github.com/danwsong/gemuboi-js">GemuBoi</a> by <a
+href="https://danwsong.com/">Daniel Song</a> (don’t forget to give
+Daniel’s GemuBoi repo a star!). The last commit wasn’t a 100 years old,
+it’s written in pure JS (no need to load WASM modules), a <a
+href="https://gemuboi.danwsong.com/">demo page</a> loads it, the demo
+page is a pure single HTML page, and SOUND IS WORKING. Ok, not all is
+perfect compared to what I was looking for, the sound uses the WebAudio
+API and is sometimes laggish, but it doesn’t require to have
+<code>SharedBufferArray</code> activated as other emulator I saw, so I
+can live with that. Others not so great parts:</p>
+<ul>
+<li>the emulator bootstrap is not super smooth, there is a bunch of
+functions we have to copy to make it boot from the PoC standalone
+HTML;</li>
+<li>there is no real API to control it from outside, but that’s not a
+problem.</li>
+</ul>
+<p>The points I enumerated are then not problematic, it’s just a matter
+to write the first page, and then to monkey patch here and there.</p>
+<h2 id="whats-the-idea-then">What’s the idea then?</h2>
+<p>The idea is pretty straight forward. If we want the synth to play
+what the GB is playing, we need to know 2 things:</p>
+<ol type="1">
+<li>what note is played;</li>
+<li>when the note is going to be played.</li>
+</ol>
+<p>Then, once we have the note, we will translate it into its MIDI
+counterpart, and we will send it to the synth. The whole process is
+simply this one:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">GB</span> Emulator <span class="at">-[our</span> patch]-<span class="op">&gt;</span> decode/store note <span class="at">-</span><span class="op">&gt;</span> when note is about to be played <span class="at">--</span><span class="op">&gt;</span> physical synth.</span></code></pre></div>
+<p>That’s it, nothing else actually for a first PoC and first step, it
+will be enough. So the first part of the game is to read the emulator
+code and to see if we can actually hook ourselves in the right places.
+This means that we need to dig into the source code of the emulator and
+we need to understand how the sound it produced on the GB.</p>
+<h2 id="game-boy-and-sounds">Game Boy and sounds</h2>
+<p>There is countless article that gives a good overview about how the
+Audio Processing Unit (APU) of the GB works, but if I could recommend a
+set of 3 articles, it would be the ones from Niko Zurstraßen on <a
+href="https://www.chciken.com/">his website</a> which are really cool
+and interactive. Specially we can see that the APU proposes 4 different
+channels:</p>
+<ul>
+<li>1 <a
+href="https://www.chciken.com/tlmboy/2025/03/28/gameboy-apu-square.html">square
+channel</a> with sweep;</li>
+<li>1 square channel;</li>
+<li>1 <a
+href="https://www.chciken.com/tlmboy/2025/04/22/gameboy-apu-wave.html">wave
+channel</a>;</li>
+<li>1 <a
+href="https://www.chciken.com/tlmboy/2025/03/24/gameboy-apu-noise.html">noise
+channe</a>.</li>
+</ul>
+<p>All those channels proposes a lot of control to be able to produce
+the iconic sound of the GB. For our purpose, we will only focus on the
+notes that are played, not on the envelope control, the sweep control,
+the volume, … That’s for another story.</p>
+<p>How the APU works then? As for most computational unit, you would
+write to some register the information that you want the unit to
+process. For each channel, there is a set of registers that are
+used:</p>
+<ul>
+<li><code>NR1x</code> for channel 1, and <code>NR14</code> which is the
+channel control register;</li>
+<li><code>NR2x</code> for channel 2, and <code>NR24</code> which is the
+channel control register;</li>
+<li><code>NR3x</code> for channel 3, and <code>NR34</code> which is the
+channel control register;</li>
+<li><code>NR4x</code> for channel 4, and <code>NR44</code> which is the
+channel control register.</li>
+</ul>
+<p>Those registers <code>NRx4</code> are the ones that will control if a
+note needs to be triggered. When the trigger-bit of the register is set,
+the sound is then “planned” to be played for later. That’s cool, this is
+where we can hook ourselves. So let’s review the emulator code and check
+how it’s structured.</p>
+<blockquote>
+<p>I don’t know about you, but I really enjoy reading code. It’s a small
+story, sometimes it’s well written, sometimes it’s badly written, and
+sometimes it’s just and amazing story. There is always something to
+extract from great stories, usually new ideas. It also helps to know
+where your own story needs to be developed and where it’s perhaps
+unecessary. I like reading code.</p>
+</blockquote>
+<p>Let’s check the <a
+href="https://github.com/danwsong/gemuboi-js/blob/master/js/sound.js"><code>sound.js</code></a>
+module, that looks like a good lead to search for sound related stuffs.
+Let’s focus on channel 1. The piece of code we are intersting in is
+related when something will be written in <code>NR14</code>.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode js"><code class="sourceCode javascript"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">set</span> <span class="fu">nr14</span>(value) {</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">this</span><span class="op">.</span><span class="at">channel1Trigger</span> <span class="op">=</span> (value <span class="op">&amp;</span> <span class="bn">0x80</span>) <span class="op">!=</span> <span class="dv">0</span><span class="op">;</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">this</span><span class="op">.</span><span class="at">channel1LengthEnable</span> <span class="op">=</span> (value <span class="op">&amp;</span> <span class="bn">0x40</span>) <span class="op">!=</span> <span class="dv">0</span><span class="op">;</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">this</span><span class="op">.</span><span class="at">channel1Frequency</span> <span class="op">=</span> ((value <span class="op">&amp;</span> <span class="bn">0x7</span>) <span class="op">&lt;&lt;</span> <span class="dv">8</span>) <span class="op">|</span> (<span class="kw">this</span><span class="op">.</span><span class="at">channel1Frequency</span> <span class="op">&amp;</span> <span class="bn">0xff</span>)<span class="op">;</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<p>That’s awesome, we already have almost all we need! We have the
+<code>channel1Trigger</code> instance attribute that will be
+<code>true</code> if the channel needs to be triggered (a note will be
+played), we have the <code>channel1Frequency</code> instance attribute
+that is the actual frequency that needs to be played!</p>
+<p>Ok, that was fast… Let’s start to code something quickly to see if we
+are going in the right direction.</p>
+<h2 id="the-standalone-html-page">The standalone HTML page</h2>
+<p>First things first, we have to create the standalone HTML page that
+will start our gameboy emulator. A brief look at the demo page shows
+that there is a bunch of js to load and a <code>main.js</code> file that
+starts the emulator by creating an instance of it. We want to have
+control over the instance creation possibly, so we will just copy/paste
+part of the <code>main.js</code> in our HTML. The page is not built to
+be beautiful or nothing, just to have something. I pasted the full code
+here in case you want to copy it to start your own experimentations on
+other aspects, or to follow more or less this article.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode js"><code class="sourceCode javascript"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;!</span>DOCTYPE html<span class="op">&gt;</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;</span>html<span class="op">&gt;</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;</span>head<span class="op">&gt;</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="op">&lt;</span>title<span class="op">&gt;</span>GBEmu<span class="op">&lt;/</span>title<span class="op">&gt;</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;/</span>head<span class="op">&gt;</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;</span>body <span class="kw">class</span><span class="op">=</span><span class="st">&quot;bg-light text-dark&quot;</span><span class="op">&gt;</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  <span class="op">&lt;</span>div style<span class="op">=</span><span class="st">&quot;display: flex; flex-direction: column;&quot;</span><span class="op">&gt;</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">&lt;</span>canvas id<span class="op">=</span><span class="st">&quot;canvas&quot;</span> <span class="kw">class</span><span class="op">=</span><span class="st">&quot;d-block w-100&quot;</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>      style<span class="op">=</span><span class="st">&quot;image-rendering: crisp-edges; image-rendering: pixelated; margin-left: -8px&quot;</span><span class="op">&gt;&lt;/</span>canvas<span class="op">&gt;</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    <span class="op">&lt;</span>label <span class="cf">for</span><span class="op">=</span><span class="st">&quot;romFileInput&quot;</span> <span class="kw">class</span><span class="op">=</span><span class="st">&quot;custom-file-upload&quot;</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>      style<span class="op">=</span><span class="st">&quot;border: 1px solid black; padding: 2px; width: fit-content; margin-bottom: 4px; cursor: pointer; height: fit-content;&quot;</span><span class="op">&gt;</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>      Load</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>    <span class="op">&lt;/</span>label<span class="op">&gt;</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>    <span class="op">&lt;</span>input id<span class="op">=</span><span class="st">&quot;romFileInput&quot;</span> type<span class="op">=</span><span class="st">&quot;file&quot;</span> accept<span class="op">=</span><span class="st">&quot;.gb, .gbc&quot;</span> style<span class="op">=</span><span class="st">&quot;display: none;&quot;</span><span class="op">&gt;</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>  <span class="op">&lt;/</span>div<span class="op">&gt;</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>  <span class="op">&lt;</span>script src<span class="op">=</span><span class="st">&quot;https://gemuboi.danwsong.com/js/cpu.js&quot;</span><span class="op">&gt;&lt;/</span>script<span class="op">&gt;</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>  <span class="op">&lt;</span>script src<span class="op">=</span><span class="st">&quot;https://gemuboi.danwsong.com/js/display.js&quot;</span><span class="op">&gt;&lt;/</span>script<span class="op">&gt;</span></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>  <span class="op">&lt;</span>script src<span class="op">=</span><span class="st">&quot;https://gemuboi.danwsong.com/js/sound.js&quot;</span><span class="op">&gt;&lt;/</span>script<span class="op">&gt;</span></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>  <span class="op">&lt;</span>script src<span class="op">=</span><span class="st">&quot;https://gemuboi.danwsong.com/js/timer.js&quot;</span><span class="op">&gt;&lt;/</span>script<span class="op">&gt;</span></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>  <span class="op">&lt;</span>script src<span class="op">=</span><span class="st">&quot;https://gemuboi.danwsong.com/js/joypad.js&quot;</span><span class="op">&gt;&lt;/</span>script<span class="op">&gt;</span></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>  <span class="op">&lt;</span>script src<span class="op">=</span><span class="st">&quot;https://gemuboi.danwsong.com/js/serial.js&quot;</span><span class="op">&gt;&lt;/</span>script<span class="op">&gt;</span></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>  <span class="op">&lt;</span>script src<span class="op">=</span><span class="st">&quot;https://gemuboi.danwsong.com/js/cartridge.js&quot;</span><span class="op">&gt;&lt;/</span>script<span class="op">&gt;</span></span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>  <span class="op">&lt;</span>script src<span class="op">=</span><span class="st">&quot;https://gemuboi.danwsong.com/js/rtc.js&quot;</span><span class="op">&gt;&lt;/</span>script<span class="op">&gt;</span></span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>  <span class="op">&lt;</span>script<span class="op">&gt;</span></span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>    <span class="co">// main setup</span></span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> gb<span class="op">;</span></span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> cycles<span class="op">;</span></span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> next<span class="op">;</span></span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> paused <span class="op">=</span> <span class="kw">false</span><span class="op">;</span></span>
+<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> running <span class="op">=</span> <span class="kw">false</span><span class="op">;</span></span>
+<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a>    <span class="kw">function</span> <span class="fu">update</span>() {</span>
+<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> (paused <span class="op">||</span> <span class="op">!</span>running) {</span>
+<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span><span class="op">;</span></span>
+<span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a>      }</span>
+<span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> (gb<span class="op">.</span><span class="at">cartridge</span><span class="op">.</span><span class="at">hasRTC</span>) {</span>
+<span id="cb3-39"><a href="#cb3-39" aria-hidden="true" tabindex="-1"></a>        gb<span class="op">.</span><span class="at">cartridge</span><span class="op">.</span><span class="at">rtc</span><span class="op">.</span><span class="fu">updateTime</span>()<span class="op">;</span></span>
+<span id="cb3-40"><a href="#cb3-40" aria-hidden="true" tabindex="-1"></a>      }</span>
+<span id="cb3-41"><a href="#cb3-41" aria-hidden="true" tabindex="-1"></a>      <span class="cf">while</span> (cycles <span class="op">&lt;</span> Display<span class="op">.</span><span class="at">cpuCyclesPerFrame</span>) {</span>
+<span id="cb3-42"><a href="#cb3-42" aria-hidden="true" tabindex="-1"></a>        <span class="cf">try</span> {</span>
+<span id="cb3-43"><a href="#cb3-43" aria-hidden="true" tabindex="-1"></a>          cycles <span class="op">+=</span> gb<span class="op">.</span><span class="fu">cycle</span>()<span class="op">;</span></span>
+<span id="cb3-44"><a href="#cb3-44" aria-hidden="true" tabindex="-1"></a>        } <span class="cf">catch</span> (error) {</span>
+<span id="cb3-45"><a href="#cb3-45" aria-hidden="true" tabindex="-1"></a>          <span class="bu">console</span><span class="op">.</span><span class="fu">error</span>(error)<span class="op">;</span></span>
+<span id="cb3-46"><a href="#cb3-46" aria-hidden="true" tabindex="-1"></a>          running <span class="op">=</span> <span class="kw">false</span><span class="op">;</span></span>
+<span id="cb3-47"><a href="#cb3-47" aria-hidden="true" tabindex="-1"></a>          <span class="cf">return</span><span class="op">;</span></span>
+<span id="cb3-48"><a href="#cb3-48" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb3-49"><a href="#cb3-49" aria-hidden="true" tabindex="-1"></a>      }</span>
+<span id="cb3-50"><a href="#cb3-50" aria-hidden="true" tabindex="-1"></a>      cycles <span class="op">-=</span> Display<span class="op">.</span><span class="at">cpuCyclesPerFrame</span><span class="op">;</span></span>
+<span id="cb3-51"><a href="#cb3-51" aria-hidden="true" tabindex="-1"></a>      next <span class="op">+=</span> Display<span class="op">.</span><span class="at">frameInterval</span><span class="op">;</span></span>
+<span id="cb3-52"><a href="#cb3-52" aria-hidden="true" tabindex="-1"></a>      <span class="pp">setTimeout</span>(update<span class="op">,</span> next <span class="op">-</span> <span class="bu">performance</span><span class="op">.</span><span class="fu">now</span>())<span class="op">;</span></span>
+<span id="cb3-53"><a href="#cb3-53" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb3-54"><a href="#cb3-54" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-55"><a href="#cb3-55" aria-hidden="true" tabindex="-1"></a>    <span class="kw">function</span> <span class="fu">loadAndStart</span>(rom) {</span>
+<span id="cb3-56"><a href="#cb3-56" aria-hidden="true" tabindex="-1"></a>      gb <span class="op">=</span> <span class="kw">new</span> <span class="fu">GameBoy</span>()<span class="op">;</span></span>
+<span id="cb3-57"><a href="#cb3-57" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-58"><a href="#cb3-58" aria-hidden="true" tabindex="-1"></a>      <span class="cf">try</span> {</span>
+<span id="cb3-59"><a href="#cb3-59" aria-hidden="true" tabindex="-1"></a>        gb<span class="op">.</span><span class="at">cartridge</span><span class="op">.</span><span class="fu">load</span>(rom)<span class="op">;</span></span>
+<span id="cb3-60"><a href="#cb3-60" aria-hidden="true" tabindex="-1"></a>        running <span class="op">=</span> <span class="kw">true</span><span class="op">;</span></span>
+<span id="cb3-61"><a href="#cb3-61" aria-hidden="true" tabindex="-1"></a>        next <span class="op">=</span> <span class="bu">performance</span><span class="op">.</span><span class="fu">now</span>()<span class="op">;</span></span>
+<span id="cb3-62"><a href="#cb3-62" aria-hidden="true" tabindex="-1"></a>        cycles <span class="op">=</span> <span class="dv">0</span><span class="op">;</span></span>
+<span id="cb3-63"><a href="#cb3-63" aria-hidden="true" tabindex="-1"></a>        <span class="fu">update</span>()<span class="op">;</span></span>
+<span id="cb3-64"><a href="#cb3-64" aria-hidden="true" tabindex="-1"></a>      } <span class="cf">catch</span> (error) {</span>
+<span id="cb3-65"><a href="#cb3-65" aria-hidden="true" tabindex="-1"></a>        <span class="bu">console</span><span class="op">.</span><span class="fu">error</span>(error)<span class="op">;</span></span>
+<span id="cb3-66"><a href="#cb3-66" aria-hidden="true" tabindex="-1"></a>      }</span>
+<span id="cb3-67"><a href="#cb3-67" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb3-68"><a href="#cb3-68" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-69"><a href="#cb3-69" aria-hidden="true" tabindex="-1"></a>    <span class="fu">addEventListener</span>(<span class="st">&#39;beforeunload&#39;</span><span class="op">,</span> () <span class="kw">=&gt;</span> {</span>
+<span id="cb3-70"><a href="#cb3-70" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> (running) {</span>
+<span id="cb3-71"><a href="#cb3-71" aria-hidden="true" tabindex="-1"></a>        gb<span class="op">.</span><span class="at">cartridge</span><span class="op">.</span><span class="fu">save</span>()<span class="op">;</span></span>
+<span id="cb3-72"><a href="#cb3-72" aria-hidden="true" tabindex="-1"></a>      }</span>
+<span id="cb3-73"><a href="#cb3-73" aria-hidden="true" tabindex="-1"></a>    })<span class="op">;</span></span>
+<span id="cb3-74"><a href="#cb3-74" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-75"><a href="#cb3-75" aria-hidden="true" tabindex="-1"></a>    <span class="bu">document</span><span class="op">.</span><span class="fu">addEventListener</span>(<span class="st">&#39;visibilitychange&#39;</span><span class="op">,</span> () <span class="kw">=&gt;</span> {</span>
+<span id="cb3-76"><a href="#cb3-76" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> (running) {</span>
+<span id="cb3-77"><a href="#cb3-77" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> (<span class="bu">document</span><span class="op">.</span><span class="at">hidden</span>) {</span>
+<span id="cb3-78"><a href="#cb3-78" aria-hidden="true" tabindex="-1"></a>          paused <span class="op">=</span> <span class="kw">true</span><span class="op">;</span></span>
+<span id="cb3-79"><a href="#cb3-79" aria-hidden="true" tabindex="-1"></a>        } <span class="cf">else</span> {</span>
+<span id="cb3-80"><a href="#cb3-80" aria-hidden="true" tabindex="-1"></a>          paused <span class="op">=</span> <span class="kw">false</span><span class="op">;</span></span>
+<span id="cb3-81"><a href="#cb3-81" aria-hidden="true" tabindex="-1"></a>          next <span class="op">=</span> <span class="bu">performance</span><span class="op">.</span><span class="fu">now</span>()<span class="op">;</span></span>
+<span id="cb3-82"><a href="#cb3-82" aria-hidden="true" tabindex="-1"></a>          <span class="fu">update</span>()<span class="op">;</span></span>
+<span id="cb3-83"><a href="#cb3-83" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb3-84"><a href="#cb3-84" aria-hidden="true" tabindex="-1"></a>      }</span>
+<span id="cb3-85"><a href="#cb3-85" aria-hidden="true" tabindex="-1"></a>    })<span class="op">;</span></span>
+<span id="cb3-86"><a href="#cb3-86" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-87"><a href="#cb3-87" aria-hidden="true" tabindex="-1"></a>    <span class="bu">document</span><span class="op">.</span><span class="fu">addEventListener</span>(<span class="st">&#39;focus&#39;</span><span class="op">,</span> () <span class="kw">=&gt;</span> {</span>
+<span id="cb3-88"><a href="#cb3-88" aria-hidden="true" tabindex="-1"></a>      <span class="bu">document</span><span class="op">.</span><span class="at">activeElement</span><span class="op">.</span><span class="fu">blur</span>()<span class="op">;</span></span>
+<span id="cb3-89"><a href="#cb3-89" aria-hidden="true" tabindex="-1"></a>    }<span class="op">,</span> <span class="kw">true</span>)<span class="op">;</span></span>
+<span id="cb3-90"><a href="#cb3-90" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-91"><a href="#cb3-91" aria-hidden="true" tabindex="-1"></a>    <span class="bu">document</span><span class="op">.</span><span class="fu">addEventListener</span>(<span class="st">&#39;click&#39;</span><span class="op">,</span> () <span class="kw">=&gt;</span> {</span>
+<span id="cb3-92"><a href="#cb3-92" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> (Sound<span class="op">.</span><span class="at">ctx</span><span class="op">.</span><span class="at">state</span> <span class="op">!=</span> <span class="st">&#39;running&#39;</span>) {</span>
+<span id="cb3-93"><a href="#cb3-93" aria-hidden="true" tabindex="-1"></a>        Sound<span class="op">.</span><span class="at">ctx</span><span class="op">.</span><span class="fu">resume</span>()<span class="op">;</span></span>
+<span id="cb3-94"><a href="#cb3-94" aria-hidden="true" tabindex="-1"></a>      }</span>
+<span id="cb3-95"><a href="#cb3-95" aria-hidden="true" tabindex="-1"></a>    })<span class="op">;</span></span>
+<span id="cb3-96"><a href="#cb3-96" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-97"><a href="#cb3-97" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> romFileInput <span class="op">=</span> <span class="bu">document</span><span class="op">.</span><span class="fu">getElementById</span>(<span class="st">&#39;romFileInput&#39;</span>)<span class="op">;</span></span>
+<span id="cb3-98"><a href="#cb3-98" aria-hidden="true" tabindex="-1"></a>    romFileInput<span class="op">.</span><span class="fu">addEventListener</span>(<span class="st">&#39;change&#39;</span><span class="op">,</span> () <span class="kw">=&gt;</span> {</span>
+<span id="cb3-99"><a href="#cb3-99" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> (running) {</span>
+<span id="cb3-100"><a href="#cb3-100" aria-hidden="true" tabindex="-1"></a>        gb<span class="op">.</span><span class="at">cartridge</span><span class="op">.</span><span class="fu">save</span>()<span class="op">;</span></span>
+<span id="cb3-101"><a href="#cb3-101" aria-hidden="true" tabindex="-1"></a>        running <span class="op">=</span> <span class="kw">false</span><span class="op">;</span></span>
+<span id="cb3-102"><a href="#cb3-102" aria-hidden="true" tabindex="-1"></a>      }</span>
+<span id="cb3-103"><a href="#cb3-103" aria-hidden="true" tabindex="-1"></a>      <span class="kw">const</span> reader <span class="op">=</span> <span class="kw">new</span> <span class="bu">FileReader</span>()<span class="op">;</span></span>
+<span id="cb3-104"><a href="#cb3-104" aria-hidden="true" tabindex="-1"></a>      reader<span class="op">.</span><span class="fu">addEventListener</span>(<span class="st">&#39;load&#39;</span><span class="op">,</span> () <span class="kw">=&gt;</span> {</span>
+<span id="cb3-105"><a href="#cb3-105" aria-hidden="true" tabindex="-1"></a>        <span class="fu">loadAndStart</span>(<span class="kw">new</span> <span class="bu">Uint8Array</span>(reader<span class="op">.</span><span class="at">result</span>))<span class="op">;</span></span>
+<span id="cb3-106"><a href="#cb3-106" aria-hidden="true" tabindex="-1"></a>      })<span class="op">;</span></span>
+<span id="cb3-107"><a href="#cb3-107" aria-hidden="true" tabindex="-1"></a>      reader<span class="op">.</span><span class="fu">readAsArrayBuffer</span>(romFileInput<span class="op">.</span><span class="at">files</span>[<span class="dv">0</span>])<span class="op">;</span></span>
+<span id="cb3-108"><a href="#cb3-108" aria-hidden="true" tabindex="-1"></a>    })<span class="op">;</span></span>
+<span id="cb3-109"><a href="#cb3-109" aria-hidden="true" tabindex="-1"></a>  <span class="op">&lt;/</span>script<span class="op">&gt;</span></span>
+<span id="cb3-110"><a href="#cb3-110" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;/</span>body<span class="op">&gt;</span></span>
+<span id="cb3-111"><a href="#cb3-111" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;/</span>html<span class="op">&gt;</span></span></code></pre></div>
+<p>We save and load the page and… well, that works, why it wouldn’t,
+this is just HTML an JS an we know the demo page works. A small
+breakpoint on during the <code>GameBoy</code> instance creation shows
+that we retrieve well the instance.</p>
+<h2 id="lets-hack-into-it">Let’s hack into it</h2>
+<p>Now that we have our GB emulator running, we can start to play with
+it a little bit. As a first test, we can just try to see if, indeed, we
+get the frequency, and what the number stored in
+<code>channel1Frequency</code> actually represents. Hopefully we will
+have the frequency we need to “hear” and we can translate it to MIDI
+(spoiler, it’s not the case). Anyway, we need to monkey patch the method
+and we will just insert a <code>console.debug</code> to see if we are in
+the right track. The best way to validate that we are actually in the
+right track will be “by hear”. We will check that what we see on the
+screen is well linked to a note we hear. If we see numbers moving, but
+no variations in the sound, then… there is a problem. So let’s monkey
+patch the <code>nr14()</code> method we found earlier and… arrrg that’s
+an accessor. Nothing wrong with that, it’s just that I never remember
+how to deal with those. I’m not doing enough JS I guess… I don’t know,
+JS object model doesn’t stick with me. Let’s check again <a
+href="https://developer.mozilla.org/es/docs/Web/JavaScript/Reference/Functions/set#definiendo_un_setter_en_un_objecto_existente_usando_defineproperty">the
+documentation about it</a>. I linked the Spanish page, just because why
+not (there is obviously a button to change language in your favorite
+human language). Ok, now that we all remember how to defined a setter
+using <code>Object.definePropery(...)</code>, let’s proceed with the
+code:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode js"><code class="sourceCode javascript"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> reg <span class="op">=</span> <span class="bu">Object</span><span class="op">.</span><span class="fu">getOwnPropertyDescriptor</span>(<span class="bu">Object</span><span class="op">.</span><span class="fu">getPrototypeOf</span>(gb<span class="op">.</span><span class="at">sound</span>)<span class="op">,</span> <span class="st">&quot;nr14&quot;</span>)<span class="op">.</span><span class="at">set</span><span class="op">;</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="bu">Object</span><span class="op">.</span><span class="fu">defineProperty</span>(gb<span class="op">.</span><span class="at">sound</span><span class="op">,</span> <span class="st">&quot;nr14&quot;</span><span class="op">,</span> {</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">set</span>(value) {</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>        reg<span class="op">.</span><span class="fu">call</span>(<span class="kw">this</span><span class="op">,</span> value)<span class="op">;</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> (<span class="kw">this</span><span class="op">.</span><span class="at">channel1Trigger</span>) { <span class="co">// we check if the channel was triggered</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>            <span class="bu">console</span><span class="op">.</span><span class="fu">debug</span>(<span class="st">&quot;Freq programmed on channel 1&quot;</span><span class="op">,</span> <span class="kw">this</span><span class="op">.</span><span class="at">channel1Frequency</span>)</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>})<span class="op">;</span></span></code></pre></div>
+<p>We are first getting the original setter because we will call it from
+our replacement setter. We dig into the GB instance created and reach
+the sound instance using <code>gb.sound</code>. We then get the property
+descriptor for the <code>"nr14"</code> accessor and we target the
+<code>set</code> method from it. Once we have the original setter saved
+in <code>reg</code>, we replace the setter for <code>"nr14"</code>
+inside of <code>gb.sound</code> by a method that calls the original
+code, then we log if <code>channel1Trigger</code> is true. We place this
+code directly after the <code>gb</code> instance creation:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode js"><code class="sourceCode javascript"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">loadAndStart</span>(rom) {</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    gb <span class="op">=</span> <span class="kw">new</span> <span class="fu">GameBoy</span>()<span class="op">;</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    <span class="co">// The previous snippet is integrated just after the main instance creation</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> reg <span class="op">=</span> <span class="bu">Object</span><span class="op">.</span><span class="fu">getOwnPropertyDescriptor</span>(<span class="bu">Object</span><span class="op">.</span><span class="fu">getPrototypeOf</span>(gb<span class="op">.</span><span class="at">sound</span>)<span class="op">,</span> <span class="st">&quot;nr14&quot;</span>)<span class="op">.</span><span class="at">set</span><span class="op">;</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    <span class="bu">Object</span><span class="op">.</span><span class="fu">defineProperty</span>(gb<span class="op">.</span><span class="at">sound</span><span class="op">,</span> <span class="st">&quot;nr14&quot;</span><span class="op">,</span> {</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>        <span class="kw">set</span>(value) {</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>            reg<span class="op">.</span><span class="fu">call</span>(<span class="kw">this</span><span class="op">,</span> value)<span class="op">;</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> (<span class="kw">this</span><span class="op">.</span><span class="at">channel1Trigger</span>) {</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>                <span class="bu">console</span><span class="op">.</span><span class="fu">debug</span>(<span class="st">&quot;Freq programmed on channel 1&quot;</span><span class="op">,</span> <span class="kw">this</span><span class="op">.</span><span class="at">channel1Frequency</span>)</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>            }</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>    })<span class="op">;</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">try</span> {</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>        gb<span class="op">.</span><span class="at">cartridge</span><span class="op">.</span><span class="fu">load</span>(rom)<span class="op">;</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>        running <span class="op">=</span> <span class="kw">true</span><span class="op">;</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>        next <span class="op">=</span> <span class="bu">performance</span><span class="op">.</span><span class="fu">now</span>()<span class="op">;</span></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>        cycles <span class="op">=</span> <span class="dv">0</span><span class="op">;</span></span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>        <span class="fu">update</span>()<span class="op">;</span></span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">catch</span> (error) {</span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>    <span class="bu">console</span><span class="op">.</span><span class="fu">error</span>(error)<span class="op">;</span></span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<p>Let’s see if that works! We run this with the <a
+href="https://www.pouet.net/prod.php?which=65997">is that a demo in your
+pocket</a> ROM.</p>
+<figure>
+<img src="./imgs/01-pulse.png"
+alt="It’s alive! We have a (square) pulse!" />
+<figcaption aria-hidden="true">It’s alive! We have a (square)
+pulse!</figcaption>
+</figure>
+<p>So, we have something that looks more or less coherent with what we
+here in term of “happeningness”. We have values and they sound more or
+less in sync with the sound coming from the emulator. That’s a good
+start, no, a great start. However, we can see that the all the frequency
+are round values. That looks fishy, music note sound frequencies have
+often decimals, and here all is perfectly round, there is something
+going on. Let’s have a look more in depth in what’s said on the page for
+the square channels:</p>
+<blockquote>
+<p>The square channel uses a non-exposed, 11-bit counter that increases
+every time it is clocked. After 2047 it overflows, generates a signal,
+and is set to the value of NR13 and NR14. The resulting frequency is:
+131,072/(2048-frequency). :o</p>
+</blockquote>
+<p>That means that we need to translate the value that is in
+<code>channel1Frequency</code> to get the frequency. We modify then our
+method:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode js"><code class="sourceCode javascript"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="bu">Object</span><span class="op">.</span><span class="fu">defineProperty</span>(gb<span class="op">.</span><span class="at">sound</span><span class="op">,</span> <span class="st">&quot;nr14&quot;</span><span class="op">,</span> {</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">set</span>(value) {</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>        reg<span class="op">.</span><span class="fu">call</span>(<span class="kw">this</span><span class="op">,</span> value)<span class="op">;</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> (<span class="kw">this</span><span class="op">.</span><span class="at">channel1Trigger</span>) {</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>            <span class="kw">const</span> freqHz <span class="op">=</span> <span class="dv">131072</span> <span class="op">/</span> (<span class="dv">2048</span> <span class="op">-</span> <span class="kw">this</span><span class="op">.</span><span class="at">channel1Frequency</span>)<span class="op">;</span> <span class="co">// we computer the freq in Hz</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>            <span class="bu">console</span><span class="op">.</span><span class="fu">debug</span>(<span class="st">&quot;Freq programmed on channel 1&quot;</span><span class="op">,</span> freqHz)</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>})<span class="op">;</span></span></code></pre></div>
+<p>Here what’s we get:</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="ex">Freq</span> programmed on channel 1 587.7668161434977</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="ex">Freq</span> programmed on channel 1 524.288</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="ex">Freq</span> programmed on channel 1 587.7668161434977</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="ex">Freq</span> programmed on channel 1 621.1943127962086</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span></code></pre></div>
+<p>That definitely looks more like musical frequencies. We are on good
+tracks. To confirm that, we will translate those frequencies to a MIDI
+note, and we will send them directly to the synth to test. To translate
+the frequency to a MIDI note, we need to apply <a
+href="https://newt.phys.unsw.edu.au/jw/notes.html">another formula</a>
+and integrate it to the code of our method:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode js"><code class="sourceCode javascript"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> freqHz <span class="op">=</span> <span class="dv">131072</span> <span class="op">/</span> (<span class="dv">2048</span> <span class="op">-</span> <span class="kw">this</span><span class="op">.</span><span class="at">channel1Frequency</span>)<span class="op">;</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> midi <span class="op">=</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">round</span>(<span class="dv">12</span> <span class="op">*</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">log2</span>(freqHz <span class="op">/</span> <span class="dv">440</span>) <span class="op">+</span> <span class="dv">69</span>)<span class="op">;</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="bu">console</span><span class="op">.</span><span class="fu">debug</span>(<span class="st">&quot;Freq programmed on channel 1&quot;</span><span class="op">,</span> freqHz<span class="op">,</span> midi)</span></code></pre></div>
+<p>And here is what we get:</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="ex">Freq</span> programmed on channel 1 439.83892617449663 69</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="ex">Freq</span> programmed on channel 1 524.288 72</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="ex">Freq</span> programmed on channel 1 587.7668161434977 74</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span></code></pre></div>
+<p>That definitely looks decent! We just have to send it to a synth
+now.</p>
+<h2 id="integration-with-nallely">Integration with Nallely</h2>
+<p>Now that we have the emulator running, we need to integrate it with
+Nallely. The integration relies on websockets and the auto-registration
+of our emulator on the <code>WebsocketBus</code> that Nallely runs. The
+good thing is that there is a lib to help auto-register. We will use it,
+and we will register our service and see if registeres to Nallely.
+First, we load the lib by adding this line after the script tags for
+GemuBoi.</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode html"><code class="sourceCode html"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">script</span> <span class="er">src</span><span class="ot">=</span><span class="st">&quot;https://cdn.jsdelivr.net/gh/dr-schlange/nallely-midi@main/libs/js/nallely-websocket.js&quot;</span><span class="dt">&gt;&lt;/</span><span class="kw">script</span><span class="dt">&gt;</span></span></code></pre></div>
+<p>Then, we register the service by declaring the parameter that we will
+use:</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode js"><code class="sourceCode javascript"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co">// Registers the emulator as a neuron in Nallely</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> parameters <span class="op">=</span> {</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">ch1_freq</span><span class="op">:</span> { <span class="dt">min</span><span class="op">:</span> <span class="dv">0</span><span class="op">,</span> <span class="dt">max</span><span class="op">:</span> <span class="dv">127</span> }<span class="op">,</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">ch2_freq</span><span class="op">:</span> { <span class="dt">min</span><span class="op">:</span> <span class="dv">0</span><span class="op">,</span> <span class="dt">max</span><span class="op">:</span> <span class="dv">127</span> }<span class="op">,</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">ch3_freq</span><span class="op">:</span> { <span class="dt">min</span><span class="op">:</span> <span class="dv">0</span><span class="op">,</span> <span class="dt">max</span><span class="op">:</span> <span class="dv">127</span> }<span class="op">,</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    <span class="dt">ch4_freq</span><span class="op">:</span> { <span class="dt">min</span><span class="op">:</span> <span class="dv">0</span><span class="op">,</span> <span class="dt">max</span><span class="op">:</span> <span class="dv">127</span> }<span class="op">,</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>}<span class="op">;</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> config <span class="op">=</span> {</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>    <span class="dt">ch1_freq</span><span class="op">:</span> <span class="dv">0</span><span class="op">,</span></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>    <span class="dt">ch2_freq</span><span class="op">:</span> <span class="dv">0</span><span class="op">,</span></span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>    <span class="dt">ch3_freq</span><span class="op">:</span> <span class="dv">0</span><span class="op">,</span></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>    <span class="dt">ch4_freq</span><span class="op">:</span> <span class="dv">0</span><span class="op">,</span></span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>}<span class="op">;</span></span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> device <span class="op">=</span> NallelyWebsocketBus<span class="op">.</span><span class="fu">register</span>(<span class="st">&#39;emulator&#39;</span><span class="op">,</span> <span class="st">&#39;gb&#39;</span><span class="op">,</span> parameters<span class="op">,</span> config)<span class="op">;</span></span></code></pre></div>
+<p>I’m so confident that I added the other channels. Let’s now send the
+value for the channel and replace the infamous
+<code>console.debug(...)</code> we introduced earlier.</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode js"><code class="sourceCode javascript"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a> <span class="bu">Object</span><span class="op">.</span><span class="fu">defineProperty</span>(gb<span class="op">.</span><span class="at">sound</span><span class="op">,</span> <span class="st">&quot;nr14&quot;</span><span class="op">,</span> {</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">set</span>(value) {</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>        reg<span class="op">.</span><span class="fu">call</span>(<span class="kw">this</span><span class="op">,</span> value)<span class="op">;</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> (<span class="kw">this</span><span class="op">.</span><span class="at">channel1Trigger</span>) {</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>            <span class="kw">const</span> freqHz <span class="op">=</span> <span class="dv">131072</span> <span class="op">/</span> (<span class="dv">2048</span> <span class="op">-</span> <span class="kw">this</span><span class="op">.</span><span class="at">channel1Frequency</span>)<span class="op">;</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>            <span class="kw">const</span> midi <span class="op">=</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">round</span>(<span class="dv">12</span> <span class="op">*</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">log2</span>(freqHz <span class="op">/</span> <span class="dv">440</span>) <span class="op">+</span> <span class="dv">69</span>)<span class="op">;</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>            device<span class="op">.</span><span class="fu">send</span>(<span class="st">&quot;ch1_freq&quot;</span><span class="op">,</span> midi)<span class="op">;</span>  <span class="co">// we send the value on the &quot;ch1_freq&quot; port</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>})<span class="op">;</span></span></code></pre></div>
+<p>Now, let’s start a Nallely session, connect to TrevorUI and refresh
+the page with our experimentation.</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="ex">nallely</span> run <span class="at">--with-trevor</span> <span class="at">--serve-ui</span> <span class="at">-b</span></span></code></pre></div>
+<p>The option <code>run --with-trevor</code> is to ensure that the
+Trevor protocol will be activated, and <code>--serve-ui</code> is to
+also get TrevorUI served by the running session. It’s not an obligation,
+the UI could be served by any other server, it’s just more practical
+here. The <code>-b</code> option is to load the builtins MIDI devices
+(currently Korg Minilogue, Roland S1, Behringer JT4000, and Behringer
+ProVS mini). You can also add support for <a
+href="https://dr-schlange.github.io/nallely-midi/nallely-midi/posts/add-new-midi-device/">your
+own MIDI device very easily</a>. Once the session is running, and the UI
+is loaded, we can see that the GB emulator appears as neuron in Nallely
+with the parameters/ports we declared. I’ll then create a Minilogue MIDI
+node, and patch the channel 1 to the Minilogue, add a scope to check if
+there is well something happening (in case there is no sound), and load
+the ROM. Finger crossed!</p>
+<div style="display: flex;flex-direction: column;align-items: center;">
+<iframe width="560" height="315" src="https://www.youtube.com/embed/biP7n-AvQjg?si=Om7pW2zofmuRJPrn" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+<p>
+We have a sound!
+</p>
+</div>
+<p>That works! That’s only channel 1, but that works! There is a problem
+though… We can hear that the sound of the synth is happening
+<em>before</em> the sound of the emulator… That’s not soooo much of an
+issue when you cut the sound of the emulator, but that’s not the best to
+have a synth that can see in the future compared to the presend of the
+running emulator. We need to find what’s going on.</p>
+<h2
+id="timing-issues-why-are-we-playing-the-future-of-the-present">Timing
+issues, why are we playing the future of the present?</h2>
+<p>If you remember what I wrote earlier, there is two components for the
+note to be played and for us to play it well. We need to get the note,
+ok, check, but then, we need to get “when” the note is played. That’s
+another component. So we need to dig in the GemuBoi source code a little
+bit more. First, where is the sound actually going to be played? Writing
+to the <code>NR14</code> registry just triggers the “ready” flag for the
+channel, but doesn’t trigger the sound really. In the code, we can see
+there is a <a
+href="https://github.com/danwsong/gemuboi-js/blob/master/js/sound.js#L648-L649"><code>Sound.latency</code></a>
+class variable as well as a <code>Sound.bufferDuration</code> class
+variable that sound (haha) interesting. The sound in emulator is not
+“real-time” as the APU would produce it as each frequencies have to be
+written to a buffer that will be played by the WebAudio API. Let’s then
+for which part of the code uses the <code>Sound.latency</code> variable.
+The <code>pushBuffer()</code> method uses it:</p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode js"><code class="sourceCode javascript"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">pushBuffer</span>() {</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> now <span class="op">=</span> Sound<span class="op">.</span><span class="at">ctx</span><span class="op">.</span><span class="at">currentTime</span><span class="op">;</span>  <span class="co">// here we have time related code</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> nowPlusDelay <span class="op">=</span> now <span class="op">+</span> Sound<span class="op">.</span><span class="at">latency</span><span class="op">;</span>  <span class="co">// here also</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">this</span><span class="op">.</span><span class="at">nextPush</span> <span class="op">=</span> <span class="kw">this</span><span class="op">.</span><span class="at">nextPush</span> <span class="op">||</span> nowPlusDelay<span class="op">;</span>  <span class="co">// here also</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="kw">this</span><span class="op">.</span><span class="at">nextPush</span> <span class="op">&gt;=</span> now) {</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> bufferSource <span class="op">=</span> Sound<span class="op">.</span><span class="at">ctx</span><span class="op">.</span><span class="fu">createBufferSource</span>()<span class="op">;</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>        bufferSource<span class="op">.</span><span class="at">buffer</span> <span class="op">=</span> <span class="kw">this</span><span class="op">.</span><span class="at">buffer</span><span class="op">;</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>        bufferSource<span class="op">.</span><span class="fu">connect</span>(<span class="kw">this</span><span class="op">.</span><span class="at">gainNode</span>)<span class="op">;</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>        bufferSource<span class="op">.</span><span class="fu">start</span>(<span class="kw">this</span><span class="op">.</span><span class="at">nextPush</span>)<span class="op">;</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>        <span class="kw">this</span><span class="op">.</span><span class="at">nextPush</span> <span class="op">+=</span> Sound<span class="op">.</span><span class="at">bufferDuration</span><span class="op">;</span></span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>        <span class="kw">this</span><span class="op">.</span><span class="at">buffer</span> <span class="op">=</span> Sound<span class="op">.</span><span class="at">ctx</span><span class="op">.</span><span class="fu">createBuffer</span>(<span class="dv">2</span><span class="op">,</span> Sound<span class="op">.</span><span class="at">bufferSamples</span><span class="op">,</span> Sound<span class="op">.</span><span class="at">sampleFrequency</span>)<span class="op">;</span></span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>        <span class="kw">this</span><span class="op">.</span><span class="at">bufferLeft</span> <span class="op">=</span> <span class="kw">this</span><span class="op">.</span><span class="at">buffer</span><span class="op">.</span><span class="fu">getChannelData</span>(<span class="dv">0</span>)<span class="op">;</span></span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>        <span class="kw">this</span><span class="op">.</span><span class="at">bufferRight</span> <span class="op">=</span> <span class="kw">this</span><span class="op">.</span><span class="at">buffer</span><span class="op">.</span><span class="fu">getChannelData</span>(<span class="dv">1</span>)<span class="op">;</span></span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> {</span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>        <span class="kw">this</span><span class="op">.</span><span class="at">nextPush</span> <span class="op">=</span> nowPlusDelay<span class="op">;</span></span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<p>So the <code>pushBuffer()</code> method has some pretty darn good
+content here. We have <code>Sound.ctx.currentTime</code> that gives us
+the current WebAudio playback time, and
+<code>nowPlusDelay = now + Sound.latency</code> that schedules it
+slightly in the future. So in this method, the sound is still not
+produced, it’s <strong>scheduled for later</strong>, this is what we
+miss!</p>
+<p>So, let’s modify our <code>NR14()</code> patch to include the same
+computation and let’s program the send for the future of the present of
+the moment the patch will be called:</p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode js"><code class="sourceCode javascript"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> reg <span class="op">=</span> <span class="bu">Object</span><span class="op">.</span><span class="fu">getOwnPropertyDescriptor</span>(<span class="bu">Object</span><span class="op">.</span><span class="fu">getPrototypeOf</span>(gb<span class="op">.</span><span class="at">sound</span>)<span class="op">,</span> <span class="st">&quot;nr14&quot;</span>)<span class="op">.</span><span class="at">set</span><span class="op">;</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="bu">Object</span><span class="op">.</span><span class="fu">defineProperty</span>(gb<span class="op">.</span><span class="at">sound</span><span class="op">,</span> <span class="st">&quot;nr14&quot;</span><span class="op">,</span> {</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">set</span>(value) {</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>        reg<span class="op">.</span><span class="fu">call</span>(<span class="kw">this</span><span class="op">,</span> value)<span class="op">;</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>        <span class="co">// We mimic the code of the &quot;pushBuffer&quot;</span></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> now <span class="op">=</span> Sound<span class="op">.</span><span class="at">ctx</span><span class="op">.</span><span class="at">currentTime</span><span class="op">;</span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> nowPlusDelay <span class="op">=</span> now <span class="op">+</span> Sound<span class="op">.</span><span class="at">latency</span><span class="op">;</span></span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> scheduledTime <span class="op">=</span> <span class="kw">this</span><span class="op">.</span><span class="at">nextPush</span> <span class="op">||</span> nowPlusDelay<span class="op">;</span></span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> (<span class="kw">this</span><span class="op">.</span><span class="at">channel1Trigger</span>) {</span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>            <span class="kw">const</span> freqHz <span class="op">=</span> <span class="dv">131072</span> <span class="op">/</span> (<span class="dv">2048</span> <span class="op">-</span> <span class="kw">this</span><span class="op">.</span><span class="at">channel1Frequency</span>)<span class="op">;</span></span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>            <span class="kw">const</span> midi <span class="op">=</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">round</span>(<span class="dv">12</span> <span class="op">*</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">log2</span>(freqHz <span class="op">/</span> <span class="dv">440</span>) <span class="op">+</span> <span class="dv">69</span>)<span class="op">;</span></span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a>            <span class="co">// We use it to program the send in the future</span></span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a>            <span class="pp">setTimeout</span>(() <span class="kw">=&gt;</span> {</span>
+<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a>                device<span class="op">.</span><span class="fu">send</span>(<span class="vs">`ch1_freq`</span><span class="op">,</span> midi)</span>
+<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a>            }<span class="op">,</span> (scheduledTime <span class="op">-</span> now <span class="op">+</span> Sound<span class="op">.</span><span class="at">bufferDuration</span>) <span class="op">*</span> <span class="dv">1000</span>)<span class="op">;</span></span>
+<span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb15-20"><a href="#cb15-20" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb15-21"><a href="#cb15-21" aria-hidden="true" tabindex="-1"></a>})<span class="op">;</span></span></code></pre></div>
+<p>We are computing the <code>scheduledTime</code> and we remove the
+<code>now</code> time from it to have a relative time. The time we have
+is in seconds, so we need to adjust that as ms multipying by
+<code>1000</code>. So, why do we need to remove the <code>now</code> and
+we don’t just do a <code>Sound.latency * 1000</code>? Well, just because
+I’m not sure about what’s going to happen because of the
+<code>this.nextPush || nowPlusDelay</code>. At this point, I just want
+the thing to work and I prefer to stay close from the original emulator
+code in case it doesn’t fully work. It’s better to go forward and see
+later if I can remove that. Honestly, I can live with that at the
+moment.</p>
+<p>It’s not the best as we are not modifying the
+<code>pushBuffer()</code> so we might have some few delay still going
+on, but I’m puting all my faith in the fact that JS is fast (I hear that
+all the time, so it has to be true). Let’s do the same as we did before,
+reload the JS code, grab the ROM and compare. I didn’t recorded this
+part out of lazyness and because it’s not that important, what needs to
+be heard is that… we are still in the future… Slightly though, we are
+getting close! After a small rambling, I see that adding
+<code>10ms</code> solves the problem, like almost entirely! That’s cool,
+but that’s not acceptable… why 10ms? I don’t like magic constants like
+this, it really ain’t good. We need to get what’s the problem. We take
+into account the latency and we use the code “we don’t understand now”
+that performs the logical “or”. This means that we are in sync with the
+code of the emulator. I really cannot think that there is almost 10ms of
+overhead passing from this method to the <code>pushBuffer</code> to the
+actual sound. That’s pretty unlikely, so the problem is somewhere else.
+However, if we look closely to the <code>pushBuffer</code> method… We
+didn’t take into account the duration of the buffer! If you saw it
+already, good catch! I totally missed it. So let’s add it to the
+computation:</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode js"><code class="sourceCode javascript"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="bu">Object</span><span class="op">.</span><span class="fu">defineProperty</span>(gb<span class="op">.</span><span class="at">sound</span><span class="op">,</span> <span class="st">&quot;nr14&quot;</span><span class="op">,</span> {</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">set</span>(value) {</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>        reg<span class="op">.</span><span class="fu">call</span>(<span class="kw">this</span><span class="op">,</span> value)<span class="op">;</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> now <span class="op">=</span> Sound<span class="op">.</span><span class="at">ctx</span><span class="op">.</span><span class="at">currentTime</span><span class="op">;</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> nowPlusDelay <span class="op">=</span> now <span class="op">+</span> Sound<span class="op">.</span><span class="at">latency</span><span class="op">;</span></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> scheduledTime <span class="op">=</span> <span class="kw">this</span><span class="op">.</span><span class="at">nextPush</span> <span class="op">||</span> nowPlusDelay<span class="op">;</span></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> (<span class="kw">this</span><span class="op">.</span><span class="at">channel1Trigger</span>) {</span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>            <span class="kw">const</span> freqHz <span class="op">=</span> <span class="dv">131072</span> <span class="op">/</span> (<span class="dv">2048</span> <span class="op">-</span> <span class="kw">this</span><span class="op">.</span><span class="at">channel1Frequency</span>)<span class="op">;</span></span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>            <span class="kw">const</span> midi <span class="op">=</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">round</span>(<span class="dv">12</span> <span class="op">*</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">log2</span>(freqHz <span class="op">/</span> <span class="dv">440</span>) <span class="op">+</span> <span class="dv">69</span>)<span class="op">;</span></span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>            <span class="pp">setTimeout</span>(() <span class="kw">=&gt;</span> {</span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a>                device<span class="op">.</span><span class="fu">send</span>(<span class="vs">`ch1_freq`</span><span class="op">,</span> midi)</span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a>                <span class="co">// We schedule a little bit more in the future</span></span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a>                <span class="co">// so the synth present is the emulator present</span></span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a>                <span class="co">// and avoid the synth to be a deviner</span></span>
+<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a>            }<span class="op">,</span> (scheduledTime <span class="op">-</span> now <span class="op">+</span> Sound<span class="op">.</span><span class="at">bufferDuration</span>) <span class="op">*</span> <span class="dv">1000</span>)<span class="op">;</span></span>
+<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb16-18"><a href="#cb16-18" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb16-19"><a href="#cb16-19" aria-hidden="true" tabindex="-1"></a>})<span class="op">;</span></span></code></pre></div>
+<div style="display: flex;flex-direction: column;align-items: center;">
+<iframe width="560" height="315" src="https://www.youtube.com/embed/YLjFrCBGLes?si=mRwyYlW__XgyFQSe" title="And now for a test!" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+<p>
+And now for a test!
+</p>
+</div>
+<p>It works! We are perfectly in sync. Well, perfectly, perhaps not at
+the ns level, there is the websocket communication between the emulator
+and Nallely, then between Nallely and the synth, but it’s not
+noticeable. Sound is coming out of the synth, I can play with it (as in
+the video where I’m toying with the filter). That’s great! We have 1
+channel, let do the same for all of the others. We will code ourselves a
+small patching function and we will call it where we had the patching
+code before:</p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode js"><code class="sourceCode javascript"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> patchChannelRegistry <span class="op">=</span> (gb<span class="op">,</span> register<span class="op">,</span> channel<span class="op">,</span> disablePreviousNote) <span class="kw">=&gt;</span> {</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> reg <span class="op">=</span> <span class="bu">Object</span><span class="op">.</span><span class="fu">getOwnPropertyDescriptor</span>(<span class="bu">Object</span><span class="op">.</span><span class="fu">getPrototypeOf</span>(gb<span class="op">.</span><span class="at">sound</span>)<span class="op">,</span> register)<span class="op">.</span><span class="at">set</span><span class="op">;</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>    <span class="bu">Object</span><span class="op">.</span><span class="fu">defineProperty</span>(gb<span class="op">.</span><span class="at">sound</span><span class="op">,</span> register<span class="op">,</span> {</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">set</span>(value) {</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>        reg<span class="op">.</span><span class="fu">call</span>(<span class="kw">this</span><span class="op">,</span> value)<span class="op">;</span></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> now <span class="op">=</span> Sound<span class="op">.</span><span class="at">ctx</span><span class="op">.</span><span class="at">currentTime</span><span class="op">;</span></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> nowPlusDelay <span class="op">=</span> now <span class="op">+</span> Sound<span class="op">.</span><span class="at">latency</span><span class="op">;</span></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> scheduledTime <span class="op">=</span> <span class="kw">this</span><span class="op">.</span><span class="at">nextPush</span> <span class="op">||</span> nowPlusDelay<span class="op">;</span></span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> (<span class="kw">this</span>[<span class="vs">`channel</span><span class="sc">${</span>channel<span class="sc">}</span><span class="vs">Trigger`</span>]) {</span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>            <span class="kw">const</span> freqHz <span class="op">=</span> <span class="dv">131072</span> <span class="op">/</span> (<span class="dv">2048</span> <span class="op">-</span> <span class="kw">this</span>[<span class="vs">`channel</span><span class="sc">${</span>channel<span class="sc">}</span><span class="vs">Frequency`</span>])<span class="op">;</span></span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>            <span class="kw">const</span> midi <span class="op">=</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">round</span>(<span class="dv">69</span> <span class="op">+</span> <span class="dv">12</span> <span class="op">*</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">log2</span>(freqHz <span class="op">/</span> <span class="dv">440</span>))<span class="op">;</span></span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a>            <span class="pp">setTimeout</span>(() <span class="kw">=&gt;</span> {</span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>                device<span class="op">.</span><span class="fu">send</span>(<span class="vs">`ch</span><span class="sc">${</span>channel<span class="sc">}</span><span class="vs">_freq`</span><span class="op">,</span> midi)</span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a>            }<span class="op">,</span> (scheduledTime <span class="op">-</span> now <span class="op">+</span> Sound<span class="op">.</span><span class="at">bufferDuration</span>) <span class="op">*</span> <span class="dv">1000</span>)<span class="op">;</span></span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a>    }<span class="op">,</span></span>
+<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a>    })<span class="op">;</span></span>
+<span id="cb17-19"><a href="#cb17-19" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb17-20"><a href="#cb17-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-21"><a href="#cb17-21" aria-hidden="true" tabindex="-1"></a><span class="co">// ...</span></span>
+<span id="cb17-22"><a href="#cb17-22" aria-hidden="true" tabindex="-1"></a><span class="fu">patchChannelRegistry</span>(gb<span class="op">,</span> <span class="st">&quot;nr14&quot;</span><span class="op">,</span> <span class="dv">1</span>)<span class="op">;</span></span>
+<span id="cb17-23"><a href="#cb17-23" aria-hidden="true" tabindex="-1"></a><span class="fu">patchChannelRegistry</span>(gb<span class="op">,</span> <span class="st">&quot;nr24&quot;</span><span class="op">,</span> <span class="dv">2</span>)<span class="op">;</span></span>
+<span id="cb17-24"><a href="#cb17-24" aria-hidden="true" tabindex="-1"></a><span class="fu">patchChannelRegistry</span>(gb<span class="op">,</span> <span class="st">&quot;nr34&quot;</span><span class="op">,</span> <span class="dv">3</span>)<span class="op">;</span></span>
+<span id="cb17-25"><a href="#cb17-25" aria-hidden="true" tabindex="-1"></a><span class="fu">patchChannelRegistry</span>(gb<span class="op">,</span> <span class="st">&quot;nr44&quot;</span><span class="op">,</span> <span class="dv">4</span>)<span class="op">;</span></span></code></pre></div>
+<p>I could have written it better, we could have extracted the channel
+number from the register name. It’s fine, it’s explicit like this. After
+giving a try, something happened… All worked <em>except</em> the channel
+4. Why channel 4 is not working? It should. Let’s dig in this infamous
+channel.</p>
+<h2 id="channel-4-noisy-and-built-different">Channel 4, noisy and built
+different</h2>
+<p>How could we be so pollito to believe that we would have everything
+working so fast. Obviously something is going on with Channel 4. It’s
+going to be a tough one, we’re going to have to cheat I think… So,
+channel 4 is not about notes, it’s a noise channel. It doesn’t use a
+frequency divider the same say, it uses instead a <a
+href="https://www.chciken.com/tlmboy/2025/03/24/gameboy-apu-noise.html">linear
+feedback shit register</a> (LSFR). If you know a little bit modular
+synthesis, you’ll know what a shift register is. Basically, they use the
+shift register while flipping some bits to create a noise. When channel
+4 is asked to play, it burst a noise burst. This channel is used for
+drums or percusive tracks, so the whole formulas for frequency and MIDI
+doesn’t work there. Eventually, we want to have the channel passed as
+MIDI notes, so we will have to cheat.</p>
+<p>Let’s go back to GemuBoi source code. The <code>NR44()</code> setter
+is built differently from the others:</p>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode js"><code class="sourceCode javascript"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="kw">set</span> <span class="fu">nr44</span>(value) {</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">this</span><span class="op">.</span><span class="at">channel4Trigger</span> <span class="op">=</span> (value <span class="op">&amp;</span> <span class="bn">0x80</span>) <span class="op">!=</span> <span class="dv">0</span><span class="op">;</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">this</span><span class="op">.</span><span class="at">channel4LengthEnable</span> <span class="op">=</span> (value <span class="op">&amp;</span> <span class="bn">0x40</span>) <span class="op">!=</span> <span class="dv">0</span><span class="op">;</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<p>That’s it? Nothing else? Not even a small <code>frequency</code>
+somewhere? With what we read about the channel, that’s quite normal, but
+how will we fix that? We need to have a MIDI note at the end. In a way,
+the Game Boy thinks the burst of noise is a frequency, if we hear
+carefully, we can hear that there is a kind of “pitch” to the noise. It
+will play the burst of “random” (it’s not really random) notes at a
+specific frequency. If it was only pure noise all the time, there will
+be no percusion really, no drum possible, so it has to have a kind of
+note in a way.</p>
+<p>After reading multiple sources, here is what I understood (don’t
+blindly trust me on that, verify to be sure I’m not mistaking). The
+APU’s base frequency is in <code>524288Hz</code> (the GB has a system
+clock of roughly 4.194MHz and derives the noise clock by dividing it by
+8), and it’s the internal noise clock. The Game Boy will try to slow
+down this frequency to use it as “speed” of a burst of noise. A “value”
+(0 or 1) is produced by the LSFR, and those values are produced at a
+specific frequency. At the end, the noise is only a set of pseudo-random
+notes played at a specific speed. There is a fixed number of “speeds”
+that are used. To lower the frequency the GB then divides the base
+frequency (~524kHz) by a fixed division ratio. The smallest division is
+<code>2</code> and the biggest is <code>28</code>. For the smallest
+division, dividing by <code>2</code> is nice, but it’s still way too
+fast to have a noise frequency that is in the range of human hear. The
+APU is actually using then the shift information from the shift register
+(how many position we aked to shift) to divide more the base frequency.
+With that, we will get a frequency in the range of human hear. This is
+what interests us, we can find this frequency and consider it as a
+musical frequency instead of the speed of the burst of noises.</p>
+<p>We need to find two informations then, the divisions for the base
+frequency, and how many position we shift. Again, we need to dig in the
+emulator source code. Quickly we can find the <a
+href="https://github.com/danwsong/gemuboi-js/blob/master/js/sound.js#L665C1-L665C21"><code>Sound.divisionRatios</code></a>
+the APU considers to shift the shift register, then if we search for
+<code>Sound.divisionRatios</code> in the source code, we find <a
+href="https://github.com/danwsong/gemuboi-js/blob/master/js/sound.js#L571C12-L574C14">lines
+571 to 574</a>:</p>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode js"><code class="sourceCode javascript"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a> <span class="cf">while</span> (<span class="kw">this</span><span class="op">.</span><span class="at">channel4FrequencyCounter</span> <span class="op">&lt;=</span> <span class="dv">0</span>) {</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">this</span><span class="op">.</span><span class="at">channel4FrequencyCounter</span> <span class="op">+=</span> Sound<span class="op">.</span><span class="at">divisionRatios</span>[<span class="kw">this</span><span class="op">.</span><span class="at">channel4DivisionRatio</span>] <span class="op">&lt;&lt;</span> <span class="kw">this</span><span class="op">.</span><span class="at">channel4ShiftClockFrequency</span><span class="op">;</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">this</span><span class="op">.</span><span class="fu">genLFSR</span>()<span class="op">;</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<p>So we know that a shift is done using
+<code>channel4ShiftClockFrequency</code> and that
+<code>Sound.divisionRatios</code> gives the division ratio. If we look
+online for a good formula to have the noise burst frequency (I didn’t
+came with it), we find:</p>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="ex">Frequency</span> = 524288 Hz / r / 2^<span class="er">(</span><span class="ex">s+1</span><span class="kw">)</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="ex">r:</span> division ratio</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="ex">s:</span> shift</span></code></pre></div>
+<p>With that, we have all we need! We have the formula, we have the
+different division ratios, we have the shift in
+<code>channel4ShiftClockFrequency</code>. We compute the frequency and
+we apply the MIDI note conversion also at the same time.</p>
+<div class="sourceCode" id="cb21"><pre
+class="sourceCode js"><code class="sourceCode javascript"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> gbNoiseToMidi <span class="op">=</span> (shiftClockFreq<span class="op">,</span> divisionRatio) <span class="kw">=&gt;</span> {</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> div <span class="op">=</span> Sound<span class="op">.</span><span class="at">divisionRatios</span>[divisionRatio]<span class="op">;</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (div <span class="op">===</span> <span class="kw">undefined</span>) <span class="cf">return</span> <span class="dv">0</span><span class="op">;</span></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> f_noise <span class="op">=</span> <span class="dv">524288</span> <span class="op">/</span> (div <span class="op">*</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">pow</span>(<span class="dv">2</span><span class="op">,</span> shiftClockFreq <span class="op">+</span> <span class="dv">1</span>))<span class="op">;</span></span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> midi <span class="op">=</span> <span class="dv">69</span> <span class="op">+</span> <span class="dv">12</span> <span class="op">*</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">log2</span>(f_noise <span class="op">/</span> <span class="dv">440</span>)<span class="op">;</span></span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">max</span>(<span class="dv">0</span><span class="op">,</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">min</span>(<span class="dv">127</span><span class="op">,</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">round</span>(midi)))<span class="op">;</span> <span class="co">// clamp to MIDI range</span></span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<p><em>Et voilà</em>, we transformed a noise to a MIDI note. To make it
+work, we patch now <code>NR44</code> more or less the same way we did
+for the other registers:</p>
+<div class="sourceCode" id="cb22"><pre
+class="sourceCode js"><code class="sourceCode javascript"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> patchNoiseChannel <span class="op">=</span> (gb<span class="op">,</span> instr) <span class="kw">=&gt;</span> {</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> nr44 <span class="op">=</span> <span class="bu">Object</span><span class="op">.</span><span class="fu">getOwnPropertyDescriptor</span>(<span class="bu">Object</span><span class="op">.</span><span class="fu">getPrototypeOf</span>(gb<span class="op">.</span><span class="at">sound</span>)<span class="op">,</span> instr)<span class="op">.</span><span class="at">set</span><span class="op">;</span></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>    <span class="bu">Object</span><span class="op">.</span><span class="fu">defineProperty</span>(gb<span class="op">.</span><span class="at">sound</span><span class="op">,</span> instr<span class="op">,</span> {</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">set</span>(value) {</span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>        nr44<span class="op">.</span><span class="fu">call</span>(<span class="kw">this</span><span class="op">,</span> value)<span class="op">;</span></span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> now <span class="op">=</span> Sound<span class="op">.</span><span class="at">ctx</span><span class="op">.</span><span class="at">currentTime</span><span class="op">;</span></span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> nowPlusDelay <span class="op">=</span> now <span class="op">+</span> Sound<span class="op">.</span><span class="at">latency</span><span class="op">;</span></span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> scheduledTime <span class="op">=</span> <span class="kw">this</span><span class="op">.</span><span class="at">nextPush</span> <span class="op">||</span> nowPlusDelay<span class="op">;</span></span>
+<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> (<span class="kw">this</span><span class="op">.</span><span class="at">channel4Trigger</span>) {</span>
+<span id="cb22-11"><a href="#cb22-11" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> midi <span class="op">=</span> <span class="fu">gbNoiseToMidi</span>(<span class="kw">this</span><span class="op">.</span><span class="at">channel4ShiftClockFrequency</span><span class="op">,</span> <span class="kw">this</span><span class="op">.</span><span class="at">channel4DivisionRatio</span>)<span class="op">;</span>  <span class="co">// the midi note computation is here</span></span>
+<span id="cb22-12"><a href="#cb22-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-13"><a href="#cb22-13" aria-hidden="true" tabindex="-1"></a>        <span class="pp">setTimeout</span>(() <span class="kw">=&gt;</span> {</span>
+<span id="cb22-14"><a href="#cb22-14" aria-hidden="true" tabindex="-1"></a>            device<span class="op">.</span><span class="fu">send</span>(<span class="st">&quot;ch4_freq&quot;</span><span class="op">,</span> midi)</span>
+<span id="cb22-15"><a href="#cb22-15" aria-hidden="true" tabindex="-1"></a>        }<span class="op">,</span> (scheduledTime <span class="op">-</span> now <span class="op">+</span> Sound<span class="op">.</span><span class="at">bufferDuration</span>) <span class="op">*</span> <span class="dv">1000</span>)<span class="op">;</span></span>
+<span id="cb22-16"><a href="#cb22-16" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb22-17"><a href="#cb22-17" aria-hidden="true" tabindex="-1"></a>    }<span class="op">,</span></span>
+<span id="cb22-18"><a href="#cb22-18" aria-hidden="true" tabindex="-1"></a>    })<span class="op">;</span></span>
+<span id="cb22-19"><a href="#cb22-19" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb22-20"><a href="#cb22-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-21"><a href="#cb22-21" aria-hidden="true" tabindex="-1"></a><span class="fu">patchNoiseChannel</span>(gb<span class="op">,</span> <span class="st">&quot;nr44&quot;</span>)</span></code></pre></div>
+<p>Obviously, knowing that we are patching channel 4 it wasn’t necessary
+to pass <code>nr44</code> as parameter, but it’s to have a kind of
+symmetry with the other patch function calls. That’s it to get something
+for the noise channel! That was fun, let’s test it, but we need to see
+bigger in term of setup.</p>
+<h2 id="final-demo">Final demo</h2>
+<p>I’m so confident it will work that I’ll use multiple synths, one for
+each channel, and I’ll run Nallely from the Raspberry Pi (rpi5). Let’s
+use exactly 4 synths then:</p>
+<ul>
+<li>a Korg Minilogue (we love it);</li>
+<li>a Roland S1;</li>
+<li>a Behringer JT4000 micro (I really like the sound, but the MIDI
+support is really not great);</li>
+<li>1 Korg NTS1 (this one is monophonic).</li>
+</ul>
+<p>I made a couple of tweaks also in the code: reading GemuBoi code, I
+identified also some easy places to use or patch to control the overall
+volume of the emulator as well as the colors palette for the 4 color
+layers and gamepad support. So I introduced ports to manipulate them.
+This is not detailed in the article, but you can find the <a
+href="https://github.com/dr-schlange/nallely-midi/blob/main/libs/js/gb.html">full
+code in Nallely’s repository</a>. I also integrated the emulator inside
+of TrevorUI. It’s not necessary to have it running there, as we seen
+before, but it’s practical to have the modules and the emulator located
+in the same window for mobiles (and this demo).</p>
+<p>I added also few modules for channel 3 (because why not). I passed
+channel 3 to a chord generator that is redirected to the 4 entries of a
+sequential switch to create an arpegio pattern. The sequential switch is
+triggered by a square LFO that is “synced” with channel 1 beat. It’s not
+real sync, I gave to the LFO’s sync port the flow of channel 1 and let
+the BPM estimation algo of the LFO do its work. I also used this LFO and
+2 others to modulate the color palette of 3 of the different layers of
+GemuBoi. I added some pads to activate or pause some of the LFOs thread
+on demand, and I also let one of the LFOs that controls the color
+palette of one layer to control the cutoff of the Minilogue. That’s all
+I had in mind, but as everything is dynamic, it’s easy to add/remove
+modules and changes the patches at run time while the sound is produced
+and without having to pause or stop anything.</p>
+<p>TrevorUI is launched on my laptop. The emulator will then run in the
+browser of my laptop and will send the channel information through
+websocket to the Nallely’s session and, eventually, to the synths.</p>
+<p>Now, let’s try it! I embedded the video starting at 2min something,
+but you can rewind to see how it started. I didn’t show how I patched
+everything though.</p>
+<div style="display: flex;flex-direction: column;align-items: center;">
+<iframe width="560" height="315" src="https://www.youtube.com/embed/3lP3cipBH9U?si=T3FyZ2m4k9JCqOLR&amp;start=148" title="A more complex setup this time" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+<p>
+A more complex setup this time
+</p>
+</div>
+<p>A quick note about this demo.</p>
+<p>Three of the synths are “polyphonic”, so why didn’t use only 1? They
+can play multiple notes at once. You have some degre of liberty in their
+manipulation. Not everything is as maleable than with a full modular
+synth, but it’s nice to see how far you can go with those.. Some of
+those “not so maleable” things are the oscillators. Even if they can
+play multiple notes at once, they don’t let you assign a flow of notes
+to a single oscillator (there 2 for the Minilogue), and they all share
+then the same sound path (paraphonie). This means that redirecting the
+three non-noise channels to a single synth (Minilogue for example) could
+lead to notes colliding, i.e: a channel plays a sequence of notes and
+anothe channel plays another sequence with overlapping notes. In this
+case, some notes might be “cut” (a voice is stolen). The Minilogue as 4
+notes polyphonie support, if you play a 5th note, one of the previous
+note is switched off. When you have the 3 channels redirected to it and
+playing at different speed, a channel might take “all the attention” of
+the Minilogue and some notes of the other channels might be not hear or
+cut.</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>It super ain’t pretty, but it’s something. There is a couple of
+things that doesn’t help with my final setup: I don’t have drum machine,
+that would have helped, and the algo for cheating channel 4 is not the
+best. Another point to consider is all the articulation around the
+notes. In this PoC we only focused on the frequency, but there is more
+information to decode, as the envelope, the sweep lenght for channel 1,
+… Having those parameters as port of our new device would have let us
+patched differently and help having a nicer tone.</p>
+<p>Obviously, the ROM used have an impact on what’s played and how it
+renders. I used a demo ROM at some point, and thoses usually pushes the
+APU a little bit, and they have really fast note variations for some
+effects. Putting all of them on the same synth, even in polyphonic mode
+doesn’t give a perfect result as we discussed before with the voice
+stealing.</p>
+<p>We have to take also into account the websocket small latency that
+might have an impact on the timing sometimes, but from what I observed,
+the websocket communication wasn’t that impacted, perhaps in some
+occasion, but keep in mind that in the demo, there is the 4 channels
+producing sound all the time, and there is also 4 scopes that receive
+data without any pause, so the websocket bus in the Nallely’s session is
+producing a lot of data. The CPU consumption was ok, between 5% and 11%
+for some peaks, the memory comsumption is around 45Mb.</p>
+<p>As a quick extention to this work, I made some tests using the
+generic MIDI bridge neuron Nallely has to control VCV rack and make it
+play along with the 4 synths. Again, it works, and it’s in “sync”, but
+it would require more patching in VCV Rack to have something nice to the
+hear.</p>
+<p>Anyway, it’s fun to see where you can go in an afternoon and how far
+you can get by only having various independent threads sending flows of
+values (signals) to each others, and now there is a new kind of signals
+I can have integrated in Nallely and play with! That was kind of the
+point. The fact the emulator is in JS, I can run it from my phone. I
+usually have a Nallely session running on a raspberry pi 5 with the S1,
+the JT4000 micro attached, my headphones in bluetooth and I can move
+freely in the house, cooking or doing things while playing with the
+various modules and make unexpected music. Having the emulator running
+on the phone is not amazing though. It works well with firefox, but it’s
+atrrrrocious with brave. I guess one of the next steps would be to use
+<a href="https://www.littlesounddj.com/lsd/index.php">little sound
+dj</a> as pure sequencer.</p>
+<h2 id="bonus-a-small-window-system-in-trevorui">Bonus: a small window
+system in TrevorUI</h2>
+<p>Another point that is still a WIP, even if the GB emulator is
+integrated in TrevorUI this way, is the fact of having a small window
+system that would let you embedd your external JavaScript devices
+directly in TrevorUI without any dedicated react/whatever code. The idea
+would be to have a kind of content agnostic small window that will load
+as an iFrame the content of the external neuron. It will just share with
+the neuron different size: embedded, maximized, maximized-portrait,
+maximized-landscape, external. Depending on the passed size, the UI part
+could adapt, possiblity with a better view, or better controls. That’s
+just an idea right now, nothing amazing though. I need to reflect more
+on it.</p>
+
+        <!-- Page Footer -->
+        <div class="footer">
+                <p>Built with <a href="https://github.com/spectrasecure/arise">Arise</a>, a cloud-native static site generator written in Bash.</p>
+        </div>
+        <!-- End Page Footer -->
+
+</body>
+</html>
