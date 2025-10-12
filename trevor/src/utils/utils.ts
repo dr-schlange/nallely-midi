@@ -174,8 +174,12 @@ export const setDebugMode = (
 	}
 };
 
-export const generateAcronym = (name: string, length = 3): string => {
-	return name
+export const generateAcronym = (
+	name: string,
+	length = 3,
+	respectCase = false,
+): string => {
+	const acronym = name
 		.split(" ")
 		.map((word) => {
 			if (!word) return "";
@@ -187,8 +191,9 @@ export const generateAcronym = (name: string, length = 3): string => {
 			const rest = word.slice(1).replace(/[aeiou]/gi, "");
 			return (firstChar + rest).slice(0, length);
 		})
-		.join("")
-		.toUpperCase();
+		.join("");
+
+	return respectCase ? acronym : acronym.toUpperCase();
 };
 
 const LOCAL_STORAGE_KEY = "order-in-rack";

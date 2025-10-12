@@ -21,6 +21,7 @@ import {
 	saveDeviceOrder,
 	devUID,
 } from "../utils/utils";
+import { MiniRack, VDevicePlaceholder } from "./VDevComponent";
 
 interface RackRowVirtualProps {
 	devices: VirtualDevice[];
@@ -147,6 +148,8 @@ export const RackRowVirtual = ({
 						onClick={() => setSelectorOpened((prev) => !prev)}
 					/>
 				</div>
+				<MiniRack devices={localDeviceOrder} />
+				<MiniRack devices={[]} />
 				<div className={"inner-rack-row"} onScroll={() => onSectionScroll?.()}>
 					<DndContext
 						sensors={sensors}

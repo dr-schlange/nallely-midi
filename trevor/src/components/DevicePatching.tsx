@@ -13,7 +13,7 @@ import type {
 	VirtualDeviceWithSection,
 	VirtualParameter,
 } from "../model";
-import { drawConnection } from "../utils/svgUtils";
+import { drawConnection, drawCurvedConnection } from "../utils/svgUtils";
 import { RackRowVirtual } from "./RackRowVirtual";
 import { useTrevorWebSocket } from "../websockets/websocket";
 import DragNumberInput from "./DragInputs";
@@ -649,7 +649,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 						connectionRepr.includes(
 							`-${firstSelected?.device.id}::${firstSelectedSection}`,
 						)));
-			drawConnection(
+			drawCurvedConnection(
 				svg,
 				fromElement,
 				toElement,
