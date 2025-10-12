@@ -22,6 +22,7 @@ from .world import (
     DeviceSerializer,
     ThreadContext,
     all_devices,
+    all_links,
     get_all_virtual_parameters,
     no_registration,
     virtual_device_classes,
@@ -546,8 +547,9 @@ class VirtualDevice(threading.Thread):
 
     def stop(self, clear_queues=True):
         """Stop the LFO thread."""
-        for device in all_devices():
-            device.unbind_link(None, self)
+        for link in all_links().values():
+            if link.dest.device is self or link.src.device is self:
+                link.uninstall()
         if self in virtual_devices:
             virtual_devices.remove(self)
         if not self.running:

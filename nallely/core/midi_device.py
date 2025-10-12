@@ -13,6 +13,7 @@ from .world import (
     DeviceNotFound,
     DeviceSerializer,
     ThreadContext,
+    all_links,
     connected_devices,
     midi_device_classes,
 )
@@ -423,6 +424,9 @@ class MidiDevice:
         self.close_in()
         self.close_out()
         # flush all callbacks and registry
+        for link in all_links().values():
+            if link.dest.device is self or link.src.device is self:
+                link.uninstall()
         self.links.clear()
         self.links_registry.clear()
         if delete and self in connected_devices:

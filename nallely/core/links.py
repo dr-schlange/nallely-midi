@@ -109,6 +109,9 @@ class Link:
     def dest_repr(self):
         return self.dest.repr()
 
+    def repr(self):
+        return f"{self.src_repr()} --> {self.dest_repr()}"
+
     @property
     def is_stream(self):
         return self.dest.parameter.stream
