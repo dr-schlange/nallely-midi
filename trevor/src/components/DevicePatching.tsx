@@ -323,7 +323,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 									trevorSocket?.killDevice(device.id);
 								}}
 							>
-								Kill device
+								Kill
 							</button>
 						</>
 					) : (
@@ -332,9 +332,11 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 							<button
 								type="button"
 								className={"ugly-button"}
-								onClick={() => {}}
+								onClick={() => {
+									trevorSocket?.unregisterService(device.repr);
+								}}
 							>
-								Unregister device (soon)
+								Unregister
 							</button>
 						</>
 					)}

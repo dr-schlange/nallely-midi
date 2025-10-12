@@ -545,6 +545,13 @@ export class TrevorWebSocket {
 			command: "all_virtual_schemas",
 		});
 	}
+
+	unregisterService(service_name) {
+		this.sendJsonMessage({
+			command: "unregister_service",
+			service_name,
+		});
+	}
 }
 
 let websocket: TrevorWebSocket | null = null;

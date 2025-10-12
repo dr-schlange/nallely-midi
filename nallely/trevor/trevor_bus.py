@@ -512,6 +512,10 @@ class TrevorBus(VirtualDevice):
                 instance.on_midi_message = self.send_control_value_update
         return self.full_state()
 
+    def unregister_service(self, service_name):
+        self.ws.unregister_service(service_name)
+        return self.full_state()
+
 
 def resource_path(relative_path):
     """Get absolute path to resource, works for dev and PyInstaller"""

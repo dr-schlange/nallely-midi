@@ -17,7 +17,7 @@ from .core import (
     VirtualParameter,
 )
 from .core.parameter_instances import PadsOrKeysInstance
-from .core.world import no_registration
+from .core.world import all_links, no_registration
 
 
 @dataclass
@@ -147,13 +147,13 @@ class WebSocketBus(VirtualDevice):
     def handler(self, client):
         path = client.request.path
         service_name = path.split("/")[1]
-        print("Connection on ", path, service_name)
+        print("[WS] Connection on ", path, service_name)
         if path.endswith("/autoconfig"):
-            print(f"Autoconfig for {service_name}")
+            print(f"[WS] Autoconfig for {service_name}")
             try:
                 message = json.loads(client.recv())
                 if service_name not in self.connected:
-                    print(f"Parameters: {message['parameters']}")
+                    # print(f"[DEBUG] Parameters: {message['parameters']}")
                     self.configure_remote_device(service_name, parameters=message["parameters"])  # type: ignore
             except (ConnectionClosed, TimeoutError) as e:
                 kind = (
@@ -162,17 +162,20 @@ class WebSocketBus(VirtualDevice):
                     else "disconnected"
                 )
                 print(
-                    f"Client {client} on {service_name} {kind} and wasn't able to auto-config {service_name}"
+                    f"[WS] Client {client} on {service_name} {kind} and wasn't able to auto-config {service_name}"
                 )
+        elif path.endswith("/unregister") and service_name in self.known_services:
+            self.unregister_service(service_name)
+            return
         elif service_name not in self.known_services:
             print(
-                f"Service {service_name} is not yet configured, you cannot subscribe to it yet"
+                f"[WS] Service {service_name} is not yet configured, you cannot subscribe to it yet"
             )
             return
 
         connected_devices = self.connected[service_name]
         connected_devices.append(client)
-        print(f"Connecting on {service_name} [{len(connected_devices)} clients]")
+        print(f"[WS] Connecting on {service_name} [{len(connected_devices)} clients]")
         try:
             for message in client:
                 # Sends message to other modules connected to this channel
@@ -193,7 +196,7 @@ class WebSocketBus(VirtualDevice):
                         break
                     except Exception as e:
                         print(
-                            f"Couldn't parse the message and broadcast {message} to local instances: {e}"
+                            f"[WS] Couldn't parse the message and broadcast {message} to local instances: {e}"
                         )
                     if device == client:
                         continue
@@ -215,11 +218,11 @@ class WebSocketBus(VirtualDevice):
                     #         pass
         except (ConnectionClosed, TimeoutError):
             print(
-                f"Client {client} on {service_name} disconnected unexpectedly [{len(connected_devices)} clients]"
+                f"[WS] Client {client} on {service_name} disconnected unexpectedly [{len(connected_devices)} clients]"
             )
         finally:
             try:
-                print("Remove", client)
+                print("[WS] Remove", client)
                 connected_devices.remove(client)
             except ValueError:
                 pass
@@ -236,7 +239,7 @@ class WebSocketBus(VirtualDevice):
             #     client.send(json.dumps({"on": "__close_bus__"}))
             clients.clear()
         if self.running and self.server:
-            print("Shutting down websocket bus...")
+            print("[WS] Shutting down websocket bus...")
             self.server.shutdown()
         for key, value in list(self.__class__.__dict__.items()):
             if isinstance(value, VirtualParameter):
@@ -272,7 +275,7 @@ class WebSocketBus(VirtualDevice):
                         else "disconnected"
                     )
                     print(
-                        f"Cannot send information on {parameter} for {connected}, it probably {kind} [{len(devices)} clients]"
+                        f"[WS] Cannot send information on {parameter} for {connected}, it probably {kind} [{len(devices)} clients]"
                     )
                 except Exception:
                     pass
@@ -283,7 +286,7 @@ class WebSocketBus(VirtualDevice):
             is_stream = False
             range = (None, None)
             pname = parameter
-            print("Configuring", parameter)
+            print("[WS] Configuring", parameter)
             if isinstance(parameter, dict):
                 pname = parameter.get("name", None)
                 range = parameter.get("range", range)
@@ -302,7 +305,7 @@ class WebSocketBus(VirtualDevice):
                 cv_name=cv_name,
                 range=range,
             )
-            print("Registering", cv_name, "range", range, "stream", is_stream)
+            print("[WS] Registering", cv_name, "range", range, "stream", is_stream)
             virtual_parameters.append(vparam)
             setattr(self.__class__, cv_name, vparam)
             if waiting_room and isinstance(waiting_room, WSWaitingRoom):
@@ -313,25 +316,13 @@ class WebSocketBus(VirtualDevice):
             self.to_update.send_update(self)
 
     def spread_registered_services(self):
-        instances = defaultdict(list)
-        for param in self.__class__.__dict__.values():
-            if (
-                isinstance(param, VirtualParameter)
-                and param.cv_name
-                and "_" in param.cv_name
-            ):
-                instance, cv_name = param.name.split("_", 1)
-                instances[instance].append(param)
-
         result = []
-        for instance, params in instances.items():
-            inst_name = instance.upper()
+        for instance, params in self.known_services.items():
             result.append(
                 {
-                    # "id": f"{self.uuid}_{inst_name}",
                     "id": self.uuid,
-                    "repr": inst_name,
-                    "meta": self._schema_as_dict(inst_name, params, "No doc"),
+                    "repr": instance,
+                    "meta": self._schema_as_dict(instance, params, "No doc"),
                     "paused": False,
                     "running": True,
                     "config": {},
@@ -340,6 +331,30 @@ class WebSocketBus(VirtualDevice):
             )
 
         return result
+
+    def unregister_service(self, service_name):
+        print(f"[WS] Unregistering {service_name}")
+
+        params = self.known_services[service_name]
+        for param in params:
+            for link in all_links().values():
+                if link.dest.parameter is param or link.src.parameter is param:
+                    print(f"[WS] unbinding link {link} for {service_name}")
+                    link.uninstall()
+                print(f"[WS] Removing {param.cv_name} from bus")
+                delattr(self.__class__, param.cv_name)
+
+        connected_clients = self.connected[service_name]
+        for connected_client in connected_clients:
+            try:
+                print(f"[WS] Disconnecting {connected_client}")
+                connected_client.close()
+            except Exception as e:
+                print(
+                    f"[WS] Error while closing connection with {connected_client}: {e}"
+                )
+        del self.connected[service_name]
+        del self.known_services[service_name]
 
 
 # class ProxyVDevice:
