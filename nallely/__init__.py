@@ -33,7 +33,7 @@ from .logicals import (
     Operator,
     WindowDetector,
 )
-from .sequencer import Sequencer, Sequencer8
+from .sequencer import Sequencer, Sequencer8, TuringMachine
 from .shifter import (
     Arpegiator,
     ChordGenerator,
@@ -117,4 +117,5 @@ __all__ = [
     "Sequencer",
     "VoiceAllocator",
     "Sequencer8",
+    "TuringMachine",
 ]
