@@ -1,3 +1,6 @@
+from collections import deque
+from random import randint, random
+
 from .core import VirtualDevice, VirtualParameter, on
 
 
@@ -269,3 +272,81 @@ class Sequencer8(VirtualDevice):
             yield output_value
         else:
             yield 0
+
+
+class TuringMachine(VirtualDevice):
+    """Simple Turing Machine Sequencer
+
+    inputs:
+    * trigger_cv [0, 1] >0 <rising>: Input clock
+    * mutation_cv [0, 1] init=0.5: Probability to mutate
+    * random_cv [0, 1] >0 <rising>: Random seed
+    * reset_cv [0, 1] >0 <rising>: Reset all to 0
+
+    outputs:
+    * out_main_cv [0, 1]: main output
+    * gate_out_cv [0, 1]: main output gate
+    * tape_out_cv [0, 255]: tape value output
+    * out0_cv [0, 1]: 1st bit value
+    * out1_cv [0, 1]: 2nd bit value
+    * out2_cv [0, 1]: 3rd bit value
+    * out3_cv [0, 1]: 4th bit value
+    * out4_cv [0, 1]: 5th bit value
+    * out5_cv [0, 1]: 6th bit value
+    * out6_cv [0, 1]: 7th bit value
+    * out7_cv [0, 1]: 8th bit value
+
+    type: ondemand
+    category: Sequencer
+    meta: disable default output
+    """
+
+    trigger_cv = VirtualParameter(
+        name="trigger", range=(0.0, 1.0), conversion_policy=">0"
+    )
+    mutation_cv = VirtualParameter(name="mutation", range=(0.0, 1.0), default=0.5)
+    random_cv = VirtualParameter(
+        name="random", range=(0.0, 1.0), conversion_policy=">0"
+    )
+    reset_cv = VirtualParameter(name="reset", range=(0.0, 1.0), conversion_policy=">0")
+    out7_cv = VirtualParameter(name="out7", range=(0.0, 1.0))
+    out6_cv = VirtualParameter(name="out6", range=(0.0, 1.0))
+    out5_cv = VirtualParameter(name="out5", range=(0.0, 1.0))
+    out4_cv = VirtualParameter(name="out4", range=(0.0, 1.0))
+    out3_cv = VirtualParameter(name="out3", range=(0.0, 1.0))
+    out2_cv = VirtualParameter(name="out2", range=(0.0, 1.0))
+    out1_cv = VirtualParameter(name="out1", range=(0.0, 1.0))
+    out0_cv = VirtualParameter(name="out0", range=(0.0, 1.0))
+    tape_out_cv = VirtualParameter(name="tape_out", range=(0.0, 255))
+    gate_out_cv = VirtualParameter(name="gate_out", range=(0.0, 1.0))
+    out_main_cv = VirtualParameter(name="out_main", range=(0.0, 1.0))
+
+    def __post_init__(self, **kwargs):
+        self.memory = deque([0] * 8)
+        return {"disable_output": True}
+
+    @on(reset_cv, edge="rising")
+    def on_reset_rising(self, value, ctx):
+        self.memory = deque([0] * 8)
+
+    @on(random_cv, edge="rising")
+    def on_random_rising(self, value, ctx):
+        random_value = randint(0, 255)
+        self.memory = deque((int(bit) for bit in bin(random_value)[2:].zfill(8)))
+
+    @on(trigger_cv, edge="rising")
+    def on_trigger_rising(self, value, ctx):
+        mutation_probability = self.mutation  # type: ignore
+        self.memory.rotate()
+        if random() < mutation_probability:
+            self.memory[0] = 1 - self.memory[0]
+        memcell = self.memory[-1]
+        yield int("".join(str(s) for s in self.memory), 2), [self.tape_out_cv]
+        yield memcell, [self.out_main_cv]
+        yield 0, [self.out_main_cv]
+        if memcell:
+            yield (1, [self.gate_out_cv])
+        else:
+            yield (0, [self.gate_out_cv])
+        for i in range(8):
+            yield (self.memory[i], [getattr(self, f"out{i}_cv")])
