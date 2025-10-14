@@ -1,25 +1,107 @@
 /** biome-ignore-all lint/a11y/useKeyWithClickEvents: <explanation> */
 /** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
-import type {
-	VirtualDevice,
-	VirtualDeviceSchema,
-	VirtualParameter,
-} from "../model";
-import { buildSectionId, devUID, generateAcronym, parameterUUID, useLongPress } from "../utils/utils";
-import { Button } from "./widgets/BaseComponents";
+import { useState } from "react";
+import type { VirtualDevice, VirtualParameter } from "../model";
+import {
+	buildSectionId,
+	devUID,
+	generateAcronym,
+	useLongPress,
+} from "../utils/utils";
+
+export const SMALL_PORTS_LIMIT = 6;
+export const PORTS_LIMIT = 12;
+
+export const SMALLSIZE = SMALL_PORTS_LIMIT;
+export const MEDIUMSIZE = PORTS_LIMIT + SMALL_PORTS_LIMIT;
+export const LARGESIZE = PORTS_LIMIT * 2 + SMALL_PORTS_LIMIT;
+export const FULLSIZE = PORTS_LIMIT * 3 + SMALL_PORTS_LIMIT;
+
+export const moduleWeight = (device: VirtualDevice): [string, number] => {
+	const nbParams = device.meta.parameters.length;
+	if (nbParams <= SMALLSIZE) {
+		return ["small", 1];
+	}
+	if (nbParams <= MEDIUMSIZE) {
+		return ["medium", 2];
+	}
+	if (nbParams <= LARGESIZE) {
+		return ["large", 3];
+	}
+	return ["full", 4];
+};
+
+export const moduleWeights = (devices: VirtualDevice[]) => {
+	const weights = {
+		small: [], // 1
+		medium: [], // 2
+		large: [], // 3
+		full: [], // 4
+	};
+	for (const device of devices) {
+		const [weight] = moduleWeight(device);
+		weights[weight].push(device);
+	}
+	return weights;
+};
+
+export const totalWeightModules = (devices: VirtualDevice[]) => {
+	const weights = moduleWeights(devices);
+	return (
+		weights.small.length +
+		weights.medium.length * 2 +
+		weights.large.length * 3 +
+		weights.full.length * 4
+	);
+};
+
+export const weightList = (devices: VirtualDevice[]) => {
+	return devices.map((d) => moduleWeight(d)[1]);
+};
+
+const chunkArray = (arr, size) =>
+	arr.reduce(
+		(acc, _, i) => (i % size ? acc : [...acc, arr.slice(i, i + size)]),
+		[],
+	);
 
 interface MiniRackProps {
 	devices: VirtualDevice[];
+	rackId: string;
+	selectedSections: string[];
+	onDeviceClick?: (device: VirtualDevice) => void;
+	onPlaceholderClick?: () => void;
 }
 
-export const MiniRack = ({ devices }: MiniRackProps) => {
-	const rackSize = 3;
-	const nbPlaceHolders = rackSize - devices.length;
+export const MiniRack = ({
+	devices,
+	rackId,
+	onPlaceholderClick,
+	onDeviceClick,
+	selectedSections,
+}: MiniRackProps) => {
+	const totalRackSlots = 6;
+
+	const nbPlaceHolders = totalRackSlots - totalWeightModules(devices);
 	const slots = Array.from([
 		...devices.map((device) => (
-			<VDevice device={device} key={devUID(device)} />
+			<VDevice
+				device={device}
+				key={devUID(device)}
+				onClick={onDeviceClick}
+				selected={
+					selectedSections?.length > 0 &&
+					selectedSections.some((s) => s.startsWith(devUID(device)))
+				}
+			/>
 		)),
-		...Array(nbPlaceHolders).fill(<VDevicePlaceholder />),
+		nbPlaceHolders > 0 && (
+			<VDevicePlaceholder
+				key={`placeholder-${rackId}`}
+				slots={nbPlaceHolders}
+				onClick={onPlaceholderClick}
+			/>
+		),
 	]);
 	return (
 		<div
@@ -30,11 +112,12 @@ export const MiniRack = ({ devices }: MiniRackProps) => {
 				gap: "1px",
 				borderTop: "5px solid grey",
 				borderBottom: "5px solid grey",
-				borderLeft: "2px solid grey",
-				borderRight: "2px solid grey",
+				// borderLeft: "2px solid grey",
+				// borderRight: "2px solid grey",
 				padding: "2px",
 				backgroundColor: "#d0d0d0",
 				// height: "135px",
+				width: "194px",
 			}}
 		>
 			{/* <div
@@ -49,7 +132,11 @@ export const MiniRack = ({ devices }: MiniRackProps) => {
 			>
 				<Button text="c" tooltip="fff" />
 			</div> */}
-			<div style={{ display: "flex", gap: "1px" }}>{slots}</div>
+			<div
+				style={{ display: "flex", gap: "1px", justifyContent: "space-around" }}
+			>
+				{slots}
+			</div>
 		</div>
 	);
 };
@@ -67,7 +154,7 @@ const Port = ({
 	parameter,
 	reverse = false,
 }: {
-	device,
+	device;
 	parameter: VirtualParameter;
 	reverse?: boolean;
 }) => {
@@ -104,7 +191,31 @@ const Port = ({
 	);
 };
 
-const HIDE = ["set_pause"];
+const generateNameWithAcronym = (
+	name: string,
+	maxLength: number = 10,
+): string => {
+	if (name.length <= maxLength) {
+		return name;
+	}
+
+	const match = name.match(/(\D*)(\d+)$/);
+	if (!match) return name.slice(0, maxLength);
+
+	const letters = match[1];
+	const number = match[2];
+
+	const remainingLength = maxLength - number.length;
+
+	let acronym = letters;
+	if (letters.length > remainingLength) {
+		acronym = generateAcronym(letters, remainingLength, true);
+	}
+
+	return acronym + number;
+};
+
+const HIDE = [];
 export const VDevice = ({
 	device,
 	onClick,
@@ -113,15 +224,19 @@ export const VDevice = ({
 	onTouchStart,
 }: VDeviceProps) => {
 	const height = "120px";
-	const width = "58px";
-	const rightPortLimit = 12;
-	const leftLabelLimit = 10;
+	let width = 58;
+	const leftLabelLimit = 8;
 	const clipping = device.repr.length >= leftLabelLimit;
 	const parameters = device.meta.parameters.filter(
 		(e) => !HIDE.includes(e.name),
 	);
-	const enoughSpace = parameters.length < rightPortLimit;
-	const sufficientSpace = parameters.length < 19;
+	const nbParameters = parameters.length;
+
+	if (nbParameters <= SMALL_PORTS_LIMIT) {
+		width = 25;
+	} else if (nbParameters > 19) {
+		width = 81;
+	}
 
 	const longPressEvents = useLongPress(
 		() => {
@@ -131,14 +246,19 @@ export const VDevice = ({
 		() => onTouchStart?.(device),
 	);
 
+	const params = {
+		head: parameters.slice(0, SMALL_PORTS_LIMIT),
+		rest: chunkArray(parameters.slice(SMALL_PORTS_LIMIT), PORTS_LIMIT),
+	};
+
 	return (
 		<div
 			style={{
 				paddingTop: "1px",
-				border: `3px solid ${selected ? "orange" : "gray"}`,
+				border: `3px solid ${selected ? "yellow" : "gray"}`,
 				height: height,
-				width: width,
-				minWidth: width,
+				width: `${width}px`,
+				minWidth: `${width}px`,
 				display: "flex",
 				flexWrap: "wrap",
 				flexDirection: "row",
@@ -171,11 +291,7 @@ export const VDevice = ({
 			>
 				<div
 					style={{
-						maxHeight: enoughSpace
-							? "100px"
-							: sufficientSpace
-								? "90px"
-								: "60px",
+						maxHeight: "100px",
 						display: "flex",
 						flexDirection: "column",
 						justifyContent: clipping ? "flex-end" : "flex-start",
@@ -193,18 +309,12 @@ export const VDevice = ({
 							transform: "rotate(180deg)",
 						}}
 					>
-						{generateAcronym(device.repr, leftLabelLimit, true)}
+						{generateNameWithAcronym(device.repr, leftLabelLimit)}
 					</p>
 				</div>
 				<div
 					style={{
-						height: enoughSpace
-							? 0
-							: sufficientSpace
-								? "34px"
-								: clipping
-									? "30px"
-									: "59px",
+						height: "59px",
 						width: "22px",
 						margin: "1px",
 						display: "inherit",
@@ -214,59 +324,60 @@ export const VDevice = ({
 						overflow: "hidden",
 					}}
 				>
-					{parameters.slice(rightPortLimit).map((p) => (
+					{/* {parameters.slice(rightPortLimit).map((p) => (
+						<Port device={device} key={p.cv_name} parameter={p} reverse />
+					))} */}
+					{params.head.map((p) => (
 						<Port device={device} key={p.cv_name} parameter={p} reverse />
 					))}
 				</div>
 			</div>
-			<div
-				style={{
-					height: "117px",
-					width: "25px",
-					padding: "1px",
-					gap: "2px",
-					display: "inherit",
-					flexDirection: "column-reverse",
-					justifyContent: "flex-start",
-				}}
-			>
-				{parameters.slice(0, rightPortLimit).map((p) => (
-					<Port device={device} key={p.cv_name} parameter={p} />
-				))}
-			</div>
+			{params.rest.map((row, i) => (
+				<div
+					key={`${device.id}-${i}`}
+					style={{
+						height: "117px",
+						width: "25px",
+						padding: "1px",
+						gap: "2px",
+						display: "inherit",
+						flexDirection: "column-reverse",
+						justifyContent: "flex-start",
+					}}
+				>
+					{row.map((p) => (
+						<Port device={device} key={p.cv_name} parameter={p} />
+					))}
+				</div>
+			))}
 		</div>
 	);
 };
 
 interface VDevicePlaceholderProps {
-	selected?: boolean;
+	slots: number;
 	onClick?: () => void;
 	onLongPress?: () => void;
 	onTouchStart?: () => void;
 }
 
 export const VDevicePlaceholder = ({
-	selected,
+	slots,
 	onClick,
-	onLongPress,
-	onTouchStart,
 }: VDevicePlaceholderProps) => {
 	const height = "120px";
-	const width = "58px";
-
-	const longPressEvents = useLongPress(
-		() => {
-			onLongPress?.();
-		},
-		500,
-		() => onTouchStart?.(),
+	const width = slots === SMALLSIZE ? 176 : slots * 26.5;
+	const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(
+		null,
 	);
+	const touchThreshold = 10;
+	const [pressed, setPressed] = useState(false);
 
 	return (
 		<div
 			style={{
 				paddingTop: "1px",
-				border: `3px dashed ${selected ? "orange" : "#aaaaaa"}`,
+				border: `3px dashed ${pressed ? "orange" : "#aaaaaa"}`,
 				height: height,
 				width: width,
 				minWidth: width,
@@ -275,24 +386,42 @@ export const VDevicePlaceholder = ({
 				flexDirection: "row",
 				gap: "0px",
 				justifyContent: "space-evenly",
-				// backgroundColor: "#e0e0e0",
+				backgroundColor: pressed ? "rgba(255,165,0,0.1)" : "transparent",
+				transform: pressed ? "scale(0.97)" : "scale(1)",
+				transition: "all 0.01s ease",
 				userSelect: "none",
 				alignItems: "center",
 			}}
-			onClick={(event) => {
-				event.preventDefault();
+			onTouchStart={(event) => {
 				event.stopPropagation();
-
-				if (!longPressEvents.didLongPress.current) {
-					onClick?.();
+				const touch = event.touches[0];
+				setTouchStart({ x: touch.clientX, y: touch.clientY });
+				setPressed(true);
+			}}
+			onTouchMove={(event) => {
+				if (!touchStart) return;
+				const touch = event.touches[0];
+				const dx = Math.abs(touch.clientX - touchStart.x);
+				const dy = Math.abs(touch.clientY - touchStart.y);
+				if (dx > touchThreshold || dy > touchThreshold) {
+					setPressed(false);
+					setTouchStart(null); // cancel press
 				}
 			}}
-			{...longPressEvents}
+			onTouchEnd={(event) => {
+				if (!pressed) return;
+				event.stopPropagation();
+				setPressed(false);
+				setTouchStart(null);
+				onClick?.();
+			}}
 		>
 			<p
 				style={{
-					color: "#aaaaaa",
+					color: pressed ? "orange" : "#aaaaaa",
 					fontSize: "27px",
+					transform: pressed ? "scale(0.97)" : "scale(1)",
+					transition: "transform 0.15s ease",
 				}}
 			>
 				+

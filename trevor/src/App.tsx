@@ -75,6 +75,40 @@ const Main = () => {
 							/>
 						</marker>
 						<marker
+							id="retro-arrowhead-small"
+							markerWidth="4"
+							markerHeight="4"
+							refX="3.5"
+							refY="2"
+							orient="auto"
+							markerUnits="strokeWidth"
+						>
+							<polygon
+								points="0,0 4,2 0,4"
+								fill="#5a87bbff"
+								stroke="white"
+								stroke-width="0.4"
+								stroke-opacity="0.3"
+							/>
+						</marker>
+						<marker
+							id="selected-retro-arrowhead-small"
+							markerWidth="4"
+							markerHeight="4"
+							refX="3.5"
+							refY="2"
+							orient="auto"
+							markerUnits="strokeWidth"
+						>
+							<polygon
+								points="0,0 4,2 0,4"
+								fill="blue"
+								stroke="white"
+								stroke-width="0.4"
+								stroke-opacity="0.3"
+							/>
+						</marker>
+						<marker
 							id="selected-retro-arrowhead"
 							markerWidth="6"
 							markerHeight="6"
@@ -106,6 +140,23 @@ const Main = () => {
 								stroke="white"
 								strokeWidth="1"
 								strokeOpacity="0.8"
+							/>
+						</marker>
+						<marker
+							id="bouncy-retro-arrowhead-small"
+							markerWidth="4"
+							markerHeight="4"
+							refX="3.5"
+							refY="2"
+							orient="auto"
+							markerUnits="strokeWidth"
+						>
+							<polygon
+								points="0,0 4,2 0,4"
+								fill="green"
+								stroke="white"
+								stroke-width="0.4"
+								stroke-opacity="0.3"
 							/>
 						</marker>
 					</defs>

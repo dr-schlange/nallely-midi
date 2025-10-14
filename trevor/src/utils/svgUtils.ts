@@ -284,50 +284,54 @@ export const drawCurvedConnection = (
 			markerEnd?: string;
 			dashed?: boolean;
 		},
-		drop = 80, // how much it "sags" in pixels
+		baseDrop = 60,
 	) => {
 		const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
 
-		const midX = (fromX + toX) / 2;
-		const midY = (fromY + toY) / 2;
+		// Compute deltas
+		const dx = toX - fromX;
+		const dy = toY - fromY;
 
-		let cx = midX;
-		let cy = midY + drop; // pull downward for sag effect
+		// Distance between points
+		const dist = Math.sqrt(dx * dx + dy * dy);
 
-		// If mostly vertical, sag sideways
-		if (Math.abs(toY - fromY) > Math.abs(toX - fromX)) {
-			cx = midX + drop; // pull sideways instead
-			cy = midY;
-		}
+		// Dynamic sag proportional to distance (but capped)
+		const maxSag = 200;
+		const sag = Math.min(baseDrop + dist * 0.005, maxSag);
 
-		const d = `M ${fromX},${fromY} Q ${cx},${cy} ${toX},${toY}`;
+		const cy = Math.max(fromY, toY) + sag;
 
+		const d = `M ${fromX},${fromY} C ${fromX},${cy} ${toX},${cy} ${toX},${toY}`;
+
+		path.setAttribute("id", "curveConnector");
 		path.setAttribute("d", d);
 		path.setAttribute("fill", "none");
 		path.setAttribute("stroke", options.stroke);
 		path.setAttribute("stroke-width", options.strokeWidth.toString());
 		path.setAttribute("stroke-opacity", options.strokeOpacity);
+		// path.setAttribute("style", "mix-blend-mode: multiply;");
+
 		if (options.dashed) path.setAttribute("stroke-dasharray", "5,5");
 		if (options.pointerEvents)
 			path.setAttribute("pointer-events", options.pointerEvents);
 		if (options.markerEnd) path.setAttribute("marker-end", options.markerEnd);
-		path.id = id;
 
+		path.id = id;
 		return path;
 	};
 
 	// Draw actual visible line
 	const color = selected ? "blue" : opts.bouncy ? "green" : "#5a87bbff";
 	const marker = selected
-		? "url(#selected-retro-arrowhead)"
+		? "url(#selected-retro-arrowhead-small)"
 		: opts.bouncy
-			? "url(#bouncy-retro-arrowhead)"
-			: "url(#retro-arrowhead)";
+			? "url(#bouncy-retro-arrowhead-small)"
+			: "url(#retro-arrowhead-small)";
 
 	const visibleLine = drawCurve(`${fromElement.id}::${toElement.id}`, {
 		stroke: color,
-		strokeWidth: selected ? 2.5 : 2,
-		strokeOpacity: "1",
+		strokeWidth: selected ? 3 : 2.5,
+		strokeOpacity: "0.7",
 		markerEnd: marker,
 		dashed: opts.muted,
 	});

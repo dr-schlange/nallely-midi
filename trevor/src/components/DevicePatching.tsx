@@ -608,6 +608,9 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 		const svg = svgRef.current;
 		if (!svg) return;
 
+		for (const line of svg.querySelectorAll("path")) {
+			line.remove();
+		}
 		for (const line of svg.querySelectorAll("line")) {
 			line.remove();
 		}

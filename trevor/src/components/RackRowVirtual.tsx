@@ -21,7 +21,29 @@ import {
 	saveDeviceOrder,
 	devUID,
 } from "../utils/utils";
-import { MiniRack, VDevicePlaceholder } from "./VDevComponent";
+import { MiniRack, moduleWeight, moduleWeights } from "./VDevComponent";
+
+const groupBySumLimit = (arr, limit) => {
+	const result = [];
+	let current = [];
+	let sum = 0;
+
+	for (const item of arr) {
+		const value = moduleWeight(item)[1];
+
+		if (sum + value > limit) {
+			result.push(current);
+			current = [item];
+			sum = value;
+		} else {
+			current.push(item);
+			sum += value;
+		}
+	}
+
+	if (current.length) result.push(current);
+	return result;
+};
 
 interface RackRowVirtualProps {
 	devices: VirtualDevice[];
@@ -45,6 +67,7 @@ export const RackRowVirtual = ({
 	horizontal,
 }: RackRowVirtualProps) => {
 	const [selectorOpened, setSelectorOpened] = useState(false);
+	const [detailOpened, setDetailOpened] = useState(false);
 	const virtualClasses = useTrevorSelector(
 		(state) => state.nallely.classes.virtual,
 	);
@@ -102,6 +125,7 @@ export const RackRowVirtual = ({
 		setLocalDeviceOrder(mergeDevicesPreservingOrder("virtuals", devices));
 	}, [devices]);
 
+	console.debug(moduleWeights(localDeviceOrder));
 	return (
 		<>
 			<div
@@ -148,42 +172,64 @@ export const RackRowVirtual = ({
 						onClick={() => setSelectorOpened((prev) => !prev)}
 					/>
 				</div>
-				<MiniRack devices={localDeviceOrder} />
-				<MiniRack devices={[]} />
 				<div className={"inner-rack-row"} onScroll={() => onSectionScroll?.()}>
-					<DndContext
-						sensors={sensors}
-						collisionDetection={closestCenter}
-						onDragEnd={handleDragEnd}
-						onDragMove={onSectionScroll}
-						modifiers={[
-							horizontal ? restrictToHorizontalAxis : restrictToVerticalAxis,
-							restrictToParentElement,
-						]}
-					>
-						<SortableContext
-							items={localDeviceOrder.map((d) => devUID(d))}
-							strategy={
-								horizontal
-									? horizontalListSortingStrategy
-									: verticalListSortingStrategy
-							}
+					{groupBySumLimit(localDeviceOrder, 6).map((rack, i) => (
+						<MiniRack
+							key={`mini-rack-${i}`}
+							devices={rack}
+							rackId={`${i}`}
+							onDeviceClick={onParameterClick}
+							onPlaceholderClick={() => setSelectorOpened((prev) => !prev)}
+							selectedSections={selectedSections}
+						/>
+					))}
+					<Button
+						text={`${detailOpened ? "hide" : "show"} details`}
+						tooltip="Open full size devices for reordering"
+						variant="small"
+						style={{
+							width: "187px",
+							height: "90%",
+							justifyContent: "flex-start",
+						}}
+						activated={detailOpened}
+						onClick={() => setDetailOpened((prev) => !prev)}
+					/>
+					{detailOpened && (
+						<DndContext
+							sensors={sensors}
+							collisionDetection={closestCenter}
+							onDragEnd={handleDragEnd}
+							onDragMove={onSectionScroll}
+							modifiers={[
+								horizontal ? restrictToHorizontalAxis : restrictToVerticalAxis,
+								restrictToParentElement,
+							]}
 						>
-							{localDeviceOrder.map((device, i) => (
-								<SortableVirtualDeviceComponent
-									key={devUID(device)}
-									device={device}
-									onParameterClick={(device) => onParameterClick(device)}
-									onDeviceClick={(device) => onParameterClick(device)}
-									selectedSections={selectedSections}
-									onSectionScroll={onSectionScroll}
-								/>
-							))}
-							{devices.length === 0 && (
-								<p style={{ color: "#808080" }}>Virtual devices</p>
-							)}
-						</SortableContext>
-					</DndContext>
+							<SortableContext
+								items={localDeviceOrder.map((d) => devUID(d))}
+								strategy={
+									horizontal
+										? horizontalListSortingStrategy
+										: verticalListSortingStrategy
+								}
+							>
+								{localDeviceOrder.map((device, i) => (
+									<SortableVirtualDeviceComponent
+										key={devUID(device)}
+										device={device}
+										onParameterClick={(device) => onParameterClick(device)}
+										onDeviceClick={(device) => onParameterClick(device)}
+										selectedSections={selectedSections}
+										onSectionScroll={onSectionScroll}
+									/>
+								))}
+								{devices.length === 0 && (
+									<p style={{ color: "#808080" }}>Virtual devices</p>
+								)}
+							</SortableContext>
+						</DndContext>
+					)}
 				</div>
 			</div>
 			{selectorOpened && (
