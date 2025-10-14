@@ -95,6 +95,8 @@ The API can be written manually or generated from a YAML decription.
 In a session, virtual devices and MIDI devices exposes parameters which can all be patched. Consequently, you can have a LFO that controls the speed of another one, and the output of this modulated LFO can modulate another one. All devices inside a Nallely session are patchable: you can also patch parameter inside a same device. Consequently, you can have a parameter of your MIDI device that contols multiple parameters of other MIDI devices, or even parameter of the same MIDI device (e.g: the cutoff that controls also the resonance in an inverted fashion, or on a dedicated small range only).
 A websocket bus, also a virtual device, hence patchable, allows visuals and external application to register to it, exposing their ports. Once their ports are exposed on the bus, any MIDI or virtual device inside the Nallely's session can connect to them and control them.
 
+If you want more details about the architecture, you can check [this link](https://deepwiki.com/dr-schlange/nallely-midi/) which gives a good more or less in depth explanation of all the parts of the architecture. Not everything is 100% exact, but it's really close from reality. 
+
 
 ### Quick Installation
 
