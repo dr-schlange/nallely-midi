@@ -141,7 +141,11 @@ const VDeviceSelectionModal = ({ onClose }: VDeviceSelectionModalProps) => {
 					<div className="modal-vdevice-selection-list">
 						{Object.entries(selections).map(([name, { schema, count }]) => (
 							<>
-								<VDeviceSchema key={name} schema={schema} onClick={removeDevice} />
+								<VDeviceSchema
+									key={name}
+									schema={schema}
+									onClick={removeDevice}
+								/>
 								<p
 									style={{
 										fontSize: "16px",

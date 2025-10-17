@@ -1,10 +1,10 @@
+/** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
+/** biome-ignore-all lint/a11y/useKeyWithClickEvents: <explanation> */
 import { useEffect, useState } from "react";
-import type { VirtualDevice, VirtualParameter } from "../model";
-import VirtualDeviceComponent from "./VirtualDeviceComponent";
+import type { VirtualDevice } from "../model";
 import { useTrevorSelector } from "../store";
 import { useTrevorWebSocket } from "../websockets/websocket";
 import {
-	closestCenter,
 	DndContext,
 	PointerSensor,
 	useSensor,
@@ -12,16 +12,23 @@ import {
 } from "@dnd-kit/core";
 import {
 	arrayMove,
-	horizontalListSortingStrategy,
 	SortableContext,
-	verticalListSortingStrategy,
+	rectSortingStrategy,
+	horizontalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import {
 	mergeDevicesPreservingOrder,
 	saveDeviceOrder,
 	devUID,
 } from "../utils/utils";
-import { MiniRack, moduleWeight, moduleWeights } from "./VDevComponent";
+import { MiniRack, moduleWeight } from "./VDevComponent";
+import { Button } from "./widgets/BaseComponents";
+import VDeviceSelectionModal from "./modals/VirtualDeviceSelectionModal";
+import {
+	restrictToHorizontalAxis,
+	restrictToVerticalAxis,
+	restrictToParentElement,
+} from "@dnd-kit/modifiers";
 
 const groupBySumLimit = (arr, limit) => {
 	const result = [];
@@ -45,6 +52,23 @@ const groupBySumLimit = (arr, limit) => {
 	return result;
 };
 
+export class CustomPointerSensor extends PointerSensor {
+	static activators = [
+		{
+			eventName: "onPointerDown" as const,
+			handler: ({ nativeEvent }: { nativeEvent: PointerEvent }) => {
+				const target = nativeEvent.target as HTMLElement | null;
+
+				if (target?.closest("[data-no-dnd]")) {
+					return false;
+				}
+
+				return true;
+			},
+		},
+	];
+}
+
 interface RackRowVirtualProps {
 	devices: VirtualDevice[];
 	onDeviceDrop?: (draggedDevice: VirtualDevice, targetIndex: number) => void;
@@ -67,7 +91,6 @@ export const RackRowVirtual = ({
 	horizontal,
 }: RackRowVirtualProps) => {
 	const [selectorOpened, setSelectorOpened] = useState(false);
-	const [detailOpened, setDetailOpened] = useState(false);
 	const virtualClasses = useTrevorSelector(
 		(state) => state.nallely.classes.virtual,
 	);
@@ -80,7 +103,12 @@ export const RackRowVirtual = ({
 	};
 
 	const sensors = useSensors(
-		useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+		useSensor(CustomPointerSensor, {
+			activationConstraint: {
+				delay: 250,
+				tolerance: 5,
+			},
+		}),
 	);
 
 	const handleDragEnd = (event) => {
@@ -125,7 +153,6 @@ export const RackRowVirtual = ({
 		setLocalDeviceOrder(mergeDevicesPreservingOrder("virtuals", devices));
 	}, [devices]);
 
-	console.debug(moduleWeights(localDeviceOrder));
 	return (
 		<>
 			<div
@@ -173,63 +200,29 @@ export const RackRowVirtual = ({
 					/>
 				</div>
 				<div className={"inner-rack-row"} onScroll={() => onSectionScroll?.()}>
-					{groupBySumLimit(localDeviceOrder, 6).map((rack, i) => (
-						<MiniRack
-							key={`mini-rack-${i}`}
-							devices={rack}
-							rackId={`${i}`}
-							onDeviceClick={onParameterClick}
-							onPlaceholderClick={() => setSelectorOpened((prev) => !prev)}
-							selectedSections={selectedSections}
-						/>
-					))}
-					<Button
-						text={`${detailOpened ? "hide" : "show"} details`}
-						tooltip="Open full size devices for reordering"
-						variant="small"
-						style={{
-							width: "187px",
-							height: "90%",
-							justifyContent: "flex-start",
-						}}
-						activated={detailOpened}
-						onClick={() => setDetailOpened((prev) => !prev)}
-					/>
-					{detailOpened && (
-						<DndContext
-							sensors={sensors}
-							collisionDetection={closestCenter}
-							onDragEnd={handleDragEnd}
-							onDragMove={onSectionScroll}
-							modifiers={[
-								horizontal ? restrictToHorizontalAxis : restrictToVerticalAxis,
-								restrictToParentElement,
-							]}
+					<DndContext
+						sensors={sensors}
+						onDragEnd={handleDragEnd}
+						modifiers={horizontal ? [restrictToHorizontalAxis] : []}
+					>
+						<SortableContext
+							items={localDeviceOrder.map((d) => devUID(d))}
+							strategy={
+								horizontal ? horizontalListSortingStrategy : rectSortingStrategy
+							}
 						>
-							<SortableContext
-								items={localDeviceOrder.map((d) => devUID(d))}
-								strategy={
-									horizontal
-										? horizontalListSortingStrategy
-										: verticalListSortingStrategy
-								}
-							>
-								{localDeviceOrder.map((device, i) => (
-									<SortableVirtualDeviceComponent
-										key={devUID(device)}
-										device={device}
-										onParameterClick={(device) => onParameterClick(device)}
-										onDeviceClick={(device) => onParameterClick(device)}
-										selectedSections={selectedSections}
-										onSectionScroll={onSectionScroll}
-									/>
-								))}
-								{devices.length === 0 && (
-									<p style={{ color: "#808080" }}>Virtual devices</p>
-								)}
-							</SortableContext>
-						</DndContext>
-					)}
+							{groupBySumLimit(localDeviceOrder, 6).map((rack, i) => (
+								<MiniRack
+									key={`mini-rack-${i}`}
+									devices={rack}
+									rackId={`${i}`}
+									onDeviceClick={onParameterClick}
+									onPlaceholderClick={() => setSelectorOpened((prev) => !prev)}
+									selectedSections={selectedSections}
+								/>
+							))}
+						</SortableContext>
+					</DndContext>
 				</div>
 			</div>
 			{selectorOpened && (
@@ -242,76 +235,3 @@ export const RackRowVirtual = ({
 };
 
 // for sortable components
-import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import type { HasId } from "../utils/utils";
-import {
-	restrictToHorizontalAxis,
-	restrictToParentElement,
-	restrictToVerticalAxis,
-} from "@dnd-kit/modifiers";
-import { Button } from "./widgets/BaseComponents";
-import VDeviceSelectionModal from "./modals/VirtualDeviceSelectionModal";
-
-type SortableComponentProps = {
-	device: VirtualDevice;
-	onDeviceClick?: (device: VirtualDevice) => void;
-	selectedSections: string[];
-	onSectionScroll?: () => void;
-	onParameterClick?: (
-		device: VirtualDevice,
-		parameter: VirtualParameter,
-	) => void;
-};
-
-function SortableVirtualDeviceComponent<T extends HasId>({
-	device,
-	selectedSections,
-	onDeviceClick,
-	onSectionScroll,
-	onParameterClick,
-}: SortableComponentProps) {
-	const { attributes, listeners, setNodeRef, transform, transition } =
-		useSortable({
-			id: devUID(device),
-		});
-
-	const style: React.CSSProperties = {
-		transform: CSS.Transform.toString(transform),
-		transition,
-		position: "relative",
-	} as const satisfies React.CSSProperties;
-
-	return (
-		<div ref={setNodeRef} style={style}>
-			<div
-				{...attributes}
-				{...listeners}
-				style={{
-					position: "absolute",
-					top: 5,
-					left: 7,
-					zIndex: 1,
-					cursor: "grab",
-					fontSize: "23px",
-					color: "gray",
-					width: "20px",
-					height: "20px",
-					display: "flex",
-					alignItems: "center",
-					justifyContent: "center",
-					touchAction: "none",
-				}}
-			>
-				=
-			</div>
-			<VirtualDeviceComponent
-				device={device}
-				selectedSections={selectedSections}
-				onDeviceClick={onDeviceClick}
-				onSectionScroll={onSectionScroll}
-				onParameterClick={onParameterClick}
-			/>
-		</div>
-	);
-}

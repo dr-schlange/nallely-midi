@@ -73,6 +73,9 @@ interface MiniRackProps {
 	onPlaceholderClick?: () => void;
 }
 
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+
 export const MiniRack = ({
 	devices,
 	rackId,
@@ -83,16 +86,13 @@ export const MiniRack = ({
 	const totalRackSlots = 6;
 
 	const nbPlaceHolders = totalRackSlots - totalWeightModules(devices);
-	const slots = Array.from([
+	const slots = [
 		...devices.map((device) => (
-			<VDevice
-				device={device}
+			<SortableVDevice
 				key={devUID(device)}
+				device={device}
 				onClick={onDeviceClick}
-				selected={
-					selectedSections?.length > 0 &&
-					selectedSections.some((s) => s.startsWith(devUID(device)))
-				}
+				selectedSections={selectedSections}
 			/>
 		)),
 		nbPlaceHolders > 0 && (
@@ -102,7 +102,8 @@ export const MiniRack = ({
 				onClick={onPlaceholderClick}
 			/>
 		),
-	]);
+	];
+
 	return (
 		<div
 			style={{
@@ -112,28 +113,17 @@ export const MiniRack = ({
 				gap: "1px",
 				borderTop: "5px solid grey",
 				borderBottom: "5px solid grey",
-				// borderLeft: "2px solid grey",
-				// borderRight: "2px solid grey",
 				padding: "2px",
 				backgroundColor: "#d0d0d0",
-				// height: "135px",
 				width: "194px",
 			}}
 		>
-			{/* <div
+			<div
 				style={{
 					display: "flex",
-					width: "auto",
-					flexDirection: "row-reverse",
-					backgroundColor: "#e0e0e0",
-					borderTop: "1px solid grey",
-					borderBottom: "1px solid grey",
+					gap: "1px",
+					justifyContent: "space-around",
 				}}
-			>
-				<Button text="c" tooltip="fff" />
-			</div> */}
-			<div
-				style={{ display: "flex", gap: "1px", justifyContent: "space-around" }}
 			>
 				{slots}
 			</div>
@@ -367,65 +357,83 @@ export const VDevicePlaceholder = ({
 }: VDevicePlaceholderProps) => {
 	const height = "120px";
 	const width = slots === SMALLSIZE ? 176 : slots * 26.5;
+	const [pressed, setPressed] = useState(false);
 	const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(
 		null,
 	);
 	const touchThreshold = 10;
-	const [pressed, setPressed] = useState(false);
 
 	return (
 		<div
+			data-no-dnd
 			style={{
 				paddingTop: "1px",
 				border: `3px dashed ${pressed ? "orange" : "#aaaaaa"}`,
-				height: height,
-				width: width,
+				height,
+				width,
 				minWidth: width,
 				display: "flex",
-				flexWrap: "wrap",
-				flexDirection: "row",
-				gap: "0px",
-				justifyContent: "space-evenly",
-				backgroundColor: pressed ? "rgba(255,165,0,0.1)" : "transparent",
-				transform: pressed ? "scale(0.97)" : "scale(1)",
-				transition: "all 0.01s ease",
-				userSelect: "none",
 				alignItems: "center",
+				justifyContent: "center",
+				transform: pressed ? "scale(0.97)" : "scale(1)",
+				backgroundColor: pressed ? "rgba(255,165,0,0.1)" : "transparent",
+				cursor: "pointer",
+				userSelect: "none",
+				touchAction: "auto",
 			}}
-			onTouchStart={(event) => {
-				event.stopPropagation();
-				const touch = event.touches[0];
+			onTouchStart={(e) => {
+				e.stopPropagation();
+				const touch = e.touches[0];
 				setTouchStart({ x: touch.clientX, y: touch.clientY });
 				setPressed(true);
 			}}
-			onTouchMove={(event) => {
+			onTouchMove={(e) => {
 				if (!touchStart) return;
-				const touch = event.touches[0];
-				const dx = Math.abs(touch.clientX - touchStart.x);
-				const dy = Math.abs(touch.clientY - touchStart.y);
-				if (dx > touchThreshold || dy > touchThreshold) {
+				const touch = e.touches[0];
+				if (
+					Math.abs(touch.clientX - touchStart.x) > touchThreshold ||
+					Math.abs(touch.clientY - touchStart.y) > touchThreshold
+				) {
 					setPressed(false);
-					setTouchStart(null); // cancel press
+					setTouchStart(null);
 				}
 			}}
-			onTouchEnd={(event) => {
+			onTouchEnd={(e) => {
 				if (!pressed) return;
-				event.stopPropagation();
+				e.stopPropagation();
 				setPressed(false);
 				setTouchStart(null);
 				onClick?.();
 			}}
+			onClick={(e) => {
+				e.stopPropagation();
+				onClick?.();
+			}}
 		>
-			<p
-				style={{
-					color: pressed ? "orange" : "#aaaaaa",
-					fontSize: "27px",
-					transform: pressed ? "scale(0.97)" : "scale(1)",
-					transition: "transform 0.15s ease",
-				}}
-			>
-				+
-			</p>
+			<p style={{ fontSize: 27, color: pressed ? "orange" : "#aaaaaa" }}>+</p>
+		</div>
+	);
+};
+
+const SortableVDevice = ({ device, onClick, selectedSections }) => {
+	const { attributes, listeners, setNodeRef, transform, transition } =
+		useSortable({
+			id: devUID(device),
+		});
+
+	const style: React.CSSProperties = {
+		transform: CSS.Transform.toString(transform),
+		transition,
+		touchAction: "none",
+	};
+
+	return (
+		<div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+			<VDevice
+				device={device}
+				onClick={onClick}
+				selected={selectedSections.some((s) => s.startsWith(devUID(device)))}
+			/>
 		</div>
 	);
 };
