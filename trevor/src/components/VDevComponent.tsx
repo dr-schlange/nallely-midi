@@ -421,13 +421,25 @@ const SortableVDevice = ({ device, onClick, selectedSections }) => {
 			id: devUID(device),
 		});
 
+	useEffect(() => {
+		const handleTouchMove = (e: TouchEvent) => {
+			if (isDragging) e.preventDefault();
+		};
+
+		document.addEventListener("touchmove", handleTouchMove, { passive: false });
+
+		return () => {
+			document.removeEventListener("touchmove", handleTouchMove);
+		};
+	}, [isDragging]);
+
 	const style: React.CSSProperties = {
 		transform: isDragging
 			? `${CSS.Transform.toString(transform)} scale(1.05)`
 			: CSS.Transform.toString(transform),
 		boxShadow: isDragging ? "0 0 10px rgba(255,165,0,0.7)" : undefined,
 		transition: "transform 0.15s ease",
-		touchAction: "none",
+		touchAction: isDragging ? "pan-y" : "auto",
 	};
 
 	return (
