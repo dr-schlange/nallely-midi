@@ -437,7 +437,7 @@ const SortableVDevice = ({ device, onClick, selectedSections }) => {
 		transform: isDragging
 			? `${CSS.Transform.toString(transform)} scale(1.05)`
 			: CSS.Transform.toString(transform),
-		boxShadow: isDragging ? "0 0 10px rgba(255,165,0,0.7)" : undefined,
+		boxShadow: isDragging ? "5px 5px rgba(255,165,0,0.7)" : undefined,
 		transition: "transform 0.15s ease",
 		touchAction: isDragging ? "pan-y" : "auto",
 	};
