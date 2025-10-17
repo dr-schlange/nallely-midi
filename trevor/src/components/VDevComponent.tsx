@@ -1,6 +1,6 @@
 /** biome-ignore-all lint/a11y/useKeyWithClickEvents: <explanation> */
 /** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { VirtualDevice, VirtualParameter } from "../model";
 import {
 	buildSectionId,
@@ -416,14 +416,17 @@ export const VDevicePlaceholder = ({
 };
 
 const SortableVDevice = ({ device, onClick, selectedSections }) => {
-	const { attributes, listeners, setNodeRef, transform, transition } =
+	const { attributes, listeners, setNodeRef, transform, isDragging } =
 		useSortable({
 			id: devUID(device),
 		});
 
 	const style: React.CSSProperties = {
-		transform: CSS.Transform.toString(transform),
-		transition,
+		transform: isDragging
+			? `${CSS.Transform.toString(transform)} scale(1.05)`
+			: CSS.Transform.toString(transform),
+		boxShadow: isDragging ? "0 0 10px rgba(255,165,0,0.7)" : undefined,
+		transition: "transform 0.15s ease",
 		touchAction: "none",
 	};
 
