@@ -433,9 +433,11 @@ const SortableVDevice = ({ device, onClick, selectedSections, onDrag }) => {
 		};
 
 		document.addEventListener("touchmove", handleTouchMove, { passive: false });
+		document.addEventListener("mousemove", handleTouchMove, { passive: false });
 
 		return () => {
 			document.removeEventListener("touchmove", handleTouchMove);
+			document.removeEventListener("mousemove", handleTouchMove);
 		};
 	}, [isDragging, device, onDrag]);
 
