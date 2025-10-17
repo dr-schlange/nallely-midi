@@ -219,6 +219,7 @@ export const RackRowVirtual = ({
 									onDeviceClick={onParameterClick}
 									onPlaceholderClick={() => setSelectorOpened((prev) => !prev)}
 									selectedSections={selectedSections}
+									onDrag={onSectionScroll}
 								/>
 							))}
 						</SortableContext>

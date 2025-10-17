@@ -1513,6 +1513,7 @@ h3.details {
 	display: flex;
 	flex-direction: row;
 	width: 100%;
+	z-index: 20;
 }
 
 /* landscape */

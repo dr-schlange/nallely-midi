@@ -71,6 +71,7 @@ interface MiniRackProps {
 	selectedSections: string[];
 	onDeviceClick?: (device: VirtualDevice) => void;
 	onPlaceholderClick?: () => void;
+	onDrag?: (device: VirtualDevice) => void;
 }
 
 import { useSortable } from "@dnd-kit/sortable";
@@ -82,6 +83,7 @@ export const MiniRack = ({
 	onPlaceholderClick,
 	onDeviceClick,
 	selectedSections,
+	onDrag,
 }: MiniRackProps) => {
 	const totalRackSlots = 6;
 
@@ -93,6 +95,7 @@ export const MiniRack = ({
 				device={device}
 				onClick={onDeviceClick}
 				selectedSections={selectedSections}
+				onDrag={onDrag}
 			/>
 		)),
 		nbPlaceHolders > 0 && (
@@ -415,7 +418,7 @@ export const VDevicePlaceholder = ({
 	);
 };
 
-const SortableVDevice = ({ device, onClick, selectedSections }) => {
+const SortableVDevice = ({ device, onClick, selectedSections, onDrag }) => {
 	const { attributes, listeners, setNodeRef, transform, isDragging } =
 		useSortable({
 			id: devUID(device),
@@ -423,7 +426,10 @@ const SortableVDevice = ({ device, onClick, selectedSections }) => {
 
 	useEffect(() => {
 		const handleTouchMove = (e: TouchEvent) => {
-			if (isDragging) e.preventDefault();
+			if (isDragging) {
+				e.preventDefault();
+				onDrag?.(device);
+			}
 		};
 
 		document.addEventListener("touchmove", handleTouchMove, { passive: false });
@@ -431,7 +437,7 @@ const SortableVDevice = ({ device, onClick, selectedSections }) => {
 		return () => {
 			document.removeEventListener("touchmove", handleTouchMove);
 		};
-	}, [isDragging]);
+	}, [isDragging, device, onDrag]);
 
 	const style: React.CSSProperties = {
 		transform: isDragging
