@@ -590,7 +590,7 @@ const PatchingModal = ({
 									>
 										<div
 											className={`parameter-box ${incoming || outgoing ? "occupied" : ""}`}
-											id={`${buildParameterId(currentSecondSection.device.id, param)}`}
+											id={`${buildParameterId(currentFirstSection.device.id, param)}`}
 										/>
 										<div className="text-wrapper">
 											<span className="parameter-name left">{param.name}</span>
