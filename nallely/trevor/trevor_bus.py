@@ -17,8 +17,6 @@ from textwrap import indent
 from websockets import ConnectionClosed, ConnectionClosedError
 from websockets.sync.server import serve
 
-from nallely.core import virtual_device
-
 from ..core import (
     Int,
     Module,
@@ -27,6 +25,7 @@ from ..core import (
     all_devices,
     all_links,
     connected_devices,
+    get_virtual_devices,
     midi_device_classes,
     no_registration,
     stop_all_connected_devices,
@@ -108,12 +107,20 @@ class TrevorBus(VirtualDevice):
         self.cc_update_interval = int(0.05e9)  # every X ns
         self.next_cc_update_time = time.perf_counter_ns() + self.cc_update_interval
         self.cc_update_package = defaultdict(make_ccvalues)
-        self.create_ws_bus()
+        self.refresh_ws_bus(WebSocketBus())
 
-    def create_ws_bus(self):
-        self.ws = WebSocketBus()
-        self.ws.to_update = self  # type: ignore
-        self.ws.start()
+    def refresh_ws_bus(self, ws=None):
+        if ws is None:
+            for dev in get_virtual_devices():
+                if isinstance(dev, WebSocketBus):
+                    ws = dev
+                    break
+        if ws is None:
+            print("[TrevorBus] No Websocket bus to refresh/reconnect to")
+            return
+        ws.to_update = self  # type: ignore
+        ws.start()
+        self.ws = ws
 
     @staticmethod
     def to_json(obj, **kwargs):
@@ -124,7 +131,9 @@ class TrevorBus(VirtualDevice):
         service_name = path.split("/")[1]
         connected_clients = self.connected[service_name]
         connected_clients.append(client)
-        print(f"Connected on {service_name} [{len(connected_clients)} clients]")
+        print(
+            f"[TrevorBus] Connected on {service_name} [{len(connected_clients)} clients]"
+        )
         try:
             client.send(self.to_json(self.full_state()))
             for message in client:
@@ -135,12 +144,14 @@ class TrevorBus(VirtualDevice):
                 if isinstance(e, (ConnectionClosedError, TimeoutError))
                 else "disconnected"
             )
-            print(f"Client {client} on trevor {kind}")
+            print(f"[TrevorBus] Client {client} on trevor {kind}")
         finally:
-            print("Disconnecting", client)
+            print("[TrevorBus] Disconnecting", client)
             try:
                 connected_clients.remove(client)
-                print(f"Connected on {service_name} [{len(connected_clients)} clients]")
+                print(
+                    f"[TrevorBus] Connected on {service_name} [{len(connected_clients)} clients]"
+                )
             except ValueError:
                 pass
 
@@ -148,7 +159,7 @@ class TrevorBus(VirtualDevice):
         try:
             self.server.serve_forever()
         except Exception as e:
-            print("Error while serving the trevor websocket server", e)
+            print("[TrevorBus] Error while serving the trevor websocket server", e)
         return super().setup()
 
     def stop(self, clear_queues=False):
@@ -179,7 +190,7 @@ class TrevorBus(VirtualDevice):
                         else "disconnected"
                     )
                     print(
-                        f"Client {client} on trevor {kind} [{len(connected_devices)} clients]"
+                        f"[TrevorBus] Client {client} on trevor {kind} [{len(connected_devices)} clients]"
                     )
                 except Exception:
                     pass
@@ -324,7 +335,7 @@ class TrevorBus(VirtualDevice):
                         else "disconnected"
                     )
                     print(
-                        f"Client {client} on trevor {kind} [{len(connected_devices)} clients]"
+                        f"[TrevorBus] Client {client} on trevor {kind} [{len(connected_devices)} clients]"
                     )
                 except Exception:
                     pass
@@ -347,7 +358,7 @@ class TrevorBus(VirtualDevice):
 
     def reset_all(self):
         self.trevor.reset_all()
-        self.create_ws_bus()
+        self.refresh_ws_bus(WebSocketBus())
         return self.full_state()
 
     def associate_parameters(
@@ -377,6 +388,7 @@ class TrevorBus(VirtualDevice):
         errors = self.session.load_all(name)
         if errors:
             self.send_message({"errors": errors})
+        self.refresh_ws_bus()
         return self.full_state()
 
     def save_all(self, name, save_defaultvalues=False):
@@ -436,7 +448,7 @@ class TrevorBus(VirtualDevice):
                     link = all_links()[device_or_link]
                     link.debug = True
                 except:
-                    print(f"Couldn't find {device_or_link}")
+                    print(f"[TrevorBus] Couldn't find {device_or_link}")
                     pass
         self.redirector.start_capture()
 
@@ -450,7 +462,7 @@ class TrevorBus(VirtualDevice):
                     link = all_links()[device_or_link]
                     link.debug = False
                 except:
-                    print(f"Couldn't find {device_or_link}")
+                    print(f"[TrevorBus] Couldn't find {device_or_link}")
                     pass
         self.redirector.stop_capture()
 
@@ -462,14 +474,14 @@ class TrevorBus(VirtualDevice):
                 {"arg": class_code, "command": "RuntimeAPI::setClassCode"}
             )
         except:
-            print(f"Couldn't find {device_id}")
+            print(f"[TrevorBus] Couldn't find {device_id}")
             pass
 
     def compile_inject(self, device_id, method_name, method_code):
         try:
             device = self.trevor.get_device_instance(device_id)
         except Exception as e:
-            print(f"Couldn't find {device_id}")
+            print(f"[TrevorBus] Couldn't find {device_id}")
             return
         try:
             self.meta_trevor.compile_inject(device, method_name, method_code)
@@ -633,6 +645,7 @@ def start_trevor(
             trevor.session.load_all(init_script)
         if address:
             trevor.session.load_address(address)
+            trevor.refresh_ws_bus()
         _trevor_menu(loaded_paths, init_script, trevor, serve_ui)
         print("Shutting down...")
     finally:

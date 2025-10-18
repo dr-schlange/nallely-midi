@@ -341,8 +341,11 @@ class WebSocketBus(VirtualDevice):
                 if link.dest.parameter is param or link.src.parameter is param:
                     print(f"[WS] unbinding link {link} for {service_name}")
                     link.uninstall()
-                print(f"[WS] Removing {param.cv_name} from bus")
+            print(f"[WS] Removing {param.cv_name} from bus")
+            try:
                 delattr(self.__class__, param.cv_name)
+            except Exception as e:
+                print(f"[WS] {param.cv_name} is not find in the WS")
 
         connected_clients = self.connected[service_name]
         for connected_client in connected_clients:
