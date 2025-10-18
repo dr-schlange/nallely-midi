@@ -3,6 +3,7 @@ import { useTrevorSelector } from "../../store";
 import { useTrevorWebSocket } from "../../websockets/websocket";
 import type { VirtualDeviceSchema } from "../../model";
 import VDeviceSchema from "../VDevSchemaComponent";
+import { Button } from "../widgets/BaseComponents";
 
 interface VDeviceSelectionModalProps {
 	onClose: () => void;
@@ -12,15 +13,16 @@ interface ModalProps {
 	onClose: () => void;
 	onCancel: () => void;
 	children?;
+	header?;
 }
 
-const Modal = ({ onClose, onCancel, children }: ModalProps) => {
+const Modal = ({ onClose, onCancel, children, header }: ModalProps) => {
 	return (
 		<div className="modal-vdevice-selection">
 			<div
 				style={{
 					width: "100%",
-					height: "40px",
+					height: "52px",
 					backgroundColor: "#d0d0d0",
 					borderBottom: "2px solid #808080",
 					padding: "0 10px",
@@ -29,11 +31,13 @@ const Modal = ({ onClose, onCancel, children }: ModalProps) => {
 					justifyContent: "space-between",
 					boxSizing: "border-box",
 					flex: "0 0 auto",
+					gap: "5px",
 				}}
 			>
 				<button type="button" className="close-button" onClick={onClose}>
 					Close
 				</button>
+				{header}
 				<button type="button" className="close-button" onClick={onCancel}>
 					Cancel
 				</button>
@@ -64,6 +68,7 @@ const VDeviceSelectionModal = ({ onClose }: VDeviceSelectionModalProps) => {
 	>({});
 	const [selection, setSelection] = useState(null);
 	const [doc, setDoc] = useState(null);
+	const [filter, setFilter] = useState<string>();
 
 	useEffect(() => {
 		trevorSocket.fetchVirtualDeviceSchemas();
@@ -113,27 +118,63 @@ const VDeviceSelectionModal = ({ onClose }: VDeviceSelectionModalProps) => {
 		onClose?.();
 	};
 
+	const header = () => {
+		const firstLetters = new Set(schemas.map((s) => s.name?.[0]));
+		return (
+			<div
+				style={{
+					display: "flex",
+					flexDirection: "row",
+					gap: "2px",
+					flexWrap: "wrap",
+					justifyContent: "space-around",
+				}}
+			>
+				{[...firstLetters].sort().map((l) => {
+					return (
+						<Button
+							key={l}
+							text={l.toUpperCase()}
+							tooltip="Filter on first letter"
+							activated={filter === l}
+							variant="small"
+							onClick={() => {
+								if (filter === l) {
+									setFilter(undefined);
+								} else {
+									setFilter(l);
+								}
+							}}
+						/>
+					);
+				})}
+			</div>
+		);
+	};
+
 	return (
-		<Modal onClose={commit} onCancel={onClose}>
+		<Modal onClose={commit} onCancel={onClose} header={header()}>
 			{schemas.length === 0 && <p>Loading available devices...</p>}
 
 			<div className="modal-vdevice-content">
 				<div className="modal-vdevice-list">
-					{schemas.map((schema) => (
-						<VDeviceSchema
-							key={schema.name}
-							schema={schema}
-							onClick={addDevice}
-							onLongPress={(schema) => {
-								setDoc(schema.doc);
-							}}
-							onTouchStart={(schema) => {
-								setSelection(schema);
-								setDoc(schema.doc);
-							}}
-							selected={selection?.name === schema.name}
-						/>
-					))}
+					{schemas
+						.filter((s) => filter === undefined || s.name?.[0] === filter)
+						.map((schema) => (
+							<VDeviceSchema
+								key={schema.name}
+								schema={schema}
+								onClick={addDevice}
+								onLongPress={(schema) => {
+									setDoc(schema.doc);
+								}}
+								onTouchStart={(schema) => {
+									setSelection(schema);
+									setDoc(schema.doc);
+								}}
+								selected={selection?.name === schema.name}
+							/>
+						))}
 				</div>
 				{/* Bottom div */}
 				<div className="modal-vdevice-bottom">
