@@ -1,6 +1,6 @@
 /** biome-ignore-all lint/a11y/useKeyWithClickEvents: <explanation> */
 /** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { VirtualDevice, VirtualParameter } from "../model";
 import {
 	buildSectionId,
@@ -76,6 +76,7 @@ interface MiniRackProps {
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useTrevorWebSocket } from "../websockets/websocket";
 
 export const MiniRack = ({
 	devices,
@@ -137,6 +138,7 @@ export const MiniRack = ({
 interface VDeviceProps {
 	device: VirtualDevice;
 	onClick?: (device: VirtualDevice) => void;
+	onDoubleClick?: (device: VirtualDevice) => void;
 	onLongPress?: (device: VirtualDevice) => void;
 	onTouchStart?: (device: VirtualDevice) => void;
 	selected?: boolean;
@@ -212,6 +214,7 @@ const HIDE = [];
 export const VDevice = ({
 	device,
 	onClick,
+	onDoubleClick,
 	selected,
 	onLongPress,
 	onTouchStart,
@@ -224,6 +227,8 @@ export const VDevice = ({
 		(e) => !HIDE.includes(e.name),
 	);
 	const nbParameters = parameters.length;
+	const lastTap = useRef<number | null>(null);
+	const trevorSocket = useTrevorWebSocket();
 
 	if (nbParameters <= SMALL_PORTS_LIMIT) {
 		width = 25;
@@ -244,11 +249,46 @@ export const VDevice = ({
 		rest: chunkArray(parameters.slice(SMALL_PORTS_LIMIT), PORTS_LIMIT),
 	};
 
+	const handleDoubleClick = (device) => {
+		if (onDoubleClick) {
+			onDoubleClick?.(device);
+			return;
+		}
+		trevorSocket.toggle_device(device, /* start= */ !device.running);
+	};
+
+	const handleClick = (event: React.MouseEvent | React.TouchEvent) => {
+		event.preventDefault();
+		event.stopPropagation();
+
+		if (longPressEvents.didLongPress.current) {
+			return;
+		}
+
+		const now = Date.now();
+		const DOUBLE_CLICK_DELAY = 200;
+		if (lastTap.current && now - lastTap.current < DOUBLE_CLICK_DELAY) {
+			handleDoubleClick(device);
+			lastTap.current = null;
+		} else {
+			lastTap.current = now;
+			setTimeout(() => {
+				if (
+					lastTap.current &&
+					Date.now() - lastTap.current >= DOUBLE_CLICK_DELAY
+				) {
+					onClick?.(device);
+					lastTap.current = null;
+				}
+			}, DOUBLE_CLICK_DELAY);
+		}
+	};
+
 	return (
 		<div
 			style={{
 				paddingTop: "1px",
-				border: `3px solid ${selected ? "yellow" : "gray"}`,
+				border: `3px ${device.paused ? "dashed" : "solid"} ${selected ? "yellow" : "gray"}`,
 				height: height,
 				width: `${width}px`,
 				minWidth: `${width}px`,
@@ -260,14 +300,7 @@ export const VDevice = ({
 				backgroundColor: "#e0e0e0",
 				userSelect: "none",
 			}}
-			onClick={(event) => {
-				event.preventDefault();
-				event.stopPropagation();
-
-				if (!longPressEvents.didLongPress.current) {
-					onClick?.(device);
-				}
-			}}
+			onClick={handleClick}
 			{...longPressEvents}
 		>
 			<div

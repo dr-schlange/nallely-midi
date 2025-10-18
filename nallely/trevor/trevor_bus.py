@@ -427,6 +427,11 @@ class TrevorBus(VirtualDevice):
         return self.full_state()
 
     def set_virtual_value(self, device_id, parameter, value):
+        if parameter == "set_pause":
+            if int(value) > 0:
+                return self.pause_device(device_id, None)
+            else:
+                return self.resume_device(device_id, None)
         self.trevor.set_virtual_value(device_id, parameter, value)
         return self.full_state()
 

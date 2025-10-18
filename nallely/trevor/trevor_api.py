@@ -187,13 +187,13 @@ class TrevorAPI:
             dev.listen()
         return
 
-    def resume_device(self, device_id, start):
+    def resume_device(self, device_id, start=None):
         device: VirtualDevice = self.get_device_instance(device_id)  # type: ignore
         if start:
             device.start()
         device.resume()
 
-    def pause_device(self, device_id, start):
+    def pause_device(self, device_id, start=None):
         device: VirtualDevice = self.get_device_instance(device_id)  # type: ignore
         if start:
             device.start()
