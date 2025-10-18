@@ -58,6 +58,9 @@ class ShiftRegister(VirtualDevice):
     input_cv = VirtualParameter("input", range=(0, 127))
     trigger_cv = VirtualParameter("trigger", range=(0, 1), conversion_policy=">0")
     reset_cv = VirtualParameter("reset", range=(0, 1))
+    length_cv = VirtualParameter(
+        "length", range=(2, 8), conversion_policy="round", default=8
+    )
 
     output7_cv = VirtualParameter("output7", range=(0, 127))
     output6_cv = VirtualParameter("output6", range=(0, 127))
@@ -72,6 +75,7 @@ class ShiftRegister(VirtualDevice):
         self.input = 0
         self.trigger = 0
         self.reset = 0
+        self.length = 8
         self.registers: deque[int | None] = deque([None] * 8, maxlen=8)
         self.outputs = [None] * 8
         for i in range(8):
@@ -82,10 +86,11 @@ class ShiftRegister(VirtualDevice):
     @on(trigger_cv, edge="rising")
     def trigger_next_step(self, value, ctx):
         self.registers.appendleft(self.input)
-        for i, (register, output) in enumerate(zip(self.registers, self.outputs)):
+        for i, (register, output) in enumerate(
+            zip(list(self.registers)[: self.length], self.outputs[: self.length])
+        ):
             if register is not None:
-                outputs = [self.output_cv, output] if i == 0 else [output]
-                yield register, outputs
+                yield register, [output]
 
     @on(reset_cv, edge="rising")
     def reset_values(self, value, ctx):

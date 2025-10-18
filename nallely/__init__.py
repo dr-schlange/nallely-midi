@@ -38,6 +38,7 @@ from .shifter import (
     Arpegiator,
     ChordGenerator,
     HarmonicGenerator,
+    Harmonizer,
     Looper,
     Modulo,
     PitchShifter,
@@ -118,4 +119,5 @@ __all__ = [
     "VoiceAllocator",
     "Sequencer8",
     "TuringMachine",
+    "Harmonizer",
 ]
