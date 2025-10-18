@@ -361,6 +361,35 @@ class Looper(VirtualDevice):
             self.current_index += 1
 
 
+ROOT = 0
+FLAT_SECOND = 1
+SECOND = 2
+MINOR_THIRD = 3
+THIRD = 4
+FOURTH = 5
+AUG_FOURTH = 6
+FLAT_FIFTH = AUG_FOURTH
+FIFTH = 7
+AUG_FIFTH = 8
+DIM_SIXTH = AUG_FIFTH
+SIXTH = 9
+AUG_SIXTH = 10
+SEVENTH = AUG_SIXTH
+MAJ_SEVENTH = 11
+OCTAVE = 12
+
+CHORD_INTERVALS = {
+    "maj": (ROOT, THIRD, FIFTH),
+    "min": (ROOT, MINOR_THIRD, FIFTH),
+    "maj7": (ROOT, THIRD, FIFTH, MAJ_SEVENTH),
+    "min7": (ROOT, MINOR_THIRD, FIFTH, SEVENTH),
+    "min7maj": (ROOT, MINOR_THIRD, FIFTH, MAJ_SEVENTH),
+    "7th": (ROOT, THIRD, FIFTH, SEVENTH),
+    "maj7#11": (ROOT, AUG_FOURTH, FIFTH, SEVENTH),
+    "dim": (ROOT, MINOR_THIRD, FLAT_FIFTH, SIXTH),
+    "m7b5": (ROOT, MINOR_THIRD, FLAT_FIFTH, SEVENTH),
+}
+
 NOTES = {
     "C": 0,
     "C#/Db": 1,
@@ -376,16 +405,19 @@ NOTES = {
     "B": 11,
 }
 NOTE_NAMES = tuple(NOTES.keys())
-INTERVALS = {
+SCALE_INTERVALS = {
     "maj": (0, 2, 2, 1, 2, 2, 2, 1),
     "min-harmo": (0, 2, 1, 2, 2, 1, 3, 1),
     "min-melo": (0, 2, 1, 2, 2, 2, 2, 1),
 }
 
 SCALES = {
-    "maj": (0, 2, 4, 5, 7, 9, 11),
-    "min-harmo": (0, 2, 3, 5, 7, 8, 11),
-    "min-melo": (0, 2, 3, 5, 7, 9, 11),
+    "maj": (ROOT, SECOND, THIRD, FOURTH, FIFTH, SIXTH, MAJ_SEVENTH),
+    "min-harmo": (ROOT, SECOND, MINOR_THIRD, FOURTH, FIFTH, AUG_FIFTH, MAJ_SEVENTH),
+    "min-melo": (ROOT, SECOND, MINOR_THIRD, FOURTH, FIFTH, SIXTH, MAJ_SEVENTH),
+    "min-penta": (ROOT, MINOR_THIRD, FOURTH, FIFTH, SEVENTH),
+    "min6-penta": (ROOT, MINOR_THIRD, FOURTH, FIFTH, SIXTH, SEVENTH),
+    "maj-penta": (ROOT, SECOND, THIRD, FIFTH, SEVENTH),
 }
 
 
@@ -395,7 +427,7 @@ class Quantizer(VirtualDevice):
     reset_cv = VirtualParameter("reset", range=(0, 1))
     root_cv = VirtualParameter("root", accepted_values=NOTE_NAMES, disable_policy=True)
     scale__cv = VirtualParameter(
-        "scale_", accepted_values=tuple(INTERVALS.keys()), disable_policy=True
+        "scale_", accepted_values=tuple(SCALE_INTERVALS.keys()), disable_policy=True
     )
     type_cv = VirtualParameter("type", accepted_values=("sample&hold", "free"))
 
@@ -464,35 +496,6 @@ class Quantizer(VirtualDevice):
         yield self.hold  # we return the same held note to force a note-off
         self.hold = None
 
-
-ROOT = 0
-FLAT_SECOND = 1
-SECOND = 2
-MINOR_THIRD = 3
-THIRD = 4
-FOURTH = 5
-AUG_FOURTH = 6
-FLAT_FIFTH = AUG_FOURTH
-FIFTH = 7
-AUG_FIFTH = 8
-DIM_SIXTH = AUG_FIFTH
-SIXTH = 9
-AUG_SIXTH = 10
-SEVENTH = AUG_SIXTH
-MAJ_SEVENTH = 11
-OCTAVE = 12
-
-CHORD_INTERVALS = {
-    "maj": (ROOT, THIRD, FIFTH),
-    "min": (ROOT, MINOR_THIRD, FIFTH),
-    "maj7": (ROOT, THIRD, FIFTH, MAJ_SEVENTH),
-    "min7": (ROOT, MINOR_THIRD, FIFTH, SEVENTH),
-    "min7maj": (ROOT, MINOR_THIRD, FIFTH, MAJ_SEVENTH),
-    "7th": (ROOT, THIRD, FIFTH, SEVENTH),
-    "maj7#11": (ROOT, AUG_FOURTH, FIFTH, SEVENTH),
-    "dim": (ROOT, MINOR_THIRD, FLAT_FIFTH, SIXTH),
-    "m7b5": (ROOT, MINOR_THIRD, FLAT_FIFTH, SEVENTH),
-}
 
 NOTES_INTERVALS = {
     "--": -1,
@@ -820,74 +823,91 @@ class VoiceAllocator(VirtualDevice):
         self.idx += 1
 
 
+INTERVAL_TO_SEMITONES = {
+    "+octave": OCTAVE,
+    "+7/b7": SEVENTH,
+    "+6/m6": SIXTH,
+    "+5/b5": FIFTH,
+    "+4/b4": FOURTH,
+    "+3/m3": THIRD,
+    "+2/b2": SECOND,
+    "root": ROOT,
+    "-2/b2": -SECOND,
+    "-3/m3": -THIRD,
+    "-4/b4": -FOURTH,
+    "-5/b5": -FIFTH,
+    "-6/m6": -SIXTH,
+    "-7/b7": -SEVENTH,
+    "-octave": -OCTAVE,
+}
+
+
 class Harmonizer(VirtualDevice):
-    output_cv = VirtualParameter("output", range=(0, 127))
-    input_cv = VirtualParameter("input", range=(0, 127))
-    interval_cv = VirtualParameter("interval", range=(-7, 7))
+    input_cv = VirtualParameter("input", range=(0, 127), conversion_policy="round")
+    interval_cv = VirtualParameter(
+        "interval", accepted_values=list(INTERVAL_TO_SEMITONES.keys()), default="root"
+    )
     key_cv = VirtualParameter(
         "key",
-        accepted_values=[
-            "C",
-            "C#",
-            "D",
-            "D#",
-            "E",
-            "F",
-            "F#",
-            "G",
-            "G#",
-            "A",
-            "A#",
-            "B",
-        ],
+        accepted_values=NOTE_NAMES,
     )
-    scale_cv = VirtualParameter("scale_", accepted_values=["major", "minor natural"])
+    scale_cv = VirtualParameter("scale_", accepted_values=list(SCALES.keys()))
 
-    def __init__(self, *args, **kwargs):
-        self.scales = {
-            "major": [0, 2, 4, 5, 7, 9, 11],
-            "minor natural": [0, 2, 3, 5, 7, 8, 10],
-        }
-        self.input = None
-        self.interval = 0
-        self.key = "C"
-        self.scale_ = "major"
-
-        super().__init__(*args, **kwargs)
+    def __post_init__(self, **kwargs):
+        self.scales = SCALES
 
     def get_scale_for_key(self, key, scale_type):
         scale = self.scales[scale_type]
-        key_idx = getattr(self.__class__, "key_cv").accepted_values.index(key)
+        key_idx = self.key_cv.parameter.accepted_values.index(key)
         return [(degree + key_idx) % 12 for degree in scale]
 
     def midi_to_scale_degree(self, note, scale):
+        scale_length = len(scale)
         pitch_class = note % 12
         octave = note // 12
         if pitch_class in scale:
             scale_degree = scale.index(pitch_class)
-            return octave * 7 + scale_degree
+            return octave * scale_length + scale_degree
         lower_degrees = [i for i, pc in enumerate(scale) if pc <= pitch_class]
         if not lower_degrees:
-            return (octave - 1) * 7 + len(scale) - 1
-        return octave * 7 + max(lower_degrees)
+            return (octave - 1) * scale_length + len(scale) - 1
+        return octave * scale_length + max(lower_degrees)
 
     def scale_degree_to_midi(self, degree, scale):
-        octave = degree // 7
-        index = degree % 7
+        octave = degree // len(scale)
+        index = degree % len(scale)
         return octave * 12 + scale[index]
 
-    def main(self, ctx):
-        if self.input is None:
-            return None
+    @on(input_cv, edge="any")
+    def change_input(self, value, ctx):
+        return self.harmonize_note()
 
-        note = self.input
-        interval = self.interval
-        key = self.key
-        scale_type = self.scale_
+    @on(scale_cv, edge="any")
+    def change_scale(self, value, ctx):
+        return self.harmonize_note()
 
+    @on(interval_cv, edge="any")
+    def change_interval(self, value, ctx):
+        return self.harmonize_note()
+
+    @on(key_cv, edge="any")
+    def change_key(self, value, ctx):
+        return self.harmonize_note()
+
+    def harmonize_note(self):
+        if not self.input:  # type: ignore
+            return 0
+
+        note = self.input  # type: ignore
+        key = self.key  # type: ignore
+        scale_type = self.scale_  # type: ignore
+        interval = self.interval  # type: ignore
+
+        semitone_shift = INTERVAL_TO_SEMITONES[interval]
+        target_note = note + semitone_shift
         scale = self.get_scale_for_key(key, scale_type)
-        input_degree = self.midi_to_scale_degree(note, scale)
-        harmonized_degree = input_degree + interval
-        harmonized_note = self.scale_degree_to_midi(harmonized_degree, scale)
+        key_root = self.key_cv.parameter.accepted_values.index(key)
+        all_scale_notes = [key_root + s + 12 * o for o in range(0, 11) for s in scale]
+        closest_note = min(all_scale_notes, key=lambda n: abs(n - target_note))
 
-        return harmonized_note
+        return closest_note

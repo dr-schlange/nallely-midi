@@ -627,9 +627,7 @@ def start_trevor(
 
         if include_experimental:
             from ..experimental import (  # noqa, we include the experimental devices
-                Harmonizer,
                 InstanceCreator,
-                Mono2Poly,
                 RandomPatcher,
             )
 
