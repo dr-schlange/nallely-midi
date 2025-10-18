@@ -431,13 +431,20 @@ const SortableVDevice = ({ device, onClick, selectedSections, onDrag }) => {
 				onDrag?.(device);
 			}
 		};
+		const end = (e) => {
+			onDrag?.(device);
+		};
 
 		document.addEventListener("touchmove", handleTouchMove, { passive: false });
 		document.addEventListener("mousemove", handleTouchMove, { passive: false });
+		document.addEventListener("mouseup", end);
+		document.addEventListener("touchup", end);
 
 		return () => {
 			document.removeEventListener("touchmove", handleTouchMove);
 			document.removeEventListener("mousemove", handleTouchMove);
+			document.removeEventListener("mouseup", end);
+			document.removeEventListener("touchup", end);
 		};
 	}, [isDragging, device, onDrag]);
 
