@@ -30,6 +30,7 @@ type FollowModes = "cyclic" | "linear";
 
 const buildOptions = (
 	mode: DisplayModes,
+	label: string,
 	upper?: number,
 	lower?: number,
 	period?: number,
@@ -44,26 +45,12 @@ const buildOptions = (
 		series: [
 			{ show: true },
 			{
-				label: "data0",
+				label,
 				stroke: mode === "line" ? "orange" : null,
 				width: mode === "line" ? 3 : 0,
 				points:
 					mode === "points"
 						? { show: true, size: 3, stroke: "orange", fill: "orange" }
-						: { show: false },
-			},
-			{
-				label: "data1",
-				stroke: mode === "line" ? "#bb995a" : null,
-				width: mode === "line" ? 3 : 0,
-				points:
-					mode === "points"
-						? {
-								show: true,
-								size: 3,
-								stroke: "#bb995a",
-								fill: "#bb995a",
-							}
 						: { show: false },
 			},
 		],
@@ -92,12 +79,11 @@ const buildOptions = (
 export const Scope = ({ id, onClose, num }: WidgetProps) => {
 	const [bufferSize, setBufferSize] = useState<number>(BUFFER_SIZE);
 	const bufferSizeRef = useRef<number>(BUFFER_SIZE);
-	const bufferRef = useRef<{ x: number[]; data0: number[]; data1: number[] }>({
+	const bufferRef = useRef<{ x: number[]; y: number[] }>({
 		x: Array.from({ length: bufferSize }, (_, i) => i),
-		data0: new Array(bufferSize).fill(0),
-		data1: new Array(bufferSize).fill(0),
+		y: new Array(bufferSize).fill(0),
 	});
-	// const startTimeRef = useRef<number>(Date.now());
+	const startTimeRef = useRef<number>(Date.now());
 	const wsRef = useRef<WebSocket | null>(null);
 	const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const isUnmounted = useRef(false);
@@ -107,7 +93,7 @@ export const Scope = ({ id, onClose, num }: WidgetProps) => {
 
 	const upperBound = useRef(undefined);
 	const lowerBound = useRef(undefined);
-	// const [label, setLabel] = useState("");
+	const [label, setLabel] = useState("");
 	const [walker, setWalker] = useState(false);
 	const [autoPaused, setAutoPaused] = useState(false);
 	const [displayMode, setDisplayMode] = useState<DisplayModes>("line");
@@ -120,7 +106,7 @@ export const Scope = ({ id, onClose, num }: WidgetProps) => {
 	const [options, setOptions] = useState<uPlot.Options>(
 		buildOptions(
 			displayMode,
-			// label,
+			label,
 			upperBound.current,
 			lowerBound.current,
 			bufferSize,
@@ -132,14 +118,14 @@ export const Scope = ({ id, onClose, num }: WidgetProps) => {
 		setOptions(
 			buildOptions(
 				displayMode,
-				// label,
+				label,
 				upperBound.current,
 				lowerBound.current,
 				bufferSize,
 				followModeRef.current,
 			),
 		);
-	}, [displayMode]);
+	}, [displayMode, label]);
 
 	const togglePointMode = () => {
 		setDisplayMode((prev) => (prev === "line" ? "points" : "line"));
@@ -171,18 +157,16 @@ export const Scope = ({ id, onClose, num }: WidgetProps) => {
 				{ length: bufferSizeRef.current },
 				(_, i) => i,
 			);
-			bufferRef.current.data0 = new Array(bufferSizeRef.current).fill(0);
-			bufferRef.current.data1 = new Array(bufferSizeRef.current).fill(0);
+			bufferRef.current.y = new Array(bufferSizeRef.current).fill(0);
 		} else {
 			bufferRef.current.x = [];
-			bufferRef.current.data0 = [];
-			bufferRef.current.data1 = [];
+			bufferRef.current.y = [];
 		}
 		elapsed.current = 0;
 		setOptions(
 			buildOptions(
 				displayMode,
-				// label,
+				label,
 				upperBound.current,
 				lowerBound.current,
 				bufferSizeRef.current,
@@ -220,10 +204,7 @@ export const Scope = ({ id, onClose, num }: WidgetProps) => {
 				ws.send(
 					JSON.stringify({
 						kind: "oscilloscope",
-						parameters: [
-							{ name: "data0", stream: true },
-							{ name: "data1", stream: true },
-						],
+						parameters: [{ name: "data", stream: true }],
 					}),
 				);
 				firstValue.current = false;
@@ -242,37 +223,23 @@ export const Scope = ({ id, onClose, num }: WidgetProps) => {
 
 				const data = JSON.parse(event.data);
 				const newValue = Number.parseFloat(data.value);
-				const channel = data.on;
 				if (Number.isNaN(newValue)) return;
 
-				// setLabel(data.on);
+				setLabel(data.on);
 
 				const buf = bufferRef.current;
 				const mode = followModeRef.current;
 				const size = bufferSizeRef.current;
 				if (mode === "cyclic") {
 					elapsed.current = (elapsed.current + 1) % size;
-					for (const ch of ["data0", "data1"]) {
-						if (ch === channel) {
-							buf[channel][elapsed.current] = newValue;
-						} else {
-							buf[ch][elapsed.current] = buf[ch][elapsed.current - 1];
-						}
-					}
+					buf.y[elapsed.current] = newValue;
 				} else {
-					elapsed.current += 1;
+					elapsed.current = elapsed.current + 1;
 					buf.x.push(elapsed.current);
-					for (const ch of ["data0", "data1"]) {
-						if (ch === channel) {
-							buf[channel].push(newValue);
-						} else {
-							buf[ch].push(buf[ch].slice(-1));
-						}
-					}
+					buf.y.push(newValue);
 					if (buf.x.length > size) {
 						buf.x.shift();
-						buf.data0.shift();
-						buf.data1.shift();
+						buf.y.shift();
 					}
 				}
 
@@ -293,7 +260,7 @@ export const Scope = ({ id, onClose, num }: WidgetProps) => {
 					updateScheduled.current = true;
 					requestAnimationFrame(() => {
 						if (chartRef.current) {
-							chartRef.current.setData([buf.x, buf.data0, buf.data1]);
+							chartRef.current.setData([buf.x, buf.y]);
 						}
 						updateScheduled.current = false;
 					});
@@ -400,11 +367,7 @@ export const Scope = ({ id, onClose, num }: WidgetProps) => {
 			<UplotReact
 				key={chartKey}
 				options={options}
-				data={[
-					bufferRef.current.x,
-					bufferRef.current.data0,
-					bufferRef.current.data1,
-				]}
+				data={[bufferRef.current.x, bufferRef.current.y]}
 				onCreate={(chart) => {
 					chartRef.current = chart;
 				}}
