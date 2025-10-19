@@ -32,7 +32,7 @@ category: envelope-generator
 
 </details>
 
-    * Arpegiator: No description/documentation
+* Arpegiator: No description/documentation
 * BernoulliTrigger: No description/documentation
 * BitCounter: No description/documentation
 * Bitwise: No description/documentation
@@ -68,7 +68,7 @@ meta: disable default output
 
 </details>
 
-    * ClockDivider: 
+* ClockDivider: 
 <details>
     <summary>details</summary>
     Clock Divider
@@ -96,7 +96,7 @@ meta: disable default output
 
 </details>
 
-    * Comparator: No description/documentation
+* Comparator: No description/documentation
 * Crossfade: Dual crossfader, proposes 2 inputs and 2 outputs.
 <details>
     <summary>details</summary>
@@ -124,7 +124,7 @@ meta: disable default output
 
 </details>
 
-    * EnvelopeSlew: Envelope Follower or Slew Limiter depending on the chosen type.
+* EnvelopeSlew: Envelope Follower or Slew Limiter depending on the chosen type.
 The Envelope Follower tracks the amplitude of an input signal, producing a smooth envelope.
 The Slew Limiter restricts how quickly the signal can change, smoothing rapid variations.
 <details>
@@ -152,7 +152,7 @@ category: filter
 
 </details>
 
-    * FlipFlop: No description/documentation
+* FlipFlop: No description/documentation
 * Gate: No description/documentation
 * HarmonicGenerator: No description/documentation
 * Harmonizer: No description/documentation
@@ -189,7 +189,7 @@ category: mixing
 
 </details>
 
-    * Modulo: No description/documentation
+* Modulo: No description/documentation
 * MultiPoleFilter: Multiple filters depending on a selected type of filter (lowpass, highpass, bandpass).
 <details>
     <summary>details</summary>
@@ -218,7 +218,7 @@ category: filter
 
 </details>
 
-    * Operator: No description/documentation
+* Operator: No description/documentation
 * PitchShifter: No description/documentation
 * Quantizer: No description/documentation
 * RingCounter: No description/documentation
@@ -242,7 +242,7 @@ category: modulation
 
 </details>
 
-    * SeqSwitch: No description/documentation
+* SeqSwitch: No description/documentation
 * Sequencer: The sequencer can be started and stopped using the "play" port.
 <details>
     <summary>details</summary>
@@ -284,7 +284,7 @@ category: sequencer
 
 </details>
 
-    * Sequencer8: The sequencer can be started and stopped using the "play" port
+* Sequencer8: The sequencer can be started and stopped using the "play" port
 and by default all the outputs are active
 <details>
     <summary>details</summary>
@@ -328,7 +328,7 @@ category: sequencer
 
 </details>
 
-    * ShiftRegister: No description/documentation
+* ShiftRegister: No description/documentation
 * Switch: No description/documentation
 * ThresholdGate: No description/documentation
 * TuringMachine: 
@@ -361,7 +361,7 @@ meta: disable default output
 
 </details>
 
-    * VCA: Simple VCA implementation with gain
+* VCA: Simple VCA implementation with gain
 <details>
     <summary>details</summary>
     Voltage Controled Amplifier
@@ -381,7 +381,7 @@ category: amplitude-modulation
 
 </details>
 
-    * VoiceAllocator: following multiple allocation algorithms.
+* VoiceAllocator: following multiple allocation algorithms.
 <details>
     <summary>details</summary>
     Takes a flow of values and "split" it in multiple voices (allocate a voice)
@@ -404,7 +404,7 @@ meta: disable default output
 
 </details>
 
-    * Waveshaper: Modulate a signal waveform to reshape it.
+* Waveshaper: Modulate a signal waveform to reshape it.
 <details>
     <summary>details</summary>
     Waveshaper
@@ -434,7 +434,7 @@ category: filter
 
 </details>
 
-    * WindowDetector: No description/documentation
+* WindowDetector: No description/documentation
 
 
 ## Experimental Neurons
