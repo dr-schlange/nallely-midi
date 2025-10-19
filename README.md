@@ -1,6 +1,6 @@
 # Nallely-midi, a hackable organic platform for MIDI experimentations
 
-Nallely (pronounced "Nayeli") is an organic platform for experimentation around the idea of MIDI meta-synth for live coding, generative music, and multimodal art, built for hacker/musicians, inspired by Smalltalk. Nallely is a MIDI companion to help you easily map MIDI controllers/instruments together, as well as create/use virtual devices (LFOs, EGs), compose them, and the possibility to expose/create remote services with parameters on which you can map your MIDI controllers/instruments or virtual devices.
+Nallely (pronounced "Nayeli") is an organic platform and meta instrument for experimentation around the idea of MIDI meta-synth for live coding, generative music, and multimodal art, built for hacker/musicians, inspired by Smalltalk. Nallely is a MIDI companion to help you easily map MIDI controllers/instruments together, as well as create/use virtual devices (LFOs, EGs), compose them, and the possibility to expose/create remote services with parameters on which you can map your MIDI controllers/instruments or virtual devices. Technically, Nallely is a visual and programmatic framework for building, performing, and evolving instruments.
 
 Think about Nallely as a small brain, where each device is a neurone (nothing related to AI) that received signals and emit signals. All those small neurons can connects to each other in various ways. Connecting neurons as you want, you might connect some that in a normal running brain would not communicate, a little bit as if you had a brain under psychedelic influences, mapped in an unusual way, producing unexpected results. Some dedicated neurons (MIDI devices) are abstraction of the physical world and can create sound physically using a MIDI device (the voice), or get impulses from external MIDI devices, while visuals could be seen as visual mental imageries, influenced by how the small neurons are connected. You can also get impulses from other devices, as example a pure javascript module lets you get impulses/statistics from your running webcam to use it as a source signal. This small module are the first "eyes" of this small musical brain. Soon modules for audio will arrive, giving the capacity to hear (to react to sound).
 
@@ -17,29 +17,34 @@ Think about Nallely as a small brain, where each device is a neurone (nothing re
 
 
 Features:
-* programmatic seemless API to your MIDI Device,
-* virtual devices (LFOs for example) you can connect to your MIDI devices (as source or target),
-* introspective API for auto-adaptive virtual modules,
-* links are formally defined and are entities of the domain,
-* bouncy links: links can trigger target port associated link to have reaction chains,
-* Python API code generator for your device if it is listed by the [MIDI CC & NRPN database](https://github.com/pencilresearch/midi) project, or from a YAML description you can easily write (see `configs` folder for examples)
+* modular-synthesis like for CV signals that can be output as MIDI note, MIDI CC, MIDI pitchweel value, ...,
+* abstraction to access your MIDI devices,
+* virtual devices (LFO, Harmonizer, Sequencer, Quantizer, ...) you can connect to your MIDI devices, as source to control your MIDI device or as target to be controled by your MIDI controller/synth, generate patterns/sequences, use/write reactive devices to alter what you are playing or how you play it,
+* compatible with Jack, VCV Rack, any software or VST that supports MIDI,
+* each device is hosted as an independent thread: each device has its own life cycle and are operating at real wall clock time (it's reality time, not audio real-time),
+* jitter mitigation,
+* web interface relying on a websocket protocol (named Trevor) which allows you to do graphically what you would ask Nallely to do programmatically (create devices, map them, change parameters, alter scalers),
+* interactive code playground in the browser (through Trevor UI) inspired by Smalltalk playground,
+* small web-based widget integrated in the web interface (scopes 1D to 3D, pads, XYpads, gameboy emulator),
+* save/reload preset for any MIDI device at run time,
+* save/reload/manage memory slots: each memory slot contains a snapshot of a Nallely session which is versionned (Nallely memory is now saved as a git repository!),
 * bind/unbind control/pad/key of your MIDI devices between each other or virtual devices, converting the CC between source and target if required,
 * bind/unbind the velocity of the pad/key of your MIDI devices to any CC control,
 * bind/unbind pad/key individualy to any control, note, parameter of MIDI devices or virtual devices,
 * bind/unbind a key/pad to another one (even if not the same note, you can map a note to its octave on the same device or another one),
 * scaler for the values that goes from a source to a target: you can restrict the range of values that will be sent to the target,
-* auto-scaling: if you want the source to adapt to the range of the target without setting the range yourself,
+* auto-scaling: the source device adapts its output range to the target without setting the range yourself,
+* introspective API for auto-adaptive virtual modules: virtual device can impact the running system including connections through the whole system meaning that you can achieve "self-modifying patch",
+* programmatic seemless API to your MIDI Device,
+* links are formally defined and are entities of the domain,
+* bouncy links: links can trigger target port associated link to have reaction chains,
+* Python API code generator for your device if it is listed by the [MIDI CC & NRPN database](https://github.com/pencilresearch/midi) project, or from a YAML description you can easily write (see `configs` folder for examples),
+* easy API to build your own reactive virtual devices (neurons) in Python, or as external virtual device in any technology, 
 * websocket-based bus on which external services can auto-register and expose parameters to which you can bind your MIDI/virtual devices in a seemless way,
+* possibility to send/receive/broadcast/listen messages and information from the external services,
 * LFOs composition with mathematical expressions,
-* Envelope Generator,
-* a web interface relying on a websocket protocol (named Trevor) which allows you to do graphically what you would ask Nallely to do in normal time (map devices, parameters, scalers),
-* interactive code playground in the browser (through Trevor UI) inspired by Smalltalk playground,
-* small web-based widget oscilloscopes (1D, 2D, 3D) integrated in the web interface,
-* save/reload preset for any MIDI device at run time,
-* save/reload/manage memory slots: each memory slot contains a snapshot of a Nallely session which is versionned (Nallely memory is now saved as a git repository!),
 * random preset generator for MIDI devices and virtual devices,
 * full random patch generator (basic at the moment) with auto-generative capacity as virtual device (you can control it from MIDI devices or other virtual devices),
-* possibility to send/receive/broadcast/listen messages and information from the external services,
 * (currently disabled) _bind/unbind any Python function to any control/pad/key of your MIDI Device_,
 
 Planned:
