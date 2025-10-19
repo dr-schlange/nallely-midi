@@ -4,13 +4,12 @@ This document centralize the various virtual modules (neurons) that exists in th
 
 ## Built-in Neurons
 
-* ADSREnvelope: Simple envelope generator with attack, decay, sustain, release.
-Generates an envelope from a gate:
-- when the gate is up -> triggers the envelope generation
-- when the gate is down -> closes the envelope
 <details>
-    <summary>details</summary>
-    ADSR Envelope Generator
+    <summary>ADSREnvelope: Simple envelope generator with attack, decay, sustain, release.</summary>
+
+
+```
+ADSR Envelope Generator
 
 Simple envelope generator with attack, decay, sustain, release.
 Generates an envelope from a gate:
@@ -30,17 +29,41 @@ outputs:
 type: continuous
 category: envelope-generator
 
+```
+
 </details>
 
-* Arpegiator: No description/documentation
-* BernoulliTrigger: No description/documentation
-* BitCounter: No description/documentation
-* Bitwise: No description/documentation
-* ChordGenerator: No description/documentation
-* Clock: Simple clock that produces a tick depending on a tempo (BPM) for various divisions.
 <details>
-    <summary>details</summary>
-    Clock
+    <summary>Arpegiator: No description/documentation</summary>
+
+</details>
+
+<details>
+    <summary>BernoulliTrigger: No description/documentation</summary>
+
+</details>
+
+<details>
+    <summary>BitCounter: No description/documentation</summary>
+
+</details>
+
+<details>
+    <summary>Bitwise: No description/documentation</summary>
+
+</details>
+
+<details>
+    <summary>ChordGenerator: No description/documentation</summary>
+
+</details>
+
+<details>
+    <summary>Clock: Simple clock that produces a tick depending on a tempo (BPM) for various divisions.</summary>
+
+
+```
+Clock
 
 Simple clock that produces a tick depending on a tempo (BPM) for various divisions.
 
@@ -66,12 +89,16 @@ type: continuous
 category: clock
 meta: disable default output
 
+```
+
 </details>
 
-* ClockDivider: 
 <details>
-    <summary>details</summary>
-    Clock Divider
+    <summary>ClockDivider: </summary>
+
+
+```
+Clock Divider
 
 inputs:
 * trigger_cv [0, 1] >0 <rising>: Trigger the divider
@@ -94,13 +121,21 @@ type: ondemand
 category: clock
 meta: disable default output
 
+```
+
 </details>
 
-* Comparator: No description/documentation
-* Crossfade: Dual crossfader, proposes 2 inputs and 2 outputs.
 <details>
-    <summary>details</summary>
-    Dual crossfader
+    <summary>Comparator: No description/documentation</summary>
+
+</details>
+
+<details>
+    <summary>Crossfade: Dual crossfader, proposes 2 inputs and 2 outputs.</summary>
+
+
+```
+Dual crossfader
 
 Dual crossfader, proposes 2 inputs and 2 outputs.
 
@@ -122,14 +157,16 @@ type: ondemand, continuous
 category: filter
 meta: disable default output
 
+```
+
 </details>
 
-* EnvelopeSlew: Envelope Follower or Slew Limiter depending on the chosen type.
-The Envelope Follower tracks the amplitude of an input signal, producing a smooth envelope.
-The Slew Limiter restricts how quickly the signal can change, smoothing rapid variations.
 <details>
-    <summary>details</summary>
-    Envelope Follower & Slew Limiter
+    <summary>EnvelopeSlew: Envelope Follower or Slew Limiter depending on the chosen type.</summary>
+
+
+```
+Envelope Follower & Slew Limiter
 
 Envelope Follower or Slew Limiter depending on the chosen type.
 The Envelope Follower tracks the amplitude of an input signal, producing a smooth envelope.
@@ -150,20 +187,56 @@ outputs:
 type: ondemand, continuous
 category: filter
 
+```
+
 </details>
 
-* FlipFlop: No description/documentation
-* Gate: No description/documentation
-* HarmonicGenerator: No description/documentation
-* Harmonizer: No description/documentation
-* LFO: No description/documentation
-* Latch: No description/documentation
-* Logical: No description/documentation
-* Looper: No description/documentation
-* Mixer: Simple 4-in mixer.
 <details>
-    <summary>details</summary>
-    Mixer
+    <summary>FlipFlop: No description/documentation</summary>
+
+</details>
+
+<details>
+    <summary>Gate: No description/documentation</summary>
+
+</details>
+
+<details>
+    <summary>HarmonicGenerator: No description/documentation</summary>
+
+</details>
+
+<details>
+    <summary>Harmonizer: No description/documentation</summary>
+
+</details>
+
+<details>
+    <summary>LFO: No description/documentation</summary>
+
+</details>
+
+<details>
+    <summary>Latch: No description/documentation</summary>
+
+</details>
+
+<details>
+    <summary>Logical: No description/documentation</summary>
+
+</details>
+
+<details>
+    <summary>Looper: No description/documentation</summary>
+
+</details>
+
+<details>
+    <summary>Mixer: Simple 4-in mixer.</summary>
+
+
+```
+Mixer
 
 Simple 4-in mixer.
 
@@ -187,13 +260,21 @@ outputs:
 type: ondemand, continuous
 category: mixing
 
+```
+
 </details>
 
-* Modulo: No description/documentation
-* MultiPoleFilter: Multiple filters depending on a selected type of filter (lowpass, highpass, bandpass).
 <details>
-    <summary>details</summary>
-    Multi Pole Filter
+    <summary>Modulo: No description/documentation</summary>
+
+</details>
+
+<details>
+    <summary>MultiPoleFilter: Multiple filters depending on a selected type of filter (lowpass, highpass, bandpass).</summary>
+
+
+```
+Multi Pole Filter
 
 Multiple filters depending on a selected type of filter (lowpass, highpass, bandpass).
 
@@ -216,16 +297,36 @@ outputs:
 type: ondemand, continuous
 category: filter
 
+```
+
 </details>
 
-* Operator: No description/documentation
-* PitchShifter: No description/documentation
-* Quantizer: No description/documentation
-* RingCounter: No description/documentation
-* SampleHold: Samples a value and hold it when the trigger input is rising.
 <details>
-    <summary>details</summary>
-    Sample & Hold
+    <summary>Operator: No description/documentation</summary>
+
+</details>
+
+<details>
+    <summary>PitchShifter: No description/documentation</summary>
+
+</details>
+
+<details>
+    <summary>Quantizer: No description/documentation</summary>
+
+</details>
+
+<details>
+    <summary>RingCounter: No description/documentation</summary>
+
+</details>
+
+<details>
+    <summary>SampleHold: Samples a value and hold it when the trigger input is rising.</summary>
+
+
+```
+Sample & Hold
 
 Samples a value and hold it when the trigger input is rising.
 
@@ -240,13 +341,21 @@ outputs:
 type: ondemand
 category: modulation
 
+```
+
 </details>
 
-* SeqSwitch: No description/documentation
-* Sequencer: The sequencer can be started and stopped using the "play" port.
 <details>
-    <summary>details</summary>
-    A simple 16-step sequencer with adjustable length.
+    <summary>SeqSwitch: No description/documentation</summary>
+
+</details>
+
+<details>
+    <summary>Sequencer: The sequencer can be started and stopped using the "play" port.</summary>
+
+
+```
+A simple 16-step sequencer with adjustable length.
 
 The sequencer can be started and stopped using the "play" port.
 
@@ -282,13 +391,16 @@ outputs:
 type: ondemand
 category: sequencer
 
+```
+
 </details>
 
-* Sequencer8: The sequencer can be started and stopped using the "play" port
-and by default all the outputs are active
 <details>
-    <summary>details</summary>
-    A simple 8-step sequencer with adjustable length and activable output.
+    <summary>Sequencer8: The sequencer can be started and stopped using the "play" port</summary>
+
+
+```
+A simple 8-step sequencer with adjustable length and activable output.
 
 The sequencer can be started and stopped using the "play" port
 and by default all the outputs are active
@@ -326,15 +438,31 @@ outputs:
 type: ondemand
 category: sequencer
 
+```
+
 </details>
 
-* ShiftRegister: No description/documentation
-* Switch: No description/documentation
-* ThresholdGate: No description/documentation
-* TuringMachine: 
 <details>
-    <summary>details</summary>
-    Simple Turing Machine Sequencer
+    <summary>ShiftRegister: No description/documentation</summary>
+
+</details>
+
+<details>
+    <summary>Switch: No description/documentation</summary>
+
+</details>
+
+<details>
+    <summary>ThresholdGate: No description/documentation</summary>
+
+</details>
+
+<details>
+    <summary>TuringMachine: </summary>
+
+
+```
+Simple Turing Machine Sequencer
 
 inputs:
 * trigger_cv [0, 1] >0 <rising>: Input clock
@@ -359,12 +487,16 @@ type: ondemand
 category: Sequencer
 meta: disable default output
 
+```
+
 </details>
 
-* VCA: Simple VCA implementation with gain
 <details>
-    <summary>details</summary>
-    Voltage Controled Amplifier
+    <summary>VCA: Simple VCA implementation with gain</summary>
+
+
+```
+Voltage Controled Amplifier
 
 Simple VCA implementation with gain
 
@@ -379,12 +511,16 @@ outputs:
 type: ondemand
 category: amplitude-modulation
 
+```
+
 </details>
 
-* VoiceAllocator: following multiple allocation algorithms.
 <details>
-    <summary>details</summary>
-    Takes a flow of values and "split" it in multiple voices (allocate a voice)
+    <summary>VoiceAllocator: following multiple allocation algorithms.</summary>
+
+
+```
+Takes a flow of values and "split" it in multiple voices (allocate a voice)
 following multiple allocation algorithms.
 
 inputs:
@@ -402,12 +538,16 @@ type: ondemand
 category: Voices
 meta: disable default output
 
+```
+
 </details>
 
-* Waveshaper: Modulate a signal waveform to reshape it.
 <details>
-    <summary>details</summary>
-    Waveshaper
+    <summary>Waveshaper: Modulate a signal waveform to reshape it.</summary>
+
+
+```
+Waveshaper
 
 Modulate a signal waveform to reshape it.
 
@@ -432,20 +572,66 @@ outputs:
 type: ondemand, continuous
 category: filter
 
+```
+
 </details>
 
-* WindowDetector: No description/documentation
+<details>
+    <summary>WindowDetector: No description/documentation</summary>
+
+</details>
+
 
 
 ## Experimental Neurons
 
-* BarnsleyProjector: No description/documentation
-* BuddhabrotProjector: No description/documentation
-* Delay: No description/documentation
-* HenonProjector: No description/documentation
-* InstanceCreator: No description/documentation
-* LorenzProjector: No description/documentation
-* MandelbrotProjector: No description/documentation
-* Morton: No description/documentation
-* RandomPatcher: No description/documentation
-* RosslerProjector: No description/documentation
+<details>
+    <summary>BarnsleyProjector: No description/documentation</summary>
+
+</details>
+
+<details>
+    <summary>BuddhabrotProjector: No description/documentation</summary>
+
+</details>
+
+<details>
+    <summary>Delay: No description/documentation</summary>
+
+</details>
+
+<details>
+    <summary>HenonProjector: No description/documentation</summary>
+
+</details>
+
+<details>
+    <summary>InstanceCreator: No description/documentation</summary>
+
+</details>
+
+<details>
+    <summary>LorenzProjector: No description/documentation</summary>
+
+</details>
+
+<details>
+    <summary>MandelbrotProjector: No description/documentation</summary>
+
+</details>
+
+<details>
+    <summary>Morton: No description/documentation</summary>
+
+</details>
+
+<details>
+    <summary>RandomPatcher: No description/documentation</summary>
+
+</details>
+
+<details>
+    <summary>RosslerProjector: No description/documentation</summary>
+
+</details>
+

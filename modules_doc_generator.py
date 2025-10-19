@@ -19,14 +19,21 @@ def generate_neuron_doc(neuron):
                 break
             if l:
                 summary += f"{l}\n"
+                break
         description = summary.strip()
 
-    neuron_doc = f"* {neuron.__name__}: {description}\n"
+    neuron_doc = f"""<details>
+    <summary>{neuron.__name__}: {description}</summary>
+
+"""
     if doc:
-        neuron_doc += f"""<details>
-    <summary>details</summary>
-    {doc}
-</details>\n\n"""
+        neuron_doc += f"""
+```
+{doc}
+```
+
+"""
+    neuron_doc += """</details>\n\n"""
     return neuron_doc
 
 
