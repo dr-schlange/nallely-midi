@@ -25,7 +25,9 @@ def generate_neuron_doc(neuron):
     if doc:
         neuron_doc += f"""<details>
     <summary>details</summary>
-    {doc}
+```
+{doc}
+```
 </details>\n\n"""
     return neuron_doc
 
