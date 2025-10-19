@@ -824,28 +824,37 @@ class VoiceAllocator(VirtualDevice):
 
 
 INTERVAL_TO_SEMITONES = {
-    "+octave": OCTAVE,
-    "+7/b7": SEVENTH,
-    "+6/m6": SIXTH,
-    "+5/b5": FIFTH,
-    "+4/b4": FOURTH,
-    "+3/m3": THIRD,
-    "+2/b2": SECOND,
-    "root": ROOT,
-    "-2/b2": -SECOND,
-    "-3/m3": -THIRD,
-    "-4/b4": -FOURTH,
-    "-5/b5": -FIFTH,
-    "-6/m6": -SIXTH,
-    "-7/b7": -SEVENTH,
     "-octave": -OCTAVE,
+    "-7/b7": -SEVENTH,
+    "-6/m6": -SIXTH,
+    "-5/b5": -FIFTH,
+    "-4/b4": -FOURTH,
+    "-3/m3": -THIRD,
+    "-2/b2": -SECOND,
+    "root": ROOT,
+    "+2/b2": SECOND,
+    "+3/m3": THIRD,
+    "+4/b4": FOURTH,
+    "+5/b5": FIFTH,
+    "+6/m6": SIXTH,
+    "+7/b7": SEVENTH,
+    "+octave": OCTAVE,
 }
 
 
 class Harmonizer(VirtualDevice):
     input_cv = VirtualParameter("input", range=(0, 127), conversion_policy="round")
-    interval_cv = VirtualParameter(
-        "interval", accepted_values=list(INTERVAL_TO_SEMITONES.keys()), default="root"
+    interval0_cv = VirtualParameter(
+        "interval0", accepted_values=list(INTERVAL_TO_SEMITONES.keys()), default="root"
+    )
+    interval1_cv = VirtualParameter(
+        "interval1", accepted_values=list(INTERVAL_TO_SEMITONES.keys()), default="root"
+    )
+    interval2_cv = VirtualParameter(
+        "interval2", accepted_values=list(INTERVAL_TO_SEMITONES.keys()), default="root"
+    )
+    interval3_cv = VirtualParameter(
+        "interval3", accepted_values=list(INTERVAL_TO_SEMITONES.keys()), default="root"
     )
     key_cv = VirtualParameter(
         "key",
@@ -853,8 +862,26 @@ class Harmonizer(VirtualDevice):
     )
     scale_cv = VirtualParameter("scale_", accepted_values=list(SCALES.keys()))
 
+    out0_cv = VirtualParameter("out0", range=(0, 127))
+    out1_cv = VirtualParameter("out1", range=(0, 127))
+    out2_cv = VirtualParameter("out2", range=(0, 127))
+    out3_cv = VirtualParameter("out3", range=(0, 127))
+
     def __post_init__(self, **kwargs):
         self.scales = SCALES
+        self.intervals = [
+            self.interval0_cv,
+            self.interval1_cv,
+            self.interval2_cv,
+            self.interval3_cv,
+        ]
+        self.outputs = [
+            self.out0_cv,
+            self.out1_cv,
+            self.out2_cv,
+            self.out3_cv,
+        ]
+        return {"disable_output": True}
 
     def get_scale_for_key(self, key, scale_type):
         scale = self.scales[scale_type]
@@ -880,34 +907,55 @@ class Harmonizer(VirtualDevice):
 
     @on(input_cv, edge="any")
     def change_input(self, value, ctx):
-        return self.harmonize_note()
+        yield from self.process()
 
     @on(scale_cv, edge="any")
     def change_scale(self, value, ctx):
-        return self.harmonize_note()
+        yield from self.process()
 
-    @on(interval_cv, edge="any")
-    def change_interval(self, value, ctx):
-        return self.harmonize_note()
+    @on(interval0_cv, edge="any")
+    def change_interval0(self, value, ctx):
+        yield from self.process()
+
+    @on(interval1_cv, edge="any")
+    def change_interval1(self, value, ctx):
+        yield from self.process()
+
+    @on(interval2_cv, edge="any")
+    def change_interval2(self, value, ctx):
+        yield from self.process()
+
+    @on(interval3_cv, edge="any")
+    def change_interval3(self, value, ctx):
+        yield from self.process()
 
     @on(key_cv, edge="any")
     def change_key(self, value, ctx):
-        return self.harmonize_note()
+        yield from self.process()
 
-    def harmonize_note(self):
+    def process(self):
+        for note, output in zip(self.harmonize_notes(), self.outputs):
+            yield note, [output]
+
+    def harmonize_notes(self):
         if not self.input:  # type: ignore
-            return 0
+            return [0] * len(self.outputs)
 
         note = self.input  # type: ignore
         key = self.key  # type: ignore
         scale_type = self.scale_  # type: ignore
-        interval = self.interval  # type: ignore
 
-        semitone_shift = INTERVAL_TO_SEMITONES[interval]
-        target_note = note + semitone_shift
-        scale = self.get_scale_for_key(key, scale_type)
-        key_root = self.key_cv.parameter.accepted_values.index(key)
-        all_scale_notes = [key_root + s + 12 * o for o in range(0, 11) for s in scale]
-        closest_note = min(all_scale_notes, key=lambda n: abs(n - target_note))
+        notes = []
+        for i in range(len(self.outputs)):
+            interval = getattr(self, f"interval{i}")
+            semitone_shift = INTERVAL_TO_SEMITONES[interval]
+            target_note = note + semitone_shift
+            scale = self.get_scale_for_key(key, scale_type)
+            key_root = self.key_cv.parameter.accepted_values.index(key)
+            all_scale_notes = [
+                key_root + s + 12 * o for o in range(0, 11) for s in scale
+            ]
+            closest_note = min(all_scale_notes, key=lambda n: abs(n - target_note))
+            notes.append(closest_note)
 
-        return closest_note
+        return notes
