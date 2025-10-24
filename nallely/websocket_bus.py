@@ -162,6 +162,7 @@ class WebSocketBus(VirtualDevice):
 
     def parse_binary(self, service_name: str, data: bytes):
         param_name, value = self.parse_frame(data)
+        param_name = f"{service_name}_{param_name}"
         output = getattr(self, f"{param_name}_cv")
         return param_name, value, output
 
@@ -218,7 +219,7 @@ class WebSocketBus(VirtualDevice):
                         # output = getattr(self, f"{param_name}_cv")
                         # value = float(json_message["value"])
                         # # print(f"[DEBUG] INTERNAL ROUTING {param_name} with {value}")
-                        param_name, value, output = parser(service_name, message)
+                        param_name, value, output = parser(service_name, message)  # type: ignore
                         setattr(self, param_name, value)
                         self.send_out(
                             value,
