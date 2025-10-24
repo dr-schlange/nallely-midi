@@ -1,4 +1,5 @@
 from collections import deque
+from math import floor
 from random import randint, random
 
 from .core import VirtualDevice, VirtualParameter, on
@@ -350,3 +351,95 @@ class TuringMachine(VirtualDevice):
             yield (0, [self.gate_out_cv])
         for i in range(8):
             yield (self.memory[i], [getattr(self, f"out{i}_cv")])
+
+
+class EuclidianSequencer(VirtualDevice):
+    """Basic Euclidian Sequencer
+
+    inputs:
+    * clock_cv [0, 1] >0 <rising>: Input clock
+    * length_cv [0, 128] init=8 round <any>: Sequence length
+    * hits_cv [0, 128] init=4 round <any>: Number of hits
+    * shift_cv [0, 127] init=0 round: Program the pattern shift
+    * trig_shift_cv [0, 1] >0 <rising>: Displace the pattern
+    * reset_cv [0, 1] >0 <rising>: Reset the sequence
+
+    outputs:
+    * trigger_out_cv [0, 1]: main output trigger
+    * gate_out_cv [0, 1]: main output gate
+    * step_out_cv [0, 1]: current number of step
+
+    type: ondemand
+    category: Sequencer
+    meta: disable default output
+    """
+
+    clock_cv = VirtualParameter(name="clock", range=(0, 1), conversion_policy=">0")
+    length_cv = VirtualParameter(
+        name="length", range=(0, 128), conversion_policy="round", default=8
+    )
+    hits_cv = VirtualParameter(
+        name="hits", range=(0, 128), conversion_policy="round", default=4
+    )
+    shift_cv = VirtualParameter(
+        name="shift", range=(0, 127), conversion_policy="round", default=0
+    )
+    trig_shift_cv = VirtualParameter(
+        name="trig_shift", range=(0, 1), conversion_policy=">0"
+    )
+    reset_cv = VirtualParameter(name="reset", range=(0, 1), conversion_policy=">0")
+
+    step_out_cv = VirtualParameter(name="step_out", range=(0, 128))
+    gate_out_cv = VirtualParameter(name="gate_out", range=(0, 1))
+    trigger_out_cv = VirtualParameter(name="trigger_out", range=(0, 1))
+
+    def __post_init__(self, **kwargs):
+        self.compute_sequence()
+        self.step = 0
+        return {"disable_output": True}
+
+    def compute_sequence(self):
+        n = self.length  # type: ignore
+        k = self.hits  # type: ignore
+        shift = self.shift % n  # type: ignore
+        self.sequence = deque([0] * n)
+        for i in range(k):
+            p = floor((i * n) / k)
+            self.sequence[p] = 1
+        self.sequence.rotate(shift)
+
+    @on(reset_cv, edge="rising")
+    def on_reset_rising(self, value, ctx):
+        self.step = 0
+
+    @on(trig_shift_cv, edge="rising")
+    def on_trig_shift_rising(self, value, ctx):
+        self.sequence.rotate(1)
+
+    @on(shift_cv, edge="any")
+    def on_shift_any(self, value, ctx):
+        self.compute_sequence()
+
+    @on(hits_cv, edge="any")
+    def on_hits_any(self, value, ctx):
+        self.compute_sequence()
+
+    @on(length_cv, edge="any")
+    def on_length_any(self, value, ctx):
+        self.compute_sequence()
+
+    @on(clock_cv, edge="rising")
+    def on_clock_rising(self, value, ctx):
+        yield self.step, [self.step_out_cv]
+
+        step_value = self.sequence[self.step]
+
+        # We output the gate
+        yield step_value, [self.gate_out_cv]
+
+        # We output a pulse
+        if step_value:
+            yield 1, [self.trigger_out_cv]
+            yield 0, [self.trigger_out_cv]
+
+        self.step = (self.step + 1) % len(self.sequence)
