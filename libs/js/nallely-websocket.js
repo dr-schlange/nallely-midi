@@ -41,6 +41,7 @@ class NallelyService {
 		}
 
 		const ws = new WebSocket(this.url);
+		ws.binaryType = "arraybuffer";
 
 		this._onOpen = () => {
 			const data = Object.entries(this.parameters).map(([name, conf]) => {
@@ -86,9 +87,24 @@ class NallelyService {
 		};
 
 		this._onMessage = (event) => {
-			const data = JSON.parse(event.data);
-			this.config[data.on] = data.value;
-			this.onmessage?.(data);
+			let message = {
+				on: undefined,
+				value: undefined,
+			};
+			const data = event.data;
+			if (typeof event.data === "string") {
+				message = JSON.parse(data);
+			} else {
+				const dv = new DataView(data);
+				const len = dv.getUint8(0);
+				const name = new TextDecoder().decode(new Uint8Array(data, 1, len));
+				const val = dv.getFloat32(1 + len, false);
+				message.on = name;
+				message.value = val;
+			}
+
+			this.config[message.on] = message.value;
+			this.onmessage?.(message);
 		};
 
 		ws.addEventListener("open", this._onOpen);
@@ -101,12 +117,26 @@ class NallelyService {
 
 	send(parameter, value) {
 		if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-			const data = JSON.stringify({ on: parameter, value });
-			this.onsend?.(data);
+			const data = this.buildFrame(parameter, value);
+			this.onsend?.({ on: parameter, value });
 			this.ws.send(data);
 			return;
 		}
 		console.warn("WebSocket not open, cannot send:", parameter, value);
+	}
+
+	buildFrame(name, value) {
+		const nameBytes = new TextEncoder().encode(name);
+		const len = nameBytes.length;
+
+		const buffer = new ArrayBuffer(1 + len + 4);
+		const dv = new DataView(buffer);
+
+		dv.setUint8(0, len);
+		new Uint8Array(buffer, 1, len).set(nameBytes);
+		dv.setFloat32(1 + len, value, false);
+
+		return buffer;
 	}
 
 	dispose() {

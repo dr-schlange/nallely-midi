@@ -197,6 +197,7 @@ export const XYScope = ({ id, onClose, num }: WidgetProps) => {
 			const ws = new WebSocket(
 				`ws://${window.location.hostname}:6789/${id}/autoconfig`,
 			);
+			ws.binaryType = "arraybuffer";
 			wsRef.current = ws;
 
 			ws.onopen = () => {
@@ -228,13 +229,28 @@ export const XYScope = ({ id, onClose, num }: WidgetProps) => {
 				}, 1000);
 				setAutoPaused(false);
 
-				const data = JSON.parse(event.data);
-				const val = Number.parseFloat(data.value);
+				let message = {
+					on: undefined,
+					value: undefined,
+				};
+				const data = event.data;
+				if (typeof event.data === "string") {
+					message = JSON.parse(data);
+				} else {
+					const dv = new DataView(data);
+					const len = dv.getUint8(0);
+					const name = new TextDecoder().decode(new Uint8Array(data, 1, len));
+					const val = dv.getFloat32(1 + len, false);
+					message.on = name;
+					message.value = val;
+				}
+
+				const val = Number.parseFloat(message.value);
 				if (Number.isNaN(val)) return;
 
-				if (data.on === "x") {
+				if (message.on === "x") {
 					latestX.current = val;
-				} else if (data.on === "y") {
+				} else if (message.on === "y") {
 					latestY.current = val;
 				}
 

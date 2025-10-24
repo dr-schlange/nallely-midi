@@ -87,8 +87,8 @@ const Main = () => {
 								points="0,0 4,2 0,4"
 								fill="#5a87bbff"
 								stroke="white"
-								stroke-width="0.4"
-								stroke-opacity="0.3"
+								strokeWidth="0.4"
+								strokeOpacity="0.3"
 							/>
 						</marker>
 						<marker
@@ -104,8 +104,8 @@ const Main = () => {
 								points="0,0 4,2 0,4"
 								fill="blue"
 								stroke="white"
-								stroke-width="0.4"
-								stroke-opacity="0.3"
+								strokeWidth="0.4"
+								strokeOpacity="0.3"
 							/>
 						</marker>
 						<marker
@@ -155,8 +155,8 @@ const Main = () => {
 								points="0,0 4,2 0,4"
 								fill="green"
 								stroke="white"
-								stroke-width="0.4"
-								stroke-opacity="0.3"
+								strokeWidth="0.4"
+								strokeOpacity="0.3"
 							/>
 						</marker>
 					</defs>

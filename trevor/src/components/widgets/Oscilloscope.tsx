@@ -198,6 +198,7 @@ export const Scope = ({ id, onClose, num }: WidgetProps) => {
 			const ws = new WebSocket(
 				`ws://${window.location.hostname}:6789/${id}/autoconfig`,
 			);
+			ws.binaryType = "arraybuffer";
 			wsRef.current = ws;
 
 			ws.onopen = () => {
@@ -221,11 +222,26 @@ export const Scope = ({ id, onClose, num }: WidgetProps) => {
 
 				setAutoPaused(false);
 
-				const data = JSON.parse(event.data);
-				const newValue = Number.parseFloat(data.value);
+				let message = {
+					on: undefined,
+					value: undefined,
+				};
+				const data = event.data;
+				if (typeof event.data === "string") {
+					message = JSON.parse(data);
+				} else {
+					const dv = new DataView(data);
+					const len = dv.getUint8(0);
+					const name = new TextDecoder().decode(new Uint8Array(data, 1, len));
+					const val = dv.getFloat32(1 + len, false);
+					message.on = name;
+					message.value = val;
+				}
+
+				const newValue = Number.parseFloat(message.value);
 				if (Number.isNaN(newValue)) return;
 
-				setLabel(data.on);
+				setLabel(message.on);
 
 				const buf = bufferRef.current;
 				const mode = followModeRef.current;

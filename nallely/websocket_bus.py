@@ -1,4 +1,5 @@
 import json
+import struct
 from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Any, Literal
@@ -144,6 +145,33 @@ class WebSocketBus(VirtualDevice):
 
         object.__setattr__(self, key, value)
 
+    @staticmethod
+    def make_frame(name: str, value: float) -> bytes:
+        name_b = name.encode("utf-8")
+        ln = len(name_b)
+        if ln > 0xFFFF:
+            raise ValueError("Channel name too long")
+        return struct.pack(f"!B{ln}s f", ln, name_b, value)
+
+    @staticmethod
+    def parse_frame(data: bytes):
+        ln = data[0]
+        name_b = data[1 : 1 + ln]
+        value = struct.unpack_from("!f", data, 1 + ln)[0]
+        return name_b.decode(), value
+
+    def parse_binary(self, service_name: str, data: bytes):
+        param_name, value = self.parse_frame(data)
+        output = getattr(self, f"{param_name}_cv")
+        return param_name, value, output
+
+    def parse_json(self, service_name: str, data: str):
+        json_message = json.loads(data)
+        param_name = f"{service_name}_{json_message["on"]}"
+        output = getattr(self, f"{param_name}_cv")
+        value = float(json_message["value"])
+        return param_name, value, output
+
     def handler(self, client):
         path = client.request.path
         service_name = path.split("/")[1]
@@ -178,15 +206,19 @@ class WebSocketBus(VirtualDevice):
         print(f"[WS] Connecting on {service_name} [{len(connected_devices)} clients]")
         try:
             for message in client:
+                parser = self.parse_binary
+                if isinstance(message, str):
+                    parser = self.parse_json
                 # Sends message to other modules connected to this channel
                 for device in list(connected_devices):
                     try:
-                        json_message = json.loads(message)
-                        # print("[DEBUG] Received", json_message)
-                        param_name = f"{service_name}_{json_message["on"]}"
-                        output = getattr(self, f"{param_name}_cv")
-                        value = float(json_message["value"])
-                        # print(f"[DEBUG] INTERNAL ROUTING {param_name} with {value}")
+                        # json_message = json.loads(message)
+                        # # print("[DEBUG] Received", json_message)
+                        # param_name = f"{service_name}_{json_message["on"]}"
+                        # output = getattr(self, f"{param_name}_cv")
+                        # value = float(json_message["value"])
+                        # # print(f"[DEBUG] INTERNAL ROUTING {param_name} with {value}")
+                        param_name, value, output = parser(service_name, message)
                         setattr(self, param_name, value)
                         self.send_out(
                             value,
@@ -256,16 +288,17 @@ class WebSocketBus(VirtualDevice):
         for connected in list(devices):
             try:
                 # print(f"[DEBUG] send to {connected}")
-                connected.send(
-                    json.dumps(
-                        {
-                            "value": float(value),
-                            "device": device,
-                            "on": parameter,
-                            "sender": ctx.param,
-                        }
-                    )
-                )
+                # connected.send(
+                #     json.dumps(
+                #         {
+                #             "value": float(value),
+                #             "device": device,
+                #             "on": parameter,
+                #             "sender": ctx.param,
+                #         }
+                #     )
+                # )
+                connected.send(self.make_frame(parameter, float(value)))
             except (ConnectionClosed, TimeoutError) as e:
                 try:
                     devices.remove(device)
