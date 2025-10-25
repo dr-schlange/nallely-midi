@@ -426,6 +426,8 @@ class EuclidianSequencer(VirtualDevice):
 
     @on(length_cv, edge="any")
     def on_length_any(self, value, ctx):
+        if self.step >= value:
+            self.step = 0
         self.compute_sequence()
 
     @on(clock_cv, edge="rising")
