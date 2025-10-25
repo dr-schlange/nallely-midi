@@ -40,6 +40,9 @@ class MetaTrevorAPI:
         setattr(device.__class__, method_name, compiled_method)
         compiled_method.__source__ = method_code
 
+    # TODO re-implement considering the full class code. If not, reactive callbacks cannot compile well unless rewritten (not ideal)
+    # at the end, the fact of having a "per method" compilation and injection as in Smalltalk here is not that usefull as writing the
+    # code of the recompiled class in the cach can enable also Pdb to understand well the position in the source code
     def object_centric_compile_inject(self, device, method_name: str, method_code: str):
         current_cls = device.__class__
         tmp_class = getattr(current_cls, "__tmp__", None)
