@@ -6,6 +6,7 @@ import re
 import time
 from collections import Counter
 from datetime import datetime
+from inspect import getmodule
 from pathlib import Path
 
 import mido
@@ -27,14 +28,20 @@ from .core import (
     virtual_devices,
 )
 from .trevor import TrevorAPI
+from .trevor.meta_trevor_api import MetaTrevorAPI
 from .utils import StateEncoder, find_class, get_note_name, longest_common_substring
 from .websocket_bus import WebSocketBus
 
 
 class Session:
-    def __init__(self, trevor_bus=None):
+    def __init__(self, trevor_bus=None, meta_env=None):
         self.trevor_bus = trevor_bus
         self.trevor = trevor_bus.trevor if trevor_bus else TrevorAPI()
+        self.meta_trevor = (
+            MetaTrevorAPI(self, exec_context=meta_env)
+            if meta_env
+            else MetaTrevorAPI(self)
+        )
         self.code = ""
 
     def save_code(self, code):
@@ -361,7 +368,7 @@ playground_code={infos["playground_code"]}
         porcelain.commit(repo, author=b"Nallely MIDI <drcoatl@proton.me>", committer=b"dr-schlange <drcoatl@proton.me>", message=message)  # type: ignore
         repo.close()
 
-    def compile_device_from_cls(self, cls):
+    def compile_device_from_cls(self, cls, temporary=False):
         if not cls:
             return None
 
@@ -370,20 +377,35 @@ playground_code={infos["playground_code"]}
         buffer = io.StringIO()
         updategencode(cls, save_in=buffer)
         device_code = buffer.getvalue()
-        new_cls = self.compile_device(device_name=cls.__name__, device_code=device_code)
+        module = getmodule(cls)
+        new_cls = self.compile_device(
+            device_name=cls.__name__,
+            device_code=device_code,
+            env=module.__dict__,
+            temporary=temporary,
+        )
         return new_cls
 
-    def compile_device(self, device_name: str, device_code: str):
+    def compile_device(
+        self, device_name: str, device_code: str, env=None, temporary=False
+    ):
         if not device_code:
             return None
 
+        if temporary:
+            device_code = device_code.replace(
+                f"class {device_name}", f"class t_{device_name}"
+            )
+            device_name = f"t_{device_name}"
         filename = f"<mem {device_name}>"
         co = compile(device_code, filename=filename, mode="exec")
+        env = env if env else {}
+
         import nallely
 
         eval_env = {}
         glob = {
-            **globals(),
+            **env,
             "VirtualParameter": nallely.VirtualParameter,
             "VirtualDevice": nallely.VirtualDevice,
             "on": nallely.on,
@@ -395,6 +417,7 @@ playground_code={infos["playground_code"]}
         eval(co, globals={**glob, **eval_env}, locals=eval_env)
         cls = eval_env[device_name]
         cls.__source__ = device_code
+        cls.__env__ = glob
         try:
             # We try to use the _interactive_cache introduced in Python 3.13
             linecache._register_code(co, device_code, filename)  # type: ignore
@@ -404,10 +427,7 @@ playground_code={infos["playground_code"]}
             globals()[device_name] = cls
         return cls
 
-    def migrate_instance(self, instance, new_cls):
-        if not issubclass(new_cls, VirtualDevice):
-            # print(f"[DEBUG] {new_cls.__name__} is not an instance of VirtualDevice")
-            return
+    def migrate_instance(self, instance, new_cls, temporary=False):
         if isinstance(instance, MidiDevice):
             return
         is_vdev = isinstance(instance, VirtualDevice)
@@ -416,17 +436,19 @@ playground_code={infos["playground_code"]}
         old_cls = instance.__class__
         instance.__class__ = new_cls
         try:
-            virtual_device_classes.remove(old_cls)
+            if not temporary:
+                virtual_device_classes.remove(old_cls)
         except Exception:
             # print(
             #     f"[DEBUG] {old_cls.__name__} is not registered as a known Virtual Device class, we skip it"
             # )
             ...
-        virtual_device_classes.append(new_cls)
+        if not temporary:
+            virtual_device_classes.append(new_cls)
 
         if is_vdev:
             instance.resume()
-        else:
+        elif issubclass(new_cls, VirtualDevice):
             # We should have a VirtualDevice instance now, but not started
             instance.__init__()
             instance.start()

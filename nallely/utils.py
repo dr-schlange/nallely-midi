@@ -244,13 +244,23 @@ def get_sourcelines(obj):
         return dedent(getsource(obj)).splitlines()
     except OSError:
         if isclass(obj):
-            return obj.__source__.splitlines()
+            cls_src = getattr(obj, "__source__")
+            if cls_src:
+                return cls_src.splitlines()
+            return ""
         cls = get_defining_class(obj)
 
         obj = unwrap(obj)
+        existing_source = getattr(obj, "__source__", None)
+        if existing_source:
+            return existing_source.splitlines()
         first_line = obj.__code__.co_firstlineno - 1
         last_line = max(
             obj.__code__.co_lines(), key=lambda x: x[2] if x[2] is not None else 0
         )[2]
         src = "\n".join(cls.__source__.splitlines()[first_line:last_line])  # type: ignore
         return dedent(src).splitlines()
+
+
+def get_source(obj):
+    return "\n".join(get_sourcelines(obj))

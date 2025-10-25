@@ -101,8 +101,8 @@ class TrevorBus(VirtualDevice):
         self.server = serve(self.handler, host=host, port=port)
         self.exec_context = ChainMap(globals())
         self.trevor = TrevorAPI()
-        self.meta_trevor = MetaTrevorAPI(self.exec_context)
-        self.session = Session(self)
+        # self.meta_trevor = MetaTrevorAPI(self.exec_context)
+        self.session = Session(self, meta_env=self.exec_context)
         self.redirector = OutputCapture(self.send_message)
         self.cc_update_interval = int(0.05e9)  # every X ns
         self.next_cc_update_time = time.perf_counter_ns() + self.cc_update_interval
@@ -474,7 +474,7 @@ class TrevorBus(VirtualDevice):
     def fetch_class_code(self, device_id):
         try:
             device = self.trevor.get_device_instance(device_id)
-            class_code = self.meta_trevor.fetch_class_code(device)
+            class_code = self.session.meta_trevor.fetch_class_code(device)
             self.send_message(
                 {"arg": class_code, "command": "RuntimeAPI::setClassCode"}
             )
@@ -489,7 +489,9 @@ class TrevorBus(VirtualDevice):
             print(f"[TrevorBus] Couldn't find {device_id}")
             return
         try:
-            self.meta_trevor.compile_inject(device, method_name, method_code)
+            self.session.meta_trevor.object_centric_compile_inject(
+                device, method_name, method_code
+            )
             self.send_notification(
                 "ok",
                 f"Method {method_name} compiled and injected in {device.__class__.__name__}",
@@ -500,6 +502,7 @@ class TrevorBus(VirtualDevice):
                 f"Error while compiling/injecting {method_name} in {device.__class__.__name__}",
             )
             print(e)
+        return self.full_state()
 
     def set_parameter_value(self, device_id, section_name, parameter_name, value):
         self.trevor.set_parameter_value(device_id, section_name, parameter_name, value)
@@ -670,9 +673,7 @@ def launch_standalone_script(
 
         if include_experimental:
             from ..experimental import (  # noqa, we include the experimental devices
-                Harmonizer,
                 InstanceCreator,
-                Mono2Poly,
                 RandomPatcher,
             )
 

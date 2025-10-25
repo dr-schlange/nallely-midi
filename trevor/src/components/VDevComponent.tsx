@@ -6,6 +6,7 @@ import {
 	buildSectionId,
 	devUID,
 	generateAcronym,
+	isClassCodeMode,
 	useLongPress,
 } from "../utils/utils";
 
@@ -77,6 +78,7 @@ interface MiniRackProps {
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useTrevorWebSocket } from "../websockets/websocket";
+import { ClassBrowser } from "./modals/ClassBrowser";
 
 export const MiniRack = ({
 	devices,
@@ -229,6 +231,7 @@ export const VDevice = ({
 	const nbParameters = parameters.length;
 	const lastTap = useRef<number | null>(null);
 	const trevorSocket = useTrevorWebSocket();
+	const [isCodeOpen, setIsCodeOpen] = useState(false);
 
 	if (nbParameters <= SMALL_PORTS_LIMIT) {
 		width = 25;
@@ -277,6 +280,10 @@ export const VDevice = ({
 					lastTap.current &&
 					Date.now() - lastTap.current >= DOUBLE_CLICK_DELAY
 				) {
+					if (isClassCodeMode()) {
+						setIsCodeOpen(true);
+						return;
+					}
 					onClick?.(device);
 					lastTap.current = null;
 				}
@@ -376,6 +383,9 @@ export const VDevice = ({
 					))}
 				</div>
 			))}
+			{isCodeOpen && (
+				<ClassBrowser device={device} onClose={() => setIsCodeOpen(false)} />
+			)}
 		</div>
 	);
 };
