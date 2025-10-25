@@ -422,7 +422,8 @@ playground_code={infos["playground_code"]}
             instance.__init__()
             instance.start()
 
-    def migrate_instances(self, device_cls: str, new_cls):
+    def migrate_instances(self, new_cls, device_cls: str | None = None):
+        device_cls = device_cls if device_cls else new_cls.__name__
         for device in all_devices():
             if device.__class__.__name__ == device_cls:
                 if isinstance(device, MidiDevice):
