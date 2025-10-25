@@ -1,5 +1,6 @@
 import io
 import json
+import linecache
 import os
 import re
 import time
@@ -376,7 +377,8 @@ playground_code={infos["playground_code"]}
         if not device_code:
             return None
 
-        co = compile(device_code, filename="<nallely_device>", mode="exec")
+        filename = f"<mem {device_name}>"
+        co = compile(device_code, filename=filename, mode="exec")
         import nallely
 
         eval_env = {}
@@ -393,6 +395,13 @@ playground_code={infos["playground_code"]}
         eval(co, globals={**glob, **eval_env}, locals=eval_env)
         cls = eval_env[device_name]
         cls.__source__ = device_code
+        try:
+            # We try to use the _interactive_cache introduced in Python 3.13
+            linecache._register_code(co, device_code, filename)  # type: ignore
+        except AttributeError:
+            ...
+        finally:
+            globals()[device_name] = cls
         return cls
 
     def migrate_instance(self, instance, new_cls):

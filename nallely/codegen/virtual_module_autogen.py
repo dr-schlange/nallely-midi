@@ -188,12 +188,10 @@ def updategencode(cls, save_in=None, verbose=False):
             source = getattr(cls, "__source__", None)
             if not source:
                 # If not source, we parse the new class from the file in memory (in case there is something)
-                new_class = ast.parse(
-                    save_in.read(), filename=f"<inmem {cls.__name__}>"
-                )
+                new_class = ast.parse(save_in.read(), filename=f"<mem {cls.__name__}>")
             else:
                 # Otherwise, we parse from the source and we know we are in context of in mem
-                new_class = ast.parse(source=source, filename=f"<inmem {cls.__name__}>")
+                new_class = ast.parse(source=source, filename=f"<mem {cls.__name__}>")
 
             # We read now the code from the file that comes from the cls_file
             cls_file = Path(cls_file)

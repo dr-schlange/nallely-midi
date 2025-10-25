@@ -6,7 +6,9 @@ import sys
 import threading
 from dataclasses import asdict
 from decimal import Decimal
+from inspect import getmodule, getmro, getsource, isclass, isfunction, ismethod, unwrap
 from pathlib import Path
+from textwrap import dedent
 
 
 def longest_common_substring(s1: str, s2: str) -> str:
@@ -219,3 +221,36 @@ def diff0_cv_property(dev, param, getattr=getattr, setattr=setattr):
         setattr(self, attr_name, value)
 
     setattr(dev.__class__, param.name, property(getter, setter))
+
+
+def get_defining_class(method):
+    if ismethod(method):
+        for cls in getmro(method.__self__.__class__):
+            if cls.__dict__.get(method.__name__) is method.__func__:
+                return cls
+        method = method.__func__
+    if isfunction(method):
+        qualname = method.__qualname__
+        cls_name = qualname.split(".<locals>", 1)[0].rsplit(".", 1)[0]
+        module = getmodule(method)
+        cls = getattr(module, cls_name, None)
+        if isinstance(cls, type):
+            return cls
+    return None
+
+
+def get_sourcelines(obj):
+    try:
+        return dedent(getsource(obj)).splitlines()
+    except OSError:
+        if isclass(obj):
+            return obj.__source__.splitlines()
+        cls = get_defining_class(obj)
+
+        obj = unwrap(obj)
+        first_line = obj.__code__.co_firstlineno - 1
+        last_line = max(
+            obj.__code__.co_lines(), key=lambda x: x[2] if x[2] is not None else 0
+        )[2]
+        src = "\n".join(cls.__source__.splitlines()[first_line:last_line])  # type: ignore
+        return dedent(src).splitlines()

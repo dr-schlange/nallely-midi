@@ -5,6 +5,7 @@ import traceback
 from collections import defaultdict, deque
 from dataclasses import asdict, dataclass
 from decimal import Decimal
+from functools import update_wrapper, wraps
 from pathlib import Path
 from queue import Empty, Full, Queue
 from types import GeneratorType
@@ -104,12 +105,14 @@ class OnChange:
         try:
             self.condition_func = self.conditions[condition]
             self.condition = condition
+            update_wrapper(self, func)  # type: ignore
             self._wrap_func()
             return
         except KeyError:
             if callable(condition):
                 self.condition_func = condition
                 self.condition = f"custom_{id(condition)}"
+                update_wrapper(self, func)  # type: ignore
                 self._wrap_func()
                 return
         raise ValueError(f"Condition {condition} unknown")
@@ -126,6 +129,7 @@ class OnChange:
         #     from_=self.parameter.name,
         # )
 
+        @wraps(original)
         def wrapped(instance, value, last_value, ctx):
             with lock:
                 condition_met = cond(last_value, value)
@@ -136,7 +140,7 @@ class OnChange:
                 return True, original(instance, value, ctx)  # type: ignore
             return False, None
 
-        self.func = wrapped
+        self.func = wrapped  # type: ignore
 
     @classmethod
     def alias_name(cls, parameter_name, condition_name):
@@ -148,7 +152,7 @@ class OnChange:
         setattr(owner, name, self.func)
 
     def __get__(self, instance, owner):
-        return self.func.__get__(instance, owner)
+        return self.func.__get__(instance, owner)  # type: ignore
 
 
 def on(
