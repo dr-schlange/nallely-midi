@@ -166,10 +166,10 @@ export const setDebugMode = (
 	}
 	event.stopPropagation();
 	if (activate) {
-		trevorSocket.startCaptureSTDOUT(componentId);
+		trevorSocket.startCaptureIO(componentId);
 		store.dispatch(setLogComponent(componentId));
 	} else {
-		trevorSocket.stopCaptureSTDOUT(componentId);
+		trevorSocket.stopCaptureIO(componentId);
 		store.dispatch(setLogComponent(undefined));
 	}
 };

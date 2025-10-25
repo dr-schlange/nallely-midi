@@ -482,17 +482,25 @@ export class TrevorWebSocket {
 		});
 	}
 
-	startCaptureSTDOUT(deviceOrLink: number | string | undefined = undefined) {
+	startCaptureIO(deviceOrLink: number | string | undefined = undefined) {
 		this.sendJsonMessage({
-			command: "start_capture_stdout",
+			command: "start_capture_io",
 			device_or_link: deviceOrLink,
 		});
 	}
 
-	stopCaptureSTDOUT(deviceOrLink: number | string | undefined = undefined) {
+	stopCaptureIO(deviceOrLink: number | string | undefined = undefined) {
 		this.sendJsonMessage({
-			command: "stop_capture_stdout",
+			command: "stop_capture_io",
 			device_or_link: deviceOrLink,
+		});
+	}
+
+	sendStdin(device_id: number, text: string) {
+		this.sendJsonMessage({
+			command: "send_stdin",
+			text,
+			device_id,
 		});
 	}
 

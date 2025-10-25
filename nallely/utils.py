@@ -55,7 +55,7 @@ def load_modules(loaded_paths):
             return None
         module = importlib.util.module_from_spec(spec)
         sys.modules[name] = module
-        spec.loader.exec_module(module)
+        spec.loader.exec_module(module)  # type: ignore
         return module
 
     for p in loaded_paths:
@@ -141,8 +141,8 @@ class ThreadSafeDefaultDict(collections.defaultdict):
 def force_off_everywhere(times=2, verbose=False):
     import mido
 
-    for port in mido.get_output_names():
-        outport = mido.open_output(port, autoreset=True)
+    for port in mido.get_output_names():  # type: ignore
+        outport = mido.open_output(port, autoreset=True)  # type: ignore
         if verbose:
             print(f" - port {port}, forcing note off on all channels...", end="")
         for channel in range(16):
@@ -240,6 +240,7 @@ def get_defining_class(method):
 
 
 def get_sourcelines(obj):
+    print("GET SOURCE FOR", obj)
     try:
         return dedent(getsource(obj)).splitlines()
     except OSError:

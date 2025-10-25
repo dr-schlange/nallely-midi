@@ -11,6 +11,7 @@ import { useTrevorSelector } from "../../store";
 import { Prec } from "@codemirror/state";
 import { type Diagnostic, linter } from "@codemirror/lint";
 import type { MidiDevice, VirtualDevice } from "../../model";
+import { Button } from "../widgets/BaseComponents";
 
 const AUTO_SAVE_DELAY = 2000;
 const ERROR_DELAY = 3000;
@@ -134,9 +135,9 @@ export function ClassBrowser({ device, onClose }: ClassBrowserProps) {
 
 	useEffect(() => {
 		trevorSocket.fetchClassCode(device.id);
-		trevorSocket.startCaptureSTDOUT();
+		trevorSocket.startCaptureIO();
 		return () => {
-			trevorSocket.stopCaptureSTDOUT();
+			trevorSocket.stopCaptureIO();
 		};
 	}, []);
 
@@ -308,6 +309,14 @@ mod-?:     displays this entry
 					}}
 				>
 					<pre style={{ color: "white", whiteSpace: "pre-wrap" }}>{stdout}</pre>
+					<input
+						type="text"
+						onKeyDown={(event) => {
+							if (event.key === "Enter") {
+								trevorSocket.sendStdin(device.id, event.currentTarget.value);
+							}
+						}}
+					/>
 				</div>
 			</div>
 			<div className="modal-header">

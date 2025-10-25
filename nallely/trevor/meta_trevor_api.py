@@ -44,19 +44,19 @@ class MetaTrevorAPI:
         current_cls = device.__class__
         tmp_class = getattr(current_cls, "__tmp__", None)
         if tmp_class:
-            print("[DEBUG] Already on tmp cls")
+            # print("[DEBUG] Already on tmp cls")
             self.compile_inject(device, method_name, method_code)
             return
 
-        print("[DEBUG] Create tmp cls")
+        # print("[DEBUG] Create tmp cls")
         src = get_source(current_cls)
         env = inspect.getmodule(current_cls)
         cls = self.session.compile_device(
             f"{current_cls.__name__}", src, env=env.__dict__, temporary=True
         )
-        print("[DEBUG] cls", cls)
+        # print("[DEBUG] cls", cls)
         cls.__tmp__ = current_cls
-        print("[DEBUG] Migrate instance")
+        # print("[DEBUG] Migrate instance")
         self.session.migrate_instance(device, cls, temporary=True)
-        print(f"[DEBUG] Compile inject for {method_name}")
+        # print(f"[DEBUG] Compile inject for {method_name}")
         self.compile_inject(device, method_name, method_code)

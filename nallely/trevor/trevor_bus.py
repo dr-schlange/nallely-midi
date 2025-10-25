@@ -1,6 +1,7 @@
 import http.server
 import io
 import json
+import queue
 import socketserver
 import sys
 import textwrap
@@ -37,50 +38,78 @@ from ..utils import StateEncoder, force_off_everywhere, load_modules
 from ..websocket_bus import (  # noqa, we keep it so it's loaded in this namespace
     WebSocketBus,
 )
-from .meta_trevor_api import MetaTrevorAPI
 from .trevor_api import TrevorAPI
 
 _SYSTEM_STDOUT = sys.stdout
 _SYSTEM_STDERR = sys.stderr
+_SYSTEM_STDIN = sys.stdin
 
 
-class OutputCapture(io.StringIO):
+class IOCapture(io.StringIO):
     def __init__(self, send_message):
         super().__init__()
         self.send_message = send_message
+        self.locals = threading.local()
+        self.queues = {}
+        self._lock = threading.RLock()
 
     def write(self, data):
-        self.send_line_to_websocket(data)
-        return super().write(data)
+        with self._lock:
+            self.send_line_to_websocket(data)
+            return super().write(data)
 
     def send_line_to_websocket(self, line):
+        if "<mem" in line:
+            self.send_message(
+                {
+                    "command": "stdout",
+                    "line": "INTERACTIVE DEBUG MODE!\nTODO=>IMPLEMENT ME\n",
+                }
+            )
         self.send_message({"command": "stdout", "line": line})
 
+    def _ensure_queue(self):
+        if not hasattr(self.locals, "stdin_queue"):
+            q = queue.Queue()
+            self.locals.stdin_queue = q
+            self.queues[threading.get_ident()] = q
+        return self.locals.stdin_queue
+
+    def write_stdin(self, text, thread=None):
+        if not text.endswith("\n"):
+            text += "\n"
+        if thread:
+            thread_id = thread.ident
+            q = self.queues.get(thread_id)
+        else:
+            q = self._ensure_queue()
+        if q:
+            q.put(text)
+
+    def readline(self, *args, **kwargs):
+        q = self._ensure_queue()
+        return q.get(block=True)
+
     def start_capture(self):
-        # self.old_stdout = _SYSTEM_STDOUT
-        # self.old_stderr = _SYSTEM_STDERR
+        sys.stdin = self
         sys.stdout = self
         sys.stderr = self
 
     def stop_capture(self):
-        # sys.stdout = self.old_stdout
-        # sys.stderr = self.old_stderr
+        sys.stdin = _SYSTEM_STDIN
         sys.stdout = _SYSTEM_STDOUT
         sys.stderr = _SYSTEM_STDERR
 
     @contextmanager
     def capture(self):
-        # old_stdout = _SYSTEM_STDOUT
-        # old_stderr = _SYSTEM_STDERR
-
+        sys.stdin = self
         sys.stdout = self
         sys.stderr = self
 
         try:
             yield self
         finally:
-            # sys.stdout = old_stdout
-            # sys.stderr = old_stderr
+            sys.stdin = _SYSTEM_STDIN
             sys.stdout = _SYSTEM_STDOUT
             sys.stdout = _SYSTEM_STDERR
 
@@ -101,9 +130,8 @@ class TrevorBus(VirtualDevice):
         self.server = serve(self.handler, host=host, port=port)
         self.exec_context = ChainMap(globals())
         self.trevor = TrevorAPI()
-        # self.meta_trevor = MetaTrevorAPI(self.exec_context)
         self.session = Session(self, meta_env=self.exec_context)
-        self.redirector = OutputCapture(self.send_message)
+        self.redirector = IOCapture(self.send_message)
         self.cc_update_interval = int(0.05e9)  # every X ns
         self.next_cc_update_time = time.perf_counter_ns() + self.cc_update_interval
         self.cc_update_package = defaultdict(make_ccvalues)
@@ -443,7 +471,7 @@ class TrevorBus(VirtualDevice):
         self.trevor.kill_device(device_id)
         return self.full_state()
 
-    def start_capture_stdout(self, device_or_link=None):
+    def start_capture_io(self, device_or_link=None):
         if device_or_link:
             try:
                 device = self.trevor.get_device_instance(device_or_link)
@@ -457,7 +485,7 @@ class TrevorBus(VirtualDevice):
                     pass
         self.redirector.start_capture()
 
-    def stop_capture_stdout(self, device_or_link=None):
+    def stop_capture_io(self, device_or_link=None):
         if device_or_link:
             try:
                 device = self.trevor.get_device_instance(device_or_link)
@@ -470,6 +498,14 @@ class TrevorBus(VirtualDevice):
                     print(f"[TrevorBus] Couldn't find {device_or_link}")
                     pass
         self.redirector.stop_capture()
+
+    def send_stdin(self, device_id, text):
+        try:
+            device = self.trevor.get_device_instance(device_id)
+        except:
+            print(f"[TrevorBus] Couldn't find {device_id}")
+            return
+        self.redirector.write_stdin(text, thread=device)
 
     def fetch_class_code(self, device_id):
         try:
