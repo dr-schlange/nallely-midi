@@ -1,5 +1,6 @@
 import ast
 import inspect
+import io
 import re
 from collections import defaultdict
 from dataclasses import dataclass
@@ -168,7 +169,7 @@ def updategencode(cls, save_in=None, verbose=False):
         else:
             return cls
         file_code = ast.parse(cls_file.read_text("utf-8"))
-    else:
+    elif isinstance(save_in, Path):
         try:
             cls_file = Path(save_in)
             new_class = ast.parse(cls.__source__, filename=cls_file)
@@ -181,6 +182,30 @@ def updategencode(cls, save_in=None, verbose=False):
                 f"Class {cls} doesn't have a __source__ attribute, returning {cls} and stop codegen"
             )
             return cls
+    elif isinstance(save_in, io.StringIO):
+        assert cls_file
+        try:
+            source = getattr(cls, "__source__", None)
+            if not source:
+                # If not source, we parse the new class from the file in memory (in case there is something)
+                new_class = ast.parse(
+                    save_in.read(), filename=f"<inmem {cls.__name__}>"
+                )
+            else:
+                # Otherwise, we parse from the source and we know we are in context of in mem
+                new_class = ast.parse(source=source, filename=f"<inmem {cls.__name__}>")
+
+            # We read now the code from the file that comes from the cls_file
+            cls_file = Path(cls_file)
+            file_code = ast.parse(cls_file.read_text("utf-8"), filename=cls_file)
+            cls_file = save_in
+        except AttributeError:
+            print(
+                f"Class {cls} doesn't have a __source__ attribute, returning {cls} and stop codegen"
+            )
+            return cls
+    else:
+        raise Exception("Unknown save_in type", save_in.__class__)
 
     has_imports = False
     autogen_import = None
@@ -189,7 +214,11 @@ def updategencode(cls, save_in=None, verbose=False):
             case ast.ClassDef(name=cls.__name__) as clsdef:
                 if verbose:
                     print(f" * transforming {clsdef.name}")
-                cls_node = new_class.body[0] if save_in is not None else clsdef
+                cls_node = (
+                    new_class.body[0]
+                    if save_in is not None and new_class.body
+                    else clsdef
+                )
                 file_code.body[i] = generate_class_node(
                     cls_node, *parsedoc(ast.get_docstring(cls_node, clean=True))
                 )
@@ -223,7 +252,10 @@ def updategencode(cls, save_in=None, verbose=False):
         module_content = black.format_str(ast.unparse(file_code), mode=black.Mode())
     else:
         module_content = ast.unparse(file_code)
-    cls_file.write_text(module_content, encoding="utf-8")
+    if isinstance(cls_file, io.StringIO):
+        cls_file.write(module_content)
+    else:
+        cls_file.write_text(module_content, encoding="utf-8")
     return cls
 
 

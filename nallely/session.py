@@ -1,3 +1,4 @@
+import io
 import json
 import os
 import re
@@ -359,6 +360,18 @@ playground_code={infos["playground_code"]}
         porcelain.commit(repo, author=b"Nallely MIDI <drcoatl@proton.me>", committer=b"dr-schlange <drcoatl@proton.me>", message=message)  # type: ignore
         repo.close()
 
+    def compile_device_from_cls(self, cls):
+        if not cls:
+            return None
+
+        from .codegen import updategencode
+
+        buffer = io.StringIO()
+        updategencode(cls, save_in=buffer)
+        device_code = buffer.getvalue()
+        new_cls = self.compile_device(device_name=cls.__name__, device_code=device_code)
+        return new_cls
+
     def compile_device(self, device_name: str, device_code: str):
         if not device_code:
             return None
@@ -381,6 +394,33 @@ playground_code={infos["playground_code"]}
         cls = eval_env[device_name]
         cls.__source__ = device_code
         return cls
+
+    def migrate_instance(self, instance, new_cls):
+        if not issubclass(new_cls, VirtualDevice):
+            # print(f"[DEBUG] {new_cls.__name__} is not an instance of VirtualDevice")
+            return
+        if isinstance(instance, MidiDevice):
+            return
+        is_vdev = isinstance(instance, VirtualDevice)
+        if is_vdev:
+            instance.pause()
+        old_cls = instance.__class__
+        instance.__class__ = new_cls
+        try:
+            virtual_device_classes.remove(old_cls)
+        except Exception:
+            # print(
+            #     f"[DEBUG] {old_cls.__name__} is not registered as a known Virtual Device class, we skip it"
+            # )
+            ...
+        virtual_device_classes.append(new_cls)
+
+        if is_vdev:
+            instance.resume()
+        else:
+            # We should have a VirtualDevice instance now, but not started
+            instance.__init__()
+            instance.start()
 
     def migrate_instances(self, device_cls: str, new_cls):
         for device in all_devices():
