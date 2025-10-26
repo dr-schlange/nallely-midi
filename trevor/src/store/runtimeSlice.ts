@@ -57,7 +57,10 @@ const runtimeSlice = createSlice({
 			};
 		},
 		addStdinWait: (state, action: PayloadAction<number>) => {
-			state.stdin.queue.push(action.payload);
+			const id = action.payload;
+			if (!state.stdin.queue.includes(id)) {
+				state.stdin.queue.push(action.payload);
+			}
 		},
 		removeStdinWait: (state, action: PayloadAction<number>) => {
 			state.stdin.queue = state.stdin.queue.filter((f) => f !== action.payload);
