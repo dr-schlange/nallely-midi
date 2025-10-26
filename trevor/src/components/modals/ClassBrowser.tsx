@@ -11,8 +11,7 @@ import { useTrevorDispatch, useTrevorSelector } from "../../store";
 import { Prec } from "@codemirror/state";
 import { type Diagnostic, linter } from "@codemirror/lint";
 import type { MidiDevice, VirtualDevice } from "../../model";
-import { Button } from "../widgets/BaseComponents";
-import { removeStdinWait } from "../../store/runtimeSlice";
+import { Terminal } from "../Terminal";
 
 const AUTO_SAVE_DELAY = 2000;
 const ERROR_DELAY = 3000;
@@ -39,6 +38,7 @@ function extractLastExpression(text: string) {
 }
 
 async function askCompletion(context: CompletionContext) {
+	const websocket = useTrevorWebSocket();
 	const word = context.matchBefore(/\w+(\.\w+)?/);
 
 	if (!word && !context.explicit) return null;
@@ -46,7 +46,6 @@ async function askCompletion(context: CompletionContext) {
 	const fullText = context.state.sliceDoc(0, context.pos);
 	const lastExpression = extractLastExpression(fullText);
 
-	const websocket = useTrevorWebSocket();
 	if (!websocket) return null;
 
 	const options = await websocket.requestCompletion(lastExpression);
@@ -97,8 +96,6 @@ export function ClassBrowser({ device, onClose }: ClassBrowserProps) {
 	const trevorSocket = useTrevorWebSocket();
 	const classCode = useTrevorSelector((state) => state.runTime.classCode);
 	// const method = useRef<string>(undefined);
-	const stdinQueue = useTrevorSelector((state) => state.runTime.stdin.queue);
-	const dispatch = useTrevorDispatch();
 
 	useEffect(() => {
 		if (!classCode?.classCode) {
@@ -319,24 +316,12 @@ mod-?:     displays this entry
 						background: "black",
 					}}
 				>
-					<pre style={{ color: "white", whiteSpace: "pre-wrap" }}>{stdout}</pre>
-					{stdinQueue.map((n) => {
-						return (
-							<>
-								<pre>stdin {n}: </pre>
-								<input
-									key={`stdin-${n}`}
-									type="text"
-									onKeyDown={(event) => {
-										if (event.key === "Enter") {
-											trevorSocket.sendStdin(n, event.currentTarget.value);
-											dispatch(removeStdinWait(n));
-										}
-									}}
-								/>
-							</>
-						);
-					})}
+					<Terminal
+						stdout={stdout}
+						stdin={(id, text) => {
+							trevorSocket.sendStdin(id, text);
+						}}
+					/>
 				</div>
 			</div>
 			<div className="modal-header">

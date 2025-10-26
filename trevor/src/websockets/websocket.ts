@@ -499,8 +499,8 @@ export class TrevorWebSocket {
 	sendStdin(thread_id: number, text: string) {
 		this.sendJsonMessage({
 			command: "send_stdin",
-			text,
 			thread_id,
+			text,
 		});
 	}
 

@@ -926,6 +926,11 @@ accessor-fn@1:
   resolved "https://registry.yarnpkg.com/accessor-fn/-/accessor-fn-1.5.3.tgz#5e2549d291d4ac022f532da9a554358dc525b0f7"
   integrity sha512-rkAofCwe/FvYFUlMB0v0gWmhqtfAtV1IUkdPbfhTUyYniu5LrC0A0UJkTH0Jv3S8SvwkmfuAlY+mQIJATdocMA==
 
+ansi_up@^6.0.6:
+  version "6.0.6"
+  resolved "https://registry.yarnpkg.com/ansi_up/-/ansi_up-6.0.6.tgz#804faf31f0385e562d2f71275ea8cff0d9dcf6dc"
+  integrity sha512-yIa1x3Ecf8jWP4UWEunNjqNX6gzE4vg2gGz+xqRGY+TBSucnYp6RRdPV4brmtg6bQ1ljD48mZ5iGSEj7QEpRKA==
+
 array-union@^2.1.0:
   version "2.1.0"
   resolved "https://registry.yarnpkg.com/array-union/-/array-union-2.1.0.tgz#b798420adbeb1de828d84acd8a2e23d3efe85e8d"

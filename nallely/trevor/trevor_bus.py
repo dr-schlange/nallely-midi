@@ -87,8 +87,11 @@ class IOCapture(io.StringIO):
 
     def readline(self, *args, **kwargs):
         q = self._ensure_queue()
+        # self.send_message(
+        #     {"arg": threading.get_ident(), "command": "RuntimeAPI::addStdinWait"}
+        # )
         self.send_message(
-            {"arg": threading.get_ident(), "command": "RuntimeAPI::addStdinWait"}
+            {"command": "stdout", "line": f"<stdin:{threading.get_ident()}>"}
         )
         return q.get(block=True)
 
@@ -284,38 +287,41 @@ class TrevorBus(VirtualDevice):
         return self.full_state()
 
     def execute_code(self, code):
-        with self.redirector.capture():
-            try:
-                print(">>>", indent(code, "... ")[4:])
-                self.trevor.execute_code(code, self.exec_context)
-            except SyntaxError as err:
-                print(err, file=sys.stderr)
-                self.send_message(
-                    {
-                        "command": "error",
-                        "details": {
-                            "line": err.lineno,
-                            "start_col": err.offset,
-                            "end_col": err.end_offset,
-                            "message": err.msg,
-                        },
-                    }
-                )
-            except Exception as err:
-                print(err, file=sys.stderr)
-                _, _, tb = sys.exc_info()
-                exc_info = traceback.extract_tb(tb)[-1]
-                self.send_message(
-                    {
-                        "command": "error",
-                        "details": {
-                            "line": exc_info.lineno,
-                            "start_col": exc_info.colno,
-                            "end_col": exc_info.end_colno,
-                            "message": str(err),
-                        },
-                    }
-                )
+        # with self.redirector.capture():
+        self.redirector.start_capture()
+        try:
+            print(">>>", indent(code, "... ")[4:])
+            self.trevor.execute_code_threaded(
+                code, self.exec_context, lambda: self.redirector.stop_capture()
+            )
+        except SyntaxError as err:
+            print(err, file=sys.stderr)
+            self.send_message(
+                {
+                    "command": "error",
+                    "details": {
+                        "line": err.lineno,
+                        "start_col": err.offset,
+                        "end_col": err.end_offset,
+                        "message": err.msg,
+                    },
+                }
+            )
+        except Exception as err:
+            print(err, file=sys.stderr)
+            _, _, tb = sys.exc_info()
+            exc_info = traceback.extract_tb(tb)[-1]
+            self.send_message(
+                {
+                    "command": "error",
+                    "details": {
+                        "line": exc_info.lineno,
+                        "start_col": exc_info.colno,
+                        "end_col": exc_info.end_colno,
+                        "message": str(err),
+                    },
+                }
+            )
         return self.full_state()
 
     def create_device(self, name):

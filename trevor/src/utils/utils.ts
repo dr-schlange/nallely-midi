@@ -340,3 +340,6 @@ export function useLongPress(
 export const devUID = (device) => {
 	return `${device.id}${device.proxy ? `_${device.repr}` : ""}`;
 };
+
+import { AnsiUp } from "ansi_up";
+export const AnsiParser = new AnsiUp();

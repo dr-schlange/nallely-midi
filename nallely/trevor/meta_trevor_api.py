@@ -79,10 +79,10 @@ class MetaTrevorAPI:
         current_cls = device.__class__
         # print("[DEBUG] Compiling dedicated class for", current_cls)
 
-        tmp_class = getattr(current_cls, "__tmp__", None)
+        tmp_class = getattr(current_cls, "__tmp__", {})
 
         if tmp_class:
-            replace_name = tmp_class.__name__
+            replace_name = tmp_class["name"].__name__
             device_name = current_cls.__name__
         else:
             replace_name = current_cls.__name__
@@ -96,6 +96,12 @@ class MetaTrevorAPI:
             final_code,
             env=env.__dict__,
         )
-        cls.__tmp__ = tmp_class if tmp_class else current_cls
+        try:
+            current_path = inspect.getfile(current_cls)
+        except OSError:
+            current_path = f"<mem {device_name}>"
+        cls.__tmp__ = (
+            tmp_class if tmp_class else {"name": current_cls, "path": current_path}
+        )
 
         self.session.migrate_instance(device, cls, temporary=True)

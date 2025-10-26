@@ -1,3 +1,4 @@
+import threading
 from decimal import Decimal
 from itertools import chain
 from typing import Any, cast
@@ -33,6 +34,19 @@ class TrevorAPI:
     def execute_code(self, code, exec_context):
         bytecode = compile(source=code, filename="<string>", mode="exec")
         exec(bytecode, globals(), exec_context)
+
+    def execute_code_threaded(self, code, exec_context, on_done):
+        def runner():
+            try:
+                bytecode = compile(code, "<string>", "exec")
+                exec(bytecode, {}, exec_context)
+            finally:
+                if on_done:
+                    on_done()
+
+        thread = threading.Thread(target=runner)
+        thread.start()
+        return thread
 
     def create_device(self, name):
         cls = next((cls for cls in midi_device_classes if cls.__name__ == name), None)

@@ -10,6 +10,7 @@ import { useTrevorWebSocket } from "../../websockets/websocket";
 import { useTrevorSelector } from "../../store";
 import { Prec } from "@codemirror/state";
 import { type Diagnostic, linter } from "@codemirror/lint";
+import { Terminal } from "../Terminal";
 
 const AUTO_SAVE_DELAY = 2000;
 const ERROR_DELAY = 3000;
@@ -36,13 +37,13 @@ function extractLastExpression(text: string) {
 
 async function askCompletion(context: CompletionContext) {
 	const word = context.matchBefore(/\w+(\.\w+)?/);
+	const websocket = useTrevorWebSocket();
 
 	if (!word && !context.explicit) return null;
 
 	const fullText = context.state.sliceDoc(0, context.pos);
 	const lastExpression = extractLastExpression(fullText);
 
-	const websocket = useTrevorWebSocket();
 	if (!websocket) return null;
 
 	const options = await websocket.requestCompletion(lastExpression);
@@ -377,9 +378,15 @@ mod-?:     displays this entry
 						overflowY: "auto",
 						padding: "10px",
 						background: "black",
+						color: "white",
 					}}
 				>
-					<pre style={{ color: "white", whiteSpace: "pre-wrap" }}>{stdout}</pre>
+					<Terminal
+						stdout={stdout}
+						stdin={(id, text) => {
+							trevorSocket.sendStdin(id, text);
+						}}
+					/>
 				</div>
 			</div>
 			<div className="modal-header">
