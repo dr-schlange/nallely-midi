@@ -382,17 +382,14 @@ playground_code={infos["playground_code"]}
             device_name=cls.__name__,
             device_code=device_code,
             env=module.__dict__,
-            temporary=temporary,
+            update_name=temporary,
         )
         return new_cls
 
     def compile_device(
-        self, device_name: str, device_code: str, env=None, temporary=False
+        self, device_name: str, device_code: str, env=None, update_name=False
     ):
-        if not device_code:
-            return None
-
-        if temporary:
+        if update_name:
             device_code = device_code.replace(
                 f"class {device_name}", f"class t_{device_name}"
             )
@@ -419,6 +416,12 @@ playground_code={infos["playground_code"]}
         cls.__source__ = device_code
         cls.__env__ = glob
         try:
+            linecache.cache[filename] = (
+                len(device_code),
+                None,
+                [line + "\n" for line in device_code.splitlines()],
+                filename,
+            )
             # We try to use the _interactive_cache introduced in Python 3.13
             linecache._register_code(co, device_code, filename)  # type: ignore
         except AttributeError:
@@ -459,14 +462,11 @@ playground_code={infos["playground_code"]}
             if device.__class__.__name__ == device_cls:
                 if isinstance(device, MidiDevice):
                     continue
-                print("[DEBUG] Migrating", device)
-                print("[DEBUG] Pause device", device)
                 device.pause()
                 old_cls = device.__class__
                 device.__class__ = new_cls
                 virtual_device_classes.remove(old_cls)
                 virtual_device_classes.append(new_cls)
-                print("[DEBUG] Restart device")
                 device.resume()
 
 

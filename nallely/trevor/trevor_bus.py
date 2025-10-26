@@ -59,13 +59,13 @@ class IOCapture(io.StringIO):
             return super().write(data)
 
     def send_line_to_websocket(self, line):
-        if "<mem" in line:
-            self.send_message(
-                {
-                    "command": "stdout",
-                    "line": "INTERACTIVE DEBUG MODE!\nTODO=>IMPLEMENT ME\n",
-                }
-            )
+        # if "<mem" in line:
+        #     self.send_message(
+        #         {
+        #             "command": "stdout",
+        #             "line": "INTERACTIVE DEBUG MODE!\nTODO=>IMPLEMENT ME\n",
+        #         }
+        #     )
         self.send_message({"command": "stdout", "line": line})
 
     def _ensure_queue(self):
@@ -75,11 +75,10 @@ class IOCapture(io.StringIO):
             self.queues[threading.get_ident()] = q
         return self.locals.stdin_queue
 
-    def write_stdin(self, text, thread=None):
+    def write_stdin(self, text, thread_id=None):
         if not text.endswith("\n"):
             text += "\n"
-        if thread:
-            thread_id = thread.ident
+        if thread_id:
             q = self.queues.get(thread_id)
         else:
             q = self._ensure_queue()
@@ -88,6 +87,9 @@ class IOCapture(io.StringIO):
 
     def readline(self, *args, **kwargs):
         q = self._ensure_queue()
+        self.send_message(
+            {"arg": threading.get_ident(), "command": "RuntimeAPI::addStdinWait"}
+        )
         return q.get(block=True)
 
     def start_capture(self):
@@ -482,7 +484,6 @@ class TrevorBus(VirtualDevice):
                     link.debug = True
                 except:
                     print(f"[TrevorBus] Couldn't find {device_or_link}")
-                    pass
         self.redirector.start_capture()
 
     def stop_capture_io(self, device_or_link=None):
@@ -496,16 +497,10 @@ class TrevorBus(VirtualDevice):
                     link.debug = False
                 except:
                     print(f"[TrevorBus] Couldn't find {device_or_link}")
-                    pass
         self.redirector.stop_capture()
 
-    def send_stdin(self, device_id, text):
-        try:
-            device = self.trevor.get_device_instance(device_id)
-        except:
-            print(f"[TrevorBus] Couldn't find {device_id}")
-            return
-        self.redirector.write_stdin(text, thread=device)
+    def send_stdin(self, thread_id, text):
+        self.redirector.write_stdin(text, thread_id=thread_id)
 
     def fetch_class_code(self, device_id):
         try:
@@ -516,26 +511,34 @@ class TrevorBus(VirtualDevice):
             )
         except:
             print(f"[TrevorBus] Couldn't find {device_id}")
-            pass
 
-    def compile_inject(self, device_id, method_name, method_code):
+    def get_class_code(self, device_id):
+        try:
+            device = self.trevor.get_device_instance(device_id)
+            class_code = self.session.meta_trevor.get_class_code(device)
+            self.send_message(
+                {"arg": class_code, "command": "RuntimeAPI::setClassCode"}
+            )
+        except:
+            print(f"[TrevorBus] Couldn't find {device_id}")
+
+    # def compile_inject(self, device_id, method_name, method_code):
+    def compile_inject(self, device_id, class_code):
         try:
             device = self.trevor.get_device_instance(device_id)
         except Exception as e:
             print(f"[TrevorBus] Couldn't find {device_id}")
             return
         try:
-            self.session.meta_trevor.object_centric_compile_inject(
-                device, method_name, method_code
-            )
+            self.session.meta_trevor.object_centric_compile_inject(device, class_code)
             self.send_notification(
                 "ok",
-                f"Method {method_name} compiled and injected in {device.__class__.__name__}",
+                f"Code for class {device.__class__.__name__} compiled, and instance {device_id} have been migrated",
             )
         except Exception as e:
             self.send_notification(
                 "error",
-                f"Error while compiling/injecting {method_name} in {device.__class__.__name__}",
+                f"Error while compiling/injecting {device.__class__.__name__}",
             )
             print(e)
         return self.full_state()

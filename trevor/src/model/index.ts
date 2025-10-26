@@ -179,11 +179,17 @@ export interface RunTimeState {
 	ccValues: CCValues;
 	patchDetails: PatchDetails | undefined;
 	usedAddresses: Address[];
+	stdin: WaitingStdinQueue;
 }
 
 export interface ClassCode {
 	className: string;
+	classCode: string;
 	methods: Record<string, string>;
+}
+
+export interface WaitingStdinQueue {
+	queue: number[];
 }
 
 export interface PatchDetails {

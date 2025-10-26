@@ -496,11 +496,11 @@ export class TrevorWebSocket {
 		});
 	}
 
-	sendStdin(device_id: number, text: string) {
+	sendStdin(thread_id: number, text: string) {
 		this.sendJsonMessage({
 			command: "send_stdin",
 			text,
-			device_id,
+			thread_id,
 		});
 	}
 
@@ -511,12 +511,27 @@ export class TrevorWebSocket {
 		});
 	}
 
-	compileInject(device_id: number, method_name, method_code) {
+	getClassCode(device_id: number) {
+		this.sendJsonMessage({
+			command: "get_class_code",
+			device_id,
+		});
+	}
+
+	// compileInject(device_id: number, method_name, method_code) {
+	// 	this.sendJsonMessage({
+	// 		command: "compile_inject",
+	// 		device_id,
+	// 		method_name,
+	// 		method_code,
+	// 	});
+	// }
+
+	compileInject(device_id: number, class_code) {
 		this.sendJsonMessage({
 			command: "compile_inject",
 			device_id,
-			method_name,
-			method_code,
+			class_code,
 		});
 	}
 

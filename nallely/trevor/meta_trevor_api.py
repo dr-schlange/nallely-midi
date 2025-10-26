@@ -2,15 +2,15 @@ import inspect
 import textwrap
 from collections import ChainMap
 
-# Imports for compilation
-from nallely import *
-
-from ..utils import get_source, get_sourcelines
+from ..utils import get_source
 
 
 class MetaTrevorAPI:
+
     def __init__(self, session, exec_context=None):
-        self.session = session
+        from ..session import Session
+
+        self.session: Session = session
         self.exec_context = exec_context if exec_context else ChainMap(globals())
 
     def fetch_class_code(self, device):
@@ -21,6 +21,20 @@ class MetaTrevorAPI:
             if callable(obj) and not inspect.isclass(obj)
         }
         return {"className": cls.__name__, "methods": method_codes}
+
+    def get_class_code(self, device):
+        cls = device.__class__
+        class_code = get_source(cls)
+        method_codes = {
+            name: get_source(obj)
+            for name, obj in cls.__dict__.items()
+            if callable(obj) and not inspect.isclass(obj)
+        }
+        return {
+            "className": cls.__name__,
+            "classCode": class_code,
+            "methods": method_codes,
+        }
 
     def compile_inject(self, device, method_name: str, method_code: str):
         filename = f"<mem {device.__class__.__name__}>"
@@ -40,26 +54,48 @@ class MetaTrevorAPI:
         setattr(device.__class__, method_name, compiled_method)
         compiled_method.__source__ = method_code
 
-    # TODO re-implement considering the full class code. If not, reactive callbacks cannot compile well unless rewritten (not ideal)
-    # at the end, the fact of having a "per method" compilation and injection as in Smalltalk here is not that usefull as writing the
-    # code of the recompiled class in the cach can enable also Pdb to understand well the position in the source code
-    def object_centric_compile_inject(self, device, method_name: str, method_code: str):
-        current_cls = device.__class__
-        tmp_class = getattr(current_cls, "__tmp__", None)
-        if tmp_class:
-            # print("[DEBUG] Already on tmp cls")
-            self.compile_inject(device, method_name, method_code)
-            return
+    # def object_centric_compile_inject(self, device, method_name: str, method_code: str):
+    #     current_cls = device.__class__
+    #     tmp_class = getattr(current_cls, "__tmp__", None)
+    #     if tmp_class:
+    #         # print("[DEBUG] Already on tmp cls")
+    #         self.compile_inject(device, method_name, method_code)
+    #         return
 
-        # print("[DEBUG] Create tmp cls")
-        src = get_source(current_cls)
+    #     # print("[DEBUG] Create tmp cls")
+    #     src = get_source(current_cls)
+    #     env = inspect.getmodule(current_cls)
+    #     cls = self.session.compile_device(
+    #         f"{current_cls.__name__}", src, env=env.__dict__, temporary=True
+    #     )
+    #     # print("[DEBUG] cls", cls)
+    #     cls.__tmp__ = current_cls
+    #     # print("[DEBUG] Migrate instance")
+    #     self.session.migrate_instance(device, cls, temporary=True)
+    #     # print(f"[DEBUG] Compile inject for {method_name}")
+    #     self.compile_inject(device, method_name, method_code)
+
+    def object_centric_compile_inject(self, device, class_code: str):
+        current_cls = device.__class__
+        # print("[DEBUG] Compiling dedicated class for", current_cls)
+
+        tmp_class = getattr(current_cls, "__tmp__", None)
+
+        if tmp_class:
+            replace_name = tmp_class.__name__
+            device_name = current_cls.__name__
+        else:
+            replace_name = current_cls.__name__
+            device_name = f"t_{replace_name}"
+
+        final_code = class_code.replace(f"class {replace_name}", f"class {device_name}")
+
         env = inspect.getmodule(current_cls)
         cls = self.session.compile_device(
-            f"{current_cls.__name__}", src, env=env.__dict__, temporary=True
+            device_name,
+            final_code,
+            env=env.__dict__,
         )
-        # print("[DEBUG] cls", cls)
-        cls.__tmp__ = current_cls
-        # print("[DEBUG] Migrate instance")
+        cls.__tmp__ = tmp_class if tmp_class else current_cls
+
         self.session.migrate_instance(device, cls, temporary=True)
-        # print(f"[DEBUG] Compile inject for {method_name}")
-        self.compile_inject(device, method_name, method_code)

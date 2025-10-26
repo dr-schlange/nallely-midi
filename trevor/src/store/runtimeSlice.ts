@@ -18,6 +18,9 @@ export const initialRunTimeState: RunTimeState = {
 	ccValues: {},
 	patchDetails: undefined,
 	usedAddresses: [],
+	stdin: {
+		queue: [],
+	},
 };
 
 interface CCState {
@@ -52,6 +55,12 @@ const runtimeSlice = createSlice({
 				...action.payload,
 				methods: { ...action.payload.methods },
 			};
+		},
+		addStdinWait: (state, action: PayloadAction<number>) => {
+			state.stdin.queue.push(action.payload);
+		},
+		removeStdinWait: (state, action: PayloadAction<number>) => {
+			state.stdin.queue = state.stdin.queue.filter((f) => f !== action.payload);
 		},
 		setSaveDefaultValue: (state, action: PayloadAction<boolean>) => {
 			state.saveDefaultValue = action.payload;
@@ -131,6 +140,8 @@ export const {
 	setPatchDetails,
 	resetPatchDetails,
 	setUsedAddresses,
+	addStdinWait,
+	removeStdinWait,
 } = runtimeSlice.actions;
 
 export default runtimeSlice.reducer;

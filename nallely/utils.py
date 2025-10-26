@@ -240,17 +240,14 @@ def get_defining_class(method):
 
 
 def get_sourcelines(obj):
-    print("GET SOURCE FOR", obj)
+    if isclass(obj):
+        cls_src = getattr(obj, "__source__", None)
+        if cls_src:
+            return cls_src.splitlines()
     try:
         return dedent(getsource(obj)).splitlines()
     except OSError:
-        if isclass(obj):
-            cls_src = getattr(obj, "__source__")
-            if cls_src:
-                return cls_src.splitlines()
-            return ""
         cls = get_defining_class(obj)
-
         obj = unwrap(obj)
         existing_source = getattr(obj, "__source__", None)
         if existing_source:

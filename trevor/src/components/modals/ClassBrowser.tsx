@@ -7,11 +7,12 @@ import {
 } from "@codemirror/autocomplete";
 import { type EditorView, keymap } from "@codemirror/view";
 import { useTrevorWebSocket } from "../../websockets/websocket";
-import { useTrevorSelector } from "../../store";
+import { useTrevorDispatch, useTrevorSelector } from "../../store";
 import { Prec } from "@codemirror/state";
 import { type Diagnostic, linter } from "@codemirror/lint";
 import type { MidiDevice, VirtualDevice } from "../../model";
 import { Button } from "../widgets/BaseComponents";
+import { removeStdinWait } from "../../store/runtimeSlice";
 
 const AUTO_SAVE_DELAY = 2000;
 const ERROR_DELAY = 3000;
@@ -95,7 +96,17 @@ export function ClassBrowser({ device, onClose }: ClassBrowserProps) {
 	const [errors, setErrors] = useState<Diagnostic[]>([]);
 	const trevorSocket = useTrevorWebSocket();
 	const classCode = useTrevorSelector((state) => state.runTime.classCode);
-	const method = useRef<string>(undefined);
+	// const method = useRef<string>(undefined);
+	const stdinQueue = useTrevorSelector((state) => state.runTime.stdin.queue);
+	const dispatch = useTrevorDispatch();
+
+	useEffect(() => {
+		if (!classCode?.classCode) {
+			setCode(`# Fetching code for ${device.meta.name}`);
+			return;
+		}
+		setCode(classCode.classCode);
+	}, [classCode?.classCode]);
 
 	const executeCode = (code: string) => {
 		trevorSocket?.executeCode(code);
@@ -134,7 +145,7 @@ export function ClassBrowser({ device, onClose }: ClassBrowserProps) {
 	}
 
 	useEffect(() => {
-		trevorSocket.fetchClassCode(device.id);
+		trevorSocket.getClassCode(device.id);
 		trevorSocket.startCaptureIO();
 		return () => {
 			trevorSocket.stopCaptureIO();
@@ -170,8 +181,8 @@ export function ClassBrowser({ device, onClose }: ClassBrowserProps) {
 				key: "Mod-s",
 				preventDefault: true,
 				run: () => {
-					if (code && method.current) {
-						trevorSocket?.compileInject(device.id, method.current, code);
+					if (code) {
+						trevorSocket?.compileInject(device.id, code);
 					}
 					return true;
 				},
@@ -253,7 +264,7 @@ mod-?:     displays this entry
 				className="modal-body"
 				style={{ display: "flex", flexDirection: "column", height: "100%" }}
 			>
-				<div>
+				{/* <div>
 					<select
 						style={{ width: "100%" }}
 						multiple
@@ -275,7 +286,7 @@ mod-?:     displays this entry
 								);
 							})}
 					</select>
-				</div>
+				</div> */}
 				<div style={{ flex: 0.6, overflowY: "auto" }}>
 					<CodeMirror
 						ref={(view) => {
@@ -309,14 +320,23 @@ mod-?:     displays this entry
 					}}
 				>
 					<pre style={{ color: "white", whiteSpace: "pre-wrap" }}>{stdout}</pre>
-					<input
-						type="text"
-						onKeyDown={(event) => {
-							if (event.key === "Enter") {
-								trevorSocket.sendStdin(device.id, event.currentTarget.value);
-							}
-						}}
-					/>
+					{stdinQueue.map((n) => {
+						return (
+							<>
+								<pre>stdin {n}: </pre>
+								<input
+									key={`stdin-${n}`}
+									type="text"
+									onKeyDown={(event) => {
+										if (event.key === "Enter") {
+											trevorSocket.sendStdin(n, event.currentTarget.value);
+											dispatch(removeStdinWait(n));
+										}
+									}}
+								/>
+							</>
+						);
+					})}
 				</div>
 			</div>
 			<div className="modal-header">
