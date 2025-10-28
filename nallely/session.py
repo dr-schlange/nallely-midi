@@ -411,7 +411,8 @@ playground_code={infos["playground_code"]}
             "nallely.on": nallely.on,
             "nallely": nallely,
         }
-        eval(co, globals={**glob, **eval_env}, locals=eval_env)
+        # eval(co, globals={**glob, **eval_env}, locals=eval_env)
+        eval(co, {**glob, **eval_env}, eval_env)  # Eval take no keyword argument...
         cls = eval_env[device_name]
         cls.__source__ = device_code
         cls.__env__ = glob
