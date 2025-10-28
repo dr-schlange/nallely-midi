@@ -73,7 +73,7 @@ export const Terminal = ({ stdout, stdin }) => {
 	}, [reactElements, triggered]);
 
 	return (
-		<div style={{ color: "white", whiteSpace: "pre-wrap", fontSize: "17px" }}>
+		<div className="terminal">
 			{reactElements}
 			{displayPending &&
 				pending.map((n) => {

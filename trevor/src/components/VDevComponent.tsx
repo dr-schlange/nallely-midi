@@ -79,6 +79,8 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useTrevorWebSocket } from "../websockets/websocket";
 import { ClassBrowser } from "./modals/ClassBrowser";
+import { useTrevorDispatch } from "../store";
+import { setClassCodeMode } from "../store/runtimeSlice";
 
 export const MiniRack = ({
 	devices,
@@ -231,6 +233,7 @@ export const VDevice = ({
 	const nbParameters = parameters.length;
 	const lastTap = useRef<number | null>(null);
 	const trevorSocket = useTrevorWebSocket();
+	const dispatch = useTrevorDispatch();
 	const [isCodeOpen, setIsCodeOpen] = useState(false);
 
 	if (nbParameters <= SMALL_PORTS_LIMIT) {
@@ -282,6 +285,7 @@ export const VDevice = ({
 				) {
 					if (isClassCodeMode()) {
 						setIsCodeOpen(true);
+						dispatch(setClassCodeMode(false));
 						return;
 					}
 					onClick?.(device);

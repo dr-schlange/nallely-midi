@@ -37,7 +37,8 @@ export const Button = ({
 				...(style ?? {}),
 			}}
 			onMouseDown={() => setClickColor("orange")}
-			onMouseUp={() => {
+			onMouseUp={(event) => {
+				event.stopPropagation();
 				setClickColor(undefined);
 				onClick?.();
 			}}
@@ -80,4 +81,21 @@ export const useNallelyRegistration = (
 	}, [id, category, parameters, config]);
 
 	return device;
+};
+
+export const HeaderButton = ({ onClick, text, ...props }) => {
+	return (
+		<button
+			type="button"
+			className="close-button"
+			onClick={(event) => {
+				event.stopPropagation();
+				event.preventDefault();
+				onClick?.();
+			}}
+			{...props}
+		>
+			{text}
+		</button>
+	);
 };

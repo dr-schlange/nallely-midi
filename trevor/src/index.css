@@ -708,7 +708,8 @@ button.active {
 	height: 35%;
 }
 
-.modal-header {
+.modal-header,
+.modal-footer {
 	height: 40px; /* Fixed height for the header */
 	display: flex;
 	align-items: center;
@@ -1284,7 +1285,13 @@ button.active {
 	transform: translate(-50%, 60%);
 }
 
-/* UI for CodeMirror */
+/* UI for CodeMirror & Terminal*/
+.terminal {
+	font-size: 17px;
+	color: white;
+	white-space: pre-wrap;
+}
+
 [class^="cm-theme"] {
 	width: 100%;
 	height: 100%;
@@ -1300,22 +1307,22 @@ button.active {
 }
 
 .cm-gutters {
-	font-size: 18px; /* tu peux réduire ici si tu veux */
+	font-size: 18px;
 }
 
 .cm-tooltip {
-	background: #f0f0f0; /* Couleur de fond clair comme les vieilles interfaces */
-	color: #000; /* Texte noir */
-	border: 2px solid #000; /* Bordure noire épaisse */
+	background: #f0f0f0;
+	color: #000;
+	border: 2px solid #000;
 	border-radius: 4px;
 	font-family:
 		"TopazPlusA1200", system-ui, Avenir, Helvetica, Arial, sans-serif;
 	font-size: 19px;
-	box-shadow: 4px 4px 0px #ccc; /* effet de profondeur rétro */
+	box-shadow: 4px 4px 0px #ccc;
 }
 
 .cm-tooltip-autocomplete {
-	background: #e0e0e0; /* un peu plus gris clair pour l'autocompletion */
+	background: #e0e0e0;
 }
 
 .cm-tooltip-autocomplete ul {
@@ -1689,6 +1696,22 @@ h3.details {
 		background-color: unset;
 		justify-content: flex-start !important;
 	}
+
+	.modal-footer > p {
+		font-size: 12px;
+	}
+
+	.cm-content {
+		font-size: 14px;
+	}
+
+	.cm-gutters {
+		font-size: 13px;
+	}
+
+	.terminal {
+		font-size: 11px;
+	}
 }
 
 /* portrait */
@@ -2024,6 +2047,22 @@ h3.details {
 		width: auto;
 		display: flex;
 		justify-content: center;
+	}
+
+	.modal-footer > p {
+		font-size: 13px;
+	}
+
+	.cm-content {
+		font-size: 13px;
+	}
+
+	.cm-gutters {
+		font-size: 12px;
+	}
+
+	.terminal {
+		font-size: 11px;
 	}
 }
 

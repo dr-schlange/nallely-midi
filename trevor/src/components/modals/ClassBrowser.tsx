@@ -12,6 +12,7 @@ import { Prec } from "@codemirror/state";
 import { type Diagnostic, linter } from "@codemirror/lint";
 import type { MidiDevice, VirtualDevice } from "../../model";
 import { Terminal } from "../Terminal";
+import { Button, HeaderButton } from "../widgets/BaseComponents";
 
 const AUTO_SAVE_DELAY = 2000;
 const ERROR_DELAY = 3000;
@@ -245,17 +246,30 @@ mod-?:     displays this entry
 	// };
 
 	return (
-		<div className="patching-modal" style={{ zIndex: 1 }}>
+		<div className="patching-modal" style={{ zIndex: 21 }}>
 			<div className="modal-header playground">
-				<button
-					type="button"
-					className="close-button"
+				<HeaderButton
+					text="Close"
 					onClick={() => {
 						onClose();
 					}}
-				>
-					Close
-				</button>
+				/>
+				<HeaderButton
+					text="Clear"
+					onClick={() => {
+						setStdout("");
+					}}
+				/>
+				<HeaderButton
+					text="Patch"
+					onClick={() => {
+						if (code) {
+							trevorSocket?.compileInject(device.id, code);
+						}
+					}}
+				/>
+
+				<HeaderButton text="Save" disabled onClick={() => {}} />
 			</div>
 			<div
 				className="modal-body"
@@ -284,7 +298,13 @@ mod-?:     displays this entry
 							})}
 					</select>
 				</div> */}
-				<div style={{ flex: 0.6, overflowY: "auto" }}>
+				<div
+					style={{ flex: 0.6, overflowY: "auto" }}
+					onClick={(event) => {
+						event.stopPropagation();
+						event.preventDefault();
+					}}
+				>
 					<CodeMirror
 						ref={(view) => {
 							if (view) {
@@ -324,7 +344,7 @@ mod-?:     displays this entry
 					/>
 				</div>
 			</div>
-			<div className="modal-header">
+			<div className="modal-footer">
 				<p>mod-?: displays shortcuts</p>
 			</div>
 		</div>
