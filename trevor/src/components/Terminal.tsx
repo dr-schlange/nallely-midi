@@ -10,7 +10,7 @@ export const Terminal = ({ stdout, stdin }) => {
 	const [displayPending, setDisplayPending] = useState(
 		!stdout.match(/<stdin:(\d+)>/g),
 	);
-	const inputRef = useRef(undefined);
+	const inputRef = useRef(null);
 
 	const output = AnsiParser.ansi_to_html(stdout);
 	const parts = output.split(/&lt;stdin:(\d+)&gt;/g);
@@ -32,6 +32,13 @@ export const Terminal = ({ stdout, stdin }) => {
 		}
 	}, [stdout, dispatch]);
 
+	const handleSubmit = (id, value, i = undefined) => {
+		const key = i !== undefined ? `${id}-${i}` : `${id}`;
+		stdin?.(id, value);
+		setTriggered((prev) => [...prev, key]);
+		dispatch(removeStdinWait(id));
+	};
+
 	const reactElements = parts.map((part, i) => {
 		if (i % 2 === 0) {
 			return (
@@ -39,28 +46,44 @@ export const Terminal = ({ stdout, stdin }) => {
 			);
 		} else {
 			const id = Number.parseInt(part, 10);
+			const key = `${id}-${i}`;
 			return (
-				<Fragment key={`stdin-${id}-${i}`}>
-					<input
-						ref={inputRef}
-						style={{
-							border: "unset",
-							backgroundColor: "black",
-							color: "white",
-							boxShadow: "unset",
-							fontSize: "inherit",
+				<Fragment key={`stdin-${key}`}>
+					<form
+						style={{ display: "inline" }}
+						onSubmit={(e) => {
+							e.preventDefault();
+							const form = e.currentTarget as HTMLFormElement;
+							const input = form.elements.namedItem(
+								`stdin-${key}`,
+							) as HTMLInputElement;
+							const value = input?.value ?? "";
+							handleSubmit(id, value, i);
 						}}
-						name="thread_id"
-						disabled={triggered.includes(`${id}-${i}`)}
-						onKeyDown={(event) => {
-							if (event.key === "Enter") {
-								stdin?.(id, event.currentTarget.value);
-								setTriggered((prev) => [...prev, `${id}-${i}`]);
-								dispatch(removeStdinWait(id));
-							}
-						}}
-					/>
-					{triggered.includes(`${id}-${i}`) && <br />}
+					>
+						<input
+							id={`stdin-${key}`}
+							ref={inputRef}
+							type="text"
+							enterKeyHint="send"
+							style={{
+								border: "unset",
+								backgroundColor: "black",
+								color: "white",
+								boxShadow: "unset",
+								fontSize: "inherit",
+							}}
+							name={`stdin-${key}`}
+							disabled={triggered.includes(key)}
+							onKeyDown={(event) => {
+								if (event.key === "Enter") {
+									event.preventDefault();
+									handleSubmit(id, event.currentTarget.value, i);
+								}
+							}}
+						/>
+					</form>
+					{triggered.includes(key) && <br />}
 				</Fragment>
 			);
 		}
@@ -77,27 +100,43 @@ export const Terminal = ({ stdout, stdin }) => {
 			{reactElements}
 			{displayPending &&
 				pending.map((n) => {
+					const key = `${n}`;
 					return (
-						<Fragment key={`stdin-${n}`}>
+						<Fragment key={`stdin-${key}`}>
 							<span>[{n}] Pending stdin:</span>
-							<input
-								style={{
-									border: "unset",
-									backgroundColor: "black",
-									color: "white",
-									boxShadow: "unset",
-									fontSize: "inherit",
+							<form
+								style={{ display: "inline" }}
+								onSubmit={(e) => {
+									e.preventDefault();
+									const form = e.currentTarget as HTMLFormElement;
+									const input = form.elements.namedItem(
+										`stdin-${key}`,
+									) as HTMLInputElement;
+									const value = input?.value ?? "";
+									handleSubmit(n, value);
 								}}
-								name="thread_id"
-								disabled={triggered.includes(`${n}`)}
-								onKeyDown={(event) => {
-									if (event.key === "Enter") {
-										stdin?.(n, event.currentTarget.value);
-										setTriggered((prev) => [...prev, `${n}`]);
-										dispatch(removeStdinWait(n));
-									}
-								}}
-							/>
+							>
+								<input
+									id={`stdin-${key}`}
+									type="text"
+									enterKeyHint="send"
+									style={{
+										border: "unset",
+										backgroundColor: "black",
+										color: "white",
+										boxShadow: "unset",
+										fontSize: "inherit",
+									}}
+									name={`stdin-${key}`}
+									disabled={triggered.includes(key)}
+									onKeyDown={(event) => {
+										if (event.key === "Enter") {
+											event.preventDefault();
+											handleSubmit(n, event.currentTarget.value);
+										}
+									}}
+								/>
+							</form>
 						</Fragment>
 					);
 				})}
