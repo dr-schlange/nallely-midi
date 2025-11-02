@@ -442,6 +442,6 @@ class EuclidianSequencer(VirtualDevice):
         # We output a pulse
         if step_value:
             yield 1, [self.trigger_out_cv]
-            yield 0, [self.trigger_out_cv]
+        yield 0, [self.trigger_out_cv]
 
         self.step = (self.step + 1) % len(self.sequence)
