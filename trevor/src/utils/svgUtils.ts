@@ -233,8 +233,10 @@ export const drawConnection = (
 			hitLine.addEventListener("click", clickHandler);
 		}
 
-		hitLine.addEventListener("touchstart", (e) =>
-			setDebugMode(e, linkId, true),
+		hitLine.addEventListener(
+			"touchstart",
+			(e) => setDebugMode(e, linkId, true),
+			{ passive: true },
 		);
 		hitLine.addEventListener("touchend", (e) => setDebugMode(e, linkId, false));
 		hitLine.addEventListener("mouseenter", (e) =>
@@ -359,8 +361,10 @@ export const drawCurvedConnection = (
 			hitLine.addEventListener("click", clickHandler);
 		}
 
-		hitLine.addEventListener("touchstart", (e) =>
-			setDebugMode(e, linkId, true),
+		hitLine.addEventListener(
+			"touchstart",
+			(e) => setDebugMode(e, linkId, true),
+			{ passive: true },
 		);
 		hitLine.addEventListener("touchend", (e) => setDebugMode(e, linkId, false));
 		hitLine.addEventListener("mouseenter", (e) =>

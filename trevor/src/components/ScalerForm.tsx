@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import type { MidiConnection } from "../model";
+import type { MidiConnection, MidiParameter, VirtualParameter } from "../model";
 import { useTrevorWebSocket } from "../websockets/websocket";
 import DragNumberInput from "./DragInputs";
+import { isVirtualParameter } from "../utils/utils";
 
 interface ScalerFormProps {
 	connection: MidiConnection;
@@ -30,6 +31,46 @@ export const ScalerForm = ({ connection }: ScalerFormProps) => {
 		trevorSocket?.setScalerValue(scalerId, "to_max", min);
 		setMax(min);
 		setMin(max);
+	};
+
+	const boundComponent = (
+		parameter: MidiParameter | VirtualParameter,
+		variable,
+		setter,
+		target,
+	) => {
+		if (isVirtualParameter(parameter) && parameter.accepted_values.length > 0) {
+			const accepted_values = parameter.accepted_values;
+			return (
+				<select
+					style={{ width: "100%" }}
+					value={accepted_values[variable]}
+					onChange={(e) => {
+						const index = parameter.accepted_values.indexOf(e.target.value);
+						setter(index);
+						trevorSocket?.setScalerValue(scalerId, target, index);
+					}}
+				>
+					{parameter.accepted_values.map((v) => (
+						<option key={v.toString()} value={v.toString()}>
+							{v.toString()}
+						</option>
+					))}
+				</select>
+			);
+		}
+		return (
+			<DragNumberInput
+				width="100%"
+				disabled={!scalerEnabled}
+				value={variable.toString()}
+				range={parameter.range}
+				onChange={(val) => setter(val)}
+				onBlur={(val) =>
+					trevorSocket?.setScalerValue(scalerId, target, Number.parseFloat(val))
+				}
+			/>
+		);
 	};
 
 	return (
@@ -99,20 +140,7 @@ export const ScalerForm = ({ connection }: ScalerFormProps) => {
 					>
 						min
 					</p>
-					<DragNumberInput
-						width="100%"
-						disabled={!scalerEnabled}
-						value={min.toString()}
-						range={connection.dest.parameter.range}
-						onChange={(val) => setMin(val)}
-						onBlur={(val) =>
-							trevorSocket?.setScalerValue(
-								scalerId,
-								"to_min",
-								Number.parseFloat(val),
-							)
-						}
-					/>
+					{boundComponent(connection.dest.parameter, min, setMin, "to_min")}
 				</label>
 				<button
 					type="button"
@@ -135,20 +163,7 @@ export const ScalerForm = ({ connection }: ScalerFormProps) => {
 					>
 						max
 					</p>
-					<DragNumberInput
-						width="85%"
-						disabled={!scalerEnabled}
-						value={max.toString()}
-						range={connection.dest.parameter.range}
-						onChange={(val) => setMax(val)}
-						onBlur={(val) =>
-							trevorSocket?.setScalerValue(
-								scalerId,
-								"to_max",
-								Number.parseFloat(val),
-							)
-						}
-					/>
+					{boundComponent(connection.dest.parameter, max, setMax, "to_max")}
 				</label>
 			</div>
 			<label>
