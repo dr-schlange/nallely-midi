@@ -1,7 +1,8 @@
+/** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import MidiDeviceComponent from "./DeviceComponent";
 import { useTrevorDispatch, useTrevorSelector } from "../store";
-import { drawConnection } from "../utils/svgUtils";
+import { drawConnection, drawCurvedConnection } from "../utils/svgUtils";
 import { useTrevorWebSocket, WsStatus } from "../websockets/websocket";
 import type { MidiDevice } from "../model";
 import { SettingsModal } from "./modals/SettingsModal";
@@ -105,6 +106,9 @@ const InstanceCreation = () => {
 			return;
 		}
 		const svg = svgRef.current;
+		for (const line of svg.querySelectorAll("path")) {
+			line.remove();
+		}
 		for (const line of svg.querySelectorAll("line")) {
 			line.remove();
 		}
@@ -117,10 +121,10 @@ const InstanceCreation = () => {
 				`[id="output-${device.ports.output}"]`,
 			);
 			if (toInput) {
-				drawConnection(svg, fromElement, toInput);
+				drawCurvedConnection(svg, fromElement, toInput);
 			}
 			if (toOutput) {
-				drawConnection(svg, toOutput, fromElement);
+				drawCurvedConnection(svg, toOutput, fromElement);
 			}
 		}
 	};
@@ -172,15 +176,17 @@ const InstanceCreation = () => {
 	};
 
 	const handleExpand = () => {
-		setIsExpanded((prev) => !prev);
 		updateConnections();
+		setIsExpanded((prev) => !prev);
 	};
 
 	const handleClose = () => {
+		updateConnections();
 		setIsSettingsOpen(false);
 	};
 
 	const handleSettingsClick = () => {
+		updateConnections();
 		setIsSettingsOpen(true);
 	};
 
@@ -285,9 +291,15 @@ const InstanceCreation = () => {
 					<>
 						<div className="instance-creation-main-panel">
 							<div style={{ display: "flex" }}>
-								<div className="instance-creation-midi-output">
+								<div
+									className="instance-creation-midi-output"
+									onScroll={() => updateConnections()}
+								>
 									<h3>MIDI Output</h3>
-									<div className="midi-ports-grid">
+									<div
+										className="midi-ports-grid"
+										onScroll={() => updateConnections()}
+									>
 										{midiInPorts.map((port) => (
 											// biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
 											<div
@@ -296,9 +308,7 @@ const InstanceCreation = () => {
 												title={port}
 												onClick={() => handlePortClick(port, "output")}
 											>
-												<span className="midi-port-name">
-													{truncateName(port, 8)}
-												</span>
+												<span className="midi-port-name">{port}</span>
 												<div
 													className="midi-port-circle"
 													id={`output-${port}`}
@@ -314,7 +324,10 @@ const InstanceCreation = () => {
 										))}
 									</div>
 								</div>
-								<div className="instance-creation-midi-inputs">
+								<div
+									className="instance-creation-midi-inputs"
+									onScroll={() => updateConnections()}
+								>
 									<h3>MIDI Inputs</h3>
 									<div className="midi-ports-grid">
 										{midiOutPorts.map((port) => (
@@ -325,9 +338,7 @@ const InstanceCreation = () => {
 												title={port}
 												onClick={() => handlePortClick(port, "input")}
 											>
-												<span className="midi-port-name">
-													{truncateName(port, 8)}
-												</span>
+												<span className="midi-port-name">{port}</span>
 												<div
 													className="midi-port-circle"
 													id={`input-${port}`}
@@ -350,8 +361,8 @@ const InstanceCreation = () => {
 								onScroll={() => updateConnections()}
 							>
 								{devices.map((device, i) => (
-									<MidiDeviceComponent
-										classConnections
+									<SmallMidiDeviceComponent
+										// classConnections
 										key={device.id}
 										device={device}
 										selected={selectedDevice === device}
@@ -425,3 +436,37 @@ const InstanceCreation = () => {
 };
 
 export default InstanceCreation;
+
+const SmallMidiDeviceComponent = ({
+	device,
+	selected = false,
+	onDeviceClick,
+}: {
+	device: MidiDevice;
+	onDeviceClick?: (device: MidiDevice) => void;
+	selected?: boolean;
+}) => {
+	const handleDeviceClick = (device: MidiDevice) => {
+		onDeviceClick?.(device);
+	};
+
+	return (
+		// biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
+		<div
+			className="device-component"
+			style={{
+				boxSizing: "border-box",
+				borderColor: selected ? "yellow" : "",
+				position: "relative",
+				userSelect: "none",
+				minWidth: "auto",
+				width: "auto",
+				height: "50px",
+			}}
+			id={`${device.id}`}
+			onClick={() => handleDeviceClick(device)}
+		>
+			<div className={`device-name left}`}>{device.repr}</div>
+		</div>
+	);
+};

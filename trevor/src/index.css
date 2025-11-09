@@ -1197,7 +1197,7 @@ button.active {
 .midi-ports-grid {
 	display: flex;
 	justify-content: space-between; /* Distribute ports evenly */
-	align-items: center;
+	align-items: flex-end;
 	width: 100%; /* Take full horizontal space */
 }
 
@@ -1207,29 +1207,27 @@ button.active {
 	align-items: center;
 	justify-content: center;
 	position: relative;
+	width: 60px;
 }
 
 .midi-port-name {
-	font-size: 15px;
+	font-size: 13px;
 	font-weight: bold;
 	color: #000000;
 	margin-bottom: 5px; /* Space between name and circle */
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	max-width: 50px; /* Limit the width for truncation */
+	white-space-collapse: collapse;
 }
 
-.midi-port-name:hover {
+/* .midi-port-name:hover {
 	overflow: visible;
 	white-space: normal;
 	background-color: #ffffff;
 	padding: 2px;
 	border: 1px solid #808080;
 	position: absolute;
-	top: -20px; /* Position above the name */
+	top: -20px;
 	z-index: 1;
-}
+} */
 
 .midi-port-circle {
 	width: 30px;
