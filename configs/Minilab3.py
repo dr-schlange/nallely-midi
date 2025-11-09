@@ -15,10 +15,14 @@ class KeysSection(nallely.Module):
 
 class PadsSection(nallely.Module):
     notes = nallely.ModulePadsOrKeys()
-    p4 = nallely.ModuleParameter(105)
-    p5 = nallely.ModuleParameter(106)
-    p6 = nallely.ModuleParameter(107)
-    p7 = nallely.ModuleParameter(108)
+    p1 = nallely.ModuleParameter(110)
+    p2 = nallely.ModuleParameter(112)
+    p3 = nallely.ModuleParameter(114)
+    p4 = nallely.ModuleParameter(116)
+    p5 = nallely.ModuleParameter(118)
+    p6 = nallely.ModuleParameter(120)
+    p7 = nallely.ModuleParameter(122)
+    p8 = nallely.ModuleParameter(124)
 
 
 class ButtonsSection(nallely.Module):
