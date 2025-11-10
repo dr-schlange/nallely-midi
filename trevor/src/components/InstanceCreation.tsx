@@ -1,4 +1,6 @@
 /** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
+/** biome-ignore-all lint/correctness/useUniqueElementIds: <explanation> */
+/** biome-ignore-all lint/a11y/useKeyWithClickEvents: <explanation> */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import MidiDeviceComponent from "./DeviceComponent";
 import { useTrevorDispatch, useTrevorSelector } from "../store";
@@ -8,9 +10,9 @@ import type { MidiDevice } from "../model";
 import { SettingsModal } from "./modals/SettingsModal";
 import { setClassCodeMode, setLogMode } from "../store/runtimeSlice";
 
-const truncateName = (name: string, maxLength: number) => {
-	return name.length > maxLength ? `${name.slice(0, maxLength)}...` : name;
-};
+// const truncateName = (name: string, maxLength: number) => {
+// 	return name.length > maxLength ? `${name.slice(0, maxLength)}...` : name;
+// };
 
 interface MidiPort {
 	name: string;
@@ -33,6 +35,26 @@ const InstanceCreation = () => {
 		(state) => state.general.trevorWebsocketURL,
 	);
 	const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+	const groupedPorts = useMemo(() => {
+		const groups: Record<string, { input: boolean; output: boolean }> = {};
+		for (const inPort of midiInPorts) {
+			groups[inPort] = {
+				input: true,
+				output: false,
+			};
+		}
+		for (const outPort of midiOutPorts) {
+			if (outPort in groups) {
+				groups[outPort].output = true;
+			} else {
+				groups[outPort] = {
+					input: false,
+					output: true,
+				};
+			}
+		}
+		return groups;
+	}, [midiInPorts, midiOutPorts]);
 
 	useEffect(() => {
 		updateConnections();
@@ -121,13 +143,17 @@ const InstanceCreation = () => {
 				`[id="output-${device.ports.output}"]`,
 			);
 			if (toInput) {
-				drawCurvedConnection(svg, fromElement, toInput);
+				drawConnection(svg, toInput, fromElement);
 			}
 			if (toOutput) {
-				drawCurvedConnection(svg, toOutput, fromElement);
+				drawConnection(svg, fromElement, toOutput);
 			}
 		}
 	};
+
+	useEffect(() => {
+		updateConnections();
+	}, [devices]);
 
 	useEffect(() => {
 		const handleResize = () => {
@@ -176,7 +202,7 @@ const InstanceCreation = () => {
 	};
 
 	const handleExpand = () => {
-		updateConnections();
+		setTimeout(() => updateConnections(), 10);
 		setIsExpanded((prev) => !prev);
 	};
 
@@ -290,17 +316,71 @@ const InstanceCreation = () => {
 				{isExpanded && (
 					<>
 						<div className="instance-creation-main-panel">
-							<div style={{ display: "flex" }}>
+							<div style={{ display: "flex", maxHeight: "250px" }}>
 								<div
-									className="instance-creation-midi-output"
+									className="instance-creation-midi"
 									onScroll={() => updateConnections()}
 								>
-									<h3>MIDI Output</h3>
+									<h3>MIDI World</h3>
 									<div
 										className="midi-ports-grid"
 										onScroll={() => updateConnections()}
 									>
-										{midiInPorts.map((port) => (
+										{Object.entries(groupedPorts).map(
+											([portName, { input, output }]) => {
+												return (
+													<div key={portName}>
+														{output && (
+															<div
+																key={`${portName}-output`}
+																className="midi-port"
+																title={portName}
+																onClick={() =>
+																	handlePortClick(portName, "output")
+																}
+															>
+																<span className="midi-port-name">{`[to] ${portName} ⬅`}</span>
+																<div
+																	className="midi-port-circle"
+																	id={`output-${portName}`}
+																	style={{
+																		borderColor:
+																			selectedPort?.name === portName &&
+																			selectedPort?.direction === "output"
+																				? "yellow"
+																				: "",
+																	}}
+																/>
+															</div>
+														)}
+														{input && (
+															<div
+																key={`${portName}-input`}
+																className="midi-port"
+																title={portName}
+																onClick={() =>
+																	handlePortClick(portName, "input")
+																}
+															>
+																<span className="midi-port-name">{`[from] ${portName} ➡`}</span>
+																<div
+																	className="midi-port-circle"
+																	id={`input-${portName}`}
+																	style={{
+																		borderColor:
+																			selectedPort?.name === portName &&
+																			selectedPort?.direction === "input"
+																				? "yellow"
+																				: "",
+																	}}
+																/>
+															</div>
+														)}
+													</div>
+												);
+											},
+										)}
+										{/* {midiInPorts.map((port) => (
 											// biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
 											<div
 												key={port}
@@ -321,42 +401,32 @@ const InstanceCreation = () => {
 													}}
 												/>
 											</div>
-										))}
+										))} */}
 									</div>
 								</div>
 								<div
-									className="instance-creation-midi-inputs"
+									className="instance-creation-nallely"
 									onScroll={() => updateConnections()}
 								>
-									<h3>MIDI Inputs</h3>
-									<div className="midi-ports-grid">
-										{midiOutPorts.map((port) => (
-											// biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
-											<div
-												key={port}
-												className="midi-port"
-												title={port}
-												onClick={() => handlePortClick(port, "input")}
-											>
-												<span className="midi-port-name">{port}</span>
-												<div
-													className="midi-port-circle"
-													id={`input-${port}`}
-													style={{
-														borderColor:
-															selectedPort?.name === port &&
-															selectedPort?.direction
-																? "yellow"
-																: "",
-													}}
-												/>
-											</div>
+									<h3>Nallely's World</h3>
+									<div
+										className="midi-ports-grid"
+										style={{ alignItems: "flex-start" }}
+									>
+										{devices.map((device, i) => (
+											<SmallMidiDeviceComponent
+												// classConnections
+												key={device.id}
+												device={device}
+												selected={selectedDevice === device}
+												onDeviceClick={() => selectDevice(device)}
+											/>
 										))}
 									</div>
 								</div>
 							</div>
 
-							<div
+							{/* <div
 								className="device-class-left-panel device-list"
 								onScroll={() => updateConnections()}
 							>
@@ -369,7 +439,7 @@ const InstanceCreation = () => {
 										onDeviceClick={() => selectDevice(device)}
 									/>
 								))}
-							</div>
+							</div> */}
 						</div>
 						<svg className="connection-svg" ref={svgRef}>
 							<title>MIDI Device Port Mapping</title>

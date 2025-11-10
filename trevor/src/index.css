@@ -248,6 +248,8 @@ input[type="text"]:disabled {
 
 .instance-creation-midi-output,
 .instance-creation-midi-inputs,
+.instance-creation-midi,
+.instance-creation-nallely,
 .instance-creation-info-panel {
 	display: flex;
 	flex-direction: column;
@@ -255,21 +257,26 @@ input[type="text"]:disabled {
 	justify-content: flex-start;
 	padding: 10px;
 	overflow: auto;
+	width: 50%;
 }
 
-.instance-creation-midi-output {
-	flex: 4; /* 40% of the horizontal space */
+.instance-creation-midi > h3,
+.instance-creation-nallely > h3 {
+	margin-bottom: 10px;
+}
+
+/* .instance-creation-midi-output {
+	flex: 4;
 	border-right: 2px solid #808080;
 }
 
 .instance-creation-midi-inputs {
 	flex: 4;
-	/* border-right: 2px solid #808080; */
 }
 
 .instance-creation-info-panel {
 	flex: 2;
-}
+} */
 
 .info-content {
 	font-size: 18px;
@@ -1196,26 +1203,26 @@ button.active {
 
 .midi-ports-grid {
 	display: flex;
-	justify-content: space-between; /* Distribute ports evenly */
+	flex-direction: column;
+	justify-content: space-between;
 	align-items: flex-end;
-	width: 100%; /* Take full horizontal space */
+	gap: 10px;
 }
 
 .midi-port {
 	display: flex;
-	flex-direction: column;
+	flex-direction: row;
 	align-items: center;
-	justify-content: center;
-	position: relative;
-	width: 60px;
+	justify-content: flex-end;
+	width: 100%;
+	gap: 5px;
 }
 
 .midi-port-name {
 	font-size: 13px;
 	font-weight: bold;
 	color: #000000;
-	margin-bottom: 5px; /* Space between name and circle */
-	white-space-collapse: collapse;
+	/* white-space-collapse: collapse; */
 }
 
 /* .midi-port-name:hover {
@@ -1230,8 +1237,8 @@ button.active {
 } */
 
 .midi-port-circle {
-	width: 30px;
-	height: 30px;
+	min-width: 17px;
+	min-height: 17px;
 	background-color: #d0d0d0;
 	border: 2px solid #808080;
 	border-radius: 50%;
