@@ -8,6 +8,7 @@ interface DragNumberInputProps {
 	disabled?: boolean;
 	width?: string;
 	style?: React.CSSProperties;
+	nullable?: boolean;
 }
 
 export default function DragNumberInput({
@@ -18,6 +19,7 @@ export default function DragNumberInput({
 	disabled,
 	style = {},
 	width = "50%",
+	nullable = false,
 }: DragNumberInputProps) {
 	const [isDragging, setIsDragging] = useState(false);
 	const inputRef = useRef<HTMLInputElement>(null);
@@ -118,7 +120,7 @@ export default function DragNumberInput({
 		let finalValue = val;
 
 		if (val === "" || parsed === null) {
-			finalValue = "0";
+			finalValue = nullable ? null : "0";
 		} else {
 			finalValue = parsed.toFixed(precision).replace(",", ".");
 		}

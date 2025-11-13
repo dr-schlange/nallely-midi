@@ -13,7 +13,7 @@ from .scaler import Scaler
 from .virtual_device import VirtualDevice, VirtualParameter
 from .world import ThreadContext
 
-DEFAULT_VELOCITY = 64
+DEFAULT_VELOCITY = 127
 
 
 # Callback compilation Matrix
@@ -48,12 +48,14 @@ class Link:
         uuid: int = 0,
         bouncy: bool = False,
         muted: bool = False,
+        velocity: int | None = None,
     ):
         self.src_feeder = src_feeder
         self.dest = dest
         self.bouncy = bouncy
         self.uuid = uuid if uuid else id(self)
         self.muted = muted
+        self.velocity = velocity
         self.__post_init__()
 
     @classmethod
@@ -96,6 +98,9 @@ class Link:
         ctx.raw_value = value
         if self.chain:
             value = self.chain(value, ctx)
+        if self.velocity:
+            ctx = ThreadContext({**ctx})
+            ctx.velocity = self.velocity
         if self.debug:
             print(f"# {value} -- {self.callback.__qualname__}\n" f"  {ctx}\n")
         result = self.callback(value, ctx)
@@ -166,6 +171,7 @@ class Link:
             },
             "bouncy": self.bouncy,
             "muted": self.muted,
+            "velocity": self.velocity,
         }
 
     def scaler_as_dict(self):

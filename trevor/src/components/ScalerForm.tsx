@@ -16,6 +16,7 @@ export const ScalerForm = ({ connection }: ScalerFormProps) => {
 
 	const [min, setMin] = useState(connection.src.chain?.to_min ?? "");
 	const [max, setMax] = useState(connection.src.chain?.to_max ?? "");
+	const [velocity, setVelocity] = useState<number | null>(connection.velocity);
 	const [method, setMethod] = useState(connection.src.chain?.method ?? "lin");
 	const [asInt, setAsInt] = useState(connection.src.chain?.as_int ?? false);
 
@@ -193,6 +194,39 @@ export const ScalerForm = ({ connection }: ScalerFormProps) => {
 					}}
 				/>
 				As integer
+			</label>
+			{/** biome-ignore lint/a11y/noLabelWithoutControl: <explanation> */}
+			<label style={{ display: "flex", flexDirection: "column" }}>
+				<p
+					style={{
+						margin: "0px 0px 3px",
+					}}
+				>
+					velocity
+				</p>
+				<DragNumberInput
+					width="100%"
+					disabled={!scalerEnabled}
+					value={velocity?.toString() || ""}
+					range={[0, 127]}
+					nullable
+					onChange={(val) => {
+						if (!val || val.length === 0) {
+							setVelocity(null);
+							return;
+						}
+						setVelocity(Number.parseInt(val, 10));
+					}}
+					onBlur={(val) =>
+						trevorSocket?.setLinkVelocity(
+							connection.src.device,
+							connection.src.parameter,
+							connection.dest.device,
+							connection.dest.parameter,
+							val !== null ? Number.parseInt(val, 10) : null,
+						)
+					}
+				/>
 			</label>
 		</div>
 	);

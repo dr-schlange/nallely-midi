@@ -72,6 +72,7 @@ export interface MidiConnection {
 	dest: MidiConnectionEnd;
 	bouncy: boolean;
 	muted: boolean;
+	velocity: number;
 	id: number;
 }
 

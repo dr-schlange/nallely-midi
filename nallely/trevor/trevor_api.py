@@ -114,6 +114,15 @@ class TrevorAPI:
         if link:
             link.muted = muted
 
+    def set_link_velocity(self, from_parameter, to_parameter, velocity):
+        from_device, _, _ = from_parameter.split("::")
+
+        src_device = self.get_device_instance(from_device)
+
+        link = src_device.links_registry.get((from_parameter, to_parameter))
+        if link:
+            link.velocity = velocity
+
     def reset_all(self, skip_unregistered=True):
         stop_all_connected_devices(skip_unregistered)
 

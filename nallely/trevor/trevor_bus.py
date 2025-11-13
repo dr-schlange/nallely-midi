@@ -392,6 +392,10 @@ class TrevorBus(VirtualDevice):
         self.trevor.mute_link(from_parameter, to_parameter, muted)
         return self.full_state()
 
+    def set_link_velocity(self, from_parameter, to_parameter, velocity):
+        self.trevor.set_link_velocity(from_parameter, to_parameter, velocity)
+        return self.full_state()
+
     def reset_all(self):
         self.trevor.reset_all()
         self.refresh_ws_bus(WebSocketBus())
