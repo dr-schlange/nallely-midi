@@ -280,3 +280,39 @@ class EnvelopeSlew(VirtualDevice):
     def main(self, ctx):
         if self.mode == "continuous":  # type: ignore
             return self.compute()
+
+
+
+class VolumeMixer(VirtualDevice):
+    """Volume mixer
+
+    Uses velocity to simulate a volume control
+
+    inputs:
+    * inA_cv [0, 127] round <any>: input A
+    * volA_cv [0, 127] round: volume A
+
+    outputs:
+    * output_cv [0, 127]: the adjusted volume signal
+
+    type: ondemand
+    category: Volume
+    """
+
+    inA_cv = VirtualParameter(name="inA", range=(0.0, 127.0), conversion_policy="round")
+    volA_cv = VirtualParameter(
+        name="volA", range=(0.0, 127.0), conversion_policy="round"
+    )
+
+    @property
+    def min_range(self):
+        return 0.0
+
+    @property
+    def max_range(self):
+        return 127.0
+
+    @on(inA_cv, edge="any")
+    def on_inA_any(self, value, ctx):
+        ctx.velocity = self.volA
+        return value

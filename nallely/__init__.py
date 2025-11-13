@@ -21,7 +21,7 @@ from .core import (
     virtual_device_classes,
     virtual_devices,
 )
-from .eg import VCA, ADSREnvelope, EnvelopeSlew, Gate, SampleHold
+from .eg import VCA, ADSREnvelope, EnvelopeSlew, Gate, SampleHold, VolumeMixer
 from .filters import Crossfade, Mixer, MultiPoleFilter, Waveshaper
 from .lfos import LFO, Cycler
 from .logicals import (
@@ -121,4 +121,5 @@ __all__ = [
     "TuringMachine",
     "Harmonizer",
     "EuclidianSequencer",
+    "VolumeMixer",
 ]
