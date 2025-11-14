@@ -192,6 +192,34 @@ category: filter
 </details>
 
 <details>
+    <summary>EuclidianSequencer: </summary>
+
+
+```
+Basic Euclidian Sequencer
+
+inputs:
+* clock_cv [0, 1] >0 <rising>: Input clock
+* length_cv [0, 128] init=8 round <any>: Sequence length
+* hits_cv [0, 128] init=4 round <any>: Number of hits
+* shift_cv [0, 127] init=0 round: Program the pattern shift
+* trig_shift_cv [0, 1] >0 <rising>: Displace the pattern
+* reset_cv [0, 1] >0 <rising>: Reset the sequence
+
+outputs:
+* trigger_out_cv [0, 1]: main output trigger
+* gate_out_cv [0, 1]: main output gate
+* step_out_cv [0, 1]: current number of step
+
+type: ondemand
+category: Sequencer
+meta: disable default output
+
+```
+
+</details>
+
+<details>
     <summary>FlipFlop: No description/documentation</summary>
 
 </details>
@@ -537,6 +565,29 @@ outputs:
 type: ondemand
 category: Voices
 meta: disable default output
+
+```
+
+</details>
+
+<details>
+    <summary>VolumeMixer: Uses velocity to simulate a volume control</summary>
+
+
+```
+Volume mixer
+
+Uses velocity to simulate a volume control
+
+inputs:
+* inA_cv [0, 127] round <any>: input A
+* volA_cv [0, 127] round <any>: volume A
+
+outputs:
+* output_cv [0, 127]: the adjusted volume signal
+
+type: ondemand
+category: Volume
 
 ```
 
