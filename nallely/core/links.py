@@ -530,13 +530,14 @@ class Link:
                     )
                 previous = value
             else:
-                dest.device.note(
-                    note=previous,
-                    velocity=ctx.get("velocity", DEFAULT_VELOCITY),
-                    type="note_off",
-                    channel=dest.parameter.channel,
-                )
-                previous = None
+                if not ctx.get("free_note", False) or ctx.raw_value == 0:
+                    dest.device.note(
+                        note=previous,
+                        velocity=ctx.get("velocity", DEFAULT_VELOCITY),
+                        type="note_off",
+                        channel=dest.parameter.channel,
+                    )
+                # previous = None
 
         return foo
 

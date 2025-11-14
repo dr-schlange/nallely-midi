@@ -282,7 +282,6 @@ class EnvelopeSlew(VirtualDevice):
             return self.compute()
 
 
-
 class VolumeMixer(VirtualDevice):
     """Volume mixer
 
@@ -290,7 +289,7 @@ class VolumeMixer(VirtualDevice):
 
     inputs:
     * inA_cv [0, 127] round <any>: input A
-    * volA_cv [0, 127] round: volume A
+    * volA_cv [0, 127] round <any>: volume A
 
     outputs:
     * output_cv [0, 127]: the adjusted volume signal
@@ -312,7 +311,14 @@ class VolumeMixer(VirtualDevice):
     def max_range(self):
         return 127.0
 
+    @on(volA_cv, edge="any")
+    def on_volA_any(self, value, ctx):
+        ctx.velocity = value
+        ctx.free_note = True
+        return self.inA
+
     @on(inA_cv, edge="any")
     def on_inA_any(self, value, ctx):
         ctx.velocity = self.volA
+        ctx.free_note = True
         return value
