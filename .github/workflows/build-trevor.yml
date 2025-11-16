@@ -1,0 +1,23 @@
+name: Build Trevor UI (for low resources platforms)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Prepare Trevor-UI
+        run: |
+          (cd trevor && yarn install && yarn build)
+          bash ./prepare-trevor-ui.bash
+          tar cvzf trevor-ui.tar.gz trevor-ui
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: trevor-ui
+          path: trevor-ui.tar.gz
