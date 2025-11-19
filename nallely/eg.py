@@ -313,12 +313,12 @@ class VolumeMixer(VirtualDevice):
 
     @on(volA_cv, edge="any")
     def on_volA_any(self, value, ctx):
-        ctx.velocity = value
+        ctx.velocity = int(value)
         ctx.free_note = True
         return self.inA
 
     @on(inA_cv, edge="any")
     def on_inA_any(self, value, ctx):
-        ctx.velocity = self.volA
+        ctx.velocity = int(self.volA)
         ctx.free_note = True
         return value

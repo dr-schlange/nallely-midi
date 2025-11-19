@@ -21,6 +21,8 @@ class PitchShifter(VirtualDevice):
 
     @on(input_cv, edge="both")
     def shift_input(self, value, ctx):
+        if value == 0:
+            return 0
         return value + self.shift
 
     @on(input_cv, edge="falling")
