@@ -300,7 +300,7 @@ class VolumeMixer(VirtualDevice):
 
     inA_cv = VirtualParameter(name="inA", range=(0.0, 127.0), conversion_policy="round")
     volA_cv = VirtualParameter(
-        name="volA", range=(0.0, 127.0), conversion_policy="round"
+        name="volA", range=(0.0, 127.0), conversion_policy="round", default=127
     )
 
     @property

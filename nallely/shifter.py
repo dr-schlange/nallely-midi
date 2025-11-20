@@ -8,7 +8,7 @@ from .core.virtual_device import VirtualDevice, VirtualParameter, on
 
 class PitchShifter(VirtualDevice):
     input_cv = VirtualParameter("input", range=(0, 128))
-    shift_cv = VirtualParameter("shift", range=(-24, +24), default=0)
+    shift_cv = VirtualParameter("shift", range=(-48, +48), default=0)
 
     @property
     def range(self):
