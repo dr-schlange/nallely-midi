@@ -290,6 +290,12 @@ class VolumeMixer(VirtualDevice):
     inputs:
     * inA_cv [0, 127] round <any>: input A
     * volA_cv [0, 127] round <any>: volume A
+    * inB_cv [0, 127] round <any>: input B
+    * volB_cv [0, 127] round <any>: volume B
+    * inC_cv [0, 127] round <any>: input C
+    * volC_cv [0, 127] round <any>: volume C
+    * inD_cv [0, 127] round <any>: input D
+    * volD_cv [0, 127] round <any>: volume D
 
     outputs:
     * output_cv [0, 127]: the adjusted volume signal
@@ -299,8 +305,20 @@ class VolumeMixer(VirtualDevice):
     """
 
     inA_cv = VirtualParameter(name="inA", range=(0.0, 127.0), conversion_policy="round")
+    inB_cv = VirtualParameter(name="inB", range=(0.0, 127.0), conversion_policy="round")
+    inC_cv = VirtualParameter(name="inC", range=(0.0, 127.0), conversion_policy="round")
+    inD_cv = VirtualParameter(name="inD", range=(0.0, 127.0), conversion_policy="round")
     volA_cv = VirtualParameter(
         name="volA", range=(0.0, 127.0), conversion_policy="round", default=127
+    )
+    volB_cv = VirtualParameter(
+        name="volB", range=(0.0, 127.0), conversion_policy="round", default=127
+    )
+    volC_cv = VirtualParameter(
+        name="volC", range=(0.0, 127.0), conversion_policy="round", default=127
+    )
+    volD_cv = VirtualParameter(
+        name="volD", range=(0.0, 127.0), conversion_policy="round", default=127
     )
 
     @property
@@ -314,11 +332,41 @@ class VolumeMixer(VirtualDevice):
     @on(volA_cv, edge="any")
     def on_volA_any(self, value, ctx):
         ctx.velocity = int(value)
-        ctx.free_note = True
+        # ctx.free_note = True
         return self.inA
 
     @on(inA_cv, edge="any")
     def on_inA_any(self, value, ctx):
         ctx.velocity = int(self.volA)
-        ctx.free_note = True
+        # ctx.free_note = True
+        return value
+
+    @on(volB_cv, edge="any")
+    def on_volB_any(self, value, ctx):
+        ctx.velocity = int(value)
+        return self.inB
+
+    @on(inB_cv, edge="any")
+    def on_inB_any(self, value, ctx):
+        ctx.velocity = int(self.volB)
+        return value
+
+    @on(volC_cv, edge="any")
+    def on_volC_any(self, value, ctx):
+        ctx.velocity = int(value)
+        return self.inC
+
+    @on(inC_cv, edge="any")
+    def on_inC_any(self, value, ctx):
+        ctx.velocity = int(self.volC)
+        return value
+
+    @on(volD_cv, edge="any")
+    def on_volD_any(self, value, ctx):
+        ctx.velocity = int(value)
+        return self.inD
+
+    @on(inD_cv, edge="any")
+    def on_inD_any(self, value, ctx):
+        ctx.velocity = int(self.volD)
         return value
