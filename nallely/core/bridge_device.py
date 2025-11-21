@@ -208,6 +208,20 @@ class X7Section(Module):
     cc_127 = ModuleParameter(127)
 
 
+class GeneralSection(Module):
+    notes = ModulePadsOrKeys()
+    pitchwheel = ModulePitchwheel()
+    mod = ModuleParameter(1)
+    volume = ModuleParameter(7)
+    panning = ModuleParameter(10)
+    expression = ModuleParameter(11)
+    sustain = ModuleParameter(64)
+    portamento = ModuleParameter(65)
+    portamento_time = ModuleParameter(5)
+    filter_q = ModuleParameter(71)
+    filter_freq = ModuleParameter(74)
+
+
 class MIDIBridge(Bridge):
     X0: X0Section  # type: ignore
     X1: X1Section  # type: ignore
@@ -217,6 +231,7 @@ class MIDIBridge(Bridge):
     X5: X5Section  # type: ignore
     X6: X6Section  # type: ignore
     X7: X7Section  # type: ignore
+    general: GeneralSection  # type: ignore
 
     def __init__(self, device_name=None, *args, **kwargs):
         super().__init__(
@@ -256,3 +271,7 @@ class MIDIBridge(Bridge):
     @property
     def X7(self) -> X7Section:
         return self.modules.X7
+
+    @property
+    def general(self) -> GeneralSection:
+        return self.modules.general
