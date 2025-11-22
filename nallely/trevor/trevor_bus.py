@@ -768,7 +768,9 @@ def _trevor_menu(loaded_paths, init_script, trevor_bus=None, trevor_ui=None):
                 )
                 elprint(menu)
             elif q == "ff":
-                print("Forcing note off on all channels of all existing MIDI output ports")
+                print(
+                    "Forcing note off on all channels of all existing MIDI output ports"
+                )
                 force_off_everywhere(verbose=True)
 
             elif q == "f":
