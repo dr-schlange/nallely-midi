@@ -102,9 +102,8 @@ class Amsynth(nallely.MidiDevice):
     def __init__(self, device_name=None, *args, **kwargs):
 
         self.process = run_process(
-            # ["amsynth", "-a", "alsa", "-x"], on_finish=self.restart_process
-            ["amsynth", "-x"],
-            on_finish=self.restart_process,
+            ["amsynth", "-a", "alsa", "-x"],
+            on_finish=self.log_termination,
         )
         import time
 
@@ -120,7 +119,7 @@ class Amsynth(nallely.MidiDevice):
         self.process.wait()
         return super().close(delete)
 
-    def restart_process(self, retcode, stdout, stderr):
+    def log_termination(self, retcode, stdout, stderr):
         print(f"[AMSYNTH] Process finished {retcode}")
         print(f"[AMSYNTH]-STDOUT {stdout.decode()}")
         print(f"[AMSYNTH]-STDERR {stderr.decode()}")
