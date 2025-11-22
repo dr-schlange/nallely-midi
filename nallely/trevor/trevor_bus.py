@@ -741,62 +741,65 @@ def launch_standalone_script(
 
 
 def _trevor_menu(loaded_paths, init_script, trevor_bus=None, trevor_ui=None):
-    elprint = _print_with_trevor if trevor_bus else print
-    while (
-        q := input(
-            "Press 'q' to stop the script, press enter to display infos, press ? to display menu...\n> "
-        )
-    ) != "q":
-        if not q:
-            elprint(
-                trevor_infos(
-                    "[TREVOR]" if trevor_bus else "[INFO]",
-                    loaded_paths,
-                    init_script,
-                    trevor_ui,
+    try:
+        elprint = _print_with_trevor if trevor_bus else print
+        while (
+            q := input(
+                "Press 'q' to stop the script, press enter to display infos, press ? to display menu...\n> "
+            )
+        ) != "q":
+            if not q:
+                elprint(
+                    trevor_infos(
+                        "[TREVOR]" if trevor_bus else "[INFO]",
+                        loaded_paths,
+                        init_script,
+                        trevor_ui,
+                    )
                 )
-            )
-        elif q == "?":
-            menu = (
-                "[MENU]\n"
-                "   k: stop (kill) a virtual or MIDI device\n"
-                "   q: stop the script\n"
-                "   f: force all notes off on connected all MIDI devices\n"
-                "   ff: force all notes off on all MIDI devices of any channel of any MIDI port\n"
-                "   s: get some stats\n"
-            )
-            elprint(menu)
-        elif q == "ff":
-            print("Forcing note off on all channels of all existing MIDI output ports")
-            force_off_everywhere(verbose=True)
+            elif q == "?":
+                menu = (
+                    "[MENU]\n"
+                    "   k: stop (kill) a virtual or MIDI device\n"
+                    "   q: stop the script\n"
+                    "   f: force all notes off on connected all MIDI devices\n"
+                    "   ff: force all notes off on all MIDI devices of any channel of any MIDI port\n"
+                    "   s: get some stats\n"
+                )
+                elprint(menu)
+            elif q == "ff":
+                print("Forcing note off on all channels of all existing MIDI output ports")
+                force_off_everywhere(verbose=True)
 
-        elif q == "f":
-            for device in connected_devices:
-                device.force_all_notes_off(10)
-        elif q == "s":
-            print("Fresh stats out of the oven")
-            print(f" * Devices {len(connected_devices) + len(virtual_devices)}")
-            print(f"   - MIDI devices {len(connected_devices)}")
-            print(f"   - Virtual devices {len(virtual_devices)}")
-            print(f" * Patches {len(all_links())}")
-        elif q == "k":
-            menu = "[STOP DEVICE]\n"
-            devices = [d for d in all_devices() if not isinstance(d, TrevorBus)]
-            for num, device in enumerate(devices):
-                menu += f"   {num} - {device.uid()}\n"
+            elif q == "f":
+                for device in connected_devices:
+                    device.force_all_notes_off(10)
+            elif q == "s":
+                print("Fresh stats out of the oven")
+                print(f" * Devices {len(connected_devices) + len(virtual_devices)}")
+                print(f"   - MIDI devices {len(connected_devices)}")
+                print(f"   - Virtual devices {len(virtual_devices)}")
+                print(f" * Patches {len(all_links())}")
+            elif q == "k":
+                menu = "[STOP DEVICE]\n"
+                devices = [d for d in all_devices() if not isinstance(d, TrevorBus)]
+                for num, device in enumerate(devices):
+                    menu += f"   {num} - {device.uid()}\n"
 
-            menu += "  enter - exit menu\n"
-            elprint(menu)
-            num = input("> ")
-            if num != "":
-                num = int(num)
-                try:
-                    print(f"Stopping {devices[num]}")
-                    devices[num].stop()
-                    if trevor_bus:
-                        trevor_bus.send_update()
-                except IndexError:
-                    print(f"There is no device {num}")
+                menu += "  enter - exit menu\n"
+                elprint(menu)
+                num = input("> ")
+                if num != "":
+                    num = int(num)
+                    try:
+                        print(f"Stopping {devices[num]}")
+                        devices[num].stop()
+                        if trevor_bus:
+                            trevor_bus.send_update()
+                    except IndexError:
+                        print(f"There is no device {num}")
+    except KeyboardInterrupt:
+        ...
 
 
 def _print_with_trevor(text):
