@@ -592,6 +592,14 @@ class MidiDevice:
         self._update_state(control, value, msg)
         self.outport.send(msg)
 
+    def program_change(self, program, channel=None):
+        if not self.outport:
+            return
+        channel = channel if channel is not None else self.channel
+        channel = min(max(0, int(channel)), 127)
+        msg = mido.Message("program_change", channel=channel, program=program)
+        self.outport.send(msg)
+
     def unbind_all(self):
         for link in self.links_registry.values():
             link.cleanup()
