@@ -1,0 +1,141 @@
+nickdowell:
+  amsynth:
+    general:
+      bank_select:
+        { cc: 0, decription: "Change sound bank", init: 0, min: 0, max: 127 }
+      filter_velocity_sens:
+        {
+          cc: 20,
+          decription: "Filter Velocity Sensitivity",
+          init: 127,
+          min: 0,
+          max: 127,
+        }
+      amp_velocity_sens:
+        {
+          cc: 21,
+          decription: "Amp Velocity Sensitivity",
+          init: 127,
+          min: 0,
+          max: 127,
+        }
+    oscillators:
+      osc1_waveform:
+        {
+          cc: 103,
+          decription: "Oscillator 1 Waveform",
+          init: 64,
+          min: 0,
+          max: 127,
+        }
+      osc1_shape:
+        {
+          cc: 104,
+          decription: "Oscillator 1 Shape",
+          init: 64,
+          min: 0,
+          max: 127,
+        }
+      osc2_waveform:
+        {
+          cc: 105,
+          decription: "Oscillator 2 Waveform",
+          init: 64,
+          min: 0,
+          max: 127,
+        }
+      osc2_shape:
+        {
+          cc: 106,
+          decription: "Oscillator 2 Shape",
+          init: 64,
+          min: 0,
+          max: 127,
+        }
+      osc2_oct:
+        {
+          cc: 108,
+          decription: "Oscillator 2 Range",
+          init: 64,
+          min: 0,
+          max: 127,
+        }
+      osc2_semitone:
+        {
+          cc: 109,
+          decription: "Oscillator 2 Pitch",
+          init: 64,
+          min: 0,
+          max: 127,
+        }
+      osc2_detune:
+        {
+          cc: 110,
+          decription: "Oscillator 2 Detune",
+          init: 64,
+          min: 0,
+          max: 127,
+        }
+      sync_oscillators:
+        { cc: 107, decription: "Sync Oscillators", init: 64, min: 0, max: 127 }
+      mix: { cc: 111, decription: "Oscillator Mix", init: 64, min: 0, max: 127 }
+      ring_mod:
+        { cc: 112, decription: "Ring Modulator", init: 64, min: 0, max: 127 }
+    amp:
+      volume: { cc: 7, decription: "Master Volume", init: 64, min: 0, max: 127 }
+      drive:
+        { cc: 15, decription: "Distortion Crunch", init: 0, min: 0, max: 127 }
+      attack: { cc: 57, decription: "Amp Attack", init: 64, min: 0, max: 127 }
+      decay: { cc: 58, decription: "Amp Decay", init: 64, min: 0, max: 127 }
+      sustain: { cc: 59, decription: "Amp Sustain", init: 64, min: 0, max: 127 }
+      release: { cc: 60, decription: "Amp Release", init: 64, min: 0, max: 127 }
+    filter:
+      type: { cc: 47, decription: "Filter Type", init: 64, min: 0, max: 127 }
+      slope: { cc: 48, decription: "Filter Slope", init: 0, min: 0, max: 127 }
+      cutoff: { cc: 50, decription: "Filter Cutoff", init: 0, min: 0, max: 127 }
+      resonance:
+        { cc: 49, decription: "Filter Resonnance", init: 0, min: 0, max: 127 }
+      key_track:
+        {
+          cc: 51,
+          decription: "Filter Keyboard Track",
+          init: 127,
+          min: 0,
+          max: 127,
+        }
+      env_amount:
+        { cc: 52, decription: "Filter Env Amount", init: 127, min: 0, max: 127 }
+      attack:
+        { cc: 53, decription: "Filter Env Attack", init: 0, min: 0, max: 127 }
+      decay:
+        { cc: 54, decription: "Filter Env Decay", init: 64, min: 0, max: 127 }
+      sustain:
+        { cc: 55, decription: "Filter Env Sustain", init: 64, min: 0, max: 127 }
+      release:
+        { cc: 56, decription: "Filter Env Release", init: 64, min: 0, max: 127 }
+    lfo:
+      waveform:
+        { cc: 118, decription: "LFO Waveform", init: 64, min: 0, max: 127 }
+      speed: { cc: 119, decription: "LFO Speed", init: 64, min: 0, max: 127 }
+      target: { cc: 117, decription: "LFO Target", init: 64, min: 0, max: 127 }
+      freq_mod_amount:
+        { cc: 1, description: "LFO Freq Mod Amount", init: 0, min: 0, max: 127 }
+      filter_mod_amount:
+        { cc: 116, decription: "Filter Mod Amount", init: 64, min: 0, max: 127 }
+      amp_mod_amount:
+        { cc: 115, decription: "Amp Mod Amount", init: 64, min: 0, max: 127 }
+    reverb:
+      amount: { cc: 91, decription: "Reverb Wet", init: 64, min: 0, max: 127 }
+      size:
+        { cc: 92, decription: "Reverb Room Size", init: 64, min: 0, max: 127 }
+      stereo: { cc: 93, decription: "Reverb Width", init: 64, min: 0, max: 127 }
+      damping: { cc: 94, decription: "Reverb Damp", init: 64, min: 0, max: 127 }
+    keys:
+      notes: "keys_or_pads"
+      pitchwheel: "pitchwheel"
+      portamento:
+        { cc: 22, decription: "Portamento Time", init: 0, min: 0, max: 127 }
+      portamento_mode:
+        { cc: 23, decription: "Portamento Mode", init: 0, min: 0, max: 127 }
+      keyboard_mode:
+        { cc: 24, decription: "Keyboard Mode", init: 0, min: 0, max: 127 }
