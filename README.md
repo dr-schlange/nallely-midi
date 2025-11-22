@@ -20,7 +20,7 @@ Features:
 * modular-synthesis like for CV signals that can be output as MIDI note, MIDI CC, MIDI pitchweel value, ...,
 * abstraction to access your MIDI devices,
 * virtual devices (LFO, Harmonizer, Sequencer, Quantizer, ...) you can connect to your MIDI devices, as source to control your MIDI device or as target to be controled by your MIDI controller/synth, generate patterns/sequences, use/write reactive devices to alter what you are playing or how you play it,
-* compatible with Jack, VCV Rack, any software or VST that supports MIDI,
+* MIDI bridge to drive any software or VST/LADSPA that supports MIDI (headless or not). Tested with VCV Rack, AMSynth, Yoshimi, Hexter, Bristol, ZynAddSubFx, FluidSynth.
 * each device is hosted as an independent thread: each device has its own life cycle and are operating at real wall clock time (it's reality time, not audio real-time),
 * jitter mitigation,
 * web interface relying on a websocket protocol (named Trevor) which allows you to do graphically what you would ask Nallely to do programmatically (create devices, map them, change parameters, alter scalers),
