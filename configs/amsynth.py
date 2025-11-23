@@ -5,24 +5,7 @@ Semi-generated
 """
 
 import nallely
-
-
-import subprocess
-import threading
-
-
-def run_process(cmd, on_finish=None):
-    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-    def _watch():
-        stdout, stderr = process.communicate()
-        if on_finish:
-            on_finish(process.returncode, stdout, stderr)
-
-    watcher = threading.Thread(target=_watch, daemon=True)
-    watcher.start()
-
-    return process
+import nallely.utils
 
 
 class GeneralSection(nallely.Module):
@@ -100,29 +83,11 @@ class Amsynth(nallely.MidiDevice):
     keys: KeysSection  # type: ignore
 
     def __init__(self, device_name=None, *args, **kwargs):
-
-        self.process = run_process(
-            ["amsynth", "-a", "alsa", "-x"],
-            on_finish=self.log_termination,
-        )
-        import time
-
-        time.sleep(0.5)
         super().__init__(
             *args,
             device_name=device_name or "amsynth",
             **kwargs,
         )
-
-    def close(self, delete=True):
-        self.process.terminate()
-        self.process.wait()
-        return super().close(delete)
-
-    def log_termination(self, retcode, stdout, stderr):
-        print(f"[AMSYNTH] Process finished {retcode}")
-        print(f"[AMSYNTH]-STDOUT {stdout.decode()}")
-        print(f"[AMSYNTH]-STDERR {stderr.decode()}")
 
     @property
     def general(self) -> GeneralSection:
@@ -151,3 +116,30 @@ class Amsynth(nallely.MidiDevice):
     @property
     def keys(self) -> KeysSection:
         return self.modules.keys
+
+
+class AmsynthAuto(Amsynth):
+    def __init__(self, device_name=None, *args, **kwargs):
+
+        self.process = nallely.utils.run_process(
+            ["amsynth", "-a", "auto", "-x"],
+            on_finish=self.log_termination,
+        )
+        import time
+
+        time.sleep(0.5)
+        super().__init__(
+            *args,
+            device_name=device_name or "amsynth",
+            **kwargs,
+        )
+
+    def close(self, delete=True):
+        self.process.terminate()
+        self.process.wait()
+        return super().close(delete)
+
+    def log_termination(self, retcode, stdout, stderr):
+        print(f"[AMSYNTH] Process finished {retcode}")
+        print(f"[AMSYNTH]-STDOUT {stdout.decode()}")
+        print(f"[AMSYNTH]-STDERR {stderr.decode()}")

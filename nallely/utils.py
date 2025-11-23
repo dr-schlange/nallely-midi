@@ -2,6 +2,7 @@ import collections
 import importlib
 import importlib.util
 import json
+import subprocess
 import sys
 import threading
 from dataclasses import asdict
@@ -262,3 +263,17 @@ def get_sourcelines(obj):
 
 def get_source(obj):
     return "\n".join(get_sourcelines(obj))
+
+
+def run_process(cmd, on_finish=None):
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    def _watch():
+        stdout, stderr = process.communicate()
+        if on_finish:
+            on_finish(process.returncode, stdout, stderr)
+
+    watcher = threading.Thread(target=_watch, daemon=True)
+    watcher.start()
+
+    return process
