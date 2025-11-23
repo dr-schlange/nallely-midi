@@ -3,7 +3,7 @@ import traceback
 from collections import defaultdict
 from dataclasses import InitVar, asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Counter, Type
+from typing import Any, Callable, Counter, Literal, Type
 
 import mido
 
@@ -23,14 +23,14 @@ NOT_INIT = "uninitialized"
 
 @dataclass
 class ModuleParameter:
-    type = "control_change"
-    cc_note: int | str
+    cc_note: int | str = -1
     channel: int | None = None
     name: str = NOT_INIT
     section_name: str = NOT_INIT
     init_value: int = 0
     description: str | None = None
     range: tuple[int, int] = (0, 127)
+    type: Literal["program_change", "control_change"] = "control_change"
 
     def __post_init__(self):
         self.stream = False
@@ -81,7 +81,12 @@ class ModuleParameter:
 
         if send:
             # Normal case, we set a value through the descriptor, this triggers the send of the message
-            to_module.device.control_change(self.cc_note, feeder, channel=self.channel)
+            if self.type == "control_change":
+                to_module.device.control_change(
+                    self.cc_note, feeder, channel=self.channel
+                )
+            else:
+                to_module.device.program_change(feeder, channel=self.channel)
         to_module.state[self.name].update(feeder)
 
     def basic_set(self, device: "MidiDevice", value):
@@ -270,15 +275,13 @@ class DeviceState:
             moduleInstance = ModuleCls(device)
             init_modules[state_name] = moduleInstance
             for param in moduleInstance.meta.parameters:
-                device.reverse_map[("control_change", param.cc_note, param.channel)] = (
-                    param
-                )
+                device.reverse_map[(param.type, param.cc_note, param.channel)] = param
             if moduleInstance.meta.pads_or_keys:
                 param = moduleInstance.meta.pads_or_keys
-                device.reverse_map[("note", None, param.channel)] = param
+                device.reverse_map[(param.type, None, param.channel)] = param
             if moduleInstance.meta.pitchwheel:
                 param = moduleInstance.meta.pitchwheel
-                device.reverse_map[("pitchwheel", None, param.channel)] = param
+                device.reverse_map[(param.type, None, param.channel)] = param
         self.modules = init_modules
 
     def __getattr__(self, name):
@@ -596,7 +599,8 @@ class MidiDevice:
         if not self.outport:
             return
         channel = channel if channel is not None else self.channel
-        channel = min(max(0, int(channel)), 127)
+        channel = min(max(0, int(channel)), 15)
+        program = min(max(0, int(program)), 127)
         msg = mido.Message("program_change", channel=channel, program=program)
         self.outport.send(msg)
 

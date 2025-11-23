@@ -87,6 +87,8 @@ Generated configuration for the {brand} - {device}
                     parameter_code = (
                         f"    {parameter_name} = nallely.ModulePitchwheel()\n"
                     )
+                elif config == "program_change":
+                    parameter_code = f"    {parameter_name} = nallely.ModuleParameter(type='program_change')\n"
                 else:
                     cc = config["cc"]
                     min, max = config.get("min", 0), config.get("max", 127)

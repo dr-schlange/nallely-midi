@@ -9,68 +9,70 @@ import nallely.utils
 
 
 class GeneralSection(nallely.Module):
-    bank_select = nallely.ModuleParameter(0)
-    filter_velocity_sens = nallely.ModuleParameter(20, init_value=127)
-    amp_velocity_sens = nallely.ModuleParameter(21, init_value=127)
+    bank_select = nallely.ModuleParameter(0, description='Change sound bank')
+    preset_select = nallely.ModuleParameter(type='program_change')
+    filter_velocity_sens = nallely.ModuleParameter(20, init_value=127, description='Filter Velocity Sensitivity')
+    amp_velocity_sens = nallely.ModuleParameter(21, init_value=127, description='Amp Velocity Sensitivity')
 
 
 class OscillatorsSection(nallely.Module):
-    osc1_waveform = nallely.ModuleParameter(103, init_value=64)
-    osc1_shape = nallely.ModuleParameter(104, init_value=64)
-    osc2_waveform = nallely.ModuleParameter(105, init_value=64)
-    osc2_shape = nallely.ModuleParameter(106, init_value=64)
-    osc2_oct = nallely.ModuleParameter(108, init_value=64)
-    osc2_semitone = nallely.ModuleParameter(109, init_value=64)
-    osc2_detune = nallely.ModuleParameter(110, init_value=64)
-    sync_oscillators = nallely.ModuleParameter(107, init_value=64)
-    mix = nallely.ModuleParameter(111, init_value=64)
-    ring_mod = nallely.ModuleParameter(112, init_value=64)
+    osc1_waveform = nallely.ModuleParameter(103, init_value=64, description='Oscillator 1 Waveform')
+    osc1_shape = nallely.ModuleParameter(104, init_value=64, description='Oscillator 1 Shape')
+    osc2_waveform = nallely.ModuleParameter(105, init_value=64, description='Oscillator 2 Waveform')
+    osc2_shape = nallely.ModuleParameter(106, init_value=64, description='Oscillator 2 Shape')
+    osc2_oct = nallely.ModuleParameter(108, init_value=64, description='Oscillator 2 Range')
+    osc2_semitone = nallely.ModuleParameter(109, init_value=64, description='Oscillator 2 Pitch')
+    osc2_detune = nallely.ModuleParameter(110, init_value=64, description='Oscillator 2 Detune')
+    sync_oscillators = nallely.ModuleParameter(107, init_value=64, description='Sync Oscillators')
+    mix = nallely.ModuleParameter(111, init_value=64, description='Oscillator Mix')
+    ring_mod = nallely.ModuleParameter(112, init_value=64, description='Ring Modulator')
 
 
 class AmpSection(nallely.Module):
-    volume = nallely.ModuleParameter(7, init_value=64)
-    drive = nallely.ModuleParameter(15)
-    attack = nallely.ModuleParameter(57, init_value=64)
-    decay = nallely.ModuleParameter(58, init_value=64)
-    sustain = nallely.ModuleParameter(59, init_value=64)
-    release = nallely.ModuleParameter(60, init_value=64)
+    volume = nallely.ModuleParameter(7, init_value=64, description='Master Volume')
+    panning = nallely.ModuleParameter(10, init_value=64, description='Panning sound')
+    drive = nallely.ModuleParameter(15, description='Distortion Crunch')
+    attack = nallely.ModuleParameter(57, init_value=64, description='Amp Attack')
+    decay = nallely.ModuleParameter(58, init_value=64, description='Amp Decay')
+    sustain = nallely.ModuleParameter(59, init_value=64, description='Amp Sustain')
+    release = nallely.ModuleParameter(60, init_value=64, description='Amp Release')
 
 
 class FilterSection(nallely.Module):
-    type = nallely.ModuleParameter(47, init_value=64)
-    slope = nallely.ModuleParameter(48)
-    cutoff = nallely.ModuleParameter(50)
-    resonance = nallely.ModuleParameter(49)
-    key_track = nallely.ModuleParameter(51, init_value=127)
-    env_amount = nallely.ModuleParameter(52, init_value=127)
-    attack = nallely.ModuleParameter(53)
-    decay = nallely.ModuleParameter(54, init_value=64)
-    sustain = nallely.ModuleParameter(55, init_value=64)
-    release = nallely.ModuleParameter(56, init_value=64)
+    type = nallely.ModuleParameter(47, init_value=64, description='Filter Type')
+    slope = nallely.ModuleParameter(48, description='Filter Slope')
+    cutoff = nallely.ModuleParameter(50, description='Filter Cutoff')
+    resonance = nallely.ModuleParameter(49, description='Filter Resonnance')
+    key_track = nallely.ModuleParameter(51, init_value=127, description='Filter Keyboard Track')
+    env_amount = nallely.ModuleParameter(52, init_value=127, description='Filter Env Amount')
+    attack = nallely.ModuleParameter(53, description='Filter Env Attack')
+    decay = nallely.ModuleParameter(54, init_value=64, description='Filter Env Decay')
+    sustain = nallely.ModuleParameter(55, init_value=64, description='Filter Env Sustain')
+    release = nallely.ModuleParameter(56, init_value=64, description='Filter Env Release')
 
 
 class LfoSection(nallely.Module):
-    waveform = nallely.ModuleParameter(118, init_value=64)
-    speed = nallely.ModuleParameter(119, init_value=64)
-    target = nallely.ModuleParameter(117, init_value=64)
-    freq_mod_amount = nallely.ModuleParameter(1, description="LFO Freq Mod Amount")
-    filter_mod_amount = nallely.ModuleParameter(116, init_value=64)
-    amp_mod_amount = nallely.ModuleParameter(115, init_value=64)
+    waveform = nallely.ModuleParameter(118, init_value=64, description='LFO Waveform')
+    speed = nallely.ModuleParameter(119, init_value=64, description='LFO Speed')
+    target = nallely.ModuleParameter(117, init_value=64, description='LFO Target')
+    freq_mod_amount = nallely.ModuleParameter(1, description='LFO Freq Mod Amount')
+    filter_mod_amount = nallely.ModuleParameter(116, init_value=64, description='Filter Mod Amount')
+    amp_mod_amount = nallely.ModuleParameter(115, init_value=64, description='Amp Mod Amount')
 
 
 class ReverbSection(nallely.Module):
-    amount = nallely.ModuleParameter(91, init_value=64)
-    size = nallely.ModuleParameter(92, init_value=64)
-    stereo = nallely.ModuleParameter(93, init_value=64)
-    damping = nallely.ModuleParameter(94, init_value=64)
+    amount = nallely.ModuleParameter(91, init_value=64, description='Reverb Wet')
+    size = nallely.ModuleParameter(92, init_value=64, description='Reverb Room Size')
+    stereo = nallely.ModuleParameter(93, init_value=64, description='Reverb Width')
+    damping = nallely.ModuleParameter(94, init_value=64, description='Reverb Damp')
 
 
 class KeysSection(nallely.Module):
     notes = nallely.ModulePadsOrKeys()
     pitchwheel = nallely.ModulePitchwheel()
-    portamento = nallely.ModuleParameter(22)
-    portamento_mode = nallely.ModuleParameter(23)
-    keyboard_mode = nallely.ModuleParameter(24)
+    portamento = nallely.ModuleParameter(22, description='Portamento Time')
+    portamento_mode = nallely.ModuleParameter(23, description='Portamento Mode')
+    keyboard_mode = nallely.ModuleParameter(24, description='Keyboard Mode')
 
 
 class Amsynth(nallely.MidiDevice):
