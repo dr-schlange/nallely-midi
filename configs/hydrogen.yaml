@@ -1,0 +1,55 @@
+hydrogen-music:
+  hydrogen:
+    general:
+      select_instrument: "program_change"
+      filter_cutoff:
+        { cc: 1, description: "Filter cutoff", init: 0, min: 0, max: 127 }
+      effect_level_absolute:
+        {
+          cc: 2,
+          description: "Effect level absolute",
+          init: 0,
+          min: 0,
+          max: 127,
+        }
+      effect_level_relative:
+        {
+          cc: 3,
+          description: "Effect level relative",
+          init: 0,
+          min: 0,
+          max: 127,
+        }
+      mute_toggle:
+        { cc: 4, description: "Mute (toggle)", init: 0, min: 0, max: 127 }
+      pitch:
+        { cc: 5, description: "Instrument pitch", init: 0, min: 0, max: 127 }
+      volume_absolute:
+        {
+          cc: 6,
+          description: "Master volume absolute",
+          init: 0,
+          min: 0,
+          max: 127,
+        }
+      volume_relative:
+        {
+          cc: 7,
+          description: "Master volume relative",
+          init: 0,
+          min: 0,
+          max: 127,
+        }
+      pan_absolute:
+        { cc: 8, description: "Pan absolute", init: 0, min: 0, max: 127 }
+      pan_relative:
+        { cc: 9, description: "Pan relative", init: 0, min: 0, max: 127 }
+    keys:
+      notes: "keys_or_pads"
+      pitchwheel: "pitchwheel"
+      portamento:
+        { cc: 22, description: "Portamento Time", init: 0, min: 0, max: 127 }
+      portamento_mode:
+        { cc: 23, description: "Portamento Mode", init: 0, min: 0, max: 127 }
+      keyboard_mode:
+        { cc: 24, description: "Keyboard Mode", init: 0, min: 0, max: 127 }
