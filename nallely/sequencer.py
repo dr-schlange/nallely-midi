@@ -159,7 +159,7 @@ class Sequencer8(VirtualDevice):
     * active7_cv [0, 1] init=1 >0: Set the output as active if >1.
 
     outputs:
-    * current_step_cv [0, 15]: The current step of the sequencer (0-indexed).
+    * current_step_cv [0, 7]: The current step of the sequencer (0-indexed).
     * output_cv [0, 127]: The output value of the current step.
     * trig_out_cv [0, 1]: A trigger signal that goes high when the sequencer advances to the next step.
 
@@ -213,7 +213,7 @@ class Sequencer8(VirtualDevice):
     )
 
     trig_out_cv = VirtualParameter(name="trig_out", range=(0, 1))
-    current_step_cv = VirtualParameter(name="current_step", range=(0, 15))
+    current_step_cv = VirtualParameter(name="current_step", range=(0, 7))
 
     def next_step(self):
         # advance step
