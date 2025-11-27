@@ -4,6 +4,7 @@ import io
 import re
 from collections import defaultdict
 from dataclasses import dataclass
+from functools import wraps
 from pathlib import Path
 
 try:
@@ -139,15 +140,15 @@ def generate_class_node(
             idx = cls_def.body.index(var_names[output.cv_name])
             cls_def.body[idx] = output.port_definition_node()
     if not has_post_init and meta:
-        cls_def.body.insert(len(inputs) + len(outputs), meta)
+        cls_def.body.insert(len(inputs) + len(outputs) + 1, meta)
     if not has_default_range and default_output:
         cls_def.body.insert(
-            len(inputs) + len(outputs), default_output.range_method_nodes()
+            len(inputs) + len(outputs) + 1, default_output.range_method_nodes()
         )
     return cls_def
 
 
-def updategencode(cls, save_in=None, verbose=False):
+def _gencode(cls, save_in=None, verbose=False, keep_decorator=True):
     cls_file = inspect.getsourcefile(cls)
     if save_in is None:
         if cls_file is None:
@@ -218,9 +219,13 @@ def updategencode(cls, save_in=None, verbose=False):
                     else clsdef
                 )
                 file_code.body[i] = generate_class_node(
-                    cls_node, *parsedoc(ast.get_docstring(cls_node, clean=True))
+                    cls_node,
+                    *parsedoc(
+                        ast.get_docstring(cls_node, clean=True),
+                    ),
+                    remove_decorator=not keep_decorator,
                 )
-            # case ast.ClassDef(decorator_list=[ast.Name("updategencode")]) as clsdef:
+            # case ast.ClassDef(decorator_list=[ast.Name("gencode")]) as clsdef:
             #     print(f" * transforming {clsdef.name}")
             #     file_code.body[i] = generate_class_node(
             #         clsdef, *parsedoc(ast.get_docstring(node, clean=True))
@@ -230,7 +235,7 @@ def updategencode(cls, save_in=None, verbose=False):
             case ast.ImportFrom(module=name) as imp if name and "codegen" in name:
                 autogen_import = imp
 
-    if autogen_import:
+    if autogen_import and not keep_decorator:
         file_code.body.remove(autogen_import)
     if not has_imports:
         file_code.body.insert(
@@ -255,6 +260,15 @@ def updategencode(cls, save_in=None, verbose=False):
     else:
         cls_file.write_text(module_content, encoding="utf-8")
     return cls
+
+
+def gencode(save_in=None, verbose=False, keep_decorator=True):
+    def foo(cls):
+        return _gencode(
+            cls, save_in=save_in, verbose=verbose, keep_decorator=keep_decorator
+        )
+
+    return foo
 
 
 def parsespec(entries, are_outputs=False):
