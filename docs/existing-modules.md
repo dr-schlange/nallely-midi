@@ -459,7 +459,7 @@ inputs:
 * active7_cv [0, 1] init=1 >0: Set the output as active if >1.
 
 outputs:
-* current_step_cv [0, 15]: The current step of the sequencer (0-indexed).
+* current_step_cv [0, 7]: The current step of the sequencer (0-indexed).
 * output_cv [0, 127]: The output value of the current step.
 * trig_out_cv [0, 1]: A trigger signal that goes high when the sequencer advances to the next step.
 
@@ -582,6 +582,12 @@ Uses velocity to simulate a volume control
 inputs:
 * inA_cv [0, 127] round <any>: input A
 * volA_cv [0, 127] round <any>: volume A
+* inB_cv [0, 127] round <any>: input B
+* volB_cv [0, 127] round <any>: volume B
+* inC_cv [0, 127] round <any>: input C
+* volC_cv [0, 127] round <any>: volume C
+* inD_cv [0, 127] round <any>: input D
+* volD_cv [0, 127] round <any>: volume D
 
 outputs:
 * output_cv [0, 127]: the adjusted volume signal
@@ -643,6 +649,41 @@ category: filter
 
 <details>
     <summary>BuddhabrotProjector: No description/documentation</summary>
+
+</details>
+
+<details>
+    <summary>ConveyorLine: Stores input in a buffer then pass them one by one in a line trigger by trigger.</summary>
+
+
+```
+Conveyor line
+
+Stores input in a buffer then pass them one by one in a line trigger by trigger.
+Each input is processed once the previous input went down all the long the line
+
+inputs:
+* input_cv [0, 127] <any>: the input to store.
+* trigger_cv [0, 1] >0 <rising>: trigger input consumption.
+* buf_size_cv [1, 1000] init=20 round <any>: the buffer size.
+* length_cv [1, 8] init=8 round <any>: the lenght of the line.
+* reset_cv [0, 1] >0 <rising>: empty the buffer.
+
+outputs:
+* out0_cv [0, 127]: 1st position in the output line.
+* out1_cv [0, 127]: 2nd position in the output line.
+* out2_cv [0, 127]: 3rd position in the output line.
+* out3_cv [0, 127]: 4th position in the output line.
+* out4_cv [0, 127]: 5th position in the output line.
+* out5_cv [0, 127]: 6th position in the output line.
+* out6_cv [0, 127]: 7th position in the output line.
+* out7_cv [0, 127]: 8th position in the output line.
+
+type: ondemand
+category: delay
+meta: disable default output
+
+```
 
 </details>
 
