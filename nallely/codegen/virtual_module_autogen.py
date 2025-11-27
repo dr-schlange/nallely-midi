@@ -274,7 +274,7 @@ def gencode(save_in=None, verbose=False, keep_decorator=True):
 def parsespec(entries, are_outputs=False):
     re_cv_name = "(?P<cv_name>\\w+)"
     re_cv_range = "(?P<cv_range>[^]]+)"
-    re_cv_policy = "\\s+(?P<policy>[^ ]+)"
+    re_cv_policy = "\\s+(?P<policy>[^ <]+)"
     re_cv_edge = f"\\s+<(?P<edges>[^>]+)>"
     re_cv_default = f"\\s+init=(?P<default>[^\\s]+)"
     re_input = re.compile(
