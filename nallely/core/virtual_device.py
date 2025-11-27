@@ -195,7 +195,11 @@ class VirtualDevice(threading.Thread):
 
         super().__init__(daemon=True)
         self.uuid = uuid if uuid else id(self)
-        self.exception_handlers = []
+        self.exception_handlers = [
+            lambda device, exception, trace: print(
+                f"[ERROR] Exception caught on {device}: {exception}\n[ERROR] pausing device"
+            )
+        ]
         self.debug = False
         self.output = None
         virtual_devices.append(self)
