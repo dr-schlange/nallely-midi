@@ -648,6 +648,36 @@ category: filter
 </details>
 
 <details>
+    <summary>BroadcastRAM8: Simple 8-slots piece of RAM that broadcast values of this slot when it's written.</summary>
+
+
+```
+8-slots Broadcast RAM
+
+Simple 8-slots piece of RAM that broadcast values of this slot when it's written.
+
+inputs:
+* io0_cv [0, 127] <any>: Input/trigger/output 0
+* io1_cv [0, 127] <any>: Input/trigger/Output 1
+* io2_cv [0, 127] <any>: Input/trigger/Output 2
+* io3_cv [0, 127] <any>: Input/trigger/Output 3
+* io4_cv [0, 127] <any>: Input/trigger/Output 4
+* io5_cv [0, 127] <any>: Input/trigger/Output 5
+* io6_cv [0, 127] <any>: Input/trigger/Output 6
+* io7_cv [0, 127] <any>: Input/trigger/Output 7
+* mode_cv [previous, new, both]: Which value will be broacasted on a trigger
+* trigger_cv [0, 1] >0 <rising>: Forces a global broadcast when triggered
+* reset_cv [0, 1] >0 <rising>: Reset all RAM to 0
+
+type: ondemand
+category: delay
+meta: disable default output
+
+```
+
+</details>
+
+<details>
     <summary>BuddhabrotProjector: No description/documentation</summary>
 
 </details>
