@@ -270,12 +270,18 @@ class Module:
 class DeviceState:
     def __init__(self, device, modules: dict[str, Type[Module]]):
         init_modules = {}
+        self.program_change = None
+        self.possible_bank = None
         for state_name, ModuleCls in modules.items():
             ModuleCls.state_name = state_name
             moduleInstance = ModuleCls(device)
             init_modules[state_name] = moduleInstance
             for param in moduleInstance.meta.parameters:
                 device.reverse_map[(param.type, param.cc_note, param.channel)] = param
+                if param.type == "program_change":
+                    self.program_change = param
+                elif param.cc_note == 0:
+                    self.possible_bank = param
             if moduleInstance.meta.pads_or_keys:
                 param = moduleInstance.meta.pads_or_keys
                 device.reverse_map[(param.type, None, param.channel)] = param
@@ -307,6 +313,27 @@ class DeviceState:
         return d
 
     def from_dict_patch(self, d):
+        d = {**d}
+        if self.program_change:
+            try:
+                param = self.program_change
+                name = param.name
+                section_name = param.section_name
+                value = d[section_name][name]
+                setattr(self.modules[section_name], name, value)
+                del d[section_name][name]
+            except Exception as e:
+                print("nO PROG CHANGE", e)
+        if self.possible_bank:
+            try:
+                param = self.possible_bank
+                name = param.name
+                section_name = param.section_name
+                value = d[section_name][name]
+                setattr(self.modules[section_name], name, value)
+                del d[section_name][name]
+            except Exception as e:
+                print("nO BANK CHANGE", e)
         for sec_name, section in d.items():
             for param, value in section.items():
                 setattr(self.modules[sec_name], param, value)

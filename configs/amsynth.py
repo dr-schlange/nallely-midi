@@ -121,6 +121,14 @@ class Amsynth(nallely.MidiDevice):
 
 
 class AmsynthAuto(Amsynth):
+    general: GeneralSection  # type: ignore
+    oscillators: OscillatorsSection  # type: ignore
+    amp: AmpSection  # type: ignore
+    filter: FilterSection  # type: ignore
+    lfo: LfoSection  # type: ignore
+    reverb: ReverbSection  # type: ignore
+    keys: KeysSection  # type: ignore
+
     def __init__(self, device_name=None, *args, **kwargs):
 
         self.process = nallely.utils.run_process(
