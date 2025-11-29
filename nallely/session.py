@@ -372,10 +372,10 @@ playground_code={infos["playground_code"]}
         if not cls:
             return None
 
-        from .codegen import gencode
+        from .codegen import gen_class_code
 
         buffer = io.StringIO()
-        gencode(cls, save_in=buffer)
+        gen_class_code(cls, save_in=buffer)
         device_code = buffer.getvalue()
         module = getmodule(cls)
         new_cls = self.compile_device(

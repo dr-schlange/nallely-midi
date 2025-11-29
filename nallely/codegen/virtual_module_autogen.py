@@ -148,7 +148,7 @@ def generate_class_node(
     return cls_def
 
 
-def _gencode(cls, save_in=None, verbose=False, keep_decorator=True):
+def gen_class_code(cls, save_in=None, verbose=False, keep_decorator=True):
     cls_file = inspect.getsourcefile(cls)
     if save_in is None:
         if cls_file is None:
@@ -264,7 +264,7 @@ def _gencode(cls, save_in=None, verbose=False, keep_decorator=True):
 
 def gencode(save_in=None, verbose=False, keep_decorator=True):
     def foo(cls):
-        return _gencode(
+        return gen_class_code(
             cls, save_in=save_in, verbose=verbose, keep_decorator=keep_decorator
         )
 

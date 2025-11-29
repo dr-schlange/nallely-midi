@@ -323,7 +323,7 @@ class DeviceState:
                 setattr(self.modules[section_name], name, value)
                 del d[section_name][name]
             except Exception as e:
-                print("nO PROG CHANGE", e)
+                pass
         if self.possible_bank:
             try:
                 param = self.possible_bank
@@ -333,7 +333,7 @@ class DeviceState:
                 setattr(self.modules[section_name], name, value)
                 del d[section_name][name]
             except Exception as e:
-                print("nO BANK CHANGE", e)
+                pass
         for sec_name, section in d.items():
             for param, value in section.items():
                 setattr(self.modules[sec_name], param, value)
