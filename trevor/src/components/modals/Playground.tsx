@@ -5,11 +5,13 @@ import {
 	autocompletion,
 	type CompletionContext,
 } from "@codemirror/autocomplete";
-import { type EditorView, keymap } from "@codemirror/view";
+import { EditorView, keymap } from "@codemirror/view";
+import { indentOnInput, indentUnit } from "@codemirror/language";
+import { defaultKeymap, indentMore } from "@codemirror/commands";
+import { type Diagnostic, linter } from "@codemirror/lint";
 import { useTrevorWebSocket } from "../../websockets/websocket";
 import { useTrevorSelector } from "../../store";
 import { Prec } from "@codemirror/state";
-import { type Diagnostic, linter } from "@codemirror/lint";
 import { Terminal } from "../Terminal";
 
 const AUTO_SAVE_DELAY = 2000;
@@ -249,6 +251,13 @@ mod-?:     displays this entry
 		}, AUTO_SAVE_DELAY);
 	};
 
+	const disableMobileAutocomplete = EditorView.contentAttributes.of({
+		autocomplete: "off",
+		autocorrect: "off",
+		autocapitalize: "off",
+		spellcheck: "false",
+	});
+
 	return (
 		<div className="patching-modal">
 			<div className="modal-header playground">
@@ -364,6 +373,10 @@ mod-?:     displays this entry
 						height="100%"
 						extensions={[
 							python(),
+							indentUnit.of("    "),
+							indentOnInput(),
+							keymap.of([...defaultKeymap]),
+							disableMobileAutocomplete,
 							linter(customLinter),
 							myCustomKeymap,
 							autocompletion({

@@ -1,20 +1,20 @@
+/** biome-ignore-all lint/a11y/useKeyWithClickEvents: <explanation> */
+/** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
 import { useEffect, useRef, useState } from "react";
 import CodeMirror from "@uiw/react-codemirror";
 import { python } from "@codemirror/lang-python";
-import {
-	autocompletion,
-	type CompletionContext,
-} from "@codemirror/autocomplete";
-import { type EditorView, keymap } from "@codemirror/view";
+import { EditorView, keymap } from "@codemirror/view";
+
+import { indentOnInput, indentUnit } from "@codemirror/language";
+import { defaultKeymap } from "@codemirror/commands";
 import { useTrevorWebSocket } from "../../websockets/websocket";
-import { useTrevorDispatch, useTrevorSelector } from "../../store";
+import { useTrevorSelector } from "../../store";
 import { Prec } from "@codemirror/state";
 import { type Diagnostic, linter } from "@codemirror/lint";
 import type { MidiDevice, VirtualDevice } from "../../model";
 import { Terminal } from "../Terminal";
-import { Button, HeaderButton } from "../widgets/BaseComponents";
+import { HeaderButton } from "../widgets/BaseComponents";
 
-const AUTO_SAVE_DELAY = 2000;
 const ERROR_DELAY = 3000;
 
 interface ClassBrowserProps {
@@ -23,71 +23,30 @@ interface ClassBrowserProps {
 	device: VirtualDevice | MidiDevice;
 }
 
-function debounce(func, delay) {
-	let timer;
-	return (...args) => {
-		clearTimeout(timer);
-		timer = setTimeout(() => {
-			func(...args);
-		}, delay);
-	};
-}
+// function extractLastExpression(text: string) {
+// 	const match = text.match(/([a-zA-Z0-9_()\[\]\.]+)$/);
+// 	return match ? match[1] : "";
+// }
 
-function extractLastExpression(text: string) {
-	const match = text.match(/([a-zA-Z0-9_()\[\]\.]+)$/);
-	return match ? match[1] : "";
-}
+// async function askCompletion(context: CompletionContext) {
+// 	const websocket = useTrevorWebSocket();
+// 	const word = context.matchBefore(/\w+(\.\w+)?/);
 
-async function askCompletion(context: CompletionContext) {
-	const websocket = useTrevorWebSocket();
-	const word = context.matchBefore(/\w+(\.\w+)?/);
+// 	if (!word && !context.explicit) return null;
 
-	if (!word && !context.explicit) return null;
+// 	const fullText = context.state.sliceDoc(0, context.pos);
+// 	const lastExpression = extractLastExpression(fullText);
 
-	const fullText = context.state.sliceDoc(0, context.pos);
-	const lastExpression = extractLastExpression(fullText);
+// 	if (!websocket) return null;
 
-	if (!websocket) return null;
+// 	const options = await websocket.requestCompletion(lastExpression);
 
-	const options = await websocket.requestCompletion(lastExpression);
-
-	return {
-		from: word ? word.from : context.pos,
-		options,
-		validFor: /^\w*$/,
-	};
-}
-
-const execute = (
-	view: EditorView,
-	executeFun: (code: string) => void,
-	print = false,
-) => {
-	const { state } = view;
-	const selection = state.selection.main;
-
-	if (selection.empty) {
-		const line = state.doc.lineAt(selection.from);
-
-		const transaction = state.update({
-			selection: { anchor: line.from, head: line.to },
-			scrollIntoView: true,
-		});
-
-		view.dispatch(transaction);
-
-		const selectedText = state.sliceDoc(line.from, line.to);
-		const code = print ? `print(${selectedText})` : selectedText;
-
-		executeFun(code);
-	} else {
-		const selectedText = state.sliceDoc(selection.from, selection.to);
-		const code = print ? `print(${selectedText})` : selectedText;
-		executeFun(code);
-	}
-
-	return true;
-};
+// 	return {
+// 		from: word ? word.from : context.pos,
+// 		options,
+// 		validFor: /^\w*$/,
+// 	};
+// }
 
 export function ClassBrowser({ device, onClose }: ClassBrowserProps) {
 	const editorRef = useRef<EditorView | undefined>(undefined);
@@ -209,41 +168,12 @@ mod-?:     displays this entry
 		]),
 	);
 
-	// function insertAssignmentAtCursor(text: string) {
-	// 	if (!editorRef.current) return;
-
-	// 	const view = editorRef.current;
-	// 	const { state } = view;
-	// 	const pos = state.selection.main.from;
-
-	// 	const line = state.doc.lineAt(pos);
-	// 	const lineText = line.text.trim();
-
-	// 	let insertPos = pos;
-	// 	let insertText = text;
-
-	// 	if (lineText.length > 0) {
-	// 		insertPos = line.to;
-	// 		insertText = `\n${text}`;
-	// 	}
-
-	// 	const transaction = state.update({
-	// 		changes: { from: insertPos, insert: insertText },
-	// 		selection: { anchor: insertPos + insertText.length },
-	// 	});
-	// 	view.dispatch(transaction);
-
-	// 	const fullText =
-	// 		state.sliceDoc(0, insertPos) + insertText + state.sliceDoc(insertPos);
-	// 	setCode(fullText);
-	// 	saveCodeDebounced();
-	// }
-
-	// const saveCodeDebounced = () => {
-	// 	return debounce((newCode: string) => {
-	// 		trevorSocket?.saveCode(newCode);
-	// 	}, AUTO_SAVE_DELAY);
-	// };
+	const disableMobileAutocomplete = EditorView.contentAttributes.of({
+		autocomplete: "off",
+		autocorrect: "off",
+		autocapitalize: "off",
+		spellcheck: "false",
+	});
 
 	return (
 		<div className="patching-modal" style={{ zIndex: 21 }}>
@@ -314,12 +244,15 @@ mod-?:     displays this entry
 						value={code}
 						onChange={(value) => {
 							setCode(value);
-							// saveCodeDebounced();
 						}}
 						maxHeight="100%"
 						height="100%"
 						extensions={[
 							python(),
+							indentUnit.of("    "),
+							indentOnInput(),
+							keymap.of([...defaultKeymap]),
+							disableMobileAutocomplete,
 							linter(customLinter),
 							myCustomKeymap,
 							// autocompletion({

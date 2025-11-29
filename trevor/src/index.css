@@ -1309,6 +1309,8 @@ button.active {
 	font-family:
 		"TopazPlusA1200", system-ui, Avenir, Helvetica, Arial, sans-serif;
 	font-size: 19px;
+	touch-action: manipulation;
+	pointer-events: auto;
 }
 
 .cm-gutters {
