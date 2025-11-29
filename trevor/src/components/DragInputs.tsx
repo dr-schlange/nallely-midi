@@ -132,6 +132,7 @@ export default function DragNumberInput({
 		<input
 			ref={inputRef}
 			type="text"
+			inputMode="decimal"
 			value={value}
 			onChange={handleInputChange}
 			onBlur={handleBlur}

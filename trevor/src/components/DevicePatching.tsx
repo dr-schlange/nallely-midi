@@ -411,6 +411,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 					</p>
 					<input
 						type="number"
+						inputMode="numeric"
 						onChange={(e) => {
 							trevorSocket?.setDeviceChannel(
 								device,
