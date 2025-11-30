@@ -148,6 +148,8 @@ def generate_class_node(
     return cls_def
 
 
+# TODO refactor considering well the save_in and read_from
+# TODO refactor, it's ugly
 def gen_class_code(
     cls, save_in=None, verbose=False, keep_decorator=True, read_from=None
 ):
@@ -188,20 +190,38 @@ def gen_class_code(
             filename=rfrom,
         )
         # We copy the existing imports
+        # We need a finer grain managment of imports
         classdef = None
         for i, node in enumerate(new_class.body):
             match node:
                 case ast.ClassDef(name=cls.__name__) as clsdef:
                     classdef = clsdef
+                case ast.ClassDef(name=name) as clsdef if name == f"t_{cls.__name__}":
+                    classdef = clsdef
                 case ast.Import() as imp:
                     copied_imports.append(imp)
                 case ast.ImportFrom() as imp:
                     copied_imports.append(imp)
-        assert classdef
+        assert (
+            classdef
+        ), f"No class definition for {cls.__name__} or t_{cls.__name__} found"
         new_class.body.insert(0, classdef)
 
         if cls_file.exists():
             file_code = ast.parse(cls_file.read_text("utf-8"))
+            cls_already_in = False
+            for i, node in enumerate(file_code.body):
+                match node:
+                    case ast.ClassDef(name=cls.__name__) as clsdef:
+                        cls_already_in = True
+                        break
+                    case ast.ClassDef(name=name) as clsdef if (
+                        name == f"t_{cls.__name__}"
+                    ):
+                        cls_already_in = True
+                        break
+            if not cls_already_in:
+                file_code.body.append(classdef)
         else:
             file_code = new_class
     elif isinstance(save_in, io.StringIO):
@@ -251,13 +271,25 @@ def gen_class_code(
             case ast.ImportFrom(module=name) as imp if name and "codegen" in name:
                 autogen_import = imp
             case ast.Import() as imp:
+                # We need a finer grain managment of imports
                 copied_imports.clear()
             case ast.ImportFrom() as imp:
+                # We need a finer grain managment of imports
                 copied_imports.clear()
 
     if autogen_import and not keep_decorator:
         file_code.body.remove(autogen_import)
     if not has_imports:
+        file_code.body.insert(
+            0,
+            ast.ImportFrom(
+                module="nallely",
+                names=[
+                    ast.alias("*"),
+                ],
+                level=0,
+            ),
+        )
         file_code.body.insert(
             0,
             ast.ImportFrom(

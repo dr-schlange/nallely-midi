@@ -61,11 +61,12 @@ def load_modules(loaded_paths, env=None, verbose=False):
         spec.loader.exec_module(module)  # type: ignore
         return module
 
+    loaded_modules = []
     for p in loaded_paths:
         if p.is_file() and p.suffix == ".py":
             if verbose:
                 print("[MODULE] Loading", p.resolve().absolute())
-            import_module_from_file(p.stem, p, env)
+            loaded_modules.append(import_module_from_file(p.stem, p, env))
 
 
 class StateEncoder(json.JSONEncoder):

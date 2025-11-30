@@ -14,7 +14,11 @@ from ..core import (
     unbind_all,
     virtual_devices,
 )
-from ..core.world import ThreadContext, get_virtual_device_classes, virtual_device_classes
+from ..core.world import (
+    ThreadContext,
+    get_virtual_device_classes,
+    virtual_device_classes,
+)
 
 
 class TrevorAPI:

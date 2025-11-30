@@ -13,8 +13,6 @@ from dulwich import porcelain
 from dulwich.notes import get_note_path
 from dulwich.repo import Repo
 
-from .core.world import register_virtual_device_class, unregister_virtual_device_class
-
 from .core import (
     DeviceNotFound,
     MidiDevice,
@@ -22,10 +20,11 @@ from .core import (
     VirtualParameter,
     all_devices,
     connected_devices,
-    midi_device_classes,
     get_virtual_device_classes,
+    midi_device_classes,
     virtual_devices,
 )
+from .core.world import register_virtual_device_class, unregister_virtual_device_class
 from .trevor import TrevorAPI
 from .trevor.meta_trevor_api import MetaTrevorAPI
 from .utils import StateEncoder, find_class, load_modules, longest_common_substring
@@ -53,11 +52,7 @@ class Session:
 
     def _load_devices(self):
         devices_file = self.devices_file
-        print("Loading", devices_file)
-        from decimal import Decimal
-
-        env = {"Decimal": Decimal}
-        load_modules([devices_file], env=env)
+        return load_modules([devices_file])
 
     @staticmethod
     def to_json(obj, **kwargs):
@@ -385,7 +380,9 @@ playground_code={infos["playground_code"]}
         porcelain.commit(repo, author=b"Nallely MIDI <drcoatl@proton.me>", committer=b"dr-schlange <drcoatl@proton.me>", message=message)  # type: ignore
         repo.close()
 
-    def compile_device_from_cls(self, cls, temporary=False, filename=None):
+    def compile_device_from_cls(
+        self, cls, temporary=False, filename=None, force_name=None
+    ):
         if not cls:
             return None
 
@@ -394,11 +391,18 @@ playground_code={infos["playground_code"]}
         buffer = Path(filename) if filename else io.StringIO()
         read_from = inspect.getsourcefile(cls)
         if read_from and self.devices_file.name == Path(read_from).name:
-            print("Same origin")
             read_from = None
-        gen_class_code(cls, save_in=buffer, read_from=read_from)
+        try:
+            gen_class_code(cls, save_in=buffer, read_from=read_from)
+        except Exception as e:
+            print(f"[DEBUG]  '{e}'", e.__class__)
+
         if filename:
-            device_code = inspect.getsource(cls)
+            from .core.world import virtual_device_classes
+
+            print("[COMPILE] Force reload generated code module")
+            self._load_devices()
+            device_code = inspect.getsource(virtual_device_classes[cls.__name__])
         else:
             device_code = buffer.getvalue()  # type: ignore
         module = getmodule(cls)
@@ -446,19 +450,19 @@ playground_code={infos["playground_code"]}
         cls = eval_env[device_name]
         cls.__source__ = device_code
         cls.__env__ = glob
-        try:
-            linecache.cache[filename] = (
-                len(device_code),
-                None,
-                [line + "\n" for line in device_code.splitlines()],
-                filename,
-            )
-            # We try to use the _interactive_cache introduced in Python 3.13
-            linecache._register_code(co, device_code, filename)  # type: ignore
-        except AttributeError:
-            ...
-        finally:
-            globals()[device_name] = cls
+        if str(filename).startswith("<"):
+            try:
+                linecache.cache[filename] = (
+                    len(device_code),
+                    None,
+                    [line + "\n" for line in device_code.splitlines()],
+                    filename,
+                )
+                # We try to use the _interactive_cache introduced in Python 3.13
+                linecache._register_code(co, device_code, filename)  # type: ignore
+            except AttributeError:
+                ...
+        globals()[device_name] = cls
         return cls
 
     def migrate_instance(self, instance, new_cls, temporary=False):

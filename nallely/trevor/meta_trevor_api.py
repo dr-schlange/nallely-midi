@@ -99,36 +99,37 @@ class MetaTrevorAPI:
             # if we don't have tmp class and we don't ask for a tmp name,
             # then we just override this class
             device_name = current_cls.__name__
+            replace_name = device_name
             final_code = class_code
 
-        cls = None
-        # if filename:
-        #     print(f"[DEBUG] Compile from source for {current_cls}, {tmp_class}")
-        #     cls = self.session.compile_device_from_cls(
-        #         tmp_class.get("name", current_cls), filename=filename
-        #     )
-        if cls is None:
-            env = inspect.getmodule(current_cls)
-            cls = self.session.compile_device(
-                device_name, final_code, env=env.__dict__, filename=filename
-            )
-        try:
-            current_path = inspect.getfile(current_cls)
-        except OSError:
-            current_path = f"<mem {device_name}>"
-        cls.__tmp__ = (
-            tmp_class if tmp_class else {"name": current_cls, "path": current_path}
+        env = inspect.getmodule(current_cls)
+        cls = self.session.compile_device(
+            device_name, final_code, env=env.__dict__, filename=filename
         )
-
+        if filename:
+            cls.__name__ = replace_name
+            cls.__source__ = cls.__source__.replace(
+                f"class {device_name}", f"class {replace_name}"
+            )
+            print(f"[META] Create and save new version of {cls} in {filename}")
+            cls = self.session.compile_device_from_cls(cls, filename=filename)
+            cls.__tmp__ = None
+            self.session.migrate_instances(cls)
+            # We force a reload of the stored device
+            self.session._load_devices()
+        else:
+            try:
+                current_path = inspect.getfile(current_cls)
+            except OSError:
+                current_path = f"<mem {device_name}>"
+            cls.__tmp__ = (
+                tmp_class if tmp_class else {"name": current_cls, "path": current_path}
+            )
         self.session.migrate_instance(device, cls, temporary=True)
 
     def compile_save_new_class(self, device, class_code: str):
         current_cls = device.__class__
         device_file = self.session.devices_file
-        print("[DEBUG] Compiling NEW class for", current_cls, "in", device_file)
-
-        # compile_device_from_cls
-
         self.object_centric_compile_inject(
             device, class_code, tmp_name=False, filename=device_file
         )

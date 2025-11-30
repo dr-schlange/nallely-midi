@@ -23,13 +23,13 @@ from .world import (
     connected_devices,
     get_all_virtual_parameters,
     get_connected_devices,
+    get_virtual_device_classes,
     get_virtual_devices,
     midi_device_classes,
     no_registration,
     stop_all_connected_devices,
     stop_all_virtual_devices,
     unbind_all,
-    get_virtual_device_classes,
     virtual_devices,
 )
 

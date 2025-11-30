@@ -26,11 +26,11 @@ from ..core import (
     all_devices,
     all_links,
     connected_devices,
+    get_virtual_device_classes,
     get_virtual_devices,
     midi_device_classes,
     no_registration,
     stop_all_connected_devices,
-    get_virtual_device_classes,
     virtual_devices,
 )
 from ..core.midi_device import MidiDevice, ModuleParameter

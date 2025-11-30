@@ -14,11 +14,11 @@ from .core import (
     VirtualParameter,
     all_devices,
     connected_devices,
+    get_virtual_device_classes,
     midi_device_classes,
     on,
     stop_all_connected_devices,
     stop_all_virtual_devices,
-    get_virtual_device_classes,
     virtual_devices,
 )
 from .eg import VCA, ADSREnvelope, EnvelopeSlew, Gate, SampleHold, VolumeMixer
