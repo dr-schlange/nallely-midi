@@ -18,7 +18,7 @@ from .core import (
     on,
     stop_all_connected_devices,
     stop_all_virtual_devices,
-    virtual_device_classes,
+    get_virtual_device_classes,
     virtual_devices,
 )
 from .eg import VCA, ADSREnvelope, EnvelopeSlew, Gate, SampleHold, VolumeMixer
@@ -73,7 +73,7 @@ __all__ = [
     "LFO",
     "Cycler",
     "ADSREnvelope",
-    "virtual_device_classes",
+    "get_virtual_device_classes",
     "virtual_devices",
     "all_devices",
     "connected_devices",

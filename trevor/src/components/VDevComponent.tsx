@@ -267,7 +267,7 @@ export const VDevice = ({
 		event.preventDefault();
 		event.stopPropagation();
 
-		if (longPressEvents.didLongPress.current) {
+		if (longPressEvents.didlongpress.current) {
 			return;
 		}
 

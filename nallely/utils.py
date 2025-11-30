@@ -49,19 +49,23 @@ def find_class(name):
     raise ValueError(f"Class {name} couldn't be found")
 
 
-def load_modules(loaded_paths):
-    def import_module_from_file(name: str, path: Path):
+def load_modules(loaded_paths, env=None, verbose=False):
+    def import_module_from_file(name: str, path: Path, env=None):
         spec = importlib.util.spec_from_file_location(name, path)
         if not spec:
             return None
         module = importlib.util.module_from_spec(spec)
+        if env:
+            module.__dict__.update(env)
         sys.modules[name] = module
         spec.loader.exec_module(module)  # type: ignore
         return module
 
     for p in loaded_paths:
         if p.is_file() and p.suffix == ".py":
-            import_module_from_file(p.stem, p)
+            if verbose:
+                print("[MODULE] Loading", p.resolve().absolute())
+            import_module_from_file(p.stem, p, env)
 
 
 class StateEncoder(json.JSONEncoder):

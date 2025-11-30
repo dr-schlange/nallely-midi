@@ -12,10 +12,9 @@ from ..core import (
     midi_device_classes,
     stop_all_connected_devices,
     unbind_all,
-    virtual_device_classes,
     virtual_devices,
 )
-from ..core.world import ThreadContext, get_virtual_device_classes
+from ..core.world import ThreadContext, get_virtual_device_classes, virtual_device_classes
 
 
 class TrevorAPI:
@@ -51,7 +50,8 @@ class TrevorAPI:
     def create_device(self, name):
         cls = next((cls for cls in midi_device_classes if cls.__name__ == name), None)
         if cls is None:
-            cls = next((cls for cls in virtual_device_classes if cls.__name__ == name))
+            # cls = next((cls for cls in get_virtual_device_classes() if cls.__name__ == name))
+            cls = virtual_device_classes[name]
         devices = all_devices()
         try:
             # We auto-connect the virtual device,

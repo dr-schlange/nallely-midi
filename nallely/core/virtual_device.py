@@ -22,11 +22,10 @@ from .scaler import Scaler
 from .world import (
     DeviceSerializer,
     ThreadContext,
-    all_devices,
     all_links,
     get_all_virtual_parameters,
     no_registration,
-    virtual_device_classes,
+    register_virtual_device_class,
     virtual_devices,
 )
 
@@ -233,7 +232,7 @@ class VirtualDevice(threading.Thread):
 
     def __init_subclass__(cls) -> None:
         # we register the cls as a known virtual device in Nallely's world
-        virtual_device_classes.append(cls)
+        register_virtual_device_class(cls)
 
         # build a signature and __init__ dynamically
         # if __init__ already exists, so we keep it

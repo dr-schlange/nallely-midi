@@ -8,7 +8,7 @@ from nallely import (
     VirtualParameter,
     WebSocketBus,
     all_devices,
-    virtual_device_classes,
+    get_virtual_device_classes,
     virtual_devices,
 )
 from nallely.trevor import TrevorAPI, TrevorBus
@@ -34,7 +34,7 @@ class InstanceCreator(VirtualDevice):
             inumber = int(self.instance_number)
             classes = [
                 cls
-                for cls in virtual_device_classes
+                for cls in get_virtual_device_classes()
                 if cls not in [TrevorBus, WebSocketBus, InstanceCreator, RandomPatcher]
             ]
             self.instance_number = random.randint(0, inumber)

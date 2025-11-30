@@ -29,7 +29,7 @@ from .world import (
     stop_all_connected_devices,
     stop_all_virtual_devices,
     unbind_all,
-    virtual_device_classes,
+    get_virtual_device_classes,
     virtual_devices,
 )
 
@@ -54,7 +54,7 @@ __all__ = [
     "virtual_devices",
     "connected_devices",
     "midi_device_classes",
-    "virtual_device_classes",
+    "get_virtual_device_classes",
     "Scaler",
     "no_registration",
     "TimeBasedDevice",

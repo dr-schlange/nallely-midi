@@ -1,11 +1,10 @@
+import inspect
 import io
 import json
 import linecache
 import os
 import re
-import time
 from collections import Counter
-from datetime import datetime
 from inspect import getmodule
 from pathlib import Path
 
@@ -14,7 +13,7 @@ from dulwich import porcelain
 from dulwich.notes import get_note_path
 from dulwich.repo import Repo
 
-import nallely
+from .core.world import register_virtual_device_class, unregister_virtual_device_class
 
 from .core import (
     DeviceNotFound,
@@ -24,17 +23,19 @@ from .core import (
     all_devices,
     connected_devices,
     midi_device_classes,
-    virtual_device_classes,
+    get_virtual_device_classes,
     virtual_devices,
 )
 from .trevor import TrevorAPI
 from .trevor.meta_trevor_api import MetaTrevorAPI
-from .utils import StateEncoder, find_class, get_note_name, longest_common_substring
+from .utils import StateEncoder, find_class, load_modules, longest_common_substring
 from .websocket_bus import WebSocketBus
+
+DEFAULT_UNIVERSE = "memory"
 
 
 class Session:
-    def __init__(self, trevor_bus=None, meta_env=None):
+    def __init__(self, trevor_bus=None, meta_env=None, universe=DEFAULT_UNIVERSE):
         self.trevor_bus = trevor_bus
         self.trevor = trevor_bus.trevor if trevor_bus else TrevorAPI()
         self.meta_trevor = (
@@ -42,10 +43,21 @@ class Session:
             if meta_env
             else MetaTrevorAPI(self)
         )
+        self.universe = universe
         self.code = ""
+        self.devices_file = universe_path(universe) / "devices.py"
+        self._load_devices()
 
     def save_code(self, code):
         self.code = code
+
+    def _load_devices(self):
+        devices_file = self.devices_file
+        print("Loading", devices_file)
+        from decimal import Decimal
+
+        env = {"Decimal": Decimal}
+        load_modules([devices_file], env=env)
 
     @staticmethod
     def to_json(obj, **kwargs):
@@ -232,13 +244,18 @@ class Session:
 
     ADDRESS_CHECKER = re.compile(r"[0-9a-fA-F]+")
 
+    def _which_universe(self, universe: str | None = None) -> str:
+        return universe if universe else DEFAULT_UNIVERSE
+
     def save_address(
-        self, address: str, universe="memory", message=None, save_defaultvalues=False
+        self, address: str, universe=None, message=None, save_defaultvalues=False
     ) -> Path:
         if not address or self.ADDRESS_CHECKER.fullmatch(address) is None:
             # raise Exception(f"{address=} has an unknown format")
             print(f"[GIT-STORE] Couldn't parse {address=} has an unknown format")
-            used_addresses = self.get_used_addresses(universe=universe)
+            used_addresses = self.get_used_addresses(
+                universe=self._which_universe(universe)
+            )
             from random import randint
 
             while (
@@ -249,7 +266,7 @@ class Session:
             address = rand_address
         address = address.upper()
 
-        location = (Path.cwd() / universe).resolve()
+        location = (Path.cwd() / self._which_universe(universe)).resolve()
         if not location.exists():
             print(
                 f"[GIT-STORE] Creating {location.name} store at {location.absolute()}"
@@ -291,8 +308,8 @@ playground_code={infos["playground_code"]}
         repo.close()
         return address_file
 
-    def load_address(self, address, universe="memory"):
-        address_file = address2path(universe, address)
+    def load_address(self, address, universe=None):
+        address_file = address2path(self._which_universe(universe), address)
         print(f"[GIT-STORE] Loading {address=} from file {address_file.resolve()}")
         return self.load_all(address_file)
 
@@ -328,15 +345,15 @@ playground_code={infos["playground_code"]}
             "virtual_devices": vdevs,
             "connections": self.all_connections_as_dict(),
             "classes": {
-                "virtual": [cls.__name__ for cls in virtual_device_classes],
+                "virtual": [cls.__name__ for cls in get_virtual_device_classes()],
                 "midi": [cls.__name__ for cls in midi_device_classes],
             },
             "playground_code": self.code,
         }
 
-    def get_used_addresses(self, universe="memory"):
+    def get_used_addresses(self, universe=None):
         cwd = Path.cwd()
-        location = (cwd / universe).resolve()
+        location = (cwd / self._which_universe(universe)).resolve()
         used_addresses = sorted(location.rglob("*.nly"))
         addresses = [
             {
@@ -349,7 +366,7 @@ playground_code={infos["playground_code"]}
         ]
         return addresses
 
-    def clear_address(self, address, universe="memory"):
+    def clear_address(self, address, universe=None):
         address_file = address2path(universe, address)
         print(
             f"[GIT-STORE] Deleting {address=} by deleting address file {address_file.resolve()}"
@@ -359,7 +376,7 @@ playground_code={infos["playground_code"]}
         except FileNotFoundError:
             print(f"[GIT-STORE] {address=} is not used, deleting noting")
             return
-        location = (Path.cwd() / universe).resolve()
+        location = (Path.cwd() / self._which_universe(universe)).resolve()
         repo = Repo(location)
         porcelain.add(repo, address_file)
 
@@ -368,33 +385,46 @@ playground_code={infos["playground_code"]}
         porcelain.commit(repo, author=b"Nallely MIDI <drcoatl@proton.me>", committer=b"dr-schlange <drcoatl@proton.me>", message=message)  # type: ignore
         repo.close()
 
-    def compile_device_from_cls(self, cls, temporary=False):
+    def compile_device_from_cls(self, cls, temporary=False, filename=None):
         if not cls:
             return None
 
         from .codegen import gen_class_code
 
-        buffer = io.StringIO()
-        gen_class_code(cls, save_in=buffer)
-        device_code = buffer.getvalue()
+        buffer = Path(filename) if filename else io.StringIO()
+        read_from = inspect.getsourcefile(cls)
+        if read_from and self.devices_file.name == Path(read_from).name:
+            print("Same origin")
+            read_from = None
+        gen_class_code(cls, save_in=buffer, read_from=read_from)
+        if filename:
+            device_code = inspect.getsource(cls)
+        else:
+            device_code = buffer.getvalue()  # type: ignore
         module = getmodule(cls)
         new_cls = self.compile_device(
             device_name=cls.__name__,
             device_code=device_code,
             env=module.__dict__,
             update_name=temporary,
+            filename=filename,
         )
         return new_cls
 
     def compile_device(
-        self, device_name: str, device_code: str, env=None, update_name=False
+        self,
+        device_name: str,
+        device_code: str,
+        env=None,
+        update_name=False,
+        filename=None,
     ):
         if update_name:
             device_code = device_code.replace(
                 f"class {device_name}", f"class t_{device_name}"
             )
             device_name = f"t_{device_name}"
-        filename = f"<mem {device_name}>"
+        filename = filename if filename else f"<mem {device_name}>"
         co = compile(device_code, filename=filename, mode="exec")
         env = env if env else {}
 
@@ -441,14 +471,14 @@ playground_code={infos["playground_code"]}
         instance.__class__ = new_cls
         try:
             if not temporary:
-                virtual_device_classes.remove(old_cls)
+                unregister_virtual_device_class(old_cls)
         except Exception:
             # print(
             #     f"[DEBUG] {old_cls.__name__} is not registered as a known Virtual Device class, we skip it"
             # )
             ...
         if not temporary:
-            virtual_device_classes.append(new_cls)
+            register_virtual_device_class(new_cls)
 
         if is_vdev:
             instance.resume()
@@ -466,8 +496,8 @@ playground_code={infos["playground_code"]}
                 device.pause()
                 old_cls = device.__class__
                 device.__class__ = new_cls
-                virtual_device_classes.remove(old_cls)
-                virtual_device_classes.append(new_cls)
+                # unregister_virtual_device_class(old_cls)
+                register_virtual_device_class(new_cls)
                 device.resume()
 
 
@@ -499,8 +529,12 @@ def extract_infos(filename):
     return details
 
 
+def universe_path(universe):
+    return (Path.cwd() / universe).resolve()
+
+
 def address2path(universe, address):
-    location = (Path.cwd() / universe).resolve()
+    location = universe_path(universe)
     frags = [address[i : i + 2] for i in range(0, len(address), 2)]
     address_file = location / (Path().with_segments(*frags)).with_suffix(".nly")
     return address_file

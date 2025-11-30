@@ -304,13 +304,13 @@ export function useLongPress(
 	onTouchStart?: () => void,
 ) {
 	const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-	const didLongPress = useRef(false);
+	const didlongpress = useRef(false);
 
 	const start = useCallback(() => {
-		didLongPress.current = false;
+		didlongpress.current = false;
 		timerRef.current = setTimeout(() => {
 			callback();
-			didLongPress.current = true;
+			didlongpress.current = true;
 		}, ms);
 	}, [callback, ms]);
 
@@ -333,7 +333,7 @@ export function useLongPress(
 		onMouseLeave: clear,
 		onTouchEnd: clear,
 		onTouchMove: clear,
-		didLongPress,
+		didlongpress,
 	};
 }
 

@@ -93,7 +93,7 @@ const VDeviceSchema = ({
 				event.preventDefault();
 				event.stopPropagation();
 
-				if (!longPressEvents.didLongPress.current) {
+				if (!longPressEvents.didlongpress.current) {
 					onClick?.(schema);
 				}
 			}}

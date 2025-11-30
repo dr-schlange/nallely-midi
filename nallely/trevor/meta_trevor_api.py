@@ -75,7 +75,9 @@ class MetaTrevorAPI:
     #     # print(f"[DEBUG] Compile inject for {method_name}")
     #     self.compile_inject(device, method_name, method_code)
 
-    def object_centric_compile_inject(self, device, class_code: str):
+    def object_centric_compile_inject(
+        self, device, class_code: str, tmp_name: bool = True, filename=None
+    ):
         current_cls = device.__class__
         # print("[DEBUG] Compiling dedicated class for", current_cls)
 
@@ -84,18 +86,32 @@ class MetaTrevorAPI:
         if tmp_class:
             replace_name = tmp_class["name"].__name__
             device_name = current_cls.__name__
-        else:
+            final_code = class_code.replace(
+                f"class {replace_name}", f"class {device_name}"
+            )
+        elif tmp_name:
             replace_name = current_cls.__name__
             device_name = f"t_{replace_name}"
+            final_code = class_code.replace(
+                f"class {replace_name}", f"class {device_name}"
+            )
+        else:
+            # if we don't have tmp class and we don't ask for a tmp name,
+            # then we just override this class
+            device_name = current_cls.__name__
+            final_code = class_code
 
-        final_code = class_code.replace(f"class {replace_name}", f"class {device_name}")
-
-        env = inspect.getmodule(current_cls)
-        cls = self.session.compile_device(
-            device_name,
-            final_code,
-            env=env.__dict__,
-        )
+        cls = None
+        # if filename:
+        #     print(f"[DEBUG] Compile from source for {current_cls}, {tmp_class}")
+        #     cls = self.session.compile_device_from_cls(
+        #         tmp_class.get("name", current_cls), filename=filename
+        #     )
+        if cls is None:
+            env = inspect.getmodule(current_cls)
+            cls = self.session.compile_device(
+                device_name, final_code, env=env.__dict__, filename=filename
+            )
         try:
             current_path = inspect.getfile(current_cls)
         except OSError:
@@ -105,3 +121,14 @@ class MetaTrevorAPI:
         )
 
         self.session.migrate_instance(device, cls, temporary=True)
+
+    def compile_save_new_class(self, device, class_code: str):
+        current_cls = device.__class__
+        device_file = self.session.devices_file
+        print("[DEBUG] Compiling NEW class for", current_cls, "in", device_file)
+
+        # compile_device_from_cls
+
+        self.object_centric_compile_inject(
+            device, class_code, tmp_name=False, filename=device_file
+        )

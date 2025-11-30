@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 virtual_devices: list["VirtualDevice"] = []
 connected_devices: list["MidiDevice"] = []
 midi_device_classes: list[Type] = []
-virtual_device_classes: list[Type] = []
+virtual_device_classes: dict[str, Type] = {}
 
 
 def no_registration(cls):
@@ -23,8 +23,9 @@ def no_registration(cls):
     except ValueError:
         ...
     try:
-        virtual_device_classes.remove(cls)
-    except ValueError:
+        del virtual_device_classes[cls.__name__]
+        # virtual_device_classes.remove(cls)
+    except KeyError:
         ...
     return cls
 
@@ -66,7 +67,15 @@ def all_devices():
 
 
 def get_virtual_device_classes():
-    return virtual_device_classes
+    return virtual_device_classes.values()
+
+
+def register_virtual_device_class(cls):
+    virtual_device_classes[cls.__name__] = cls
+
+
+def unregister_virtual_device_class(cls):
+    del virtual_device_classes[cls.__name__]
 
 
 def get_midi_device_classes():
@@ -74,7 +83,7 @@ def get_midi_device_classes():
 
 
 def get_all_device_classes():
-    return get_midi_device_classes() + get_virtual_device_classes()
+    return get_midi_device_classes() + list(get_virtual_device_classes())
 
 
 def unbind_all():

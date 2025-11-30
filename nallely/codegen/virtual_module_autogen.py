@@ -148,8 +148,12 @@ def generate_class_node(
     return cls_def
 
 
-def gen_class_code(cls, save_in=None, verbose=False, keep_decorator=True):
+def gen_class_code(
+    cls, save_in=None, verbose=False, keep_decorator=True, read_from=None
+):
     cls_file = inspect.getsourcefile(cls)
+    copied_imports = []
+
     if save_in is None:
         if cls_file is None:
             frame = inspect.currentframe()
@@ -171,18 +175,35 @@ def gen_class_code(cls, save_in=None, verbose=False, keep_decorator=True):
             return cls
         file_code = ast.parse(cls_file.read_text("utf-8"))
     elif isinstance(save_in, Path):
-        try:
-            cls_file = Path(save_in)
-            new_class = ast.parse(cls.__source__, filename=cls_file)
-            if cls_file.exists():
-                file_code = ast.parse(cls_file.read_text("utf-8"))
-            else:
-                file_code = new_class
-        except AttributeError:
-            print(
-                f"Class {cls} doesn't have a __source__ attribute, returning {cls} and stop codegen"
-            )
-            return cls
+        cls_file = Path(save_in)
+        # print(f"[DEBUG] File is {cls_file}")
+        # print(f"[DEBUG] Read from {read_from}")
+        rfrom = Path(read_from) if read_from else cls_file
+        new_class = ast.parse(
+            source=getattr(
+                cls,
+                "__source__",
+                rfrom.read_text(encoding="utf-8") if rfrom else inspect.getsource(cls),
+            ),
+            filename=rfrom,
+        )
+        # We copy the existing imports
+        classdef = None
+        for i, node in enumerate(new_class.body):
+            match node:
+                case ast.ClassDef(name=cls.__name__) as clsdef:
+                    classdef = clsdef
+                case ast.Import() as imp:
+                    copied_imports.append(imp)
+                case ast.ImportFrom() as imp:
+                    copied_imports.append(imp)
+        assert classdef
+        new_class.body.insert(0, classdef)
+
+        if cls_file.exists():
+            file_code = ast.parse(cls_file.read_text("utf-8"))
+        else:
+            file_code = new_class
     elif isinstance(save_in, io.StringIO):
         assert cls_file
         try:
@@ -225,15 +246,14 @@ def gen_class_code(cls, save_in=None, verbose=False, keep_decorator=True):
                     ),
                     remove_decorator=not keep_decorator,
                 )
-            # case ast.ClassDef(decorator_list=[ast.Name("gencode")]) as clsdef:
-            #     print(f" * transforming {clsdef.name}")
-            #     file_code.body[i] = generate_class_node(
-            #         clsdef, *parsedoc(ast.get_docstring(node, clean=True))
-            #     )
             case ast.ImportFrom(module="nallely"):
                 has_imports = True
             case ast.ImportFrom(module=name) as imp if name and "codegen" in name:
                 autogen_import = imp
+            case ast.Import() as imp:
+                copied_imports.clear()
+            case ast.ImportFrom() as imp:
+                copied_imports.clear()
 
     if autogen_import and not keep_decorator:
         file_code.body.remove(autogen_import)
@@ -250,6 +270,8 @@ def gen_class_code(cls, save_in=None, verbose=False, keep_decorator=True):
                 level=0,
             ),
         )
+    if copied_imports:
+        file_code.body[0:0] = copied_imports
     ast.fix_missing_locations(file_code)
     if black:
         module_content = black.format_str(ast.unparse(file_code), mode=black.Mode())

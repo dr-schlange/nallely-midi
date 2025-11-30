@@ -199,7 +199,14 @@ mod-?:     displays this entry
 					}}
 				/>
 
-				<HeaderButton text="Save" disabled onClick={() => {}} />
+				<HeaderButton
+					text="Save"
+					onClick={() => {
+						if (code) {
+							trevorSocket?.compileInjectSave(device.id, code);
+						}
+					}}
+				/>
 			</div>
 			<div
 				className="modal-body"
