@@ -168,7 +168,7 @@ def on(
 
 
 class VirtualDevice(threading.Thread):
-    _devices_count: dict[Type, int] = defaultdict(int)
+    _devices_count: dict[str, int] = defaultdict(int)
     output_cv = VirtualParameter(name="output", range=(0, 127))
 
     # We use a consumer to bypass the input queue
@@ -178,8 +178,10 @@ class VirtualDevice(threading.Thread):
 
     def __new__(cls, *args, **kwargs):
         instance = super().__new__(cls)
-        instance._devices_count[cls] += 1
-        instance._number = instance._devices_count[cls]  # type: ignore
+        instance._devices_count[cls.__name__] += 1
+        instance._number = instance._devices_count[cls.__name__]
+        # instance._devices_count[cls] += 1
+        # instance._number = instance._devices_count[cls]  # type: ignore
         return instance
 
     def __init__(
