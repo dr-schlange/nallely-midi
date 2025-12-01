@@ -390,22 +390,26 @@ playground_code={infos["playground_code"]}
 
         buffer = Path(filename) if filename else io.StringIO()
         read_from = inspect.getsourcefile(cls)
-        if read_from and self.devices_file.name == Path(read_from).name:
-            read_from = None
+        # if read_from and self.devices_file.name == Path(read_from).name:
+        #     read_from = None
         try:
             gen_class_code(cls, save_in=buffer, read_from=read_from)
         except Exception as e:
             print(f"[DEBUG]  '{e}'", e.__class__)
 
+        module = getmodule(cls)
         if filename:
             from .core.world import virtual_device_classes
 
             print("[COMPILE] Force reload generated code module")
             self._load_devices()
-            device_code = inspect.getsource(virtual_device_classes[cls.__name__])
+            # We take the new version of the class
+            cls = virtual_device_classes[cls.__name__]
+            device_code = inspect.getsource(cls)
+            module = getmodule(cls)
         else:
             device_code = buffer.getvalue()  # type: ignore
-        module = getmodule(cls)
+
         new_cls = self.compile_device(
             device_name=cls.__name__,
             device_code=device_code,
@@ -413,6 +417,15 @@ playground_code={infos["playground_code"]}
             update_name=temporary,
             filename=filename,
         )
+        if filename:
+            from .core.world import virtual_device_classes
+
+            print("[COMPILE] Force reload compiled generated module code")
+            self._load_devices()
+            # We take the new version of the class
+            new_cls = virtual_device_classes[new_cls.__name__]
+            device_code = inspect.getsource(new_cls)
+            module = getmodule(new_cls)
         return new_cls
 
     def compile_device(
@@ -450,18 +463,18 @@ playground_code={infos["playground_code"]}
         cls = eval_env[device_name]
         cls.__source__ = device_code
         cls.__env__ = glob
-        if str(filename).startswith("<"):
-            try:
-                linecache.cache[filename] = (
-                    len(device_code),
-                    None,
-                    [line + "\n" for line in device_code.splitlines()],
-                    filename,
-                )
-                # We try to use the _interactive_cache introduced in Python 3.13
-                linecache._register_code(co, device_code, filename)  # type: ignore
-            except AttributeError:
-                ...
+        # if str(filename).startswith("<"):
+        try:
+            linecache.cache[filename] = (
+                len(device_code),
+                None,
+                [line + "\n" for line in device_code.splitlines()],
+                filename,
+            )
+            # We try to use the _interactive_cache introduced in Python 3.13
+            linecache._register_code(co, device_code, filename)  # type: ignore
+        except AttributeError:
+            ...
         globals()[device_name] = cls
         return cls
 

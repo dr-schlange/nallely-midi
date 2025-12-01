@@ -566,6 +566,7 @@ class TrevorBus(VirtualDevice):
                 "ok",
                 f"Code for class {device.__class__.__name__} compiled, and instance {device_id} have been migrated",
             )
+            self.get_class_code(device_id)
         except Exception as e:
             self.send_notification(
                 "error",
