@@ -561,11 +561,23 @@ export class TrevorWebSocket {
 		});
 	}
 
-	compileInjectSave(device_id: number, class_code) {
+	compileInjectSave(
+		device_id: number,
+		class_code,
+		force_name: string | undefined,
+	) {
 		this.sendJsonMessage({
 			command: "compile_inject_save",
 			device_id,
 			class_code,
+			force_name: force_name,
+		});
+	}
+
+	createNewDevice(name: string) {
+		this.sendJsonMessage({
+			command: "create_new_vdev",
+			name,
 		});
 	}
 

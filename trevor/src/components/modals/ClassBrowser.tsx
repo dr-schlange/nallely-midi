@@ -203,7 +203,12 @@ mod-?:     displays this entry
 					text="Save"
 					onClick={() => {
 						if (code) {
-							trevorSocket?.compileInjectSave(device.id, code);
+							const regex = /class (?<name>[^(]+)/;
+							const match = code.match(regex);
+							if (match?.groups) {
+								const name = match.groups.name;
+								trevorSocket?.compileInjectSave(device.id, code, name);
+							}
 						}
 					}}
 				/>

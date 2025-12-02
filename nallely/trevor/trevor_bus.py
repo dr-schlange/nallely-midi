@@ -553,14 +553,16 @@ class TrevorBus(VirtualDevice):
             print(e)
         return self.full_state()
 
-    def compile_inject_save(self, device_id, class_code):
+    def compile_inject_save(self, device_id, class_code, force_name=None):
         try:
             device = self.trevor.get_device_instance(device_id)
         except Exception as e:
             print(f"[TrevorBus] Couldn't find {device_id}")
             return
         try:
-            self.session.meta_trevor.compile_save_new_class(device, class_code)
+            self.session.meta_trevor.compile_save_new_class(
+                device, class_code, force_name
+            )
             # TODO: migrate all instances but need a stronger hot-patch for structural changes
             self.send_notification(
                 "ok",
@@ -573,6 +575,39 @@ class TrevorBus(VirtualDevice):
                 f"Error while compiling/injecting {device.__class__.__name__}",
             )
             print(e)
+        return self.full_state()
+
+    def create_new_vdev(self, name):
+        doc = f"""    \"\"\"
+    {name}
+
+    <description>
+
+    inputs:
+    # * NAME [RANGE] init=? CONV <EDGE>: DOC
+
+    outputs:
+    # * NAME [RANGE]: DOC
+
+    type: <ondemand | continuous>
+    category: <category>
+    # meta: disable default output
+    \"\"\"
+    """
+        cls = type(
+            name,
+            (VirtualDevice,),
+            {
+                "__doc__": doc,
+            },
+        )
+        code = f"""class {name}(VirtualDevice):
+    {doc}
+        """
+        cls.__source__ = code
+        instance = cls()
+        self.session.meta_trevor.compile_save_new_class(instance, code)
+        self.get_class_code(instance.uuid)
         return self.full_state()
 
     def set_parameter_value(self, device_id, section_name, parameter_name, value):

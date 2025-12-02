@@ -29,6 +29,7 @@ import {
 	restrictToVerticalAxis,
 	restrictToParentElement,
 } from "@dnd-kit/modifiers";
+import { ClassBrowser } from "./modals/ClassBrowser";
 
 const groupBySumLimit = (arr, limit) => {
 	const result = [];
@@ -91,6 +92,7 @@ export const RackRowVirtual = ({
 	horizontal,
 }: RackRowVirtualProps) => {
 	const [selectorOpened, setSelectorOpened] = useState(false);
+	const [codeEditorOpened, setCodeEditorOpened] = useState(false);
 	const virtualClasses = useTrevorSelector(
 		(state) => state.nallely.classes.virtual,
 	);
@@ -153,6 +155,11 @@ export const RackRowVirtual = ({
 		setLocalDeviceOrder(mergeDevicesPreservingOrder("virtuals", devices));
 	}, [devices]);
 
+	const handleCreateNew = () => {
+		trevorSocket?.createNewDevice("MyDevice");
+		setCodeEditorOpened((prev) => !prev);
+	};
+
 	return (
 		<>
 			<div
@@ -198,6 +205,17 @@ export const RackRowVirtual = ({
 						}}
 						onClick={() => setSelectorOpened((prev) => !prev)}
 					/>
+					<Button
+						text="Create"
+						tooltip="Create a new virtual device"
+						variant="small"
+						style={{
+							width: "100%",
+							height: "87%",
+							color: "black",
+						}}
+						onClick={() => handleCreateNew()}
+					/>
 				</div>
 				<div className={"inner-rack-row"} onScroll={() => onSectionScroll?.()}>
 					<DndContext
@@ -231,6 +249,9 @@ export const RackRowVirtual = ({
 					onClose={() => setSelectorOpened((prev) => !prev)}
 				/>
 			)}
+			{/* {codeEditorOpened && (
+				<ClassBrowser onClose={() => setSelectorOpened((prev) => !prev)} />
+			)} */}
 		</>
 	);
 };

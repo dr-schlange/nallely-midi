@@ -226,7 +226,7 @@ class VirtualDevice(threading.Thread):
         self.ready_event = threading.Event()
         self.closed_ports = set()
         self._param_last_values = {}
-        self.internal_setup()
+        self._internal_conversion_setup()
         if autoconnect:
             self.start()
 
@@ -258,6 +258,16 @@ class VirtualDevice(threading.Thread):
         super().__init_subclass__()
 
     def internal_setup(self):
+        self._internal_init()
+        self._internal_conversion_setup()
+
+    def _internal_init(self):
+        for param in self.__class__.all_parameters():
+            if param.no_init:
+                continue
+            setattr(self, param.name, param.get_default())
+
+    def _internal_conversion_setup(self):
         for parameter in self.all_parameters():
             if parameter.accepted_values and not parameter.disable_policy:
                 map2values_cv_property(self, parameter)

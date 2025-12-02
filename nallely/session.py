@@ -478,7 +478,7 @@ playground_code={infos["playground_code"]}
         globals()[device_name] = cls
         return cls
 
-    def migrate_instance(self, instance, new_cls, temporary=False):
+    def migrate_instance(self, instance, new_cls, temporary=False, count=[0]):
         if isinstance(instance, MidiDevice):
             return
         is_vdev = isinstance(instance, VirtualDevice)
@@ -488,18 +488,24 @@ playground_code={infos["playground_code"]}
         instance.__class__ = new_cls
         try:
             if not temporary:
+                print(f"[COMPILE] Unregister {old_cls}")
                 unregister_virtual_device_class(old_cls)
         except Exception:
             # print(
             #     f"[DEBUG] {old_cls.__name__} is not registered as a known Virtual Device class, we skip it"
             # )
-            ...
+            pass
         if not temporary:
+            print(f"[COMPILE] Register {new_cls}")
             register_virtual_device_class(new_cls)
 
         if is_vdev:
+            instance._internal_init()
+            print(f"[META] Instance migrated, resume the instance {count[0]}")
+            count[0] += 1
             instance.resume()
         elif issubclass(new_cls, VirtualDevice):
+            print("[META] Instance migrated, start the instance")
             # We should have a VirtualDevice instance now, but not started
             instance.__init__()
             instance.start()
@@ -508,14 +514,7 @@ playground_code={infos["playground_code"]}
         device_cls = device_cls if device_cls else new_cls.__name__
         for device in all_devices():
             if device.__class__.__name__ == device_cls:
-                if isinstance(device, MidiDevice):
-                    continue
-                device.pause()
-                old_cls = device.__class__
-                device.__class__ = new_cls
-                # unregister_virtual_device_class(old_cls)
-                register_virtual_device_class(new_cls)
-                device.resume()
+                self.migrate_instance(device, new_cls)
 
 
 def extract_infos(filename):

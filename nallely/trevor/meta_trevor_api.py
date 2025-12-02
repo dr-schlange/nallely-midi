@@ -114,9 +114,9 @@ class MetaTrevorAPI:
             print(f"[META] Create and save new version of {cls} in {filename}")
             cls = self.session.compile_device_from_cls(cls, filename=filename)
             cls.__tmp__ = None
+            self.session._load_devices()
             self.session.migrate_instances(cls)
             # We force a reload of the stored device
-            self.session._load_devices()
         else:
             try:
                 current_path = inspect.getfile(current_cls)
@@ -127,9 +127,28 @@ class MetaTrevorAPI:
             )
         self.session.migrate_instance(device, cls, temporary=True)
 
-    def compile_save_new_class(self, device, class_code: str):
+    def compile_save_new_class(
+        self, device, class_code: str, force_name: str | None = None
+    ):
         current_cls = device.__class__
+        if force_name and force_name != current_cls.__name__:
+            current_cls.__name__ = force_name
         device_file = self.session.devices_file
         self.object_centric_compile_inject(
             device, class_code, tmp_name=False, filename=device_file
         )
+
+    # def compile_save_new_class(self, class_code: str):
+    #     import re
+
+    #     pattern = re.compile(r"class ([^(]+)")
+    #     device_name = pattern.findall(text)
+    #     cls = self.session.compile_device(
+    #         device_name, final_code, env=env.__dict__, filename=filename
+    #     )
+
+    #     current_cls = device.__class__
+    #     device_file = self.session.devices_file
+    #     self.object_centric_compile_inject(
+    #         device, class_code, tmp_name=False, filename=device_file
+    #     )
