@@ -75,11 +75,9 @@ def register_virtual_device_class(cls):
 
 
 def unregister_virtual_device_class(cls):
-    print(f"[DEBUG] Unregistering {cls.__name__}")
     del virtual_device_classes[cls.__name__]
     for name, existing in list(virtual_device_classes.items()):
         if existing.__name__ == cls.__name__ or existing is cls:
-            print(f"[DEBUG] Unregistering leftover {name}")
             del virtual_device_classes[name]
 
 

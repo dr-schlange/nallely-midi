@@ -326,12 +326,15 @@ class TrevorBus(VirtualDevice):
 
     def create_device(self, name):
         instance = self.trevor.create_device(name)
+        self._setup_created_instance(instance)
+        return self.full_state()
+
+    def _setup_created_instance(self, instance):
         instance.to_update = self
         if isinstance(instance, MidiDevice):
             instance.on_midi_message = self.send_control_value_update
         else:
             instance.exception_handlers.append(self.exception_handler)
-        return self.full_state()
 
     def exception_handler(self, device, exception, trace):
         message = f"Exception caught on {device}: {exception}"
@@ -605,7 +608,9 @@ class TrevorBus(VirtualDevice):
     {doc}
         """
         cls.__source__ = code
-        instance = cls()
+
+        instance = cls(autoconnect=True)
+        self._setup_created_instance(instance)
         self.session.meta_trevor.compile_save_new_class(instance, code)
         self.get_class_code(instance.uuid)
         return self.full_state()

@@ -217,7 +217,7 @@ class VirtualDevice(threading.Thread):
             defaultdict(list),
         )
         self.links_registry: dict[tuple[str, str], Link] = {}
-        self.input_queues = ThreadSafeDefaultDict(lambda: Queue(maxsize=2000))
+        self.input_queues = ThreadSafeDefaultDict(lambda: Queue(maxsize=200))
         self.pause_event = threading.Event()
         self.paused = False
         self.running = False
@@ -265,6 +265,8 @@ class VirtualDevice(threading.Thread):
         for param in self.__class__.all_parameters():
             if param.no_init:
                 continue
+            if param.name in self.__dict__:
+                continue  # we skip instance attribute that are already set
             setattr(self, param.name, param.get_default())
 
     def _internal_conversion_setup(self):
@@ -553,7 +555,7 @@ class VirtualDevice(threading.Thread):
                 ctx.last_values[last_value_key] = value
 
     def start(self):
-        """Start the LFO thread."""
+        """Start the device thread."""
         if self.is_alive() or self.running:
             return
         self.running = True
@@ -565,7 +567,7 @@ class VirtualDevice(threading.Thread):
         self.ready_event.wait()
 
     def stop(self, clear_queues=True):
-        """Stop the LFO thread."""
+        """Stop the device thread."""
         for link in all_links().values():
             if link.dest.device is self or link.src.device is self:
                 link.uninstall()
@@ -588,7 +590,7 @@ class VirtualDevice(threading.Thread):
             self.join()  # Wait for the thread to finish
 
     def pause(self, duration=None):
-        """Pause the LFO, optionally for a specific duration."""
+        """Pause the device, optionally for a specific duration."""
         if self.running and not self.paused:
             self.paused = True
             self.pause_event.clear()

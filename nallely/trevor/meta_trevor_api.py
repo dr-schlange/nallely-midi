@@ -115,7 +115,7 @@ class MetaTrevorAPI:
             cls = self.session.compile_device_from_cls(cls, filename=filename)
             cls.__tmp__ = None
             self.session._load_devices()
-            self.session.migrate_instances(cls)
+            self.session.migrate_instances(cls.__name__)
             # We force a reload of the stored device
         else:
             try:

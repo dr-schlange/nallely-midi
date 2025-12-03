@@ -7,6 +7,7 @@ import re
 from collections import Counter
 from inspect import getmodule
 from pathlib import Path
+from typing import Type
 
 import mido
 from dulwich import porcelain
@@ -24,7 +25,11 @@ from .core import (
     midi_device_classes,
     virtual_devices,
 )
-from .core.world import register_virtual_device_class, unregister_virtual_device_class
+from .core.world import (
+    register_virtual_device_class,
+    unregister_virtual_device_class,
+    virtual_device_classes,
+)
 from .trevor import TrevorAPI
 from .trevor.meta_trevor_api import MetaTrevorAPI
 from .utils import StateEncoder, find_class, load_modules, longest_common_substring
@@ -478,8 +483,10 @@ playground_code={infos["playground_code"]}
         globals()[device_name] = cls
         return cls
 
-    def migrate_instance(self, instance, new_cls, temporary=False, count=[0]):
+    def migrate_instance(self, instance, new_cls, temporary=False):
         if isinstance(instance, MidiDevice):
+            return
+        if instance.__class__ is new_cls:
             return
         is_vdev = isinstance(instance, VirtualDevice)
         if is_vdev:
@@ -500,9 +507,8 @@ playground_code={infos["playground_code"]}
             register_virtual_device_class(new_cls)
 
         if is_vdev:
-            instance._internal_init()
-            print(f"[META] Instance migrated, resume the instance {count[0]}")
-            count[0] += 1
+            instance.internal_setup()
+            print(f"[META] Instance migrated, resume the instance")
             instance.resume()
         elif issubclass(new_cls, VirtualDevice):
             print("[META] Instance migrated, start the instance")
@@ -510,7 +516,9 @@ playground_code={infos["playground_code"]}
             instance.__init__()
             instance.start()
 
-    def migrate_instances(self, new_cls, device_cls: str | None = None):
+    def migrate_instances(self, new_cls: Type | str, device_cls: str | None = None):
+        if isinstance(new_cls, str):
+            new_cls = virtual_device_classes[new_cls]
         device_cls = device_cls if device_cls else new_cls.__name__
         for device in all_devices():
             if device.__class__.__name__ == device_cls:
