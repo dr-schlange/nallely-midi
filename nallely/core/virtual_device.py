@@ -206,10 +206,7 @@ class VirtualDevice(threading.Thread):
         virtual_devices.append(self)
         object.__setattr__(self, "device", self)  # to be polymorphic with Int
         object.__setattr__(self, "__virtual__", self)  # to have a fake section
-        if disable_output:
-            self.__class__.output_cv = VirtualParameter(
-                name="output", range=(0, 127), hidden=True
-            )
+        self._internal_default_output_setup(disable_output)
         self.links: tuple[
             defaultdict[str, list[Link]], defaultdict[str, list[Link]]
         ] = (
@@ -279,6 +276,12 @@ class VirtualDevice(threading.Thread):
                 diff0_cv_property(self, parameter)
             elif parameter.conversion_policy == "round":
                 round_cv_property(self, parameter)
+
+    def _internal_default_output_setup(self, disable_output):
+        if disable_output:
+            self.__class__.output_cv = VirtualParameter(
+                name="output", range=(0, 127), hidden=True
+            )
 
     def setup(self) -> ThreadContext:
         return ThreadContext()

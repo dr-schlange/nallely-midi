@@ -513,7 +513,7 @@ playground_code={infos["playground_code"]}
 
         if is_vdev:
             instance.internal_setup()
-            instance.__post_init__()
+            instance._internal_default_output_setup(instance.__post_init__())
             print(f"[META] Instance migrated, resume the instance")
             instance.resume()
         elif issubclass(new_cls, VirtualDevice):
