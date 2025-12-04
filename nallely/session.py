@@ -491,8 +491,13 @@ playground_code={infos["playground_code"]}
         is_vdev = isinstance(instance, VirtualDevice)
         if is_vdev:
             instance.pause()
+
         old_cls = instance.__class__
         instance.__class__ = new_cls
+
+        # We adapt the numbering of the instances
+        old_cls._devices_count[old_cls.__name__] -= 1
+        new_cls._devices_count[new_cls.__name__] += 1
         try:
             if not temporary:
                 print(f"[COMPILE] Unregister {old_cls}")
@@ -508,6 +513,7 @@ playground_code={infos["playground_code"]}
 
         if is_vdev:
             instance.internal_setup()
+            instance.__post_init__()
             print(f"[META] Instance migrated, resume the instance")
             instance.resume()
         elif issubclass(new_cls, VirtualDevice):
