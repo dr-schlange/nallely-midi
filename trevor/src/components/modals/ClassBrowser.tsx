@@ -1,6 +1,7 @@
 /** biome-ignore-all lint/a11y/useKeyWithClickEvents: <explanation> */
 /** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import CodeMirror from "@uiw/react-codemirror";
 import { python } from "@codemirror/lang-python";
 import { EditorView, keymap } from "@codemirror/view";
@@ -227,10 +228,35 @@ function templateCompletions(context) {
 			type: "constant",
 			// Add a command that moves to next field after applying completion
 			apply: (view, completion, from, to) => {
+				const snippetData = view.state.field(activeSnippetField, false);
+				if (!snippetData) return;
+
+				const currentIndex = snippetData.currentIndex;
+				const lengthDiff = item.length - (to - from);
+
+				// Apply the completion and update slot positions
 				view.dispatch({
 					changes: { from, to, insert: item },
 					selection: { anchor: from + item.length },
+					effects: activeSnippetEffect.of({
+						...snippetData,
+						slots: snippetData.slots.map((s, i) => {
+							if (i === currentIndex) {
+								// Update current slot to the new text range
+								return { ...s, from: from, to: from + item.length };
+							} else if (i > currentIndex) {
+								// Shift subsequent slots by the length difference
+								return {
+									...s,
+									from: s.from + lengthDiff,
+									to: s.to + lengthDiff,
+								};
+							}
+							return s;
+						}),
+					}),
 				});
+
 				// Move to next field after a short delay
 				setTimeout(() => {
 					if (hasActiveSnippet(view.state)) {
@@ -474,8 +500,8 @@ mod-?:     displays this entry
 		spellcheck: "false",
 	});
 
-	return (
-		<div className="patching-modal" style={{ zIndex: 21 }}>
+	const modalContent = (
+		<div className="patching-modal">
 			<div className="modal-header playground">
 				<HeaderButton
 					text="Close"
@@ -532,6 +558,10 @@ mod-?:     displays this entry
 						event.stopPropagation();
 						event.preventDefault();
 					}}
+					onTouchStart={(e) => e.stopPropagation()}
+					onTouchMove={(e) => e.stopPropagation()}
+					onTouchEnd={(e) => e.stopPropagation()}
+					onContextMenu={(e) => e.preventDefault()}
 				>
 					<CodeMirror
 						ref={(view) => {
@@ -647,4 +677,6 @@ mod-?:     displays this entry
 			</div>
 		</div>
 	);
+
+	return createPortal(modalContent, document.body);
 }
