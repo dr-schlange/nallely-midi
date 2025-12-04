@@ -505,7 +505,7 @@ playground_code={infos["playground_code"]}
     <description>
 
     inputs:
-    # * %name [%range] init=%init %conv <%edge>: %doc
+    # * %name [%range] init=%default %conv <%edge>: %doc
     # * %name [%range] %conv <%edge>: %doc
 
     outputs:
