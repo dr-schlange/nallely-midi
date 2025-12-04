@@ -505,13 +505,14 @@ playground_code={infos["playground_code"]}
     <description>
 
     inputs:
+    # * %name [%range] init=%init %conv <%edge>: %doc
     # * %name [%range] %conv <%edge>: %doc
 
     outputs:
     # * %name [%range]: %doc
 
-    type: %type  # <ondemand | continuous>
-    category: %category  # <category>
+    type: <ondemand | continuous>
+    category: <category>
     # meta: disable default output
     \"\"\"
     """

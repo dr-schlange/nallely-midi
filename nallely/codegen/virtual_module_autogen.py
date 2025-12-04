@@ -397,7 +397,7 @@ def parsedoc(doc: str | None):
         if line.startswith("inputs:"):
             while cat := next(doc_iter, None):
                 cat = cat.strip()
-                if not cat.startswith("* "):
+                if not cat:
                     break
                 code = cat.rsplit(":", 1)
                 input_specs.append(code)
@@ -405,6 +405,8 @@ def parsedoc(doc: str | None):
         if line and line.startswith("outputs:"):
             while cat := next(doc_iter, None):
                 cat = cat.strip()
+                if not cat:
+                    break
                 if cat.startswith("* "):
                     code = cat.rsplit(":", 1)
                     output_specs.append(code)
