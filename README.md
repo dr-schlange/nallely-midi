@@ -45,6 +45,13 @@ Features:
 * LFOs composition with mathematical expressions,
 * random preset generator for MIDI devices and virtual devices,
 * full random patch generator (basic at the moment) with auto-generative capacity as virtual device (you can control it from MIDI devices or other virtual devices),
+* create Python devices directly from the web UI:
+  * while the system runs and plays: modify, create, debug using pdb/ipdb, or whatever python debugger you have installed on your machine,
+  * Smalltalk/lisp-like hot-patch: instances are not recreated, they are migrated to a new class,
+  * isolated hot-patch you can patch only a single instance of a class without disturbing the others,
+  * full git-based versionning for each individual device,
+  * debug a single instance of a device class without impacting the others,
+  * exception handler mechanism: if a modification fails, only the impacted instances is stopped, you can then manually fix it and restart it.
 * (currently disabled) _bind/unbind any Python function to any control/pad/key of your MIDI Device_,
 
 Planned:
