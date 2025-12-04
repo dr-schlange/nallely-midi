@@ -54,27 +54,6 @@ class MetaTrevorAPI:
         setattr(device.__class__, method_name, compiled_method)
         compiled_method.__source__ = method_code
 
-    # def object_centric_compile_inject(self, device, method_name: str, method_code: str):
-    #     current_cls = device.__class__
-    #     tmp_class = getattr(current_cls, "__tmp__", None)
-    #     if tmp_class:
-    #         # print("[DEBUG] Already on tmp cls")
-    #         self.compile_inject(device, method_name, method_code)
-    #         return
-
-    #     # print("[DEBUG] Create tmp cls")
-    #     src = get_source(current_cls)
-    #     env = inspect.getmodule(current_cls)
-    #     cls = self.session.compile_device(
-    #         f"{current_cls.__name__}", src, env=env.__dict__, temporary=True
-    #     )
-    #     # print("[DEBUG] cls", cls)
-    #     cls.__tmp__ = current_cls
-    #     # print("[DEBUG] Migrate instance")
-    #     self.session.migrate_instance(device, cls, temporary=True)
-    #     # print(f"[DEBUG] Compile inject for {method_name}")
-    #     self.compile_inject(device, method_name, method_code)
-
     def object_centric_compile_inject(
         self, device, class_code: str, tmp_name: bool = True, filename=None
     ):
@@ -114,9 +93,9 @@ class MetaTrevorAPI:
             print(f"[META] Create and save new version of {cls} in {filename}")
             cls = self.session.compile_device_from_cls(cls, filename=filename)
             cls.__tmp__ = None
-            self.session._load_devices()
-            self.session.migrate_instances(cls.__name__)
             # We force a reload of the stored device
+            self.session._load_device_file(filename)
+            self.session.migrate_instances(cls.__name__)
         else:
             try:
                 current_path = inspect.getfile(current_cls)
@@ -133,22 +112,7 @@ class MetaTrevorAPI:
         current_cls = device.__class__
         if force_name and force_name != current_cls.__name__:
             current_cls.__name__ = force_name
-        device_file = self.session.devices_file
+        device_file = self.session.devices_path / f"{current_cls.__name__.lower()}.py"
         self.object_centric_compile_inject(
             device, class_code, tmp_name=False, filename=device_file
         )
-
-    # def compile_save_new_class(self, class_code: str):
-    #     import re
-
-    #     pattern = re.compile(r"class ([^(]+)")
-    #     device_name = pattern.findall(text)
-    #     cls = self.session.compile_device(
-    #         device_name, final_code, env=env.__dict__, filename=filename
-    #     )
-
-    #     current_cls = device.__class__
-    #     device_file = self.session.devices_file
-    #     self.object_centric_compile_inject(
-    #         device, class_code, tmp_name=False, filename=device_file
-    #     )

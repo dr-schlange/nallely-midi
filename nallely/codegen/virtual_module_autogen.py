@@ -192,12 +192,17 @@ def gen_class_code(
         # We copy the existing imports
         # We need a finer grain managment of imports
         classdef = None
+        # idx = -1
         for i, node in enumerate(new_class.body):
             match node:
                 case ast.ClassDef(name=cls.__name__) as clsdef:
                     classdef = clsdef
+                    # idx = i
+                    break
                 case ast.ClassDef(name=name) as clsdef if name == f"t_{cls.__name__}":
                     classdef = clsdef
+                    # idx = i
+                    break
                 case ast.Import() as imp:
                     copied_imports.append(imp)
                 case ast.ImportFrom() as imp:
@@ -205,7 +210,7 @@ def gen_class_code(
         assert (
             classdef
         ), f"No class definition for {cls.__name__} or t_{cls.__name__} found"
-        new_class.body.insert(0, classdef)
+        # new_class.body[idx] = classdef
 
         if cls_file.exists():
             file_code = ast.parse(cls_file.read_text("utf-8"))

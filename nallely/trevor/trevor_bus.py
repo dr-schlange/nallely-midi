@@ -581,37 +581,9 @@ class TrevorBus(VirtualDevice):
         return self.full_state()
 
     def create_new_vdev(self, name):
-        doc = f"""    \"\"\"
-    {name}
-
-    <description>
-
-    inputs:
-    # * NAME [RANGE] init=? CONV <EDGE>: DOC
-
-    outputs:
-    # * NAME [RANGE]: DOC
-
-    type: <ondemand | continuous>
-    category: <category>
-    # meta: disable default output
-    \"\"\"
-    """
-        cls = type(
-            name,
-            (VirtualDevice,),
-            {
-                "__doc__": doc,
-            },
+        instance = self.session.create_new_vdev(
+            name, setup_callback=self._setup_created_instance
         )
-        code = f"""class {name}(VirtualDevice):
-    {doc}
-        """
-        cls.__source__ = code
-
-        instance = cls(autoconnect=True)
-        self._setup_created_instance(instance)
-        self.session.meta_trevor.compile_save_new_class(instance, code)
         self.get_class_code(instance.uuid)
         return self.full_state()
 

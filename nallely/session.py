@@ -50,14 +50,28 @@ class Session:
         self.universe = universe
         self.code = ""
         self.devices_file = universe_path(universe) / "devices.py"
-        self._load_devices()
+        self.devices_path = universe_path(universe) / "devices"
+        self.devices_path.mkdir(parents=True, exist_ok=True)
+        self._load_all_devices()
 
     def save_code(self, code):
         self.code = code
 
-    def _load_devices(self):
-        devices_file = self.devices_file
-        return load_modules([devices_file])
+    def _load_all_devices(self):
+        return load_modules(list(self.devices_path.glob("*.py")))
+
+    def _load_device(self, device_name):
+        device_path = self.devices_path / f"{device_name}.py"
+        try:
+            return load_modules([device_path])
+        except Exception as e:
+            print(f"[META] Couldn't load {device_path}: {e}")
+
+    def _load_device_file(self, filepath):
+        try:
+            return load_modules([filepath])
+        except Exception as e:
+            print(f"[META] Couldn't load {filepath}: {e}")
 
     @staticmethod
     def to_json(obj, **kwargs):
@@ -407,7 +421,7 @@ playground_code={infos["playground_code"]}
             from .core.world import virtual_device_classes
 
             print("[COMPILE] Force reload generated code module")
-            self._load_devices()
+            self._load_device_file(filename)
             # We take the new version of the class
             cls = virtual_device_classes[cls.__name__]
             device_code = inspect.getsource(cls)
@@ -426,7 +440,8 @@ playground_code={infos["playground_code"]}
             from .core.world import virtual_device_classes
 
             print("[COMPILE] Force reload compiled generated module code")
-            self._load_devices()
+            self._load_device_file(filename)
+
             # We take the new version of the class
             new_cls = virtual_device_classes[new_cls.__name__]
             device_code = inspect.getsource(new_cls)
@@ -482,6 +497,41 @@ playground_code={infos["playground_code"]}
             ...
         globals()[device_name] = cls
         return cls
+
+    def create_new_vdev(self, name, setup_callback=None):
+        doc = f"""    \"\"\"
+    {name}
+
+    <description>
+
+    inputs:
+    # * %name [%range] %conv <%edge>: %doc
+
+    outputs:
+    # * %name [%range]: %doc
+
+    type: %type  # <ondemand | continuous>
+    category: %category  # <category>
+    # meta: disable default output
+    \"\"\"
+    """
+        cls = type(
+            name,
+            (VirtualDevice,),
+            {
+                "__doc__": doc,
+            },
+        )
+        code = f"""class {name}(VirtualDevice):
+    {doc}
+        """
+        cls.__source__ = code
+
+        instance = cls(autoconnect=True)
+        if setup_callback:
+            setup_callback(instance)
+        self.meta_trevor.compile_save_new_class(instance, code)
+        return instance
 
     def migrate_instance(self, instance, new_cls, temporary=False):
         if isinstance(instance, MidiDevice):
