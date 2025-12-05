@@ -216,7 +216,7 @@ def gen_class_code(
                     classdef = clsdef
                     # idx = i
                     break
-                case ast.Import(names=names) as imp:
+                case ast.Import() as imp:
                     copied_imports.append(imp)
                 case ast.ImportFrom(level=level) as imp if level == 0:
                     copied_imports.append(imp)
@@ -409,8 +409,10 @@ def parsedoc(doc: str | None):
         if line.startswith("inputs:"):
             while cat := next(doc_iter, None):
                 cat = cat.strip()
-                if not cat.startswith("* "):
+                if not cat:
                     break
+                if not cat.startswith("* "):
+                    continue
                 code = cat.rsplit(":", 1)
                 input_specs.append(code)
             line = cat
@@ -418,7 +420,7 @@ def parsedoc(doc: str | None):
             while cat := next(doc_iter, None):
                 cat = cat.strip()
                 if not cat:
-                    break
+                    continue
                 if cat.startswith("* "):
                     code = cat.rsplit(":", 1)
                     output_specs.append(code)
