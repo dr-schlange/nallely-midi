@@ -728,7 +728,7 @@ button.active {
 
 .modal-footer {
 	height: 20px;
-	align-items: flex-end;
+	align-items: center;
 }
 
 .modal-vdevice-selection {

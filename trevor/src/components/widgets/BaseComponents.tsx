@@ -7,13 +7,15 @@ export const Button = ({
 	tooltip = undefined,
 	variant = "small",
 	style = undefined,
+	disabled = false,
 }: {
 	activated?: boolean;
-	onClick?: () => void;
+	onClick?: (event) => void;
 	text: string;
 	tooltip: undefined | string;
 	variant?: "big" | "small";
 	style?: React.CSSProperties;
+	disabled?: boolean;
 }) => {
 	const [clickColor, setClickColor] = useState<string | undefined>(undefined);
 
@@ -38,11 +40,22 @@ export const Button = ({
 				justifyContent: "center",
 				...(style ?? {}),
 			}}
-			onMouseDown={() => setClickColor("orange")}
+			onMouseDown={(event) => {
+				event.stopPropagation();
+				event.preventDefault();
+				if (disabled) {
+					return;
+				}
+				setClickColor("orange");
+			}}
 			onMouseUp={(event) => {
 				event.stopPropagation();
+				event.preventDefault();
+				if (disabled) {
+					return;
+				}
 				setClickColor(undefined);
-				onClick?.();
+				onClick?.(event);
 			}}
 			title={tooltip}
 		>

@@ -9,6 +9,7 @@ import { useTrevorWebSocket, WsStatus } from "../websockets/websocket";
 import type { MidiDevice } from "../model";
 import { SettingsModal } from "./modals/SettingsModal";
 import { setClassCodeMode, setLogMode } from "../store/runtimeSlice";
+import { Button } from "./widgets/BaseComponents";
 
 // const truncateName = (name: string, maxLength: number) => {
 // 	return name.length > maxLength ? `${name.slice(0, maxLength)}...` : name;
@@ -263,6 +264,7 @@ const InstanceCreation = () => {
 						flexDirection: "row",
 						flexWrap: "nowrap",
 						alignItems: "center",
+						gap: "2px",
 					}}
 				>
 					<button
@@ -277,33 +279,42 @@ const InstanceCreation = () => {
 					>
 						{isExpanded ? "- MIDI IOs" : "+ MIDI IOs"}
 					</button>
-					<button
-						className={classCodeMode ? "active" : ""}
-						style={{ padding: "0px", width: "27px", height: "100%" }}
-						type="button"
-						title="class code"
+					<Button
+						activated={classCodeMode}
+						text={"C"}
+						tooltip="Class code"
+						variant="big"
 						onClick={handleClassCodeMode}
-					>
-						C
-					</button>
-					<button
-						className={logMode ? "active" : ""}
-						style={{ fontSize: "larger", padding: "0px" }}
-						type="button"
-						title="log mode"
+						style={{ border: "unset" }}
+					/>
+					<Button
+						activated={logMode}
+						text={"🔍"}
+						tooltip="Log mode"
+						variant="big"
 						onClick={handleLogMode}
-					>
-						🔍
-					</button>
-					<button
-						style={{ fontSize: "larger", padding: "0px", width: "27px" }}
-						type="button"
-						title="settings"
+						style={{ border: "unset" }}
+					/>
+					<Button
+						text={"⚙"}
+						tooltip="Settings"
+						variant="big"
 						onClick={handleSettingsClick}
-					>
-						⚙
-					</button>
-					<span
+						style={{ border: "unset" }}
+					/>
+					<Button
+						disabled
+						text={displayWebsocketStatus()}
+						tooltip={
+							(websocketStatus === WsStatus.CONNECTED &&
+								`Connected to ${connectionUrl}`) ||
+							`Not connected, trying on ${connectionUrl}`
+						}
+						variant="big"
+						onClick={handleSettingsClick}
+						style={{ border: "unset" }}
+					/>
+					{/* <span
 						title={
 							(websocketStatus === WsStatus.CONNECTED &&
 								`Connected to ${connectionUrl}`) ||
@@ -311,7 +322,7 @@ const InstanceCreation = () => {
 						}
 					>
 						{displayWebsocketStatus()}
-					</span>
+					</span> */}
 				</div>
 				{isExpanded && (
 					<>
