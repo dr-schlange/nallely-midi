@@ -82,6 +82,7 @@ class MetaTrevorAPI:
             final_code = class_code
 
         env = inspect.getmodule(current_cls)
+        print(f"[META] Compiling first version of {device_name} considering {filename}")
         cls = self.session.compile_device(
             device_name, final_code, env=env.__dict__, filename=filename
         )

@@ -155,6 +155,7 @@ def gen_class_code(
 ):
     cls_file = inspect.getsourcefile(cls)
     copied_imports = []
+    classdef = None
 
     if save_in is None:
         if cls_file is None:
@@ -178,8 +179,20 @@ def gen_class_code(
         file_code = ast.parse(cls_file.read_text("utf-8"))
     elif isinstance(save_in, Path):
         cls_file = Path(save_in)
-        # print(f"[DEBUG] File is {cls_file}")
-        # print(f"[DEBUG] Read from {read_from}")
+        module_file = inspect.getsourcefile(cls)
+        if module_file:
+            module_file = Path(module_file)
+        if module_file and cls_file != module_file:
+            module = ast.parse(
+                source=module_file.read_text("utf-8"), filename=module_file
+            )
+            for i, node in enumerate(module.body):
+                match node:
+                    case ast.Import() as imp:
+                        copied_imports.append(imp)
+                    case ast.ImportFrom(level=level) as imp if level == 0:
+                        copied_imports.append(imp)
+
         rfrom = Path(read_from) if read_from else cls_file
         new_class = ast.parse(
             source=getattr(
@@ -203,9 +216,9 @@ def gen_class_code(
                     classdef = clsdef
                     # idx = i
                     break
-                case ast.Import() as imp:
+                case ast.Import(names=names) as imp:
                     copied_imports.append(imp)
-                case ast.ImportFrom() as imp:
+                case ast.ImportFrom(level=level) as imp if level == 0:
                     copied_imports.append(imp)
         assert (
             classdef
@@ -244,6 +257,7 @@ def gen_class_code(
             cls_file = Path(cls_file)
             file_code = ast.parse(cls_file.read_text("utf-8"), filename=cls_file)
             cls_file = save_in
+            classdef = new_class.body[0]
         except AttributeError:
             print(
                 f"Class {cls} doesn't have a __source__ attribute, returning {cls} and stop codegen"
@@ -260,9 +274,7 @@ def gen_class_code(
                 if verbose:
                     print(f" * transforming {clsdef.name}")
                 cls_node = (
-                    new_class.body[0]
-                    if save_in is not None and new_class.body
-                    else clsdef
+                    classdef if save_in is not None and classdef is not None else clsdef
                 )
                 file_code.body[i] = generate_class_node(
                     cls_node,
@@ -277,10 +289,12 @@ def gen_class_code(
                 autogen_import = imp
             case ast.Import() as imp:
                 # We need a finer grain managment of imports
-                copied_imports.clear()
+                copied_imports.append(imp)
+                print("[DEBUG] Add AFTER import", imp)
             case ast.ImportFrom() as imp:
                 # We need a finer grain managment of imports
-                copied_imports.clear()
+                copied_imports.append(imp)
+                print("[DEBUG] Add AFTER import from", imp)
 
     if autogen_import and not keep_decorator:
         file_code.body.remove(autogen_import)
@@ -397,7 +411,7 @@ def parsedoc(doc: str | None):
         if line.startswith("inputs:"):
             while cat := next(doc_iter, None):
                 cat = cat.strip()
-                if not cat:
+                if not cat.startswith("* "):
                     break
                 code = cat.rsplit(":", 1)
                 input_specs.append(code)

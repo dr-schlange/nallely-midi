@@ -414,7 +414,10 @@ playground_code={infos["playground_code"]}
         try:
             gen_class_code(cls, save_in=buffer, read_from=read_from)
         except Exception as e:
-            print(f"[DEBUG]  '{e}'", e.__class__)
+            import traceback
+
+            print(f"[CODEGEN] ERROR: '{e}'", e.__class__)
+            traceback.print_exception(type(e), e, e.__traceback__)
 
         module = getmodule(cls)
         if filename:
