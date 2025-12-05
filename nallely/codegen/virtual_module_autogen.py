@@ -290,11 +290,9 @@ def gen_class_code(
             case ast.Import() as imp:
                 # We need a finer grain managment of imports
                 copied_imports.append(imp)
-                print("[DEBUG] Add AFTER import", imp)
             case ast.ImportFrom() as imp:
                 # We need a finer grain managment of imports
                 copied_imports.append(imp)
-                print("[DEBUG] Add AFTER import from", imp)
 
     if autogen_import and not keep_decorator:
         file_code.body.remove(autogen_import)
