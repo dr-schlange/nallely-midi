@@ -261,6 +261,18 @@ class Session:
     def _which_universe(self, universe: str | None = None) -> str:
         return universe if universe else DEFAULT_UNIVERSE
 
+    def _get_repository(self, universe: str | None = None) -> Repo:
+        location = (Path.cwd() / self._which_universe(universe)).resolve()
+        if not location.exists():
+            print(
+                f"[GIT-STORE] Creating {location.name} store at {location.absolute()}"
+            )
+            repo = porcelain.init(location)
+        else:
+            print(f"[GIT-STORE] Opening existing store: {location.name}")
+            repo = Repo(location)
+        return repo
+
     def save_address(
         self, address: str, universe=None, message=None, save_defaultvalues=False
     ) -> Path:
@@ -280,15 +292,7 @@ class Session:
             address = rand_address
         address = address.upper()
 
-        location = (Path.cwd() / self._which_universe(universe)).resolve()
-        if not location.exists():
-            print(
-                f"[GIT-STORE] Creating {location.name} store at {location.absolute()}"
-            )
-            repo = porcelain.init(location)
-        else:
-            print(f"[GIT-STORE] Opening existing store: {location.name}")
-            repo = Repo(location)
+        repo = self._get_repository(universe=universe)
 
         address_file = address2path(universe, address)
         address_file.parent.mkdir(exist_ok=True, parents=True)
@@ -449,6 +453,20 @@ playground_code={infos["playground_code"]}
             new_cls = virtual_device_classes[new_cls.__name__]
             device_code = inspect.getsource(new_cls)
             module = getmodule(new_cls)
+
+            # We create a commit for the new version of the class
+            repo = self._get_repository(universe=self.universe)
+            porcelain.add(repo, filename)
+            session_id = hex(id(self))[2:].upper()
+            message = f"""Enhanced device class {new_cls.__name__} in session 0x{session_id}
+
+SESSION_ID=0x{session_id}
+original_file={read_from}
+"""
+            porcelain.commit(repo, author=b"Nallely MIDI <drcoatl@proton.me>", committer=b"dr-schlange <drcoatl@proton.me>", message=message)  # type: ignore
+            print(f"[GIT-STORE] Commit {filename=} for device class {new_cls.__name__}")
+            repo.close()
+
         return new_cls
 
     def compile_device(
