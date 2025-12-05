@@ -553,7 +553,7 @@ mod-?:     displays this entry
 				style={{ display: "flex", flexDirection: "column", height: "100%" }}
 			>
 				<div
-					style={{ flex: 0.6, overflowY: "auto" }}
+					style={{ height: "100%", overflowY: "auto" }}
 					onClick={(event) => {
 						event.stopPropagation();
 						event.preventDefault();
@@ -658,7 +658,7 @@ mod-?:     displays this entry
 				</div>
 				<div
 					style={{
-						flex: 0.4,
+						height: "25%",
 						overflowY: "auto",
 						padding: "10px",
 						background: "black",

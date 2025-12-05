@@ -726,6 +726,10 @@ button.active {
 	padding: 0 10px;
 }
 
+.modal-footer {
+	height: 20px;
+}
+
 .modal-vdevice-selection {
 	position: fixed;
 	width: 80%;
