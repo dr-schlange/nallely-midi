@@ -15,13 +15,14 @@ import { Prec, StateEffect, StateField } from "@codemirror/state";
 import { type Diagnostic, linter } from "@codemirror/lint";
 import type { MidiDevice, VirtualDevice } from "../../model";
 import { Terminal } from "../Terminal";
-import { HeaderButton } from "../widgets/BaseComponents";
+import { Button, HeaderButton } from "../widgets/BaseComponents";
 import {
 	autocompletion,
 	startCompletion,
 	acceptCompletion,
 	completionStatus,
 } from "@codemirror/autocomplete";
+import { Scope } from "../widgets/Oscilloscope";
 
 const ERROR_DELAY = 3000;
 
@@ -385,6 +386,8 @@ export function ClassBrowser({ device, onClose }: ClassBrowserProps) {
 	const trevorSocket = useTrevorWebSocket();
 	const classCode = useTrevorSelector((state) => state.runTime.classCode);
 	// const method = useRef<string>(undefined);
+	const [mode, setMode] = useState<"scope" | "terminal">("terminal");
+	const [value, setValue] = useState(undefined);
 
 	useEffect(() => {
 		if (!classCode?.classCode) {
@@ -656,24 +659,54 @@ mod-?:     displays this entry
 						]}
 					/>
 				</div>
-				<div
-					style={{
-						height: "25%",
-						overflowY: "auto",
-						padding: "10px",
-						background: "black",
-					}}
-				>
-					<Terminal
-						stdout={stdout}
-						stdin={(id, text) => {
-							trevorSocket.sendStdin(id, text);
+				{
+					<div
+						style={{
+							height: "25%",
+							overflowY: "auto",
+							padding: "10px",
+							background: "black",
 						}}
-					/>
-				</div>
+					>
+						<Terminal
+							stdout={stdout}
+							stdin={(id, text) => {
+								trevorSocket.sendStdin(id, text);
+							}}
+						/>
+					</div>
+				}
 			</div>
-			<div className="modal-footer">
-				<p>mod-?: displays shortcuts</p>
+			<div className="modal-footer" style={{ gap: "5px" }}>
+				{mode === "terminal" ? (
+					<p>mod-?: displays shortcuts</p>
+				) : (
+					<p style={{ width: "100%" }}>{value}</p>
+				)}
+				{mode === "scope" && (
+					<div
+						style={{ position: "relative", bottom: "60px", zIndex: "99999" }}
+					>
+						<Scope
+							id="dbg"
+							num={419}
+							onClose={() => setMode("terminal")}
+							onMessage={(val) => setValue(val)}
+						/>
+					</div>
+				)}
+				<Button
+					text={"S"}
+					tooltip={mode === "terminal" ? "Show scope" : "Hide scope"}
+					activated={mode === "scope"}
+					onClick={() => {
+						if (mode === "terminal") {
+							setMode("scope");
+						} else {
+							setMode("terminal");
+						}
+					}}
+				/>
 			</div>
 		</div>
 	);

@@ -76,7 +76,17 @@ const buildOptions = (
 	return opts;
 };
 
-export const Scope = ({ id, onClose, num }: WidgetProps) => {
+type ScopeProps = WidgetProps & {
+	onMessage?: (value: number) => void;
+};
+
+export const Scope = ({
+	id,
+	onClose,
+	num,
+	style,
+	onMessage = undefined,
+}: ScopeProps) => {
 	const [bufferSize, setBufferSize] = useState<number>(BUFFER_SIZE);
 	const bufferSizeRef = useRef<number>(BUFFER_SIZE);
 	const bufferRef = useRef<{ x: number[]; y: number[] }>({
@@ -239,6 +249,7 @@ export const Scope = ({ id, onClose, num }: WidgetProps) => {
 				}
 
 				const newValue = Number.parseFloat(message.value);
+				onMessage?.(message.value);
 				if (Number.isNaN(newValue)) return;
 
 				setLabel(message.on);
@@ -324,7 +335,7 @@ export const Scope = ({ id, onClose, num }: WidgetProps) => {
 	}, [id]);
 
 	return (
-		<div className="scope">
+		<div className="scope" style={style ?? {}}>
 			<div
 				style={{
 					position: "absolute",

@@ -26,7 +26,9 @@ export const Button = ({
 				backgroundColor:
 					clickColor ||
 					(activated ? "yellow" : (style?.backgroundColor ?? "#e0e0e0")),
+				minWidth: variant === "small" ? "12px" : "23px",
 				width: variant === "small" ? "12px" : "23px",
+				minHeight: variant === "small" ? "18px" : "23px",
 				height: variant === "small" ? "18px" : "23px",
 				textAlign: "center",
 				cursor: "pointer",
@@ -52,6 +54,7 @@ export const Button = ({
 export interface WidgetProps {
 	id: string;
 	num: number;
+	style?: React.CSSProperties;
 	onClose?: (id: string) => void;
 }
 
