@@ -998,39 +998,41 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 								</div>
 							</div>
 							<div className="bottom-right-panel">
-								<h3>Connections</h3>
-								<div
-									className="connection-setup"
-									style={{
-										height: "150px",
-										position: "relative",
-										overflowY: "scroll",
-									}}
-								>
-									<ul className="connections-list">
-										{allConnections.map((connection) => {
-											return (
-												<li
-													key={buildConnectionName(connection)}
-													onClick={() => handleConnectionClick(connection)}
-													onKeyDown={(e) => {
-														if (e.key === "Enter" || e.key === " ") {
-															handleConnectionClick(connection);
-														}
-													}}
-													onKeyUp={(e) => {
-														if (e.key === "Enter" || e.key === " ") {
-															e.preventDefault();
-														}
-													}}
-													className={`connection-item ${selectedConnection === connectionId(connection) ? "selected" : ""}`}
-												>
-													{buildConnectionName(connection)}
-												</li>
-											);
-										})}
-									</ul>
-								</div>
+								<details>
+									<summary>Connetions</summary>
+									<div
+										className="connection-setup"
+										style={{
+											height: "150px",
+											position: "relative",
+											overflowY: "scroll",
+										}}
+									>
+										<ul className="connections-list">
+											{allConnections.map((connection) => {
+												return (
+													<li
+														key={buildConnectionName(connection)}
+														onClick={() => handleConnectionClick(connection)}
+														onKeyDown={(e) => {
+															if (e.key === "Enter" || e.key === " ") {
+																handleConnectionClick(connection);
+															}
+														}}
+														onKeyUp={(e) => {
+															if (e.key === "Enter" || e.key === " ") {
+																e.preventDefault();
+															}
+														}}
+														className={`connection-item ${selectedConnection === connectionId(connection) ? "selected" : ""}`}
+													>
+														{buildConnectionName(connection)}
+													</li>
+												);
+											})}
+										</ul>
+									</div>
+								</details>
 								{allConnections?.length > 0 && (
 									<button
 										type="button"
@@ -1047,6 +1049,15 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 						</div>
 						<div className="device-patching-top-panel">
 							<button
+								type="button"
+								className={"ugly-button"}
+								onClick={() => setIsMemoryOpen?.(true)}
+							>
+								Manage Addresses
+							</button>
+						</div>
+						<div className="device-patching-top-panel">
+							<button
 								className={"ugly-button"}
 								type="button"
 								onClick={savePatch}
@@ -1058,9 +1069,9 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 							<button
 								type="button"
 								className={"ugly-button"}
-								onClick={() => setIsMemoryOpen?.(true)}
+								onClick={openPlayground}
 							>
-								Manage Addresses
+								Playground
 							</button>
 						</div>
 						<div className="device-patching-top-panel">
@@ -1070,24 +1081,6 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 								onClick={resetAll}
 							>
 								Reset All
-							</button>
-						</div>
-						{/* <div className="device-patching-top-panel">
-							<button
-								type="button"
-								className={"ugly-button"}
-								onClick={() => trevorSocket?.pullFullState()}
-							>
-								Full State
-							</button>
-						</div> */}
-						<div className="device-patching-top-panel">
-							<button
-								type="button"
-								className={"ugly-button"}
-								onClick={openPlayground}
-							>
-								Playground
 							</button>
 						</div>
 						<div className="device-patching-top-panel">

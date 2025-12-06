@@ -26,7 +26,7 @@ export const AboutModal = ({ onClose }: AboutModalProps) => {
 					style={{ width: "194px", height: "183px", margin: "10px" }}
 					onClick={changeTrevor}
 				/>
-				<p style={{ textAlign: "center" }}>Trevor 0.0.1</p>
+				<p style={{ textAlign: "center" }}>Trevor 0.2.0</p>
 			</div>
 		</div>
 	);
