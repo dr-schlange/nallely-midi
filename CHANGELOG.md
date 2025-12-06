@@ -53,6 +53,7 @@
 * Add scaler range with drop down for target parameter with accepted values
 * Add new UI for MIDI ports I/O
 * Add link velocity support
+* Add back menu for MIDI devices in the right bar
 
 ### Bug fixes
 
