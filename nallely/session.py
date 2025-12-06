@@ -48,6 +48,7 @@ class Session:
             else MetaTrevorAPI(self)
         )
         self.universe = universe
+        self._get_repository(universe)
         self.code = ""
         self.devices_file = universe_path(universe) / "devices.py"
         self.devices_path = universe_path(universe) / "devices"
