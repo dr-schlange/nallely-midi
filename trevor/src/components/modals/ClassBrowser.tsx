@@ -1,6 +1,6 @@
 /** biome-ignore-all lint/a11y/useKeyWithClickEvents: <explanation> */
 /** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import CodeMirror from "@uiw/react-codemirror";
 import { python } from "@codemirror/lang-python";
@@ -388,6 +388,16 @@ export function ClassBrowser({ device, onClose }: ClassBrowserProps) {
 	// const method = useRef<string>(undefined);
 	const [mode, setMode] = useState<"scope" | "terminal">("terminal");
 	const [value, setValue] = useState(undefined);
+	const devices = useTrevorSelector((state) => state.nallely.virtual_devices);
+	const connections = useTrevorSelector((state) => state.nallely.connections);
+	const debuggedPorts = useMemo(() => {
+		return connections.filter(
+			(c) => c.src.device === device.id || c.dest.repr === "dbg",
+		);
+	}, [connections, device.id]);
+	const debuggedPortNames = useMemo(() => {
+		return debuggedPorts.map((c) => c.src.parameter.name);
+	}, [debuggedPorts]);
 
 	useEffect(() => {
 		if (!classCode?.classCode) {
@@ -695,18 +705,64 @@ mod-?:     displays this entry
 						/>
 					</div>
 				)}
-				<Button
-					text={"S"}
-					tooltip={mode === "terminal" ? "Show scope" : "Hide scope"}
-					activated={mode === "scope"}
-					onClick={() => {
-						if (mode === "terminal") {
-							setMode("scope");
-						} else {
-							setMode("terminal");
-						}
-					}}
-				/>
+				<div style={{ display: "flex", gap: "4px", alignItems: "center" }}>
+					<select
+						style={{
+							border: "unset",
+							boxShadow: "none",
+							height: "18px",
+							width: "18px",
+						}}
+						value={""}
+						title="Select port to debug"
+						onChange={(e) => {
+							const val = e.target.value;
+							// fromDevice: MidiDevice | VirtualDevice,
+							// 		fromParameter: MidiParameter | VirtualParameter | PadsOrKeys | PadOrKey,
+							// 		toDevice: MidiDevice | VirtualDevice,
+							// 		toParameter: MidiParameter | VirtualParameter | PadsOrKeys | PadOrKey,
+							// 		unbind: boolean,
+							const fromParameter = (
+								device as VirtualDevice
+							).meta.parameters.find((p) => {
+								const prefix = debuggedPortNames.includes(p.name) ? "*" : "";
+								return `${prefix}${p.cv_name}` === val;
+							});
+							const unbind = val.startsWith("*");
+							const toDevice = devices.find((d) => d.repr === "dbg");
+							const toParameter = toDevice.meta.parameters[0];
+							trevorSocket?.associateParameters(
+								device,
+								fromParameter,
+								toDevice,
+								toParameter,
+								unbind,
+							);
+						}}
+					>
+						<option value={""}>-</option>
+						{(device as VirtualDevice).meta.parameters.map((p) => (
+							<option
+								key={`${p.cv_name}`}
+								value={`${debuggedPortNames.includes(p.name) ? "*" : ""}${p.cv_name}`}
+							>
+								{`${debuggedPortNames.includes(p.name) ? "*" : " "} ${p.cv_name}`}
+							</option>
+						))}
+					</select>
+					<Button
+						text={"S"}
+						tooltip={mode === "terminal" ? "Show scope" : "Hide scope"}
+						activated={mode === "scope"}
+						onClick={() => {
+							if (mode === "terminal") {
+								setMode("scope");
+							} else {
+								setMode("terminal");
+							}
+						}}
+					/>
+				</div>
 			</div>
 		</div>
 	);
