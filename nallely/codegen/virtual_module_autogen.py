@@ -358,18 +358,18 @@ def parsespec(entries, are_outputs=False):
         if not m:
             continue
         cv_name = m.group("cv_name")
-        lower, upper, *rest = m.group("cv_range").split(",")
+        lower, upper, *rest = [s.strip() for s in m.group("cv_range").split(",")]
         name = cv_name.replace("_cv", "")
         default = m.group("default")
         try:
             default = float(default)
         except Exception:
-            ...
+            pass
+        edges = m.group("edges")
+        if edges:
+            edges = [m.strip() for m in edges.split(",")]
         try:
             policy = m.group("policy")
-            edges = m.group("edges")
-            if edges:
-                edges = [m.strip() for m in edges.split(",")]
             lower = float(lower)
             upper = float(upper)
             range = (lower, upper)
@@ -391,7 +391,8 @@ def parsespec(entries, are_outputs=False):
                     cv_name=cv_name,
                     name=name,
                     accepted_values=accepted_values,
-                    edges=["any"],
+                    edges=edges if edges else ["any"],
+                    default=default,
                 )
             )
     return nodes
@@ -434,4 +435,6 @@ def parsedoc(doc: str | None):
             f'\ndef __post_init__(self, **kwargs):\n    return {{\n        "disable_output": True\n    }}\n',
             mode="exec",
         ).body[0]
+    else:
+        meta = None
     return (inputs, outputs, meta)

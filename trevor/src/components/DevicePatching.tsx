@@ -1,4 +1,5 @@
-import { useEffect, useState, useRef, type ReactElement } from "react";
+/** biome-ignore-all lint/a11y/noLabelWithoutControl: <explanation> */
+import { useEffect, useState, useRef, type ReactElement, useMemo } from "react";
 import { RackRow } from "./RackRow";
 import { selectChannels, useTrevorDispatch, useTrevorSelector } from "../store";
 
@@ -32,6 +33,7 @@ import { RackRowWidgets, type RackRowWidgetRef } from "./RackRowWidgets";
 import { type RackRowCCRef, RackRowCCs } from "./RackRowCC";
 import { MemoryModal } from "./modals/MemoryModal";
 import { setCurrentAddress } from "../store/runtimeSlice";
+import { Button } from "./widgets/BaseComponents";
 
 const VERTICAL = "⇄";
 const HORIZONTAL = "⇅";
@@ -61,6 +63,10 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 	const midi_devices = useTrevorSelector((state) => state.nallely.midi_devices);
 	const virtual_devices = useTrevorSelector(
 		(state) => state.nallely.virtual_devices,
+	);
+	const all_devices = useMemo(
+		() => [...midi_devices, ...virtual_devices],
+		[midi_devices, virtual_devices],
 	);
 	// const device_classes = useTrevorSelector((state) => state.nallely.classes);
 	const trevorSocket = useTrevorWebSocket();
@@ -267,7 +273,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 		if (isVirtualDevice(device)) {
 			setInformation(
 				<>
-					<p
+					{/* <p
 						style={{
 							marginLeft: "5px",
 							marginTop: "5px",
@@ -276,7 +282,8 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 						}}
 					>
 						{device.repr}
-					</p>
+					</p> */}
+
 					<button
 						type="button"
 						className={"ugly-button"}
@@ -351,7 +358,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 			}
 			setInformation(
 				<>
-					<p style={{ marginLeft: "5px" }}>
+					<p style={{ marginLeft: "5px", fontSize: "18px" }}>
 						{device.repr} {section?.name}
 					</p>
 					{section?.parameters.map((param) => {
@@ -376,6 +383,16 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 							</label>
 						);
 					})}
+					<button
+						style={{
+							fontSize: "16px",
+						}}
+						type="button"
+						className={"ugly-button"}
+						onClick={() => handleMidiDeviceClick(device)}
+					>
+						back to device view
+					</button>
 				</>,
 			);
 			return;
@@ -383,7 +400,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 		// Device information on the right panel
 		setInformation(
 			<>
-				<p style={{ marginLeft: "5px" }}>{device.repr}</p>
+				<p style={{ marginLeft: "5px", fontSize: "18px" }}>{device.repr}</p>
 				<button
 					type="button"
 					className={"ugly-button"}
@@ -426,6 +443,9 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 				<hr />
 				{device.meta.sections?.map((section) => (
 					<button
+						style={{
+							fontSize: "16px",
+						}}
 						key={section.name}
 						type="button"
 						className={"ugly-button"}
@@ -926,14 +946,41 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 				</button>
 				{(isExpanded && (
 					<div className="device-patching-side-section">
-						<div className="device-patching-top-panel">
-							<button
-								type="button"
-								className={`ugly-button ${associateMode ? "active" : ""}`}
-								onClick={toggleAssociateMode}
+						{/* <div className="device-patching-top-panel"> */}
+						<div style={{ display: "flex", gap: "4px", alignItems: "center" }}>
+							<select
+								style={{ width: "100%", fontSize: "18px" }}
+								value={selection?.[0]?.device.id ?? ""}
+								title="Select device to associate"
+								onChange={(e) => {
+									const val = e.target.value;
+									const device = all_devices.filter(
+										(d) => d.id.toString() === val,
+									)?.[0];
+									if (!device) {
+										return;
+									}
+									if (isVirtualDevice(device)) {
+										handleParameterClick(device);
+									} else {
+										handleMidiDeviceClick(device);
+									}
+								}}
 							>
-								Associate
-							</button>
+								<option value={""}>--</option>
+								{all_devices.map((cls) => (
+									<option key={`${cls.id}`} value={cls.id}>
+										{cls.repr}
+									</option>
+								))}
+							</select>
+							<Button
+								text={"⟳"}
+								tooltip="Pull full state"
+								variant={"big"}
+								style={{ border: "unset" }}
+								onClick={() => trevorSocket?.pullFullState()}
+							/>
 						</div>
 						<div>
 							<div className="device-patching-middle-panel">
@@ -1025,7 +1072,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 								Reset All
 							</button>
 						</div>
-						<div className="device-patching-top-panel">
+						{/* <div className="device-patching-top-panel">
 							<button
 								type="button"
 								className={"ugly-button"}
@@ -1033,7 +1080,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 							>
 								Full State
 							</button>
-						</div>
+						</div> */}
 						<div className="device-patching-top-panel">
 							<button
 								type="button"
