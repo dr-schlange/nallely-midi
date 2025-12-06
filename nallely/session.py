@@ -48,7 +48,7 @@ class Session:
             else MetaTrevorAPI(self)
         )
         self.universe = universe
-        self._get_repository(universe)
+        self._init_memory_repo(universe)
         self.code = ""
         self.devices_file = universe_path(universe) / "devices.py"
         self.devices_path = universe_path(universe) / "devices"
@@ -261,6 +261,9 @@ class Session:
 
     def _which_universe(self, universe: str | None = None) -> str:
         return universe if universe else DEFAULT_UNIVERSE
+
+    def _init_memory_repo(self, universe: str | None = None):
+        self._get_repository(universe=universe)
 
     def _get_repository(self, universe: str | None = None) -> Repo:
         location = (Path.cwd() / self._which_universe(universe)).resolve()
