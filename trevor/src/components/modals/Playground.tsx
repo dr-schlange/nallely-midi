@@ -14,7 +14,7 @@ import { useTrevorSelector } from "../../store";
 import { Prec } from "@codemirror/state";
 import { Terminal } from "../Terminal";
 
-const AUTO_SAVE_DELAY = 2000;
+// const AUTO_SAVE_DELAY = 2000;
 const ERROR_DELAY = 3000;
 
 interface PlaygroundProps {
@@ -22,15 +22,15 @@ interface PlaygroundProps {
 	onClose: () => void;
 }
 
-function debounce(func, delay) {
-	let timer;
-	return (...args) => {
-		clearTimeout(timer);
-		timer = setTimeout(() => {
-			func(...args);
-		}, delay);
-	};
-}
+// function debounce(func, delay) {
+// 	let timer;
+// 	return (...args) => {
+// 		clearTimeout(timer);
+// 		timer = setTimeout(() => {
+// 			func(...args);
+// 		}, delay);
+// 	};
+// }
 
 function extractLastExpression(text: string) {
 	const match = text.match(/([a-zA-Z0-9_()\[\]\.]+)$/);
@@ -242,14 +242,7 @@ mod-?:     displays this entry
 		const fullText =
 			state.sliceDoc(0, insertPos) + insertText + state.sliceDoc(insertPos);
 		setCode(fullText);
-		saveCodeDebounced();
 	}
-
-	const saveCodeDebounced = () => {
-		return debounce((newCode: string) => {
-			trevorSocket?.saveCode(newCode);
-		}, AUTO_SAVE_DELAY);
-	};
 
 	const disableMobileAutocomplete = EditorView.contentAttributes.of({
 		autocomplete: "off",
@@ -367,7 +360,6 @@ mod-?:     displays this entry
 						value={code}
 						onChange={(value) => {
 							setCode(value);
-							saveCodeDebounced();
 						}}
 						maxHeight="100%"
 						height="100%"

@@ -717,11 +717,6 @@ mod-?:     displays this entry
 						title="Select port to debug"
 						onChange={(e) => {
 							const val = e.target.value;
-							// fromDevice: MidiDevice | VirtualDevice,
-							// 		fromParameter: MidiParameter | VirtualParameter | PadsOrKeys | PadOrKey,
-							// 		toDevice: MidiDevice | VirtualDevice,
-							// 		toParameter: MidiParameter | VirtualParameter | PadsOrKeys | PadOrKey,
-							// 		unbind: boolean,
 							const fromParameter = (
 								device as VirtualDevice
 							).meta.parameters.find((p) => {
