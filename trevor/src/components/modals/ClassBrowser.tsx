@@ -32,31 +32,6 @@ interface ClassBrowserProps {
 	device: VirtualDevice | MidiDevice;
 }
 
-// function extractLastExpression(text: string) {
-// 	const match = text.match(/([a-zA-Z0-9_()\[\]\.]+)$/);
-// 	return match ? match[1] : "";
-// }
-
-// async function askCompletion(context: CompletionContext) {
-// 	const websocket = useTrevorWebSocket();
-// 	const word = context.matchBefore(/\w+(\.\w+)?/);
-
-// 	if (!word && !context.explicit) return null;
-
-// 	const fullText = context.state.sliceDoc(0, context.pos);
-// 	const lastExpression = extractLastExpression(fullText);
-
-// 	if (!websocket) return null;
-
-// 	const options = await websocket.requestCompletion(lastExpression);
-
-// 	return {
-// 		from: word ? word.from : context.pos,
-// 		options,
-// 		validFor: /^\w*$/,
-// 	};
-// }
-
 const completionRegistry = {
 	name: ["in_cv", "in0_cv", "out0_cv", "a_cv"],
 	range: ["0, 1", "0, 127", "op1, op2", "%min, %max"],
@@ -66,12 +41,12 @@ const completionRegistry = {
 	doc: ["Parameter description"],
 	min: ["0", "1"],
 	max: ["127", "255"],
-	line: ["%stmts", "%expr"],
+	line: ["%stmts"],
 	stmt: ["%ifblock", "%expr"],
-	ifblock: ["if %cond:\n    %stmts\nelse:    %stmts\n"],
-	stmts: ["%stmt\n%stmts", "λ"],
+	ifblock: ["if %cond:\n    %stmts\nelse:\n    %stmts\n"],
+	stmts: ["%stmt", "%stmt\n%stmts", "λ"],
 	inlineif: ["%then_ if %cond else %else_"],
-	cond: ["true", "false", "in_cv > %value", "in_cv == %value"],
+	cond: ["true", "false", "in_cv > %number", "in_cv == %number"],
 	then_: ["%set"],
 	else_: ["%set"],
 	set: ["!"],
@@ -87,11 +62,92 @@ const completionRegistry = {
 	number: ["0", "1", "127", "3.14"],
 };
 
-// Check if a completion string is a single placeholder (e.g., "%expr" or "%stmts<group>")
+// Parse grammar rules from editor content between $$ markers
+// Format: rule_name: str1 | str2 | ... | strn ;
+// Adds each rule_name and its alternatives to completionRegistry
+// Processes all $$ sections in the document
+function parseGrammarRules(editorText) {
+	const lines = editorText.split('\n');
+	let inGrammarSection = false;
+	let currentRule = '';
+	
+	for (const line of lines) {
+		// Check for $$ marker
+		if (line.trim().startsWith('$$')) {
+			if (inGrammarSection) {
+				// End of grammar section - continue looking for more sections
+				inGrammarSection = false;
+				currentRule = '';
+			} else {
+				// Start of grammar section
+				inGrammarSection = true;
+			}
+			continue;
+		}
+		
+		if (!inGrammarSection) continue;		// Accumulate multi-line rules
+		currentRule += line + '\n';
+
+		// Check if we have a complete rule (ends with semicolon)
+		if (currentRule.trim().endsWith(';')) {
+			// Remove the trailing semicolon
+			const ruleContent = currentRule.slice(0, currentRule.lastIndexOf(';'));
+
+			// Parse the rule
+			const colonIndex = ruleContent.indexOf(':');
+			if (colonIndex === -1) {
+				// No colon found, skip this rule
+				currentRule = '';
+				continue;
+			}
+
+			const ruleName = ruleContent.substring(0, colonIndex).trim();
+
+			// Detect base indentation from the first line (rule name line)
+			const lines = currentRule.split('\n');
+			const firstLine = lines[0];
+			const baseIndent = firstLine.match(/^(\s*)/)?.[1] || '';
+
+			// Remove base indentation from all lines
+			const dedentedText = lines
+				.map(line => {
+					if (line.startsWith(baseIndent)) {
+						return line.substring(baseIndent.length);
+					}
+					return line;
+				})
+				.join('\n');
+
+			// Re-extract alternatives from dedented text
+			const dedentedColonIndex = dedentedText.indexOf(':');
+			const dedentedAlternatives = dedentedText.substring(dedentedColonIndex + 1);
+
+			// Remove trailing semicolon from dedented text
+			const finalAlternatives = dedentedAlternatives.substring(0, dedentedAlternatives.lastIndexOf(';'));
+
+			// Split by | and clean up each alternative
+			const options = finalAlternatives
+				.split('|')
+				.map(alt => alt.trim())
+				.filter(alt => alt.length > 0);
+
+			if (ruleName && options.length > 0) {
+				// Add to completion registry
+				completionRegistry[ruleName] = options;
+			}
+
+			// Reset for next rule
+			currentRule = '';
+		}
+	}
+}
+
+// Check if a completion string is a single placeholder (e.g., "%expr", "<expr>", or "%stmts<group>")
 function isSinglePlaceholder(str) {
 	const trimmed = str.trim();
 	// Match exactly one placeholder with nothing else
-	const match = trimmed.match(/^%([a-zA-Z_]\w*)(?:<([^>]+)>)?$/);
+	// Supports: %name, %name<group>, <name>, <name<group>>
+	const match = trimmed.match(/^(?:%|<)([a-zA-Z_]\w*)(?:<([^>]+)>)?>?$/);
 	return match !== null;
 }
 
@@ -107,7 +163,8 @@ function expandCompletion(completion, visited = new Set()) {
 	}
 
 	// Extract the group name from the placeholder
-	const match = completion.match(/^%([a-zA-Z_]\w*)(?:<([^>]+)>)?$/);
+	// Supports: %name, %name<group>, <name>, <name<group>>
+	const match = completion.match(/^(?:%|<)([a-zA-Z_]\w*)(?:<([^>]+)>)?>?$/);
 	if (!match) return [completion];
 
 	const placeholderName = match[1];
@@ -144,21 +201,32 @@ function expandCompletion(completion, visited = new Set()) {
 	return expanded;
 }
 
+// Unescape special characters (\%, \<, \>) to their literal forms
+function unescapeTemplate(str) {
+	return str.replace(/\\([%<>])/g, '$1');
+}
+
 // Parse a template string that may contain nested placeholders
-// %name<group> creates a placeholder
+// %name<group> or <name> or <name<group>> creates a placeholder
+// Use \%, \<, \> for literal characters
 // Returns both the plain text and slot information
-function parseNestedTemplate(src, parentId = "") {
+// indent: string to prepend to each line (except the first)
+function parseNestedTemplate(src, parentId = "", indent = "") {
 	const slots = [];
 	let plainText = "";
 	let currentPos = 0;
 
-	const regex = /%([a-zA-Z_]\w*)(?:<([^>]+)>)?/g;
+	// Matches: %name, %name<group>, <name>, <name<group>>
+	// But not escaped sequences like \% or \<
+	const regex = /(?<!\\)(?:%|<)([a-zA-Z_]\w*)(?:<([^>]+)>)?>?/g;
 	let match;
 	let slotIndex = 1;
 
 	while ((match = regex.exec(src)) !== null) {
-		// Add text before the placeholder
-		plainText += src.substring(currentPos, match.index);
+		// Add text before the placeholder and unescape it
+		const textBefore = src.substring(currentPos, match.index);
+		// Apply indentation to newlines in the text and unescape
+		plainText += unescapeTemplate(textBefore).replace(/\n/g, `\n${indent}`);
 
 		const name = match[1];
 		const group = match[2] || null;
@@ -176,17 +244,17 @@ function parseNestedTemplate(src, parentId = "") {
 			to: slotTo,
 		});
 
-		currentPos = regex.lastIndex;
-		slotIndex++;
+	currentPos = regex.lastIndex;
+	slotIndex++;
 	}
 
 	// Add remaining text
-	plainText += src.substring(currentPos);
+	const remainingText = src.substring(currentPos);
+	// Apply indentation to newlines in remaining text and unescape
+	plainText += unescapeTemplate(remainingText).replace(/\n/g, `\n${indent}`);
 
 	return { plainText, slots };
-}
-
-function parseTemplateLine(src) {
+}function parseTemplateLine(src) {
 	const slots = [];
 	let index = 1;
 
@@ -352,7 +420,7 @@ function templateCompletions(context) {
 		from: slot.from,
 		to: slot.to,
 		options: expandedList.map((item) => ({
-			label: item,
+			label: unescapeTemplate(item), // Show unescaped version in completion menu
 			type: "constant",
 			apply: (view, completion, from, to) => {
 				const snippetData = view.state.field(activeSnippetField, false);
@@ -388,11 +456,18 @@ function templateCompletions(context) {
 				}
 
 				// Check if item contains nested placeholders
-				const hasPlaceholders = /%([a-zA-Z_]\w*)(?:<([^>]+)>)?/.test(item);
+				// Supports: %name, %name<group>, <name>, <name<group>>
+				// But not escaped sequences like \% or \<
+				const hasPlaceholders = /(?<!\\)(?:%|<)([a-zA-Z_]\w*)(?:<([^>]+)>)?>?/.test(item);
 
 				if (hasPlaceholders) {
-					// Parse nested template
-					const parsed = parseNestedTemplate(item, currentSlot.id);
+					// Get the indentation of the current line
+					const currentLine = view.state.doc.lineAt(from);
+					const lineText = currentLine.text;
+					const indent = lineText.match(/^\s*/)?.[0] || "";
+
+					// Parse nested template with indentation
+					const parsed = parseNestedTemplate(item, currentSlot.id, indent);
 					const insertText = parsed.plainText;
 
 					// Calculate absolute positions for new slots
@@ -468,17 +543,25 @@ function templateCompletions(context) {
 						});
 					}, 50);
 				} else {
-					// Simple text replacement (no nested placeholders)
-					const lengthDiff = item.length - (to - from);
+					// Simple text replacement with indentation applied
+					const currentLine = view.state.doc.lineAt(from);
+					const lineText = currentLine.text;
+					const indent = lineText.match(/^\s*/)?.[0] || "";
+
+					// Unescape special characters and apply indentation to all newlines
+					const unescapedItem = unescapeTemplate(item);
+					const indentedItem = unescapedItem.replace(/\n/g, `\n${indent}`);
+
+					const lengthDiff = indentedItem.length - (to - from);
 
 					view.dispatch({
-						changes: { from, to, insert: item },
-						selection: { anchor: from + item.length },
+						changes: { from, to, insert: indentedItem },
+						selection: { anchor: from + indentedItem.length },
 						effects: activeSnippetEffect.of({
 							...snippetData,
 							slots: snippetData.slots.map((s, i) => {
 								if (i === snippetData.currentIndex) {
-									return { ...s, from: from, to: from + item.length };
+									return { ...s, from: from, to: from + indentedItem.length };
 								} else if (i > snippetData.currentIndex) {
 									return {
 										...s,
@@ -520,14 +603,21 @@ function findFirstEmptyLineAfter(state, startLineNumber) {
 function duplicateAsSnippet(view) {
 	if (!view) return;
 
+	// Parse grammar rules from the entire editor content
+	const editorText = view.state.doc.toString();
+	parseGrammarRules(editorText);
+
 	const sel = view.state.selection.main;
 	const line = view.state.doc.lineAt(sel.from);
 	let src = line.text;
 
 	src = `    ${src.replace(/^\s*#\s*/, "").trim()}`;
 
-	// Parse using the new nested template parser
-	const parsed = parseNestedTemplate(src);
+	// Extract indentation (4 spaces as set above)
+	const indent = "    ";
+
+	// Parse using the new nested template parser with indentation
+	const parsed = parseNestedTemplate(src, "", indent);
 	const plainText = parsed.plainText;
 	const insertPos = findFirstEmptyLineAfter(view.state, line.number);
 
