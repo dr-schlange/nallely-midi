@@ -284,13 +284,6 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 						{device.repr}
 					</p> */}
 
-					<button
-						type="button"
-						className={"ugly-button"}
-						onClick={() => trevorSocket?.randomPreset(device.id)}
-					>
-						random preset
-					</button>
 					<hr />
 					{device.meta.parameters.map((param) => (
 						<div
@@ -320,9 +313,17 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 							</label>
 						</div>
 					))}
-					{!device.proxy ? (
-						<>
-							<hr />
+					<hr />
+					<details>
+						<summary>Danger zone</summary>
+						<button
+							type="button"
+							className={"ugly-button"}
+							onClick={() => trevorSocket?.randomPreset(device.id)}
+						>
+							random preset
+						</button>
+						{!device.proxy ? (
 							<button
 								type="button"
 								className={"ugly-button"}
@@ -332,10 +333,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 							>
 								Kill
 							</button>
-						</>
-					) : (
-						<>
-							<hr />
+						) : (
 							<button
 								type="button"
 								className={"ugly-button"}
@@ -345,8 +343,9 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 							>
 								Unregister
 							</button>
-						</>
-					)}
+						)}
+					</details>
+					<hr />
 				</>,
 			);
 			return;
@@ -383,6 +382,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 							</label>
 						);
 					})}
+					<hr />
 					<button
 						style={{
 							fontSize: "16px",
@@ -436,7 +436,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 							);
 						}}
 						min={0}
-						max={16}
+						max={15}
 						value={channels[device.id]}
 					/>
 				</label>
@@ -455,13 +455,18 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 					</button>
 				))}
 				<hr />
-				<button
-					type="button"
-					className={"ugly-button"}
-					onClick={() => trevorSocket?.killDevice(device.id)}
-				>
-					Kill device
-				</button>
+				<details>
+					<summary>Danger zone</summary>
+
+					<button
+						type="button"
+						className={"ugly-button"}
+						onClick={() => trevorSocket?.killDevice(device.id)}
+					>
+						Kill device
+					</button>
+				</details>
+				<hr />
 			</>,
 		);
 	};
@@ -999,7 +1004,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 							</div>
 							<div className="bottom-right-panel">
 								<details>
-									<summary>Connetions</summary>
+									<summary>Connections</summary>
 									<div
 										className="connection-setup"
 										style={{
@@ -1032,19 +1037,19 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 											})}
 										</ul>
 									</div>
+									{allConnections?.length > 0 && (
+										<button
+											type="button"
+											className={"ugly-button"}
+											onClick={deleteAllConnections}
+											style={{
+												height: "auto",
+											}}
+										>
+											Delete All
+										</button>
+									)}
 								</details>
-								{allConnections?.length > 0 && (
-									<button
-										type="button"
-										className={"ugly-button"}
-										onClick={deleteAllConnections}
-										style={{
-											height: "auto",
-										}}
-									>
-										Delete All
-									</button>
-								)}
 							</div>
 						</div>
 						<div className="device-patching-top-panel">
