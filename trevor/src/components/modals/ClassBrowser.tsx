@@ -70,7 +70,7 @@ function parseGrammarRules(editorText) {
 	const lines = editorText.split('\n');
 	let inGrammarSection = false;
 	let currentRule = '';
-	
+
 	for (const line of lines) {
 		// Check for $$ marker
 		if (line.trim().startsWith('$$')) {
@@ -84,8 +84,12 @@ function parseGrammarRules(editorText) {
 			}
 			continue;
 		}
-		
-		if (!inGrammarSection) continue;		// Accumulate multi-line rules
+
+		if (!inGrammarSection) {
+			continue;
+		}
+
+		// Accumulate multi-line rules
 		currentRule += line + '\n';
 
 		// Check if we have a complete rule (ends with semicolon)
