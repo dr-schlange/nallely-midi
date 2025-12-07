@@ -59,12 +59,132 @@ interface ClassBrowserProps {
 
 const completionRegistry = {
 	name: ["in_cv", "in0_cv", "out0_cv", "a_cv"],
-	range: ["0, 1", "0, 127", "op1, op2"],
+	range: ["0, 1", "0, 127", "op1, op2", "%min, %max"],
 	default: ["0", "1", "64"],
 	edge: ["any", "rising", "falling", "both", "increase", "decrease", "flat"],
 	conv: ["round", ">0", "!=0"],
 	doc: ["Parameter description"],
+	min: ["0", "1"],
+	max: ["127", "255"],
+	line: ["%stmts", "%expr"],
+	stmt: ["%ifblock", "%expr"],
+	ifblock: ["if %cond:\n    %stmts\nelse:    %stmts\n"],
+	stmts: ["%stmt\n%stmts", "λ"],
+	inlineif: ["%then_ if %cond else %else_"],
+	cond: ["true", "false", "in_cv > %value", "in_cv == %value"],
+	then_: ["%set"],
+	else_: ["%set"],
+	set: ["!"],
+	expr: ["%operand %op %operand", "%inlineif"],
+	op: ["%arit_op", "%bool_op"],
+	arit_op: ["+", "-", "*", "/"],
+	bool_op: ["==", "!=", "<", ">", "<=", ">="],
+	operand: ["%attr_access", "%number"],
+	attr_access: ["%receiver.%parameter"],
+	parameter: ["in", "in0", "out0", "a"],
+	receiver: ["self", "%par"],
+	par: ["(%expr)"],
+	number: ["0", "1", "127", "3.14"],
 };
+
+// Check if a completion string is a single placeholder (e.g., "%expr" or "%stmts<group>")
+function isSinglePlaceholder(str) {
+	const trimmed = str.trim();
+	// Match exactly one placeholder with nothing else
+	const match = trimmed.match(/^%([a-zA-Z_]\w*)(?:<([^>]+)>)?$/);
+	return match !== null;
+}
+
+// Recursively expand single-placeholder completions
+// Returns expanded completions that are either:
+// - Non-placeholder text
+// - Multi-placeholder templates
+// - Single placeholders that can't be expanded further
+function expandCompletion(completion, visited = new Set()) {
+	// Base case: not a single placeholder, return as-is
+	if (!isSinglePlaceholder(completion)) {
+		return [completion];
+	}
+
+	// Extract the group name from the placeholder
+	const match = completion.match(/^%([a-zA-Z_]\w*)(?:<([^>]+)>)?$/);
+	if (!match) return [completion];
+
+	const placeholderName = match[1];
+	const explicitGroup = match[2];
+	const groupName = explicitGroup || placeholderName;
+
+	// Prevent infinite recursion
+	if (visited.has(groupName)) {
+		return [completion];
+	}
+
+	// Get completions for this group
+	const groupCompletions = completionRegistry[groupName];
+	if (!groupCompletions) {
+		return [completion];
+	}
+
+	// Mark as visited
+	visited.add(groupName);
+
+	// Recursively expand each completion
+	const expanded = [];
+	for (const subCompletion of groupCompletions) {
+		if (isSinglePlaceholder(subCompletion)) {
+			// Recursively expand single placeholders
+			const subExpanded = expandCompletion(subCompletion, new Set(visited));
+			expanded.push(...subExpanded);
+		} else {
+			// Keep non-single-placeholder completions as-is
+			expanded.push(subCompletion);
+		}
+	}
+
+	return expanded;
+}
+
+// Parse a template string that may contain nested placeholders
+// %name<group> creates a placeholder
+// Returns both the plain text and slot information
+function parseNestedTemplate(src, parentId = "") {
+	const slots = [];
+	let plainText = "";
+	let currentPos = 0;
+
+	const regex = /%([a-zA-Z_]\w*)(?:<([^>]+)>)?/g;
+	let match;
+	let slotIndex = 1;
+
+	while ((match = regex.exec(src)) !== null) {
+		// Add text before the placeholder
+		plainText += src.substring(currentPos, match.index);
+
+		const name = match[1];
+		const group = match[2] || null;
+		const id = parentId ? `${parentId}-${slotIndex}` : `${slotIndex}`;
+
+		const slotFrom = plainText.length;
+		plainText += name; // Use the placeholder name as initial text
+		const slotTo = plainText.length;
+
+		slots.push({
+			name,
+			group,
+			id,
+			from: slotFrom,
+			to: slotTo,
+		});
+
+		currentPos = regex.lastIndex;
+		slotIndex++;
+	}
+
+	// Add remaining text
+	plainText += src.substring(currentPos);
+
+	return { plainText, slots };
+}
 
 function parseTemplateLine(src) {
 	const slots = [];
@@ -88,7 +208,7 @@ const activeSnippetEffect = StateEffect.define<{
 	slots: Array<{
 		name: string;
 		group: string | null;
-		index: number;
+		id: string; // hierarchical ID like "1", "1-1", "1-2-1"
 		from: number;
 		to: number;
 	}>;
@@ -99,7 +219,7 @@ const activeSnippetField = StateField.define<{
 	slots: Array<{
 		name: string;
 		group: string | null;
-		index: number;
+		id: string;
 		from: number;
 		to: number;
 	}>;
@@ -221,52 +341,164 @@ function templateCompletions(context) {
 		return null;
 	}
 
+	// Expand single-placeholder completions recursively
+	const expandedList = [];
+	for (const item of list) {
+		const expanded = expandCompletion(item);
+		expandedList.push(...expanded);
+	}
+
 	return {
 		from: slot.from,
 		to: slot.to,
-		options: list.map((item) => ({
+		options: expandedList.map((item) => ({
 			label: item,
 			type: "constant",
-			// Add a command that moves to next field after applying completion
 			apply: (view, completion, from, to) => {
 				const snippetData = view.state.field(activeSnippetField, false);
 				if (!snippetData) return;
 
-				const currentIndex = snippetData.currentIndex;
-				const lengthDiff = item.length - (to - from);
+				const currentSlot = snippetData.slots[snippetData.currentIndex];
 
-				// Apply the completion and update slot positions
-				view.dispatch({
-					changes: { from, to, insert: item },
-					selection: { anchor: from + item.length },
-					effects: activeSnippetEffect.of({
-						...snippetData,
-						slots: snippetData.slots.map((s, i) => {
-							if (i === currentIndex) {
-								// Update current slot to the new text range
-								return { ...s, from: from, to: from + item.length };
-							} else if (i > currentIndex) {
-								// Shift subsequent slots by the length difference
-								return {
-									...s,
-									from: s.from + lengthDiff,
-									to: s.to + lengthDiff,
-								};
-							}
-							return s;
+				// Special case: "λ" means end recursion, just remove the placeholder
+				if (item === "λ") {
+					view.dispatch({
+						changes: { from, to, insert: "" },
+						selection: { anchor: from },
+						effects: activeSnippetEffect.of({
+							...snippetData,
+							slots: snippetData.slots.map((s, i) => {
+								if (i === snippetData.currentIndex) {
+									return { ...s, from, to: from };
+								} else if (i > snippetData.currentIndex) {
+									const shift = to - from;
+									return { ...s, from: s.from - shift, to: s.to - shift };
+								}
+								return s;
+							}),
 						}),
-					}),
-				});
+					});
 
-				// Move to next field after a short delay
-				setTimeout(() => {
-					if (hasActiveSnippet(view.state)) {
-						moveToNextSnippetField(view);
-					}
-				}, 100);
+					setTimeout(() => {
+						if (hasActiveSnippet(view.state)) {
+							moveToNextSnippetField(view);
+						}
+					}, 100);
+					return;
+				}
+
+				// Check if item contains nested placeholders
+				const hasPlaceholders = /%([a-zA-Z_]\w*)(?:<([^>]+)>)?/.test(item);
+
+				if (hasPlaceholders) {
+					// Parse nested template
+					const parsed = parseNestedTemplate(item, currentSlot.id);
+					const insertText = parsed.plainText;
+
+					// Calculate absolute positions for new slots
+					const newSlots = parsed.slots.map((s) => ({
+						...s,
+						from: from + s.from,
+						to: from + s.to,
+					}));
+
+					// Insert the text
+					view.dispatch({
+						changes: { from, to, insert: insertText },
+						selection: { anchor: from + insertText.length },
+					});
+
+					// Calculate length difference
+					const lengthDiff = insertText.length - (to - from);
+
+					// Build new slots array: keep slots before current, insert new nested slots, shift slots after
+					const allSlots = [
+						...snippetData.slots.slice(0, snippetData.currentIndex),
+						...newSlots,
+						...snippetData.slots
+							.slice(snippetData.currentIndex + 1)
+							.map((s) => ({
+								...s,
+								from: s.from + lengthDiff,
+								to: s.to + lengthDiff,
+							})),
+					];
+
+					// Update state with new slots
+					view.dispatch({
+						effects: activeSnippetEffect.of({
+							slots: allSlots,
+							currentIndex: snippetData.currentIndex, // Stay at same index (first new slot)
+						}),
+					});
+
+					// Delete first nested placeholder and trigger completion
+					setTimeout(() => {
+						const firstNestedSlot = allSlots[snippetData.currentIndex];
+						view.dispatch({
+							changes: {
+								from: firstNestedSlot.from,
+								to: firstNestedSlot.to,
+								insert: "",
+							},
+							selection: { anchor: firstNestedSlot.from },
+							effects: activeSnippetEffect.of({
+								slots: allSlots.map((s, i) => {
+									if (i === snippetData.currentIndex) {
+										return {
+											...s,
+											from: firstNestedSlot.from,
+											to: firstNestedSlot.from,
+										};
+									} else if (i > snippetData.currentIndex) {
+										const shift = firstNestedSlot.to - firstNestedSlot.from;
+										return { ...s, from: s.from - shift, to: s.to - shift };
+									}
+									return s;
+								}),
+								currentIndex: snippetData.currentIndex,
+							}),
+						});
+
+						view.focus();
+						requestAnimationFrame(() => {
+							requestAnimationFrame(() => {
+								startCompletion(view);
+							});
+						});
+					}, 50);
+				} else {
+					// Simple text replacement (no nested placeholders)
+					const lengthDiff = item.length - (to - from);
+
+					view.dispatch({
+						changes: { from, to, insert: item },
+						selection: { anchor: from + item.length },
+						effects: activeSnippetEffect.of({
+							...snippetData,
+							slots: snippetData.slots.map((s, i) => {
+								if (i === snippetData.currentIndex) {
+									return { ...s, from: from, to: from + item.length };
+								} else if (i > snippetData.currentIndex) {
+									return {
+										...s,
+										from: s.from + lengthDiff,
+										to: s.to + lengthDiff,
+									};
+								}
+								return s;
+							}),
+						}),
+					});
+
+					setTimeout(() => {
+						if (hasActiveSnippet(view.state)) {
+							moveToNextSnippetField(view);
+						}
+					}, 100);
+				}
 			},
 		})),
-		// Force completion to show immediately without typing
 		filter: false,
 	};
 }
@@ -294,10 +526,9 @@ function duplicateAsSnippet(view) {
 
 	src = `    ${src.replace(/^\s*#\s*/, "").trim()}`;
 
-	const parsed = parseTemplateLine(src);
-
-	// Create plain text version (replace ${n:text} with just text)
-	const plainText = parsed.snippet.replace(/\$\{(\d+):([^}]+)\}/g, "$2");
+	// Parse using the new nested template parser
+	const parsed = parseNestedTemplate(src);
+	const plainText = parsed.plainText;
 	const insertPos = findFirstEmptyLineAfter(view.state, line.number);
 
 	// First, add a newline if needed
@@ -307,32 +538,12 @@ function duplicateAsSnippet(view) {
 		});
 	}
 
-	// Insert the plain text and calculate slot positions
-	let currentPos = insertPos;
-	const slots = [];
-	let remainingText = plainText;
-
-	for (const slot of parsed.slots) {
-		const beforeSlot = remainingText.substring(
-			0,
-			remainingText.indexOf(slot.name),
-		);
-		currentPos += beforeSlot.length;
-
-		const slotStart = currentPos;
-		const slotEnd = currentPos + slot.name.length;
-
-		slots.push({
-			...slot,
-			from: slotStart,
-			to: slotEnd,
-		});
-
-		currentPos = slotEnd;
-		remainingText = remainingText.substring(
-			beforeSlot.length + slot.name.length,
-		);
-	}
+	// Calculate absolute positions for slots
+	const slots = parsed.slots.map((slot) => ({
+		...slot,
+		from: insertPos + slot.from,
+		to: insertPos + slot.to,
+	}));
 
 	// Insert the text and set up snippet state
 	view.dispatch({
