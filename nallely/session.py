@@ -531,7 +531,7 @@ original_file={read_from}
 
     inputs:
     # * %name [%range] init=%default %conv <%edge>: %doc
-    # * %name [%range] %conv <%edge>: %doc
+    # * %name [%range] %options: %doc
 
     outputs:
     # * %name [%range]: %doc

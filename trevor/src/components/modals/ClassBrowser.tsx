@@ -33,33 +33,27 @@ interface ClassBrowserProps {
 }
 
 const completionRegistry = {
-	name: ["in_cv", "in0_cv", "out0_cv", "a_cv"],
-	range: ["0, 1", "0, 127", "op1, op2", "%min, %max"],
-	default: ["0", "1", "64"],
-	edge: ["any", "rising", "falling", "both", "increase", "decrease", "flat"],
-	conv: ["round", ">0", "!=0"],
+	name: ["a_cv", "b_cv", "in<x>_cv", "out<x>_cv"],
+	x: ["0", "1", "2", "3", "4"],
+	range: ["0, 1", "0, 127", "%min", "%max", "%entries"],
+	entries: ["%entries, %entries"],
+	options: ["init=%default %conv", "%conv"],
+	default: ["0", "1", "64", "127", "-1"],
+	conv: ["round %edges", ">0 %edges", "!=0 %edges", "%edges"],
+	edges: ["\\<%edge\\>"],
+	edge: [
+		"any",
+		"rising",
+		"falling",
+		"both",
+		"increase",
+		"decrease",
+		"flat",
+		"%edge, %edge",
+	],
+	min: ["0", "1", "127"],
+	max: ["127", "255", "1", "0"],
 	doc: ["Parameter description"],
-	min: ["0", "1"],
-	max: ["127", "255"],
-	line: ["%stmts"],
-	stmt: ["%ifblock", "%expr"],
-	ifblock: ["if %cond:\n    %stmts\nelse:\n    %stmts\n"],
-	stmts: ["%stmt", "%stmt\n%stmts", "λ"],
-	inlineif: ["%then_ if %cond else %else_"],
-	cond: ["true", "false", "in_cv > %number", "in_cv == %number"],
-	then_: ["%set"],
-	else_: ["%set"],
-	set: ["!"],
-	expr: ["%operand %op %operand", "%inlineif"],
-	op: ["%arit_op", "%bool_op"],
-	arit_op: ["+", "-", "*", "/"],
-	bool_op: ["==", "!=", "<", ">", "<=", ">="],
-	operand: ["%attr_access", "%number"],
-	attr_access: ["%receiver.%parameter"],
-	parameter: ["in", "in0", "out0", "a"],
-	receiver: ["self", "%par"],
-	par: ["(%expr)"],
-	number: ["0", "1", "127", "3.14"],
 };
 
 // Parse grammar rules from editor content between $$ markers
@@ -67,17 +61,17 @@ const completionRegistry = {
 // Adds each rule_name and its alternatives to completionRegistry
 // Processes all $$ sections in the document
 function parseGrammarRules(editorText) {
-	const lines = editorText.split('\n');
+	const lines = editorText.split("\n");
 	let inGrammarSection = false;
-	let currentRule = '';
+	let currentRule = "";
 
 	for (const line of lines) {
 		// Check for $$ marker
-		if (line.trim().startsWith('$$')) {
+		if (line.trim().startsWith("$$")) {
 			if (inGrammarSection) {
 				// End of grammar section - continue looking for more sections
 				inGrammarSection = false;
-				currentRule = '';
+				currentRule = "";
 			} else {
 				// Start of grammar section
 				inGrammarSection = true;
@@ -90,50 +84,55 @@ function parseGrammarRules(editorText) {
 		}
 
 		// Accumulate multi-line rules
-		currentRule += line + '\n';
+		currentRule += line + "\n";
 
 		// Check if we have a complete rule (ends with semicolon)
-		if (currentRule.trim().endsWith(';')) {
+		if (currentRule.trim().endsWith(";")) {
 			// Remove the trailing semicolon
-			const ruleContent = currentRule.slice(0, currentRule.lastIndexOf(';'));
+			const ruleContent = currentRule.slice(0, currentRule.lastIndexOf(";"));
 
 			// Parse the rule
-			const colonIndex = ruleContent.indexOf(':');
+			const colonIndex = ruleContent.indexOf(":");
 			if (colonIndex === -1) {
 				// No colon found, skip this rule
-				currentRule = '';
+				currentRule = "";
 				continue;
 			}
 
 			const ruleName = ruleContent.substring(0, colonIndex).trim();
 
 			// Detect base indentation from the first line (rule name line)
-			const lines = currentRule.split('\n');
+			const lines = currentRule.split("\n");
 			const firstLine = lines[0];
-			const baseIndent = firstLine.match(/^(\s*)/)?.[1] || '';
+			const baseIndent = firstLine.match(/^(\s*)/)?.[1] || "";
 
 			// Remove base indentation from all lines
 			const dedentedText = lines
-				.map(line => {
+				.map((line) => {
 					if (line.startsWith(baseIndent)) {
 						return line.substring(baseIndent.length);
 					}
 					return line;
 				})
-				.join('\n');
+				.join("\n");
 
 			// Re-extract alternatives from dedented text
-			const dedentedColonIndex = dedentedText.indexOf(':');
-			const dedentedAlternatives = dedentedText.substring(dedentedColonIndex + 1);
+			const dedentedColonIndex = dedentedText.indexOf(":");
+			const dedentedAlternatives = dedentedText.substring(
+				dedentedColonIndex + 1,
+			);
 
 			// Remove trailing semicolon from dedented text
-			const finalAlternatives = dedentedAlternatives.substring(0, dedentedAlternatives.lastIndexOf(';'));
+			const finalAlternatives = dedentedAlternatives.substring(
+				0,
+				dedentedAlternatives.lastIndexOf(";"),
+			);
 
 			// Split by | and clean up each alternative
 			const options = finalAlternatives
-				.split('|')
-				.map(alt => alt.trim())
-				.filter(alt => alt.length > 0);
+				.split("|")
+				.map((alt) => alt.trim())
+				.filter((alt) => alt.length > 0);
 
 			if (ruleName && options.length > 0) {
 				// Add to completion registry
@@ -141,7 +140,7 @@ function parseGrammarRules(editorText) {
 			}
 
 			// Reset for next rule
-			currentRule = '';
+			currentRule = "";
 		}
 	}
 }
@@ -207,7 +206,7 @@ function expandCompletion(completion, visited = new Set()) {
 
 // Unescape special characters (\%, \<, \>) to their literal forms
 function unescapeTemplate(str) {
-	return str.replace(/\\([%<>])/g, '$1');
+	return str.replace(/\\([%<>])/g, "$1");
 }
 
 // Parse a template string that may contain nested placeholders
@@ -248,8 +247,8 @@ function parseNestedTemplate(src, parentId = "", indent = "") {
 			to: slotTo,
 		});
 
-	currentPos = regex.lastIndex;
-	slotIndex++;
+		currentPos = regex.lastIndex;
+		slotIndex++;
 	}
 
 	// Add remaining text
@@ -258,7 +257,8 @@ function parseNestedTemplate(src, parentId = "", indent = "") {
 	plainText += unescapeTemplate(remainingText).replace(/\n/g, `\n${indent}`);
 
 	return { plainText, slots };
-}function parseTemplateLine(src) {
+}
+function parseTemplateLine(src) {
 	const slots = [];
 	let index = 1;
 
@@ -462,7 +462,8 @@ function templateCompletions(context) {
 				// Check if item contains nested placeholders
 				// Supports: %name, %name<group>, <name>, <name<group>>
 				// But not escaped sequences like \% or \<
-				const hasPlaceholders = /(?<!\\)(?:%|<)([a-zA-Z_]\w*)(?:<([^>]+)>)?>?/.test(item);
+				const hasPlaceholders =
+					/(?<!\\)(?:%|<)([a-zA-Z_]\w*)(?:<([^>]+)>)?>?/.test(item);
 
 				if (hasPlaceholders) {
 					// Get the indentation of the current line
