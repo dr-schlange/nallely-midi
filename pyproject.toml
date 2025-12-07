@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nallely"
-version = "0.0.1"
+version = "0.2.0"
 description = "MIDI companion, tools and abstraction to easily scripts for your MIDI devices"
 readme = "README.md"
 license-files = ["LICENSE"]
