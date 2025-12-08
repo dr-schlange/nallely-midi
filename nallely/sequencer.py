@@ -134,12 +134,16 @@ class Sequencer8(VirtualDevice):
     and by default all the outputs are active
 
     inputs:
+    * prev_edit_step_cv [0, 1] >0 <rising>: Advance the sequencer edit index by one step on each rising edge.
+    * next_edit_step_cv [0, 1] >0 <rising>: Pull back the sequencer edit index by one step on each rising edge.
+    * input_cv [0, 127]: Input CV (not used in this module, reserved for future use).
+    * write_cv [0, 1] >0 <rising>: When high on a rising edge, writes the value of input_cv to the current edit step.
     * trigger_cv [0, 1] >0 <rising>: Advance the sequencer by one step on each rising edge.
     * length_cv [1, 8] init=8 round <any>: Set the length of the sequence (number of steps).
     * play_cv [0, 1] init=1 >0 <rising, falling>: Control if the sequencer must be started or not (1 = start, 0 = stop).
                                                   By default, the sequencer is started.
     * reset_cv [0, 1] >0 <rising>: Reset the sequencer to the first step.
-    * step_cv [0, 7] round <any>: Set the current step of the sequencer (0-indexed).
+    * set_step_cv [0, 7] round <any>: Set the current step of the sequencer (0-indexed).
     * step0_cv [0, 127]: Set the output value of step 1.
     * step1_cv [0, 127]: Set the output value of step 2.
     * step2_cv [0, 127]: Set the output value of step 3.
@@ -160,6 +164,7 @@ class Sequencer8(VirtualDevice):
 
     outputs:
     * current_step_cv [0, 7]: The current step of the sequencer (0-indexed).
+    * edit_step_cv [0, 7]: The current edit step index (0-indexed).
     * output_cv [0, 127]: The output value of the current step.
     * trig_out_cv [0, 1]: A trigger signal that goes high when the sequencer advances to the next step.
 
@@ -167,18 +172,27 @@ class Sequencer8(VirtualDevice):
     category: sequencer
     """
 
-    trigger_cv = VirtualParameter(name="trigger", range=(0, 1), conversion_policy=">0")
-    play_cv = VirtualParameter(
-        name="play", range=(0, 1), conversion_policy=">0", default=1
+    input_cv = VirtualParameter(name="input", range=(0.0, 127.0))
+    write_cv = VirtualParameter(name="write", range=(0.0, 1.0), conversion_policy=">0")
+    prev_edit_step_cv = VirtualParameter(
+        name="prev_edit_step", range=(0.0, 1.0), conversion_policy=">0"
     )
-    reset_cv = VirtualParameter(name="reset", range=(0, 1), conversion_policy=">0")
+    next_edit_step_cv = VirtualParameter(
+        name="next_edit_step", range=(0.0, 1.0), conversion_policy=">0"
+    )
+    trigger_cv = VirtualParameter(
+        name="trigger", range=(0.0, 1.0), conversion_policy=">0"
+    )
+    play_cv = VirtualParameter(
+        name="play", range=(0.0, 1.0), conversion_policy=">0", default=1.0
+    )
+    reset_cv = VirtualParameter(name="reset", range=(0.0, 1.0), conversion_policy=">0")
     set_step_cv = VirtualParameter(
-        name="set_step", range=(0, 7), conversion_policy="round"
+        name="set_step", range=(0.0, 7.0), conversion_policy="round"
     )
     length_cv = VirtualParameter(
-        name="length", range=(1, 8), conversion_policy="round", default=8
+        name="length", range=(1.0, 8.0), conversion_policy="round", default=8.0
     )
-
     step0_cv = VirtualParameter(name="step0", range=(0.0, 127.0))
     step1_cv = VirtualParameter(name="step1", range=(0.0, 127.0))
     step2_cv = VirtualParameter(name="step2", range=(0.0, 127.0))
@@ -187,6 +201,7 @@ class Sequencer8(VirtualDevice):
     step5_cv = VirtualParameter(name="step5", range=(0.0, 127.0))
     step6_cv = VirtualParameter(name="step6", range=(0.0, 127.0))
     step7_cv = VirtualParameter(name="step7", range=(0.0, 127.0))
+    edit_step_cv = VirtualParameter(name="edit_step", range=(0.0, 7.0))
     active0_cv = VirtualParameter(
         name="active0", range=(0, 1), conversion_policy=">0", default=1
     )
@@ -211,34 +226,40 @@ class Sequencer8(VirtualDevice):
     active7_cv = VirtualParameter(
         name="active7", range=(0, 1), conversion_policy=">0", default=1
     )
+    trig_out_cv = VirtualParameter(name="trig_out", range=(0.0, 1.0))
+    current_step_cv = VirtualParameter(name="current_step", range=(0.0, 7.0))
 
-    trig_out_cv = VirtualParameter(name="trig_out", range=(0, 1))
-    current_step_cv = VirtualParameter(name="current_step", range=(0, 7))
+    @property
+    def min_range(self):
+        return 0.0
+
+    @property
+    def max_range(self):
+        return 127.0
+
+    def __post_init__(self, **kwargs):
+        self.edit_step = 0
 
     def next_step(self):
-        # advance step
-        if self.current_step > self.length - 1:  # type: ignore
+        if self.current_step > self.length - 1:
             next_step = 0
         else:
-            next_step = (self.current_step + 1) % int(self.length)  # type: ignore
-        yield next_step, [self.current_step_cv]
+            next_step = (self.current_step + 1) % int(self.length)
+        yield (next_step, [self.current_step_cv])
         if self.current_step_active():
-            # send gate out
-            yield 1, [self.trig_out_cv]
-            yield 0, [self.trig_out_cv]
-
-            # send output
-            output_value = getattr(self, f"step{self.current_step}")  # type: ignore
+            yield (1, [self.trig_out_cv])
+            yield (0, [self.trig_out_cv])
+            output_value = getattr(self, f"step{self.current_step}")
             yield output_value
         else:
             yield 0
 
     def clear_outs(self):
         for output in [self.trig_out_cv, self.output_cv, self.current_step_cv]:
-            yield 0, [output]
+            yield (0, [output])
 
     def current_step_active(self):
-        return getattr(self, f"active{self.current_step}") > 0  # type: ignore
+        return getattr(self, f"active{self.current_step}") > 0
 
     @on(play_cv, edge="rising")
     def on_play_rising(self, value, ctx):
@@ -251,28 +272,40 @@ class Sequencer8(VirtualDevice):
     @on(reset_cv, edge="rising")
     def on_reset_rising(self, value, ctx):
         yield from self.clear_outs()
-        yield 0, [self.current_step_cv]
+        yield (0, [self.current_step_cv])
 
     @on(length_cv, edge="any")
     def on_length_any(self, value, ctx):
-        if self.current_step > int(value):  # type: ignore
+        if self.current_step > int(value):
             yield from self.clear_outs()
-            yield 0, [self.current_step_cv]
+            yield (0, [self.current_step_cv])
             yield from self.next_step()
 
     @on(trigger_cv, edge="rising")
     def on_trigger_rising(self, value, ctx):
-        if self.play > 0:  # type: ignore
+        if self.play > 0:
             yield from self.next_step()
 
     @on(set_step_cv, edge="any")
     def on_step_any(self, value, ctx):
-        yield int(value), [self.current_step_cv]
+        yield (int(value), [self.current_step_cv])
         if self.current_step_active():
-            output_value = getattr(self, f"step{int(self.current_step)}")  # type: ignore
+            output_value = getattr(self, f"step{int(self.current_step)}")
             yield output_value
         else:
             yield 0
+
+    @on(next_edit_step_cv, edge="rising")
+    def on_next_edit_step_rising(self, value, ctx):
+        return (self.edit_step + 1) % 8, [self.edit_step_cv]
+
+    @on(prev_edit_step_cv, edge="rising")
+    def on_prev_edit_step_rising(self, value, ctx):
+        return (self.edit_step - 1) % 8, [self.edit_step_cv]
+
+    @on(write_cv, edge="rising")
+    def on_write_rising(self, value, ctx):
+        setattr(self, f"step{self.edit_step}", self.input)
 
 
 class TuringMachine(VirtualDevice):
