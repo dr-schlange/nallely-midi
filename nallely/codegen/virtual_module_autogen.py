@@ -156,6 +156,7 @@ def gen_class_code(
     cls_file = inspect.getsourcefile(cls)
     copied_imports = []
     classdef = None
+    has_imports = False
 
     if save_in is None:
         if cls_file is None:
@@ -205,6 +206,7 @@ def gen_class_code(
         # We copy the existing imports
         # We need a finer grain managment of imports
         classdef = None
+        # has_imports = len(copied_imports) > 0
         # idx = -1
         for i, node in enumerate(new_class.body):
             match node:
@@ -216,9 +218,11 @@ def gen_class_code(
                     classdef = clsdef
                     # idx = i
                     break
-                case ast.Import() as imp:
+                case ast.Import() as imp if not has_imports:
                     copied_imports.append(imp)
-                case ast.ImportFrom(level=level) as imp if level == 0:
+                case ast.ImportFrom(level=level) as imp if (
+                    not has_imports and level == 0
+                ):
                     copied_imports.append(imp)
         assert (
             classdef
@@ -266,7 +270,8 @@ def gen_class_code(
     else:
         raise Exception("Unknown save_in type", save_in.__class__)
 
-    has_imports = False
+    has_nallely_imports = False
+    has_imports = len(copied_imports) > 0
     autogen_import = None
     for i, node in enumerate(file_code.body):
         match node:
@@ -284,19 +289,19 @@ def gen_class_code(
                     remove_decorator=not keep_decorator,
                 )
             case ast.ImportFrom(module="nallely"):
-                has_imports = True
+                has_nallely_imports = True
             case ast.ImportFrom(module=name) as imp if name and "codegen" in name:
                 autogen_import = imp
-            case ast.Import() as imp:
+            case ast.Import() as imp if not has_imports:
                 # We need a finer grain managment of imports
                 copied_imports.append(imp)
-            case ast.ImportFrom() as imp:
+            case ast.ImportFrom() as imp if not has_imports:
                 # We need a finer grain managment of imports
                 copied_imports.append(imp)
 
     if autogen_import and not keep_decorator:
         file_code.body.remove(autogen_import)
-    if not has_imports:
+    if not has_nallely_imports:
         file_code.body.insert(
             0,
             ast.ImportFrom(
@@ -319,7 +324,7 @@ def gen_class_code(
                 level=0,
             ),
         )
-    if copied_imports:
+    if has_imports and copied_imports:
         file_code.body[0:0] = copied_imports
     ast.fix_missing_locations(file_code)
     if black:

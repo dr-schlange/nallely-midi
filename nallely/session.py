@@ -456,7 +456,7 @@ playground_code={infos["playground_code"]}
             # We take the new version of the class
             new_cls = virtual_device_classes[new_cls.__name__]
             device_code = inspect.getsource(new_cls)
-            module = getmodule(new_cls)
+            # module = getmodule(new_cls)
 
             # We create a commit for the new version of the class
             repo = self._get_repository(universe=self.universe)
