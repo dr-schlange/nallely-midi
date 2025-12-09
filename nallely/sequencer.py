@@ -249,8 +249,9 @@ class Sequencer8(VirtualDevice):
         if self.current_step_active():
             yield (1, [self.trig_out_cv])
             yield (0, [self.trig_out_cv])
-            output_value = getattr(self, f"step{self.current_step}")
+            output_value = getattr(self, f"step{int(self.current_step)}")
             yield output_value
+            yield (output_value, [getattr(self, f"step{int(self.current_step)}_cv")])
         else:
             yield 0
 
@@ -259,7 +260,7 @@ class Sequencer8(VirtualDevice):
             yield (0, [output])
 
     def current_step_active(self):
-        return getattr(self, f"active{self.current_step}") > 0
+        return getattr(self, f"active{int(self.current_step)}") > 0
 
     @on(play_cv, edge="rising")
     def on_play_rising(self, value, ctx):
@@ -297,15 +298,15 @@ class Sequencer8(VirtualDevice):
 
     @on(next_edit_step_cv, edge="rising")
     def on_next_edit_step_rising(self, value, ctx):
-        return (self.edit_step + 1) % 8, [self.edit_step_cv]
+        return ((int(self.edit_step) + 1) % 8, [self.edit_step_cv])
 
     @on(prev_edit_step_cv, edge="rising")
     def on_prev_edit_step_rising(self, value, ctx):
-        return (self.edit_step - 1) % 8, [self.edit_step_cv]
+        return ((int(self.edit_step) - 1) % 8, [self.edit_step_cv])
 
     @on(write_cv, edge="rising")
     def on_write_rising(self, value, ctx):
-        setattr(self, f"step{self.edit_step}", self.input)
+        setattr(self, f"step{int(self.edit_step)}", self.input)
 
 
 class TuringMachine(VirtualDevice):

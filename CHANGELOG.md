@@ -41,6 +41,8 @@
   * experimental Volume Mixer (based on key velocity)
   * Conveyor Line
   * experimental RAM broadcast module (allows patching observer/reactor patterns)
+* Add edit mode for Sequencer8
+* Sequencer8 steps are now not only input, but also output and yield their value on activation
 * Add experimental keyboard support (for linux mainly)
 * Add generic MIDI Bridge
 * Add JS finger-tracking external device example
