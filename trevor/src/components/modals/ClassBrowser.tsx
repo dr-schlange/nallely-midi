@@ -58,181 +58,126 @@ const completionRegistry = {
 
 // Parse grammar rules from editor content between $$ markers
 // Format: rule_name: str1 | str2 | ... | strn ;
-// Adds each rule_name and its alternatives to completionRegistry
-// Processes all $$ sections in the document
-function parseGrammarRules(editorText) {
-	const lines = editorText.split("\n");
-	let inGrammarSection = false;
-	let currentRule = "";
-
-	for (const line of lines) {
-		// Check for $$ marker
-		if (line.trim().startsWith("$$")) {
-			if (inGrammarSection) {
-				// End of grammar section - continue looking for more sections
-				inGrammarSection = false;
-				currentRule = "";
-			} else {
-				// Start of grammar section
-				inGrammarSection = true;
-			}
-			continue;
-		}
-
-		if (!inGrammarSection) {
-			continue;
-		}
-
-		// Accumulate multi-line rules
-		currentRule += line + "\n";
-
-		// Check if we have a complete rule (ends with semicolon)
-		if (currentRule.trim().endsWith(";")) {
-			// Remove the trailing semicolon
-			const ruleContent = currentRule.slice(0, currentRule.lastIndexOf(";"));
-
-			// Parse the rule
-			const colonIndex = ruleContent.indexOf(":");
-			if (colonIndex === -1) {
-				// No colon found, skip this rule
-				currentRule = "";
-				continue;
-			}
-
-			const ruleName = ruleContent.substring(0, colonIndex).trim();
-
-			// Detect base indentation from the first line (rule name line)
-			const lines = currentRule.split("\n");
-			const firstLine = lines[0];
-			const baseIndent = firstLine.match(/^(\s*)/)?.[1] || "";
-
-			// Remove base indentation from all lines
-			const dedentedText = lines
-				.map((line) => {
-					if (line.startsWith(baseIndent)) {
-						return line.substring(baseIndent.length);
-					}
-					return line;
-				})
-				.join("\n");
-
-			// Re-extract alternatives from dedented text
-			const dedentedColonIndex = dedentedText.indexOf(":");
-			const dedentedAlternatives = dedentedText.substring(
-				dedentedColonIndex + 1,
-			);
-
-			// Remove trailing semicolon from dedented text
-			const finalAlternatives = dedentedAlternatives.substring(
-				0,
-				dedentedAlternatives.lastIndexOf(";"),
-			);
-
-			// Split by | and clean up each alternative
-			const options = finalAlternatives
-				.split("|")
-				.map((alt) => alt.trim())
-				.filter((alt) => alt.length > 0);
-
-			if (ruleName && options.length > 0) {
-				// Add to completion registry
-				completionRegistry[ruleName] = options;
-			}
-
-			// Reset for next rule
-			currentRule = "";
+// We process all $$ sections in the document
+const parseGrammarRules = (editorText) => {
+	const ruleSets = [];
+	const editorLines = editorText.split("\n");
+	for (const [i, line] of editorLines.entries()) {
+		if (line.trim() === "$$") {
+			ruleSets.push(i);
 		}
 	}
-}
+	// If we have an odd number of $$ we are missing a closing one, remove the last
+	if (ruleSets.length % 2 !== 0) {
+		ruleSets.pop();
+	}
+
+	for (let i = 0; i < ruleSets.length; i += 2) {
+		const [start, end] = ruleSets.slice(i, i + 2);
+		const ruleSet = editorLines.slice(start + 1, end).join("\n");
+		const rules = ruleSet.split(/(?<!\\);/).filter((r) => r.trim().length > 0);
+		for (const rule of rules) {
+			const [ruleName, ...rest] = rule.split(":");
+			// TODO introduce better the indnetation handling
+			const indent = rule.match(/^(\s*)/)?.[1] || "";
+			const options = rest
+				.join(":")
+				.split("\n")
+				.map((alt) => alt.replace(indent, ""))
+				.join("\n")
+				.split(/(?<!\\)\|/)
+				.map((alt) => alt.trim())
+				.filter((alt) => alt.length > 0);
+			completionRegistry[ruleName.trim()] = options;
+		}
+	}
+};
 
 // Check if a completion string is a single placeholder (e.g., "%expr", "<expr>", or "%stmts<group>")
-function isSinglePlaceholder(str) {
+const isSinglePlaceholder = (str) => {
 	const trimmed = str.trim();
 	// Match exactly one placeholder with nothing else
-	// Supports: %name, %name<group>, <name>, <name<group>>
-	const match = trimmed.match(/^(?:%|<)([a-zA-Z_]\w*)(?:<([^>]+)>)?>?$/);
+	// Supports: %name, <name>
+	// TODO change this regex to be mainteanable
+	const match = trimmed.match(/^(?:%|<)([a-zA-Z_]\w*)>?$/);
 	return match !== null;
-}
+};
 
 // Recursively expand single-placeholder completions
 // Returns expanded completions that are either:
 // - Non-placeholder text
 // - Multi-placeholder templates
 // - Single placeholders that can't be expanded further
-function expandCompletion(completion, visited = new Set()) {
+// This expansion is used to skip 1 level of indirection in completions if there is only 1 placeholder
+const expandCompletion = (completion, visited = new Set()) => {
 	// Base case: not a single placeholder, return as-is
 	if (!isSinglePlaceholder(completion)) {
 		return [completion];
 	}
 
-	// Extract the group name from the placeholder
-	// Supports: %name, %name<group>, <name>, <name<group>>
-	const match = completion.match(/^(?:%|<)([a-zA-Z_]\w*)(?:<([^>]+)>)?>?$/);
+	// Extract the placeholder
+	const match = completion.match(/^(?:%|<)([a-zA-Z_]\w*)>?$/);
 	if (!match) return [completion];
 
 	const placeholderName = match[1];
-	const explicitGroup = match[2];
-	const groupName = explicitGroup || placeholderName;
 
-	// Prevent infinite recursion
-	if (visited.has(groupName)) {
+	if (visited.has(placeholderName)) {
 		return [completion];
 	}
 
 	// Get completions for this group
-	const groupCompletions = completionRegistry[groupName];
-	if (!groupCompletions) {
+	const completions = completionRegistry[placeholderName];
+	if (!completions) {
+		// If no completions we consider the placeholder as a kind of terminal that requires
+		// text input.
 		return [completion];
 	}
 
-	// Mark as visited
-	visited.add(groupName);
+	visited.add(placeholderName);
 
-	// Recursively expand each completion
+	// Expand each completion
 	const expanded = [];
-	for (const subCompletion of groupCompletions) {
+	for (const subCompletion of completions) {
 		if (isSinglePlaceholder(subCompletion)) {
 			// Recursively expand single placeholders
 			const subExpanded = expandCompletion(subCompletion, new Set(visited));
 			expanded.push(...subExpanded);
 		} else {
-			// Keep non-single-placeholder completions as-is
+			// Keep non single placeholder completions untouched
 			expanded.push(subCompletion);
 		}
 	}
 
 	return expanded;
-}
+};
 
 // Unescape special characters (\%, \<, \>) to their literal forms
-function unescapeTemplate(str) {
-	return str.replace(/\\([%<>])/g, "$1");
-}
+const unescapeChar = (str) => {
+	return str.replace(/\\(.)/g, "$1");
+};
 
 // Parse a template string that may contain nested placeholders
-// %name<group> or <name> or <name<group>> creates a placeholder
-// Use \%, \<, \> for literal characters
+// %name or <name> creates a placeholder
 // Returns both the plain text and slot information
 // indent: string to prepend to each line (except the first)
-function parseNestedTemplate(src, parentId = "", indent = "") {
+const parseNestedTemplate = (src, parentId = "", indent = "") => {
 	const slots = [];
 	let plainText = "";
 	let currentPos = 0;
 
-	// Matches: %name, %name<group>, <name>, <name<group>>
+	// Matches: %name, <name>
 	// But not escaped sequences like \% or \<
-	const regex = /(?<!\\)(?:%|<)([a-zA-Z_]\w*)(?:<([^>]+)>)?>?/g;
-	let match;
+	const regex = /(?<!\\)(?:%|<)([a-zA-Z_]\w*)>?/g;
+	let match = "";
 	let slotIndex = 1;
 
 	while ((match = regex.exec(src)) !== null) {
 		// Add text before the placeholder and unescape it
 		const textBefore = src.substring(currentPos, match.index);
 		// Apply indentation to newlines in the text and unescape
-		plainText += unescapeTemplate(textBefore).replace(/\n/g, `\n${indent}`);
+		plainText += unescapeChar(textBefore).replace(/\n/g, `\n${indent}`);
 
 		const name = match[1];
-		const group = match[2] || null;
 		const id = parentId ? `${parentId}-${slotIndex}` : `${slotIndex}`;
 
 		const slotFrom = plainText.length;
@@ -241,7 +186,6 @@ function parseNestedTemplate(src, parentId = "", indent = "") {
 
 		slots.push({
 			name,
-			group,
 			id,
 			from: slotFrom,
 			to: slotTo,
@@ -254,32 +198,15 @@ function parseNestedTemplate(src, parentId = "", indent = "") {
 	// Add remaining text
 	const remainingText = src.substring(currentPos);
 	// Apply indentation to newlines in remaining text and unescape
-	plainText += unescapeTemplate(remainingText).replace(/\n/g, `\n${indent}`);
+	plainText += unescapeChar(remainingText).replace(/\n/g, `\n${indent}`);
 
 	return { plainText, slots };
-}
-function parseTemplateLine(src) {
-	const slots = [];
-	let index = 1;
-
-	// Convert the mini template system to the snippet system of code mirror
-	const snippet = src.replace(
-		/%([a-zA-Z_]\w*)(?:<([^>]+)>)?/g,
-		(m, ident, group) => {
-			const slotIndex = index++;
-			slots.push({ name: ident, group: group || null, index: slotIndex });
-			return `\${${slotIndex}:${ident}}`;
-		},
-	);
-
-	return { snippet, slots };
-}
+};
 
 // Custom snippet system that works inside docstrings
 const activeSnippetEffect = StateEffect.define<{
 	slots: Array<{
 		name: string;
-		group: string | null;
 		id: string; // hierarchical ID like "1", "1-1", "1-2-1"
 		from: number;
 		to: number;
@@ -290,7 +217,6 @@ const activeSnippetEffect = StateEffect.define<{
 const activeSnippetField = StateField.define<{
 	slots: Array<{
 		name: string;
-		group: string | null;
 		id: string;
 		from: number;
 		to: number;
@@ -307,6 +233,9 @@ const activeSnippetField = StateField.define<{
 			}
 		}
 		// Update positions if document changed
+		// this is flaky because we should perhaps
+		// instead cancel the active snippet if we edit outside
+		// need to see more when using
 		if (value && tr.docChanged) {
 			const slots = value.slots.map((slot) => {
 				const from = tr.changes.mapPos(slot.from);
@@ -319,22 +248,22 @@ const activeSnippetField = StateField.define<{
 	},
 });
 
-function getCurrentSnippetField(state) {
+const getCurrentSnippetField = (state) => {
 	const snippetData = state.field(activeSnippetField, false);
 	if (!snippetData) return null;
 
 	const currentSlot = snippetData.slots[snippetData.currentIndex];
 	return currentSlot || null;
-}
+};
 
-function hasActiveSnippet(state) {
+const hasActiveSnippet = (state) => {
 	const snippetData = state.field(activeSnippetField, false);
 	return (
 		snippetData !== null && snippetData.currentIndex < snippetData.slots.length
 	);
-}
+};
 
-function moveToNextSnippetField(view) {
+const moveToNextSnippetField = (view) => {
 	const snippetData = view.state.field(activeSnippetField, false);
 	if (!snippetData) return false;
 
@@ -370,9 +299,10 @@ function moveToNextSnippetField(view) {
 		}),
 	});
 
-	// Force focus and trigger completion after state update - with extensive logging
+	// Force focus and trigger completion
 	view.focus();
 
+	// Forces completion
 	requestAnimationFrame(() => {
 		requestAnimationFrame(() => {
 			startCompletion(view);
@@ -380,9 +310,9 @@ function moveToNextSnippetField(view) {
 	});
 
 	return true;
-}
+};
 
-function moveToPrevSnippetField(view) {
+const moveToPrevSnippetField = (view) => {
 	const snippetData = view.state.field(activeSnippetField, false);
 	if (!snippetData || snippetData.currentIndex === 0) return false;
 
@@ -397,23 +327,28 @@ function moveToPrevSnippetField(view) {
 		}),
 	});
 	return true;
-}
+};
 
-function templateCompletions(context) {
+const templateCompletions = (context) => {
 	const slot = getCurrentSnippetField(context.state);
 	if (!slot) return null;
 
-	const group = slot.group || slot.name;
-	if (!group) return null;
+	const rule = slot.name;
+	if (!rule) {
+		return null;
+	}
 
-	const list = completionRegistry[group];
-	if (!list) return null;
+	const list = completionRegistry[rule];
+	if (!list) {
+		return null;
+	}
 
+	// If we are outside the slot
 	if (context.pos < slot.from || context.pos > slot.to) {
 		return null;
 	}
 
-	// Expand single-placeholder completions recursively
+	// Expand simple 1-placeholder completions recursively
 	const expandedList = [];
 	for (const item of list) {
 		const expanded = expandCompletion(item);
@@ -424,15 +359,18 @@ function templateCompletions(context) {
 		from: slot.from,
 		to: slot.to,
 		options: expandedList.map((item) => ({
-			label: unescapeTemplate(item), // Show unescaped version in completion menu
+			label: unescapeChar(item), // We show the unescaped version in completion menu
 			type: "constant",
 			apply: (view, completion, from, to) => {
 				const snippetData = view.state.field(activeSnippetField, false);
-				if (!snippetData) return;
+				if (!snippetData) {
+					return;
+				}
 
 				const currentSlot = snippetData.slots[snippetData.currentIndex];
 
 				// Special case: "λ" means end recursion, just remove the placeholder
+				// should consider another char, this one is hard to type...
 				if (item === "λ") {
 					view.dispatch({
 						changes: { from, to, insert: "" },
@@ -459,11 +397,8 @@ function templateCompletions(context) {
 					return;
 				}
 
-				// Check if item contains nested placeholders
-				// Supports: %name, %name<group>, <name>, <name<group>>
-				// But not escaped sequences like \% or \<
-				const hasPlaceholders =
-					/(?<!\\)(?:%|<)([a-zA-Z_]\w*)(?:<([^>]+)>)?>?/.test(item);
+				// We check if item contains placeholders, but not escaped sequences like \% or \<
+				const hasPlaceholders = /(?<!\\)(?:%|<)([a-zA-Z_]\w*)>?/.test(item);
 
 				if (hasPlaceholders) {
 					// Get the indentation of the current line
@@ -475,7 +410,7 @@ function templateCompletions(context) {
 					const parsed = parseNestedTemplate(item, currentSlot.id, indent);
 					const insertText = parsed.plainText;
 
-					// Calculate absolute positions for new slots
+					// Update positions for new slots
 					const newSlots = parsed.slots.map((s) => ({
 						...s,
 						from: from + s.from,
@@ -492,9 +427,12 @@ function templateCompletions(context) {
 					const lengthDiff = insertText.length - (to - from);
 
 					// Build new slots array: keep slots before current, insert new nested slots, shift slots after
+					// This is required to update the positions for the slot positionned *after* the expansion
+					// we consider the expansion is always done from left to right, so left slots are asked first
+					// consequently, they cannot be before the currentIndex
 					const allSlots = [
 						...snippetData.slots.slice(0, snippetData.currentIndex),
-						...newSlots,
+						...newSlots, // we inject the new slots
 						...snippetData.slots
 							.slice(snippetData.currentIndex + 1)
 							.map((s) => ({
@@ -505,10 +443,11 @@ function templateCompletions(context) {
 					];
 
 					// Update state with new slots
+					// we stay at the same index (first slot replaced the old one)
 					view.dispatch({
 						effects: activeSnippetEffect.of({
 							slots: allSlots,
-							currentIndex: snippetData.currentIndex, // Stay at same index (first new slot)
+							currentIndex: snippetData.currentIndex,
 						}),
 					});
 
@@ -554,7 +493,7 @@ function templateCompletions(context) {
 					const indent = lineText.match(/^\s*/)?.[0] || "";
 
 					// Unescape special characters and apply indentation to all newlines
-					const unescapedItem = unescapeTemplate(item);
+					const unescapedItem = unescapeChar(item);
 					const indentedItem = unescapedItem.replace(/\n/g, `\n${indent}`);
 
 					const lengthDiff = indentedItem.length - (to - from);
@@ -589,9 +528,9 @@ function templateCompletions(context) {
 		})),
 		filter: false,
 	};
-}
+};
 
-function findFirstEmptyLineAfter(state, startLineNumber) {
+const findFirstEmptyLineAfter = (state, startLineNumber) => {
 	const totalLines = state.doc.lines;
 
 	for (let i = startLineNumber + 1; i <= totalLines; i++) {
@@ -601,25 +540,22 @@ function findFirstEmptyLineAfter(state, startLineNumber) {
 		}
 	}
 
-	// If none found, return end-of-document
+	// If none found, return last line that represent "EOF"
 	return state.doc.length;
-}
+};
 
-function duplicateAsSnippet(view) {
+const duplicateAsSnippet = (view) => {
 	if (!view) return;
 
 	// Parse grammar rules from the entire editor content
 	const editorText = view.state.doc.toString();
 	parseGrammarRules(editorText);
 
+	// Get the line under the cursor for expansion
 	const sel = view.state.selection.main;
 	const line = view.state.doc.lineAt(sel.from);
-	let src = line.text;
-
-	src = `    ${src.replace(/^\s*#\s*/, "").trim()}`;
-
-	// Extract indentation (4 spaces as set above)
-	const indent = "    ";
+	const src = line.text.replace(/^\s*#\s*/, "").trim();
+	const indent = line.text.match(/^(\s*)/)?.[1] || "";
 
 	// Parse using the new nested template parser with indentation
 	const parsed = parseNestedTemplate(src, "", indent);
@@ -633,7 +569,7 @@ function duplicateAsSnippet(view) {
 		});
 	}
 
-	// Calculate absolute positions for slots
+	// Update positions for slots (slot is placeholder info)
 	const slots = parsed.slots.map((slot) => ({
 		...slot,
 		from: insertPos + slot.from,
@@ -654,35 +590,36 @@ function duplicateAsSnippet(view) {
 	});
 
 	// Delete the first placeholder and show completions
-	if (slots.length > 0) {
-		setTimeout(() => {
-			const firstSlot = slots[0];
-			view.dispatch({
-				changes: { from: firstSlot.from, to: firstSlot.to, insert: "" },
-				selection: { anchor: firstSlot.from },
-				effects: activeSnippetEffect.of({
-					slots: slots.map((s, i) => {
-						if (i === 0) {
-							return { ...s, from: firstSlot.from, to: firstSlot.from };
-						} else {
-							const shift = firstSlot.to - firstSlot.from;
-							return { ...s, from: s.from - shift, to: s.to - shift };
-						}
-					}),
-					currentIndex: 0,
-				}),
-			});
-
-			// Trigger completion after placeholder deletion using requestAnimationFrame for better mobile support
-			view.focus();
-			requestAnimationFrame(() => {
-				requestAnimationFrame(() => {
-					startCompletion(view);
-				});
-			});
-		}, 10);
+	if (slots.length === 0) {
+		return;
 	}
-}
+	setTimeout(() => {
+		const firstSlot = slots[0];
+		view.dispatch({
+			changes: { from: firstSlot.from, to: firstSlot.to, insert: "" },
+			selection: { anchor: firstSlot.from },
+			effects: activeSnippetEffect.of({
+				slots: slots.map((s, i) => {
+					if (i === 0) {
+						return { ...s, from: firstSlot.from, to: firstSlot.from };
+					}
+					const shift = firstSlot.to - firstSlot.from;
+					return { ...s, from: s.from - shift, to: s.to - shift };
+				}),
+				currentIndex: 0,
+			}),
+		});
+
+		// Trigger completion after placeholder deletion using requestAnimationFrame, this helps
+		// for mobile support
+		view.focus();
+		requestAnimationFrame(() => {
+			requestAnimationFrame(() => {
+				startCompletion(view);
+			});
+		});
+	}, 10);
+};
 
 export function ClassBrowser({ device, onClose }: ClassBrowserProps) {
 	const editorRef = useRef<EditorView | undefined>(undefined);
@@ -904,6 +841,8 @@ mod-?:     displays this entry
 							myCustomKeymap,
 							activeSnippetField,
 							Prec.high(
+								// Add new keymaps for recursive snippets
+								// completion
 								keymap.of([
 									{
 										key: "Tab",
@@ -960,6 +899,8 @@ mod-?:     displays this entry
 								tooltipClass: () => "snippet-completion-tooltip",
 								defaultKeymap: true,
 							}),
+							// tooltip placement is totally wrong...
+							// it depends too much on the rest of the divs that is badly styled
 							EditorView.baseTheme({
 								".cm-tooltip.cm-tooltip-autocomplete, &light .cm-tooltip-autocomplete":
 									{
