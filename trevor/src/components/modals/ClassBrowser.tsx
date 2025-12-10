@@ -558,7 +558,7 @@ const duplicateAsSnippet = (view) => {
 	const indent = line.text.match(/^(\s*)/)?.[1] || "";
 
 	// Parse using the new nested template parser with indentation
-	const parsed = parseNestedTemplate(src, "", indent);
+	const parsed = parseNestedTemplate(`${indent}${src}`, "", indent);
 	const plainText = parsed.plainText;
 	const insertPos = findFirstEmptyLineAfter(view.state, line.number);
 
