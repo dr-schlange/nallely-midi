@@ -350,6 +350,7 @@ export const Scope = ({
 					justifyContent: "flex-end",
 					flexDirection: "row",
 					gap: "4px",
+					pointerEvents: "none",
 				}}
 			>
 				<DragNumberInput

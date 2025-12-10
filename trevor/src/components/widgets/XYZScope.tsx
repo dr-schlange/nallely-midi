@@ -422,6 +422,7 @@ export const XYZScope = ({ id, onClose, num }: WidgetProps) => {
 					justifyContent: "flex-end",
 					flexDirection: "row",
 					gap: "4px",
+					pointerEvents: "none",
 				}}
 			>
 				<DragNumberInput

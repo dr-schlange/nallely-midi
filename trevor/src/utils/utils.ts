@@ -343,3 +343,6 @@ export const devUID = (device) => {
 
 import { AnsiUp } from "ansi_up";
 export const AnsiParser = new AnsiUp();
+
+export const clamp = (value: number, min: number, max: number) =>
+	Math.min(Math.max(value, min), max);

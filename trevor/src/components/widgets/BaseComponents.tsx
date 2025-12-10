@@ -38,6 +38,7 @@ export const Button = ({
 				display: "flex",
 				flexDirection: "column",
 				justifyContent: "center",
+				pointerEvents: "auto",
 				...(style ?? {}),
 			}}
 			onMouseDown={(event) => {

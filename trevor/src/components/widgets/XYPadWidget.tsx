@@ -197,13 +197,14 @@ export const XYPad = ({ id, onClose, num }: WidgetProps) => {
 					width: "100%",
 					userSelect: "none",
 					position: "absolute",
+					pointerEvents: "none",
 				}}
 			>
 				<Button
 					text={"h"}
 					activated={hold}
 					onClick={() => setHold((prev) => !prev)}
-					tooltip="Expand widget"
+					tooltip="Hold value"
 				/>
 				<Button text="x" onClick={() => onClose?.(id)} tooltip="Close widget" />
 			</div>

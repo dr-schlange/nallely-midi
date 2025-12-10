@@ -133,6 +133,7 @@ export const Pads = ({ id, onClose, num }: WidgetProps) => {
 					justifyContent: "flex-end",
 					flexDirection: "row",
 					gap: "4px",
+					pointerEvents: "none",
 				}}
 			>
 				<Button text="x" onClick={() => onClose?.(id)} tooltip="Close widget" />

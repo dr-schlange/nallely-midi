@@ -35,6 +35,7 @@ const WidgetComponents = {
 			{...props}
 		/>
 	),
+	GPControl,
 };
 
 export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
@@ -191,6 +192,7 @@ import {
 	useSensors,
 } from "@dnd-kit/core";
 import { findFirstMissingValue } from "../utils/utils";
+import { GPControl } from "./widgets/GPControlWidget";
 
 const SortableWidget = ({
 	id,
