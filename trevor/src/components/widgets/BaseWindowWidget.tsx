@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { Button, type WidgetProps } from "./BaseComponents";
 
 type WindowWidgetProps = WidgetProps & {
@@ -49,7 +49,7 @@ export const WindowWidget = ({ id, onClose, num, url }: WindowWidgetProps) => {
 			</div>
 			<iframe
 				ref={iframeRef}
-				src={url}
+				src={`${url}?nallelyId=${id}`}
 				title="Window"
 				style={{
 					height: "100%",
