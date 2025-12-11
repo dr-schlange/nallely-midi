@@ -4,33 +4,24 @@
 
 ### Features
 
+#### Module user layer
+
 * Add explicit support for [amsynth](https://github.com/amsynth/amsynth/) and any software MIDI synth
 * Add program change support
 * Add bank/preset loading priority
 * Add new UI for virtual devices: devices are now looking more like modules in a modular synthesis rack
 * Add drag and drop for modules in the mini rack system
-* Add exception handler for virtual devices
 * Add new modal to create multiple devices instances at once
-* Introduce >0, !=0 and round conversion policy
-* Add `__post_init__(...)` hook for creating internal attributes for virtual devices
-* Add dynamic class code generation (Smalltalk inspired)
-* Add dynamic instances migrations (Smalltalk inspired)
-* Add support for debugger (pdb/ipdb/...) and fake stdin redirected to the frontend
-* Add support for hot-patching instances
-* Add support for creating new virtual devices directly from the UI (Smalltalk inspired)
-* Add support for codegeneration and versioning different versions of virtual devices
-* Add support for "layers" (replacement of internal classes at run time), layers are versioned also
-* Add better code editor support on mobile
-* Add self-modifying decorator for module/virtual device auto-generator following the docstring
 * Add new control widgets:
   * XYPad
   * Pads
   * Sliders
+  * Gamepad-like virtual controls
 * Add new modules:
   * Mixer
   * Crossfade
   * Harmonic Generator
-  * ThreasholdGate
+  * ThresholdGate
   * 16-step steps sequencer
   * 8-step flexible steps sequencer
   * experimental GB emulator
@@ -45,17 +36,33 @@
 * Sequencer8 steps are now not only input, but also output and yield their value on activation
 * Add experimental keyboard support (for linux mainly)
 * Add generic MIDI Bridge
-* Add JS finger-tracking external device example
-* Improve JS library for websocket connection
 * Improve ChordGenerator
-* Add kind of proxy support for virtual devices (mainly for the websocket bus): now each registered service on the websocket is shown as an independedent module
+* Add JS finger-tracking external device example
 * Add possibility to unregister a service from the websocket bus
-* Add code automatic code generator to generate the online doc for existing modules
-* Add support for binary messages send by the websocket server
-* Add scaler range with drop down for target parameter with accepted values
 * Add new UI for MIDI ports I/O
 * Add link velocity support
 * Add back menu for MIDI devices in the right bar
+* Add scaler range with drop down for target parameter with accepted values
+
+#### Developer/Moduler developer layer
+
+* Add exception handler for virtual devices
+* Introduce >0, !=0 and round conversion policy
+* Add `__post_init__(...)` hook for creating internal attributes for virtual devices
+* Add dynamic class code generation (Smalltalk inspired)
+* Add dynamic instances migrations (Smalltalk inspired)
+* Add support for debugger (pdb/ipdb/...) and fake stdin redirected to the frontend
+* Add support for hot-patching instances
+* Add support for creating new virtual devices directly from the UI (Smalltalk inspired)
+* Add support for codegeneration and versioning different versions of virtual devices
+* Add support for "layers" (replacement of internal classes at run time), layers are versioned also
+* Add better code editor support on mobile
+* Add self-modifying decorator for module/virtual device auto-generator following the docstring
+* Improve JS library for websocket connection
+* Add kind of proxy support for virtual devices (mainly for the websocket bus): now each registered service on the websocket is shown as an independedent module
+* Add code automatic code generator to generate the online doc for existing modules
+* Add support for binary messages send by the websocket server
+* Introduced a small system for fast doc typing in the editor (user-driven term-rewriting system based on recursive snippets)
 
 ### Bug fixes
 
