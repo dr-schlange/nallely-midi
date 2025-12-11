@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## Nallely v0.2.0 -- Tepezcohuite
+## Nallely v0.2.1 -- Tepezcohuite
 
 ### Fix
 
