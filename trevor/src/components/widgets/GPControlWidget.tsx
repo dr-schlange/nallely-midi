@@ -78,8 +78,9 @@ const DirectionalCross = ({ device }: { device }) => {
 					minHeight: "25px",
 					minWidth: "25px",
 					position: "absolute",
-					top: "35px",
+					top: "38px",
 					left: "30px",
+					borderBottom: "none",
 				}}
 			/>
 			<DButton
@@ -89,7 +90,8 @@ const DirectionalCross = ({ device }: { device }) => {
 					minWidth: "25px",
 					position: "absolute",
 					top: "63px",
-					left: "4px",
+					left: "5px",
+					borderRight: "none",
 				}}
 			/>
 			<DButton
@@ -100,6 +102,7 @@ const DirectionalCross = ({ device }: { device }) => {
 					position: "absolute",
 					top: "63px",
 					left: "58px",
+					borderLeft: "none",
 				}}
 			/>
 			<DButton
@@ -109,7 +112,8 @@ const DirectionalCross = ({ device }: { device }) => {
 					minWidth: "25px",
 					position: "absolute",
 					top: "91px",
-					left: "31px",
+					left: "30px",
+					borderTop: "none",
 				}}
 			/>
 		</>
