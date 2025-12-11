@@ -146,6 +146,7 @@ export default function DragNumberInput({
 				userSelect: "none",
 				maxWidth: width,
 				width: width,
+				pointerEvents: "auto",
 				...style,
 			}}
 		/>
