@@ -84,7 +84,7 @@ const DirectionalCross = ({ device }: { device }) => {
 				}}
 			/>
 			<DButton
-				onChange={(value) => parameters.down.fun(device, value)}
+				onChange={(value) => parameters.left.fun(device, value)}
 				style={{
 					minHeight: "25px",
 					minWidth: "25px",
@@ -95,7 +95,7 @@ const DirectionalCross = ({ device }: { device }) => {
 				}}
 			/>
 			<DButton
-				onChange={(value) => parameters.left.fun(device, value)}
+				onChange={(value) => parameters.right.fun(device, value)}
 				style={{
 					minHeight: "25px",
 					minWidth: "25px",
@@ -106,7 +106,7 @@ const DirectionalCross = ({ device }: { device }) => {
 				}}
 			/>
 			<DButton
-				onChange={(value) => parameters.right.fun(device, value)}
+				onChange={(value) => parameters.down.fun(device, value)}
 				style={{
 					minHeight: "25px",
 					minWidth: "25px",
