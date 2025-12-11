@@ -2,6 +2,14 @@
 
 ## Nallely v0.2.0 -- Tepezcohuite
 
+### Fix
+
+* Fix labeling of controls on the GampadLike widget
+* Fix indentation for the term rewriting system
+* Fix unresponsive drag input on oscilloscopes
+
+## Nallely v0.2.0 -- Tepezcohuite
+
 ### Features
 
 #### Module user layer
