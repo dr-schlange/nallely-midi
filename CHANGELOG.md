@@ -2,7 +2,7 @@
 
 ## Nallely v0.2.0 -- Tepezcohuite
 
-### Fix
+### Fix
 
 * Fix labeling of controls on the GampadLike widget
 * Fix indentation for the term rewriting system
