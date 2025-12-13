@@ -289,3 +289,156 @@ class ThresholdGate(VirtualDevice):
     def main(self, ctx: ThreadContext) -> Any:
         if self.type == "continuous":  # type: ignore
             return self.process(self.input, self.threshold)  # type: ignore
+
+
+class Multiplexer(VirtualDevice):
+    """
+    Multiplexer
+
+    inputs:
+    # * %name [%range] %options: %doc
+    * in0_cv [0, 127] <any>: input 0
+    * in1_cv [0, 127] <any>: input 2
+    * in2_cv [0, 127] <any>: input 3
+    * in3_cv [0, 127] <any>: input 4
+    * in4_cv [0, 127] <any>: input 5
+    * in5_cv [0, 127] <any>: input 6
+    * in6_cv [0, 127] <any>: input 7
+    * in7_cv [0, 127] <any>: input 8
+    * in8_cv [0, 127] <any>: input 9
+    * selector_cv [0, 7] init=0 round <both>: input selector
+
+    outputs:
+    # * %name [%range]: %doc
+    * out_cv [0, 127]: output
+
+    type: ondemand
+    category: <category>
+    meta: disable default output
+    """
+
+    selector_cv = VirtualParameter(
+        name="selector", range=(0.0, 7.0), conversion_policy="round", default=0.0
+    )
+    out_cv = VirtualParameter(name="out", range=(0.0, 127.0))
+    in2_cv = VirtualParameter(name="in2", range=(0.0, 127.0))
+    in3_cv = VirtualParameter(name="in3", range=(0.0, 127.0))
+    in4_cv = VirtualParameter(name="in4", range=(0.0, 127.0))
+    in5_cv = VirtualParameter(name="in5", range=(0.0, 127.0))
+    in6_cv = VirtualParameter(name="in6", range=(0.0, 127.0))
+    in7_cv = VirtualParameter(name="in7", range=(0.0, 127.0))
+    in8_cv = VirtualParameter(name="in8", range=(0.0, 127.0))
+    in0_cv = VirtualParameter(name="in0", range=(0.0, 127.0))
+    in1_cv = VirtualParameter(name="in1", range=(0.0, 127.0))
+
+    def __post_init__(self, **kwargs):
+        self.ins = [getattr(self, f"in{i}_cv") for i in range(8)]
+        return {"disable_output": True}
+
+    def triggerif(self, id_):
+        if self.selector == id_:
+            return getattr(self, self.ins[id_].name)
+
+    @on(in1_cv, edge="any")
+    def on_in1_any(self, value, ctx):
+        if self.selector == 1:
+            return (value, [self.out_cv])
+
+    @on(in0_cv, edge="any")
+    def on_in0_any(self, value, ctx):
+        if self.selector == 0:
+            return (value, [self.out_cv])
+
+    @on(in8_cv, edge="any")
+    def on_in8_any(self, value, ctx):
+        if self.selector == 8:
+            return (value, [self.out_cv])
+
+    @on(in7_cv, edge="any")
+    def on_in7_any(self, value, ctx):
+        if self.selector == 7:
+            return (value, [self.out_cv])
+
+    @on(in6_cv, edge="any")
+    def on_in6_any(self, value, ctx):
+        if self.selector == 6:
+            return (value, [self.out_cv])
+
+    @on(in5_cv, edge="any")
+    def on_in5_any(self, value, ctx):
+        if self.selector == 5:
+            return (value, [self.out_cv])
+
+    @on(in4_cv, edge="any")
+    def on_in4_any(self, value, ctx):
+        if self.selector == 4:
+            return (value, [self.out_cv])
+
+    @on(in3_cv, edge="any")
+    def on_in3_any(self, value, ctx):
+        if self.selector == 3:
+            return (value, [self.out_cv])
+
+    @on(in2_cv, edge="any")
+    def on_in2_any(self, value, ctx):
+        if self.selector == 2:
+            return (value, [self.out_cv])
+
+    @on(selector_cv, edge="both")
+    def on_selector_both(self, value, ctx):
+        return self.triggerif(value)
+
+
+class Demultiplexer(VirtualDevice):
+    """
+    Demultiplexer
+
+    inputs:
+    # * %name [%range] %options: %doc
+    * input_cv [0, 127] <any>: input
+    * selector_cv [0, 7] round <both>: selector
+
+    outputs:
+    # * %name [%range]: %doc
+    * out0_cv [0, 127]: out0
+    * out1_cv [0, 127]: out1
+    * out2_cv [0, 127]: out2
+    * out3_cv [0, 127]: out3
+    * out4_cv [0, 127]: out4
+    * out5_cv [0, 127]: out5
+    * out6_cv [0, 127]: out6
+    * out7_cv [0, 127]: out7
+
+    type: <ondemand | continuous>
+    category: <category>
+    meta: disable default output
+    """
+
+    input_cv = VirtualParameter(name="input", range=(0.0, 127.0))
+    selector_cv = VirtualParameter(
+        name="selector", range=(0.0, 7.0), conversion_policy="round"
+    )
+    out7_cv = VirtualParameter(name="out7", range=(0.0, 127.0))
+    out6_cv = VirtualParameter(name="out6", range=(0.0, 127.0))
+    out5_cv = VirtualParameter(name="out5", range=(0.0, 127.0))
+    out4_cv = VirtualParameter(name="out4", range=(0.0, 127.0))
+    out3_cv = VirtualParameter(name="out3", range=(0.0, 127.0))
+    out2_cv = VirtualParameter(name="out2", range=(0.0, 127.0))
+    out1_cv = VirtualParameter(name="out1", range=(0.0, 127.0))
+    out0_cv = VirtualParameter(name="out0", range=(0.0, 127.0))
+
+    def __post_init__(self, **kwargs):
+        self.outs = [getattr(self, f"out{i}_cv") for i in range(8)]
+        return {"disable_output": True}
+
+    @on(selector_cv, edge="both")
+    def on_selector_both(self, value, ctx):
+        idx = int(self.selector)
+        yield (0, self.outs[:idx] + self.outs[idx + 1 :])
+        yield (value, [self.outs[idx]])
+
+    @on(input_cv, edge="any")
+    def on_input_any(self, value, ctx):
+        idx = int(self.selector)
+        yield (0, self.outs[:idx] + self.outs[idx + 1 :])
+        yield (value, [self.outs[idx]])
