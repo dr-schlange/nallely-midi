@@ -30,6 +30,7 @@ from .core.world import (
     unregister_virtual_device_class,
     virtual_device_classes,
 )
+from .newmodule import create_class
 from .trevor import TrevorAPI
 from .trevor.meta_trevor_api import MetaTrevorAPI
 from .utils import StateEncoder, find_class, load_modules, longest_common_substring
@@ -524,39 +525,12 @@ original_file={read_from}
         return cls
 
     def create_new_vdev(self, name, setup_callback=None):
-        doc = f"""    \"\"\"
-    {name}
-
-    <description>
-
-    inputs:
-    # * %name [%range] init=%default %conv <%edge>: %doc
-    # * %name [%range] %options: %doc
-
-    outputs:
-    # * %name [%range]: %doc
-
-    type: <ondemand | continuous>
-    category: <category>
-    # meta: disable default output
-    \"\"\"
-    """
-        cls = type(
-            name,
-            (VirtualDevice,),
-            {
-                "__doc__": doc,
-            },
-        )
-        code = f"""class {name}(VirtualDevice):
-    {doc}
-        """
-        cls.__source__ = code
+        cls = create_class(name)
 
         instance = cls(autoconnect=True)
         if setup_callback:
             setup_callback(instance)
-        self.meta_trevor.compile_save_new_class(instance, code)
+        self.meta_trevor.compile_save_new_class(instance, cls.__source__)
         return instance
 
     def migrate_instance(self, instance, new_cls, temporary=False):
