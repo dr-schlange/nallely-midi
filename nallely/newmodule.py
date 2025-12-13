@@ -5,10 +5,10 @@ def create_class(name):
     {name}
 
     inputs:
-    # * %name [%range] %options: %doc
+    # * %inname [%range] %options: %doc
 
     outputs:
-    # * %name [%range]: %doc
+    # * %outname [%range]: %doc
 
     type: <ondemand | continuous>
     category: <category>
