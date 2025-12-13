@@ -33,10 +33,10 @@ interface ClassBrowserProps {
 }
 
 const completionRegistry = {
-	name: ["a_cv", "b_cv", "in<x>_cv", "out<x>_cv"],
-	x: ["0", "1", "2", "3", "4"],
+	name: ["a_cv", "b_cv", "in<x>_cv", "out<x>_cv", "io<x>_cv", "<%portname>_cv"],
+	x: ["0", "1", "2", "3", "4", "5", "6", "7", "8"],
 	range: ["0, 1", "0, 127", "%min", "%max", "%entries"],
-	entries: ["%entries, %entries"],
+	entries: ["%entries, %entries", "λ"],
 	options: ["init=%default %conv", "%conv"],
 	default: ["0", "1", "64", "127", "-1"],
 	conv: ["round %edges", ">0 %edges", "!=0 %edges", "%edges"],
