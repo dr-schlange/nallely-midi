@@ -47,6 +47,9 @@ from .shifter import (
 )
 from .switchs import (
     BitCounter,
+    Demultiplexer,
+    DownScaler,
+    Multiplexer,
     RingCounter,
     SeqSwitch,
     ShiftRegister,
@@ -122,4 +125,7 @@ __all__ = [
     "Harmonizer",
     "EuclidianSequencer",
     "VolumeMixer",
+    "DownScaler",
+    "Multiplexer",
+    "Demultiplexer",
 ]
