@@ -189,6 +189,8 @@ def gen_class_code(
             )
             for i, node in enumerate(module.body):
                 match node:
+                    case ast.ImportFrom(module="nallely"):
+                        continue
                     case ast.Import() as imp:
                         copied_imports.append(imp)
                     case ast.ImportFrom(level=level) as imp if level == 0:
@@ -206,8 +208,6 @@ def gen_class_code(
         # We copy the existing imports
         # We need a finer grain managment of imports
         classdef = None
-        # has_imports = len(copied_imports) > 0
-        # idx = -1
         for i, node in enumerate(new_class.body):
             match node:
                 case ast.ClassDef(name=cls.__name__) as clsdef:
@@ -218,6 +218,8 @@ def gen_class_code(
                     classdef = clsdef
                     # idx = i
                     break
+                case ast.ImportFrom(module="nallely"):
+                    continue
                 case ast.Import() as imp if not has_imports:
                     copied_imports.append(imp)
                 case ast.ImportFrom(level=level) as imp if (
@@ -273,6 +275,8 @@ def gen_class_code(
     has_nallely_imports = False
     has_imports = len(copied_imports) > 0
     autogen_import = None
+    imports_to_remove = []
+    unparsed_imports = [ast.unparse(i) for i in copied_imports]
     for i, node in enumerate(file_code.body):
         match node:
             case ast.ClassDef(name=cls.__name__) as clsdef:
@@ -295,10 +299,16 @@ def gen_class_code(
             case ast.Import() as imp if not has_imports:
                 # We need a finer grain managment of imports
                 copied_imports.append(imp)
+            case (ast.Import() | ast.ImportFrom()) as imp if (
+                ast.unparse(imp) in unparsed_imports
+            ):
+                imports_to_remove.append(imp)
             case ast.ImportFrom() as imp if not has_imports:
                 # We need a finer grain managment of imports
                 copied_imports.append(imp)
 
+    for node in imports_to_remove:
+        file_code.body.remove(node)
     if autogen_import and not keep_decorator:
         file_code.body.remove(autogen_import)
     if not has_nallely_imports:
