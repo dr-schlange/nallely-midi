@@ -406,7 +406,7 @@ def parsespec(entries, are_outputs=False):
                     cv_name=cv_name,
                     name=name,
                     accepted_values=accepted_values,
-                    edges=edges if edges else ["any"],
+                    edges=edges if edges else [],
                     default=default,
                 )
             )
