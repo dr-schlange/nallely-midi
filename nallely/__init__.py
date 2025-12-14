@@ -49,6 +49,7 @@ from .switchs import (
     BitCounter,
     Demultiplexer,
     DownScaler,
+    DualRouter,
     Multiplexer,
     RingCounter,
     SeqSwitch,
@@ -128,4 +129,5 @@ __all__ = [
     "DownScaler",
     "Multiplexer",
     "Demultiplexer",
+    "DualRouter",
 ]

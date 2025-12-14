@@ -476,3 +476,60 @@ class DownScaler(VirtualDevice):
     def on_input_any(self, value, ctx):
         self.idx = (self.idx + 1) % 2
         return (value, [self.outs[self.idx]])
+
+
+class DualRouter(VirtualDevice):
+    """DualRouter
+
+    Routes 1 of 2 inputs to the output:
+     * on a rising ede on selector,
+     * or considering selector as an absolute selector (0 = route in0, 1 = route in1)
+
+    inputs:
+    # * %inname [%range] %options: %doc
+    * in0_cv [0, 127] <any>: input 1
+    * in1_cv [0, 127] <any>: input 2
+    * type_cv [toggle, absolute] round: toggle behavior or absolute
+    * selector_cv [0, 1] >0 <any, rising>: select input to deliver
+
+    outputs:
+    # * %outname [%range]: %doc
+
+    type: <ondemand | continuous>
+    category: <category>
+    # meta: disable default output
+    """
+
+    in0_cv = VirtualParameter(name="in0", range=(0.0, 127.0))
+    in1_cv = VirtualParameter(name="in1", range=(0.0, 127.0))
+    type_cv = VirtualParameter(name="type", accepted_values=["toggle", "absolute"])
+    selector_cv = VirtualParameter(
+        name="selector", range=(0.0, 1.0), conversion_policy=">0"
+    )
+
+    def __post_init__(self, **kwargs):
+        self.idx = 0
+
+    def trigger_if(self, idx):
+        if self.idx == idx:
+            return getattr(self, f"in{idx}")
+
+    @on(selector_cv, edge="any")
+    def on_selector_any(self, value, ctx):
+        if self.type == "absolute":
+            self.idx = int(value)
+            return self.trigger_if(self.idx)
+
+    @on(selector_cv, edge="rising")
+    def on_selector_rising(self, value, ctx):
+        if self.type == "toggle":
+            self.idx = (self.idx + 1) % 2
+            return self.trigger_if(self.idx)
+
+    @on(in1_cv, edge="any")
+    def on_in1_any(self, value, ctx):
+        return self.trigger_if(1)
+
+    @on(in0_cv, edge="any")
+    def on_in0_any(self, value, ctx):
+        return self.trigger_if(0)
