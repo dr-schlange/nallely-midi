@@ -11,9 +11,11 @@ class NallelyService {
 		this.name = name;
 		this.parameters = parameters;
 		this.config = config;
+		const params = new URLSearchParams(window.location.search);
+		const nallelyId = params.get("nallelyId") || name;
 		this.url = address
-			? `ws://${address}/${name}/autoconfig`
-			: `ws://${window.location.hostname}:6789/${name}/autoconfig`;
+			? `ws://${address}/${nallelyId}/autoconfig`
+			: `ws://${window.location.hostname}:6789/${nallelyId}/autoconfig`;
 		this.register = register;
 		this.autoRegister();
 	}
