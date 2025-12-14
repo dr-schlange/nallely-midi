@@ -974,7 +974,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 							>
 								<option value={""}>--</option>
 								{all_devices.map((cls) => (
-									<option key={`${cls.id}`} value={cls.id}>
+									<option key={cls.repr} value={cls.id}>
 										{cls.repr}
 									</option>
 								))}
