@@ -102,8 +102,10 @@
 </head>
 
 <body>
-<h1 id="a-hackable-system-for-midi-and-signal-experimentation">A
-Hackable System for MIDI and Signal Experimentation</h1>
+<h1
+id="a-small-organic-live-programmable-modular-brain-for-midi-and-cv-like-signals">A
+Small Organic Live-Programmable Modular Brain for MIDI and CV-like
+Signals</h1>
 <p>Nallely - pronounced “Nayeli” - is an organic open-source Python
 platform for modular signal processing and meta-synth creation. Nallely
 lets you build your own modular instrument or machine from any signal
@@ -207,7 +209,7 @@ signals;</li>
 technology can register and emit or receive signals;</li>
 <li>meta-neurons which can control, create, modify other neurons.</li>
 </ul>
-<p>Currently, Nallely includes a few remote neurons coded in JavaScript,
+<p>Nallely includes a few remote neurons coded in JavaScript,
 introducing 3D visuals (mental imagery for your brain) that can be
 controlled by signals received from your Nallely session (your modular
 brain instance). It also includes a webcam-aware neuron, providing
@@ -234,6 +236,91 @@ alt="Trevor loves you" /></td>
 </tr>
 </tbody>
 </table>
+<h2 id="how-is-it-different-from-existing-systems">How is it different
+from existing systems?</h2>
+<p>Nallely has properties that are different from traditional modular
+synthesis softwares:</p>
+<ul>
+<li>each module (neuron) runs in its own independent thread and
+communicates with others neurons (or your synths) by sending
+asynchronous messages. This property (message sending), copied from
+Smalltalk and reactive actor-based systems, enables neuron isolation,
+resiliency and fault-tolerancy. If a module “fails”, the system
+continues to run, and lets you the possibility to kill the faulty
+module, or live-debug it and restart it;</li>
+<li>it emulates time, running by wall-clock and doesn’t simulate time.
+There is no global tick, no global clock: each module can run a it’s own
+speed;</li>
+<li>synchronization happens, because it happens, not because it’s
+enforced;</li>
+<li>everything is a signal. MIDI notes and CV-like data is unified as a
+stream of numbers. You don’t need to wonder which kind of patch you need
+to use, which CC you should target, how to map the information range,
+all is automatical: the patch jit-compiles a small adapter when you
+connect two ports to ensure speed and hide dedicated behaviors;</li>
+<li>patchs are directed, they indicate how the signal will be sent from
+one neuron to another;</li>
+<li>ports can be input and output at the same time. Depending on how the
+module is developed, a port can yield datas or receive data. This
+enables a new class of modules where you can can seemlessly code
+reaction chains, observable memory, …;</li>
+<li>talks network in an unified way;</li>
+<li>patch from anywhere in the same network: sessions are headless and
+are controlled by a web-interface. Connect to a session from your phone
+or your laptop. The web-UI is stateless, if you’re connected to a
+session, you’ll always be in sync with it;</li>
+<li>all patch modification is versionned using Git: don’t loose your
+patches, or their history, go back in time to revive a previous version,
+branch to make experiments, sync your memory with a remote Git
+repository to share your patches.</li>
+</ul>
+<h2 id="extensionhacking-is-encouraged">Extension/hacking is
+encouraged</h2>
+<p>Nallely is built to be fully extensible and hackable, at it’s core,
+and at the neuron level, all live:</p>
+<ul>
+<li>you don’t like the web-interface? You can follow a simple small
+protocol to control a running session and you’ll get a snapshot
+representing the new full state of the session, letting you the option
+to display it as you want;</li>
+<li>you can live-code your Python neurons while the system runs, you can
+create modules, edit the Python code from the web-UI, even debug it with
+standard Python cli debugging tools;</li>
+<li>you can live-patch your Python neurons while the system runs: modify
+the code of your running module and directly sees the result. No need to
+restart the system, no hot-reload, no instance re-creation, Nallely
+embedds an object-centric hot-patch system with instance migration.
+Never loose your code, all is versionned with git;</li>
+<li>you can write your modules and code from your phone if you want, to
+help you with bootstrapping new neurons, the code editor proposes a code
+generator and a smart templating system relying on a user-driven
+term-rewriting system. Write your own snippets templates, and recursive
+templates grammar directly in the editor to help you code faster.</li>
+<li>you don’t like Python? You can develop neurons in your favorite
+language as long as it knows how to connect to a websocket server. Just
+declare the ports your want to expose, register callbacks and your good
+to go. There’s examples with webcam, finger trackings, gameboy emulator,
+…, integrating a software to Nallely is easy and it opens for
+experimentation;</li>
+<li>neurons have access to an introspective API that lets them be able
+to create new neurons instances, auto-patch themselves, monitor other
+neurons, …</li>
+</ul>
+<h2 id="so">So…</h2>
+<p>Nallely is not a DAW or a system for computer-based sound synthesis;
+it’s more meta-synth focused and eventually a companion for your MIDI
+devices: to combine or manipulate them in order to create a new
+instrument, or to make semi-modular synths a little bit more
+modular.</p>
+<p>If you’re looking for something that ensures strong strict time,
+Nallely is not made for you. If you’re looking for high-predictability,
+Nallely might not be for you.</p>
+<p>By embracing asynchronous as first-class feature, Nallely is a
+playground that promotes emergent behaviors. So, it’s not a DAW, it’s
+not a DSP. It’s a playground for emergent behaviors, generative control,
+and turning synth rigs into living systems in the form of a programmable
+small living brain. Quickly experiments with crazy ideas: connect
+everything with anything and everything.</p>
 <p>Nallely is available, open-source, free, and will remain free and
 open-source.</p>
 
