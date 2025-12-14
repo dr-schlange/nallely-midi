@@ -38,7 +38,7 @@ const completionRegistry = {
 	outname: ["a_cv", "b_cv", "out<x>_cv", "<portname>_cv"],
 	x: ["0", "1", "2", "3", "4", "5", "6", "7", "8"],
 	range: ["0, 1", "0, 127", "%min", "%max", "%entries"],
-	entries: ["%entries, %entries", "λ"],
+	entries: ["%optname", "%entries, %entries"],
 	options: ["init=%default %conv", "%conv"],
 	default: ["0", "1", "64", "127", "-1"],
 	conv: ["round %edges", ">0 %edges", "!=0 %edges", "%edges"],
@@ -119,7 +119,9 @@ const expandCompletion = (completion, visited = new Set()) => {
 
 	// Extract the placeholder
 	const match = completion.match(/^(?:%|<)([a-zA-Z_]\w*)>?$/);
-	if (!match) return [completion];
+	if (!match) {
+		return [completion];
+	}
 
 	const placeholderName = match[1];
 
@@ -360,7 +362,7 @@ const templateCompletions = (context) => {
 	return {
 		from: slot.from,
 		to: slot.to,
-		options: expandedList.map((item) => ({
+		options: [...new Set(expandedList)].map((item) => ({
 			label: unescapeChar(item), // We show the unescaped version in completion menu
 			type: "constant",
 			apply: (view, completion, from, to) => {
@@ -556,16 +558,29 @@ const duplicateAsSnippet = (view) => {
 	// Get the line under the cursor for expansion
 	const sel = view.state.selection.main;
 	const line = view.state.doc.lineAt(sel.from);
+	const insertPos = findFirstEmptyLineAfter(view.state, line.number);
+
+	if (!line.text.trim().startsWith("#")) {
+		let txt = `${line.text}\n`;
+		if (insertPos === view.state.doc.length) {
+			txt = `\n${txt}`;
+		}
+		view.dispatch({
+			changes: { from: insertPos, insert: txt },
+		});
+
+		return;
+	}
+
 	const src = line.text.replace(/^\s*#\s*/, "").trim();
 	const indent = line.text.match(/^(\s*)/)?.[1] || "";
 
 	// Parse using the new nested template parser with indentation
 	const parsed = parseNestedTemplate(`${indent}${src}`, "", indent);
 	const plainText = parsed.plainText;
-	const insertPos = findFirstEmptyLineAfter(view.state, line.number);
 
 	// First, add a newline if needed
-	if (insertPos < view.state.doc.length) {
+	if (insertPos <= view.state.doc.length) {
 		view.dispatch({
 			changes: { from: insertPos, insert: "\n" },
 		});
