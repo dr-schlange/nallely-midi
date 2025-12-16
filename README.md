@@ -78,8 +78,45 @@ This repository proposes pre-compiled binaries that can directly be downloaded f
 Once you have Nallely running, you should see a prompt. Pressing `enter` will display information about the running Nallely's session. Typing `q` shutsdown the session, `?` displays the help menu.
 As Nallely have been run with Trevor and serves the UI, you can directly go to [http://localhost:3000](http://localhost:3000) or [http://127.0.0.1:3000](http://127.0.0.1:3000) which will serve Trevor-UI. The UI should connect directly to the Trevor Websocket Server.
 
+### Connect a MIDI Device
+
+ When it comes to the communication and the connection with MIDI devices, Nallely let you the choice about how you'll interact with it:
+
+ * from a generated Python API,
+ * from a MIDI bridge (generic Python API).
+
+The main difference is in the way you'll patch the elements later, both solution are obviously valid, but one gives you a better representation of the features of your MIDI device.
+
+* **Generated Python API** implies the generation of the Python API from a higher-level description, either CSV or YAML, and to generate the API from Nallely directly using the command line,
+* **MIDI bridge** doesn't imply the generation of the Python API, but will provide also a less detailed meaningful way of patching your devices: you'll have to rely on your knowledge of CCs of your MIDI device.
+
+The generated Python API lets you describe properly your MIDI device and had meaningful names to each CC, while the MIDI bridge exposes CCs ports on which you'll connect to.
+
 <details>
- <summary>Include a new MIDI device</summary>
+ <summary>Control your MIDI Device using the MIDI bridge (without Generating a Dedicated API)</summary>
+
+In the MIDI device rack (on the left in vertical mode), choose the `MIDI Bridge` from the drop-down menu. You'll have a new MIDI neuron created.
+
+<img width="286" height="207" alt="01" src="https://github.com/user-attachments/assets/47f154f0-0753-4c40-b7ed-e0ae7802666c" />
+
+Expand the `MIDI IOs` top panel, you'll see the MIDI ports discovered by the system. You can then click on the port that hosts your MIDI device, then click on the MIDI Bridge instance to connect them. 
+
+<img width="713" height="175" alt="02" src="https://github.com/user-attachments/assets/b5166b1d-e4e2-4ad8-9dbf-a6e0623d9421" />
+
+
+Once it's done, you're good to go, you can then select a channel for your device by clicking on the device and expanding the right bar, then you can start to patch!
+
+<img width="717" height="521" alt="03" src="https://github.com/user-attachments/assets/83dcb2f7-fd79-47c8-ba32-579aa5d41756" />
+
+The following video shows how to connect the MIDI Bridge to a MIDI port, change the channel and create an LFO to connect to the notes of the MIDI Bridge.
+
+https://github.com/user-attachments/assets/2686c6de-cd38-4717-a72f-a394309473ab
+
+
+</details>
+
+<details>
+ <summary>Include a new MIDI device Generating a Dedicated API</summary>
 
 If you have your MIDI device listed in the [MIDI CC & NRPN database](https://midi.guide) as CSV, or if you have a [YAML description](https://github.com/dr-schlange/nallely-midi/blob/main/docs/main.md#define-a-new-configuration-for-a-device-using-yaml) of your MIDI device, you can generate the Python API to integrate it with Nallely using the `generate` subcommand:
 
