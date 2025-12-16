@@ -36,12 +36,12 @@ const WidgetComponents = {
 		/>
 	),
 	GPControl,
-	SSynth: (props) => (
-		<WindowWidget
-			url={`http://${window.location.hostname}:3000/synth.html`}
-			{...props}
-		/>
-	),
+	// SSynth: (props) => (
+	// 	<WindowWidget
+	// 		url={`http://${window.location.hostname}:3000/synth.html`}
+	// 		{...props}
+	// 	/>
+	// ),
 };
 
 export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
