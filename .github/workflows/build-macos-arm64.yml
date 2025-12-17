@@ -1,4 +1,4 @@
-name:  Build Nallely Binary for macOS x64
+name:  Build Nallely Binary for macOS arm64
 
 on:
   push:
