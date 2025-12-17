@@ -114,6 +114,25 @@ def main():
         from nallely.codegen import generate_api
 
         generate_api(args.input, args.output)
+    else:
+        from nallely.trevor.trevor_bus import _print_with_trevor
+
+        welcome = f"""-= Welcome to Nallely a small organic live programmable modular brain =-
+
+To launch a session with the Trevor protocol and UI, use the "run" subcommand:
+
+    $ nallely run --with-trevor --serve-ui
+
+You can then browse to http://localhost:3000 to open Trevor-UI.
+The "--help" option will give you information about the options you can use:
+
+    $ nallely run --help
+
+To generate the Python code API for one of your MIDI device configuration use the "generate" subcommand:
+
+    $ nallely generate -i MYDEVICE.yaml -o MYDEVICE.py
+"""
+        _print_with_trevor(welcome)
 
 
 if __name__ == "__main__":
