@@ -7,13 +7,13 @@ Think about Nallely as a small brain, where each device is a neurone (nothing re
 [Nallely's Website](https://dr-schlange.github.io/nallely-midi/)
 [Demo videos (new and old)](https://www.youtube.com/playlist?list=PL0S9whcJCHAgP9Gb_Z3FyaJOYngbdR-mj)
 
-| Control multiple MIDI devices |  Patch your devices  |  Monitor the signals | Change settings
-:-------------------------:|:-------------------------:|:-----:|:-------:
-![Control multiple MIDI devices](https://github.com/user-attachments/assets/df545edc-6fa8-424f-9039-dd2046a9f406) | ![Patch in a graphical way](https://github.com/user-attachments/assets/d5d96809-159d-4cbb-81e2-5a1b7c3f9452) | ![See the signal at any point](https://github.com/user-attachments/assets/94e8cb6b-44a8-407b-acdb-1b66a148ad71) | ![Change any settings](https://github.com/user-attachments/assets/3509e077-cc97-424f-ac52-3c382e0fbaaa)
+|                                           Control multiple MIDI devices                                           |                                              Patch your devices                                              |                                               Monitor the signals                                               |                                             Change settings                                             |
+| :---------------------------------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------------------------: | :-----------------------------------------------------------------------------------------------------: |
+| ![Control multiple MIDI devices](https://github.com/user-attachments/assets/df545edc-6fa8-424f-9039-dd2046a9f406) | ![Patch in a graphical way](https://github.com/user-attachments/assets/d5d96809-159d-4cbb-81e2-5a1b7c3f9452) | ![See the signal at any point](https://github.com/user-attachments/assets/94e8cb6b-44a8-407b-acdb-1b66a148ad71) | ![Change any settings](https://github.com/user-attachments/assets/3509e077-cc97-424f-ac52-3c382e0fbaaa) |
 
-| Manage your patchs as a versioned memory | Trevor is always here | Get a Smalltalk-like playground | Explore your patch in 3D 
-:-------------------------:|:-------------------------:|:-----:|:-------:
-![Manage your patchs as a versioned memory](https://github.com/user-attachments/assets/177cb536-dee2-4f1d-9275-49cf0805fb13) |  ![Trevor loves you](https://github.com/user-attachments/assets/13b208d3-14b3-44aa-8e28-9344eca69f60) | ![Get a Smalltalk-like playground](https://github.com/user-attachments/assets/e247e41e-8850-4987-80a1-2ce6d98d72b6) | ![Explore your patch in 3D](https://github.com/user-attachments/assets/6d5abee2-73af-4ea8-a68a-7445e64cf0e6)
+|                                           Manage your patchs as a versioned memory                                           |                                        Trevor is always here                                         |                                           Get a Smalltalk-like playground                                           |                                           Explore your patch in 3D                                           |
+| :--------------------------------------------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------: | :-----------------------------------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------------: |
+| ![Manage your patchs as a versioned memory](https://github.com/user-attachments/assets/177cb536-dee2-4f1d-9275-49cf0805fb13) | ![Trevor loves you](https://github.com/user-attachments/assets/13b208d3-14b3-44aa-8e28-9344eca69f60) | ![Get a Smalltalk-like playground](https://github.com/user-attachments/assets/e247e41e-8850-4987-80a1-2ce6d98d72b6) | ![Explore your patch in 3D](https://github.com/user-attachments/assets/6d5abee2-73af-4ea8-a68a-7445e64cf0e6) |
 
 
 Features:
@@ -39,7 +39,7 @@ Features:
 * links are formally defined and are entities of the domain,
 * bouncy links: links can trigger target port associated link to have reaction chains,
 * Python API code generator for your device if it is listed by the [MIDI CC & NRPN database](https://github.com/pencilresearch/midi) project, or from a YAML description you can easily write (see `configs` folder for examples),
-* easy API to build your own reactive virtual devices (neurons) in Python, or as external virtual device in any technology, 
+* easy API to build your own reactive virtual devices (neurons) in Python, or as external virtual device in any technology,
 * websocket-based bus on which external services can auto-register and expose parameters to which you can bind your MIDI/virtual devices in a seemless way,
 * possibility to send/receive/broadcast/listen messages and information from the external services,
 * LFOs composition with mathematical expressions,
@@ -62,21 +62,19 @@ Browse the [Issues section](https://github.com/dr-schlange/nallely-midi/issues) 
 
 You can install Nallely from source or use the precompiled binary for your system. The installation from source is detailed lower in the README.
 
-### Prerequisites
-
-Nallely relies on `mido` and `python-rtmidi`. If you choose to use the pre-compiled version, they should come shipped directly with the binary. However, `python-rtmidi` eventually relies on `rtmidi`, so you need to have it installed on your machine. For Linux users, it's almost certain that your distribution has a package for it. For macOS users, there is a [homebrew](https://formulae.brew.sh/formula/rtmidi) that will let you install `rtmidi` easily.
+<!-- Nallely relies on `mido` and `python-rtmidi`. If you choose to use the pre-compiled version, they come shipped directly with the binary, so no other .  However, `python-rtmidi` eventually relies on `rtmidi`, so you need to have it installed on your machine. For Linux users, it's almost certain that your distribution has a package for it. For macOS users, there is a [homebrew](https://formulae.brew.sh/formula/rtmidi) that will let you install `rtmidi` easily. -->
 
 ### Install from binaries
 
 This repository proposes pre-compiled binaries that can directly be downloaded from the `Release` section in this repository. Those binaries are built from the repository by Github action. The binaries are produced by `pyinstaller` and embedd Nallely and Trevor, that can be ran from the command line, as well as Trevor-UI and visuals that can be accessed directly from your local web-browser.
 
-1. Download the archive related to your OS. Please, note that the binary for Windows has been built, but not tested as I don't have VM with this OS.
-2. Unzip the archive, you should have a single binary file: Nallely with Trevor.
+1. Download the archive related to your OS. Please, note that the binary for Windows has been built, but not tested.
+2. Unzip the archive, you should have a single binary file that contains Nallely with Trevor.
 3. Run Nallely: `nallely run --with-trevor --serve-ui` (this will run Nallely, enables the Trevor protocol and serve the UI as a webapp).
-3bis. If you want to have the builtins MIDI devices API loaded add the option `-b`: `nallely run --with-trevor --serve-ui -b`. Currently the builtin devices are the Korg NTS-1 and Korg Minilogue. There is extra configuration in [configs](https://github.com/dr-schlange/nallely-midi/tree/main/configs) for the Roland S-1, Behringer JT-4000 micro, and Behringer ProVS mini. 
+3bis. If you want to have the builtins MIDI devices API loaded add the option `-b`: `nallely run --with-trevor --serve-ui -b`. Currently the builtin devices are the Korg NTS-1 and Korg Minilogue. There is extra configuration in [configs](https://github.com/dr-schlange/nallely-midi/tree/main/configs) for the Roland S-1, Behringer JT-4000 micro, and Behringer ProVS mini.
 
 Once you have Nallely running, you should see a prompt. Pressing `enter` will display information about the running Nallely's session. Typing `q` shutsdown the session, `?` displays the help menu.
-As Nallely have been run with Trevor and serves the UI, you can directly go to [http://localhost:3000](http://localhost:3000) or [http://127.0.0.1:3000](http://127.0.0.1:3000) which will serve Trevor-UI. The UI should connect directly to the Trevor Websocket Server.
+As Nallely have been run with Trevor and serves the UI, you can directly go to [http://localhost:3000](http://localhost:3000) or [http://127.0.0.1:3000](http://127.0.0.1:3000) which will serve Trevor-UI. The UI should connect directly to the Trevor Websocket Server. Check the [quick tour/doc of Trevor-UI](https://github.com/dr-schlange/nallely-midi/blob/main/docs/gui-trevorui.md)
 
 ### Connect a MIDI Device
 
@@ -99,7 +97,7 @@ In the MIDI device rack (on the left in vertical mode), choose the `MIDI Bridge`
 
 <img width="286" height="207" alt="01" src="https://github.com/user-attachments/assets/47f154f0-0753-4c40-b7ed-e0ae7802666c" />
 
-Expand the `MIDI IOs` top panel, you'll see the MIDI ports discovered by the system. You can then click on the port that hosts your MIDI device, then click on the MIDI Bridge instance to connect them. 
+Expand the `MIDI IOs` top panel, you'll see the MIDI ports discovered by the system. You can then click on the port that hosts your MIDI device, then click on the MIDI Bridge instance to connect them.
 
 <img width="713" height="175" alt="02" src="https://github.com/user-attachments/assets/b5166b1d-e4e2-4ad8-9dbf-a6e0623d9421" />
 
@@ -140,7 +138,7 @@ NOTE: The `notes: 'keys_or_pads'` entry doesn't have to be in an isolated sectio
 
 <details>
  <summary>Embedded Visuals</summary>
- 
+
 All the embedded visuals are available at [http://localhost:3000/visuals](http://localhost:3000/visuals). You can open them, and to manipulate them from Nallely and Trevor-UI, you need first to create a `WebsocketBus` in Nallely. You can do that by opening the dropdown menu of the middle vertical rack in the UI and clicking on `WebsocketBus` (currently we are limited to 1 bus, but many different visuals can register to a same bus).
 </details>
 
@@ -195,7 +193,7 @@ The API can be written manually or generated from a YAML decription.
 In a session, virtual devices and MIDI devices exposes parameters which can all be patched. Consequently, you can have a LFO that controls the speed of another one, and the output of this modulated LFO can modulate another one. All devices inside a Nallely session are patchable: you can also patch parameter inside a same device. Consequently, you can have a parameter of your MIDI device that contols multiple parameters of other MIDI devices, or even parameter of the same MIDI device (e.g: the cutoff that controls also the resonance in an inverted fashion, or on a dedicated small range only).
 A websocket bus, also a virtual device, hence patchable, allows visuals and external application to register to it, exposing their ports. Once their ports are exposed on the bus, any MIDI or virtual device inside the Nallely's session can connect to them and control them.
 
-If you want more details about the architecture, you can check [this link](https://deepwiki.com/dr-schlange/nallely-midi/) which gives a good more or less in depth explanation of all the parts of the architecture. Not everything is 100% exact, but it's really close from reality. 
+If you want more details about the architecture, you can check [this link](https://deepwiki.com/dr-schlange/nallely-midi/) which gives a good more or less in depth explanation of all the parts of the architecture. Not everything is 100% exact, but it's really close from reality.
 
 <!--
 ##### Extra Virtual Devices
