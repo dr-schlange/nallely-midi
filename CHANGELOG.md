@@ -1,5 +1,23 @@
 # CHANGELOG
 
+## Nallely v0.3.0 -- Tepezcohuite
+
+### Features
+
+* Add new modules
+  * Downscaler
+  * DualRouter
+  * Multiplexer
+  * Demultiplexer
+
+#### Fix
+
+* Add welcome screen/message when running Nallely from the command line without any arguments
+* Fix some double key registration in the UI
+* Improve automatic completion for inputs/outputs for the docstring DSL
+* Fix multiple imports copy when migrating an instance to a new class
+
+
 ## Nallely v0.2.1 -- Tepezcohuite
 
 ### Fix
