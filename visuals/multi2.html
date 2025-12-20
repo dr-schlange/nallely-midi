@@ -60,6 +60,7 @@
     </div>
     <button id="toggle-controls">Show Controls</button>
 
+    <script src="https://cdn.jsdelivr.net/gh/dr-schlange/nallely-midi@main/libs/js/nallely-websocket.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.134/examples/js/controls/OrbitControls.js"></script>
     <script>
@@ -87,6 +88,22 @@
             waveSpeed: { min: 0, max: 5.0, step: 0.1 },
             zSpread: { min: 0, max: 50.0, step: 1 },
             hueShiftSpeed: { min: 0, max: 1.0, step: 0.01 }
+        };
+
+        // Connection to Nallely
+        const device = NallelyWebsocketBus.register('visuals', 'spiral3d', sliderConfig, config);
+        device.onmessage = (msg) => {
+            if (config.hasOwnProperty(msg.on)) {
+                config[msg.on] = msg.value;
+                const slider = document.getElementById(msg.on);
+                if (slider) {
+                    slider.value = msg.value;
+                    slider.nextElementSibling.textContent = msg.value;
+                }
+                if (['layerCount', 'spiralTurns', 'separation', 'zSpread'].includes(msg.on)) {
+                    rebuildSpiral();
+                }
+            }
         };
 
         // --- SLIDER UI ---
@@ -232,33 +249,6 @@
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
-
-        // --- WEBSOCKET AUTO-CONFIG ---
-        (function connectWS() {
-            const ws = new WebSocket(`ws://${window.location.hostname}:6789/spiral3d/autoconfig`);
-            ws.onopen = () => {
-                ws.send(JSON.stringify({
-                    kind: "visual",
-                    parameters: Object.entries(sliderConfig).map(([name, conf]) => { return { name, range: [conf.min, conf.max] } })
-                }));
-            };
-            ws.onmessage = ({ data }) => {
-                const msg = JSON.parse(data);
-                if (config.hasOwnProperty(msg.on)) {
-                    config[msg.on] = msg.value;
-                    const slider = document.getElementById(msg.on);
-                    if (slider) {
-                        slider.value = msg.value;
-                        slider.nextElementSibling.textContent = msg.value;
-                    }
-                    if (['layerCount', 'spiralTurns', 'separation', 'zSpread'].includes(msg.on)) {
-                        rebuildSpiral();
-                    }
-                }
-            };
-            ws.onclose = () => setTimeout(connectWS, 1000);
-            ws.onerror = e => { console.error(e); ws.close(); };
-        })();
     </script>
 </body>
 

@@ -75,6 +75,7 @@
         <button id="hide-controls">Hide Controls</button>
     </div>
     <button id="toggle-controls">Show Controls</button>
+    <script src="https://cdn.jsdelivr.net/gh/dr-schlange/nallely-midi@main/libs/js/nallely-websocket.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.134/examples/js/controls/OrbitControls.js"></script>
     <script>
@@ -98,6 +99,15 @@
             zFrequency: { min: 0.1, max: 5.0, step: 0.1 },
             colorShift: { min: 0.0, max: 1.01, step: 0.01 },
             armCount: { min: 1.0, max: 10.01, step: 0.1 }
+        };
+
+        // Connection to Nallely
+        const device = NallelyWebsocketBus.register('visuals', 'psychedelicspiral', sliderConfig, config);
+        device.onmessage = (msg) => {
+            if (config.hasOwnProperty(data.on)) {
+                config[data.on] = data.value;
+                const slider = document.getElementById(`slider-${data.on}`).value = parseFloat(data.value);
+            }
         };
 
         // Create sliders for each parameter
@@ -302,38 +312,6 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // WebSocket setup
-        const connect = () => {
-            const ws = new WebSocket(`ws://${window.location.hostname}:6789/psychedelicspiral/autoconfig`);
-
-            ws.onopen = () => {
-                ws.send(JSON.stringify({
-                    kind: "visual",
-                    parameters: Object.entries(sliderConfig).map(([name, conf]) => { return { name, range: [conf.min, conf.max] } })
-                }));
-            };
-
-            ws.onclose = (e) => {
-                console.log('Socket is closed. Reconnect will be attempted in 1 second.', e.reason);
-                setTimeout(() => {
-                    connect();
-                }, 1000);
-            };
-
-            ws.onerror = (err) => {
-                console.error('Socket encountered error: ', err.message, 'Closing socket');
-                ws.close();
-            };
-
-            ws.onmessage = (event) => {
-                const data = JSON.parse(event.data);
-                console.log("receiving", data);
-                config[data.on] = data.value;
-                const slider = document.getElementById(`slider-${data.on}`).value = parseFloat(data.value);
-            };
-        };
-        // Start ws connection
-        connect();
         // Start animation
         animate();
     </script>

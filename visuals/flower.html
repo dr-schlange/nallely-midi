@@ -1,12 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Psychedelic 3D Spiral Arms with Z-Step Control</title>
     <style>
-        body { margin: 0; overflow: hidden; background: black; }
-        canvas { display: block; }
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: black;
+        }
+
+        canvas {
+            display: block;
+        }
+
         #controls {
             position: absolute;
             top: 10px;
@@ -15,15 +24,40 @@
             padding: 10px;
             border-radius: 5px;
         }
-        #sliders { display: flex; flex-direction: column; gap: 10px; }
-        .control-group { display: flex; align-items: center; gap: 10px; }
-        label { color: white; width: 150px; }
-        input[type="range"] { flex: 1; }
-        .value { color: white; width: 50px; text-align: right; }
-        #hide-controls, #toggle-controls {
+
+        #sliders {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        label {
+            color: white;
+            width: 150px;
+        }
+
+        input[type="range"] {
+            flex: 1;
+        }
+
+        .value {
+            color: white;
+            width: 50px;
+            text-align: right;
+        }
+
+        #hide-controls,
+        #toggle-controls {
             margin-top: 10px;
             padding: 5px 10px;
         }
+
         #toggle-controls {
             display: none;
             position: absolute;
@@ -32,12 +66,14 @@
         }
     </style>
 </head>
+
 <body>
     <div id="controls">
         <div id="sliders"></div>
         <button id="hide-controls">Hide Controls</button>
     </div>
     <button id="toggle-controls">Show Controls</button>
+    <script src="https://cdn.jsdelivr.net/gh/dr-schlange/nallely-midi@main/libs/js/nallely-websocket.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.134/examples/js/controls/OrbitControls.js"></script>
     <script>
@@ -71,6 +107,14 @@
             moveX: { min: -500, max: 500, step: 1 },
             moveY: { min: -500, max: 500, step: 1 },
             moveZ: { min: -500, max: 500, step: 1 }
+        };
+
+        // Connection to Nallely
+        const device = NallelyWebsocketBus.register('visuals', 'p6', sliderConfig, config);
+        device.onmessage = (data) => {
+            config[data.on] = data.value;
+            const slider = document.getElementById(`slider-${data.on}`).value = parseFloat(data.value);
+            if (data.on === 'armCount' || data.on === 'zStep') updateParticles();
         };
 
         // Create sliders
@@ -272,8 +316,8 @@
             document.getElementById('slider-rotateZ').value = config.rotateZ;
             document.querySelector('#slider-rotateZ + .value').textContent = config.rotateZ;
         }
-// Control for exploring manually
-const mouseControl = new THREE.OrbitControls(camera, renderer.domElement);
+        // Control for exploring manually
+        const mouseControl = new THREE.OrbitControls(camera, renderer.domElement);
         mouseControl.enableDamping = true;  // Smooth motion
         mouseControl.dampingFactor = 0.05;  // Damping intensity
         mouseControl.screenSpacePanning = true;  // Disable panning
@@ -310,40 +354,8 @@ const mouseControl = new THREE.OrbitControls(camera, renderer.domElement);
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
-        // WebSocket setup
-        const connect = () => {
-            const ws = new WebSocket(`ws://${window.location.hostname}:6789/p6/autoconfig`);
-
-            ws.onopen = () => {
-                ws.send(JSON.stringify({
-                    kind: "visual",
-                    parameters: Object.entries(sliderConfig).map(([name, conf]) => { return { name, range: [conf.min, conf.max] } })
-                }));
-            };
-
-            ws.onclose = (e) => {
-                console.log('Socket is closed. Reconnect will be attempted in 1 second.', e.reason);
-                setTimeout(() => {
-                    connect();
-                }, 1000);
-            };
-
-            ws.onerror = (err) => {
-                console.error('Socket encountered error: ', err.message, 'Closing socket');
-                ws.close();
-            };
-
-            ws.onmessage = (event) => {
-                const data = JSON.parse(event.data);
-                console.log("receiving", data);
-                config[data.on] = data.value;
-                const slider = document.getElementById(`slider-${data.on}`).value = parseFloat(data.value);
-                if (data.on === 'armCount' || data.on === 'zStep') updateParticles();
-            };
-        };
-        // Start ws connection
-        connect();
         animate();
     </script>
 </body>
+
 </html>
