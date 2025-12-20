@@ -317,6 +317,9 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 					<details>
 						<summary>Danger zone</summary>
 						<button
+							style={{
+								fontSize: "16px",
+							}}
 							type="button"
 							className={"ugly-button"}
 							onClick={() => trevorSocket?.randomPreset(device.id)}
@@ -325,6 +328,9 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 						</button>
 						{!device.proxy ? (
 							<button
+								style={{
+									fontSize: "16px",
+								}}
 								type="button"
 								className={"ugly-button"}
 								onClick={() => {
@@ -335,6 +341,9 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 							</button>
 						) : (
 							<button
+								style={{
+									fontSize: "16px",
+								}}
 								type="button"
 								className={"ugly-button"}
 								onClick={() => {
@@ -456,6 +465,9 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 				))}
 				<hr />
 				<button
+					style={{
+						fontSize: "16px",
+					}}
 					type="button"
 					className={"ugly-button"}
 					onClick={() => trevorSocket?.forceNoteOff(device.id)}
@@ -466,6 +478,9 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 					<summary>Danger zone</summary>
 
 					<button
+						style={{
+							fontSize: "16px",
+						}}
 						type="button"
 						className={"ugly-button"}
 						onClick={() => trevorSocket?.killDevice(device.id)}
