@@ -281,3 +281,7 @@ class TrevorAPI:
             for _ in range(count):
                 devices.append(self.create_device(cls_name))
         return devices
+
+    def force_note_off(self, device_id):
+        dev = cast(MidiDevice, self.get_device_instance(device_id))
+        dev.force_all_notes_off()

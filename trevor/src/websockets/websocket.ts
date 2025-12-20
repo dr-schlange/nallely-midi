@@ -508,6 +508,13 @@ export class TrevorWebSocket {
 		});
 	}
 
+	forceNoteOff(device_id: number) {
+		this.sendJsonMessage({
+			command: "force_note_off",
+			device_id,
+		});
+	}
+
 	startCaptureIO(deviceOrLink: number | string | undefined = undefined) {
 		this.sendJsonMessage({
 			command: "start_capture_io",

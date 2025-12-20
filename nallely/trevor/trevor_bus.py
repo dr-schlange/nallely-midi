@@ -486,6 +486,10 @@ class TrevorBus(VirtualDevice):
         self.trevor.kill_device(device_id)
         return self.full_state()
 
+    def force_note_off(self, device_id):
+        self.trevor.force_note_off(device_id)
+        return self.full_state()
+
     def start_capture_io(self, device_or_link=None):
         if device_or_link:
             try:

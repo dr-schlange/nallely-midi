@@ -455,6 +455,13 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 					</button>
 				))}
 				<hr />
+				<button
+					type="button"
+					className={"ugly-button"}
+					onClick={() => trevorSocket?.forceNoteOff(device.id)}
+				>
+					Force note off
+				</button>
 				<details>
 					<summary>Danger zone</summary>
 
