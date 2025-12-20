@@ -4,14 +4,23 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nallely"
-version = "0.2.0"
+version = "0.3.0"
 description = "MIDI companion, tools and abstraction to easily scripts for your MIDI devices"
 readme = "README.md"
 license-files = ["LICENSE"]
 license = "BSD-3-Clause"
 authors = [{ name = "dr-schlange", email = "drcoatl@proton.me" }]
 urls = { "Bug Tracker" = "https://github.com/dr-schlange/nallely-midi", "Homepage" = "https://github.com/dr-schlange/nallely-midi" }
-keywords = ["music", "midi", "midi-device", "midi-controller", "lfo"]
+keywords = [
+    "music",
+    "midi",
+    "midi-device",
+    "midi-controller",
+    "live-coding",
+    "hot-patching",
+    "live-debugger",
+    "midi-routing",
+]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Programming Language :: Python",
@@ -19,6 +28,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Operating System :: OS Independent",
     "Intended Audience :: Developers",
     "Intended Audience :: Other Audience",
@@ -29,7 +39,7 @@ requires-python = ">=3.10"
 dependencies = ["mido", "websockets", "python-rtmidi", "ruamel.yaml", "dulwich"]
 
 [project.optional-dependencies]
-dev = ["pytest", "build", "pytest-asyncio"]
+dev = ["pytest", "build", "pytest-asyncio", "behave"]
 keyboard = ["pynput"]
 
 [tool.setuptools]
