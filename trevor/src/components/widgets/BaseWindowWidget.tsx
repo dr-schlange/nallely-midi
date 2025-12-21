@@ -3,9 +3,17 @@ import { Button, type WidgetProps } from "./BaseComponents";
 
 type WindowWidgetProps = WidgetProps & {
 	url: string;
+	expandable?: boolean;
 };
 
-export const WindowWidget = ({ id, onClose, num, url }: WindowWidgetProps) => {
+export const WindowWidget = ({
+	id,
+	onClose,
+	num,
+	url,
+	expandable = false,
+	...iframeProps
+}: WindowWidgetProps) => {
 	const [expanded, setExpanded] = useState(false);
 	const windowRef = useRef<HTMLDivElement>(null);
 	const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -39,12 +47,14 @@ export const WindowWidget = ({ id, onClose, num, url }: WindowWidgetProps) => {
 					gap: "4px",
 				}}
 			>
-				<Button
-					text={"+"}
-					activated={expanded}
-					onClick={expand}
-					tooltip="Expand widget"
-				/>
+				{expandable && (
+					<Button
+						text={"+"}
+						activated={expanded}
+						onClick={expand}
+						tooltip="Expand widget"
+					/>
+				)}
 				<Button text="x" onClick={() => onClose?.(id)} tooltip="Close window" />
 			</div>
 			<iframe
@@ -56,6 +66,7 @@ export const WindowWidget = ({ id, onClose, num, url }: WindowWidgetProps) => {
 					width: "100%",
 					border: "unset",
 				}}
+				{...iframeProps}
 			/>
 		</div>
 	);

@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Analyser</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/dr-schlange/nallely-midi@main/libs/js/nallely-websocket.js"></script>
+    <style>
+        body {
+            margin: 0;
+            font-family: monospace;
+            background: rgb(224, 224, 224);
+            color: #eee;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-items: flex-end;
+        }
+
+        button {
+            font-family: monospace;
+        }
+
+        #container {
+            position: relative;
+            top: 5px;
+            max-width: 170px;
+            max-height: 120px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        #start {
+            width: auto;
+        }
+
+        canvas {
+            height: 40px;
+            width: 120px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="container">
+        <button id="start">Start</button>
+        <canvas id="scope"></canvas>
+        <canvas id="amplitude"></canvas>
+    </div>
+    <script>
+        const scopeCanvas = document.getElementById('scope');
+        const scopeCtx = scopeCanvas.getContext('2d');
+
+        const amplitudeCanvas = document.getElementById('amplitude');
+        const amplitudeCtx = amplitudeCanvas.getContext('2d');
+
+        const audioCtx = new AudioContext();
+        const analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 2048;
+        const bufferLength = analyser.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+
+        let env = 0; // envelope state (0–127)
+
+        // time constants in milliseconds
+        const ATTACK_MS = 20;
+        const RELEASE_MS = 150;
+
+        // convert to per-frame coefficients (assuming ~60fps)
+        const attackCoeff = 1 - Math.exp(-1 / (ATTACK_MS * 0.06));
+        const releaseCoeff = 1 - Math.exp(-1 / (RELEASE_MS * 0.06));
+
+        const constraints = { audio: true };
+        navigator.mediaDevices
+            .getUserMedia(constraints)
+            .then((stream) => {
+                source = audioCtx.createMediaStreamSource(stream);
+                const gainNode = audioCtx.createGain();
+                gainNode.gain.value = 20;
+
+                source.connect(gainNode);
+                gainNode.connect(analyser);
+
+
+                draw(scopeCanvas, scopeCtx);
+                draw(amplitudeCanvas, amplitudeCtx);
+            })
+            .catch(function (err) {
+                console.error("The following gUM error occured: " + err);
+            });
+
+        document.getElementById("start").addEventListener("click", async () => {
+            await audioCtx.resume();
+        });
+
+        // Nallely setup
+        const parameters = {
+            amplitude: { min: 0, max: 127 }
+        };
+        const config = {
+            amplitude: 0
+        };
+
+        const device = NallelyWebsocketBus.register('controller', 'audio', parameters, config);
+
+        let lastSend = 0;
+        const SEND_INTERVAL = 16;
+
+        function maybeSend(port, value) {
+            const now = performance.now();
+            if (now - lastSend >= SEND_INTERVAL) {
+                device.send(port, value);
+                lastSend = now;
+            }
+        }
+
+        const drawFunc = {
+            scope: (canvas, ctx, dataArray, bufferLength) => {
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = "rgb(0 0 0)";
+                ctx.beginPath();
+
+                const sliceWidth = canvas.width / bufferLength;
+                let x = 0;
+
+                for (let i = 0; i < bufferLength; i++) {
+                    const v = dataArray[i] / 128.0;
+                    const y = (v * canvas.height) / 2;
+
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+
+                    x += sliceWidth;
+                }
+
+                ctx.stroke();
+            },
+            amplitude: (canvas, ctx, dataArray, bufferLength) => {
+                let sum = 0;
+                for (let i = 0; i < bufferLength; i++) {
+                    const v = dataArray[i] - 128;
+                    sum += v * v;
+                }
+                const rms = Math.sqrt(sum / bufferLength);
+                const normalizedAmplitude = Math.min(127, Math.round((rms / 128) * 127));
+
+                // 0–127 -> 0–1
+                const norm = normalizedAmplitude / 127;
+
+                // logarithmic scaling
+                const LOG_K = 20;
+                const logScaled = Math.log1p(LOG_K * norm) / Math.log1p(LOG_K);
+                const logValue = Math.round(logScaled * 127);
+
+                // envelope follower
+                if (logValue > env) {
+                    env += (logValue - env) * attackCoeff;
+                } else {
+                    env += (logValue - env) * releaseCoeff;
+                }
+
+                const smoothValue = Math.round(env);
+
+                maybeSend("amplitude", smoothValue);
+
+                const barWidth = (smoothValue / 127) * canvas.width;
+
+                ctx.fillStyle = "rgb(0 0 0)";
+                ctx.fillRect(0, 0, barWidth, canvas.height);
+
+                ctx.fillStyle = "white";
+                ctx.font = "50px monospace";
+                ctx.fillText(smoothValue, 4, canvas.height - 4);
+            }
+        }
+
+
+        function draw(canvas, ctx) {
+            const func = drawFunc[canvas.id];
+            function drawAnim() {
+                requestAnimationFrame(drawAnim);
+
+                analyser.getByteTimeDomainData(dataArray);
+
+                ctx.fillStyle = "rgb(200 200 200)";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                func(canvas, ctx, dataArray, bufferLength);
+            }
+            drawAnim();
+        }
+    </script>
+</body>
+
+</html>

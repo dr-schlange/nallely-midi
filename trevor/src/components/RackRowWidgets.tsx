@@ -26,19 +26,28 @@ const WidgetComponents = {
 	Scope,
 	XYScope,
 	XYZScope,
+	Sliders,
 	Pads,
 	XYPad,
-	Sliders,
 	GBEmu: (props) => (
 		<WindowWidget
 			url={`http://${window.location.hostname}:3000/gb.html`}
+			expandable
 			{...props}
 		/>
 	),
 	GPControl,
+	MicAnalyzer: (props) => (
+		<WindowWidget
+			url={`http://${window.location.hostname}:3000/audio-analysis.html`}
+			allow="microphone"
+			{...props}
+		/>
+	),
 	// SSynth: (props) => (
 	// 	<WindowWidget
 	// 		url={`http://${window.location.hostname}:3000/synth.html`}
+	//		expandable
 	// 		{...props}
 	// 	/>
 	// ),
