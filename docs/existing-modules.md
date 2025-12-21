@@ -162,6 +162,92 @@ meta: disable default output
 </details>
 
 <details>
+    <summary>Demultiplexer: Demultiplexer</summary>
+
+
+```
+
+Demultiplexer
+
+inputs:
+# * %name [%range] %options: %doc
+* input_cv [0, 127] <any>: input
+* selector_cv [0, 7] round <both>: selector
+
+outputs:
+# * %name [%range]: %doc
+* out0_cv [0, 127]: out0
+* out1_cv [0, 127]: out1
+* out2_cv [0, 127]: out2
+* out3_cv [0, 127]: out3
+* out4_cv [0, 127]: out4
+* out5_cv [0, 127]: out5
+* out6_cv [0, 127]: out6
+* out7_cv [0, 127]: out7
+
+type: <ondemand | continuous>
+category: <category>
+meta: disable default output
+
+```
+
+</details>
+
+<details>
+    <summary>DownScaler: DownScaler</summary>
+
+
+```
+
+DownScaler
+
+Splits a signal in 2 outputs, distributing alternating between the various outputs.
+
+inputs:
+* input_cv [0, 127] init=0 <any>: The input signal
+
+outputs:
+* out0_cv [0, 127]: First downscaled version
+* out1_cv [0, 127]: Second downscaled version
+
+type: ondemand
+category: <category>
+meta: disable default output
+
+```
+
+</details>
+
+<details>
+    <summary>DualRouter: Routes 1 of 2 inputs to the output:</summary>
+
+
+```
+DualRouter
+
+Routes 1 of 2 inputs to the output:
+ * on a rising ede on selector,
+ * or considering selector as an absolute selector (0 = route in0, 1 = route in1)
+
+inputs:
+# * %inname [%range] %options: %doc
+* in0_cv [0, 127] <any>: input 1
+* in1_cv [0, 127] <any>: input 2
+* type_cv [toggle, absolute] round: toggle behavior or absolute
+* selector_cv [0, 1] >0 <any, rising>: select input to deliver
+
+outputs:
+# * %outname [%range]: %doc
+
+type: <ondemand | continuous>
+category: <category>
+# meta: disable default output
+
+```
+
+</details>
+
+<details>
     <summary>EnvelopeSlew: Envelope Follower or Slew Limiter depending on the chosen type.</summary>
 
 
@@ -213,6 +299,32 @@ outputs:
 
 type: ondemand
 category: Sequencer
+meta: disable default output
+
+```
+
+</details>
+
+<details>
+    <summary>FineTuneNote: FineTuneNote</summary>
+
+
+```
+
+FineTuneNote
+
+inputs:
+# * %inname [%range] %options: %doc
+* input_cv [0, 127] <any>: main input
+* slide_cv [0, 1] init=1 >0: if activated each pitch variation will not produce a new note on
+
+outputs:
+# * %outname [%range]: %doc
+* note_out_cv [0, 127]: main note output (connect to the key of the synth)
+* pitchwheel_out_cv [-8192, 8191]: main fine-tuned note (connect to the pitchwheel of the synth)
+
+type: <ondemand | continuous>
+category: <category>
 meta: disable default output
 
 ```
@@ -330,6 +442,39 @@ category: filter
 </details>
 
 <details>
+    <summary>Multiplexer: Multiplexer</summary>
+
+
+```
+
+Multiplexer
+
+inputs:
+# * %name [%range] %options: %doc
+* in0_cv [0, 127] <any>: input 0
+* in1_cv [0, 127] <any>: input 2
+* in2_cv [0, 127] <any>: input 3
+* in3_cv [0, 127] <any>: input 4
+* in4_cv [0, 127] <any>: input 5
+* in5_cv [0, 127] <any>: input 6
+* in6_cv [0, 127] <any>: input 7
+* in7_cv [0, 127] <any>: input 8
+* in8_cv [0, 127] <any>: input 9
+* selector_cv [0, 7] init=0 round <both>: input selector
+
+outputs:
+# * %name [%range]: %doc
+* out_cv [0, 127]: output
+
+type: ondemand
+category: <category>
+meta: disable default output
+
+```
+
+</details>
+
+<details>
     <summary>Operator: No description/documentation</summary>
 
 </details>
@@ -434,12 +579,16 @@ The sequencer can be started and stopped using the "play" port
 and by default all the outputs are active
 
 inputs:
+* prev_edit_step_cv [0, 1] >0 <rising>: Advance the sequencer edit index by one step on each rising edge.
+* next_edit_step_cv [0, 1] >0 <rising>: Pull back the sequencer edit index by one step on each rising edge.
+* input_cv [0, 127]: Input CV (not used in this module, reserved for future use).
+* write_cv [0, 1] >0 <rising>: When high on a rising edge, writes the value of input_cv to the current edit step.
 * trigger_cv [0, 1] >0 <rising>: Advance the sequencer by one step on each rising edge.
 * length_cv [1, 8] init=8 round <any>: Set the length of the sequence (number of steps).
 * play_cv [0, 1] init=1 >0 <rising, falling>: Control if the sequencer must be started or not (1 = start, 0 = stop).
                                               By default, the sequencer is started.
 * reset_cv [0, 1] >0 <rising>: Reset the sequencer to the first step.
-* step_cv [0, 7] round <any>: Set the current step of the sequencer (0-indexed).
+* set_step_cv [0, 7] round <any>: Set the current step of the sequencer (0-indexed).
 * step0_cv [0, 127]: Set the output value of step 1.
 * step1_cv [0, 127]: Set the output value of step 2.
 * step2_cv [0, 127]: Set the output value of step 3.
@@ -460,6 +609,7 @@ inputs:
 
 outputs:
 * current_step_cv [0, 7]: The current step of the sequencer (0-indexed).
+* edit_step_cv [0, 7]: The current edit step index (0-indexed).
 * output_cv [0, 127]: The output value of the current step.
 * trig_out_cv [0, 1]: A trigger signal that goes high when the sequencer advances to the next step.
 

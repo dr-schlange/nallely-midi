@@ -148,7 +148,7 @@
                     sum += v * v;
                 }
                 const rms = Math.sqrt(sum / bufferLength);
-                const normalizedAmplitude = Math.min(127, Math.round((rms / 128) * 127));
+                const normalizedAmplitude = Math.min(127, (rms / 128) * 127);
 
                 // 0–127 -> 0–1
                 const norm = normalizedAmplitude / 127;
@@ -156,7 +156,7 @@
                 // logarithmic scaling
                 const LOG_K = 20;
                 const logScaled = Math.log1p(LOG_K * norm) / Math.log1p(LOG_K);
-                const logValue = Math.round(logScaled * 127);
+                const logValue = logScaled * 127;
 
                 // envelope follower
                 if (logValue > env) {
@@ -165,7 +165,7 @@
                     env += (logValue - env) * releaseCoeff;
                 }
 
-                const smoothValue = Math.round(env);
+                const smoothValue = env;
 
                 maybeSend("amplitude", smoothValue);
 

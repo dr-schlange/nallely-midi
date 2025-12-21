@@ -37,6 +37,7 @@ from .sequencer import EuclidianSequencer, Sequencer, Sequencer8, TuringMachine
 from .shifter import (
     Arpegiator,
     ChordGenerator,
+    FineTuneNote,
     HarmonicGenerator,
     Harmonizer,
     Looper,
@@ -130,4 +131,5 @@ __all__ = [
     "Multiplexer",
     "Demultiplexer",
     "DualRouter",
+    "FineTuneNote",
 ]
