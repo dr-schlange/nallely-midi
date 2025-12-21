@@ -317,6 +317,7 @@ inputs:
 # * %inname [%range] %options: %doc
 * input_cv [0, 127] <any>: main input
 * slide_cv [0, 1] init=1 >0: if activated each pitch variation will not produce a new note on
+* finetune_cv [0, 8191] init=2048 round: fine tune how the conversion for fraction should be handled (depends on your synth/preset)
 
 outputs:
 # * %outname [%range]: %doc

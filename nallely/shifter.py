@@ -971,6 +971,7 @@ class FineTuneNote(VirtualDevice):
     # * %inname [%range] %options: %doc
     * input_cv [0, 127] <any>: main input
     * slide_cv [0, 1] init=1 >0: if activated each pitch variation will not produce a new note on
+    * finetune_cv [0, 8191] init=2048 round: fine tune how the conversion for fraction should be handled (depends on your synth/preset)
 
     outputs:
     # * %outname [%range]: %doc
@@ -982,6 +983,9 @@ class FineTuneNote(VirtualDevice):
     meta: disable default output
     """
 
+    finetune_cv = VirtualParameter(
+        name="finetune", range=(0.0, 8191.0), conversion_policy="round", default=2048.0
+    )
     slide_cv = VirtualParameter(
         name="slide", range=(0.0, 1.0), conversion_policy=">0", default=1.0
     )
@@ -995,7 +999,7 @@ class FineTuneNote(VirtualDevice):
     @on(input_cv, edge="any")
     def on_input_any(self, value, ctx):
         closest_note, fine_tune = divmod(value, 1.0)
-        pitchwheel = round(fine_tune * 700)
+        pitchwheel = round(fine_tune * self.finetune)
         if not self.slide:
             yield (0, [self.note_out_cv])
         yield (closest_note, [self.note_out_cv])
