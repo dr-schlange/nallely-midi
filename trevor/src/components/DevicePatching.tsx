@@ -1,5 +1,12 @@
 /** biome-ignore-all lint/a11y/noLabelWithoutControl: <explanation> */
-import { useEffect, useState, useRef, type ReactElement, useMemo } from "react";
+import {
+	useEffect,
+	useState,
+	useRef,
+	type ReactElement,
+	useMemo,
+	useCallback,
+} from "react";
 import { RackRow } from "./RackRow";
 import { selectChannels, useTrevorDispatch, useTrevorSelector } from "../store";
 
@@ -649,96 +656,131 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 	};
 
 	const [linkMouseInteraction, setLinkMouseInteraction] = useState(false);
-	const updateConnections = () => {
+	const updateConnectionsRef = useRef<number | null>(null);
+	const throttleTimeoutRef = useRef<number | null>(null);
+
+	const updateConnections = useCallback(() => {
 		if (linkMouseInteraction) {
 			return;
 		}
 
-		const svg = svgRef.current;
-		if (!svg) return;
+		// Debounce: cancel previous scheduled update
+		if (updateConnectionsRef.current !== null) {
+			cancelAnimationFrame(updateConnectionsRef.current);
+		}
 
-		for (const line of svg.querySelectorAll("path")) {
-			line.remove();
-		}
-		for (const line of svg.querySelectorAll("line")) {
-			line.remove();
-		}
-		const sortedConnections = [...allConnections].sort((a, b) => {
-			const isSelected = (x) => connectionId(x) === selectedConnection;
-			if (isSelected(a) && !isSelected(b)) return 1;
-			if (!isSelected(a) && isSelected(b)) return -1;
-			return 0;
+		updateConnectionsRef.current = requestAnimationFrame(() => {
+			const svg = svgRef.current;
+			if (!svg) return;
+
+			// Clearing the innerHTML looks like it's faster than removing child nodes
+			svg.innerHTML = "";
+
+			updateConnectionsRef.current = null;
+			// Memoize sorted connections and element queries
+			const sortedConnections = [...allConnections].sort((a, b) => {
+				const isSelected = (x) => connectionId(x) === selectedConnection;
+				if (isSelected(a) && !isSelected(b)) return 1;
+				if (!isSelected(a) && isSelected(b)) return -1;
+				return 0;
+			});
+
+			// Cache element queries
+			const elementCache = new Map<string, Element | null>();
+			const getElement = (id: string) => {
+				if (!elementCache.has(id)) {
+					elementCache.set(id, document.querySelector(`[id="${id}"]`));
+				}
+				return elementCache.get(id) || null;
+			};
+			for (const connection of sortedConnections) {
+				const srcSection = connection.src.parameter.section_name;
+				const srcId = buildSectionId(
+					connection.src.device,
+					srcSection === "__virtual__"
+						? (connection.src.parameter as VirtualParameter).cv_name
+						: srcSection,
+				);
+				const dstSection = connection.dest.parameter.section_name;
+				const destId = buildSectionId(
+					connection.dest.device,
+					dstSection === "__virtual__"
+						? (connection.dest.parameter as VirtualParameter).cv_name
+						: dstSection,
+				);
+				const fromElement = getElement(srcId);
+				const toElement = getElement(destId);
+				const highlightConnected = selection.length === 1;
+				const firstSelected = selection[0];
+				const firstSelectedSection =
+					firstSelected?.section.parameters[0]?.section_name ||
+					firstSelected?.section.pads_or_keys?.section_name;
+				const connectionRepr = connectionId(connection);
+				const highlighted =
+					connectionRepr === selectedConnection ||
+					(highlightConnected &&
+						(connectionRepr.startsWith(
+							`${firstSelected?.device.id}::${firstSelectedSection}`,
+						) ||
+							connectionRepr.includes(
+								`-${firstSelected?.device.id}::${firstSelectedSection}`,
+							)));
+				drawCurvedConnection(
+					svg,
+					fromElement,
+					toElement,
+					highlighted,
+					{ bouncy: connection.bouncy, muted: connection.muted },
+					connection.id,
+				);
+
+				// specific code to draw connections with the widgets (scopes, etc)
+				if (connection.src.repr.includes("WebSocketBus")) {
+					const port = (connection.src.parameter as VirtualParameter).cv_name;
+					const widgetId = port.split(/_/)[0];
+					const widgetTarget = getElement(widgetId);
+					drawConnection(svg, widgetTarget, fromElement, highlighted, {
+						bouncy: false,
+						muted: true,
+					});
+				}
+				if (connection.dest.repr.includes("WebSocketBus")) {
+					const port = (connection.dest.parameter as VirtualParameter).cv_name;
+					const widgetId = port.split(/_/)[0];
+					const widgetTarget = getElement(widgetId);
+					drawConnection(svg, toElement, widgetTarget, highlighted, {
+						bouncy: false,
+						muted: true,
+					});
+				}
+			}
 		});
-		for (const connection of sortedConnections) {
-			const srcSection = connection.src.parameter.section_name;
-			const srcId = buildSectionId(
-				connection.src.device,
-				srcSection === "__virtual__"
-					? (connection.src.parameter as VirtualParameter).cv_name
-					: srcSection,
-			);
-			const dstSection = connection.dest.parameter.section_name;
-			const destId = buildSectionId(
-				connection.dest.device,
-				dstSection === "__virtual__"
-					? (connection.dest.parameter as VirtualParameter).cv_name
-					: dstSection,
-			);
-			const fromElement = document.querySelector(`[id="${srcId}"]`);
-			const toElement = document.querySelector(`[id="${destId}"]`);
-			const highlightConnected = selection.length === 1;
-			const firstSelected = selection[0];
-			const firstSelectedSection =
-				firstSelected?.section.parameters[0]?.section_name ||
-				firstSelected?.section.pads_or_keys?.section_name;
-			const connectionRepr = connectionId(connection);
-			const highlighted =
-				connectionRepr === selectedConnection ||
-				(highlightConnected &&
-					(connectionRepr.startsWith(
-						`${firstSelected?.device.id}::${firstSelectedSection}`,
-					) ||
-						connectionRepr.includes(
-							`-${firstSelected?.device.id}::${firstSelectedSection}`,
-						)));
-			drawCurvedConnection(
-				svg,
-				fromElement,
-				toElement,
-				highlighted,
-				{ bouncy: connection.bouncy, muted: connection.muted },
-				connection.id,
-			);
+	}, [linkMouseInteraction, allConnections, selectedConnection, selection]);
 
-			// specific code to draw connections with the widgets (scopes, etc)
-			if (connection.src.repr.includes("WebSocketBus")) {
-				const port = (connection.src.parameter as VirtualParameter).cv_name;
-				const widgetId = port.split(/_/)[0];
-				const widgetTarget = document.querySelector(`[id="${widgetId}"]`);
-				drawConnection(svg, widgetTarget, fromElement, highlighted, {
-					bouncy: false,
-					muted: true,
-				});
-			}
-			if (connection.dest.repr.includes("WebSocketBus")) {
-				const port = (connection.dest.parameter as VirtualParameter).cv_name;
-				const widgetId = port.split(/_/)[0];
-				const widgetTarget = document.querySelector(`[id="${widgetId}"]`);
-				drawConnection(svg, toElement, widgetTarget, highlighted, {
-					bouncy: false,
-					muted: true,
-				});
-			}
+	// Throttled version for frequent events like scrolling
+	const updateConnectionsThrottled = useCallback(() => {
+		if (throttleTimeoutRef.current !== null) {
+			// We already have a scheduled update
+			return;
 		}
-	};
+		throttleTimeoutRef.current = window.setTimeout(() => {
+			updateConnections();
+			throttleTimeoutRef.current = null;
+		}, 16); // throttle at 60Hz more or less
+	}, [updateConnections]);
 
 	useEffect(() => {
 		updateConnections();
-	}, [allConnections, selectedConnection, orientation]); // Update lines when connections change
+	}, [updateConnections]);
 
 	useEffect(() => {
+		let resizeTimeout: number;
 		const handleResize = () => {
-			updateConnections();
+			// Throttle resize events
+			clearTimeout(resizeTimeout);
+			resizeTimeout = window.setTimeout(() => {
+				updateConnections();
+			}, 100);
 		};
 
 		const observer = new ResizeObserver(handleResize);
@@ -748,8 +790,9 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 
 		return () => {
 			observer.disconnect();
+			clearTimeout(resizeTimeout);
 		};
-	}, [allConnections, selectedConnection]);
+	}, [updateConnections]);
 
 	const handleNonSectionClick = () => {
 		setSelection([]); // Deselect sections
@@ -906,7 +949,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 					selectedSections={selection.map(
 						(d) => `${d.device.id}::${d.section.parameters[0]?.section_name}`,
 					)}
-					onSectionScroll={updateConnections}
+					onSectionScroll={updateConnectionsThrottled}
 					onDeviceClick={handleMidiDeviceClick}
 					horizontal={orientation === HORIZONTAL}
 					onDeviceDrop={updateConnections}
@@ -926,7 +969,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 								`${devUID(d.device)}::${d.section.parameters[0]?.section_name}`,
 						);
 					})()}
-					onSectionScroll={updateConnections}
+					onSectionScroll={updateConnectionsThrottled}
 					horizontal={orientation === HORIZONTAL}
 					onDeviceDrop={updateConnections}
 					onDragEnd={updateConnections}
@@ -936,13 +979,11 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 					onAddWidget={updateConnections}
 					horizontal={orientation === HORIZONTAL}
 					onDragEnd={updateConnections}
-					onRackScroll={updateConnections}
+					onRackScroll={updateConnectionsThrottled}
 				/>
 				<svg
 					className={`device-patching-svg ${orientation === HORIZONTAL ? "horizontal" : ""}`}
 					ref={svgRef}
-					// width={mainSectionRef.current?.scrollWidth}
-					// height={mainSectionRef.current?.scrollHeight}
 				/>
 			</div>
 
@@ -974,7 +1015,6 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 				</button>
 				{(isExpanded && (
 					<div className="device-patching-side-section">
-						{/* <div className="device-patching-top-panel"> */}
 						<div style={{ display: "flex", gap: "4px", alignItems: "center" }}>
 							<select
 								style={{ width: "100%", fontSize: "18px" }}
@@ -1155,9 +1195,6 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 						>
 							🌐
 						</button>
-						{/* <p style={{ fontSize: "14px", margin: "5px" }}>
-							0x{currentAddress?.hex ?? "????"}
-						</p> */}
 					</div>
 				)}
 			</div>
