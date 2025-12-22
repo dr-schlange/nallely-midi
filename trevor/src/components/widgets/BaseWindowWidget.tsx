@@ -44,6 +44,7 @@ export const WindowWidget = ({
 					display: "flex",
 					justifyContent: "flex-end",
 					flexDirection: "row",
+					pointerEvents: "none",
 					gap: "4px",
 				}}
 			>

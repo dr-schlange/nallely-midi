@@ -44,6 +44,14 @@ const WidgetComponents = {
 			{...props}
 		/>
 	),
+	Webcam: (props) => (
+		<WindowWidget
+			url={`http://${window.location.hostname}:3000/webcam.html`}
+			allow="camera"
+			expandable
+			{...props}
+		/>
+	),
 	// SSynth: (props) => (
 	// 	<WindowWidget
 	// 		url={`http://${window.location.hostname}:3000/synth.html`}

@@ -76,27 +76,30 @@
         const attackCoeff = 1 - Math.exp(-1 / (ATTACK_MS * 0.06));
         const releaseCoeff = 1 - Math.exp(-1 / (RELEASE_MS * 0.06));
 
-        const constraints = { audio: true };
-        navigator.mediaDevices
-            .getUserMedia(constraints)
-            .then((stream) => {
-                source = audioCtx.createMediaStreamSource(stream);
+        let started = false;
+
+        document.getElementById("start").addEventListener("click", async () => {
+            if (started) return;
+            started = true;
+
+            await audioCtx.resume();
+
+            const constraints = { audio: true };
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                const source = audioCtx.createMediaStreamSource(stream);
                 const gainNode = audioCtx.createGain();
                 gainNode.gain.value = 20;
 
                 source.connect(gainNode);
                 gainNode.connect(analyser);
 
-
                 draw(scopeCanvas, scopeCtx);
                 draw(amplitudeCanvas, amplitudeCtx);
-            })
-            .catch(function (err) {
+            } catch (err) {
                 console.error("The following gUM error occured: " + err);
-            });
-
-        document.getElementById("start").addEventListener("click", async () => {
-            await audioCtx.resume();
+                started = false;
+            }
         });
 
         // Nallely setup

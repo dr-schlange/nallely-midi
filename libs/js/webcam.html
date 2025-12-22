@@ -12,7 +12,6 @@
     <style>
         body {
             margin: 0;
-            overflow: hidden;
         }
 
         canvas {
@@ -22,14 +21,14 @@
 </head>
 
 <body>
-    <h1>Nallely External Device Webcam Integration Demo</h1>
-
+    <button id="start-camera">Start Camera</button>
     <div>
         <label for="address">Server Address:</label>
         <input type="text" id="address" value="" placeholder="hostname:port" />
         <button id="connect-btn">Connect</button>
     </div>
     <div id="status">Status: <span id="connection-status">Disconnected</span></div>
+
 
     <video id="camera-feed" autoplay></video>
     <canvas id="canvas" style="display:none;"></canvas>
@@ -196,67 +195,82 @@
         }
 
         window.addEventListener('load', function startCamera() {
-            navigator.mediaDevices.getUserMedia({ video: true })
-                .then(stream => {
-                    video.srcObject = stream;
+            let cameraStarted = false;
 
-                    video.addEventListener('loadeddata', () => {
-                        canvas.width = video.videoWidth;
-                        canvas.height = video.videoHeight;
+            document.getElementById('start-camera').addEventListener('click', () => {
+                if (cameraStarted) return;
+                cameraStarted = true;
 
-                        // Measure brightness every 200ms
-                        setInterval(() => {
-                            // capture the current frame
-                            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                            const data = imageData.data;
+                document.getElementById('start-camera').textContent = 'Starting...';
+                document.getElementById('start-camera').disabled = true;
 
-                            // Brightness
-                            const avgBrightness = computeBrightness(data)
-                            brightnessDisplay.textContent = avgBrightness.toFixed(2);
-                            device.send("brightness", avgBrightness)
+                navigator.mediaDevices.getUserMedia({ video: true })
+                    .then(stream => {
+                        video.srcObject = stream;
 
-                            // Average color
-                            const avg = getAverageColor(data);
-                            averageDisplay.textContent = `${avg.r}, ${avg.g}, ${avg.b}`;
-                            averageDisplay.style.color = `rgb(${avg.r}, ${avg.g}, ${avg.b})`;
-                            if (avg.r !== config.average_R) {
-                                config.average_R = avg.r;
-                                device.send("average_R", avg.r);
-                            }
-                            if (avg.g !== config.average_G) {
-                                config.average_G = avg.g;
-                                device.send("average_G", avg.g);
-                            }
-                            if (avg.b !== config.average_B) {
-                                config.average_B = avg.b;
-                                device.send("average_B", avg.b);
-                            }
+                        video.addEventListener('loadeddata', () => {
+                            canvas.width = video.videoWidth;
+                            canvas.height = video.videoHeight;
+
+                            document.getElementById('start-camera').textContent = 'Camera Running';
+
+                            // Measure brightness every 200ms
+                            setInterval(() => {
+                                // capture the current frame
+                                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                                const data = imageData.data;
+
+                                // Brightness
+                                const avgBrightness = computeBrightness(data)
+                                brightnessDisplay.textContent = avgBrightness.toFixed(2);
+                                device.send("brightness", avgBrightness)
+
+                                // Average color
+                                const avg = getAverageColor(data);
+                                averageDisplay.textContent = `${avg.r}, ${avg.g}, ${avg.b}`;
+                                averageDisplay.style.color = `rgb(${avg.r}, ${avg.g}, ${avg.b})`;
+                                if (avg.r !== config.average_R) {
+                                    config.average_R = avg.r;
+                                    device.send("average_R", avg.r);
+                                }
+                                if (avg.g !== config.average_G) {
+                                    config.average_G = avg.g;
+                                    device.send("average_G", avg.g);
+                                }
+                                if (avg.b !== config.average_B) {
+                                    config.average_B = avg.b;
+                                    device.send("average_B", avg.b);
+                                }
 
 
-                            // Hue
-                            const hue = rgbToHsv(avg.r, avg.g, avg.b);
-                            dominantDisplay.textContent = `${hue.h.toFixed(2)}, ${hue.s.toFixed(2)}, ${hue.v.toFixed(2)}`;
-                            dominantDisplay.style.color = `rgb(${hue.h * 255}, ${hue.s * 255}, ${hue.v * 255})`;
-                            if (hue.h !== config.average_H) {
-                                config.average_H = hue.h;
-                                device.send("average_H", hue.h);
-                            }
-                            if (hue.s !== config.average_S) {
-                                config.average_S = hue.s;
-                                device.send("average_S", hue.s);
-                            }
-                            if (hue.v !== config.average_V) {
-                                config.average_V = hue.v;
-                                device.send("average_V", hue.v);
-                            }
+                                // Hue
+                                const hue = rgbToHsv(avg.r, avg.g, avg.b);
+                                dominantDisplay.textContent = `${hue.h.toFixed(2)}, ${hue.s.toFixed(2)}, ${hue.v.toFixed(2)}`;
+                                dominantDisplay.style.color = `rgb(${hue.h * 255}, ${hue.s * 255}, ${hue.v * 255})`;
+                                if (hue.h !== config.average_H) {
+                                    config.average_H = hue.h;
+                                    device.send("average_H", hue.h);
+                                }
+                                if (hue.s !== config.average_S) {
+                                    config.average_S = hue.s;
+                                    device.send("average_S", hue.s);
+                                }
+                                if (hue.v !== config.average_V) {
+                                    config.average_V = hue.v;
+                                    device.send("average_V", hue.v);
+                                }
 
-                        }, 200);
+                            }, 200);
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Error accessing camera:', error);
+                        document.getElementById('start-camera').textContent = 'Error - Try Again';
+                        document.getElementById('start-camera').disabled = false;
+                        cameraStarted = false;
                     });
-                })
-                .catch(error => {
-                    console.error('Error accessing camera:', error);
-                });
+            });
         });
 
         // Hand tracking with MediaPipe
@@ -326,14 +340,21 @@
 
 
         // Associate the camera feed with MediaPipe Hands
-        const camera = new Camera(video, {
-            onFrame: async () => {
-                await hands.send({ image: video });
-            },
-            width: 640,
-            height: 480
+        window.addEventListener('load', function () {
+            let camera;
+            document.getElementById('start-camera').addEventListener('click', () => {
+                if (!camera) {
+                    camera = new Camera(video, {
+                        onFrame: async () => {
+                            await hands.send({ image: video });
+                        },
+                        width: 640,
+                        height: 480
+                    });
+                    camera.start();
+                }
+            });
         });
-        camera.start();
 
 
     </script>
