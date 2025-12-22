@@ -627,6 +627,41 @@ category: sequencer
 </details>
 
 <details>
+    <summary>SuperShiftRegister: Weird shift register where inputs/outputs are outputs/inputs and which bubbles values back in a loops.</summary>
+
+
+```
+SuperShiftRegister
+
+Weird shift register where inputs/outputs are outputs/inputs and which bubbles values back in a loops.
+
+inputs:
+# * %inname [%range] %options: %doc
+# * io<num>_cv [0, 127]: io, in to write out to read
+* trigger_cv [0, 1] >0 <rising>: trigger next step
+* io0_cv [0, 127]: io, in to write out to read
+* io1_cv [0, 127]: io, in to write out to read
+* io2_cv [0, 127]: io, in to write out to read
+* io3_cv [0, 127]: io, in to write out to read
+* io4_cv [0, 127]: io, in to write out to read
+* io5_cv [0, 127]: io, in to write out to read
+* io6_cv [0, 127]: io, in to write out to read
+* io7_cv [0, 127]: io, in to write out to read
+* idx_cv [0, 7] round: index sequence
+* length_cv [1, 8] init=8 round: length sequence
+
+outputs:
+# * %outname [%range]: %doc
+
+type: <ondemand | continuous>
+category: <category>
+meta: disable default output
+
+```
+
+</details>
+
+<details>
     <summary>Switch: No description/documentation</summary>
 
 </details>

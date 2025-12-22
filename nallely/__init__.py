@@ -55,6 +55,7 @@ from .switchs import (
     RingCounter,
     SeqSwitch,
     ShiftRegister,
+    SuperShiftRegister,
     Switch,
     ThresholdGate,
 )
@@ -132,4 +133,5 @@ __all__ = [
     "Demultiplexer",
     "DualRouter",
     "FineTuneNote",
+    "SuperShiftRegister",
 ]
