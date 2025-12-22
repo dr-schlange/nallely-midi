@@ -25,6 +25,7 @@ import {
 import { Scope } from "../widgets/Oscilloscope";
 
 const ERROR_DELAY = 3000;
+const TERMINAL_MAX_CHARS = 2048;
 
 interface ClassBrowserProps {
 	onExecute?: (code: string, action: string) => void;
@@ -647,6 +648,7 @@ export function ClassBrowser({ device, onClose }: ClassBrowserProps) {
 	const classCode = useTrevorSelector((state) => state.runTime.classCode);
 	// const method = useRef<string>(undefined);
 	const [mode, setMode] = useState<"scope" | "terminal">("terminal");
+	const [isFullLineCopy, setIsFullLineCopy] = useState(false);
 	const [value, setValue] = useState(undefined);
 	const devices = useTrevorSelector((state) => state.nallely.virtual_devices);
 	const connections = useTrevorSelector((state) => state.nallely.connections);
@@ -715,7 +717,11 @@ export function ClassBrowser({ device, onClose }: ClassBrowserProps) {
 				displayError(editorRef.current, message.details);
 			}
 			if (message.command === "stdout") {
-				setStdout((prev) => `${prev}${message.line}`);
+				setStdout((prev) =>
+					prev.length > TERMINAL_MAX_CHARS
+						? `${prev.slice(message.line.length)}${message.line}`
+						: `${prev}${message.line}`,
+				);
 			}
 		};
 
@@ -773,6 +779,87 @@ mod-?:     displays this entry
 		spellcheck: "false",
 	});
 
+	const copyCodeToClipboard = async (code, isFullLine = false) => {
+		try {
+			await navigator.clipboard.writeText(code);
+			setIsFullLineCopy(isFullLine);
+		} catch (err) {
+			console.error("Failed to copy text: ", err);
+		}
+	};
+
+	// I hate so much implementing thoses...
+	const cutCodeToClipboard = async (view) => {
+		if (!view) return;
+		const state = view.state;
+		const sel = state.selection.main;
+		let selectedText: string;
+		let deleteFrom: number;
+		let deleteTo: number;
+		const isFullLine = sel.empty;
+
+		if (sel.empty) {
+			// Cut the whole line if nothing is selected
+			const line = state.doc.lineAt(sel.from);
+			selectedText = state.sliceDoc(line.from, line.to);
+			deleteFrom = line.from;
+			// Include the newline character if not the last line
+			deleteTo = line.to < state.doc.length ? line.to + 1 : line.to;
+		} else {
+			// Cut the selection
+			selectedText = state.sliceDoc(sel.from, sel.to);
+			deleteFrom = sel.from;
+			deleteTo = sel.to;
+		}
+
+		try {
+			await navigator.clipboard.writeText(selectedText);
+			setIsFullLineCopy(isFullLine);
+			// Delete the text after copying to clipboard
+			view.dispatch({
+				changes: { from: deleteFrom, to: deleteTo },
+				selection: { anchor: deleteFrom },
+			});
+		} catch (err) {
+			console.error("Failed to cut text: ", err);
+		}
+	};
+
+	const pastCodeFromClipboard = async (view) => {
+		try {
+			const code = await navigator.clipboard.readText();
+			const state = view.state;
+			const sel = state.selection.main;
+
+			if (isFullLineCopy) {
+				// Insert on the line before the current cursor position
+				const currentLine = state.doc.lineAt(sel.from);
+				const insertPos = currentLine.from;
+				view.dispatch(
+					state.update({
+						changes: {
+							from: insertPos,
+							insert: `${code}\n`,
+						},
+						selection: { anchor: insertPos + code.length + 1 },
+					}),
+				);
+			} else {
+				// Normal paste at cursor position
+				view.dispatch(
+					state.update({
+						changes: {
+							from: sel.from,
+							insert: code,
+						},
+					}),
+				);
+			}
+		} catch (err) {
+			console.error("Failed to paste text: ", err);
+		}
+	};
+
 	const modalContent = (
 		<div className="patching-modal">
 			<div className="modal-header playground">
@@ -782,10 +869,43 @@ mod-?:     displays this entry
 						onClose();
 					}}
 				/>
+
 				<HeaderButton
-					text="Clear"
+					text="Copy"
 					onClick={() => {
-						setStdout("");
+						if (code && editorRef.current) {
+							const state = editorRef.current.state;
+							const sel = state.selection.main;
+							let selectedText: string;
+							const isFullLine = sel.empty;
+							if (sel.empty) {
+								// Copy the whole line if nothing is selected
+								const line = state.doc.lineAt(sel.from);
+								selectedText = state.sliceDoc(line.from, line.to);
+							} else {
+								// Copy the selection
+								selectedText = state.sliceDoc(sel.from, sel.to);
+							}
+							copyCodeToClipboard(selectedText, isFullLine);
+						}
+					}}
+				/>
+
+				<HeaderButton
+					text="Cut"
+					onClick={() => {
+						if (code && editorRef.current) {
+							cutCodeToClipboard(editorRef.current);
+						}
+					}}
+				/>
+
+				<HeaderButton
+					text="Paste"
+					onClick={() => {
+						if (code && editorRef.current) {
+							pastCodeFromClipboard(editorRef.current);
+						}
 					}}
 				/>
 
@@ -1019,6 +1139,13 @@ mod-?:     displays this entry
 							} else {
 								setMode("terminal");
 							}
+						}}
+					/>
+					<Button
+						text={"C"}
+						tooltip={"Clear terminal"}
+						onClick={() => {
+							setStdout("");
 						}}
 					/>
 				</div>
