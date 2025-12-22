@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, memo } from "react";
 import { useTrevorWebSocket } from "../websockets/websocket";
 
 const DISPLAY_DURATION = 3000;
@@ -9,7 +9,7 @@ const notifIcons = {
 	error: "🔴",
 };
 
-export const NotificationBar = () => {
+export const NotificationBar = memo(() => {
 	const trevorSocket = useTrevorWebSocket();
 	const [currentNotification, setCurrentNotification] = useState(null);
 	const notificationQueue = useRef([]);
@@ -63,4 +63,4 @@ export const NotificationBar = () => {
 			<p>{currentNotification}</p>
 		</div>
 	);
-};
+});

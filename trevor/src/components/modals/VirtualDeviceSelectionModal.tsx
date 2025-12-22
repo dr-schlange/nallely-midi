@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useMemo, memo } from "react";
 import { useTrevorSelector } from "../../store";
 import { useTrevorWebSocket } from "../../websockets/websocket";
 import type { VirtualDeviceSchema } from "../../model";
@@ -16,7 +16,7 @@ interface ModalProps {
 	header?;
 }
 
-const Modal = ({ onClose, onCancel, children, header }: ModalProps) => {
+const Modal = memo(({ onClose, onCancel, children, header }: ModalProps) => {
 	return (
 		<div className="modal-vdevice-selection">
 			<div
@@ -56,7 +56,7 @@ const Modal = ({ onClose, onCancel, children, header }: ModalProps) => {
 			</div>
 		</div>
 	);
-};
+});
 
 const VDeviceSelectionModal = ({ onClose }: VDeviceSelectionModalProps) => {
 	const schemas = useTrevorSelector(
@@ -74,7 +74,7 @@ const VDeviceSelectionModal = ({ onClose }: VDeviceSelectionModalProps) => {
 		trevorSocket.fetchVirtualDeviceSchemas();
 	}, [trevorSocket, trevorSocket.socket]);
 
-	const addDevice = (schema: VirtualDeviceSchema) => {
+	const addDevice = useCallback((schema: VirtualDeviceSchema) => {
 		setSelections((prev) => {
 			const newSelection = { ...prev };
 			if (schema.name in prev) {
@@ -90,9 +90,9 @@ const VDeviceSelectionModal = ({ onClose }: VDeviceSelectionModalProps) => {
 			return newSelection;
 		});
 		setSelection(schema);
-	};
+	}, []);
 
-	const removeDevice = (schema: VirtualDeviceSchema) => {
+	const removeDevice = useCallback((schema: VirtualDeviceSchema) => {
 		setSelections((prev) => {
 			if (!(schema.name in prev)) {
 				return prev;
@@ -105,9 +105,9 @@ const VDeviceSelectionModal = ({ onClose }: VDeviceSelectionModalProps) => {
 
 			return newSelection;
 		});
-	};
+	}, []);
 
-	const commit = () => {
+	const commit = useCallback(() => {
 		const classes = {};
 		for (const device of Object.values(selections)) {
 			classes[device.schema.name] = device.count;
@@ -116,9 +116,17 @@ const VDeviceSelectionModal = ({ onClose }: VDeviceSelectionModalProps) => {
 			trevorSocket.createDevices(classes);
 		}
 		onClose?.();
-	};
+	}, [selections, trevorSocket, onClose]);
 
-	const header = () => {
+	const handleLongPress = useCallback((schema: VirtualDeviceSchema) => {
+		setDoc(schema.doc);
+	}, []);
+
+	const handleTouchStart = useCallback((schema: VirtualDeviceSchema) => {
+		setSelection(schema);
+		setDoc(schema.doc);
+	}, []);
+	const headerElement = useMemo(() => {
 		const firstLetters = new Set(schemas.map((s) => s.name?.[0]));
 		return (
 			<div
@@ -150,10 +158,10 @@ const VDeviceSelectionModal = ({ onClose }: VDeviceSelectionModalProps) => {
 				})}
 			</div>
 		);
-	};
+	}, [schemas, filter]);
 
 	return (
-		<Modal onClose={commit} onCancel={onClose} header={header()}>
+		<Modal onClose={commit} onCancel={onClose} header={headerElement}>
 			{schemas.length === 0 && <p>Loading available devices...</p>}
 
 			<div className="modal-vdevice-content">
@@ -165,13 +173,8 @@ const VDeviceSelectionModal = ({ onClose }: VDeviceSelectionModalProps) => {
 								key={schema.name}
 								schema={schema}
 								onClick={addDevice}
-								onLongPress={(schema) => {
-									setDoc(schema.doc);
-								}}
-								onTouchStart={(schema) => {
-									setSelection(schema);
-									setDoc(schema.doc);
-								}}
+								onLongPress={handleLongPress}
+								onTouchStart={handleTouchStart}
 								selected={selection?.name === schema.name}
 							/>
 						))}
