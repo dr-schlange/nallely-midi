@@ -53,7 +53,7 @@ interface DevicePatchingProps {
 const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 	const mainSectionRef = useRef(null);
 	const [associateMode, setAssociateMode] = useState(true);
-	const [selection, setSelection] = useState<MidiDeviceWithSection[]>([]);
+	const [selection, setSelection] = useState<(MidiDeviceWithSection | VirtualDeviceWithSection)[]>([]);
 	const [isModalOpen, setIsModalOpen] = useState(false);
 	const [isAboutOpen, setIsAboutOpen] = useState(false);
 	const [isMemoryOpen, setIsMemoryOpen] = useState(false);
@@ -91,6 +91,24 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 	const [orientation, setOrientation] = useState<string>(
 		window.innerHeight < 450 ? HORIZONTAL : VERTICAL,
 	);
+
+	// Refs for stable updateConnections function
+	const allConnectionsRef = useRef(allConnections);
+	const selectedConnectionRef = useRef(selectedConnection);
+	const selectionRef = useRef(selection);
+
+	// Sync refs with current values
+	useEffect(() => {
+		allConnectionsRef.current = allConnections;
+	}, [allConnections]);
+
+	useEffect(() => {
+		selectedConnectionRef.current = selectedConnection;
+	}, [selectedConnection]);
+
+	useEffect(() => {
+		selectionRef.current = selection;
+	}, [selection]);
 	const currentAddress = useTrevorSelector(
 		(state) => state.runTime.currentAddress,
 	);
@@ -257,13 +275,13 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 					}
 				}}
 				onChange={(value) => {
-					setTempValues({
-						...tempValues,
+					setTempValues((prev) => ({
+						...prev,
 						[device.id]: {
-							...tempValues[device.id],
+							...prev[device.id],
 							[key]: value,
 						},
-					});
+					}));
 				}}
 				range={parameter.range}
 			/>
@@ -592,7 +610,6 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 				}
 				setIsModalOpen(true);
 			} else {
-				// @ts-expect-error objects are not fully polymorphic, but that's ok here
 				setSelection((prev) => [...prev, newElement]);
 				updateInfo(device);
 				setCurrentSelected(device.id);
@@ -635,7 +652,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 				}));
 				if (isExpanded) {
 					setDisplayedSection((_) => selection[0]);
-					updateInfo(selection[0].device, selection[0].section);
+					updateInfo(selection[0].device, selection[0].section as MidiDeviceSection);
 				}
 				setIsModalOpen(true);
 			} else {
@@ -677,6 +694,11 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 			svg.innerHTML = "";
 
 			updateConnectionsRef.current = null;
+			// Use refs to get current values without triggering dependency changes
+			const allConnections = allConnectionsRef.current;
+			const selectedConnection = selectedConnectionRef.current;
+			const selection = selectionRef.current;
+
 			// Memoize sorted connections and element queries
 			const sortedConnections = [...allConnections].sort((a, b) => {
 				const isSelected = (x) => connectionId(x) === selectedConnection;
@@ -755,7 +777,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 				}
 			}
 		});
-	}, [linkMouseInteraction, allConnections, selectedConnection, selection]);
+	}, [linkMouseInteraction]);
 
 	// Throttled version for frequent events like scrolling
 	const updateConnectionsThrottled = useCallback(() => {
