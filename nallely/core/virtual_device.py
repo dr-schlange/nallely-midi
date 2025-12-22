@@ -838,6 +838,8 @@ class VirtualDevice(threading.Thread):
         import random
 
         for parameter in self.all_parameters():
+            if parameter.name == "set_pause":
+                continue
             min, max = parameter.range
             min = min or 0
             max = max or 127
