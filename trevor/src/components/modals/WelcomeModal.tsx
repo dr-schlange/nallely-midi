@@ -1,6 +1,5 @@
-import { useState } from "react";
 import { useTrevorDispatch, useTrevorSelector } from "../../store";
-import { disableFirstLaunch, setWebsocketURL } from "../../store/generalSlice";
+import { disableFirstLaunch } from "../../store/generalSlice";
 
 export const WelcomeModal = () => {
 	const dispatch = useTrevorDispatch();

@@ -81,6 +81,7 @@ import { useTrevorWebSocket } from "../websockets/websocket";
 import { ClassBrowser } from "./modals/ClassBrowser";
 import { useTrevorDispatch } from "../store";
 import { setClassCodeMode } from "../store/runtimeSlice";
+import { Portal } from "./Portal";
 
 export const MiniRack = ({
 	devices,
@@ -388,7 +389,9 @@ export const VDevice = ({
 				</div>
 			))}
 			{isCodeOpen && (
-				<ClassBrowser device={device} onClose={() => setIsCodeOpen(false)} />
+				<Portal>
+					<ClassBrowser device={device} onClose={() => setIsCodeOpen(false)} />
+				</Portal>
 			)}
 		</div>
 	);

@@ -34,6 +34,7 @@ import { type RackRowCCRef, RackRowCCs } from "./RackRowCC";
 import { MemoryModal } from "./modals/MemoryModal";
 import { setCurrentAddress } from "../store/runtimeSlice";
 import { Button } from "./widgets/BaseComponents";
+import { Portal } from "./Portal";
 
 const VERTICAL = "⇄";
 const HORIZONTAL = "⇅";
@@ -1161,31 +1162,43 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 				)}
 			</div>
 			{isModalOpen && (
-				<PatchingModal
-					onClose={closeModal}
-					firstSection={selectedSections.firstSection}
-					secondSection={selectedSections.secondSection}
-					onSettingsClick={handleSettingsClick}
-					selectedSettings={displayedSection}
-					onSectionChange={(deviceSection) => {
-						if (!isExpanded) {
-							return;
-						}
-						setDisplayedSection(deviceSection);
-						setCurrentSelected(deviceSection.device.id);
-						updateInfo(
-							deviceSection.device,
-							isVirtualDevice(deviceSection.device)
-								? undefined
-								: (deviceSection.section as MidiDeviceSection),
-						);
-					}}
-				/>
+				<Portal>
+					<PatchingModal
+						onClose={closeModal}
+						firstSection={selectedSections.firstSection}
+						secondSection={selectedSections.secondSection}
+						onSettingsClick={handleSettingsClick}
+						selectedSettings={displayedSection}
+						onSectionChange={(deviceSection) => {
+							if (!isExpanded) {
+								return;
+							}
+							setDisplayedSection(deviceSection);
+							setCurrentSelected(deviceSection.device.id);
+							updateInfo(
+								deviceSection.device,
+								isVirtualDevice(deviceSection.device)
+									? undefined
+									: (deviceSection.section as MidiDeviceSection),
+							);
+						}}
+					/>
+				</Portal>
 			)}
-			{isAboutOpen && <AboutModal onClose={closeModal} />}
-			{isPlaygroundOpen && <Playground onClose={closeModal} />}
+			{isAboutOpen && (
+				<Portal>
+					<AboutModal onClose={closeModal} />
+				</Portal>
+			)}
+			{isPlaygroundOpen && (
+				<Portal>
+					<Playground onClose={closeModal} />
+				</Portal>
+			)}
 			{isMemoryOpen && (
-				<MemoryModal onClose={closeModal} onLoad={handleLoadOk} />
+				<Portal>
+					<MemoryModal onClose={closeModal} onLoad={handleLoadOk} />
+				</Portal>
 			)}
 		</div>
 	);

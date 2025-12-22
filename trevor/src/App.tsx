@@ -8,6 +8,7 @@ import { useMemo, useState } from "react";
 import { WelcomeModal } from "./components/modals/WelcomeModal";
 import { NotificationBar } from "./components/NotificationBar";
 import { PatchingDevice3D } from "./components/3d/PatchingDevice3D";
+import { Portal } from "./components/Portal";
 
 const App = () => {
 	useMemo(() => {
@@ -52,8 +53,16 @@ const Main = () => {
 				<div className="bottom-section">
 					<DevicePatching open3DView={swith3DOn} />
 				</div>
-				{errors && errors.length > 0 && <ErrorModal errors={errors} />}
-				{firstLaunch && <WelcomeModal />}
+				{errors && errors.length > 0 && (
+					<Portal>
+						<ErrorModal errors={errors} />
+					</Portal>
+				)}
+				{firstLaunch && (
+					<Portal>
+						<WelcomeModal />
+					</Portal>
+				)}
 				<svg style={{ height: "0px", width: "0px" }}>
 					<title>Global definitions</title>
 					<defs>

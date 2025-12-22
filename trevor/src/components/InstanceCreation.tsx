@@ -10,6 +10,7 @@ import type { MidiDevice } from "../model";
 import { SettingsModal } from "./modals/SettingsModal";
 import { setClassCodeMode, setLogMode } from "../store/runtimeSlice";
 import { Button } from "./widgets/BaseComponents";
+import { Portal } from "./Portal";
 
 // const truncateName = (name: string, maxLength: number) => {
 // 	return name.length > maxLength ? `${name.slice(0, maxLength)}...` : name;
@@ -510,7 +511,11 @@ const InstanceCreation = () => {
 						</svg>
 					</>
 				)}
-				{isSettingsOpen && <SettingsModal onClose={handleClose} />}
+				{isSettingsOpen && (
+					<Portal>
+						<SettingsModal onClose={handleClose} />
+					</Portal>
+				)}
 			</div>
 		</>
 	);

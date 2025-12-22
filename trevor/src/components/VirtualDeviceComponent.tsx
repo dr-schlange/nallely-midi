@@ -12,6 +12,7 @@ import {
 import { useTrevorDispatch, useTrevorSelector } from "../store";
 import { ClassBrowser } from "./modals/ClassBrowser";
 import { setClassCodeMode } from "../store/runtimeSlice";
+import { Portal } from "./Portal";
 
 export interface VirtualDeviceComponentProps {
 	margin?: number;
@@ -207,7 +208,9 @@ const VirtualDeviceComponent = ({
 				</div>
 			</div>
 			{isCodeOpen && (
-				<ClassBrowser onClose={handleClassBrowserClose} device={device} />
+				<Portal>
+					<ClassBrowser onClose={handleClassBrowserClose} device={device} />
+				</Portal>
 			)}
 		</div>
 	);

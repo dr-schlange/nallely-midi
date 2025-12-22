@@ -24,12 +24,8 @@ import {
 import { MiniRack, moduleWeight } from "./VDevComponent";
 import { Button } from "./widgets/BaseComponents";
 import VDeviceSelectionModal from "./modals/VirtualDeviceSelectionModal";
-import {
-	restrictToHorizontalAxis,
-	restrictToVerticalAxis,
-	restrictToParentElement,
-} from "@dnd-kit/modifiers";
-import { ClassBrowser } from "./modals/ClassBrowser";
+import { restrictToHorizontalAxis } from "@dnd-kit/modifiers";
+import { Portal } from "./Portal";
 
 const groupBySumLimit = (arr, limit) => {
 	const result = [];
@@ -245,13 +241,12 @@ export const RackRowVirtual = ({
 				</div>
 			</div>
 			{selectorOpened && (
-				<VDeviceSelectionModal
-					onClose={() => setSelectorOpened((prev) => !prev)}
-				/>
+				<Portal>
+					<VDeviceSelectionModal
+						onClose={() => setSelectorOpened((prev) => !prev)}
+					/>
+				</Portal>
 			)}
-			{/* {codeEditorOpened && (
-				<ClassBrowser onClose={() => setSelectorOpened((prev) => !prev)} />
-			)} */}
 		</>
 	);
 };
