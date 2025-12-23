@@ -1,4 +1,3 @@
-import { memo } from "react";
 import { useEffect, useState } from "react";
 import type { MidiConnection, MidiParameter, VirtualParameter } from "../model";
 import { useTrevorWebSocket } from "../websockets/websocket";
@@ -9,7 +8,7 @@ interface ScalerFormProps {
 	connection: MidiConnection;
 }
 
-export const ScalerForm = memo(({ connection }: ScalerFormProps) => {
+export const ScalerForm = ({ connection }: ScalerFormProps) => {
 	const scalerEnabled = Boolean(connection.src.chain);
 	const scalerId = scalerEnabled ? connection.src.chain?.id : 0;
 
@@ -231,4 +230,4 @@ export const ScalerForm = memo(({ connection }: ScalerFormProps) => {
 			</label>
 		</div>
 	);
-});
+};

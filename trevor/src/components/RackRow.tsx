@@ -14,20 +14,9 @@ import {
 	arrayMove,
 	horizontalListSortingStrategy,
 	verticalListSortingStrategy,
-	useSortable,
 } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import {
-	restrictToHorizontalAxis,
-	restrictToParentElement,
-	restrictToVerticalAxis,
-} from "@dnd-kit/modifiers";
-import { useEffect, useState, memo } from "react";
-import {
-	mergeDevicesPreservingOrder,
-	saveDeviceOrder,
-	type HasId,
-} from "../utils/utils";
+import { useEffect, useState } from "react";
+import { mergeDevicesPreservingOrder, saveDeviceOrder } from "../utils/utils";
 
 interface RackRowProps {
 	devices: MidiDevice[];
@@ -41,145 +30,147 @@ interface RackRowProps {
 	horizontal?: boolean;
 }
 
-export const RackRow = memo(
-	({
-		devices,
-		onDeviceDrop,
-		onDragEnd,
-		onSectionClick,
-		selectedSections,
-		onNonSectionClick,
-		onSectionScroll,
-		onDeviceClick,
-		horizontal,
-	}: RackRowProps) => {
-		const midiClasses = useTrevorSelector(
-			(state) => state.nallely.classes.midi,
-		);
-		const [localDeviceOrder, setLocalDeviceOrder] =
-			useState<MidiDevice[]>(devices);
+export const RackRow = ({
+	devices,
+	onDeviceDrop,
+	onDragEnd,
+	onSectionClick,
+	selectedSections,
+	onNonSectionClick,
+	onSectionScroll,
+	onDeviceClick,
+	horizontal,
+}: RackRowProps) => {
+	const midiClasses = useTrevorSelector((state) => state.nallely.classes.midi);
+	const [localDeviceOrder, setLocalDeviceOrder] =
+		useState<MidiDevice[]>(devices);
 
-		const trevorSocket = useTrevorWebSocket();
-		const handleDeviceClassClick = (deviceClass: string) => {
-			trevorSocket?.createDevice(deviceClass);
-		};
+	const trevorSocket = useTrevorWebSocket();
+	const handleDeviceClassClick = (deviceClass: string) => {
+		trevorSocket?.createDevice(deviceClass);
+	};
 
-		const sensors = useSensors(
-			useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-		);
+	const sensors = useSensors(
+		useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+	);
 
-		const handleDragEnd = (event) => {
-			const { active, over } = event;
-			if (!over || active.id === over.id) {
-				setTimeout(() => {
-					onDragEnd?.();
-				}, 10);
-				return;
-			}
-
-			const draggedIndex = localDeviceOrder.findIndex(
-				(d) => d.id === active.id,
-			);
-			const targetIndex = localDeviceOrder.findIndex((d) => d.id === over.id);
-
-			if (draggedIndex === -1 || targetIndex === -1) {
-				setTimeout(() => {
-					onDragEnd?.();
-				}, 10);
-				return;
-			}
-
-			const newOrder = arrayMove(localDeviceOrder, draggedIndex, targetIndex);
-			setLocalDeviceOrder(newOrder);
-
-			saveDeviceOrder(
-				"midi",
-				newOrder.map((d) => d.id),
-			);
-
-			// Add delay to allow DOM to settle after drag operation
+	const handleDragEnd = (event) => {
+		const { active, over } = event;
+		if (!over || active.id === over.id) {
 			setTimeout(() => {
-				onDeviceDrop?.(localDeviceOrder[targetIndex], targetIndex);
 				onDragEnd?.();
 			}, 10);
-		};
+			return;
+		}
 
-		useEffect(() => {
-			setLocalDeviceOrder(mergeDevicesPreservingOrder("midi", devices));
-		}, [devices]);
+		const draggedIndex = localDeviceOrder.findIndex((d) => d.id === active.id);
+		const targetIndex = localDeviceOrder.findIndex((d) => d.id === over.id);
 
-		return (
-			<div
-				className={`rack-row ${horizontal ? "horizontal" : ""}`}
-				onScroll={() => onSectionScroll?.()}
-				onClick={(event) => {
-					if (
-						!(event.target as HTMLElement).classList.contains(
-							"rack-section-box",
-						) &&
-						!(event.target as HTMLElement).classList.contains(
-							"rack-section-name",
-						)
-					) {
-						onNonSectionClick();
-					}
+		if (draggedIndex === -1 || targetIndex === -1) {
+			setTimeout(() => {
+				onDragEnd?.();
+			}, 10);
+			return;
+		}
+
+		const newOrder = arrayMove(localDeviceOrder, draggedIndex, targetIndex);
+		setLocalDeviceOrder(newOrder);
+
+		saveDeviceOrder(
+			"midi",
+			newOrder.map((d) => d.id),
+		);
+
+		// Add delay to allow DOM to settle after drag operation
+		setTimeout(() => {
+			onDeviceDrop?.(localDeviceOrder[targetIndex], targetIndex);
+			onDragEnd?.();
+		}, 10);
+	};
+
+	useEffect(() => {
+		setLocalDeviceOrder(mergeDevicesPreservingOrder("midi", devices));
+	}, [devices]);
+
+	return (
+		<div
+			className={`rack-row ${horizontal ? "horizontal" : ""}`}
+			onScroll={() => onSectionScroll?.()}
+			onClick={(event) => {
+				if (
+					!(event.target as HTMLElement).classList.contains(
+						"rack-section-box",
+					) &&
+					!(event.target as HTMLElement).classList.contains("rack-section-name")
+				) {
+					onNonSectionClick();
+				}
+			}}
+		>
+			<select
+				value=""
+				title="Adds a MIDI device to the system"
+				onChange={(e) => {
+					const val = e.target.value;
+					if (val) handleDeviceClassClick(val);
 				}}
 			>
-				<select
-					value=""
-					title="Adds a MIDI device to the system"
-					onChange={(e) => {
-						const val = e.target.value;
-						if (val) handleDeviceClassClick(val);
-					}}
+				<option value="">--</option>
+				{midiClasses.map((cls) => (
+					<option key={cls} value={cls}>
+						{cls}
+					</option>
+				))}
+			</select>
+			<div className={"inner-rack-row"} onScroll={() => onSectionScroll?.()}>
+				<DndContext
+					sensors={sensors}
+					collisionDetection={closestCenter}
+					onDragEnd={handleDragEnd}
+					onDragMove={onSectionScroll}
+					modifiers={[
+						horizontal ? restrictToHorizontalAxis : restrictToVerticalAxis,
+						restrictToParentElement,
+					]}
 				>
-					<option value="">--</option>
-					{midiClasses.map((cls) => (
-						<option key={cls} value={cls}>
-							{cls}
-						</option>
-					))}
-				</select>
-				<div className={"inner-rack-row"} onScroll={() => onSectionScroll?.()}>
-					<DndContext
-						sensors={sensors}
-						collisionDetection={closestCenter}
-						onDragEnd={handleDragEnd}
-						onDragMove={onSectionScroll}
-						modifiers={[
-							horizontal ? restrictToHorizontalAxis : restrictToVerticalAxis,
-							restrictToParentElement,
-						]}
+					<SortableContext
+						items={localDeviceOrder.map((d) => d.id)}
+						strategy={
+							horizontal
+								? horizontalListSortingStrategy
+								: verticalListSortingStrategy
+						}
 					>
-						<SortableContext
-							items={localDeviceOrder.map((d) => d.id)}
-							strategy={
-								horizontal
-									? horizontalListSortingStrategy
-									: verticalListSortingStrategy
-							}
-						>
-							{localDeviceOrder.map((device) => (
-								<SortableComponent
-									component={MidiDeviceComponent}
-									key={device.id}
-									device={device}
-									onSectionClick={(section) => onSectionClick(device, section)}
-									selectedSections={selectedSections}
-									onDeviceClick={onDeviceClick}
-								/>
-							))}
+						{localDeviceOrder.map((device) => (
+							<SortableComponent
+								component={MidiDeviceComponent}
+								key={device.id}
+								device={device}
+								onSectionClick={(section) => onSectionClick(device, section)}
+								selectedSections={selectedSections}
+								onDeviceClick={onDeviceClick}
+							/>
+						))}
 
-							{localDeviceOrder.length === 0 && (
-								<p style={{ color: "#808080" }}>MIDI devices</p>
-							)}
-						</SortableContext>
-					</DndContext>
-				</div>
+						{localDeviceOrder.length === 0 && (
+							<p style={{ color: "#808080" }}>MIDI devices</p>
+						)}
+					</SortableContext>
+				</DndContext>
 			</div>
-		);
-	},
-);
+		</div>
+	);
+};
+
+// for sortable components
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import type { HasId } from "../utils/utils";
+import {
+	restrictToHorizontalAxis,
+	restrictToParentElement,
+	restrictToVerticalAxis,
+} from "@dnd-kit/modifiers";
 
 type SortableComponentProps<T extends HasId> = {
 	device: T;

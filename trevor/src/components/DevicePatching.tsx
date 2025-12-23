@@ -53,9 +53,7 @@ interface DevicePatchingProps {
 const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 	const mainSectionRef = useRef(null);
 	const [associateMode, setAssociateMode] = useState(true);
-	const [selection, setSelection] = useState<
-		(MidiDeviceWithSection | VirtualDeviceWithSection)[]
-	>([]);
+	const [selection, setSelection] = useState<(MidiDeviceWithSection | VirtualDeviceWithSection)[]>([]);
 	const [isModalOpen, setIsModalOpen] = useState(false);
 	const [isAboutOpen, setIsAboutOpen] = useState(false);
 	const [isMemoryOpen, setIsMemoryOpen] = useState(false);
@@ -111,55 +109,6 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 	useEffect(() => {
 		selectionRef.current = selection;
 	}, [selection]);
-
-	// Memoize filtered virtual devices
-	const filteredVirtualDevices = useMemo(
-		() =>
-			virtual_devices.filter(
-				(device) =>
-					!device.meta.name.includes("TrevorBus") &&
-					!device.meta.name.includes("WebSocketBus"),
-			),
-		[virtual_devices],
-	);
-
-	// Create stable string keys for MIDI and virtual selections
-	const midiSelectionKey = useMemo(
-		() =>
-			selection
-				.filter((d) => !d.section.virtual)
-				.map((d) => `${d.device.id}::${d.section.parameters[0]?.section_name}`)
-				.join("|"),
-		[selection],
-	);
-
-	const virtualSelectionKey = useMemo(
-		() =>
-			selection
-				.filter((d) => d.section.virtual)
-				.flatMap((d) =>
-					d.section.parameters.map((p) => `${d.device.id}::${p.cv_name}`),
-				)
-				.join("|"),
-		[selection],
-	);
-
-	// Memoize MIDI selections - only recreates when MIDI selection actually changes
-	const selectedMidiSections = useMemo(
-		() =>
-			midiSelectionKey ? midiSelectionKey.split("|").filter((s) => s) : [],
-		[midiSelectionKey],
-	);
-
-	// Memoize virtual selections - only recreates when virtual selection actually changes
-	const selectedVirtualSections = useMemo(
-		() =>
-			virtualSelectionKey
-				? virtualSelectionKey.split("|").filter((s) => s)
-				: [],
-		[virtualSelectionKey],
-	);
-
 	const currentAddress = useTrevorSelector(
 		(state) => state.runTime.currentAddress,
 	);
@@ -412,7 +361,6 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 								className={"ugly-button"}
 								onClick={() => {
 									trevorSocket?.killDevice(device.id);
-									setSelection([]);
 								}}
 							>
 								Kill
@@ -426,7 +374,6 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 								className={"ugly-button"}
 								onClick={() => {
 									trevorSocket?.unregisterService(device.repr);
-									setSelection([]);
 								}}
 							>
 								Unregister
@@ -633,124 +580,97 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 		setInformation(undefined);
 	}, [tempValues, midi_devices, virtual_devices, allConnections, channels]);
 
-	const handleParameterClick = useCallback(
-		(device: VirtualDevice) => {
-			setSelectedConnection(undefined);
-			if (!associateMode) {
-				updateInfo(device);
-				setCurrentSelected((_) => device.id);
-				// Still update selection for visual indicator
-				const virtualSection: VirtualDeviceSection = {
-					parameters: device.meta.parameters.map((e) => {
-						return { ...e, name: e.cv_name };
-					}),
-					virtual: true,
-					name: "__virtual__",
-					pads_or_keys: null,
-					pitchwheel: null,
-				};
-				setSelection([{ device, section: virtualSection }]);
-				return;
-			}
-			setSelection((prevSelection) => {
-				if (prevSelection.length < 2) {
-					const virtualSection: VirtualDeviceSection = {
-						parameters: device.meta.parameters.map((e) => {
-							return { ...e, name: e.cv_name };
-						}),
-						virtual: true,
-						name: "__virtual__",
-						pads_or_keys: null,
-						pitchwheel: null,
-					};
-					const newElement = { device, section: virtualSection };
-					setDisplayedSection((_) => undefined);
+	const handleParameterClick = (device: VirtualDevice) => {
+		setSelectedConnection(undefined);
+		if (!associateMode) {
+			updateInfo(device);
+			setCurrentSelected((_) => device.id);
+			return;
+		}
+		if (selection.length < 2) {
+			const virtualSection = {
+				parameters: device.meta.parameters.map((e) => {
+					return { ...e, name: e.cv_name };
+				}),
+			} as VirtualDeviceSection;
+			const newElement = { device, section: virtualSection };
+			setDisplayedSection((_) => undefined);
 
-					if (prevSelection.length === 1) {
-						setSelectedSections((_) => ({
-							firstSection: prevSelection[0],
-							secondSection: newElement,
-						}));
-						if (isExpanded) {
-							setDisplayedSection((_) => prevSelection[0]);
-							updateInfo(
-								prevSelection[0].device,
-								prevSelection[0].section as MidiDeviceSection,
-							);
-						}
-						setIsModalOpen(true);
-						return [...prevSelection, newElement];
-					}
-					updateInfo(device);
-					setCurrentSelected(device.id);
-					setDisplayedSection(newElement);
-					return [...prevSelection, newElement];
-				}
-				return prevSelection;
-			});
-			// eslint-disable-next-line react-hooks/exhaustive-deps
-		},
-		[associateMode, isExpanded],
-	);
-
-	const handleSectionClick = useCallback(
-		(device: MidiDevice, section: MidiDeviceSection) => {
-			setSelectedConnection(undefined);
-			if (!associateMode) {
-				updateInfo(device, section);
-				setCurrentSelected(device.id);
-				setDisplayedSection((_) => ({ device, section }));
-				return;
-			}
-			setSelection((prevSelection) => {
-				// Check if already selected and remove if so
-				if (
-					prevSelection.find(
-						(e) => e.device.id === device.id && e.section.name === section.name,
-					)
-				) {
-					return prevSelection.filter(
-						(s) => s.device.id !== device.id || s.section.name !== section.name,
+			if (selection.length === 1) {
+				setSelectedSections((_) => ({
+					firstSection: selection[0],
+					secondSection: newElement,
+				}));
+				if (isExpanded) {
+					setDisplayedSection((_) => selection[0]);
+					updateInfo(
+						selection[0].device,
+						selection[0].section as MidiDeviceSection,
 					);
 				}
+				setIsModalOpen(true);
+			} else {
+				setSelection((prev) => [...prev, newElement]);
+				updateInfo(device);
+				setCurrentSelected(device.id);
+				setDisplayedSection(newElement);
+			}
+		}
+	};
 
-				if (prevSelection.length < 2) {
-					setDisplayedSection(undefined);
-					const newElement = { device, section };
+	const handleSectionClick = (
+		device: MidiDevice,
+		section: MidiDeviceSection,
+	) => {
+		setSelectedConnection(undefined);
+		if (!associateMode) {
+			updateInfo(device, section);
+			setCurrentSelected(device.id);
+			setDisplayedSection((_) => ({ device, section }));
+			return;
+		}
+		if (
+			selection.find(
+				(e) => e.device.id === device.id && e.section.name === section.name,
+			)
+		) {
+			setSelection((_) =>
+				selection.filter(
+					(s) => s.device.id !== device.id || s.section.name !== section.name,
+				),
+			);
+		}
 
-					if (prevSelection.length === 1) {
-						setSelectedSections((_) => ({
-							firstSection: prevSelection[0],
-							secondSection: newElement,
-						}));
-						if (isExpanded) {
-							setDisplayedSection((_) => prevSelection[0]);
-							updateInfo(
-								prevSelection[0].device,
-								prevSelection[0].section as MidiDeviceSection,
-							);
-						}
-						setIsModalOpen(true);
-						return [...prevSelection, newElement];
-					}
-					updateInfo(device, section);
-					setCurrentSelected(device.id);
-					return [...prevSelection, newElement];
+		if (selection.length < 2) {
+			setDisplayedSection(undefined);
+			const newElement = { device, section };
+
+			if (selection.length === 1) {
+				setSelectedSections((_) => ({
+					firstSection: selection[0],
+					secondSection: newElement,
+				}));
+				if (isExpanded) {
+					setDisplayedSection((_) => selection[0]);
+					updateInfo(selection[0].device, selection[0].section as MidiDeviceSection);
 				}
-				return prevSelection;
-			});
-			// eslint-disable-next-line react-hooks/exhaustive-deps
-		},
-		[associateMode, isExpanded],
-	);
+				setIsModalOpen(true);
+			} else {
+				updateInfo(device, section);
+				setCurrentSelected(device.id);
+				setSelection((prev) => [...prev, newElement]);
+			}
+		}
+	};
 
-	const closeModal = useCallback(() => {
+	const closeModal = () => {
 		setIsModalOpen(false);
 		setIsAboutOpen(false);
-		setSelection((prev) => (prev.length > 0 ? [] : prev));
+		setSelection([]);
 		setIsPlaygroundOpen(false);
+		// setAssociateMode(false);
 		setIsMemoryOpen(false);
-	}, []);
+	};
 
 	const [linkMouseInteraction, setLinkMouseInteraction] = useState(false);
 	const updateConnectionsRef = useRef<number | null>(null);
@@ -896,19 +816,18 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 		};
 	}, [updateConnections]);
 
-	const handleNonSectionClick = useCallback(() => {
-		setSelection((prev) => (prev.length > 0 ? [] : prev));
+	const handleNonSectionClick = () => {
+		setSelection([]); // Deselect sections
 		setDisplayedSection(undefined);
-	}, []);
+	};
 
-	const handleMidiDeviceClick = useCallback((device: MidiDevice) => {
+	const handleMidiDeviceClick = (device: MidiDevice) => {
 		setCurrentSelected(device.id);
 		setSelectedConnection(undefined);
-		setSelection((prev) => (prev.length > 0 ? [] : prev));
+		setSelection([]);
 		setDisplayedSection(undefined);
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 		updateInfo(device);
-	}, []);
+	};
 
 	const findDevice = (deviceId: number) => {
 		return [...midi_devices, ...virtual_devices].find((d) => d.id === deviceId);
@@ -1049,7 +968,9 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 					devices={midi_devices}
 					onSectionClick={handleSectionClick}
 					onNonSectionClick={handleNonSectionClick}
-					selectedSections={selectedMidiSections}
+					selectedSections={selection.map(
+						(d) => `${d.device.id}::${d.section.parameters[0]?.section_name}`,
+					)}
 					onSectionScroll={updateConnectionsThrottled}
 					onDeviceClick={handleMidiDeviceClick}
 					horizontal={orientation === HORIZONTAL}
@@ -1057,10 +978,19 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 					onDragEnd={updateConnections}
 				/>
 				<RackRowVirtual
-					devices={filteredVirtualDevices}
+					devices={virtual_devices.filter(
+						(device) =>
+							!device.meta.name.includes("TrevorBus") &&
+							!device.meta.name.includes("WebSocketBus"),
+					)}
 					onParameterClick={handleParameterClick}
 					onNonSectionClick={handleNonSectionClick}
-					selectedSections={selectedVirtualSections}
+					selectedSections={(() => {
+						return selection.map(
+							(d) =>
+								`${devUID(d.device)}::${d.section.parameters[0]?.section_name}`,
+						);
+					})()}
 					onSectionScroll={updateConnectionsThrottled}
 					horizontal={orientation === HORIZONTAL}
 					onDeviceDrop={updateConnections}

@@ -1,15 +1,9 @@
-import { memo } from "react";
 import { Fragment, useEffect, useRef, useState } from "react";
 import { AnsiParser } from "../utils/utils";
 import { useTrevorDispatch, useTrevorSelector } from "../store";
 import { addStdinWait, removeStdinWait } from "../store/runtimeSlice";
 
-interface TerminalProps {
-	stdout: string;
-	stdin: (id: any, text: any) => void;
-}
-
-export const Terminal = memo(({ stdout, stdin }: TerminalProps) => {
+export const Terminal = ({ stdout, stdin }) => {
 	const [triggered, setTriggered] = useState([]);
 	const pending = useTrevorSelector((state) => state.runTime.stdin.queue);
 	const dispatch = useTrevorDispatch();
@@ -148,4 +142,4 @@ export const Terminal = memo(({ stdout, stdin }: TerminalProps) => {
 				})}
 		</div>
 	);
-});
+};
