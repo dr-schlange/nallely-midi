@@ -845,6 +845,7 @@ mod-?:     displays this entry
 				/>
 				<HeaderButton
 					text={cmdMode ? "CMD" : "INS"}
+					disabled={!vimActive}
 					style={{
 						backgroundColor: vimActive ? "orange" : "unset",
 						color: vimActive ? "black" : "gray",
@@ -997,7 +998,7 @@ mod-?:     displays this entry
 			</div>
 			<div className="modal-footer" style={{ gap: "5px" }}>
 				{mode === "terminal" ? (
-					<p>: "mod-?: displays shortcuts"</p>
+					<p>mod-?: displays shortcuts</p>
 				) : (
 					<p style={{ width: "100%" }}>{value}</p>
 				)}
