@@ -1,6 +1,6 @@
 /** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
 /** biome-ignore-all lint/a11y/useKeyWithClickEvents: <explanation> */
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { VirtualDevice } from "../model";
 import { useTrevorSelector } from "../store";
 import { useTrevorWebSocket } from "../websockets/websocket";
@@ -109,43 +109,42 @@ export const RackRowVirtual = ({
 		}),
 	);
 
-	const handleDragEnd = (event) => {
-		const { active, over } = event;
-		if (!over || active.id === over.id) {
-			setTimeout(() => {
-				onDragEnd?.();
-			}, 10);
-			return;
-		}
+	const handleDragEnd = useCallback(
+		(event) => {
+			const { active, over } = event;
 
-		const draggedIndex = localDeviceOrder.findIndex(
-			(d) => devUID(d) === active.id,
-		);
-		const targetIndex = localDeviceOrder.findIndex(
-			(d) => devUID(d) === over.id,
-		);
+			if (!over || active.id === over.id) {
+				setTimeout(() => onDragEnd?.(), 100);
+				return;
+			}
 
-		if (draggedIndex === -1 || targetIndex === -1) {
-			setTimeout(() => {
-				onDragEnd?.();
-			}, 10);
-			return;
-		}
+			setLocalDeviceOrder((prevOrder) => {
+				const draggedIndex = prevOrder.findIndex(
+					(d) => devUID(d) === active.id,
+				);
+				const targetIndex = prevOrder.findIndex((d) => devUID(d) === over.id);
 
-		const newOrder = arrayMove(localDeviceOrder, draggedIndex, targetIndex);
-		setLocalDeviceOrder(newOrder);
+				if (draggedIndex === -1 || targetIndex === -1) {
+					setTimeout(() => onDragEnd?.(), 10);
+					return prevOrder;
+				}
 
-		saveDeviceOrder(
-			"virtuals",
-			newOrder.map((d) => devUID(d)),
-		);
+				const newOrder = arrayMove(prevOrder, draggedIndex, targetIndex);
 
-		// Add delay to allow DOM to settle after drag operation
-		onDeviceDrop?.(localDeviceOrder[targetIndex], targetIndex);
-		setTimeout(() => {
-			onDragEnd?.();
-		}, 10);
-	};
+				saveDeviceOrder(
+					"virtuals",
+					newOrder.map((d) => devUID(d)),
+				);
+
+				onDeviceDrop?.(newOrder[targetIndex], targetIndex);
+
+				setTimeout(() => onDragEnd?.(), 100);
+
+				return newOrder;
+			});
+		},
+		[onDeviceDrop, onDragEnd],
+	);
 
 	useEffect(() => {
 		setLocalDeviceOrder(mergeDevicesPreservingOrder("virtuals", devices));
@@ -155,6 +154,15 @@ export const RackRowVirtual = ({
 		trevorSocket?.createNewDevice("MyDevice");
 		setCodeEditorOpened((prev) => !prev);
 	};
+
+	const groupedDevices = useMemo(
+		() => groupBySumLimit(localDeviceOrder, 6),
+		[localDeviceOrder],
+	);
+
+	const handlePlaceholderClick = useCallback(() => {
+		setSelectorOpened((prev) => !prev);
+	}, []);
 
 	return (
 		<>
@@ -225,13 +233,13 @@ export const RackRowVirtual = ({
 								horizontal ? horizontalListSortingStrategy : rectSortingStrategy
 							}
 						>
-							{groupBySumLimit(localDeviceOrder, 6).map((rack, i) => (
+							{groupedDevices.map((rack, i) => (
 								<MiniRack
 									key={`mini-rack-${i}`}
 									devices={rack}
 									rackId={`${i}`}
 									onDeviceClick={onParameterClick}
-									onPlaceholderClick={() => setSelectorOpened((prev) => !prev)}
+									onPlaceholderClick={handlePlaceholderClick}
 									selectedSections={selectedSections}
 									onDrag={onSectionScroll}
 								/>

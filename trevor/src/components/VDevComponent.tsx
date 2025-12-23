@@ -1,6 +1,12 @@
 /** biome-ignore-all lint/a11y/useKeyWithClickEvents: <explanation> */
 /** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
-import { useEffect, useRef, useState } from "react";
+import React, {
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
 import type { VirtualDevice, VirtualParameter } from "../model";
 import {
 	buildSectionId,
@@ -93,7 +99,10 @@ export const MiniRack = ({
 }: MiniRackProps) => {
 	const totalRackSlots = 6;
 
-	const nbPlaceHolders = totalRackSlots - totalWeightModules(devices);
+	const nbPlaceHolders = useMemo(
+		() => totalRackSlots - totalWeightModules(devices),
+		[devices],
+	);
 	const slots = [
 		...devices.map((device) => (
 			<SortableVDevice
@@ -149,47 +158,49 @@ interface VDeviceProps {
 	selected?: boolean;
 }
 
-const Port = ({
-	device,
-	parameter,
-	reverse = false,
-}: {
-	device;
-	parameter: VirtualParameter;
-	reverse?: boolean;
-}) => {
-	return (
-		<div
-			style={{
-				display: "flex",
-				flexDirection: reverse ? "row-reverse" : "row",
-				alignItems: "center",
-				justifyContent: "flex-end",
-				gap: "2px",
-			}}
-		>
-			<p
-				style={{
-					fontSize: "8px",
-					margin: 0,
-					color: "gray",
-				}}
-				title={parameter.name}
-			>
-				{generateAcronym(parameter.name, 4)}
-			</p>
+const Port = React.memo(
+	({
+		device,
+		parameter,
+		reverse = false,
+	}: {
+		device;
+		parameter: VirtualParameter;
+		reverse?: boolean;
+	}) => {
+		return (
 			<div
 				style={{
-					width: "6px",
-					height: "6px",
-					backgroundColor: "orange",
-					borderRadius: "50%",
+					display: "flex",
+					flexDirection: reverse ? "row-reverse" : "row",
+					alignItems: "center",
+					justifyContent: "flex-end",
+					gap: "2px",
 				}}
-				id={buildSectionId(device.id, parameter.cv_name)}
-			/>
-		</div>
-	);
-};
+			>
+				<p
+					style={{
+						fontSize: "8px",
+						margin: 0,
+						color: "gray",
+					}}
+					title={parameter.name}
+				>
+					{generateAcronym(parameter.name, 4)}
+				</p>
+				<div
+					style={{
+						width: "6px",
+						height: "6px",
+						backgroundColor: "orange",
+						borderRadius: "50%",
+					}}
+					id={buildSectionId(device.id, parameter.cv_name)}
+				/>
+			</div>
+		);
+	},
+);
 
 const generateNameWithAcronym = (
 	name: string,
@@ -215,187 +226,195 @@ const generateNameWithAcronym = (
 	return acronym + number;
 };
 
-const HIDE = [];
-export const VDevice = ({
-	device,
-	onClick,
-	onDoubleClick,
-	selected,
-	onLongPress,
-	onTouchStart,
-}: VDeviceProps) => {
-	const height = "120px";
-	let width = 58;
-	const leftLabelLimit = 8;
-	const clipping = device.repr.length >= leftLabelLimit;
-	const parameters = device.meta.parameters.filter(
-		(e) => !HIDE.includes(e.name),
-	);
-	const nbParameters = parameters.length;
-	const lastTap = useRef<number | null>(null);
-	const trevorSocket = useTrevorWebSocket();
-	const dispatch = useTrevorDispatch();
-	const [isCodeOpen, setIsCodeOpen] = useState(false);
+const HIDE = new Set<string>();
+export const VDevice = React.memo(
+	({
+		device,
+		onClick,
+		onDoubleClick,
+		selected,
+		onLongPress,
+		onTouchStart,
+	}: VDeviceProps) => {
+		const height = "120px";
+		const leftLabelLimit = 8;
+		const clipping = device.repr.length >= leftLabelLimit;
+		const parameters = useMemo(
+			() => device.meta.parameters.filter((e) => !HIDE.has(e.name)),
+			[device.meta.parameters],
+		);
+		const nbParameters = parameters.length;
+		const lastTap = useRef<number | null>(null);
+		const trevorSocket = useTrevorWebSocket();
+		const dispatch = useTrevorDispatch();
+		const [isCodeOpen, setIsCodeOpen] = useState(false);
 
-	if (nbParameters <= SMALL_PORTS_LIMIT) {
-		width = 25;
-	} else if (nbParameters > 19) {
-		width = 81;
-	}
+		const width =
+			nbParameters <= SMALL_PORTS_LIMIT ? 25 : nbParameters > 19 ? 81 : 58;
 
-	const longPressEvents = useLongPress(
-		() => {
-			onLongPress?.(device);
-		},
-		500,
-		() => onTouchStart?.(device),
-	);
+		const longPressEvents = useLongPress(
+			() => {
+				onLongPress?.(device);
+			},
+			500,
+			() => onTouchStart?.(device),
+		);
 
-	const params = {
-		head: parameters.slice(0, SMALL_PORTS_LIMIT),
-		rest: chunkArray(parameters.slice(SMALL_PORTS_LIMIT), PORTS_LIMIT),
-	};
+		const params = useMemo(
+			() => ({
+				head: parameters.slice(0, SMALL_PORTS_LIMIT),
+				rest: chunkArray(parameters.slice(SMALL_PORTS_LIMIT), PORTS_LIMIT),
+			}),
+			[parameters],
+		);
 
-	const handleDoubleClick = (device) => {
-		if (onDoubleClick) {
-			onDoubleClick?.(device);
-			return;
-		}
-		trevorSocket.toggle_device(device, /* start= */ !device.running);
-	};
-
-	const handleClick = (event: React.MouseEvent | React.TouchEvent) => {
-		event.preventDefault();
-		event.stopPropagation();
-
-		if (longPressEvents.didlongpress.current) {
-			return;
-		}
-
-		const now = Date.now();
-		const DOUBLE_CLICK_DELAY = 200;
-		if (lastTap.current && now - lastTap.current < DOUBLE_CLICK_DELAY) {
-			handleDoubleClick(device);
-			lastTap.current = null;
-		} else {
-			lastTap.current = now;
-			setTimeout(() => {
-				if (
-					lastTap.current &&
-					Date.now() - lastTap.current >= DOUBLE_CLICK_DELAY
-				) {
-					if (isClassCodeMode()) {
-						setIsCodeOpen(true);
-						dispatch(setClassCodeMode(false));
-						return;
-					}
-					onClick?.(device);
-					lastTap.current = null;
+		const handleDoubleClick = useCallback(
+			(device) => {
+				if (onDoubleClick) {
+					onDoubleClick?.(device);
+					return;
 				}
-			}, DOUBLE_CLICK_DELAY);
-		}
-	};
+				trevorSocket.toggle_device(device, /* start= */ !device.running);
+			},
+			[onDoubleClick, trevorSocket],
+		);
 
-	return (
-		<div
-			style={{
-				paddingTop: "1px",
-				border: `3px ${device.paused ? "dashed" : "solid"} ${selected ? "yellow" : "gray"}`,
-				height: height,
-				width: `${width}px`,
-				minWidth: `${width}px`,
-				display: "flex",
-				flexWrap: "wrap",
-				flexDirection: "row",
-				gap: "0px",
-				justifyContent: "space-evenly",
-				backgroundColor: "#e0e0e0",
-				userSelect: "none",
-			}}
-			onClick={handleClick}
-			{...longPressEvents}
-		>
+		const handleClick = useCallback(
+			(event: React.MouseEvent | React.TouchEvent) => {
+				event.preventDefault();
+				event.stopPropagation();
+
+				if (longPressEvents.didlongpress.current) {
+					return;
+				}
+
+				const now = Date.now();
+				const DOUBLE_CLICK_DELAY = 200;
+				if (lastTap.current && now - lastTap.current < DOUBLE_CLICK_DELAY) {
+					handleDoubleClick(device);
+					lastTap.current = null;
+				} else {
+					lastTap.current = now;
+					setTimeout(() => {
+						if (
+							lastTap.current &&
+							Date.now() - lastTap.current >= DOUBLE_CLICK_DELAY
+						) {
+							if (isClassCodeMode()) {
+								setIsCodeOpen(true);
+								dispatch(setClassCodeMode(false));
+								return;
+							}
+							onClick?.(device);
+							lastTap.current = null;
+						}
+					}, DOUBLE_CLICK_DELAY);
+				}
+			},
+			[onClick, handleDoubleClick, device, dispatch, longPressEvents],
+		);
+
+		return (
 			<div
 				style={{
-					display: "inherit",
-					flexDirection: "column",
-					alignItems: "center",
-					justifyContent: "space-between",
-					height: "117px",
-					width: "25px",
-					padding: "1px",
-					gap: "2px",
+					paddingTop: "1px",
+					border: `3px ${device.paused ? "dashed" : "solid"} ${selected ? "yellow" : "gray"}`,
+					height: height,
+					width: `${width}px`,
+					minWidth: `${width}px`,
+					display: "flex",
+					flexWrap: "wrap",
+					flexDirection: "row",
+					gap: "0px",
+					justifyContent: "space-evenly",
+					backgroundColor: "#e0e0e0",
+					userSelect: "none",
 				}}
+				onClick={handleClick}
+				{...longPressEvents}
 			>
 				<div
 					style={{
-						maxHeight: "100px",
-						display: "flex",
-						flexDirection: "column",
-						justifyContent: clipping ? "flex-end" : "flex-start",
-						overflow: "hidden",
-					}}
-				>
-					<p
-						style={{
-							margin: 0,
-							whiteSpace: "nowrap",
-							fontSize: "14px",
-							color: "black",
-							writingMode: "vertical-rl",
-							textOrientation: "sideways",
-							transform: "rotate(180deg)",
-						}}
-					>
-						{generateNameWithAcronym(device.repr, leftLabelLimit)}
-					</p>
-				</div>
-				<div
-					style={{
-						height: "59px",
-						width: "22px",
-						margin: "1px",
 						display: "inherit",
-						flexDirection: "column-reverse",
-						justifyContent: "flex-start",
-						gap: "2px",
-						overflow: "hidden",
-					}}
-				>
-					{/* {parameters.slice(rightPortLimit).map((p) => (
-						<Port device={device} key={p.cv_name} parameter={p} reverse />
-					))} */}
-					{params.head.map((p) => (
-						<Port device={device} key={p.cv_name} parameter={p} reverse />
-					))}
-				</div>
-			</div>
-			{params.rest.map((row, i) => (
-				<div
-					key={`${device.id}-${i}`}
-					style={{
+						flexDirection: "column",
+						alignItems: "center",
+						justifyContent: "space-between",
 						height: "117px",
 						width: "25px",
 						padding: "1px",
 						gap: "2px",
-						display: "inherit",
-						flexDirection: "column-reverse",
-						justifyContent: "flex-start",
 					}}
 				>
-					{row.map((p) => (
-						<Port device={device} key={p.cv_name} parameter={p} />
-					))}
+					<div
+						style={{
+							maxHeight: "100px",
+							display: "flex",
+							flexDirection: "column",
+							justifyContent: clipping ? "flex-end" : "flex-start",
+							overflow: "hidden",
+						}}
+					>
+						<p
+							style={{
+								margin: 0,
+								whiteSpace: "nowrap",
+								fontSize: "14px",
+								color: "black",
+								writingMode: "vertical-rl",
+								textOrientation: "sideways",
+								transform: "rotate(180deg)",
+							}}
+						>
+							{generateNameWithAcronym(device.repr, leftLabelLimit)}
+						</p>
+					</div>
+					<div
+						style={{
+							height: "59px",
+							width: "22px",
+							margin: "1px",
+							display: "inherit",
+							flexDirection: "column-reverse",
+							justifyContent: "flex-start",
+							gap: "2px",
+							overflow: "hidden",
+						}}
+					>
+						{params.head.map((p) => (
+							<Port device={device} key={p.cv_name} parameter={p} reverse />
+						))}
+					</div>
 				</div>
-			))}
-			{isCodeOpen && (
-				<Portal>
-					<ClassBrowser device={device} onClose={() => setIsCodeOpen(false)} />
-				</Portal>
-			)}
-		</div>
-	);
-};
+				{params.rest.map((row, i) => (
+					<div
+						key={`${device.id}-${i}`}
+						style={{
+							height: "117px",
+							width: "25px",
+							padding: "1px",
+							gap: "2px",
+							display: "inherit",
+							flexDirection: "column-reverse",
+							justifyContent: "flex-start",
+						}}
+					>
+						{row.map((p) => (
+							<Port device={device} key={p.cv_name} parameter={p} />
+						))}
+					</div>
+				))}
+				{isCodeOpen && (
+					<Portal>
+						<ClassBrowser
+							device={device}
+							onClose={() => setIsCodeOpen(false)}
+						/>
+					</Portal>
+				)}
+			</div>
+		);
+	},
+);
 
 interface VDevicePlaceholderProps {
 	slots: number;
@@ -404,116 +423,139 @@ interface VDevicePlaceholderProps {
 	onTouchStart?: () => void;
 }
 
-export const VDevicePlaceholder = ({
-	slots,
-	onClick,
-}: VDevicePlaceholderProps) => {
-	const height = "120px";
-	const width = slots === SMALLSIZE ? 176 : slots * 26.5;
-	const [pressed, setPressed] = useState(false);
-	const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(
-		null,
-	);
-	const touchThreshold = 10;
+export const VDevicePlaceholder = React.memo(
+	({ slots, onClick }: VDevicePlaceholderProps) => {
+		const height = "120px";
+		const width = slots === SMALLSIZE ? 176 : slots * 26.5;
+		const [pressed, setPressed] = useState(false);
+		const [touchStart, setTouchStart] = useState<{
+			x: number;
+			y: number;
+		} | null>(null);
+		const touchThreshold = 10;
 
-	return (
-		<div
-			data-no-dnd
-			style={{
-				paddingTop: "1px",
-				border: `3px dashed ${pressed ? "orange" : "#aaaaaa"}`,
-				height,
-				width,
-				minWidth: width,
-				display: "flex",
-				alignItems: "center",
-				justifyContent: "center",
-				transform: pressed ? "scale(0.97)" : "scale(1)",
-				backgroundColor: pressed ? "rgba(255,165,0,0.1)" : "transparent",
-				cursor: "pointer",
-				userSelect: "none",
-				touchAction: "auto",
-			}}
-			onTouchStart={(e) => {
-				e.stopPropagation();
-				const touch = e.touches[0];
-				setTouchStart({ x: touch.clientX, y: touch.clientY });
-				setPressed(true);
-			}}
-			onTouchMove={(e) => {
-				if (!touchStart) return;
-				const touch = e.touches[0];
-				if (
-					Math.abs(touch.clientX - touchStart.x) > touchThreshold ||
-					Math.abs(touch.clientY - touchStart.y) > touchThreshold
-				) {
+		return (
+			<div
+				data-no-dnd
+				style={{
+					paddingTop: "1px",
+					border: `3px dashed ${pressed ? "orange" : "#aaaaaa"}`,
+					height,
+					width,
+					minWidth: width,
+					display: "flex",
+					alignItems: "center",
+					justifyContent: "center",
+					transform: pressed ? "scale(0.97)" : "scale(1)",
+					backgroundColor: pressed ? "rgba(255,165,0,0.1)" : "transparent",
+					cursor: "pointer",
+					userSelect: "none",
+					touchAction: "auto",
+				}}
+				onTouchStart={(e) => {
+					e.stopPropagation();
+					const touch = e.touches[0];
+					setTouchStart({ x: touch.clientX, y: touch.clientY });
+					setPressed(true);
+				}}
+				onTouchMove={(e) => {
+					if (!touchStart) return;
+					const touch = e.touches[0];
+					if (
+						Math.abs(touch.clientX - touchStart.x) > touchThreshold ||
+						Math.abs(touch.clientY - touchStart.y) > touchThreshold
+					) {
+						setPressed(false);
+						setTouchStart(null);
+					}
+				}}
+				onTouchEnd={(e) => {
+					if (!pressed) return;
+					e.stopPropagation();
 					setPressed(false);
 					setTouchStart(null);
+					onClick?.();
+				}}
+				onClick={(e) => {
+					e.stopPropagation();
+					onClick?.();
+				}}
+			>
+				<p style={{ fontSize: 27, color: pressed ? "orange" : "#aaaaaa" }}>+</p>
+			</div>
+		);
+	},
+);
+
+interface SortableVDeviceProps {
+	device: VirtualDevice;
+	onClick?: (device: VirtualDevice) => void;
+	selectedSections: string[];
+	onDrag?: (device: VirtualDevice) => void;
+}
+const SortableVDevice = React.memo(
+	({ device, onClick, selectedSections, onDrag }: SortableVDeviceProps) => {
+		const { attributes, listeners, setNodeRef, transform, isDragging } =
+			useSortable({
+				id: devUID(device),
+			});
+
+		useEffect(() => {
+			const handleTouchMove = (e: TouchEvent) => {
+				if (isDragging) {
+					e.preventDefault();
+					onDrag?.(device);
 				}
-			}}
-			onTouchEnd={(e) => {
-				if (!pressed) return;
-				e.stopPropagation();
-				setPressed(false);
-				setTouchStart(null);
-				onClick?.();
-			}}
-			onClick={(e) => {
-				e.stopPropagation();
-				onClick?.();
-			}}
-		>
-			<p style={{ fontSize: 27, color: pressed ? "orange" : "#aaaaaa" }}>+</p>
-		</div>
-	);
-};
-
-const SortableVDevice = ({ device, onClick, selectedSections, onDrag }) => {
-	const { attributes, listeners, setNodeRef, transform, isDragging } =
-		useSortable({
-			id: devUID(device),
-		});
-
-	useEffect(() => {
-		const handleTouchMove = (e: TouchEvent) => {
-			if (isDragging) {
-				e.preventDefault();
+			};
+			const end = (e) => {
 				onDrag?.(device);
-			}
+			};
+
+			document.addEventListener("touchmove", handleTouchMove, {
+				passive: false,
+			});
+			document.addEventListener("mousemove", handleTouchMove, {
+				passive: false,
+			});
+			document.addEventListener("mouseup", end);
+			document.addEventListener("touchup", end);
+
+			return () => {
+				document.removeEventListener("touchmove", handleTouchMove);
+				document.removeEventListener("mousemove", handleTouchMove);
+				document.removeEventListener("mouseup", end);
+				document.removeEventListener("touchup", end);
+			};
+		}, [isDragging, device, onDrag]);
+
+		const style: React.CSSProperties = {
+			transform: isDragging
+				? `${CSS.Transform.toString(transform)} scale(1.05)`
+				: CSS.Transform.toString(transform),
+			boxShadow: isDragging ? "5px 5px rgba(255,165,0,0.7)" : undefined,
+			transition: "transform 0.15s ease",
+			touchAction: isDragging ? "pan-y" : "auto",
 		};
-		const end = (e) => {
-			onDrag?.(device);
-		};
 
-		document.addEventListener("touchmove", handleTouchMove, { passive: false });
-		document.addEventListener("mousemove", handleTouchMove, { passive: false });
-		document.addEventListener("mouseup", end);
-		document.addEventListener("touchup", end);
+		const handleDeviceClick = useCallback(
+			(device) => {
+				onClick?.(device);
+			},
+			[onClick],
+		);
 
-		return () => {
-			document.removeEventListener("touchmove", handleTouchMove);
-			document.removeEventListener("mousemove", handleTouchMove);
-			document.removeEventListener("mouseup", end);
-			document.removeEventListener("touchup", end);
-		};
-	}, [isDragging, device, onDrag]);
+		const isSelected = selectedSections.some((s) =>
+			s.startsWith(devUID(device)),
+		);
 
-	const style: React.CSSProperties = {
-		transform: isDragging
-			? `${CSS.Transform.toString(transform)} scale(1.05)`
-			: CSS.Transform.toString(transform),
-		boxShadow: isDragging ? "5px 5px rgba(255,165,0,0.7)" : undefined,
-		transition: "transform 0.15s ease",
-		touchAction: isDragging ? "pan-y" : "auto",
-	};
-
-	return (
-		<div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-			<VDevice
-				device={device}
-				onClick={onClick}
-				selected={selectedSections.some((s) => s.startsWith(devUID(device)))}
-			/>
-		</div>
-	);
-};
+		return (
+			<div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+				<VDevice
+					device={device}
+					onClick={handleDeviceClick}
+					selected={isSelected}
+				/>
+			</div>
+		);
+	},
+);

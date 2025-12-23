@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useMemo } from "react";
+import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import type {
 	MidiConnection,
 	MidiDevice,
@@ -28,6 +28,7 @@ import {
 } from "../../utils/utils";
 import { MidiGrid } from "../MidiGrid";
 import { Button } from "../widgets/BaseComponents";
+import { createSelector } from "@reduxjs/toolkit";
 
 const collectAllVirtualParameters = (device: VirtualDevice) => {
 	return device.meta.parameters.map((p) => parameterUUID(device.id, p));
@@ -53,6 +54,53 @@ const collectAllParameters = (device: MidiDevice | VirtualDevice) => {
 	}
 	return collectAllMidiParameters(device);
 };
+
+const getSectionParameters = (sectionWrapper, reverseOrder = false) => {
+	if (!sectionWrapper) {
+		return [];
+	}
+	const pitchwheel = sectionWrapper.section.pitchwheel
+		? [sectionWrapper.section.pitchwheel]
+		: [];
+	const mainOutputIndex = sectionWrapper.section.parameters.findIndex(
+		(e) => e.name === "output_cv",
+	);
+	const params = [...sectionWrapper.section.parameters];
+	if (mainOutputIndex !== -1) {
+		const output = params.splice(mainOutputIndex, 1);
+		params.push(...output);
+	}
+	if (reverseOrder) {
+		return [...params.reverse(), ...pitchwheel];
+	}
+	return [...params, ...pitchwheel];
+};
+
+const selectAllVirtualDeviceSection = createSelector(
+	[(state) => state.nallely.virtual_devices],
+	(devices) =>
+		devices
+			.filter(
+				(e) => e.meta.name !== "TrevorBus" && e.meta.name !== "WebSocketBus",
+			)
+			.flatMap(
+				(device) =>
+					({
+						device,
+						section: { parameters: device.meta.parameters },
+					}) as VirtualDeviceWithSection,
+			),
+);
+
+const selectAllMidiDeviceSection = createSelector(
+	[(state) => state.nallely.midi_devices],
+	(devices) =>
+		devices.flatMap((d) =>
+			d.meta.sections.map(
+				(section) => ({ device: d, section }) as MidiDeviceWithSection,
+			),
+		),
+);
 
 interface PatchingModalProps {
 	onClose: () => void;
@@ -110,56 +158,47 @@ const PatchingModal = ({
 	const [currentSecondSection, setCurrentSecondSection] =
 		useState(secondSection);
 
-	const connections = allConnections.filter(
-		(f) =>
-			connectionsOfInterest(
-				f,
-				currentFirstSection?.device.id,
-				currentFirstSection?.section.parameters[0]?.section_name ||
-					currentFirstSection?.section.pads_or_keys?.section_name ||
-					currentFirstSection?.section.pitchwheel?.section_name,
-			) ||
-			connectionsOfInterest(
-				f,
-				currentSecondSection?.device.id,
-				currentSecondSection?.section.parameters[0]?.section_name ||
-					currentSecondSection?.section.pads_or_keys?.section_name ||
-					currentSecondSection?.section.pitchwheel?.section_name,
+	const firstSectionName =
+		currentFirstSection?.section.parameters[0]?.section_name ||
+		currentFirstSection?.section.pads_or_keys?.section_name ||
+		currentFirstSection?.section.pitchwheel?.section_name;
+
+	const secondSectionName =
+		currentSecondSection?.section.parameters[0]?.section_name ||
+		currentSecondSection?.section.pads_or_keys?.section_name ||
+		currentSecondSection?.section.pitchwheel?.section_name;
+
+	const connections = useMemo(
+		() =>
+			allConnections.filter(
+				(f) =>
+					connectionsOfInterest(
+						f,
+						currentFirstSection?.device.id,
+						firstSectionName,
+					) ||
+					connectionsOfInterest(
+						f,
+						currentSecondSection?.device.id,
+						secondSectionName,
+					),
 			),
+		[
+			allConnections,
+			currentFirstSection?.device.id,
+			firstSectionName,
+			currentSecondSection?.device.id,
+			secondSectionName,
+		],
 	);
 
 	const [selectedConnection, setSelectedConnection] = useState<string | null>(
 		null,
 	);
 	const [isMouseInteracting, setIsMouseInteracting] = useState(false);
-	const allMidiDeviceSection = useTrevorSelector((state) =>
-		state.nallely.midi_devices
-			// .filter(
-			// 	(device) =>
-			// 		device.id === currentFirstSection.device.id ||
-			// 		device.id === currentSecondSection.device.id,
-			// )
-			.flatMap((d) =>
-				d.meta.sections.map(
-					(section) => ({ device: d, section }) as MidiDeviceWithSection,
-				),
-			),
-	);
-	const allVirtualDeviceSection = useTrevorSelector((state) =>
-		state.nallely.virtual_devices
-			.filter((e) => e.meta.name !== "TrevorBus")
-			// .filter(
-			// 	(device) =>
-			// 		device.id === currentFirstSection.device.id ||
-			// 		device.id === currentSecondSection.device.id,
-			// )
-			.flatMap(
-				(device) =>
-					({
-						device,
-						section: { parameters: device.meta.parameters },
-					}) as VirtualDeviceWithSection,
-			),
+	const allMidiDeviceSection = useTrevorSelector(selectAllMidiDeviceSection);
+	const allVirtualDeviceSection = useTrevorSelector(
+		selectAllVirtualDeviceSection,
 	);
 	const allSections = [...allMidiDeviceSection, ...allVirtualDeviceSection];
 	const svgRef = useRef<SVGSVGElement>(null);
@@ -176,119 +215,131 @@ const PatchingModal = ({
 		};
 	}, [onClose]);
 
-	const handleParameterClick = (
-		device: MidiDevice | VirtualDevice,
-		param: MidiParameter | VirtualParameter,
-	) => {
-		setSelectedConnection(null); // Deselect the connection
-		if (selectedParameters.length === 0) {
-			setSelectedParameters([{ device, parameter: param }]);
-			return;
-		}
-		if (selectedParameters[0].parameter === param) {
-			setSelectedParameters(() => []);
-			return; // Deselect if the same parameter is clicked twice
-		}
-		const firstParameter = selectedParameters[0];
-		const firstParameterUUID = parameterUUID(
-			firstParameter.device,
-			firstParameter.parameter,
-		);
-		websocket?.associateParameters(
-			firstParameter.device,
-			firstParameter.parameter,
-			device,
-			param,
-			connections.find(
-				(c) =>
-					parameterUUID(c.src.device, c.src.parameter) === firstParameterUUID &&
-					parameterUUID(c.dest.device, c.dest.parameter) ===
-						parameterUUID(device, param),
-			) !== undefined, // if a connection already exist, we remove it
-		);
-		setSelectedParameters(() => []);
-	};
+	const handleParameterClick = useCallback(
+		(
+			device: MidiDevice | VirtualDevice,
+			param: MidiParameter | VirtualParameter,
+		) => {
+			setSelectedConnection(null); // Deselect the connection
+			setSelectedParameters((prev) => {
+				if (prev.length === 0) {
+					return [{ device, parameter: param }];
+				}
 
-	const handleConnectionClick = (connection: MidiConnection) => {
-		if (selectedConnection === connectionId(connection)) {
-			setSelectedConnection(null);
-			return;
-		}
-		setSelectedConnection(connectionId(connection));
-	};
+				if (prev[0].parameter === param) {
+					return [];
+				}
 
-	const handleKeySectionClick = (
-		device: MidiDevice | VirtualDevice,
-		keys: PadsOrKeys,
-	) => {
-		setSelectedConnection(null); // Deselect the connection
-		if (selectedParameters.length === 0) {
-			setSelectedParameters([{ device, parameter: keys }]);
-			return;
-		}
-		const firstParameter = selectedParameters[0];
-		if (
-			firstParameter.device === device &&
-			firstParameter.parameter.section_name === keys.section_name
-		) {
-			setSelectedParameters(() => []);
-			return; // Deselect if the same parameter is clicked twice
-		}
-		const firstParameterUUID = parameterUUID(
-			firstParameter.device,
-			firstParameter.parameter,
-		);
-		websocket?.associateParameters(
-			firstParameter.device,
-			firstParameter.parameter,
-			device,
-			keys,
-			connections.find(
-				(c) =>
-					parameterUUID(c.src.device, c.src.parameter) === firstParameterUUID &&
-					parameterUUID(c.dest.device, c.dest.parameter) ===
-						parameterUUID(device, keys),
-			) !== undefined, // if a connection already exist, we remove it
-		);
-		setSelectedParameters(() => []);
-	};
+				const firstParameter = prev[0];
+				const firstParameterUUID = parameterUUID(
+					firstParameter.device,
+					firstParameter.parameter,
+				);
 
-	const handleKeyClick = (
-		device: MidiDevice | VirtualDevice,
-		key: PadOrKey,
-	) => {
-		setSelectedConnection(null); // Deselect the connection
-		if (selectedParameters.length === 0) {
-			setSelectedParameters([{ device, parameter: key }]);
-			return;
-		}
-		const firstParameter = selectedParameters[0];
-		if (
-			firstParameter.device === device &&
-			firstParameter.parameter.section_name === key.section_name &&
-			(firstParameter.parameter as PadOrKey).note === key.note
-		) {
-			setSelectedParameters([]);
-			return; // Deselect if the same parameter is clicked twice
-		}
-		const firstParameterUUID = parameterUUID(
-			firstParameter.device,
-			firstParameter.parameter,
-		);
-		websocket?.associateParameters(
-			firstParameter.device,
-			firstParameter.parameter,
-			device,
-			key,
-			connections.find(
-				(c) =>
-					parameterUUID(c.src.device, c.src.parameter) === firstParameterUUID &&
-					parameterUUID(c.dest.device, c.dest.parameter) ===
-						parameterUUID(device, key),
-			) !== undefined, // if a connection already exist, we remove it
-		);
-		setSelectedParameters([]);
-	};
+				websocket?.associateParameters(
+					firstParameter.device,
+					firstParameter.parameter,
+					device,
+					param,
+					connections.some(
+						(c) =>
+							parameterUUID(c.src.device, c.src.parameter) ===
+								firstParameterUUID &&
+							parameterUUID(c.dest.device, c.dest.parameter) ===
+								parameterUUID(device, param),
+					),
+				);
+				return [];
+			});
+		},
+		[websocket, connections],
+	);
+
+	const handleConnectionClick = useCallback(
+		(connection: MidiConnection) => {
+			if (selectedConnection === connectionId(connection)) {
+				setSelectedConnection(null);
+				return;
+			}
+			setSelectedConnection(connectionId(connection));
+		},
+		[selectedConnection],
+	);
+
+	const handleKeySectionClick = useCallback(
+		(device: MidiDevice | VirtualDevice, keys: PadsOrKeys) => {
+			setSelectedConnection(null); // Deselect the connection
+			setSelectedParameters((prev) => {
+				if (prev.length === 0) {
+					return [{ device, parameter: keys }];
+				}
+				const firstParameter = prev[0];
+				if (
+					firstParameter.device === device &&
+					firstParameter.parameter.section_name === keys.section_name
+				) {
+					return [];
+				}
+				const firstParameterUUID = parameterUUID(
+					firstParameter.device,
+					firstParameter.parameter,
+				);
+				websocket?.associateParameters(
+					firstParameter.device,
+					firstParameter.parameter,
+					device,
+					keys,
+					connections.some(
+						(c) =>
+							parameterUUID(c.src.device, c.src.parameter) ===
+								firstParameterUUID &&
+							parameterUUID(c.dest.device, c.dest.parameter) ===
+								parameterUUID(device, keys),
+					), // if a connection already exist, we remove it
+				);
+				return [];
+			});
+		},
+		[websocket, connections],
+	);
+
+	const handleKeyClick = useCallback(
+		(device: MidiDevice | VirtualDevice, key: PadOrKey) => {
+			setSelectedConnection(null); // Deselect the connection
+			setSelectedParameters((prev) => {
+				if (prev.length === 0) {
+					return [{ device, parameter: key }];
+				}
+				const firstParameter = prev[0];
+				if (
+					firstParameter.device === device &&
+					firstParameter.parameter.section_name === key.section_name &&
+					(firstParameter.parameter as PadOrKey).note === key.note
+				) {
+					return []; // Deselect if the same parameter is clicked twice
+				}
+				const firstParameterUUID = parameterUUID(
+					firstParameter.device,
+					firstParameter.parameter,
+				);
+				websocket?.associateParameters(
+					firstParameter.device,
+					firstParameter.parameter,
+					device,
+					key,
+					connections.some(
+						(c) =>
+							parameterUUID(c.src.device, c.src.parameter) ===
+								firstParameterUUID &&
+							parameterUUID(c.dest.device, c.dest.parameter) ===
+								parameterUUID(device, key),
+					), // if a connection already exist, we remove it
+				);
+				return [];
+			});
+		},
+		[websocket, connections],
+	);
 
 	const updateConnections = () => {
 		if (isMouseInteracting) {
@@ -298,9 +349,7 @@ const PatchingModal = ({
 		if (!svgRef.current) return;
 
 		const svg = svgRef.current;
-		for (const line of svg.querySelectorAll("line")) {
-			line.remove();
-		}
+		svg.innerHTML = "";
 		const sortedConnections = [...connections].sort((a, b) => {
 			const isSelected = (x) => connectionId(x) === selectedConnection;
 			if (isSelected(a) && !isSelected(b)) return 1;
@@ -361,70 +410,93 @@ const PatchingModal = ({
 		setRefresh((refresh + 1) % 2);
 	};
 
-	const selectedConnectionInstance = allConnections.find(
-		(c) => connectionId(c) === selectedConnection,
+	const selectedConnectionInstance = useMemo(
+		() => allConnections.find((c) => connectionId(c) === selectedConnection),
+		[allConnections, selectedConnection],
 	);
 
-	const shouldHighlight = (device: MidiDevice | VirtualDevice) => {
-		if (selectedParameters.length === 0) {
+	const shouldHighlight = useCallback(
+		(device: MidiDevice | VirtualDevice) => {
+			if (selectedParameters.length === 0) {
+				return "";
+			}
+			const param = selectedParameters[0];
+			if (device.id === param.device.id) {
+				return (
+					(param?.parameter as PadOrKey)?.note ||
+					((param?.parameter as PadsOrKeys)?.keys != null && "__pads_or_keys__")
+				);
+			}
 			return "";
-		}
-		const param = selectedParameters[0];
-		if (device.id === param.device.id) {
-			return (
-				(param?.parameter as PadOrKey)?.note ||
-				((param?.parameter as PadsOrKeys)?.keys != null && "__pads_or_keys__")
-			);
-		}
-		return "";
-	};
+		},
+		[selectedParameters],
+	);
 
-	const srcPadsOrKey = currentFirstSection?.section.pads_or_keys;
-	const srcAllParameters = collectAllParameters(currentFirstSection.device);
-	const srcAllIncoming = allConnections
-		.filter((c) =>
-			srcAllParameters.includes(parameterUUID(c.dest.device, c.dest.parameter)),
-		)
-		.map((c) => parameterUUID(c.dest.device, c.dest.parameter));
-	const srcAllOutgoing = allConnections
-		.filter((c) =>
-			srcAllParameters.includes(parameterUUID(c.src.device, c.src.parameter)),
-		)
-		.map((c) => parameterUUID(c.src.device, c.src.parameter));
+	// const srcPadsOrKey = currentFirstSection?.section.pads_or_keys;
+	const srcAllParameters = useMemo(
+		() => collectAllParameters(currentFirstSection.device),
+		[currentFirstSection.device],
+	);
+	const srcAllIncoming = useMemo(
+		() =>
+			allConnections
+				.filter((c) =>
+					srcAllParameters.includes(
+						parameterUUID(c.dest.device, c.dest.parameter),
+					),
+				)
+				.map((c) => parameterUUID(c.dest.device, c.dest.parameter)),
+		[srcAllParameters, allConnections],
+	);
+	const srcAllOutgoing = useMemo(
+		() =>
+			allConnections
+				.filter((c) =>
+					srcAllParameters.includes(
+						parameterUUID(c.src.device, c.src.parameter),
+					),
+				)
+				.map((c) => parameterUUID(c.src.device, c.src.parameter)),
+		[srcAllParameters, allConnections],
+	);
 
-	const dstPadsOrKey = currentSecondSection?.section.pads_or_keys;
-	const dstAllParameters = collectAllParameters(currentSecondSection.device);
-	const dstAllIncoming = allConnections
-		.filter((c) =>
-			dstAllParameters.includes(parameterUUID(c.dest.device, c.dest.parameter)),
-		)
-		.map((c) => parameterUUID(c.dest.device, c.dest.parameter));
-	const dstAllOutgoing = allConnections
-		.filter((c) =>
-			dstAllParameters.includes(parameterUUID(c.src.device, c.src.parameter)),
-		)
-		.map((c) => parameterUUID(c.src.device, c.src.parameter));
+	// const dstPadsOrKey = currentSecondSection?.section.pads_or_keys;
+	const dstAllParameters = useMemo(
+		() => collectAllParameters(currentSecondSection.device),
+		[currentSecondSection.device],
+	);
+	const dstAllIncoming = useMemo(
+		() =>
+			allConnections
+				.filter((c) =>
+					dstAllParameters.includes(
+						parameterUUID(c.dest.device, c.dest.parameter),
+					),
+				)
+				.map((c) => parameterUUID(c.dest.device, c.dest.parameter)),
+		[dstAllParameters, allConnections],
+	);
+	const dstAllOutgoing = useMemo(
+		() =>
+			allConnections
+				.filter((c) =>
+					dstAllParameters.includes(
+						parameterUUID(c.src.device, c.src.parameter),
+					),
+				)
+				.map((c) => parameterUUID(c.src.device, c.src.parameter)),
+		[dstAllParameters, allConnections],
+	);
 
-	const getSectionParameters = (sectionWrapper, reverseOrder = false) => {
-		if (!sectionWrapper) {
-			return [];
-		}
-		const pitchwheel = sectionWrapper.section.pitchwheel
-			? [sectionWrapper.section.pitchwheel]
-			: [];
-		const mainOutputIndex = sectionWrapper.section.parameters.findIndex(
-			(e) => e.name === "output_cv",
-		);
-		const params = [...sectionWrapper.section.parameters];
-		if (mainOutputIndex !== -1) {
-			const output = params.splice(mainOutputIndex, 1);
-			params.push(...output);
-		}
-		if (reverseOrder) {
-			return [...params.reverse(), ...pitchwheel];
-		}
-		return [...params, ...pitchwheel];
-	};
+	const firstSectionParameters = useMemo(
+		() => getSectionParameters(currentFirstSection, true),
+		[currentFirstSection],
+	);
+
+	const secondSectionParameters = useMemo(
+		() => getSectionParameters(currentSecondSection),
+		[currentSecondSection],
+	);
 
 	const buildDropDown = (
 		currentSection: MidiDeviceWithSection | VirtualDeviceWithSection,
@@ -563,7 +635,7 @@ const PatchingModal = ({
 								</div>
 							)}
 							{/* {currentFirstSection?.section.parameters.map((param) => { */}
-							{getSectionParameters(currentFirstSection, true).map((param) => {
+							{firstSectionParameters.map((param) => {
 								const incoming = srcAllIncoming.includes(
 									parameterUUID(currentFirstSection.device.id, param),
 								);
@@ -624,7 +696,7 @@ const PatchingModal = ({
 								</div>
 							)}
 
-							{getSectionParameters(currentSecondSection).map((param) => {
+							{secondSectionParameters.map((param) => {
 								const incoming = dstAllIncoming.includes(
 									parameterUUID(currentSecondSection.device.id, param),
 								);
