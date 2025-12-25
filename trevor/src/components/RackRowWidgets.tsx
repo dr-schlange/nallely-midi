@@ -29,6 +29,7 @@ const WidgetComponents = {
 	Sliders,
 	Pads,
 	XYPad,
+	Keyboard,
 	GBEmu: (props) => (
 		<WindowWidget
 			url={`http://${window.location.hostname}:3000/gb.html`}
@@ -216,6 +217,7 @@ import {
 } from "@dnd-kit/core";
 import { findFirstMissingValue } from "../utils/utils";
 import { GPControl } from "./widgets/GPControlWidget";
+import { Keyboard } from "./widgets/KeyboardWidget";
 
 const SortableWidget = ({
 	id,
