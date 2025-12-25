@@ -10,6 +10,7 @@ import React, {
 import type { VirtualDevice, VirtualParameter } from "../model";
 import {
 	buildSectionId,
+	clamp,
 	devUID,
 	generateAcronym,
 	isClassCodeMode,
@@ -227,6 +228,7 @@ const generateNameWithAcronym = (
 };
 
 const HIDE = new Set<string>();
+const MAX_ROWS = 2;
 export const VDevice = React.memo(
 	({
 		device,
@@ -243,7 +245,8 @@ export const VDevice = React.memo(
 			() => device.meta.parameters.filter((e) => !HIDE.has(e.name)),
 			[device.meta.parameters],
 		);
-		const nbParameters = parameters.length;
+
+		const nbParameters = clamp(parameters.length, 0, FULLSIZE);
 		const lastTap = useRef<number | null>(null);
 		const trevorSocket = useTrevorWebSocket();
 		const dispatch = useTrevorDispatch();
@@ -385,7 +388,7 @@ export const VDevice = React.memo(
 						))}
 					</div>
 				</div>
-				{params.rest.map((row, i) => (
+				{params.rest.slice(0, MAX_ROWS).map((row, i) => (
 					<div
 						key={`${device.id}-${i}`}
 						style={{
