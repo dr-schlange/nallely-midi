@@ -48,6 +48,7 @@ export const Keyboard = ({ id, onClose, num }: WidgetProps) => {
 		"controls",
 	);
 	const [toggle, setToggle] = useState(false);
+	const [focus, setFocus] = useState(false);
 	const [pressedKeys, setPressedKeys] = useState<Set<string>>(new Set());
 
 	useEffect(() => {
@@ -137,6 +138,12 @@ export const Keyboard = ({ id, onClose, num }: WidgetProps) => {
 				}}
 			>
 				<Button
+					text={"f"}
+					activated={focus}
+					onClick={() => setFocus((prev) => !prev)}
+					tooltip="Focus for keyboard"
+				/>
+				<Button
 					text={"h"}
 					activated={toggle}
 					onClick={() => setToggle((prev) => !prev)}
@@ -160,6 +167,21 @@ export const Keyboard = ({ id, onClose, num }: WidgetProps) => {
 					overflowX: "auto",
 				}}
 			>
+				{focus && (
+					<input
+						style={{
+							height: "10px",
+							color: "gray",
+							width: "157px",
+							fontSize: "14px",
+							textAlign: "right",
+							boxShadow: "unset",
+						}}
+						onKeyUp={(e) => {
+							(e.target as HTMLInputElement).value = "";
+						}}
+					/>
+				)}
 				{Array.from(pressedKeys).map((key) => (
 					<span key={key}>{key} </span>
 				))}
