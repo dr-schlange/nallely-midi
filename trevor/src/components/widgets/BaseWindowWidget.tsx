@@ -1,9 +1,10 @@
 import { useRef, useState } from "react";
-import { Button, type WidgetProps } from "./BaseComponents";
+import { Button, TextInput, type WidgetProps } from "./BaseComponents";
 
 type WindowWidgetProps = WidgetProps & {
-	url: string;
+	url?: string;
 	expandable?: boolean;
+	urlBar?: boolean;
 };
 
 export const WindowWidget = ({
@@ -12,11 +13,14 @@ export const WindowWidget = ({
 	num,
 	url,
 	expandable = false,
+	urlBar = false,
 	...iframeProps
 }: WindowWidgetProps) => {
 	const [expanded, setExpanded] = useState(false);
 	const windowRef = useRef<HTMLDivElement>(null);
 	const iframeRef = useRef<HTMLIFrameElement>(null);
+	const [windowUrl, setWindowUrl] = useState(url || "");
+	const [tmpUrl, setTmpUrl] = useState(windowUrl || "");
 
 	const expand = () => {
 		setExpanded((prev) => !prev);
@@ -48,6 +52,15 @@ export const WindowWidget = ({
 					gap: "4px",
 				}}
 			>
+				<TextInput
+					placeholder="wiget's url"
+					value={tmpUrl}
+					onChange={(value) => setTmpUrl(value)}
+					style={{ width: expanded ? "99%" : "103px" }}
+					onEnter={(value) => {
+						setWindowUrl(value);
+					}}
+				/>
 				{expandable && (
 					<Button
 						text={"+"}
@@ -58,17 +71,22 @@ export const WindowWidget = ({
 				)}
 				<Button text="x" onClick={() => onClose?.(id)} tooltip="Close window" />
 			</div>
-			<iframe
-				ref={iframeRef}
-				src={`${url}?nallelyId=${id}`}
-				title="Window"
-				style={{
-					height: "100%",
-					width: "100%",
-					border: "unset",
-				}}
-				{...iframeProps}
-			/>
+
+			{windowUrl && (
+				<iframe
+					ref={iframeRef}
+					src={`${windowUrl}?nallelyId=${id}&nallelyOrigin=${window.location.hostname}:6789`}
+					title="Window"
+					style={{
+						height: "86%",
+						width: "100%",
+						border: "unset",
+						position: "relative",
+						top: urlBar ? "20px" : "0px",
+					}}
+					{...iframeProps}
+				/>
+			)}
 		</div>
 	);
 };

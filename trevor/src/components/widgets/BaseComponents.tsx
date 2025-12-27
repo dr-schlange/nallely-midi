@@ -116,3 +116,49 @@ export const HeaderButton = ({ onClick, text, ...props }) => {
 		</button>
 	);
 };
+
+interface TextInputProps {
+	value: string;
+	onChange: (value: string, event: React.ChangeEvent<HTMLInputElement>) => void;
+	onEnter?: (
+		value: string,
+		event: React.KeyboardEvent<HTMLInputElement>,
+	) => void;
+	placeholder?: string;
+	style?: React.CSSProperties;
+}
+
+export const TextInput = ({
+	value,
+	onChange,
+	onEnter,
+	placeholder = "",
+	style = {},
+	...props
+}: TextInputProps) => {
+	return (
+		<input
+			style={{
+				height: "10px",
+				color: "gray",
+				fontSize: "14px",
+				textAlign: "right",
+				boxShadow: "unset",
+				pointerEvents: "auto",
+				...style,
+			}}
+			placeholder={placeholder}
+			onChange={(e) => {
+				onChange?.(e.target.value, e);
+			}}
+			onKeyDown={(e) => {
+				if (e.key === "Enter") {
+					e.stopPropagation();
+					e.preventDefault();
+					onEnter?.(value, e);
+				}
+			}}
+			{...props}
+		/>
+	);
+};

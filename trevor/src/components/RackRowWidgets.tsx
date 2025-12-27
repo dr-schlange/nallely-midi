@@ -53,6 +53,9 @@ const WidgetComponents = {
 			{...props}
 		/>
 	),
+	Window: (props) => (
+		<WindowWidget urlBar expandable {...props} allow="camera; microphone" />
+	),
 	// SSynth: (props) => (
 	// 	<WindowWidget
 	// 		url={`http://${window.location.hostname}:3000/synth.html`}
