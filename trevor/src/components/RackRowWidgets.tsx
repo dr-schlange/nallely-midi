@@ -45,6 +45,7 @@ const WidgetComponents = {
 			{...props}
 		/>
 	),
+	ViewMatrix,
 	Webcam: (props) => (
 		<WindowWidget
 			url={`http://${window.location.hostname}:3000/webcam.html`}
@@ -221,6 +222,7 @@ import {
 import { findFirstMissingValue } from "../utils/utils";
 import { GPControl } from "./widgets/GPControlWidget";
 import { Keyboard } from "./widgets/KeyboardWidget";
+import { ViewMatrix } from "./widgets/ViewMatrix";
 
 const SortableWidget = ({
 	id,

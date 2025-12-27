@@ -122,7 +122,7 @@ interface TextInputProps {
 	onChange: (value: string, event: React.ChangeEvent<HTMLInputElement>) => void;
 	onEnter?: (
 		value: string,
-		event: React.KeyboardEvent<HTMLInputElement>,
+		event?: React.KeyboardEvent<HTMLInputElement>,
 	) => void;
 	placeholder?: string;
 	style?: React.CSSProperties;
@@ -150,6 +150,11 @@ export const TextInput = ({
 			placeholder={placeholder}
 			onChange={(e) => {
 				onChange?.(e.target.value, e);
+			}}
+			onBlur={(e) => {
+				e.stopPropagation();
+				e.preventDefault();
+				onEnter?.(value);
 			}}
 			onKeyDown={(e) => {
 				if (e.key === "Enter") {

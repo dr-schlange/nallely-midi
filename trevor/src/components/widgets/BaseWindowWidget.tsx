@@ -52,15 +52,17 @@ export const WindowWidget = ({
 					gap: "4px",
 				}}
 			>
-				<TextInput
-					placeholder="wiget's url"
-					value={tmpUrl}
-					onChange={(value) => setTmpUrl(value)}
-					style={{ width: expanded ? "99%" : "103px" }}
-					onEnter={(value) => {
-						setWindowUrl(value);
-					}}
-				/>
+				{urlBar && (
+					<TextInput
+						placeholder="wiget's url"
+						value={tmpUrl}
+						onChange={(value) => setTmpUrl(value)}
+						style={{ width: expanded ? "99%" : "103px" }}
+						onEnter={(value) => {
+							setWindowUrl(value);
+						}}
+					/>
+				)}
 				{expandable && (
 					<Button
 						text={"+"}
