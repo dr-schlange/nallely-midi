@@ -296,11 +296,13 @@ mod-?:     displays this entry
 						}}
 					>
 						<option value="">--</option>
-						{virtualDevices.filter(e => !e.proxy).map((device) => (
-							<option value={device.repr.toLowerCase()} key={device.id}>
-								{device.repr}
-							</option>
-						))}
+						{virtualDevices
+							.filter((e) => !e.proxy)
+							.map((device) => (
+								<option value={device.repr.toLowerCase()} key={device.id}>
+									{device.repr}
+								</option>
+							))}
 					</select>
 				</label>
 				<button

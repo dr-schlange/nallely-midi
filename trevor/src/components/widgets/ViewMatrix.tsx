@@ -90,6 +90,7 @@ export const ViewMatrix = ({ id, onClose, num }: WidgetProps) => {
 
 		for (let i = 0; i < size; i++) {
 			const active = idx.current === i;
+			matrix[i].style.borderColor = active ? "orange" : "gray";
 			matrix[i].style.backgroundColor = active ? "orange" : "gray";
 		}
 	}, []);
