@@ -274,6 +274,9 @@ class Sequencer8(VirtualDevice):
     def on_reset_rising(self, value, ctx):
         yield from self.clear_outs()
         yield (0, [self.current_step_cv])
+        output_value = getattr(self, f"step{int(self.current_step)}")
+        yield output_value
+        yield (output_value, [getattr(self, f"step{int(self.current_step)}_cv")])
 
     @on(length_cv, edge="any")
     def on_length_any(self, value, ctx):
