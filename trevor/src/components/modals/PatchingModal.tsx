@@ -143,7 +143,6 @@ const PatchingModal = ({
 		};
 	});
 
-	const [refresh, setRefresh] = useState(0);
 	const [selectedParameters, setSelectedParameters] = useState<
 		{
 			device: MidiDevice | VirtualDevice;
@@ -341,7 +340,7 @@ const PatchingModal = ({
 		[websocket, connections],
 	);
 
-	const updateConnections = () => {
+	const updateConnections = useCallback(() => {
 		if (isMouseInteracting) {
 			return;
 		}
@@ -384,11 +383,16 @@ const PatchingModal = ({
 				portraitMode.current ? "vertical" : "horizontal",
 			);
 		}
-	};
+	}, [
+		connections,
+		selectedConnection,
+		handleConnectionClick,
+		isMouseInteracting,
+	]);
 
 	useEffect(() => {
 		updateConnections();
-	}, [connections, refresh]);
+	}, [updateConnections]);
 
 	useEffect(() => {
 		const handleResize = () => {
@@ -403,12 +407,11 @@ const PatchingModal = ({
 		return () => {
 			observer.disconnect();
 		};
-	}, [connections]);
+	}, [updateConnections]);
 
-	const handleGridOpen = () => {
-		// drawConnections();
-		setRefresh((refresh + 1) % 2);
-	};
+	const handleGridOpen = useCallback(() => {
+		setTimeout(() => updateConnections(), 0);
+	}, [updateConnections]);
 
 	const selectedConnectionInstance = useMemo(
 		() => allConnections.find((c) => connectionId(c) === selectedConnection),
