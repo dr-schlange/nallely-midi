@@ -38,6 +38,13 @@ const WidgetComponents = {
 		/>
 	),
 	GPControl,
+	GPS: (props) => (
+		<WindowWidget
+			url={`http://${window.location.hostname}:3000/gps.html`}
+			allow="geolocation"
+			{...props}
+		/>
+	),
 	MicAnalyzer: (props) => (
 		<WindowWidget
 			url={`http://${window.location.hostname}:3000/audio-analysis.html`}
@@ -55,7 +62,12 @@ const WidgetComponents = {
 		/>
 	),
 	Window: (props) => (
-		<WindowWidget urlBar expandable {...props} allow="camera; microphone" />
+		<WindowWidget
+			urlBar
+			expandable
+			{...props}
+			allow="camera; microphone; geolocation"
+		/>
 	),
 	// SSynth: (props) => (
 	// 	<WindowWidget
