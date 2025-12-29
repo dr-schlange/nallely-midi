@@ -42,6 +42,7 @@ const WidgetComponents = {
 		<WindowWidget
 			url={`http://${window.location.hostname}:3000/gps.html`}
 			allow="geolocation"
+			expandable
 			{...props}
 		/>
 	),
