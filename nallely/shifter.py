@@ -7,27 +7,29 @@ from .core.virtual_device import VirtualDevice, VirtualParameter, on
 
 
 class PitchShifter(VirtualDevice):
-    input_cv = VirtualParameter("input", range=(0, 128))
+    """Pitch shifter
+    Shifts a note from -48.0 to +48.0 semitones.
+    Semi-tones can be decimal values, input can be also a decimal values, they are quantized later if needed.
+
+    inputs:
+    * input_cv [0, 127] <any>: the input note to shift (0-127)
+    * shift_cv [-48, 48] init=0 <both>: the amount of shift to apply (-48 to +48)
+
+    outputs:
+    * output_cv [0, 127]: the shifted note (0-127)
+
+    type: ondemand
+    category: pitch
+    """
+
+    input_cv = VirtualParameter("input", range=(0, 127))
     shift_cv = VirtualParameter("shift", range=(-48, +48), default=0)
 
-    @property
-    def range(self):
-        return (0, 127)
-
-    def __init__(self, *args, **kwargs):
-        self.input = 0
-        self.shift = 0
-        super().__init__(*args, **kwargs)
-
-    @on(input_cv, edge="both")
+    @on(input_cv, edge="any")
     def shift_input(self, value, ctx):
         if value == 0:
             return 0
         return value + self.shift
-
-    @on(input_cv, edge="falling")
-    def reset_input(self, value, ctx):
-        return 0
 
     @on(shift_cv, edge="both")
     def apply_shift(self, value, ctx):
@@ -37,7 +39,7 @@ class PitchShifter(VirtualDevice):
 
 
 class Modulo(VirtualDevice):
-    input_cv = VirtualParameter("input", range=(0, 128))
+    input_cv = VirtualParameter("input", range=(0, 127))
     modulo_cv = VirtualParameter("modulo", range=(0.001, None))
 
     @property
