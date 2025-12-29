@@ -396,12 +396,17 @@ class Link:
                 ctx=ThreadContext({**ctx, "param": src.parameter.name}),
             )
         else:
-            return lambda value, ctx: dest.device.set_parameter(
-                # dest.parameter.name, chain(getattr(src_section, src_param)), ctx
-                dest.parameter.name,
-                value,
-                ctx,
-            )
+
+            def foo(value, ctx):
+                if ctx.get("type", None) == "note_off":
+                    value = 0
+                return dest.device.set_parameter(
+                    dest.parameter.name,
+                    value,
+                    ctx,
+                )
+
+            return foo
 
     # MIDI key/pad -> MIDI key/pad
     def _install_PadOrKey__PadOrKey(self):
@@ -506,38 +511,85 @@ class Link:
         self.cleanup_callback = lambda: dest.device.all_notes_off()
         lower_range_value, _ = dest.parameter.range
 
-        previous = None
-        # get_channel = self.get_channel
+        # This count is "global" to the link instance only
+        count = {}
 
         def foo(value, ctx):
             value = round(value)
-            nonlocal previous
-            # nonlocal get_channel
-            if previous != value:
-                if lower_range_value != value and ctx.raw_value != 0:
-                    dest.device.note(
-                        note=value,
-                        velocity=ctx.get("velocity", DEFAULT_VELOCITY),
-                        type="note_on",
-                        channel=dest.parameter.channel,
-                    )
-                if previous:
-                    dest.device.note(
-                        note=previous,
-                        velocity=ctx.get("velocity", DEFAULT_VELOCITY),
-                        type="note_off",
-                        channel=dest.parameter.channel,
-                    )
-                previous = value
-            else:
-                if not ctx.get("free_note", False) or ctx.raw_value == 0:
-                    dest.device.note(
-                        note=previous,
-                        velocity=ctx.get("velocity", DEFAULT_VELOCITY),
-                        type="note_off",
-                        channel=dest.parameter.channel,
-                    )
-                # previous = None
+            nonlocal count
+            type = ctx.get("type", None)
+            if type == "note_on":
+                count[value] = ctx.get("velocity", DEFAULT_VELOCITY)
+                return dest.device.note(
+                    note=value,
+                    velocity=ctx.get("velocity", DEFAULT_VELOCITY),
+                    type="note_on",
+                    channel=dest.parameter.channel,
+                )
+            elif type == "note_off" and value in count:
+                ctx.velocity = count[value]
+                del count[value]
+                return dest.device.note(
+                    note=value,
+                    velocity=ctx.get("velocity", DEFAULT_VELOCITY),
+                    type="note_off",
+                    channel=dest.parameter.channel,
+                )
+            elif type == "note_off" and value not in count and value != 0:
+                return dest.device.note(
+                    note=value,
+                    velocity=ctx.get("velocity", DEFAULT_VELOCITY),
+                    type="note_off",
+                    channel=dest.parameter.channel,
+                )
+            elif value == 0:
+                # We get the last note
+                try:
+                    note = list(count.keys())[-1]
+                except IndexError:
+                    # There is not note to release (can happen, but rare, depends on config)
+                    return
+                ctx.velocity = ctx.get("velocity", DEFAULT_VELOCITY)
+                del count[note]
+                return dest.device.note(
+                    note=note,
+                    velocity=ctx.get("velocity", DEFAULT_VELOCITY),
+                    type="note_off",
+                    channel=dest.parameter.channel,
+                )
+            elif value in count:
+                ctx.velocity = count[value]
+                del count[value]
+                try:
+                    del ctx["type"]
+                except KeyError:
+                    pass
+                return dest.device.note(
+                    note=value,
+                    velocity=ctx.get("velocity", DEFAULT_VELOCITY),
+                    type="note_off",
+                    channel=dest.parameter.channel,
+                )
+            elif value not in count:
+                count[value] = ctx.get("velocity", DEFAULT_VELOCITY)
+                try:
+                    last = list(count.keys())[-1]
+                    del count[last]
+                except IndexError:
+                    # There is not note to release (can happen, but rare, depends on config)
+                    return
+                dest.device.note(
+                    note=last,
+                    velocity=ctx.get("velocity", DEFAULT_VELOCITY),
+                    type="note_off",
+                    channel=dest.parameter.channel,
+                )
+                return dest.device.note(
+                    note=value,
+                    velocity=ctx.get("velocity", DEFAULT_VELOCITY),
+                    type="note_on",
+                    channel=dest.parameter.channel,
+                )
 
         return foo
 

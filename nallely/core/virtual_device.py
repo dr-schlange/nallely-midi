@@ -291,6 +291,7 @@ class VirtualDevice(threading.Thread):
     def debug_print(self, ctx):
         print("======")
         print(f"{self.uid()}")
+        print("Context:", ctx)
         print("======")
         for virt in self.all_parameters():
             print(f"* {virt.cv_name}[{virt.name}] = {getattr(self, virt.name)}")
@@ -456,6 +457,9 @@ class VirtualDevice(threading.Thread):
 
                 # Run main processing and output
                 # triggered = False
+                new_inner_ctx = ThreadContext(
+                    {"last_values": ctx.get("last_values", {})}
+                )
                 if changed:
                     # if any parameter have been impacted
                     for param in changed:
@@ -465,7 +469,9 @@ class VirtualDevice(threading.Thread):
                             aliased_name = alias_name(param, key)
                             if hasattr(self, aliased_name):
                                 success, value = getattr(self, aliased_name)(
-                                    current_value, last_value, ctx
+                                    current_value,
+                                    last_value,
+                                    inner_ctx,
                                 )
                                 # triggered = True
                                 if success and self.debug:
@@ -476,11 +482,10 @@ class VirtualDevice(threading.Thread):
                                     print()
                                 if not success or value is None:
                                     continue
-                                ctx.update(inner_ctx)
-                                handle_generator_or_output(value, param, ctx)
+                                new_inner_ctx.update(inner_ctx)
+                                handle_generator_or_output(value, param, new_inner_ctx)
                 # we call the idle loop
-                # # if not triggered:
-                # value = next(main_gen)
+                ctx.last_values = new_inner_ctx.last_values
                 if main_gen is None or not isinstance(main_gen, GeneratorType):
                     main_gen = self.main(ctx)
                 finished = handle_generator_or_output(main_gen, "_default_idle", ctx)
@@ -545,7 +550,11 @@ class VirtualDevice(threading.Thread):
 
         for output in outputs or list(self.nonstream_links.keys()):
             last_value_key = f"{output}_{from_}"
-            if value != ctx.last_values.get(last_value_key):
+            if ctx.get("type") in ["note_on", "note_off"]:
+                diff_last_value = True
+            else:
+                diff_last_value = value != ctx.last_values.get(last_value_key)
+            if diff_last_value:
                 links = self.nonstream_links.get(output, [])
                 for link in links:
                     try:
