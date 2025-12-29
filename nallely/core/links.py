@@ -590,6 +590,8 @@ class Link:
                     type="note_on",
                     channel=dest.parameter.channel,
                 )
+            else:
+                print("[STRANGE] Unknown case please report me!", value, ctx)
 
         return foo
 

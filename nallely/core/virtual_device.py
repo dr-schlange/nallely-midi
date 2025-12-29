@@ -471,7 +471,7 @@ class VirtualDevice(threading.Thread):
                                 success, value = getattr(self, aliased_name)(
                                     current_value,
                                     last_value,
-                                    inner_ctx,
+                                    ThreadContext({**new_inner_ctx, **inner_ctx}),
                                 )
                                 # triggered = True
                                 if success and self.debug:
@@ -550,11 +550,8 @@ class VirtualDevice(threading.Thread):
 
         for output in outputs or list(self.nonstream_links.keys()):
             last_value_key = f"{output}_{from_}"
-            if ctx.get("type") in ["note_on", "note_off"]:
-                diff_last_value = True
-            else:
-                diff_last_value = value != ctx.last_values.get(last_value_key)
-            if diff_last_value:
+            is_note = ctx.get("type") in ["note_on", "note_off"]
+            if is_note or value != ctx.last_values.get(last_value_key):
                 links = self.nonstream_links.get(output, [])
                 for link in links:
                     try:
