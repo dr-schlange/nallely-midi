@@ -34,7 +34,7 @@ jobs:
 
       - name: Build with PyInstaller
         run: |
-          pyinstaller nallely-windows.spec
+          pyinstaller nallely.spec
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
