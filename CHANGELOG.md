@@ -1,5 +1,34 @@
 # CHANGELOG
 
+## Nallely v0.4.0 -- Tepezcohuite$
+
+## Features
+
+* Change semantic for patch/links. Links can now be also polyphonic when originating from a MIDI synth source. When originating from a virtual module, they are monophonic by default (can be overriden from inside the module).
+* Update js lib with new parameters to gain a flexible setup
+* Add "force note off" button from UI (accessible in the right bar after clicking on the MIDI device, not a section)
+* Add VIM mode for the code editor
+* Add new modules:
+  * "fine tuning" button that can transform non-integer values to a int MIDI value + pitchwheel value
+  * webcam module (from localhost only at the moment)
+  * audio module (first PoC, from localhost only at the moment)
+  * gps module (from locahost only at the moment)
+  * weird shift-register based on an auto-looping-modifying memory cells
+  * js-based keyboard widget
+  * generic "winow" widget to embedd any iframe
+  * matrix-view widget (experimental) to be bound to any vdev to produce a matrix-based view
+  * key splitter (split notes following 4 different programmable ranges)
+
+## Fix
+
+* Update size of some buttons
+* Improve UI performances (still needs work)
+* Avoid "set_pause" to be set by random preset generator
+* Proxies appearing in the playground vdev list (should be handled better)
+* Reset issue on 8-step sequencer
+* Fix pitch shifter with new polyphonic semantic
+
+
 ## Nallely v0.3.0 -- Tepezcohuite
 
 ### Features
