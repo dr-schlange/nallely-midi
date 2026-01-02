@@ -27,7 +27,7 @@ pyz = PYZ(a.pure, a.zipped_data)
 exe = EXE(
     pyz,
     a.scripts,
-    name='nallely.bin',
+    name='nallely',
     debug=False,
     strip=False,
     upx=True,
@@ -42,5 +42,5 @@ coll = COLLECT(
     a.datas,
     strip=False,
     upx=True,
-    name='nallely.bin',
+    name='nallely',
 )
