@@ -55,4 +55,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: nallely-windows-x64
-          path: dist/nallely.bin.exe
+          path: dist/
