@@ -28,15 +28,11 @@ pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 exe = EXE(
     pyz,
     a.scripts,
-    [],
     name='nallely.bin',
     debug=True,
     strip=False,
     upx=False,
-    upx_exclude=[],
-    runtime_tmpdir=None,
     console=True,
-    exclude_binaries=True,
 )
 
 coll = COLLECT(
