@@ -8,30 +8,29 @@ trevor_ui_data = [(str(Path(trevor_ui_dir)), trevor_ui_dir)]
 
 a = Analysis(
     ['nallely/cli.py'],
-    pathex=[],
-    binaries=[],
     datas=trevor_ui_data,
     hiddenimports=['ruamel.yaml', 'mido.backends.rtmidi', 'psutil'],
     hookspath=[],
     excludes=[
         'tkinter', 'test', 'unittest', 'doctest', 'lib2to3',
         'multiprocessing', 'xmlrpc', 'xml.etree',
-        'concurrent', 'asyncio', 'email.mime', 'logging.config', 'logging.handlers', 'pygame'
+        'concurrent', 'asyncio', 'email.mime', 'logging.config',
+        'logging.handlers', 'pygame', 'distutils', 'pydoc',
+        'idlelib', 'email', 'http', 'xml.dom',
     ],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
-    cipher=block_cipher,
 )
 
-pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
+pyz = PYZ(a.pure, a.zipped_data)
 
 exe = EXE(
     pyz,
     a.scripts,
     name='nallely.bin',
-    debug=True,
+    debug=False,
     strip=False,
-    upx=False,
+    upx=True,
     console=True,
 )
 
@@ -41,6 +40,6 @@ coll = COLLECT(
     a.zipfiles,
     a.datas,
     strip=False,
-    upx=False,
+    upx=True,
     name='nallely.bin',
 )
