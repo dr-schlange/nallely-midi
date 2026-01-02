@@ -15,7 +15,7 @@ a = Analysis(
         'tkinter', 'test', 'unittest', 'doctest', 'lib2to3',
         'multiprocessing', 'xmlrpc', 'xml.etree',
         'concurrent', 'asyncio', 'email.mime', 'logging.config',
-        'logging.handlers', 'pygame', 'distutils', 'pydoc',
+        'logging.handlers', 'pygame', 'pydoc',
         'idlelib', 'email', 'http', 'xml.dom',
     ],
     win_no_prefer_redirects=False,
