@@ -58,6 +58,7 @@ from .switchs import (
     SuperShiftRegister,
     Switch,
     ThresholdGate,
+    KeySplitter,
 )
 from .websocket_bus import WebSocketBus
 
@@ -134,4 +135,5 @@ __all__ = [
     "DualRouter",
     "FineTuneNote",
     "SuperShiftRegister",
+    "KeySplitter",
 ]

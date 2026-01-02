@@ -353,6 +353,37 @@ meta: disable default output
 </details>
 
 <details>
+    <summary>KeySplitter: Let's you route notes depending on ranges</summary>
+
+
+```
+KeySplitter
+
+Let's you route notes depending on ranges
+
+inputs:
+# * %inname [%range] %options: %doc
+* input_cv [0, 127] <any>: input notes
+* range0_cv [0, 127] init=34: threshold for first note
+* range1_cv [0, 127] init=64: threshold for second note
+* range2_cv [0, 127] init=94: threshold for third note
+
+outputs:
+# * %outname [%range]: %doc
+* out0_cv [0, 127]: note output
+* out1_cv [0, 127]: note output
+* out2_cv [0, 127]: note output
+* out3_cv [0, 127]: note output
+
+type: <ondemand | continuous>
+category: <category>
+meta: disable default output
+
+```
+
+</details>
+
+<details>
     <summary>LFO: No description/documentation</summary>
 
 </details>
@@ -481,7 +512,25 @@ meta: disable default output
 </details>
 
 <details>
-    <summary>PitchShifter: No description/documentation</summary>
+    <summary>PitchShifter: Shifts a note from -48.0 to +48.0 semitones.</summary>
+
+
+```
+Pitch shifter
+Shifts a note from -48.0 to +48.0 semitones.
+Semi-tones can be decimal values, input can be also a decimal values, they are quantized later if needed.
+
+inputs:
+* input_cv [0, 127] <any>: the input note to shift (0-127)
+* shift_cv [-48, 48] init=0 <both>: the amount of shift to apply (-48 to +48)
+
+outputs:
+* output_cv [0, 127]: the shifted note (0-127)
+
+type: ondemand
+category: pitch
+
+```
 
 </details>
 
