@@ -14,7 +14,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: '3.12'
 
       - name: Install dependencies
         run: |
@@ -37,6 +37,10 @@ jobs:
           cd ..
           Copy-Item trevor\dist\* $DEST_FOLDER -Recurse -Force
           Copy-Item visuals $DEST_FOLDER -Recurse -Force
+          Copy-Item libs\js\gb.html $DEST_FOLDER -Force
+          Copy-Item libs\js\audio-analysis.html $DEST_FOLDER -Force
+          Copy-Item libs\js\webcam.html $DEST_FOLDER -Force
+          Copy-Item libs\js\gps.html $DEST_FOLDER -Force
 
       - name: Build with PyInstaller
         run: |
