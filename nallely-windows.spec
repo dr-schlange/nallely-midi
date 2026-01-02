@@ -16,7 +16,7 @@ a = Analysis(
         'multiprocessing', 'xmlrpc', 'xml.etree',
         'concurrent', 'asyncio', 'email.mime', 'logging.config',
         'logging.handlers', 'pygame', 'pydoc',
-        'idlelib', 'email', 'http', 'xml.dom',
+        'idlelib',
     ],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
