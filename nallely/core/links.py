@@ -509,7 +509,6 @@ class Link:
         dest = cast(PadsOrKeysInstance, self.dest)
 
         self.cleanup_callback = lambda: dest.device.all_notes_off()
-        lower_range_value, _ = dest.parameter.range
 
         # This count is "global" to the link instance only
         count = {}
@@ -571,19 +570,19 @@ class Link:
                     channel=dest.parameter.channel,
                 )
             elif value not in count:
-                count[value] = ctx.get("velocity", DEFAULT_VELOCITY)
                 try:
                     last = list(count.keys())[-1]
                     del count[last]
+                    dest.device.note(
+                        note=last,
+                        velocity=ctx.get("velocity", DEFAULT_VELOCITY),
+                        type="note_off",
+                        channel=dest.parameter.channel,
+                    )
                 except IndexError:
-                    # There is not note to release (can happen, but rare, depends on config)
-                    return
-                dest.device.note(
-                    note=last,
-                    velocity=ctx.get("velocity", DEFAULT_VELOCITY),
-                    type="note_off",
-                    channel=dest.parameter.channel,
-                )
+                    # There is not note to release, we then just activate the next note to play
+                    pass
+                count[value] = ctx.get("velocity", DEFAULT_VELOCITY)
                 return dest.device.note(
                     note=value,
                     velocity=ctx.get("velocity", DEFAULT_VELOCITY),
