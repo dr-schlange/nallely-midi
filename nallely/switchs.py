@@ -605,6 +605,9 @@ class KeySplitter(VirtualDevice):
     * range0_cv [0, 127] init=34: threshold for first note
     * range1_cv [0, 127] init=64: threshold for second note
     * range2_cv [0, 127] init=94: threshold for third note
+    * mode_cv [lastoff, keeplast]: should the module cut the
+                                   last value transmitted for a range
+                                   when another value enters and is yielded.
 
     outputs:
     # * %outname [%range]: %doc
@@ -618,6 +621,7 @@ class KeySplitter(VirtualDevice):
     meta: disable default output
     """
 
+    mode_cv = VirtualParameter(name="mode", accepted_values=["lastoff", "keeplast"])
     input_cv = VirtualParameter(name="input", range=(0.0, 127.0))
     range0_cv = VirtualParameter(name="range0", range=(0.0, 127.0), default=34.0)
     range1_cv = VirtualParameter(name="range1", range=(0.0, 127.0), default=64.0)
@@ -632,12 +636,20 @@ class KeySplitter(VirtualDevice):
 
     @on(input_cv, edge="any")
     def on_input_any(self, value, ctx):
-        val = ctx.raw_value
-        if 0 < val <= self.range0:
-            return (val, [self.out0_cv])
-        if self.range0 < val <= self.range1:
-            return (val, [self.out1_cv])
-        if self.range1 < val <= self.range2:
-            return (val, [self.out2_cv])
-        if self.range2 < val <= 127:
-            return (val, [self.out3_cv])
+        val = value if value else ctx.raw_value
+        if val <= self.range0:
+            yield (val, [self.out0_cv])
+            output = 0
+        elif self.range0 < val <= self.range1:
+            yield (val, [self.out1_cv])
+            output = 1
+        elif self.range1 < val <= self.range2:
+            yield (val, [self.out2_cv])
+            output = 2
+        elif self.range2 < val:
+            yield (val, [self.out3_cv])
+            output = 3
+        else:
+            output = 4  # should never happen
+        if self.mode == "lastoff":
+            return (0, [getattr(self, f"out{i}_cv") for i in range(4) if i != output])
