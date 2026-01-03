@@ -22,17 +22,9 @@ from .core.world import all_links, no_registration
 
 
 @dataclass
-class WSOutputEntry:
-    scaler: list[Any]
-    target: Int | PadOrKey | PadsOrKeysInstance | ParameterInstance | None
-
-    def bind(self, parameter):
-        self.target = parameter
-
-
-@dataclass
 class WSWaitingRoom:
     name: str
+    device: VirtualDevice
     inputs_queue: list = field(default_factory=list)
     outputs_queue: list = field(default_factory=list)
 
@@ -63,13 +55,16 @@ class WSWaitingRoom:
             self.outputs_queue.append(value)
 
     def rebind_outputs(self, source):
-        for out_entry in self.outputs_queue:
+        for out_entry in list(self.outputs_queue):
             if out_entry.target is None:
                 continue
-            # print(
-            #     f"[DEBUG] Rebind output {self.name} from {source} to {out_entry.target} "
-            # )
             src_parameter = getattr(source, self.name)
+            if isinstance(out_entry.target, WSWaitingRoom):
+                wr = out_entry.target
+                print(f"[WS-to-WS] Rebinding {self.name} to {wr.name}")
+                target_device = wr.device
+                setattr(target_device, wr.name, src_parameter)
+                continue
             target_device = out_entry.target.device
             target_parameter = out_entry.target.parameter
             if out_entry.scaler:
@@ -80,7 +75,8 @@ class WSWaitingRoom:
                 setattr(target_device, target_parameter.cv_name, src_parameter)
             except AttributeError:
                 setattr(target_device, target_parameter.name, src_parameter)
-        self.flush_outputs()
+            self.outputs_queue.remove(out_entry)
+        # self.flush_outputs()
 
     def flush_outputs(self):
         self.outputs_queue.clear()
@@ -93,10 +89,20 @@ class WSWaitingRoom:
         method: Literal["lin", "log"] = "lin",
         as_int: bool = False,
     ):
-        # print("[DEBUG] SCALER CREATION")
         out_entry = WSOutputEntry([min, max, method, as_int], None)
         self.append_output(out_entry)
         return out_entry
+
+
+@dataclass
+class WSOutputEntry:
+    scaler: list[Any]
+    target: (
+        Int | PadOrKey | PadsOrKeysInstance | ParameterInstance | WSWaitingRoom | None
+    )
+
+    def bind(self, parameter):
+        self.target = parameter
 
 
 @no_registration
@@ -113,7 +119,7 @@ class WebSocketBus(VirtualDevice):
     def __getattr__(self, key):
         # print(f"[DEBUG] Create a waitingRoom for {key}")
         # We build a waiting room
-        waiting_room = WSWaitingRoom(key)
+        waiting_room = WSWaitingRoom(key, self)
         object.__setattr__(self, key, waiting_room)
         return waiting_room
 
@@ -133,13 +139,16 @@ class WebSocketBus(VirtualDevice):
                     ModulePadsOrKeys,
                     Scaler,
                     VirtualDevice,
+                    WSOutputEntry,
                 ),
             )
             and key not in self.__dict__
             and key not in self.__class__.__dict__
         ):
-            waiting_room = WSWaitingRoom(key)
+            waiting_room = WSWaitingRoom(key, self)
             waiting_room.append_input(value)
+            if isinstance(value, WSOutputEntry):
+                value.target = getattr(self, key)
             object.__setattr__(self, key, waiting_room)
             return
 
@@ -327,7 +336,6 @@ class WebSocketBus(VirtualDevice):
                 is_stream = parameter.get("stream", False)
             param_name = f"{name}_{pname}"
             cv_name = f"{param_name}_cv"
-            # waiting_room = getattr(self, cv_name, None)
             try:
                 waiting_room = object.__getattribute__(self, cv_name)
             except AttributeError:
@@ -343,6 +351,7 @@ class WebSocketBus(VirtualDevice):
             virtual_parameters.append(vparam)
             setattr(self.__class__, cv_name, vparam)
             if waiting_room and isinstance(waiting_room, WSWaitingRoom):
+                # if not waiting_room.outputs_queue:
                 del self.__dict__[cv_name]
                 waiting_room.rebind(self)
         self.known_services[name] = virtual_parameters
