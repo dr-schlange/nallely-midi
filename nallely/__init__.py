@@ -51,6 +51,7 @@ from .switchs import (
     Demultiplexer,
     DownScaler,
     DualRouter,
+    KeySplitter,
     Multiplexer,
     RingCounter,
     SeqSwitch,
@@ -58,7 +59,6 @@ from .switchs import (
     SuperShiftRegister,
     Switch,
     ThresholdGate,
-    KeySplitter,
 )
 from .websocket_bus import WebSocketBus
 

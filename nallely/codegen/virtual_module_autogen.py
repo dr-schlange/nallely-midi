@@ -184,18 +184,21 @@ def gen_class_code(
         if module_file:
             module_file = Path(module_file)
         if module_file and cls_file != module_file:
-            module = ast.parse(
-                source=module_file.read_text("utf-8"), filename=module_file
-            )
-            for i, node in enumerate(module.body):
-                match node:
-                    case ast.ImportFrom(module="nallely"):
-                        continue
-                    case ast.Import() as imp:
-                        copied_imports.append(imp)
-                    case ast.ImportFrom(level=level) as imp if level == 0:
-                        copied_imports.append(imp)
-
+            module = inspect.getmodule(cls)
+            assert module
+            # module = ast.parse(
+            #     source=module_file.read_text("utf-8"), filename=module_file
+            # )
+            # for i, node in enumerate(module.body):
+            #     match node:
+            #         case ast.ImportFrom(module="nallely"):
+            #             continue
+            #         case ast.Import() as imp:
+            #             copied_imports.append(imp)
+            #         case ast.ImportFrom(level=level) as imp if level == 0:
+            #             copied_imports.append(imp)
+            copied_imports.append(ast.parse(f"from {module.__name__} import *").body[0])
+            has_imports = True
         rfrom = Path(read_from) if read_from else cls_file
         new_class = ast.parse(
             source=getattr(
@@ -212,11 +215,9 @@ def gen_class_code(
             match node:
                 case ast.ClassDef(name=cls.__name__) as clsdef:
                     classdef = clsdef
-                    # idx = i
                     break
                 case ast.ClassDef(name=name) as clsdef if name == f"t_{cls.__name__}":
                     classdef = clsdef
-                    # idx = i
                     break
                 case ast.ImportFrom(module="nallely"):
                     continue
@@ -312,16 +313,16 @@ def gen_class_code(
     if autogen_import and not keep_decorator:
         file_code.body.remove(autogen_import)
     if not has_nallely_imports:
-        file_code.body.insert(
-            0,
-            ast.ImportFrom(
-                module="nallely",
-                names=[
-                    ast.alias("*"),
-                ],
-                level=0,
-            ),
-        )
+        # file_code.body.insert(
+        #     0,
+        #     ast.ImportFrom(
+        #         module="nallely",
+        #         names=[
+        #             ast.alias("*"),
+        #         ],
+        #         level=0,
+        #     ),
+        # )
         file_code.body.insert(
             0,
             ast.ImportFrom(
