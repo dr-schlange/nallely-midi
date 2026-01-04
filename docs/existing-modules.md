@@ -367,6 +367,9 @@ inputs:
 * range0_cv [0, 127] init=34: threshold for first note
 * range1_cv [0, 127] init=64: threshold for second note
 * range2_cv [0, 127] init=94: threshold for third note
+* mode_cv [lastoff, keeplast]: should the module cut the
+                               last value transmitted for a range
+                               when another value enters and is yielded.
 
 outputs:
 # * %outname [%range]: %doc
@@ -989,6 +992,52 @@ meta: disable default output
 
 <details>
     <summary>RosslerProjector: No description/documentation</summary>
+
+</details>
+
+<details>
+    <summary>UniversalSlopeGenerator: Serge-inspired Universal Slope Generator (single channel).</summary>
+
+
+```
+UniversalSlopeGenerator
+
+Serge-inspired Universal Slope Generator (single channel).
+
+Generates voltage-controlled slopes for:
+- AD / AR envelopes
+- Cycling LFOs
+- Slew limiting
+- Trigger-to-envelope generation
+- Free-running function generation
+
+Hybrid operation:
+- Reactive when externally triggered
+- Continuous when cycle enabled
+
+NOTE: This module is LLM generated
+
+inputs:
+* trig_cv [0, 1] >0 <rising>: Rising-edge trigger input. Starts a new slope immediately.
+* gate_cv [0, 1] >0 <rising, falling>: Gate input. Rising edge begins rise phase; falling edge begins fall phase.
+* rise_cv [0.001, 10.0]: Rise time control. Exponential response.
+* fall_cv [0.001, 10.0]: Fall time control. Exponential response.
+* shape_cv [log, lin, exp]: Curve mode for both rise and fall.
+* cycle_cv [off, on] <any>: Cycle enable. When non-zero, slope free-runs continuously,
+                       restarting automatically after EOC.
+* reset_cv [0, 1] >0 <rising>: Immediate reset. Forces output to 0 and stops the slope.
+
+outputs:
+* out_cv [0, 1]: Main slope output.
+* inv_cv [0, 1]: Inverted output (1 - out).
+* eor_cv [0, 1]: End Of Rise pulse. Emits a short pulse at the end of the rise phase.
+* eoc_cv [0, 1]: End Of Cycle pulse. Emits a short pulse at the end of the fall phase.
+
+type: hybrid
+category: function-generator
+meta: disable default output
+
+```
 
 </details>
 
