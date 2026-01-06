@@ -530,7 +530,7 @@ class UniversalSlopeGenerator(VirtualDevice):
     * eor_cv [0, 1]: End Of Rise pulse. Emits a short pulse at the end of the rise phase.
     * eoc_cv [0, 1]: End Of Cycle pulse. Emits a short pulse at the end of the fall phase.
 
-    type: hybrid
+    type: continuous
     category: function-generator
     meta: disable default output
     """
@@ -636,3 +636,87 @@ class UniversalSlopeGenerator(VirtualDevice):
         if value == "on" and self.phase == "idle":
             self.phase = "rising"
             self.value = 0.0
+
+
+class SmoothSteppedGenerator(VirtualDevice):
+    """
+    Serge SSG (Smooth & Stepped Generator)
+
+    NOTE: LLM Generated (mostly)
+
+    inputs:
+    * input_cv [-10.0, 10.0] init=0.0 round: Rising-edge trigger input. Starts a new slope immediately
+    * trig_cv [0, 1] round <rising>: Trig input
+    * gate_cv [0, 1] <increase, decrease>: Gate input
+    * rate_cv [0.001, 10.0] init=0.5: Curve mode
+    * coupler_cv [-1.0, 1.0] init=0: Coupler amount
+    * noise_cv [ideal, rails, nonlinear]: Finer feedback computation introducing noise on some values
+
+    outputs:
+    * stepped_cv [-10.0, 10.0]: Stepped output
+    * smooth_cv [-10.0, 10.0]: Smooth output
+    * hot_cv [0, 1]: HOT output
+
+    type: continuous
+    category: function-generator
+    meta: disable default output
+    """
+
+    noise_cv = VirtualParameter(
+        name="noise", accepted_values=["ideal", "rails", "nonlinear"]
+    )
+    input_cv = VirtualParameter(
+        name="input", range=(-10.0, 10.0), conversion_policy="round", default=0.0
+    )
+    trig_cv = VirtualParameter(name="trig", range=(0.0, 1.0), conversion_policy="round")
+    gate_cv = VirtualParameter(name="gate", range=(0.0, 1.0))
+    rate_cv = VirtualParameter(name="rate", range=(0.001, 10.0), default=0.5)
+    coupler_cv = VirtualParameter(name="coupler", range=(-1.0, 1.0), default=0.0)
+    hot_cv = VirtualParameter(name="hot", range=(0.0, 1.0))
+    stepped_cv = VirtualParameter(name="stepped", range=(-10.0, 10.0))
+    smooth_cv = VirtualParameter(name="smooth", range=(-10.0, 10.0))
+
+    def __post_init__(self, **kwargs):
+        self.mode = "track"
+        self.held = self.input
+        self.smooth = self.input
+        self.last_time = time.time()
+        return {"disable_output": True}
+
+    def main(self, ctx):
+        now = time.time()
+        dt = now - self.last_time
+        self.last_time = now
+        rate = max(self.rate, 0.0001)
+        dt = min(dt, rate * 0.25)
+        alpha = 1.0 - math.exp(-dt / rate)
+        raw_stepped = self.held if self.mode == "hold" else self.input
+        target = raw_stepped + self.coupler * self.smooth
+        self.smooth += (target - self.smooth) * alpha
+        if self.noise == "rails":
+            self.smooth = max(-10.0, min(10.0, self.smooth))
+        elif self.noise == "nonlinear":
+            self.smooth = 10.0 * math.tanh(self.smooth / 10.0)
+        yield (raw_stepped, [self.stepped_cv])
+        yield (self.smooth, [self.smooth_cv])
+
+    @on(trig_cv, edge="rising")
+    def on_trig(self, value, ctx):
+        self.held = self.input
+        self.mode = "hold"
+        yield (1, [self.hot_cv])
+        yield (0, [self.hot_cv])
+
+    @on(gate_cv, edge="increase")
+    def on_gate_increase(self, value, ctx):
+        if value >= 1:
+            self.mode = "track"
+
+    @on(gate_cv, edge="decrease")
+    def on_gate_decrease(self, value, ctx):
+        if self.mode == "hold":
+            return
+        self.mode = "hold"
+        self.held = self.input
+        yield (1, [self.hot_cv])
+        yield (0, [self.hot_cv])
