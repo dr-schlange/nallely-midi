@@ -276,9 +276,10 @@ class WebSocketBus(VirtualDevice):
     def stop(self, clear_queues=False):
         # print("[DEBUG] Stopping server")
         for service, clients in self.connected.items():
-            # for client in clients:
-            #     print(f"[DEBUG] Closing connection for {client} on {service}")
-            #     client.send(json.dumps({"on": "__close_bus__"}))
+            for client in clients:
+                print(f"[WS] Closing connection for {client} on {service}")
+                client.close(code=1000, reason="WebSocket Bus is shutting down")
+                # client.send(json.dumps({"on": "__close_bus__"}))
             clients.clear()
         if self.running and self.server:
             print("[WS] Shutting down websocket bus...")
