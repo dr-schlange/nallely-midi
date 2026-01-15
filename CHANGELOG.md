@@ -1,8 +1,25 @@
 # CHANGELOG
 
-## Nallely v0.4.0 -- Tepezcohuite$
+## Nallely v0.5.0 -- Tepezcohuite
 
-## Features
+### Features
+
+* KeySplitter gains ability to either suppress or keep the last note yielded by a range
+* Add rebinding of services registered to the websocket bus to other services registered on the websocket bus (extension of waiting room handling)
+* Add new devices
+  * Add experimental Universal Slope Generator in a Serge-style fashion (mostly LLM generated)
+  * Add experimental Smooth Stepped Generator in a Serge-style fashion (mostly LLM generated)
+  * Add experimentatl pure integrator
+
+### Fix
+
+* Fix imports during virtual module code generation
+* Fix WebSocket Bus blocking when shutting down when too much information is still in the websockets buffers
+* Fix output range for the operator module, from (0, 127) to (None, None) otherwise, scaler kicks in when we don't want
+
+## Nallely v0.4.0 -- Tepezcohuite
+
+### Features
 
 * Change semantic for patch/links. Links can now be also polyphonic when originating from a MIDI synth source. When originating from a virtual module, they are monophonic by default (can be overriden from inside the module).
 * Update js lib with new parameters to gain a flexible setup
@@ -19,7 +36,7 @@
   * matrix-view widget (experimental) to be bound to any vdev to produce a matrix-based view
   * key splitter (split notes following 4 different programmable ranges)
 
-## Fix
+### Fix
 
 * Update size of some buttons
 * Improve UI performances (still needs work)
