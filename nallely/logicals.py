@@ -128,11 +128,11 @@ class Operator(VirtualDevice):
 
     @property
     def min_range(self):
-        return 0
+        return None
 
     @property
     def max_range(self):
-        return 127
+        return None
 
     operator_map = {
         "+": lambda a, b: a + b,
