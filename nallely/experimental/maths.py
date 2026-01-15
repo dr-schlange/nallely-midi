@@ -740,12 +740,16 @@ class Integrator(VirtualDevice):
     meta: disable default output
     """
 
-    input_cv = VirtualParameter(name="input", range=(-1.0, 1.0), default=0.0)
+    input_cv = VirtualParameter(name="input", range=(None, None), default=0.0)
     gain_cv = VirtualParameter(name="gain", range=(0.0, 100.0), default=1.0)
     reset_cv = VirtualParameter(
         name="reset", range=(0.0, 1.0), conversion_policy="round"
     )
-    out_cv = VirtualParameter(name="out", range=(-1.0, 1.0))
+    out_cv = VirtualParameter(name="out")
+
+    @property
+    def range(self):
+        return None, None
 
     def __post_init__(self, **kwargs):
         self.value = 0.0
