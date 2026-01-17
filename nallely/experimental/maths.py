@@ -729,9 +729,11 @@ class Integrator(VirtualDevice):
 
     inputs:
     * input_cv [None, None] init=0.0 round: Integrator input in integrator unit
-    * initial_cv [-1.0, 1.0] init=0.0 <any>: Initial condition
+    * initial_cv [None, None] init=0.0 <any>: Initial condition
     * gain_cv [0.0, 100.0] init=1.0: Integrator gain
     * reset_cv [0, 1.0] round: Reset integrator
+    * limits_cv [unbound, -1..1, leakage]: behavior when approaching limits
+    * leakage_factor_cv [0.0, 0.1] init=0.00001: leakage factor
 
     outputs:
     * output_cv [None, None]: main output
@@ -740,17 +742,27 @@ class Integrator(VirtualDevice):
     category: math
     """
 
-    initial_cv = VirtualParameter(name="initial", range=(-1.0, 1.0), default=0.0)
     input_cv = VirtualParameter(
         name="input", range=(None, None), conversion_policy="round", default=0.0
     )
+    initial_cv = VirtualParameter(name="initial", range=(None, None), default=0.0)
     gain_cv = VirtualParameter(name="gain", range=(0.0, 100.0), default=1.0)
     reset_cv = VirtualParameter(
         name="reset", range=(0.0, 1.0), conversion_policy="round"
     )
+    limits_cv = VirtualParameter(
+        name="limits", accepted_values=["unbound", "-1..1", "leakage"]
+    )
+    leakage_factor_cv = VirtualParameter(
+        name="leakage_factor", range=(0.0, 0.1), default=1e-05
+    )
 
     @property
     def range(self):
+        if self.limits == "-1..1":
+            self.input_cv.parameter.range = (-1.0, 1.0)
+            return (-1.0, 1.0)
+        self.input_cv.parameter.range = (None, None)
         return (None, None)
 
     def __post_init__(self, **kwargs):
@@ -761,8 +773,11 @@ class Integrator(VirtualDevice):
         now = time.time()
         dt = now - self.last_time
         self.last_time = now
+        if self.limits == "leakage":
+            self.value *= 1.0 - self.leakage_factor * dt
         self.value += self.input * self.gain * dt
-        self.value = max(-1.0, min(1.0, self.value))
+        if self.limits == "-1..1":
+            self.value = max(-1.0, min(1.0, self.value))
         yield self.value
 
     @on(reset_cv, edge="rising")
