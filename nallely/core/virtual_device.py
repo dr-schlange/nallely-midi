@@ -190,6 +190,7 @@ class VirtualDevice(threading.Thread):
         target_cycle_time: float = 0.002,
         autoconnect: bool = False,
         disable_output: bool = False,
+        **kwargs,
     ):
         from ..utils import ThreadSafeDefaultDict
         from .links import Link
