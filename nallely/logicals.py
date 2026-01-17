@@ -202,7 +202,6 @@ class Operator(VirtualDevice):
         return self.build_node(self, o, "/")
 
 
-
 class Logical(VirtualDevice):
     a_cv = VirtualParameter(name="a", range=(0, 1), conversion_policy=">0")
     b_cv = VirtualParameter(name="b", range=(0, 1), conversion_policy=">0")
