@@ -178,6 +178,30 @@ class Operator(VirtualDevice):
             return
         return self.operator_map[self.operator](self.a, self.b)
 
+    @staticmethod
+    def build_node(a, b, operator):
+        op = Operator(operator=operator)
+        op.a_cv = a.output_cv
+        if isinstance(b, VirtualDevice):
+            op.b_cv = b.output_cv
+        else:
+            op.set_parameter("b", b)
+        op.start()
+        return op
+
+    def __add__(self, o):
+        return self.build_node(self, o, "+")
+
+    def __sub__(self, o):
+        return self.build_node(self, o, "-")
+
+    def __mul__(self, o):
+        return self.build_node(self, o, "*")
+
+    def __div__(self, o):
+        return self.build_node(self, o, "/")
+
+
 
 class Logical(VirtualDevice):
     a_cv = VirtualParameter(name="a", range=(0, 1), conversion_policy=">0")
