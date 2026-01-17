@@ -774,7 +774,8 @@ class Integrator(VirtualDevice):
         dt = now - self.last_time
         self.last_time = now
         if self.limits == "leakage":
-            self.value *= 1.0 - self.leakage_factor * dt
+            decay_factor = math.exp(-self.leakage_factor * dt)
+            self.value *= decay_factor
         self.value += self.input * self.gain * dt
         if self.limits == "-1..1":
             self.value = max(-1.0, min(1.0, self.value))
