@@ -386,8 +386,15 @@ def parsespec(entries, are_outputs=False):
             edges = [m.strip() for m in edges.split(",")]
         try:
             policy = m.group("policy")
-            lower = float(lower)
-            upper = float(upper)
+            if lower == "None":
+                lower = None
+            else:
+                lower = float(lower)
+            if upper == "None":
+                upper = None
+            else:
+                upper = float(upper)
+
             range = (lower, upper)
             params = {
                 "cv_name": cv_name,
