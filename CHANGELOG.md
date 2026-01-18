@@ -10,6 +10,8 @@
   * Add experimental Universal Slope Generator in a Serge-style fashion (mostly LLM generated)
   * Add experimental Smooth Stepped Generator in a Serge-style fashion (mostly LLM generated)
   * Add experimentatl pure integrator
+* Add local bound display in the 1D scope
+* Add documentation about how to write neurons (virtual devices)
 
 ### Fix
 
