@@ -792,3 +792,55 @@ class Integrator(VirtualDevice):
         self.value = value
         self.last_time = time.time()
         return self.value
+
+
+class Inverter(VirtualDevice):
+    """
+    Inverter
+
+    inputs:
+    # * %inname [%range] %options: %doc
+    * in0_cv [None, None] <any>: inverter in0
+    * in1_cv [None, None] <any>: inverter in1
+    * in2_cv [None, None] <any>: inverter in2
+    * in3_cv [None, None] <any>: inverter in3
+
+    outputs:
+    # * %outname [%range]: %doc
+    * out0_cv [None, None]: inverter output 0
+    * out1_cv [None, None]: inverter output 1
+    * out2_cv [None, None]: inverter output 2
+    * out3_cv [None, None]: inverter output 3
+
+    type: <ondemand | continuous>
+    category: <category>
+    meta: disable default output
+    """
+
+    in0_cv = VirtualParameter(name="in0", range=(None, None))
+    in1_cv = VirtualParameter(name="in1", range=(None, None))
+    in2_cv = VirtualParameter(name="in2", range=(None, None))
+    in3_cv = VirtualParameter(name="in3", range=(None, None))
+    out3_cv = VirtualParameter(name="out3", range=(None, None))
+    out2_cv = VirtualParameter(name="out2", range=(None, None))
+    out1_cv = VirtualParameter(name="out1", range=(None, None))
+    out0_cv = VirtualParameter(name="out0", range=(None, None))
+
+    def __post_init__(self, **kwargs):
+        return {"disable_output": True}
+
+    @on(in3_cv, edge="any")
+    def on_in3_any(self, value, ctx):
+        return (-value, [self.out3_cv])
+
+    @on(in1_cv, edge="any")
+    def on_in1_any(self, value, ctx):
+        return (-value, [self.out1_cv])
+
+    @on(in0_cv, edge="any")
+    def on_in0_any(self, value, ctx):
+        return (-value, [self.out0_cv])
+
+    @on(in2_cv, edge="any")
+    def on_in2_any(self, value, ctx):
+        return (-value, [self.out2_cv])
