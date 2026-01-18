@@ -971,6 +971,63 @@ meta: disable default output
 </details>
 
 <details>
+    <summary>Integrator: A pure mathematical integrator for emergent</summary>
+
+
+```
+
+A pure mathematical integrator for emergent
+non-determinism in async feedback loops.
+
+inputs:
+* input_cv [None, None] init=0.0 round: Integrator input in integrator unit
+* initial_cv [None, None] init=0.0 <any>: Initial condition
+* gain_cv [0.0, 100.0] init=1.0: Integrator gain
+* reset_cv [0, 1.0] round: Reset integrator
+* limits_cv [unbound, -1..1, leakage]: behavior when approaching limits
+* leakage_factor_cv [0.0, 0.1] init=0.00001: leakage factor
+
+outputs:
+* output_cv [None, None]: main output
+
+type: continuous
+category: math
+
+```
+
+</details>
+
+<details>
+    <summary>Inverter: Inverter</summary>
+
+
+```
+
+Inverter
+
+inputs:
+# * %inname [%range] %options: %doc
+* in0_cv [None, None] <any>: inverter in0
+* in1_cv [None, None] <any>: inverter in1
+* in2_cv [None, None] <any>: inverter in2
+* in3_cv [None, None] <any>: inverter in3
+
+outputs:
+# * %outname [%range]: %doc
+* out0_cv [None, None]: inverter output 0
+* out1_cv [None, None]: inverter output 1
+* out2_cv [None, None]: inverter output 2
+* out3_cv [None, None]: inverter output 3
+
+type: <ondemand | continuous>
+category: <category>
+meta: disable default output
+
+```
+
+</details>
+
+<details>
     <summary>LorenzProjector: No description/documentation</summary>
 
 </details>
@@ -996,6 +1053,37 @@ meta: disable default output
 </details>
 
 <details>
+    <summary>SmoothSteppedGenerator: Serge SSG (Smooth & Stepped Generator)</summary>
+
+
+```
+
+Serge SSG (Smooth & Stepped Generator)
+
+NOTE: mostly LLM Generated (and buggy)
+
+inputs:
+* input_cv [-10.0, 10.0] init=0.0 round: Rising-edge trigger input. Starts a new slope immediately
+* trig_cv [0, 1] round <rising>: Trig input
+* gate_cv [0, 1] <increase, decrease>: Gate input
+* rate_cv [0.001, 10.0] init=0.5: Curve mode
+* coupler_cv [-1.0, 1.0] init=0: Coupler amount
+* noise_cv [ideal, rails, nonlinear]: Finer feedback computation introducing noise on some values
+
+outputs:
+* stepped_cv [-10.0, 10.0]: Stepped output
+* smooth_cv [-10.0, 10.0]: Smooth output
+* hot_cv [0, 1]: HOT output
+
+type: continuous
+category: function-generator
+meta: disable default output
+
+```
+
+</details>
+
+<details>
     <summary>UniversalSlopeGenerator: Serge-inspired Universal Slope Generator (single channel).</summary>
 
 
@@ -1015,17 +1103,17 @@ Hybrid operation:
 - Reactive when externally triggered
 - Continuous when cycle enabled
 
-NOTE: This module is LLM generated
+NOTE: This module is LLM generated and manually fixed (and buggy for some outputs)
 
 inputs:
-* trig_cv [0, 1] >0 <rising>: Rising-edge trigger input. Starts a new slope immediately.
-* gate_cv [0, 1] >0 <rising, falling>: Gate input. Rising edge begins rise phase; falling edge begins fall phase.
-* rise_cv [0.001, 10.0]: Rise time control. Exponential response.
-* fall_cv [0.001, 10.0]: Fall time control. Exponential response.
+* trig_cv [0, 1] round <rising>: Rising-edge trigger input. Starts a new slope immediately.
+* gate_cv [0, 1] round <rising, falling>: Gate input. Rising edge begins rise phase; falling edge begins fall phase.
+* rise_cv [0.001, 10.0] init=0.25: Rise time control. Exponential response.
+* fall_cv [0.001, 10.0] init=0.25: Fall time control. Exponential response.
 * shape_cv [log, lin, exp]: Curve mode for both rise and fall.
 * cycle_cv [off, on] <any>: Cycle enable. When non-zero, slope free-runs continuously,
                        restarting automatically after EOC.
-* reset_cv [0, 1] >0 <rising>: Immediate reset. Forces output to 0 and stops the slope.
+* reset_cv [0, 1] round <rising>: Immediate reset. Forces output to 0 and stops the slope.
 
 outputs:
 * out_cv [0, 1]: Main slope output.
@@ -1033,7 +1121,7 @@ outputs:
 * eor_cv [0, 1]: End Of Rise pulse. Emits a short pulse at the end of the rise phase.
 * eoc_cv [0, 1]: End Of Cycle pulse. Emits a short pulse at the end of the fall phase.
 
-type: hybrid
+type: continuous
 category: function-generator
 meta: disable default output
 
