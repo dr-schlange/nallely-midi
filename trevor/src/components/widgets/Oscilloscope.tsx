@@ -103,10 +103,13 @@ export const Scope = ({
 
 	const upperBound = useRef(undefined);
 	const lowerBound = useRef(undefined);
+	const [localMin, setLocalMin] = useState(undefined);
+	const [localMax, setLocalMax] = useState(undefined);
 	const [label, setLabel] = useState("");
 	const [walker, setWalker] = useState(false);
 	const [autoPaused, setAutoPaused] = useState(false);
 	const [displayMode, setDisplayMode] = useState<DisplayModes>("line");
+	const [minMaxDisplay, setMinMaxDisplay] = useState(false);
 	const [followMode, setFollowMode] = useState<FollowModes>("linear");
 	const followModeRef = useRef<FollowModes>(followMode);
 	const [chartKey, setChartKey] = useState(0);
@@ -153,6 +156,10 @@ export const Scope = ({
 
 	const toggleWalker = () => {
 		setWalker((prev) => !prev);
+	};
+
+	const toggleMinMaxDisplay = () => {
+		setMinMaxDisplay((prev) => !prev);
 	};
 
 	const closeScope = () => {
@@ -290,6 +297,8 @@ export const Scope = ({
 							chartRef.current.setData([buf.x, buf.y]);
 						}
 						updateScheduled.current = false;
+						setLocalMin(Math.min(...buf.y));
+						setLocalMax(Math.max(...buf.y));
 					});
 				}
 				if (firstValue.current === false) {
@@ -349,10 +358,16 @@ export const Scope = ({
 					display: "flex",
 					justifyContent: "flex-end",
 					flexDirection: "row",
-					gap: "4px",
+					gap: "3.5px",
 					pointerEvents: "none",
 				}}
 			>
+				<Button
+					text="b"
+					activated={minMaxDisplay}
+					onClick={toggleMinMaxDisplay}
+					tooltip="Toggle min max display"
+				/>
 				<DragNumberInput
 					range={[BUFFER_LOWER, BUFFER_UPPER]}
 					width="30px"
@@ -364,6 +379,8 @@ export const Scope = ({
 						color: "gray",
 						fontSize: "14px",
 						textAlign: "right",
+						paddingRight: "1px",
+						paddingLeft: "0px",
 						boxShadow: "unset",
 					}}
 				/>
@@ -401,6 +418,22 @@ export const Scope = ({
 				}}
 			/>
 			{walker && <Walker paused={autoPaused} />}
+			{minMaxDisplay && (
+				<div
+					style={{
+						position: "absolute",
+						bottom: "0px",
+						color: "gray",
+						marginBottom: "2px",
+					}}
+				>
+					<p style={{ fontSize: "12px", margin: 0 }}>
+						min: {localMin ?? "?"}
+						<br />
+						max: {localMax ?? "?"}
+					</p>
+				</div>
+			)}
 		</div>
 	);
 };
