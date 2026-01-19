@@ -310,7 +310,7 @@ What's important to take from there:
 * creating an instance of a neuron looks like creating a Python instance, there is no difference in a syntax point of view;
 * starting a neuron actually means "starting the thread that represents the instance of the neuron";
 * you can initialize a neuron with keyword arguments directly in the constructor, they are derived from the `VirtualParameter`;
-* using the assignment operation between ports creates a channel between them, it doesn't affect a value to the port;
+* using the assignment operation between ports creates a channel between them, it doesn't assign a value to the port;
 * passing a value to a port of a neuron is done using `set_parameter(...)`;
 * values are cross-domain, we have the output of the LFO that can either represent a variation of the `shift` value, or the shifted note from the `shifter` can be linked to the `speed` of the LFO;
 * there is no special syntax for feedback loops, you just patch the system;
@@ -329,7 +329,7 @@ But it's recommended to actually uses Nallely from the command line:
 nallely run -i my_script.py
 ```
 
-Running the script using the runner introduces automatically the cleanup logic and blocking logic to avoid to finish the main thread while reaching the end of the script. Don't forget that the execution model is purely asynchroneous, thus, none of the creation of the LFO, the PitchShifter, patching and setting values are non-blocking.
+Running the script using the runner introduces automatically the cleanup logic and blocking logic to avoid to finish the main thread while reaching the end of the script. Don't forget that the execution model is purely asynchroneous, thus, all actions as the creation of the LFO, the PitchShifter, patching and setting values are non-blocking.
 
 
 ## Going further, having more complex behaviors with your neuron
