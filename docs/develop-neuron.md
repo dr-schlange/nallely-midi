@@ -334,14 +334,187 @@ Running the script using the runner introduces automatically the cleanup logic a
 
 ## Going further, having more complex behaviors with your neuron
 
-* sleep
-* hybrid behaviors (execution order)
-* main
-* ctx
-* semantic value of 0
-* i/o ports
-* yielding multiple values
-* yielding multiple values on multiple ports
-* yielding a value to multiple ports at the same time
-* accepted_values (generates drop-down and automatic conversion between int/float => actual drop-down value)
-* jitter, pinging/poking the machine
+This section describes various points that lets you be more expressive with your neurons. The section is split in multiple sub-sections, each of them covering specific points of the execution model and the semantic of neurons in Nallely. Will be covered:
+
+* how to make you neuron sleep without blocking the reception of messages;
+* how to program ports that are input and output;
+* how to yield values on a specific output port, or multiple specific ports;
+* how to yield multiple values on a specific port or multiple ports from inside the neuron;
+* how to create a purely continuous neuron;
+* how to create an hybrid neuron and details about execution order between reactive and continuous methods;
+* what's the `ctx`, how to use it, or not use it;
+* how to create ports that accept multiple predefined values (drop-down like);
+* feedback loops through the example of an integrator, jitters, pinging and poking the running system;
+* how to test your neurons using BDD.
+
+### Make your neuron sleep in a non-blocking way and define ports that are input and output
+
+As stated in the beginning of the document, there is no global clock, that means that time can be interpreted as relative to each neuron, or "global" if we consider the wall-clock time. Nallely doesn't enforce the way you want to look at the time, it entirely depends on the neuron and how you want to manipulate it. In this section we will see how we can make a neuron sleep for a specific time and triggers of multiple sleep are handled. To highlight the behavior and the API around sleep, we are going to develop a purely reactive neuron that can create delayed chain reactions by considering ports that are input and output at the same time.
+
+#### A delayed reaction chain neuron
+
+This neuron will expose 4 differents i/o ports that will forward the received value after a parametrable delay. The behavior of such a neuron implements a kind of delayed push-sub pattern. As each port is input and output, even if each port is independent, you can later patch the first i/o into the second i/o, then the second in the third i/o, etc, creating a longer delay line that will propagate the value received step after step.
+To create such a module, we will need:
+
+* 4 i/o ports that will react to any transition/movement,
+* 1 port that will define the delay time in ms.
+
+Lets write the docstring of such a neuron.
+
+```python
+class DelayedPushSub:
+    """Delayed Push Sub
+
+    This neuron lets you create delayed reaction chain.
+
+    inputs:
+    * io0_cv [0, 127] <any>: 1st io
+    * io1_cv [0, 127] <any>: 2nd io
+    * io2_cv [0, 127] <any>: 3rd io
+    * io3_cv [0, 127] <any>: 4th io
+    * time_cv [0, 5000]: how long is the delay (in ms)
+
+    outputs:
+
+    type: reactive
+    category: chain reaction
+    meta: disable default output
+    """
+```
+
+Then generate the skeleton.
+
+```python
+class DelayedPushSub(VirtualDevice):
+    """Delayed Push Sub
+
+    This neuron lets you create delayed reaction chain.
+
+    inputs:
+    * io0_cv [0, 127] <any>: 1st io
+    * io1_cv [0, 127] <any>: 2nd io
+    * io2_cv [0, 127] <any>: 3rd io
+    * io3_cv [0, 127] <any>: 4th io
+    * time_cv [0, 5000]: how long is the delay (in ms)
+
+    outputs:
+
+    type: reactive
+    category: chain reaction
+    meta: disable default output
+    """
+
+    io0_cv = VirtualParameter(name="io0", range=(0.0, 127.0))
+    io1_cv = VirtualParameter(name="io1", range=(0.0, 127.0))
+    io2_cv = VirtualParameter(name="io2", range=(0.0, 127.0))
+    io3_cv = VirtualParameter(name="io3", range=(0.0, 127.0))
+    time_cv = VirtualParameter(name="time", range=(0.0, 5000.0))
+
+    def __post_init__(self, **kwargs):
+        return {"disable_output": True}
+
+    @on(io3_cv, edge="any")
+    def on_io3_any(self, value, ctx): ...
+
+    @on(io2_cv, edge="any")
+    def on_io2_any(self, value, ctx): ...
+
+    @on(io1_cv, edge="any")
+    def on_io1_any(self, value, ctx): ...
+
+    @on(io0_cv, edge="any")
+    def on_io0_any(self, value, ctx): ...
+```
+
+If you read the documentation until there, you'll see almost nothing new, beside the `__post_init__` method. This method is used here to disable the default output, but this method is also used when you need to add specific internal state variable that will not be exposed as port.
+
+Now that we have the skeleton, lets write the method for our first io. The implementation is pretty straight forward: we receive a value, then we send it on the same port.
+
+```python
+@on(io0_cv, edge="any")
+def on_io0_any(self, value, ctx):
+    yield from self.sleep(self.time)
+    yield value, [self.io0_cv]
+```
+
+The method to call to make a neuron sleep is `self.sleep(...)` that takes as parameter the number of ms the neuron will sleep. You can see that the method is called using `yield from`. This is required, as the sleep is non-fully-blocking, it just makes the reactive method and the overall neuron sleep, but it doesn't interfer with the neurons ability to receive values on various ports. Once the neuron finished to sleep, it sends the value on `self.io0_cv`. The syntax to send a value on a specific port is the following:
+
+```python
+yield <value>, [ports]
+# or
+return <value>, [ports]
+
+# send a value on the default output_cv port
+yield <value>, [self.output_cv]
+# or
+yield <value>
+# or
+return <value>, [self.output_cv]
+# or
+return <value>
+```
+
+The fact of using either `return` or `yield` entirely dependen on the behavior of your neuron and reactive method. When the `output_cv` default output is targetted, the port is optional. You can see also that the syntax accepts a list as second parameter when the value is sent on specific ports. This list can be multiple ports. If there is more than one port, the value is sent to each ports in a loop, in the order described by the port list.
+
+**NOTE:** when you send a value on a port using return/yield, the value is written on the port instance. This behavior lets you query the module at any moment and always know what's the value on the port.
+
+Now that we have a first method for the first i/o, we can copy/paste the same behavior for each method, and we are good, our neuron is finished and fully functionnal.
+
+```python
+class DelayedPushSub(VirtualDevice):
+    """Delayed Push Sub
+
+    This neuron lets you create delayed reaction chain.
+
+    inputs:
+    * io0_cv [0, 127] <any>: 1st io
+    * io1_cv [0, 127] <any>: 2nd io
+    * io2_cv [0, 127] <any>: 3rd io
+    * io3_cv [0, 127] <any>: 4th io
+    * time_cv [0, 5000]: how long is the delay (in ms)
+
+    outputs:
+
+    type: reactive
+    category: chain reaction
+    meta: disable default output
+    """
+
+    io0_cv = VirtualParameter(name="io0", range=(0.0, 127.0))
+    io1_cv = VirtualParameter(name="io1", range=(0.0, 127.0))
+    io2_cv = VirtualParameter(name="io2", range=(0.0, 127.0))
+    io3_cv = VirtualParameter(name="io3", range=(0.0, 127.0))
+    time_cv = VirtualParameter(name="time", range=(0.0, 5000.0))
+
+    def __post_init__(self, **kwargs):
+        return {"disable_output": True}
+
+    @on(io3_cv, edge="any")
+    def on_io3_any(self, value, ctx):
+        yield from self.sleep(self.time)
+        yield value, [self.io3_cv]
+
+    @on(io2_cv, edge="any")
+    def on_io2_any(self, value, ctx):
+        yield from self.sleep(self.time)
+        yield value, [self.io2_cv]
+
+    @on(io1_cv, edge="any")
+    def on_io1_any(self, value, ctx):
+        yield from self.sleep(self.time)
+        yield value, [self.io1_cv]
+
+    @on(io0_cv, edge="any")
+    def on_io0_any(self, value, ctx):
+        yield from self.sleep(self.time)
+        yield value, [self.io0_cv]
+```
+
+We observe that the behavior for each method is the same at the exception of the port. There is multiple ways of refactoring this code, we will not enter into details in this document, but I'm sure you have an idea or a trick up your sleeve.
+
+Lets chat just a little bit about what happens in this situation:
+
+* a value arrives on `io0` with a sleep time of 5s
+* while the neuron is sleeping, another value arrives on `io1`.
+
+What happens? In this case, the value that arrives on `io1` is stored in the queue for `io1` (each port get its own queue). Then after the 5s passed, the method for `io1` will be called and the neuron will go to sleep, etc.
