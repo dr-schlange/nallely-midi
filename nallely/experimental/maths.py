@@ -923,3 +923,118 @@ class Laplace(VirtualDevice):
     def on_reset_rising(self, value, ctx):
         self.out_prev = 0
         self.in_prev = 0
+
+
+class KineticShaper(VirtualDevice):
+    """Kinetic Shaper
+
+    Kinetic wave shaper based on an integrated Laplace transformation
+
+    inputs:
+    * input_cv [-1.0, 1.0]: transformation input
+    * drive_cv [-1, 1] init=1: scaling factor for now value
+    * momentum_cv [-1, 1] init=1: scaling factor for previous value
+    * inertia_cv [-1, 1] init=0: feedback coefficient
+    * rate_cv [0.001, 100] init=1: rate applied to the transformation result
+    * clipping_cv [soft_cubic, algebraic, clamp, tanh, linear]: type of behavior when reaching the range limit
+    * nonlinear_cv [off, on]: introduction of non-linearity factor before clipping
+    * reset_cv [0, 1] round <rising>: reset the transformation internal state
+
+    outputs:
+    * output_cv [-1.0, 1.0]: transformation output
+
+    type: hybrid
+    category: math
+    """
+
+    input_cv = VirtualParameter(name="input", range=(-1.0, 1.0))
+    drive_cv = VirtualParameter(name="drive", range=(-1.0, 1.0), default=1.0)
+    momentum_cv = VirtualParameter(name="momentum", range=(-1.0, 1.0), default=1.0)
+    inertia_cv = VirtualParameter(name="inertia", range=(-1.0, 1.0), default=0.0)
+    rate_cv = VirtualParameter(name="rate", range=(0.001, 100.0), default=1.0)
+    clipping_cv = VirtualParameter(
+        name="clipping",
+        accepted_values=[
+            "soft_cubic",
+            "algebraic",
+            "clamp",
+            "tanh",
+            "linear",
+        ],
+    )
+    nonlinear_cv = VirtualParameter(name="nonlinear", accepted_values=["off", "on"])
+    reset_cv = VirtualParameter(
+        name="reset", range=(0.0, 1.0), conversion_policy="round"
+    )
+
+    @property
+    def min_range(self):
+        return -1.0
+
+    @property
+    def max_range(self):
+        return 1.0
+
+    def __post_init__(self, **kwargs):
+        self.out_prev = 0
+        self.in_prev = 0
+        self.value = 0
+        self.last_time = time.time()
+
+    def apply_clipping(self, value):
+        match self.clipping:
+            case "soft_cubic":
+                if value > 1.0:
+                    value = 1.0
+                elif value < -1.0:
+                    value = -1.0
+                else:
+                    value = 1.5 * (value - value**3 / 3.0)
+            case "algebraic":
+                value = value / math.sqrt(1.0 + value * value)
+            case "clamp":
+                value = max(-1.0, min(1.0, value))
+            case "tanh":
+                value = math.tanh(value)
+            case "linear":
+                ...
+        return value
+
+    def main(self, ctx):
+        now = time.time()
+        dt = now - self.last_time
+        self.last_time = now
+
+        in_now = self.input
+
+        # 1. The 'Direct' path (drive)
+        # 2. The 'Slope' path (momentum) - Normalized by dt so it's time-accurate velocity
+        input_velocity = (in_now - self.in_prev) / dt if dt > 0 else 0
+
+        # 3. The 'Inertia' path (inertia)
+        # We calculate the "Target" state based on Laplace logic
+        # out_now = (drive * in) + (momentum * slope) - (inertia * out_prev)
+        target = (
+            (self.drive * in_now)
+            + (self.momentum * input_velocity)
+            - (self.inertia * self.out_prev)
+        )
+
+        # 4. The Integration Step (The "Special" part)
+        # Instead of jumping to the target, we 'flow' toward it
+        # This turns b-coefficients into "forces" and a1 into "resistance"
+        self.value += (target - self.value) * self.rate * dt
+
+        # Clipping and state update
+        if self.nonlinear == "on":
+            self.value += (self.value * abs(self.value)) * 0.5
+        out_now = self.apply_clipping(self.value)
+        self.in_prev = in_now
+        self.out_prev = out_now
+
+        return out_now
+
+    @on(reset_cv, edge="rising")
+    def on_reset_rising(self, value, ctx):
+        self.out_prev = 0
+        self.in_prev = 0
