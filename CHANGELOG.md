@@ -6,11 +6,12 @@
 
 * KeySplitter gains ability to either suppress or keep the last note yielded by a range
 * Add rebinding of services registered to the websocket bus to other services registered on the websocket bus (extension of waiting room handling)
-* Add new devices
+* Add new neurons
   * Add experimental Universal Slope Generator in a Serge-style fashion (mostly LLM generated)
   * Add experimental Smooth Stepped Generator in a Serge-style fashion (mostly LLM generated)
   * Add experimentatl pure integrator
-  * Add experimental Laplace transformation module
+  * Add experimental Laplace transformation
+  * Add experimental KineticShaper
 * Add local bound display in the 1D scope
 * Add documentation about how to write neurons (virtual devices)
 
