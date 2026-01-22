@@ -858,7 +858,7 @@ class Laplace(VirtualDevice):
     * b0_cv [-1, 1] init=1: scaling factor for now value
     * b1_cv [-1, 1] init=1: scaling factor for previous value
     * a1_cv [-1, 1] init=0: feedback coefficient
-    * gain_cv [1, 100] init=1: gain applied to the transformation result
+    * gain_cv [0.001, 100] init=1: gain applied to the transformation result
     * clipping_cv [soft_cubic, algebraic, clamp, tanh, linear]: type of behavior when reaching the range limit
     * reset_cv [0, 1] round <rising>: reset the transformation internal state
 
@@ -876,7 +876,7 @@ class Laplace(VirtualDevice):
     b0_cv = VirtualParameter(name="b0", range=(-1.0, 1.0), default=1.0)
     b1_cv = VirtualParameter(name="b1", range=(-1.0, 1.0), default=1.0)
     a1_cv = VirtualParameter(name="a1", range=(-1.0, 1.0), default=0.0)
-    gain_cv = VirtualParameter(name="gain", range=(1.0, 100.0), default=1.0)
+    gain_cv = VirtualParameter(name="gain", range=(0.001, 100.0), default=1.0)
     clipping_cv = VirtualParameter(
         name="clipping",
         accepted_values=["soft_cubic", "algebraic", "clamp", "tanh", "linear"],
@@ -891,14 +891,14 @@ class Laplace(VirtualDevice):
         return 1.0
 
     def __post_init__(self, **kwargs):
-        self.output = 0
+        self.out_prev = 0
         self.in_prev = 0
 
     def main(self, ctx):
         in_now = self.input
         in_prev = self.in_prev
-        out_prev = self.output
-        out_now = self.b0 * in_now + self.b1 * in_prev - self.a1 * out_prev
+        self.out_prev = self.output if self.output is not None else 0
+        out_now = self.b0 * in_now + self.b1 * in_prev - self.a1 * self.out_prev
         self.in_prev = in_now
         out_now *= self.gain
         match self.clipping:
@@ -921,5 +921,5 @@ class Laplace(VirtualDevice):
 
     @on(reset_cv, edge="rising")
     def on_reset_rising(self, value, ctx):
-        self.output = 0
+        self.out_prev = 0
         self.in_prev = 0
