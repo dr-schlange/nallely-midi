@@ -105,12 +105,13 @@ export const Scope = ({
 	const lowerBound = useRef(undefined);
 	const [localMin, setLocalMin] = useState(undefined);
 	const [localMax, setLocalMax] = useState(undefined);
+	const [currentValue, setCurrentValue] = useState(undefined);
 	const [label, setLabel] = useState("");
 	const [walker, setWalker] = useState(false);
 	const [autoPaused, setAutoPaused] = useState(false);
 	const [displayMode, setDisplayMode] = useState<DisplayModes>("line");
-	const [minMaxDisplay, setMinMaxDisplay] = useState(false);
-	const [followMode, setFollowMode] = useState<FollowModes>("linear");
+	const [minMaxDisplay, setMinMaxDisplay] = useState(true);
+	const [followMode, setFollowMode] = useState<FollowModes>("cyclic");
 	const followModeRef = useRef<FollowModes>(followMode);
 	const [chartKey, setChartKey] = useState(0);
 	const elapsed = useRef(0);
@@ -299,6 +300,7 @@ export const Scope = ({
 						updateScheduled.current = false;
 						setLocalMin(Math.min(...buf.y));
 						setLocalMax(Math.max(...buf.y));
+						setCurrentValue(newValue);
 					});
 				}
 				if (firstValue.current === false) {
@@ -429,6 +431,8 @@ export const Scope = ({
 				>
 					<p style={{ fontSize: "12px", margin: 0 }}>
 						min: {localMin ?? "?"}
+						<br />
+						val: {currentValue ?? "?"}
 						<br />
 						max: {localMax ?? "?"}
 					</p>
