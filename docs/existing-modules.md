@@ -1028,6 +1028,65 @@ meta: disable default output
 </details>
 
 <details>
+    <summary>KineticShaper: Kinetic wave shaper based on an integrated Laplace transformation</summary>
+
+
+```
+Kinetic Shaper
+
+Kinetic wave shaper based on an integrated Laplace transformation
+
+inputs:
+* input_cv [-1.0, 1.0]: transformation input
+* drive_cv [-1, 1] init=1: scaling factor for now value
+* momentum_cv [-1, 1] init=1: scaling factor for previous value
+* inertia_cv [-1, 1] init=0: feedback coefficient
+* rate_cv [0.001, 100] init=1: rate applied to the transformation result
+* clipping_cv [soft_cubic, algebraic, clamp, tanh, linear]: type of behavior when reaching the range limit
+* nonlinear_cv [off, on]: introduction of non-linearity factor before clipping
+* reset_cv [0, 1] round <rising>: reset the transformation internal state
+
+outputs:
+* output_cv [-1.0, 1.0]: transformation output
+
+type: hybrid
+category: math
+
+```
+
+</details>
+
+<details>
+    <summary>Laplace: This neuron is a simple mathematical Laplace transformation applied</summary>
+
+
+```
+Simple Laplace transformation
+
+This neuron is a simple mathematical Laplace transformation applied
+following the equation:
+    > out_now = (b0 * in_now) + (b1 * in_prev) - (a1 * out_prev)
+
+inputs:
+* input_cv [-1.0, 1.0]: transformation input
+* b0_cv [-1, 1] init=1: scaling factor for now value
+* b1_cv [-1, 1] init=1: scaling factor for previous value
+* a1_cv [-1, 1] init=0: feedback coefficient
+* gain_cv [0.001, 100] init=1: gain applied to the transformation result
+* clipping_cv [soft_cubic, algebraic, clamp, tanh, linear]: type of behavior when reaching the range limit
+* reset_cv [0, 1] round <rising>: reset the transformation internal state
+
+outputs:
+* output_cv [-1.0, 1.0]: transformation output
+
+type: hybrid
+category: math
+
+```
+
+</details>
+
+<details>
     <summary>LorenzProjector: No description/documentation</summary>
 
 </details>
