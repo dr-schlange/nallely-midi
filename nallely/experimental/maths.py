@@ -1027,7 +1027,12 @@ class KineticShaper(VirtualDevice):
 
         # Clipping and state update
         if self.nonlinear == "on":
-            self.value += (self.value * abs(self.value)) * 0.5
+            # Calculate the 'push' (the warmth) and add it
+            push = self.value * abs(self.value) * 0.5
+            self.value += push
+
+            # Safety Valve: Soft-clip it to a range (e.g., -10 to 10)
+            self.value = 10.0 * math.tanh(self.value / 10.0)
         out_now = self.apply_clipping(self.value)
         self.in_prev = in_now
         self.out_prev = out_now
@@ -1038,3 +1043,15 @@ class KineticShaper(VirtualDevice):
     def on_reset_rising(self, value, ctx):
         self.out_prev = 0
         self.in_prev = 0
+        self.value = 0
+        self.last_time = time.time()
+
+
+
+# IDEA
+# The "Biological" Fractal Patch
+# The Trigger: Use the output of a KineticShaper.
+# The Birth: When output > 0.8, the module spawns a "Child" version of itself.
+# The Parasite: The Child's output is patched to the Parent's a1_cv (Inertia). This means the child "slows down" the parent or makes it more "resonant."
+# The Death: When the Parent's value drops below -0.5, it kills the Child.
+# Because of the OS Jitter the lifespan of each generation would be slightly different.
