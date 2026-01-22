@@ -12,7 +12,7 @@
   * Add experimentatl pure integrator
   * Add experimental Laplace transformation
   * Add experimental KineticShaper
-* Add local bound display in the 1D scope
+* Add current value and local bound display in the 1D scope
 * Add documentation about how to write neurons (virtual devices)
 
 ### Fix
