@@ -14,6 +14,7 @@
   * Add experimental KineticShaper
 * Add current value and local bound display in the 1D scope
 * Add documentation about how to write neurons (virtual devices)
+* Add methods to get incoming/outgoing links for a port in the reflexive API for neurons
 
 ### Fix
 
@@ -36,7 +37,7 @@
   * gps module (from locahost only at the moment)
   * weird shift-register based on an auto-looping-modifying memory cells
   * js-based keyboard widget
-  * generic "winow" widget to embedd any iframe
+  * generic "window" widget to embedd any site in an iframe
   * matrix-view widget (experimental) to be bound to any vdev to produce a matrix-based view
   * key splitter (split notes following 4 different programmable ranges)
 

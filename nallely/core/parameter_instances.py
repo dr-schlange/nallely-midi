@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
 
 from .scaler import Scaler
-from .world import ThreadContext
+from .world import ThreadContext, all_devices
 
 if TYPE_CHECKING:
     from .midi_device import (
@@ -57,6 +57,30 @@ class ParameterInstance:
 
     def value(self):
         return object.__getattribute__(self.device, self.parameter.name)
+
+    @property
+    def outgoing_links(self):
+        return self.outgoing_nonstream_links + self.outgoing_stream_links
+
+    @property
+    def outgoing_stream_links(self):
+        return self.device.stream_links[self.repr()]
+
+    @property
+    def outgoing_nonstream_links(self):
+        return self.device.nonstream_links[self.repr()]
+
+    @property
+    def incoming_links(self):
+        from .world import all_devices
+
+        links = []
+        self_repr = self.repr()
+        for device in all_devices():
+            for (_, dst), link in device.links_registry.items():
+                if dst == self_repr:
+                    links.append(link)
+        return links
 
 
 class Int(int):
@@ -130,6 +154,28 @@ class Int(int):
         return (
             f"{self.device.uuid}::{self.parameter.section_name}::{self.parameter.name}"
         )
+
+    @property
+    def outgoing_links(self):
+        links = []
+        self_repr = self.repr()
+        for (src, _), link in self.device.links_registry.items():
+            if src == self_repr:
+                links.append(link)
+
+        return links
+
+    @property
+    def incoming_links(self):
+        from .world import all_devices
+
+        links = []
+        self_repr = self.repr()
+        for device in all_devices():
+            for (_, dst), link in device.links_registry.items():
+                if dst == self_repr:
+                    links.append(link)
+        return links
 
 
 class PadsOrKeysInstance:
