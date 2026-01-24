@@ -621,7 +621,25 @@ def test__mapping_cc_to_cc__then__unbind(sender, receiver):
     assert sender.links[("control_change", 20, None)][0].dest.parameter.name == "sink2"
 
 
-def test__access_outgoing_ports(sender, receiver):
+def test__access_links_outgoing_from_port(sender, receiver):
+    _, sender = sender
+    _, receiver = receiver
+
+    receiver.modules.main.sink1 = sender.modules.main.button1
+
+    assert len(sender.outgoing_links) == 1
+
+    link = sender.outgoing_links[0]
+    assert link.src.device is sender
+    assert link.src.parameter is sender.modules.main.button1.parameter
+    assert link.dest.device is receiver
+    assert link.dest.parameter is receiver.modules.main.sink1.parameter
+
+    receiver.modules.main.sink1 -= sender.modules.main.button1
+    assert len(sender.outgoing_links) == 0
+
+
+def test__access_links_outgoing_from_device(sender, receiver):
     _, sender = sender
     _, receiver = receiver
 
@@ -639,19 +657,19 @@ def test__access_outgoing_ports(sender, receiver):
     assert len(sender.modules.main.button1.outgoing_links) == 0
 
 
-def test__access_incoming_ports(sender, receiver):
+def test__access_links_incoming_from_port(sender, receiver):
     _, sender = sender
     _, receiver = receiver
 
     receiver.modules.main.sink1 = sender.modules.main.button1
 
-    assert len(receiver.modules.main.sink1.incoming_links) == 1
+    assert len(receiver.incoming_links) == 1
 
-    link = receiver.modules.main.sink1.incoming_links[0]
+    link = receiver.incoming_links[0]
     assert link.src.device is sender
     assert link.src.parameter is sender.modules.main.button1.parameter
     assert link.dest.device is receiver
     assert link.dest.parameter is receiver.modules.main.sink1.parameter
 
     receiver.modules.main.sink1 -= sender.modules.main.button1
-    assert len(receiver.modules.main.sink1.incoming_links) == 0
+    assert len(receiver.incoming_links) == 0

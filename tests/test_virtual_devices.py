@@ -125,7 +125,26 @@ def test__access_links_outgoing_stream_from_ports(FakeLFO):
     assert len(lfo2.output_cv.outgoing_links) == 0
 
 
-def test__access_links_incoming_links_from_ports():
+def test__access_links_outgoing_from_device(FakeLFO):
+    lfo1 = FakeLFO()
+    lfo2 = FakeLFO()
+
+    lfo1.FAKE_cv = lfo2.output_cv
+
+    assert len(lfo2.outgoing_links) == 1
+
+    link = lfo2.outgoing_links[0]
+    assert link.src.device is lfo2
+    assert link.src.parameter is lfo2.output_cv.parameter
+    assert link.dest.device is lfo1
+    assert link.dest.parameter is lfo1.FAKE_cv.parameter
+
+    lfo1.FAKE_cv -= lfo2.output_cv
+
+    assert len(lfo2.outgoing_links) == 0
+
+
+def test__access_links_incoming_from_ports():
     lfo1 = LFO()
     lfo2 = LFO()
 
@@ -142,3 +161,22 @@ def test__access_links_incoming_links_from_ports():
     lfo1.speed_cv -= lfo2.output_cv
 
     assert len(lfo1.speed_cv.incoming_links) == 0
+
+
+def test__access_links_incoming_from_device():
+    lfo1 = LFO()
+    lfo2 = LFO()
+
+    lfo1.speed_cv = lfo2.output_cv
+
+    assert len(lfo1.incoming_links) == 1
+
+    link = lfo1.incoming_links[0]
+    assert link.src.device is lfo2
+    assert link.src.parameter is lfo2.output_cv.parameter
+    assert link.dest.device is lfo1
+    assert link.dest.parameter is lfo1.speed_cv.parameter
+
+    lfo1.speed_cv -= lfo2.output_cv
+
+    assert len(lfo1.incoming_links) == 0

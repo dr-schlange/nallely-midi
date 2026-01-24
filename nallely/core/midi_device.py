@@ -700,6 +700,22 @@ class MidiDevice:
         self.links[(type, cc_note, channel)].remove(link)
         link.cleanup()
 
+    @property
+    def outgoing_links(self):
+        return list(self.links_registry.values())
+
+    @property
+    def incoming_links(self):
+        from .world import all_devices
+
+        links = []
+        self_repr = f"{self.uuid}::"
+        for device in all_devices():
+            for (_, dst), link in device.links_registry.items():
+                if dst.startswith(self_repr):
+                    links.append(link)
+        return links
+
     def __isub__(self, other):
         # The only way to be here is from a callback removal on the key/pad section
         other.device.unbind_link(other, self)

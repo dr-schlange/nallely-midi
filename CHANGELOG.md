@@ -14,7 +14,9 @@
   * Add experimental KineticShaper
 * Add current value and local bound display in the 1D scope
 * Add documentation about how to write neurons (virtual devices)
-* Add methods to get incoming/outgoing links for a port in the reflexive API for neurons
+* Add new methods in neuron's reflexive API
+  * Add methods to get incoming/outgoing links from a port
+  * Add method to get incoming/outgoing links from a device
 
 ### Fix
 
