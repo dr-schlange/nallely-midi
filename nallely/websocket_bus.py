@@ -1,4 +1,5 @@
 import json
+import math
 import struct
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -160,13 +161,16 @@ class WebSocketBus(VirtualDevice):
         ln = len(name_b)
         if ln > 0xFFFF:
             raise ValueError("Channel name too long")
-        return struct.pack(f"!B{ln}s f", ln, name_b, value)
+        return struct.pack(f"!B{ln}s d", ln, name_b, value)
 
     @staticmethod
     def parse_frame(data: bytes):
         ln = data[0]
         name_b = data[1 : 1 + ln]
-        value = struct.unpack_from("!f", data, 1 + ln)[0]
+        try:
+            value = struct.unpack_from("!f", data, 1 + ln)[0]
+        except struct.error:
+            value = struct.unpack_from("!d", data, 1 + ln)[0]
         return name_b.decode(), value
 
     def parse_binary(self, service_name: str, data: bytes):
@@ -299,16 +303,8 @@ class WebSocketBus(VirtualDevice):
         for connected in list(devices):
             try:
                 # print(f"[DEBUG] send to {connected}")
-                # connected.send(
-                #     json.dumps(
-                #         {
-                #             "value": float(value),
-                #             "device": device,
-                #             "on": parameter,
-                #             "sender": ctx.param,
-                #         }
-                #     )
-                # )
+                if math.isnan(value):
+                    continue
                 connected.send(self.make_frame(parameter, float(value)))
             except (ConnectionClosed, TimeoutError) as e:
                 try:
@@ -323,6 +319,19 @@ class WebSocketBus(VirtualDevice):
                     )
                 except Exception:
                     pass
+            except struct.error as e:
+                print(f"[WS] An error was caught while creating the frame: {e}")
+                print(f"[WS] Switching to json to encode {parameter}: {value}")
+                connected.send(
+                    json.dumps(
+                        {
+                            "value": float(value),
+                            "device": device,
+                            "on": parameter,
+                            "sender": ctx.param,
+                        }
+                    )
+                )
 
     def configure_remote_device(self, name, parameters: list[str | dict[str, Any]]):
         virtual_parameters = []
