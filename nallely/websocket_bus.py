@@ -167,7 +167,10 @@ class WebSocketBus(VirtualDevice):
     def parse_frame(data: bytes):
         ln = data[0]
         name_b = data[1 : 1 + ln]
-        value = struct.unpack_from("!d", data, 1 + ln)[0]
+        try:
+            value = struct.unpack_from("!d", data, 1 + ln)[0]
+        except struct.error:
+            value = struct.unpack_from("!f", data, 1 + ln)[0]
         return name_b.decode(), value
 
     def parse_binary(self, service_name: str, data: bytes):
