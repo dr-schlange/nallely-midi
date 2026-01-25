@@ -317,7 +317,7 @@ export const XYZScope = ({ id, onClose, num }: WidgetProps) => {
 					const dv = new DataView(data);
 					const len = dv.getUint8(0);
 					const name = new TextDecoder().decode(new Uint8Array(data, 1, len));
-					const val = dv.getFloat32(1 + len, false);
+					const val = dv.getFloat64(1 + len, false);
 					message.on = name;
 					message.value = val;
 				}

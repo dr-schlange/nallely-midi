@@ -101,7 +101,7 @@ class NallelyService {
 				const dv = new DataView(data);
 				const len = dv.getUint8(0);
 				const name = new TextDecoder().decode(new Uint8Array(data, 1, len));
-				const val = dv.getFloat32(1 + len, false);
+				const val = dv.getFloat64(1 + len, false);
 				message.on = name;
 				message.value = val;
 			}
@@ -137,7 +137,7 @@ class NallelyService {
 
 		dv.setUint8(0, len);
 		new Uint8Array(buffer, 1, len).set(nameBytes);
-		dv.setFloat32(1 + len, value, false);
+		dv.setFloat64(1 + len, value, false);
 
 		return buffer;
 	}

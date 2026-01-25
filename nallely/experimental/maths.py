@@ -1066,6 +1066,7 @@ class LorenzAttractor(VirtualDevice):
     * rho_cv [-50, 50] init=10:
     * beta_cv [-5, 5] init=1:
     * gain_cv [0.001, 100] init=1: gain applied to the transformation result
+    * tsleep_cv [0.1, 30] init=10: sleep time in ms between each step computation
     * reset_cv [0, 1] round <rising>: reset the transformation internal state
 
     outputs:
@@ -1082,19 +1083,23 @@ class LorenzAttractor(VirtualDevice):
     rho_cv = VirtualParameter(name="rho", range=(-50.0, 50.0), default=28)
     beta_cv = VirtualParameter(name="beta", range=(-5.0, 5.0), default=8 / 3)
     gain_cv = VirtualParameter(name="gain", range=(0.001, 100.0), default=1.0)
+    tsleep_cv = VirtualParameter(name="tsleep", range=(0.1, 30.0), default=10.0)
     reset_cv = VirtualParameter(
         name="reset", range=(0.0, 1.0), conversion_policy="round"
     )
-    z_cv = VirtualParameter(name="z")
-    y_cv = VirtualParameter(name="y")
-    x_cv = VirtualParameter(name="x")
+    z_cv = VirtualParameter(name="z", range=(-600.0, 600.0))
+    y_cv = VirtualParameter(name="y", range=(-300.0, 300.0))
+    x_cv = VirtualParameter(name="x", range=(-300.0, 300.0))
 
     def __post_init__(self, **kwargs):
-        self.last_time = time.time()
-        self.x = 0.1
-        self.y = 0.0
-        self.z = 0.0
+        self.internal_reset()
         return {"disable_output": True}
+
+    def internal_reset(self):
+        self.last_time = time.time()
+        self.ix = 0.1
+        self.iy = 0.0
+        self.iz = 0.0
 
     @on(reset_cv, edge="rising")
     def on_reset_rising(self, value, ctx):
@@ -1103,19 +1108,24 @@ class LorenzAttractor(VirtualDevice):
     def next_value(self):
         now = time.time()
         dt = now - self.last_time
-        dx = self.sigma * (self.y - self.x)
-        dy = self.x * (self.rho - self.z) - self.y
-        dz = self.x * self.y - self.beta * self.z
-        self.x += dx * dt
-        self.y += dy * dt
-        self.z += dz * dt
+        dx = self.sigma * (self.iy - self.ix)
+        dy = self.ix * (self.rho - self.iz) - self.iy
+        dz = self.ix * self.iy - self.beta * self.iz
+        self.ix += dx * dt
+        self.iy += dy * dt
+        self.iz += dz * dt
         self.last_time = now
-        return self.x, self.y, self.z
+        return self.ix, self.iy, self.iz
 
     def main(self, ctx):
         x, y, z = self.next_value()
 
-        yield x, [self.x_cv]
-        yield y, [self.y_cv]
-        yield z, [self.z_cv]
-        yield from self.sleep(1)
+        if math.isnan(x) or math.isnan(y) or math.isnan(z):
+            print("[LorenzAttractor] NaN observed, reset attractor")
+            self.internal_reset()
+            x, y, z = self.next_value()
+
+        yield x * self.gain, [self.x_cv]
+        yield y * self.gain, [self.y_cv]
+        yield z * self.gain, [self.z_cv]
+        yield from self.sleep(self.tsleep)

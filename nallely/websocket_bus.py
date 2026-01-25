@@ -161,13 +161,13 @@ class WebSocketBus(VirtualDevice):
         ln = len(name_b)
         if ln > 0xFFFF:
             raise ValueError("Channel name too long")
-        return struct.pack(f"!B{ln}s f", ln, name_b, value)
+        return struct.pack(f"!B{ln}s d", ln, name_b, value)
 
     @staticmethod
     def parse_frame(data: bytes):
         ln = data[0]
         name_b = data[1 : 1 + ln]
-        value = struct.unpack_from("!f", data, 1 + ln)[0]
+        value = struct.unpack_from("!d", data, 1 + ln)[0]
         return name_b.decode(), value
 
     def parse_binary(self, service_name: str, data: bytes):
@@ -291,6 +291,10 @@ class WebSocketBus(VirtualDevice):
         super().stop(clear_queues)
 
     def receiving(self, value, on, ctx: ThreadContext):
+        if math.isnan(value):
+            import sys
+
+            value = sys.float_info.min
         device, *parameter = on.split("_")
         parameter = "_".join(parameter)
 
@@ -300,8 +304,6 @@ class WebSocketBus(VirtualDevice):
         for connected in list(devices):
             try:
                 # print(f"[DEBUG] send to {connected}")
-                if math.isnan(value):
-                    continue
                 connected.send(self.make_frame(parameter, float(value)))
             except (ConnectionClosed, TimeoutError) as e:
                 try:
