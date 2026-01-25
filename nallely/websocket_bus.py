@@ -161,16 +161,13 @@ class WebSocketBus(VirtualDevice):
         ln = len(name_b)
         if ln > 0xFFFF:
             raise ValueError("Channel name too long")
-        return struct.pack(f"!B{ln}s d", ln, name_b, value)
+        return struct.pack(f"!B{ln}s f", ln, name_b, value)
 
     @staticmethod
     def parse_frame(data: bytes):
         ln = data[0]
         name_b = data[1 : 1 + ln]
-        try:
-            value = struct.unpack_from("!f", data, 1 + ln)[0]
-        except struct.error:
-            value = struct.unpack_from("!d", data, 1 + ln)[0]
+        value = struct.unpack_from("!f", data, 1 + ln)[0]
         return name_b.decode(), value
 
     def parse_binary(self, service_name: str, data: bytes):
