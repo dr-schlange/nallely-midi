@@ -13,6 +13,7 @@
   * Add experimental Laplace transformation
   * Add experimental KineticShaper
 * Add current value and local bound display in the 1D scope
+* Add different precision handling on swipe fields for numbers in TrevorUI
 * Add documentation about how to write neurons (virtual devices)
 * Add new methods in neuron's reflexive API
   * Add methods to get incoming/outgoing links from a port
@@ -23,6 +24,7 @@
 * Fix imports during virtual module code generation
 * Fix WebSocket Bus blocking when shutting down when too much information is still in the websockets buffers
 * Fix output range for the operator module, from (0, 127) to (None, None) otherwise, scaler kicks in when we don't want
+* Fix nan value interpretation and struct packing in the websocket bus
 
 ## Nallely v0.4.0 -- Tepezcohuite
 
