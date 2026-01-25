@@ -36,9 +36,10 @@ export default function DragNumberInput({
 		const normalized = inputValue.replace(",", ".").trim();
 		const parts = normalized.split(".");
 		if (parts.length === 2) {
-			setPrecision(parts[1].length);
-		} else {
-			setPrecision(0);
+			const len = parts[1].length;
+			if (len > precision) {
+				setPrecision(parts[1].length);
+			}
 		}
 	};
 
@@ -120,7 +121,7 @@ export default function DragNumberInput({
 		let finalValue = val;
 
 		if (val === "" || parsed === null) {
-			finalValue = nullable ? null : "0";
+			finalValue = nullable ? null : formatDisplay(0);
 		} else {
 			finalValue = parsed.toFixed(precision).replace(",", ".");
 		}
