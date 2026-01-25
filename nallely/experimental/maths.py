@@ -61,7 +61,7 @@ class HenonProjector(VirtualDevice):
 class LorenzProjector(VirtualDevice):
     sigma_cv = VirtualParameter("sigma", range=(5, 20))
     rho_cv = VirtualParameter("rho", range=(10, 50))
-    beta_cv = VirtualParameter("b", range=(1, 5))
+    beta_cv = VirtualParameter("beta", range=(1, 5))
     freq_cv = VirtualParameter("freq", range=(0.01, 5000))
 
     z_cv = VirtualParameter("z")
@@ -1047,7 +1047,6 @@ class KineticShaper(VirtualDevice):
         self.last_time = time.time()
 
 
-
 # IDEA
 # The "Biological" Fractal Patch
 # The Trigger: Use the output of a KineticShaper.
@@ -1055,3 +1054,68 @@ class KineticShaper(VirtualDevice):
 # The Parasite: The Child's output is patched to the Parent's a1_cv (Inertia). This means the child "slows down" the parent or makes it more "resonant."
 # The Death: When the Parent's value drops below -0.5, it kills the Child.
 # Because of the OS Jitter the lifespan of each generation would be slightly different.
+
+
+class LorenzAttractor(VirtualDevice):
+    """Lorenz Attractor
+
+    Simple implementation of Lorenz Attractor equation using wall-clock time
+
+    inputs:
+    * sigma_cv [-20, 20] init=5:
+    * rho_cv [-50, 50] init=10:
+    * beta_cv [-5, 5] init=1:
+    * gain_cv [0.001, 100] init=1: gain applied to the transformation result
+    * reset_cv [0, 1] round <rising>: reset the transformation internal state
+
+    outputs:
+    * x_cv [-30, 30]: x output
+    * y_cv [-30, 30]: y output
+    * z_cv [-60, 60]: z output
+
+    type: hybrid
+    category: math
+    meta: disable default output
+    """
+
+    sigma_cv = VirtualParameter(name="sigma", range=(-20.0, 20.0), default=10.0)
+    rho_cv = VirtualParameter(name="rho", range=(-50.0, 50.0), default=28)
+    beta_cv = VirtualParameter(name="beta", range=(-5.0, 5.0), default=8 / 3)
+    gain_cv = VirtualParameter(name="gain", range=(0.001, 100.0), default=1.0)
+    reset_cv = VirtualParameter(
+        name="reset", range=(0.0, 1.0), conversion_policy="round"
+    )
+    z_cv = VirtualParameter(name="z")
+    y_cv = VirtualParameter(name="y")
+    x_cv = VirtualParameter(name="x")
+
+    def __post_init__(self, **kwargs):
+        self.last_time = time.time()
+        self.x = 0.1
+        self.y = 0.0
+        self.z = 0.0
+        return {"disable_output": True}
+
+    @on(reset_cv, edge="rising")
+    def on_reset_rising(self, value, ctx):
+        self.last_time = time.time()
+
+    def next_value(self):
+        now = time.time()
+        dt = now - self.last_time
+        dx = self.sigma * (self.y - self.x)
+        dy = self.x * (self.rho - self.z) - self.y
+        dz = self.x * self.y - self.beta * self.z
+        self.x += dx * dt
+        self.y += dy * dt
+        self.z += dz * dt
+        self.last_time = now
+        return self.x, self.y, self.z
+
+    def main(self, ctx):
+        x, y, z = self.next_value()
+
+        yield x, [self.x_cv]
+        yield y, [self.y_cv]
+        yield z, [self.z_cv]
+        yield from self.sleep(1)
