@@ -12,12 +12,14 @@
   * Add experimentatl pure integrator
   * Add experimental Laplace transformation
   * Add experimental KineticShaper
+  * Add experimental Transistor
 * Add current value and local bound display in the 1D scope
 * Add different precision handling on swipe fields for numbers in TrevorUI
 * Add documentation about how to write neurons (virtual devices)
 * Add new methods in neuron's reflexive API
   * Add methods to get incoming/outgoing links from a port
   * Add method to get incoming/outgoing links from a device
+* Websocket bus now considers Float64 by default
 
 ### Fix
 

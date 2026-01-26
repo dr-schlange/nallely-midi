@@ -1129,3 +1129,66 @@ class LorenzAttractor(VirtualDevice):
         yield y * self.gain, [self.y_cv]
         yield z * self.gain, [self.z_cv]
         yield from self.sleep(self.tsleep)
+
+
+class Transistor(VirtualDevice):
+    """Transistor
+
+    Minimal nonlinear gain element with internal state (Behavioral, Minimal).
+    Designed to be patched freely, including in feedback loops,
+    and to behave qualitatively like a transistor (gain, saturation,
+    finite response time).
+
+    NOTE: 100% LLM generated (beside the code generation from the docstring)
+
+    inputs:
+    * input_cv [-10, 10] init=0: Input drive signal (base / gate equivalent)
+    * gain_cv [0.0, 20.0] init=2.0: Small-signal gain (loop gain control)
+    * sat_cv [0.1, 20.0] init=5.0: Output saturation level (rail / limiting)
+    * response_cv [0.001, 1.0] init=0.1: Response speed (0 = very slow, 1 = instantaneous)
+    * reset_cv [0, 1] round <rising>: Reset internal state (output memory)
+
+    outputs:
+    * output_cv [-20, 20]: Output signal (collector / emitter / drain equivalent)
+
+    type: hybrid
+    category: nonlinear
+    """
+
+    input_cv = VirtualParameter(name="input", range=(-10.0, 10.0), default=0.0)
+    gain_cv = VirtualParameter(name="gain", range=(0.0, 20.0), default=2.0)
+    sat_cv = VirtualParameter(name="sat", range=(0.1, 20.0), default=5.0)
+    response_cv = VirtualParameter(name="response", range=(0.001, 1.0), default=0.1)
+    reset_cv = VirtualParameter(
+        name="reset", range=(0.0, 1.0), conversion_policy="round"
+    )
+
+    @property
+    def min_range(self):
+        return -20.0
+
+    @property
+    def max_range(self):
+        return 20.0
+
+    def __post_init__(self, **kwargs):
+        self.y = 0.0
+
+    @on(reset_cv, edge="rising")
+    def on_reset_rising(self, value, ctx):
+        self.y = 0.0
+
+    def main(self, ctx):
+        x = self.input
+        g = self.gain
+        s = self.sat
+        a = self.response
+
+        # Nonlinear gain with soft saturation
+        u = g * x
+        y_target = s * math.tanh(u / s)
+
+        # Finite response (leaky follower)
+        self.y += a * (y_target - self.y)
+
+        return self.y
