@@ -1,9 +1,39 @@
-# Nallely-midi, a hackable organic platform for MIDI experimentations
+# Nallely, a hackable organic brain for signal experimentation
 
+Nallely (pronounced "Nayeli") is not a tool. It's not even an instrument in the usual sense. Nallely is a living system you can enter, perturb, and observe. It's a programmable environment where signals exist, interact, mutate, and sometimes surprise you.
+
+You can think of Nallely as a small brain. Each device is a neuron (nothing related to AI): it receives signals, transforms them, and emits signals. Neurons are autonomous, asynchronous, and fully patchable. You can connect them in ways that would never happen in a sober brain, closer to what might emerge under psychedelic influences, creating unusual signal flows that generate unexpected behaviors.
+
+Some neurons abstract the physical world. MIDI devices become voices: synths that produce sound, controllers that emit gestures. Other neurons act as senses: a webcam module can become an eye, feeding statistics or motion into the system. Visuals can be thought of as mental imagery, shaped by how signals propagate through the network. Future audio modules will give the system the ability to "hear" and react to sound.
+
+At its core, Nallely is about signal shaping. Every patch is a question: **how do I want to shape this signal?**
+
+Signals can be split, merged, quantized, integrated, transformed, delayed, folded, or fed back into themselves. Neurons range from pitch shifters, harmonizers, sequencer to integrators and Laplace transformations. There is no strict separation between control, modulation, or data: everything is a signal, and everything can be patched. More importantly, you can create your own neurons in Python while the system runs, you don't have to stop your system to code an idea, give birth to it while your living system runs, no restart needed. You can also create your neuron in any technology as long as it speaks websocket.
+
+You can design playable instruments, auto-playable systems, or things that resist both categories. Make it useful. Make it useless. Interact with it, listen to it, watch it evolve, or let it run and observe what emerges.
+
+**Connect anything to anything. See what happens.**
+
+<details>
+ <summary>What Nallely Is Not</summary>
+Nallely is not a DAW, and it is not a system for computer-based sound synthesis. It is a meta-synth and a companion to MIDI instruments: a way to combine, bend, and rewire existing synths into new instruments, or to make semi-modular setups more modular.
+ 
+If you’re looking for something that ensures strong strict time, Nallely is not for you. If you’re looking for high-predictability, Nallely might not be for you.
+
+Asynchrony is a first-class feature. There is no global clock, no enforced synchronization. Timing emerges because things interact, not because they are aligned.
+
+Nallely is not a DAW. It is not a DSP engine. It is a playground for emergent behaviors, generative control, and turning synths into living systems, programmable, perturbable, and sometimes surprising.
+</details>
+
+<!--
 Nallely (pronounced "Nayeli") is an organic platform and meta instrument for experimentation around the idea of MIDI meta-synth for live coding, generative music, and multimodal art, built for hacker/musicians, inspired by Smalltalk. Nallely is a MIDI companion to help you easily map MIDI controllers/instruments together, as well as create/use virtual devices (check out the [list of existing modules](https://github.com/dr-schlange/nallely-midi/blob/main/docs/existing-modules.md)), compose them, modify them while they run, and the possibility to expose/create remote services with parameters on which you can map your MIDI controllers/instruments or virtual devices. Technically, Nallely is a visual and programmatic framework for building, performing, and evolving instruments.
 
-Think about Nallely as a small brain, where each device is a neurone (nothing related to AI) that received signals and emit signals. All those small neurons can connects to each other in various ways. Connecting neurons as you want, you might connect some that in a normal running brain would not communicate, a little bit as if you had a brain under psychedelic influences, mapped in an unusual way, producing unexpected results. Some dedicated neurons (MIDI devices) are abstraction of the physical world and can create sound physically using a MIDI device (the voice), or get impulses from external MIDI devices, while visuals could be seen as visual mental imageries, influenced by how the small neurons are connected. You can also get impulses from other devices, as example a pure javascript module lets you get impulses/statistics from your running webcam to use it as a source signal. This small module are the first "eyes" of this small musical brain. Soon modules for audio will arrive, giving the capacity to hear (to react to sound).
+Please note something important: Nallely is not a tool. It's not even an instrument in the usual sense. It's a living system you can enter, perturb, and observe. 
 
+Think about Nallely as a small brain, where each device is a neurone (nothing related to AI) that received signals and emit signals. All those small neurons can connects to each other in various ways. Connecting neurons as you want, you might connect some that in a normal running brain would not communicate, a little bit as if you had a brain under psychedelic influences, mapped in an unusual way, producing unexpected results. Some dedicated neurons (MIDI devices) are abstraction of the physical world and can create sound physically using a MIDI device (the voice), or get impulses from external MIDI devices, while visuals could be seen as visual mental imageries, influenced by how the small neurons are connected. You can also get impulses from other devices, as example a pure javascript module lets you get impulses/statistics from your running webcam to use it as a source signal. This small module are the first "eyes" of this small musical brain. Soon modules for audio will arrive, giving the capacity to hear (to react to sound). 
+
+One fundamental thing: Nallely is all about signal shaping, signal manipulation. When you build a patch, you need to reflect on "how do I want to shape my signal?". There are neurons for spliting "horizontally and vertically", quantizing, transforming, integrating. Neurons go from pitch shifters, to harmonizers, or even Laplace transformation. All neurons are fully patcheable. Use them, compose them, design your own instrument, design your own auto-playable instrument. Make it usefull, make it useless, interact with it, observe it.  
+-->
 [Nallely's Website](https://dr-schlange.github.io/nallely-midi/)
 [Demo videos (new and old)](https://www.youtube.com/playlist?list=PL0S9whcJCHAgP9Gb_Z3FyaJOYngbdR-mj)
 
@@ -194,6 +224,8 @@ In a session, virtual devices and MIDI devices exposes parameters which can all 
 A websocket bus, also a virtual device, hence patchable, allows visuals and external application to register to it, exposing their ports. Once their ports are exposed on the bus, any MIDI or virtual device inside the Nallely's session can connect to them and control them.
 
 If you want more details about the architecture, you can check [this link](https://deepwiki.com/dr-schlange/nallely-midi/) which gives a good more or less in depth explanation of all the parts of the architecture. Not everything is 100% exact, but it's really close from reality.
+
+
 
 <!--
 ##### Extra Virtual Devices
