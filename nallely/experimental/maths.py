@@ -728,7 +728,7 @@ class Integrator(VirtualDevice):
     non-determinism in async feedback loops.
 
     inputs:
-    * input_cv [None, None] init=0.0 round: Integrator input in integrator unit
+    * input_cv [None, None] init=0.0: Integrator input in integrator unit
     * initial_cv [None, None] init=0.0 <any>: Initial condition
     * gain_cv [0.0, 100.0] init=1.0: Integrator gain
     * reset_cv [0, 1.0] round: Reset integrator
@@ -742,9 +742,7 @@ class Integrator(VirtualDevice):
     category: math
     """
 
-    input_cv = VirtualParameter(
-        name="input", range=(None, None), conversion_policy="round", default=0.0
-    )
+    input_cv = VirtualParameter(name="input", range=(None, None), default=0.0)
     initial_cv = VirtualParameter(name="initial", range=(None, None), default=0.0)
     gain_cv = VirtualParameter(name="gain", range=(0.0, 100.0), default=1.0)
     reset_cv = VirtualParameter(
