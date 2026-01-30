@@ -20,6 +20,10 @@
   * Add methods to get incoming/outgoing links from a port
   * Add method to get incoming/outgoing links from a device
 * Websocket bus now considers Float64 by default
+* LLM makes it in Nallely, not as a dev, not as a contributor, but as a user:
+  * Use LLMs (RAG) to build patches interactively
+  * LLM/RAG can auto-register as an external neuron and monitor/debug patches
+  * Add LLM/RAG oriented skill file with instruction to help you generate connector for your language to build external neurons and implement Trevor protocol
 
 ### Fix
 
