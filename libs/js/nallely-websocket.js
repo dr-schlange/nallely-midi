@@ -132,7 +132,7 @@ class NallelyService {
 		const nameBytes = new TextEncoder().encode(name);
 		const len = nameBytes.length;
 
-		const buffer = new ArrayBuffer(1 + len + 4);
+		const buffer = new ArrayBuffer(1 + len + 8);
 		const dv = new DataView(buffer);
 
 		dv.setUint8(0, len);
