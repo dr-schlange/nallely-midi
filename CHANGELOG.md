@@ -33,7 +33,7 @@
 * Fix output range for the operator module, from (0, 127) to (None, None) otherwise, scaler kicks in when we don't want
 * Fix nan value interpretation and struct packing in the websocket bus
 
-## Nallely v0.4.0 -- Tepezcohuite
+## Nallely v0.4.0 -- Tepezcohuite
 
 ### Features
 
