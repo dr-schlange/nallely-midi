@@ -183,21 +183,6 @@ export const RackRowVirtual = ({
 				}}
 			>
 				<div className="rack-top-bar">
-					<select
-						value={""}
-						title="Adds a virtual device to the system"
-						onChange={(e) => {
-							const val = e.target.value;
-							handleDeviceClassClick(val);
-						}}
-					>
-						<option value={""}>--</option>
-						{virtualClasses.map((cls) => (
-							<option key={cls} value={cls}>
-								{cls}
-							</option>
-						))}
-					</select>
 					<Button
 						text="Add many"
 						tooltip="Add multiple virtual devices at once"
