@@ -50,6 +50,8 @@ class Session:
         )
         self.universe = universe
         self.repo = self._init_memory_repo(universe)
+        print(f"[GIT-STORE] gc universe: {universe}")
+        porcelain.gc(self.repo, auto=True)
         self.code = ""
         self.devices_file = self.universe_path(universe) / "devices.py"
         self.devices_path = self.universe_path(universe) / "devices"
