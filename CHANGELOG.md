@@ -25,6 +25,8 @@
   * LLM/RAG can auto-register as an external neuron and monitor/debug patches
   * Add LLM/RAG oriented skill file with instruction to help you generate connector for your language to build external neurons and implement Trevor protocol
 * Add [connector for Pharo Smalltalk dialect](https://github.com/dr-schlange/nallely-pharo): create your neurons in Pharo
+* Add connector for Ruby
+* Add connector for Python (usefull for distributed computation over the network)
 
 ### Fix
 
