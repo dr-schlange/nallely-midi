@@ -49,10 +49,10 @@ class Session:
             else MetaTrevorAPI(self)
         )
         self.universe = universe
-        self._init_memory_repo(universe)
+        self.repo = self._init_memory_repo(universe)
         self.code = ""
-        self.devices_file = universe_path(universe) / "devices.py"
-        self.devices_path = universe_path(universe) / "devices"
+        self.devices_file = self.universe_path(universe) / "devices.py"
+        self.devices_path = self.universe_path(universe) / "devices"
         self.devices_path.mkdir(parents=True, exist_ok=True)
         self._load_all_devices()
 
@@ -264,9 +264,11 @@ class Session:
         return universe if universe else DEFAULT_UNIVERSE
 
     def _init_memory_repo(self, universe: str | None = None):
-        self._get_repository(universe=universe)
+        return self._get_repository(universe=universe)
 
     def _get_repository(self, universe: str | None = None) -> Repo:
+        if getattr(self, "repo", None) is not None:
+            return self.repo
         location = (Path.cwd() / self._which_universe(universe)).resolve()
         if not location.exists():
             print(
@@ -299,14 +301,14 @@ class Session:
 
         repo = self._get_repository(universe=universe)
 
-        address_file = address2path(universe, address)
+        address_file = self.address2path(universe, address)
         address_file.parent.mkdir(exist_ok=True, parents=True)
 
         self.save_all(address_file, save_defaultvalues=save_defaultvalues)
         print(f"[GIT-STORE] saved {address_file.absolute()}")
 
         porcelain.add(repo, address_file)
-        infos = extract_infos(address_file)
+        infos = self.extract_infos(address_file)
         midi_devices = "\n".join(
             f"* {dev}={num}\n" for dev, num in infos["midi"].items()
         )
@@ -332,7 +334,7 @@ playground_code={infos["playground_code"]}
         return address_file
 
     def load_address(self, address, universe=None):
-        address_file = address2path(self._which_universe(universe), address)
+        address_file = self.address2path(self._which_universe(universe), address)
         print(f"[GIT-STORE] Loading {address=} from file {address_file.resolve()}")
         return self.load_all(address_file)
 
@@ -390,7 +392,7 @@ playground_code={infos["playground_code"]}
         return addresses
 
     def clear_address(self, address, universe=None):
-        address_file = address2path(universe, address)
+        address_file = self.address2path(universe, address)
         print(
             f"[GIT-STORE] Deleting {address=} by deleting address file {address_file.resolve()}"
         )
@@ -399,8 +401,7 @@ playground_code={infos["playground_code"]}
         except FileNotFoundError:
             print(f"[GIT-STORE] {address=} is not used, deleting noting")
             return
-        location = (Path.cwd() / self._which_universe(universe)).resolve()
-        repo = Repo(location)
+        repo = self._get_repository(universe=universe)
         porcelain.add(repo, address_file)
 
         session_id = hex(id(self))[2:].upper()
@@ -580,53 +581,56 @@ original_file={read_from}
             if device.__class__.__name__ == device_cls:
                 self.migrate_instance(device, new_cls)
 
+    def extract_infos(self, filename):
+        file = Path(filename)
+        with file.open("r", encoding="utf-8") as f:
+            content = json.load(f)
+        midi_classes = Counter(dev["class"] for dev in content["midi_devices"])
+        virtual_classes_count = Counter(
+            dev["class"] for dev in content["virtual_devices"]
+        )
+        patches = len(content["connections"])
+        playground_code = content.get("playground_code")
+        # repo = Repo(file.parent.parent)
+        repo = self.repo
 
-def extract_infos(filename):
-    file = Path(filename)
-    with file.open("r", encoding="utf-8") as f:
-        content = json.load(f)
-    midi_classes = Counter(dev["class"] for dev in content["midi_devices"])
-    virtual_classes_count = Counter(dev["class"] for dev in content["virtual_devices"])
-    patches = len(content["connections"])
-    playground_code = content.get("playground_code")
-    repo = Repo(file.parent.parent)
+        commit_sha = self.get_last_commit_hash_for_file(file)
+        if commit_sha:
+            note_id = get_note_path(commit_sha)
+            metadata = json.loads(note_id.decode("utf-8"))
+        else:
+            metadata = {}
 
-    commit_sha = get_last_commit_hash_for_file(repo, file)
-    if commit_sha:
-        note_id = get_note_path(commit_sha)
-        metadata = json.loads(note_id.decode("utf-8"))
-    else:
-        metadata = {}
+        details = {
+            "midi": midi_classes,
+            "virtual": virtual_classes_count,
+            "patches": patches,
+            "playground_code": bool(playground_code),
+            "metadata": metadata,
+        }
+        repo.close()
+        return details
 
-    details = {
-        "midi": midi_classes,
-        "virtual": virtual_classes_count,
-        "patches": patches,
-        "playground_code": bool(playground_code),
-        "metadata": metadata,
-    }
-    repo.close()
-    return details
+    @staticmethod
+    def universe_path(universe):
+        return (Path.cwd() / universe).resolve()
 
+    @classmethod
+    def address2path(cls, universe, address):
+        location = cls.universe_path(universe)
+        frags = [address[i : i + 2] for i in range(0, len(address), 2)]
+        address_file = location / (Path().with_segments(*frags)).with_suffix(".nly")
+        return address_file
 
-def universe_path(universe):
-    return (Path.cwd() / universe).resolve()
+    def get_last_commit_hash_for_file(self, file_path):
+        if not file_path.exists():
+            return None
+        try:
+            walker = self.repo.get_walker(
+                paths=[f"{file_path}".encode("utf-8")], max_entries=1
+            )
 
-
-def address2path(universe, address):
-    location = universe_path(universe)
-    frags = [address[i : i + 2] for i in range(0, len(address), 2)]
-    address_file = location / (Path().with_segments(*frags)).with_suffix(".nly")
-    return address_file
-
-
-def get_last_commit_hash_for_file(repo, file_path):
-    if not file_path.exists():
-        return None
-    try:
-        walker = repo.get_walker(paths=[f"{file_path}".encode("utf-8")], max_entries=1)
-
-        last_commit = next(iter(walker)).commit
-        return last_commit.id
-    except StopIteration:
-        return None
+            last_commit = next(iter(walker)).commit
+            return last_commit.id
+        except StopIteration:
+            return None

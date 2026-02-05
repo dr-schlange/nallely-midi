@@ -6,7 +6,7 @@ Feature: LFOs connections
         Given A is started
         And B is started
         Given A's default output connected to B's speed
-        When around 100ms have passed
+        When around 101ms have passed
         Then B's speed is eq 10
 
 

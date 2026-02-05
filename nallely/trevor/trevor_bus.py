@@ -600,9 +600,7 @@ class TrevorBus(VirtualDevice):
         return self.full_state()
 
     def fetch_path_infos(self, filename):
-        from ..session import extract_infos
-
-        details = extract_infos(filename)
+        details = self.session.extract_infos(filename)
         self.send_message({"command": "RuntimeAPI::setPatchDetails", "arg": details})
 
     def all_virtual_schemas(self):
