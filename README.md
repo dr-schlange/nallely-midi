@@ -1,6 +1,6 @@
 # Nallely, a hackable organic brain for signal experimentation
 
-Nallely (pronounced "Nayeli") is not a tool. It's not even an instrument in the usual sense. Nallely is a living system you can enter, perturb, and observe. It's a programmable environment where signals exist, interact, mutate, and sometimes surprise you.
+Nallely (pronounced "Nayeli") is not a tool. It's not even an instrument in the usual sense. Nallely is a living system you can enter, perturb, and observe. It's a programmable environment where signals exist, interact, mutate, and sometimes surprise you. Now removing a little bit the poetic varnish: Nallely connects your MIDI gear (software, hardware) with virtual signal processor to create a whole instrument while keeping each device running independently. As consequence, things interact naturally and can drift in a non-deterministic way. Patch an LFO to your synths' filter, stack a sequencer, cross-modulate everything with feedback loops everywhere if you want and let it evolve. Nallely runs perfectly on a Raspberry Pi and is tested daily on a Rpi5.
 
 You can think of Nallely as a small brain. Each device is a neuron (nothing related to AI): it receives signals, transforms them, and emits signals. Neurons are autonomous, asynchronous, and fully patchable. You can connect them in ways that would never happen in a sober brain, closer to what might emerge under psychedelic influences, creating unusual signal flows that generate unexpected behaviors.
 
