@@ -5,7 +5,7 @@ Author:: "Dr. Schlange"
 Description:: "How to build a Voltage Control Amplifier with Nallely from scratch"
 Language:: "en"
 Published Date:: "2025-06-21"
-Modified Date:: "2025-06-21"
+Modified Date:: "2026-02-06"
 
 ---- END ARISE \\ DO NOT MODIFY THIS LINE ---->
 
@@ -254,6 +254,8 @@ We also saw that we have some facilities to react on different kind of input val
 
 ### What's ok-ish
 
+*edit: this is fixed now*
+
 The fact of having a different name between the variable name for the class variable that defines the parameter and the "internal" name of the parameter, is not the best, but is ok at the moment. This gives flexibility as it allows us to write `@property` using the internal name, without overriding the class variable name. That's something we can live with, but that could be improved considering a naming convention between the port name and the "internal" port name.
 
 I'm not opiniated in the idea of having a convention though, as I can see where, in this case, the convention could be problematic. We loose the completion, in a way, meaning that if we want to introduce a `@property`, we have a chance to misstype the name of the internal parameter/port and it might be annoying to debug. Having to write the name forces us to see well what's the name of the internal property, which helps in seeing issues quicker. So, definitely, there is work and thoughts to give to this, but it's not prioritary at the moment. I mean, I guess we can live with typing two names (it appeared to be handy in one situation also, so... why not).
@@ -261,6 +263,8 @@ I'm not opiniated in the idea of having a convention though, as I can see where,
 We could also consider a name by default (convention), and let the possibility to override it, but, again, I'm enclined to think that it might be error prone. I need to think more about it.
 
 ### What's grinding my gear
+
+*edit: all points raised in this section are fixed now*
 
 The way of defining the default values for the parameters/ports is definitely not right. We have to manually insert it at a specific position in the `__init__(...)` method and we shouldn't have to do that or to care about that. That's a huge gotchat.
 
@@ -287,6 +291,8 @@ Here are some reflections about what could be done better, and why we are still 
 
 ### Why cannot we code directly in the interface without having to stop/reload?
 
+*edit: there is a now a code browser for virtual devices with hot-patching and possibility to debug using standard Python tools from the UI*
+
 Currently, Nallely offers some capabilities to directly code and run code directly from the web interface. There is two main options for that:
 
 1. the playground,
@@ -300,6 +306,8 @@ Another limitation is that we need to "save" the result. In the current code bro
 
 #### Inject the code of the new method
 
+*edit: this is implemented*
+
 If we consider injecting the code of the new method where the code of the original method is defined. That's totally doable, but not that easy: we need to properly insert the code as text in the right place, moving the code that is potentially "below" in the file "lower". That's the kind of things where we need to bother a lot with lines and offset, and... I don't know... I don't like it, so it's like the last option I would consider.
 
 Another approach would be to build the AST of the whole file where to inject the method, then regenerate the code of the full file. This is easier, **but** we loose the formatting of the whole file, unless we apply a formating policy like `black`, but that would mean that we impose something. That's personal taste I guess, but I don't like the idea of imposing something on formatting to others. Well, internally `black` is used for developing Nallely, but it's because I don't want to care about formatting. I don't want to impose a way of formatting things on your own devices that will not be included in the Nallely's core code.
@@ -308,6 +316,9 @@ We could use also [`parso`](https://github.com/davidhalter/parso) that would kee
 
 
 #### Generate the code of a new full class
+
+*edit: this is implemented*
+
 
 This approach would consider the full code of the new class, so the code of the methods that didn't change and the code of the method that changed, to be generated in another file that would act like a temporary buffer in which we write all the modifications. That's a simpler approach in the sense that if we have various classes in a Python module, we don't need to regenerate the code of the previous classes/functions (as in the previous method). The downside of this approach though is that we need to track the code of each class in their temporary file, and we need to have temporary files to deal with. Again, nothing really complicated, but there is probably a lot of small gotchas, and juggling with all the files is never fun (again, personal opinion).
 
@@ -346,6 +357,8 @@ Anyway, as you can see, this requires more reflection to get something that woul
 
 
 ### Why do we `super` at the end?
+
+*edit: this is fixed now*
 
 For attentive reader, a question you might have is: why we called the `__init__` at the end?
 
