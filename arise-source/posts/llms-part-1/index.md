@@ -1,0 +1,125 @@
+<!-- BEGIN ARISE ------------------------------
+Title:: "On the use of agentic LLMs in Nallely - Part 1"
+
+Author:: "Dr. Schlange"
+Description:: "How Agents can interact with Nallely and how to use LLMs to enhance documentation and DSL/API design"
+Language:: "en"
+Published Date:: "2026-02-06"
+Modified Date:: "2026-02-06"
+
+---- END ARISE \\ DO NOT MODIFY THIS LINE ---->
+
+# On the use of agentic LLMs in Nallely - Part 1
+
+It's not a secret to anyone, it's almost 3 years now that LLMs are everywhere and really trendy. I never liked to use them because of the code they generate. I'm definitely not an expert with those either, I experimented, I can produce things with them, but I dislike the experience, perhaps mainly because I dislike writing.
+Anyway, what does have to do with this post. Well, despite my unlove for LLMs, I experimented with on different levels:
+
+* at the code level: how can LLM generate meaningful code and meaningful tests
+* at the internal API design level: how can I use LLM hallucinations to my interest
+* at the session level: how can agentic LLM drive a running Nallely session, monitor its behavior, and adapt it, debug it in real-time.
+
+I'm not sure my experience is something relevant honestly, there is thousands of articles about LLMs, but few of them are reporting how hallucinations are actually something that allows us developers to build better abstractions and about Gherkin scenarios based testing (both are tightly related). The big question to answer is then "what does the LLM's failure tell us about our design?" intead of "how do we fix the LLM?". This brings to what could be considered as **LLM as oracle for abstraction quality**.
+Again, I'm no AI expert and I don't like it so take what I write here with a pinch of salt. If you disagree and feel the urge to correct me or insult me, feel free to reach me by email, I promise I'll read them and pretend I'm offended if it makes you feel better :).
+
+Let's see first what's the root of all evil (that's my personal non-objective non-relevant opinion), then I'll develop how I solved this in my case, and then how it unlocks for free nice interactions with LLMs.
+
+## Semantic gap: more abstraction means more to fill
+
+That's something you definitely had to deal with at least once in your experiences with LLMs. When you prompt, you think basically at a more abstract level. Nothing new here, you know that. What do you get as result? With modern LLMs as part of beginning 2026, you get code that "works", it compiles, it executes, you might not have all you need, but you can fix it with more prompt. Sometimes you have something that is a literal realization of what you asked for but that's definitely not what you expect. You get then this classicla evil-genie phenomena, you ask for a car, you get it, but in your kitchen, not in your driveway.
+Strangely, you probably noticed: for some tasks, the LLM produced exact and perfect code directly, and for others, it's not the case. For example, the LLM will produce perfect code to call a REST endpoint in Python, but will fail to produce a good version of a simple model with 3 classes targetting your domain.
+
+That comes from a semantic gap in between what you prompt and what is necessary to realize the prompt. I saw here and there mainly two ways of prompting:
+
+* write only about the domain, e.g: "Generate a Sequencer that goes forward when the trigger receives a rising edge."
+* write about the domain trying to bridge the semantic gap, e.g: "Generate a class that will represent a Sequencer that will go forward when the trigger receives a rising edge. Edge detection is done by tracking the last value and checking if the last value transition from 0 to something >0, ..."
+
+The first prompt only cares about the domain, but is too abstract to get a proper result, while the second prompt is very long to add a lot of context and implementation details. You'll tell me: "yeah, but context help!", and that's true, context is here to help to reduce slowly the semantic gap, but that's still information that needs to be distilled in the conversation with the LLM one way or another. So more writing... and I don't like to write, you can see it from all the sloppy blog posts I wrote...
+
+So what does the LLM's failure tell us about our design?
+So, how does it happen that if I just prompt: "Write a Python script that fetches google results for X search" I get a result that works for the domain related part (the "fetches google results"), if you look at your Python script, you'll perhaps see a very obvious `import requests` or any other library that is used lately to deal with HTTP connections. This library is a bridge between something abstract "fetch results from google" and the realization. The library encodes a lot of the domain already and deals with at a human level. When we use `requests` we think "I'm going to get the content of this page, I need to use the get() method", that's pretty much the same the LLM does, it uses `get()` and uses this abstraction properly. As the LLM didn't have to generate the code to open a socket, handle the connection, the handshake, etc, then all is fluid.
+
+What we can learn from that? If there is an abstraction built which is simple and clear enough, the LLM can use it and will yield better code. Not only better functionnal code, but it will yield constant and reproductible code also because *there is one way, and only one simple way to map the intent as behavior in the code*. There is probably counter-examples here and there when you used AI to work on one of your projects, but mainly, I stand by this. The idea we all had is obvious, we need to constraint the solution space (i.e: what the LLM needs to produce), if there is a single solution to an intent in this space, then we gain reproductibility, and a good helper for us.
+
+That's nice, but what do we gain from that? In my opinion (please keep in mind this is my opinion, it's not a revelation or universal claim), we gain a potential helper **if we define the rules and the abstraction carefully in the first place**, and also **we gain an oracle to evaluate the soundness of our abstraction**.
+
+Let me develop quickly on the "we gain a potential helper if we define the abstraction carefully", then go in the oracle thingy.
+
+### Good abstraction makes good friends
+
+Writing a good abstraction, like a good library, a good API, or a good framework leverage already at the human level a positive feedback: people can code complex things in few lines and in a safe way (if designed properly). Humans read the documentation, then maps high-level intents on what the library gives as ability, and then uses them. If the documentation is good enough, and the abstraction is good enough, then the LLM will do the same work as the human, mapping token paths to a resolution at some point, which will be code that uses the abstraction. That's something that doesn't look that deep, because it isn't, but that have an interesting implication: you can prompt lighter!
+
+You don't have to write long prompts, you can summarize a lot of things when you prompt, you don't have to give too much context either. The rules and the semantic of the abstraction lays in the code itself (and the usage part in the documentation). If you have a clean abstraction to reduce the gap between the high-level prompt and the code, then you have a reproductible outcome. More imporotantly: if you build your abstraction for human users first, with a clear mental model, then LLMs can use it properly and will give good results. The bad part (the good part in my opinion): if you want to play by these rules, you need to build a nice abstraction for humans, so you need to code. Perhaps I'm pushing things in this direction also because I prefer to code than to write.
+
+There is one interesting side effect of that, after you built your abstraction, you can check if it's leaking using the LLM.
+
+### LLM as oracle for abstraction quality - LLM hallucinations to build better (domain) abstractions
+
+After you built your abstraction, you can do something to try to answer those questions: "does it leaks, is it easy to use, ...". You start a new conversation with the LLM to which you fed prior to that code examples of your abstraction, perhaps doc if you wrote, and 5 or 6 times in a row (different conversations each time), you prompt it to do a task. The prompt have to be "light", avoid technical details and only be written with the high-level mental model and domain that you are targetting with your abstraction. From there, two possible paths:
+
+1. you get exactly what you want each time, and the result is 95% equivalent at each generation from a new conversation
+2. you get less than 95% equivalence each run (95% is an arbitrary threshold it's to give a number and not say 100%)
+
+If you are in the first situation, congratulation, you might have a non-leaky, easy to use abstraction. It doesn't mean it's 100% true, but at least there is no currently obvious counter-examples.
+
+If you are in the second situation, congratulation, you know that your abstraction is not clear enough and that you have to iterate on it. It simple, if an LLM is easily confused, then a human will be confused also, just silently. The LLM makes the confusion visible and measurable. The other good news is that you can precisely identify where the LLM went off track, and you can correct that. To correct it, there is two ways:
+
+1. you can reinforce your abstraction to make it easier to use and less error prone,
+2. you can reinforce the documentation to make it more obvious.
+
+There is no real rule on what's the best here, it depends on where you think the details to fill the semantic gap needs to be encoded.
+
+### Sure, but no, not all the time
+
+I was quite absolute in what I wrote about the rule *one way and only one obvious way to map the intent to code*. That's bait. More seriously, there is moments where there is possibly multiple good ways of saying things depending on the situation. That's something that can be either tamed at the abstraction level, by splitting the concepts and concerns, or by being clear about it in the documentation. That's doesn't invalidate the fact that if your LLM doesn't know what to choose depending on the situation, then there is a problem in what you either explained in your documentation, or in what you exposed in your abstraction.
+
+Another point about the hallucinations is that there is a training bias (in a way). You can have a mediocre abstraction, but enough examples for the LLM to produce working code. That's why having 95% (or whatever %) of good code doesn't mean your abstraction is easy for human or "good enough", so you shouldn't count on that. After all, the LLM is an oracle that measure abstraction quality as filtered through its training distribution. What matters is the fact the LLM fails actually, not that it succeeds. If it fails despite giving documentation and few training examples (it should be few, representative, not a lot), then there is fundamentally wrong with your abstraction.
+
+Something else? Yes, definitely, the *one way and only one obvious way to map the intent to code* works very well for API, library and framework that targets a very well defined domain. If you need to bridge multiple domains, that doesn't stand really anymore because you would need to have something cohesive between multiple artifacts and one way to drive the high-level prompt, which is perhaps not possible. In this case, the solution might shock you, but you can actually just isolate the different domains and make them composable properly. That's not impossible, that's just creating various small inter-object protocols in your app. That forces you to do something that most people are allergic at: **think in system** and **think architecture first**. I know you're shocked, but that's what works for me. That's the "it works on my machine", just think system and clean architecture. I'll not lie, its hard sometimes, it requires to think a lot, but that's the fun part: to get lost in your architecture for a bit. Small personal controversial take and for > 18 years old people, jump at the end of the paragraph if you don't feel confortable, but thinking about your architecture under the influence of some known products that alter perception (cannabis, psychedelics) is helping, but more than than, it projects you into project you in a wonderful new small world that you can inspect under so many different angles and loose yourself into while impersonating some concepts. Again, that's personal, but that's something I definitely love.
+
+
+## LLM with Nallely
+
+So all what I wrote before, how does it match with Nallely and how LLMs are used with Nallely. You guessed it, they are not used to code the core of Nallely, but they are used in 4 distinct fashions:
+
+1. to test quality of the API/abstraction and documentation to create new neurons (if it fails, it's a signal it's wrong, if not, we cannot really know);
+2. to write behavioral tests using `behave` and Gherkin syntax;
+3. as Nallely real-time user;
+4. to quickly prototype new neurons when I'm lazy (it happens often).
+
+In this section, I'll come back on the 3 latter points, the first point being lasily poorly exposed in the previous section.
+
+### Write behavioral tests: LLM + behave = ♡
+
+You totally know that there is unit test. You know I know that you don't write a lot. Unit tests are sometimes painful to write. Unit tests are nice to ensure that the fundamental rules of your system is coherent and stays the same accross various iterations, but when you need to tests some more complex behavior, it becomes sometimes hard to write them, and especially, it's hard to read again. So, what you do? You ask an LLM to generate the test. Good instinct, but boy, how awful it is to have to integrate them. Sure the test can pass, sure the test is written, but it's soooo hard to read it sometimes, and so annoying... That would be way better to be able to write tests in a kind of natural language that you can run... I'm sure you know it, but you probably just discarded the idea, but the [Gherkin syntax](https://cucumber.io/docs/gherkin/reference) is your friend. It allows you to write in a plain-language scenarios and potentially to execute them after (depending on the implementation). That's pretty cool, no, you know what's, better, that's Fonzie cool (I'm old now).
+
+What's great about it: everything! You can re-read and *understand* your tests, you can write them targeting your domain, you can test now the behavior of your system without having to think about some small implementation details or establishing the scenario programmatically. The cherry on the cake, you'll be surprise, but LLM are way better at producing text than code, and LLMs can definitely produce very meaningful tests **that you can reread and understand**. That's amazing, but what's the catch? Well, writing tests with Gherkin is not entirely complicated, but writing the glue code that will allow you to run them is not that obvious unfortunately. Fortunately, there is some implementations that helps to code this glue without too much effort. I'm using [`behave`](https://behave.readthedocs.io/en/latest/) for Python and I'm happy with how the API is defined. And it's clear it's without too much efforts because, if you remember well, we are working towards having a clean and easy to use abstraction. In this situation, Gherkin syntax is like a poor version of LLM, no inference, no "thinking", but you can write in almost plain english and get a test. This is tremendously helped by the fact that if our abstraction is in a good shape, then it's easy to map intents to actual line of code. The way to phrase those intents will be a little bit rigid, but it's better than lines of code.
+
+In Nallely, the steps that defines how some plain english text will be interpreted is defined in the [`steps.py`](https://github.com/dr-schlange/nallely-midi/blob/main/tests/features/steps/steps.py) file. I'll not go in details about the implementation, the code is not that long. It makes a heavy use of metaprogramming though, so if you're not used to, it might be complicated to understand at first glance. Those steps defines different configuration over the objects, and some assertions that are tested, like `after around Xms passed` or `output is eq to 20`, etc. Here is an example of a scenario entirely generated by the LLM (after feeding it few examples).
+
+```gherkin
+Scenario: crossfade at mid-level (out0)
+    Given a Crossfade c with a level of 50
+    And c is started
+    And c's in0 is set to 100
+    And c's in1 is set to 0
+    And c's type is set to continuous
+    When around 5ms have passed
+    Then c's out0 is eq 50
+```
+
+That's deadly simple to read and understand no? I mean, perhaps it's me only, let me reframe: it looks simple to me. This kind of tests are really interesting on multiple levels:
+
+1. the LLM can generate them easily without too much hallucination despite giving only few examples;
+2. the test is easy to read;
+3. the LLM generates not a single scenario, but usually a lot of them because it has to generate texts, not code, regarding a constrained domain only, not trying to fix, patch, tweak code.
+
+This scenario was generated by chatGPT4.1 I think (I don't remember, I did that months ago), with modern LLMs the gain and the scenarios generated are even better, and it also tries directly to generate scenarios for corner cases! Some requires later some timing adjustments for Nallely (waiting a little bit more between assertions sometimes), but that's a direct consequence of the asynchroneous message passing thread-per-module nature of Nallely, nothing else.
+
+
+## Then end?
+
+Ok, you know what? Yeah, framed like this, like cheap cliffhanger in cheap movies (Zappa would like it) is perfect.
+
+I think that's enough for this article, there is a lot already in this, and I'm tired to write (remember, I don't like it). Beside, I just realized I need to record videos to supports my claims and to show how agentic LLM (claude here) can drive a Nallely session in real-time. I don't like to record demo, it's annoying to do, but that's a necessary pain.
+
+In the next article we will see how claude can drive a remote Nallely session in real-time, how it can debug it, and how it can write new nerons to explore ideas. As Nallely supports dynamic code execution and definition and modifications of neurons on the fly, we will also see how an LLM can code/inject directly a running patch (that's totally not secure, please don't do it).
