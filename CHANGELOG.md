@@ -34,6 +34,8 @@
 * Fix WebSocket Bus blocking when shutting down when too much information is still in the websockets buffers
 * Fix output range for the operator module, from (0, 127) to (None, None) otherwise, scaler kicks in when we don't want
 * Fix nan value interpretation and struct packing in the websocket bus
+* Improve repository handling using Dulwich (speed up address save)
+* Fix error with the stream capture class, stderr wasn't injected back properly after disconnection...
 
 ## Nallely v0.4.0 -- Tepezcohuite
 

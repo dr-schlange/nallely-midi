@@ -116,7 +116,7 @@ class IOCapture(io.StringIO):
         finally:
             sys.stdin = _SYSTEM_STDIN
             sys.stdout = _SYSTEM_STDOUT
-            sys.stdout = _SYSTEM_STDERR
+            sys.stderr = _SYSTEM_STDERR
 
 
 def make_ccvalues():
