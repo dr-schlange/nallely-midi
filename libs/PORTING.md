@@ -44,7 +44,9 @@ Use the plain parameter name (e.g. `"note"`), not the internal cv_name (e.g. `"c
 
 ## Step 2: Registration
 
-Connect via WebSocket to `ws://HOST:6789/NEURON_NAME/autoconfig` and send a single JSON text message declaring the neuron's parameters:
+Connect via WebSocket to `ws://HOST:6789/NEURON_NAME/autoconfig` and send a single JSON text message declaring the neuron's parameters.
+
+**Naming constraint**: The neuron name **must not contain underscores**. Internally, the WebSocket Bus builds parameter names as `{neuron}_{param}` and the `receiving()` method splits on `_` to recover the neuron name — taking only the first segment. A name like `my_synth` with parameter `note` produces `my_synth_note`; the bus then splits it as neuron=`my`, parameter=`synth_note`, which is wrong. Use `mysynth` instead.
 
 ```json
 {

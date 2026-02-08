@@ -64,7 +64,9 @@ External neurons: `WEBSOCKETBUS_ID::__virtual__::neuronname_paramname_cv`
 
 ### WebSocket Bus (port 6789) - External Neuron
 
-Register as a neuron: connect to `ws://HOST:6789/NEURON_NAME/autoconfig`, send JSON:
+Register as a neuron: connect to `ws://HOST:6789/NEURON_NAME/autoconfig`, send JSON.
+
+**Naming constraint**: `NEURON_NAME` **must not contain underscores**. The bus internally builds `{neuron}_{param}` names and splits on `_` to recover the neuron name (taking only the first segment). A name like `my_synth` breaks routing. Use `mysynth` instead.
 ```json
 {
   "kind": "external",
