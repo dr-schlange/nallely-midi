@@ -9,11 +9,7 @@ Please refer to the technology you want to use for your external device:
 * `llms/` - LLM system prompt / reference document for AI-driven session control
 * `ruby/` - Ruby (external neuron + client to drive a session)
 * `C/` - C (external neuron)
-
-
-* `pharo` - Pharo (external neuron + client to drive a session)
-
-A connector for Pharo (modern Smalltalk dialect) is avaiable in an [other github repository](https://github.com/dr-schlange/nallely-pharo). It would have been possible to integrate the source code in this repository, but it would have been potentially painful to maintain later.
+* `pharo` - Pharo (external neuron + client to drive a session). The connector for Pharo (modern Smalltalk dialect) is avaiable in an [other github repository](https://github.com/dr-schlange/nallely-pharo). It would have been possible to integrate the source code in this repository, but it would have been potentially painful to maintain later.
 
 
 ## Write a connector in a new language
