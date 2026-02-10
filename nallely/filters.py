@@ -146,9 +146,9 @@ class Waveshaper(VirtualDevice):
     Modulate a signal waveform to reshape it.
 
     inputs:
-    * input_cv [0, 127] <any>: Input signal.
+    * input_cv [-5, 5] <any>: Input signal.
     * mode_cv [linear, exp, log, sigmoid, fold, quantize]: Choose how to shape the input waveform.
-    * amount_cv [0, 1]: The filter type (default=lowpass).
+    * amount_cv [0, 1]: Dry/wet mix (0 = fully shaped, 1 = fully dry).
     * symmetry_cv [-1.0, 1] init=0.0: Adjusts the balance between "positive" and "negative" portions of the reshaped waveform.
     * bias_cv [0.0, 5.0]: Offsets the input signal before applying the shaping function.
     * exp_power_cv [0.1, 50]: Controls the exponent used in the exponential shaping mode.
@@ -161,28 +161,26 @@ class Waveshaper(VirtualDevice):
                                       continuous = value produced at the cycle speed of the module.
 
     outputs:
-    * output_cv [0, 127]: The reshaped signal.
+    * output_cv [-5, 5]: The reshaped signal.
 
     type: ondemand, continuous
     category: filter
     """
 
-    input_cv = VirtualParameter(name="input", range=(-5, 5))
+    input_cv = VirtualParameter(name="input", range=(-5.0, 5.0))
     mode_cv = VirtualParameter(
         name="mode",
-        accepted_values=("linear", "exp", "log", "sigmoid", "fold", "quantize"),
+        accepted_values=["linear", "exp", "log", "sigmoid", "fold", "quantize"],
     )
-    amount_cv = VirtualParameter(name="amount", range=(0, 1))
-    symmetry_cv = VirtualParameter(name="symmetry", range=(-1, 1), default=0)
-    bias_cv = VirtualParameter(name="bias", range=(0, 5))
-    exp_power_cv = VirtualParameter(name="exp_power", range=(0.1, 50))
-    log_scale_cv = VirtualParameter(name="log_scale", range=(1, 30))
-    sigmoid_gain_cv = VirtualParameter(name="sigmoid_gain", range=(0.5, 20))
-    fold_gain_cv = VirtualParameter(name="fold_gain", range=(0.5, 10))
-    quantize_steps_cv = VirtualParameter(
-        name="quantize_steps", range=(2, 64), conversion_policy="round"
-    )
-    type_cv = VirtualParameter(name="type", accepted_values=("ondemand", "continuous"))
+    amount_cv = VirtualParameter(name="amount", range=(0.0, 1.0))
+    symmetry_cv = VirtualParameter(name="symmetry", range=(-1.0, 1.0), default=0.0)
+    bias_cv = VirtualParameter(name="bias", range=(0.0, 5.0))
+    exp_power_cv = VirtualParameter(name="exp_power", range=(0.1, 50.0))
+    log_scale_cv = VirtualParameter(name="log_scale", range=(1.0, 30.0))
+    sigmoid_gain_cv = VirtualParameter(name="sigmoid_gain", range=(0.5, 20.0))
+    fold_gain_cv = VirtualParameter(name="fold_gain", range=(0.5, 10.0))
+    quantize_steps_cv = VirtualParameter(name="quantize_steps", range=(2.0, 64.0))
+    type_cv = VirtualParameter(name="type", accepted_values=["ondemand", "continuous"])
 
     def __init__(self, *args, **kwargs):
         self.mode = "linear"
@@ -198,31 +196,31 @@ class Waveshaper(VirtualDevice):
         self.exp_power = 2
         super().__init__(*args, **kwargs)
 
-    def process(self):
-        # Normalize input to -1..1
-        norm = self.input / 5.0
-        norm = max(-1.0, min(1.0, norm))
+    @property
+    def min_range(self):
+        return -5.0
 
-        # Apply bias in normalized space (-1..1)
+    @property
+    def max_range(self):
+        return 5.0
+
+    def process(self):
+        lo, hi = self.input_cv.parameter.range
+        half = (hi - lo) / 2
+        mid = (hi + lo) / 2
+        norm = (self.input - mid) / half if half != 0 else 0.0
+        norm = max(-1.0, min(1.0, norm))
         bias_norm = self.bias / 5.0
         x = norm + bias_norm
         x = max(-1.0, min(1.0, x))
-
-        # Apply shaping function
         y = self.apply_shaping(x, self.mode)
-
-        # Apply symmetry
         if y >= 0:
             y *= 1 + self.symmetry
         else:
             y *= 1 - self.symmetry
         y = max(-1.0, min(1.0, y))
-
-        # Dry/Wet blending (0 = wet, 1 = dry)
         blended = self.amount * norm + (1 - self.amount) * y
-
-        # Map back to 0..5V output
-        output = (blended + 1) * 5 / 2
+        output = blended * half + mid
         return output
 
     def apply_shaping(self, x, mode):
@@ -237,7 +235,7 @@ class Waveshaper(VirtualDevice):
         elif mode == "sigmoid":
             return math.tanh(self.sigmoid_gain * x)
         elif mode == "fold":
-            return abs(((x * self.fold_gain + 1) % 2) - 1) * 2 - 1
+            return abs((x * self.fold_gain + 1) % 2 - 1) * 2 - 1
         elif mode == "quantize":
             steps = int(self.quantize_steps)
             if steps == 0:
