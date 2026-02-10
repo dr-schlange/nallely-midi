@@ -7,8 +7,9 @@ Please refer to the technology you want to use for your external device:
 * `js/` - JavaScript/TypeScript (external neuron)
 * `python/` - Python (external neuron + client to drive a session)
 * `llms/` - LLM system prompt / reference document for AI-driven session control
-
-A connector for Pharo (modern Smalltalk dialect) is avaiable in an [other github repository](https://github.com/dr-schlange/nallely-pharo). It would have been possible to integrate the source code in this repository, but it would have been potentially painful to maintain later.
+* `ruby/` - Ruby (external neuron + client to drive a session)
+* `C/` - C (external neuron)
+* `pharo` - Pharo (external neuron + client to drive a session). The connector for Pharo (modern Smalltalk dialect) is avaiable in an [other github repository](https://github.com/dr-schlange/nallely-pharo). It would have been possible to integrate the source code in this repository, but it would have been potentially painful to maintain later.
 
 
 ## Write a connector in a new language
