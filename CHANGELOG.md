@@ -24,9 +24,11 @@
   * Use LLMs (RAG) to build patches interactively
   * LLM/RAG can auto-register as an external neuron and monitor/debug patches
   * Add LLM/RAG oriented skill file with instruction to help you generate connector for your language to build external neurons and implement Trevor protocol
-* Add [connector for Pharo Smalltalk dialect](https://github.com/dr-schlange/nallely-pharo): create your neurons in Pharo
-* Add connector for Ruby
-* Add connector for Python (usefull for distributed computation over the network)
+* Add various connectors for different languages
+  * Add [connector for Pharo Smalltalk dialect](https://github.com/dr-schlange/nallely-pharo): create your neurons in Pharo
+  * Add connector for Ruby
+  * Add connector for Python (usefull for distributed computation over the network)
+  * Add connector for C
 
 ### Fix
 
@@ -36,6 +38,8 @@
 * Fix nan value interpretation and struct packing in the websocket bus
 * Improve repository handling using Dulwich (speed up address save)
 * Fix error with the stream capture class, stderr wasn't injected back properly after disconnection...
+* Fix errors in the waveshaper (scaler ranges)
+* Fix oscilloscope for smoother experience with less refresh
 
 ## Nallely v0.4.0 -- Tepezcohuite
 
