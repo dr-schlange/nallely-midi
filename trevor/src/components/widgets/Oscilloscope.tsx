@@ -31,8 +31,6 @@ type FollowModes = "cyclic" | "linear";
 const buildOptions = (
 	mode: DisplayModes,
 	label: string,
-	upper?: number,
-	lower?: number,
 	period?: number,
 	followMode?: FollowModes,
 ): uPlot.Options => {
@@ -46,7 +44,7 @@ const buildOptions = (
 			{ show: true },
 			{
 				label,
-				stroke: mode === "line" ? "orange" : null,
+				stroke: mode === "line" ? "orange" : "transparent",
 				width: mode === "line" ? 3 : 0,
 				points:
 					mode === "points"
@@ -65,11 +63,7 @@ const buildOptions = (
 						: undefined,
 			},
 			y: {
-				auto: upper === undefined || lower === undefined,
-				range:
-					upper !== undefined && lower !== undefined
-						? [lower, upper]
-						: undefined,
+				auto: false,
 			},
 		},
 	};
@@ -93,7 +87,6 @@ export const Scope = ({
 		x: Array.from({ length: bufferSize }, (_, i) => i),
 		y: new Array(bufferSize).fill(0),
 	});
-	const startTimeRef = useRef<number>(Date.now());
 	const wsRef = useRef<WebSocket | null>(null);
 	const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const isUnmounted = useRef(false);
@@ -103,12 +96,11 @@ export const Scope = ({
 
 	const upperBound = useRef(undefined);
 	const lowerBound = useRef(undefined);
-	const [localMin, setLocalMin] = useState(undefined);
-	const [localMax, setLocalMax] = useState(undefined);
-	const [currentValue, setCurrentValue] = useState(undefined);
+	const statsRef = useRef<HTMLParagraphElement | null>(null);
 	const [label, setLabel] = useState("");
+	const labelRef = useRef("");
 	const [walker, setWalker] = useState(false);
-	const [autoPaused, setAutoPaused] = useState(false);
+	const walkerRef = useRef<HTMLDivElement | null>(null);
 	const [displayMode, setDisplayMode] = useState<DisplayModes>("line");
 	const [minMaxDisplay, setMinMaxDisplay] = useState(true);
 	const [followMode, setFollowMode] = useState<FollowModes>("cyclic");
@@ -118,26 +110,12 @@ export const Scope = ({
 	const firstValue = useRef(false);
 
 	const [options, setOptions] = useState<uPlot.Options>(
-		buildOptions(
-			displayMode,
-			label,
-			upperBound.current,
-			lowerBound.current,
-			bufferSize,
-			followModeRef.current,
-		),
+		buildOptions(displayMode, label, bufferSize, followModeRef.current),
 	);
 
 	useEffect(() => {
 		setOptions(
-			buildOptions(
-				displayMode,
-				label,
-				upperBound.current,
-				lowerBound.current,
-				bufferSize,
-				followModeRef.current,
-			),
+			buildOptions(displayMode, label, bufferSize, followModeRef.current),
 		);
 	}, [displayMode, label]);
 
@@ -185,8 +163,6 @@ export const Scope = ({
 			buildOptions(
 				displayMode,
 				label,
-				upperBound.current,
-				lowerBound.current,
 				bufferSizeRef.current,
 				followModeRef.current,
 			),
@@ -235,10 +211,10 @@ export const Scope = ({
 				}
 
 				inactivityTimeout.current = setTimeout(() => {
-					setAutoPaused(true);
+					walkerRef.current?.classList.add("paused");
 				}, 1000);
 
-				setAutoPaused(false);
+				walkerRef.current?.classList.remove("paused");
 
 				let message = {
 					on: undefined,
@@ -260,7 +236,10 @@ export const Scope = ({
 				onMessage?.(message.value);
 				if (Number.isNaN(newValue)) return;
 
-				setLabel(message.on);
+				if (message.on !== labelRef.current) {
+					labelRef.current = message.on;
+					setLabel(message.on);
+				}
 
 				const buf = bufferRef.current;
 				const mode = followModeRef.current;
@@ -278,29 +257,39 @@ export const Scope = ({
 					}
 				}
 
-				let update = false;
-				if (upperBound.current === undefined || newValue > upperBound.current) {
-					upperBound.current = newValue;
-					update = true;
-				}
-				if (lowerBound.current === undefined || newValue < lowerBound.current) {
-					lowerBound.current = newValue;
-					update = true;
-				}
-				if (update) {
-					setChartKey((k) => k + 1);
-				}
-
 				if (!updateScheduled.current) {
 					updateScheduled.current = true;
 					requestAnimationFrame(() => {
+						let min = Infinity,
+							max = -Infinity;
+						for (const v of buf.y) {
+							if (v < min) min = v;
+							if (v > max) max = v;
+						}
+						upperBound.current = max;
+						lowerBound.current = min;
 						if (chartRef.current) {
-							chartRef.current.setData([buf.x, buf.y]);
+							chartRef.current.batch(() => {
+								chartRef.current.setData([buf.x, buf.y], false);
+								if (buf.x.length > 0) {
+									chartRef.current.setScale("x", {
+										min: buf.x[0],
+										max: buf.x[buf.x.length - 1],
+									});
+								}
+								if (min !== Infinity) {
+									const pad = max === min ? 0.1 : 0;
+									chartRef.current.setScale("y", {
+										min: min - pad,
+										max: max + pad,
+									});
+								}
+							});
 						}
 						updateScheduled.current = false;
-						setLocalMin(Math.min(...buf.y));
-						setLocalMax(Math.max(...buf.y));
-						setCurrentValue(newValue);
+						if (statsRef.current) {
+							statsRef.current.textContent = `min: ${min === Infinity ? "?" : min}\nval: ${newValue}\nmax: ${max === -Infinity ? "?" : max}`;
+						}
 					});
 				}
 				if (firstValue.current === false) {
@@ -419,7 +408,16 @@ export const Scope = ({
 					chartRef.current = chart;
 				}}
 			/>
-			{walker && <Walker paused={autoPaused} />}
+			{walker && (
+				<div
+					ref={walkerRef}
+					className="walker"
+					style={{
+						backgroundImage: `url(${walkerSprites})`,
+						animationDuration: `${5 / 8}s`,
+					}}
+				/>
+			)}
 			{minMaxDisplay && (
 				<div
 					style={{
@@ -429,12 +427,11 @@ export const Scope = ({
 						marginBottom: "2px",
 					}}
 				>
-					<p style={{ fontSize: "12px", margin: 0 }}>
-						min: {localMin ?? "?"}
-						<br />
-						val: {currentValue ?? "?"}
-						<br />
-						max: {localMax ?? "?"}
+					<p
+						ref={statsRef}
+						style={{ fontSize: "12px", margin: 0, whiteSpace: "pre-line" }}
+					>
+						min: ?{"\n"}val: ?{"\n"}max: ?
 					</p>
 				</div>
 			)}
