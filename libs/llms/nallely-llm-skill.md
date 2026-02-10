@@ -193,6 +193,7 @@ Most neurons support `type` parameter:
 8. External neuron services persist after disconnect, reconnecting reuses registration
 9. Feedback loops are expensive at fast cycle rates
 10. For accepted_values params, pass the string value directly (e.g. "xor", "sine")
+11. **Never assume parameter or port names.** Always read them from the session state. Every `recv()` after a Trevor command returns a full session state snapshot containing all devices, their parameters (with `name`, `cv_name`, `range`, etc.), and all connections. Use this state to discover device IDs, parameter cv_names, and connection topology. Port names can vary between device types, proxy devices, and external neurons — the session state is the single source of truth.
 
 ## Session State Structure
 
