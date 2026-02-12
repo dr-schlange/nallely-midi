@@ -10,8 +10,7 @@
 		"format-trevor": "biome format src --fix",
 		"format-jslib": "biome format src --fix ../libs/js",
 		"preview": "vite preview",
-		"deploy:gh": "GH=true yarn build && gh-pages -d dist",
-		"deploy:neutralino": "yarn build && cp -r dist/* ../trevor-neutralino/resources && cd ../trevor-neutralino && neu build"
+		"deploy:gh": "GH=true yarn build && gh-pages -d dist"
 	},
 	"dependencies": {
 		"@codemirror/autocomplete": "^6.20.0",
@@ -28,7 +27,6 @@
 		"react-dom": "^19.2.3",
 		"react-force-graph-3d": "^1.29.0",
 		"react-redux": "^9.2.0",
-		"react-uplot": "^0.0.9",
 		"three-spritetext": "^1.10.0",
 		"uplot": "^1.6.32",
 		"uplot-react": "^1.2.4"
@@ -43,7 +41,6 @@
 		"gh-pages": "^6.3.0",
 		"globals": "^16.5.0",
 		"typescript": "~5.9.3",
-		"typescript-eslint": "^8.50.1",
 		"vite": "^7.3.0"
 	}
 }
