@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import DragNumberInput from "../DragInputs";
-import { Button, WidgetProps } from "./BaseComponents";
+import { Button, type WidgetProps } from "./BaseComponents";
 
 const BUFFER_SIZE_MAX = 5000;
 const BUFFER_SIZE_MIN = 2;
@@ -15,20 +15,13 @@ export const XYScope = ({ id, onClose, num }: WidgetProps) => {
 	const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const isUnmounted = useRef(false);
 	const [bufferSize, setBufferSize] = useState<number>(BUFFER_SIZE);
-	const bufferSizeRef = useRef(bufferSize); // <-- REF for latest buffer size
+	const bufferSizeRef = useRef(bufferSize);
 
 	const latestX = useRef<number | null>(null);
 	const latestY = useRef<number | null>(null);
 	const points = useRef<{ x: number; y: number }[]>([]);
 
-	// Track extrema for zoom to fit
-	const minX = useRef<number | null>(null);
-	const maxX = useRef<number | null>(null);
-	const minY = useRef<number | null>(null);
-	const maxY = useRef<number | null>(null);
-
-	const [autoPaused, setAutoPaused] = useState(false);
-	const inactivityTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const updateScheduled = useRef(false);
 
 	// Viewport transform refs
 	const scaleX = useRef(1);
@@ -36,28 +29,11 @@ export const XYScope = ({ id, onClose, num }: WidgetProps) => {
 	const offsetX = useRef(0);
 	const offsetY = useRef(0);
 
-	// Commit and clamp new buffer size from input
 	const commitBufferSize = (valueStr: string) => {
 		let newSize = Number.parseFloat(valueStr);
 		if (Number.isNaN(newSize)) newSize = BUFFER_SIZE_MIN;
 		newSize = Math.max(BUFFER_SIZE_MIN, Math.min(BUFFER_SIZE_MAX, newSize));
 		setBufferSize(newSize);
-	};
-
-	// Update extrema with new point
-	const updateExtrema = (x: number, y: number) => {
-		minX.current = minX.current === null ? x : Math.min(minX.current, x);
-		maxX.current = maxX.current === null ? x : Math.max(maxX.current, x);
-		minY.current = minY.current === null ? y : Math.min(minY.current, y);
-		maxY.current = maxY.current === null ? y : Math.max(maxY.current, y);
-	};
-
-	// Reset extrema
-	const resetExtrema = () => {
-		minX.current = null;
-		maxX.current = null;
-		minY.current = null;
-		maxY.current = null;
 	};
 
 	// Transform data coords to canvas pixel coords
@@ -78,36 +54,42 @@ export const XYScope = ({ id, onClose, num }: WidgetProps) => {
 
 		ctx.clearRect(0, 0, w, h);
 
-		// Draw axes in light gray
+		// Draw axes through data origin (0, 0)
 		ctx.strokeStyle = "#ccc";
 		ctx.lineWidth = 1;
 
-		// X axis: y = center line
-		ctx.beginPath();
-		ctx.moveTo(0, h / 2);
-		ctx.lineTo(w, h / 2);
-		ctx.stroke();
+		const originX = dataToCanvasX(0, w);
+		const originY = dataToCanvasY(0, h);
 
-		// Y axis: x = center line
-		ctx.beginPath();
-		ctx.moveTo(w / 2, 0);
-		ctx.lineTo(w / 2, h);
-		ctx.stroke();
+		// X axis (horizontal line through Y=0)
+		if (originY >= 0 && originY <= h) {
+			ctx.beginPath();
+			ctx.moveTo(0, originY);
+			ctx.lineTo(w, originY);
+			ctx.stroke();
+		}
+
+		// Y axis (vertical line through X=0)
+		if (originX >= 0 && originX <= w) {
+			ctx.beginPath();
+			ctx.moveTo(originX, 0);
+			ctx.lineTo(originX, h);
+			ctx.stroke();
+		}
 
 		// Draw points
 		ctx.fillStyle = "orange";
-		const lineWidth = 1;
+		const pointRadius = 1;
 		for (const p of points.current) {
 			const px = dataToCanvasX(p.x, w);
 			const py = dataToCanvasY(p.y, h);
 			ctx.beginPath();
-			ctx.arc(px, py, lineWidth, 0, Math.PI * 2);
+			ctx.arc(px, py, pointRadius, 0, Math.PI * 2);
 			ctx.fill();
 		}
 	};
 
 	const reset = () => {
-		resetExtrema();
 		points.current = [];
 		scaleX.current = 1;
 		scaleY.current = 1;
@@ -116,51 +98,54 @@ export const XYScope = ({ id, onClose, num }: WidgetProps) => {
 		drawPoints();
 	};
 
-	// Zoom to fit all points with margin
+	// Zoom to fit all current points with margin
 	const zoomToFit = () => {
 		const canvas = canvasRef.current;
-		if (!canvas) return;
+		if (!canvas || points.current.length === 0) return;
 
 		const w = canvas.width;
 		const h = canvas.height;
 
-		if (
-			minX.current === null ||
-			maxX.current === null ||
-			minY.current === null ||
-			maxY.current === null
-		)
-			return;
+		// Compute extrema from current buffer
+		let minX = Infinity,
+			maxX = -Infinity,
+			minY = Infinity,
+			maxY = -Infinity;
+		for (const p of points.current) {
+			if (p.x < minX) minX = p.x;
+			if (p.x > maxX) maxX = p.x;
+			if (p.y < minY) minY = p.y;
+			if (p.y > maxY) maxY = p.y;
+		}
 
-		const dataWidth = maxX.current - minX.current || 1;
-		const dataHeight = maxY.current - minY.current || 1;
+		const dataWidth = maxX - minX || 1;
+		const dataHeight = maxY - minY || 1;
 
-		// Calculate scale to fit with margin on each side
 		const scaleXNew = (w - 2 * MARGIN_PX) / dataWidth;
 		const scaleYNew = (h - 2 * MARGIN_PX) / dataHeight;
-
-		// Use uniform scale (optional, or use separate)
 		const scale = Math.min(scaleXNew, scaleYNew);
 
 		scaleX.current = scale;
 		scaleY.current = scale;
 
 		// Center offset to middle of data bounding box
-		offsetX.current = (minX.current + maxX.current) / 2;
-		offsetY.current = (minY.current + maxY.current) / 2;
+		offsetX.current = (minX + maxX) / 2;
+		offsetY.current = (minY + maxY) / 2;
 
 		drawPoints();
 	};
 
 	const expand = () => {
-		setExpanded((prev) => !prev);
-		if (expanded) {
-			containerRef.current.style.height = "";
-			containerRef.current.style.width = "";
-		} else {
-			containerRef.current.style.height = "100%";
-			containerRef.current.style.width = "100%";
-		}
+		setExpanded((prev) => {
+			if (prev) {
+				containerRef.current.style.height = "";
+				containerRef.current.style.width = "";
+			} else {
+				containerRef.current.style.height = "100%";
+				containerRef.current.style.width = "100%";
+			}
+			return !prev;
+		});
 	};
 
 	// Resize canvas to match container size
@@ -185,7 +170,7 @@ export const XYScope = ({ id, onClose, num }: WidgetProps) => {
 	useEffect(() => {
 		bufferSizeRef.current = bufferSize;
 		if (points.current.length > bufferSize) {
-			points.current = points.current.slice(points.current.length - bufferSize);
+			points.current = points.current.slice(-bufferSize);
 			drawPoints();
 		}
 	}, [bufferSize]);
@@ -213,7 +198,6 @@ export const XYScope = ({ id, onClose, num }: WidgetProps) => {
 				latestX.current = null;
 				latestY.current = null;
 				points.current = [];
-				resetExtrema();
 				scaleX.current = 1;
 				scaleY.current = 1;
 				offsetX.current = 0;
@@ -221,14 +205,6 @@ export const XYScope = ({ id, onClose, num }: WidgetProps) => {
 			};
 
 			ws.onmessage = (event) => {
-				if (inactivityTimeout.current) {
-					clearTimeout(inactivityTimeout.current);
-				}
-				inactivityTimeout.current = setTimeout(() => {
-					setAutoPaused(true);
-				}, 1000);
-				setAutoPaused(false);
-
 				let message = {
 					on: undefined,
 					value: undefined,
@@ -256,14 +232,19 @@ export const XYScope = ({ id, onClose, num }: WidgetProps) => {
 
 				if (latestX.current != null && latestY.current != null) {
 					points.current.push({ x: latestX.current, y: latestY.current });
-					updateExtrema(latestX.current, latestY.current);
 
-					// Trim using ref to latest buffer size
-					while (points.current.length > bufferSizeRef.current) {
-						points.current.shift();
+					if (points.current.length > bufferSizeRef.current) {
+						points.current = points.current.slice(-bufferSizeRef.current);
 					}
 
-					requestAnimationFrame(drawPoints);
+					if (!updateScheduled.current) {
+						updateScheduled.current = true;
+						requestAnimationFrame(() => {
+							drawPoints();
+							updateScheduled.current = false;
+						});
+					}
+
 					latestX.current = null;
 					latestY.current = null;
 				}
@@ -286,7 +267,6 @@ export const XYScope = ({ id, onClose, num }: WidgetProps) => {
 		return () => {
 			isUnmounted.current = true;
 			if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
-			if (inactivityTimeout.current) clearTimeout(inactivityTimeout.current);
 			if (wsRef.current) wsRef.current.close();
 		};
 	}, [id]);

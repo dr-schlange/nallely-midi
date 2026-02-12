@@ -40,6 +40,8 @@
 * Fix error with the stream capture class, stderr wasn't injected back properly after disconnection...
 * Fix errors in the waveshaper (scaler ranges)
 * Fix oscilloscope for smoother experience with less refresh
+* Fix 2D oscilloscope for smoother experience with less refresh
+* Fix 3D oscilloscope for smoother experience with less refresh and new rotation capability (touch instead of buttons)
 
 ## Nallely v0.4.0 -- Tepezcohuite
 

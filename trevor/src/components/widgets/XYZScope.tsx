@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import DragNumberInput from "../DragInputs";
-import { Button, WidgetProps } from "./BaseComponents";
+import { Button, type WidgetProps } from "./BaseComponents";
 
 const BUFFER_SIZE_MAX = 5000;
 const BUFFER_SIZE_MIN = 2;
 const BUFFER_SIZE = 500;
 const MARGIN_PX = 5;
+const PERSPECTIVE_DISTANCE = 200;
 
 export const XYZScope = ({ id, onClose, num }: WidgetProps) => {
 	const containerRef = useRef<HTMLDivElement | null>(null);
@@ -15,23 +16,14 @@ export const XYZScope = ({ id, onClose, num }: WidgetProps) => {
 	const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const isUnmounted = useRef(false);
 	const [bufferSize, setBufferSize] = useState<number>(BUFFER_SIZE);
-	const bufferSizeRef = useRef(bufferSize); // for latest buffer size
+	const bufferSizeRef = useRef(bufferSize);
 
 	const latestX = useRef<number | null>(null);
 	const latestY = useRef<number | null>(null);
 	const latestZ = useRef<number | null>(null);
 	const points = useRef<{ x: number; y: number; z: number }[]>([]);
 
-	// Track extrema for zoom to fit
-	const minX = useRef<number | null>(null);
-	const maxX = useRef<number | null>(null);
-	const minY = useRef<number | null>(null);
-	const maxY = useRef<number | null>(null);
-	const minZ = useRef<number | null>(null);
-	const maxZ = useRef<number | null>(null);
-
-	const [autoPaused, setAutoPaused] = useState(false);
-	const inactivityTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const updateScheduled = useRef(false);
 
 	// Viewport transform refs
 	const scaleX = useRef(1);
@@ -43,29 +35,22 @@ export const XYZScope = ({ id, onClose, num }: WidgetProps) => {
 	const rotationX = useRef(0);
 	const rotationY = useRef(0);
 
+	// Drag rotation state
+	const [dragRotateEnabled, setDragRotateEnabled] = useState(false);
+	const dragRotateRef = useRef(false);
+	const isDragging = useRef(false);
+	const lastPointer = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+	const rotationCenter = useRef<{ x: number; y: number; z: number }>({
+		x: 0,
+		y: 0,
+		z: 0,
+	});
+
 	const commitBufferSize = (valueStr: string) => {
 		let newSize = Number.parseFloat(valueStr);
 		if (Number.isNaN(newSize)) newSize = BUFFER_SIZE_MIN;
 		newSize = Math.max(BUFFER_SIZE_MIN, Math.min(BUFFER_SIZE_MAX, newSize));
 		setBufferSize(newSize);
-	};
-
-	const updateExtrema = (x: number, y: number, z: number) => {
-		minX.current = minX.current === null ? x : Math.min(minX.current, x);
-		maxX.current = maxX.current === null ? x : Math.max(maxX.current, x);
-		minY.current = minY.current === null ? y : Math.min(minY.current, y);
-		maxY.current = maxY.current === null ? y : Math.max(maxY.current, y);
-		minZ.current = minZ.current === null ? z : Math.min(minZ.current, z);
-		maxZ.current = maxZ.current === null ? z : Math.max(maxZ.current, z);
-	};
-
-	const resetExtrema = () => {
-		minX.current = null;
-		maxX.current = null;
-		minY.current = null;
-		maxY.current = null;
-		minZ.current = null;
-		maxZ.current = null;
 	};
 
 	// 3D rotation and projection to 2D canvas coords
@@ -76,30 +61,38 @@ export const XYZScope = ({ id, onClose, num }: WidgetProps) => {
 		canvasWidth: number,
 		canvasHeight: number,
 	) => {
+		const rc = rotationCenter.current;
 		const cosY = Math.cos(rotationY.current);
 		const sinY = Math.sin(rotationY.current);
 		const cosX = Math.cos(rotationX.current);
 		const sinX = Math.sin(rotationX.current);
 
+		// Translate to rotation center
+		const dx = x - rc.x;
+		const dy = y - rc.y;
+		const dz = z - rc.z;
+
 		// Rotate around Y axis
-		const xr = x * cosY - z * sinY;
-		const zr = x * sinY + z * cosY;
+		const xr = dx * cosY - dz * sinY;
+		const zr = dx * sinY + dz * cosY;
 
 		// Rotate around X axis
-		const yr = y * cosX - zr * sinX;
-		const zr2 = y * sinX + zr * cosX;
+		const yr = dy * cosX - zr * sinX;
+		const zr2 = dy * sinX + zr * cosX;
 
-		// Perspective projection parameters
-		const distance = 200;
-		const scale = distance / (distance + zr2);
+		// Translate back
+		const fx = xr + rc.x;
+		const fy = yr + rc.y;
+		const fz = zr2 + rc.z;
+
+		// Perspective projection
+		const ps = PERSPECTIVE_DISTANCE / (PERSPECTIVE_DISTANCE + fz);
 
 		// Transform to canvas coords, applying viewport scale and offset
-		const cx =
-			(xr - offsetX.current) * scaleX.current * scale + canvasWidth / 2;
-		const cy =
-			canvasHeight / 2 - (yr - offsetY.current) * scaleY.current * scale;
+		const cx = (fx - offsetX.current) * scaleX.current * ps + canvasWidth / 2;
+		const cy = canvasHeight / 2 - (fy - offsetY.current) * scaleY.current * ps;
 
-		return { x: cx, y: cy };
+		return { x: cx, y: cy, ps };
 	};
 
 	const drawPoints = () => {
@@ -116,8 +109,8 @@ export const XYZScope = ({ id, onClose, num }: WidgetProps) => {
 		// Draw axes in light gray - project origin axes lines in 3D rotated space
 		ctx.strokeStyle = "#ccc";
 		ctx.lineWidth = 1;
+		ctx.globalAlpha = 1.0;
 
-		// Draw X axis line (from -axisLength to +axisLength along X, Y=Z=0)
 		const axisLength = 100;
 		const origin = project3Dto2D(0, 0, 0, w, h);
 		const xPos = project3Dto2D(axisLength, 0, 0, w, h);
@@ -126,33 +119,33 @@ export const XYZScope = ({ id, onClose, num }: WidgetProps) => {
 		ctx.lineTo(xPos.x, xPos.y);
 		ctx.stroke();
 
-		// Draw Y axis line (X=0, along Y axis)
 		const yPos = project3Dto2D(0, axisLength, 0, w, h);
 		ctx.beginPath();
 		ctx.moveTo(origin.x, origin.y);
 		ctx.lineTo(yPos.x, yPos.y);
 		ctx.stroke();
 
-		// Draw Z axis line (X=Y=0, along Z axis)
 		const zPos = project3Dto2D(0, 0, axisLength, w, h);
 		ctx.beginPath();
 		ctx.moveTo(origin.x, origin.y);
 		ctx.lineTo(zPos.x, zPos.y);
 		ctx.stroke();
 
-		// Draw points
-		ctx.fillStyle = "orange";
-		const lineWidth = 1;
+		// Draw points with depth cue (size + opacity modulated by perspective scale)
 		for (const p of points.current) {
 			const pt = project3Dto2D(p.x, p.y, p.z, w, h);
+			const pointSize = Math.max(0.5, Math.min(3, pt.ps * 1.5));
+			ctx.globalAlpha = Math.max(0.2, Math.min(1.0, pt.ps * 0.8));
+			ctx.fillStyle = "orange";
 			ctx.beginPath();
-			ctx.arc(pt.x, pt.y, lineWidth, 0, Math.PI * 2);
+			ctx.arc(pt.x, pt.y, pointSize, 0, Math.PI * 2);
 			ctx.fill();
 		}
+
+		ctx.globalAlpha = 1.0;
 	};
 
 	const reset = () => {
-		resetExtrema();
 		points.current = [];
 		scaleX.current = 1;
 		scaleY.current = 1;
@@ -160,83 +153,151 @@ export const XYZScope = ({ id, onClose, num }: WidgetProps) => {
 		offsetY.current = 0;
 		rotationX.current = 0;
 		rotationY.current = 0;
+		rotationCenter.current = { x: 0, y: 0, z: 0 };
 		drawPoints();
 	};
 
 	const zoomToFit = () => {
 		const canvas = canvasRef.current;
-		if (!canvas) return;
+		if (!canvas || points.current.length === 0) return;
 
 		const w = canvas.width;
 		const h = canvas.height;
 
-		if (points.current.length === 0) return;
+		const cosYr = Math.cos(rotationY.current);
+		const sinYr = Math.sin(rotationY.current);
+		const cosXr = Math.cos(rotationX.current);
+		const sinXr = Math.sin(rotationX.current);
 
-		// Project all points to 2D (rotated)
-		const projectedPoints = points.current.map((p) =>
-			project3Dto2D(p.x, p.y, p.z, w, h),
-		);
+		// Compute rotated coordinates for all points (around rotation center)
+		const rc = rotationCenter.current;
+		const rotated = points.current.map((p) => {
+			const dx = p.x - rc.x;
+			const dy = p.y - rc.y;
+			const dz = p.z - rc.z;
+			const xr = dx * cosYr - dz * sinYr;
+			const zr = dx * sinYr + dz * cosYr;
+			const yr = dy * cosXr - zr * sinXr;
+			const zr2 = dy * sinXr + zr * cosXr;
+			return { xr: xr + rc.x, yr: yr + rc.y, zr2: zr2 + rc.z };
+		});
 
-		// Compute 2D bounding box of projected points
-		let projMinX = Infinity,
-			projMaxX = -Infinity,
-			projMinY = Infinity,
-			projMaxY = -Infinity;
+		// Center offset on mean of rotated data
+		let sumX = 0,
+			sumY = 0;
+		for (const r of rotated) {
+			sumX += r.xr;
+			sumY += r.yr;
+		}
+		offsetX.current = sumX / rotated.length;
+		offsetY.current = sumY / rotated.length;
 
-		for (const p of projectedPoints) {
-			if (p.x < projMinX) projMinX = p.x;
-			if (p.x > projMaxX) projMaxX = p.x;
-			if (p.y < projMinY) projMinY = p.y;
-			if (p.y > projMaxY) projMaxY = p.y;
+		// Project with scale=1 to find bounding box
+		scaleX.current = 1;
+		scaleY.current = 1;
+
+		let minPx = Infinity,
+			maxPx = -Infinity,
+			minPy = Infinity,
+			maxPy = -Infinity;
+		for (const r of rotated) {
+			const ps = PERSPECTIVE_DISTANCE / (PERSPECTIVE_DISTANCE + r.zr2);
+			const px = (r.xr - offsetX.current) * ps + w / 2;
+			const py = h / 2 - (r.yr - offsetY.current) * ps;
+			if (px < minPx) minPx = px;
+			if (px > maxPx) maxPx = px;
+			if (py < minPy) minPy = py;
+			if (py > maxPy) maxPy = py;
 		}
 
-		const projWidth = projMaxX - projMinX || 1;
-		const projHeight = projMaxY - projMinY || 1;
+		const projWidth = maxPx - minPx || 1;
+		const projHeight = maxPy - minPy || 1;
 
-		// Calculate scale to fit inside canvas with margin
-		const scaleXNew = (w - 2 * MARGIN_PX) / projWidth;
-		const scaleYNew = (h - 2 * MARGIN_PX) / projHeight;
-		const scale = Math.min(scaleXNew, scaleYNew);
-
-		// Set uniform scale
-		scaleX.current = scale;
-		scaleY.current = scale;
-
-		// Calculate offsets so bounding box is centered
-		// projected center:
-		const projCenterX = (projMinX + projMaxX) / 2;
-		const projCenterY = (projMinY + projMaxY) / 2;
-
-		// We want the projected center to be at canvas center, so offset data accordingly:
-		// To find offsetX and offsetY in data coords, invert projection for center:
-
-		// Because offsetX and offsetY are in data space and used inside project3Dto2D,
-		// we can approximate offsetX and offsetY by projecting the data center, then
-		// adjusting offsetX and offsetY so projected center moves to canvas center.
-
-		// Compute current data center
-		const dataCenterX = (minX.current! + maxX.current!) / 2;
-		const dataCenterY = (minY.current! + maxY.current!) / 2;
-
-		// Compute difference in projected space between projected data center and canvas center
-		const projectedDataCenter = project3Dto2D(
-			dataCenterX,
-			dataCenterY,
-			(minZ.current! + maxZ.current!) / 2,
-			w,
-			h,
+		// Compute uniform scale to fit within canvas with margin
+		const fitScale = Math.min(
+			(w - 2 * MARGIN_PX) / projWidth,
+			(h - 2 * MARGIN_PX) / projHeight,
 		);
 
-		const dx = projectedDataCenter.x - w / 2;
-		const dy = projectedDataCenter.y - h / 2;
-
-		// Adjust offsets by moving them in data space to counter this delta
-		// Approximate by unscaling:
-		offsetX.current += dx / (scaleX.current * scale);
-		offsetY.current -= dy / (scaleY.current * scale);
+		scaleX.current = fitScale;
+		scaleY.current = fitScale;
 
 		drawPoints();
 	};
+
+	const expand = () => {
+		setExpanded((prev) => {
+			if (prev) {
+				containerRef.current.style.height = "";
+				containerRef.current.style.width = "";
+			} else {
+				containerRef.current.style.height = "100%";
+				containerRef.current.style.width = "100%";
+			}
+			return !prev;
+		});
+	};
+
+	const toggleDragRotate = () => {
+		setDragRotateEnabled((prev) => {
+			dragRotateRef.current = !prev;
+			return !prev;
+		});
+	};
+
+	// Pointer event handlers for drag rotation
+	useEffect(() => {
+		const canvas = canvasRef.current;
+		if (!canvas) return;
+
+		const onPointerDown = (e: PointerEvent) => {
+			if (!dragRotateRef.current) return;
+			isDragging.current = true;
+			lastPointer.current = { x: e.clientX, y: e.clientY };
+			canvas.setPointerCapture(e.pointerId);
+
+			// Barycenter of points as rotation pivot
+			const pts = points.current;
+			if (pts.length > 0) {
+				let sx = 0,
+					sy = 0,
+					sz = 0;
+				for (const p of pts) {
+					sx += p.x;
+					sy += p.y;
+					sz += p.z;
+				}
+				const n = pts.length;
+				rotationCenter.current = { x: sx / n, y: sy / n, z: sz / n };
+			}
+		};
+
+		const onPointerMove = (e: PointerEvent) => {
+			if (!isDragging.current) return;
+			const dx = e.clientX - lastPointer.current.x;
+			const dy = e.clientY - lastPointer.current.y;
+			rotationY.current += dx * 0.01;
+			rotationX.current += dy * 0.01;
+			lastPointer.current = { x: e.clientX, y: e.clientY };
+			drawPoints();
+		};
+
+		const onPointerUp = (e: PointerEvent) => {
+			if (!isDragging.current) return;
+			isDragging.current = false;
+			canvas.releasePointerCapture(e.pointerId);
+		};
+
+		canvas.addEventListener("pointerdown", onPointerDown);
+		canvas.addEventListener("pointermove", onPointerMove);
+		canvas.addEventListener("pointerup", onPointerUp);
+
+		return () => {
+			canvas.removeEventListener("pointerdown", onPointerDown);
+			canvas.removeEventListener("pointermove", onPointerMove);
+			canvas.removeEventListener("pointerup", onPointerUp);
+		};
+	}, []);
 
 	useEffect(() => {
 		const resizeCanvas = () => {
@@ -258,7 +319,7 @@ export const XYZScope = ({ id, onClose, num }: WidgetProps) => {
 	useEffect(() => {
 		bufferSizeRef.current = bufferSize;
 		if (points.current.length > bufferSize) {
-			points.current = points.current.slice(points.current.length - bufferSize);
+			points.current = points.current.slice(-bufferSize);
 			drawPoints();
 		}
 	}, [bufferSize]);
@@ -288,24 +349,16 @@ export const XYZScope = ({ id, onClose, num }: WidgetProps) => {
 				latestY.current = null;
 				latestZ.current = null;
 				points.current = [];
-				resetExtrema();
 				scaleX.current = 1;
 				scaleY.current = 1;
 				offsetX.current = 0;
 				offsetY.current = 0;
 				rotationX.current = 0;
 				rotationY.current = 0;
+				rotationCenter.current = { x: 0, y: 0, z: 0 };
 			};
 
 			ws.onmessage = (event) => {
-				if (inactivityTimeout.current) {
-					clearTimeout(inactivityTimeout.current);
-				}
-				inactivityTimeout.current = setTimeout(() => {
-					setAutoPaused(true);
-				}, 1000);
-				setAutoPaused(false);
-
 				let message = {
 					on: undefined,
 					value: undefined,
@@ -321,15 +374,15 @@ export const XYZScope = ({ id, onClose, num }: WidgetProps) => {
 					message.on = name;
 					message.value = val;
 				}
-				const on = message.on;
-				const val = message.value;
+
+				const val = Number.parseFloat(message.value);
 				if (Number.isNaN(val)) return;
 
-				if (on === "x") {
+				if (message.on === "x") {
 					latestX.current = val;
-				} else if (on === "y") {
+				} else if (message.on === "y") {
 					latestY.current = val;
-				} else if (on === "z") {
+				} else if (message.on === "z") {
 					latestZ.current = val;
 				}
 
@@ -343,13 +396,19 @@ export const XYZScope = ({ id, onClose, num }: WidgetProps) => {
 						y: latestY.current,
 						z: latestZ.current,
 					});
-					updateExtrema(latestX.current, latestY.current, latestZ.current);
 
-					while (points.current.length > bufferSizeRef.current) {
-						points.current.shift();
+					if (points.current.length > bufferSizeRef.current) {
+						points.current = points.current.slice(-bufferSizeRef.current);
 					}
 
-					requestAnimationFrame(drawPoints);
+					if (!updateScheduled.current) {
+						updateScheduled.current = true;
+						requestAnimationFrame(() => {
+							drawPoints();
+							updateScheduled.current = false;
+						});
+					}
+
 					latestX.current = null;
 					latestY.current = null;
 					latestZ.current = null;
@@ -373,38 +432,9 @@ export const XYZScope = ({ id, onClose, num }: WidgetProps) => {
 		return () => {
 			isUnmounted.current = true;
 			if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
-			if (inactivityTimeout.current) clearTimeout(inactivityTimeout.current);
 			if (wsRef.current) wsRef.current.close();
 		};
 	}, [id]);
-
-	// Rotation controls
-	const tiltUp = () => {
-		rotationX.current -= 0.1;
-		drawPoints();
-	};
-	const tiltDown = () => {
-		rotationX.current += 0.1;
-		drawPoints();
-	};
-	const rotateLeft = () => {
-		rotationY.current -= 0.1;
-		drawPoints();
-	};
-	const rotateRight = () => {
-		rotationY.current += 0.1;
-		drawPoints();
-	};
-	const expand = () => {
-		setExpanded((prev) => !prev);
-		if (expanded) {
-			containerRef.current.style.height = "";
-			containerRef.current.style.width = "";
-		} else {
-			containerRef.current.style.height = "100%";
-			containerRef.current.style.width = "100%";
-		}
-	};
 
 	return (
 		<div ref={containerRef} className="scope">
@@ -446,12 +476,12 @@ export const XYZScope = ({ id, onClose, num }: WidgetProps) => {
 					tooltip="Expand widget"
 				/>
 				{expanded && (
-					<>
-						<Button text="↑" onClick={tiltUp} tooltip="Tilt Up" />
-						<Button text="↓" onClick={tiltDown} tooltip="Tilt Down" />
-						<Button text="←" onClick={rotateLeft} tooltip="Rotate Left" />
-						<Button text="→" onClick={rotateRight} tooltip="Rotate Right" />
-					</>
+					<Button
+						text="d"
+						activated={dragRotateEnabled}
+						onClick={toggleDragRotate}
+						tooltip="Toggle drag rotation"
+					/>
 				)}
 				<Button text="f" onClick={zoomToFit} tooltip="Zoom to Fit" />
 				<Button text="r" onClick={reset} tooltip="Reset" />
@@ -468,6 +498,7 @@ export const XYZScope = ({ id, onClose, num }: WidgetProps) => {
 					width: "100%",
 					height: "100%",
 					display: "block",
+					cursor: dragRotateEnabled ? "grab" : "default",
 				}}
 			/>
 		</div>
