@@ -29,6 +29,7 @@
   * Add connector for Ruby
   * Add connector for Python (usefull for distributed computation over the network)
   * Add connector for C
+* Add possibility to add/remove parameters dynamically for a registered service on the websocket bus (protocol expansion)
 
 ### Fix
 

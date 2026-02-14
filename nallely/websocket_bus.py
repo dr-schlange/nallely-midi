@@ -194,9 +194,18 @@ class WebSocketBus(VirtualDevice):
             print(f"[WS] Autoconfig for {service_name}")
             try:
                 message = json.loads(client.recv())
+                parameters = message["parameters"]
+                action = message.get("type")
                 if service_name not in self.connected:
                     # print(f"[DEBUG] Parameters: {message['parameters']}")
-                    self.configure_remote_device(service_name, parameters=message["parameters"])  # type: ignore
+                    self.configure_remote_device(service_name, parameters=parameters)  # type: ignore
+                elif action == "add_parameters":
+                    self.add_ports_to_remote_device(service_name, parameters=parameters)
+                elif action == "remove_parameters":
+                    self.remove_ports_to_remote_device(
+                        service_name, parameters=parameters
+                    )
+
             except (ConnectionClosed, TimeoutError) as e:
                 kind = (
                     "crashed"
@@ -335,7 +344,7 @@ class WebSocketBus(VirtualDevice):
                     )
                 )
 
-    def configure_remote_device(self, name, parameters: list[str | dict[str, Any]]):
+    def _add_ports(self, name, parameters: list[str | dict[str, Any]]):
         virtual_parameters = []
         for parameter in parameters:
             is_stream = False
@@ -363,9 +372,42 @@ class WebSocketBus(VirtualDevice):
             virtual_parameters.append(vparam)
             setattr(self.__class__, cv_name, vparam)
             if waiting_room and isinstance(waiting_room, WSWaitingRoom):
-                # if not waiting_room.outputs_queue:
                 del self.__dict__[cv_name]
                 waiting_room.rebind(self)
+        return virtual_parameters
+
+    def add_ports_to_remote_device(self, name, parameters: list[str | dict[str, Any]]):
+        virtual_parameters = self._add_ports(name, parameters)
+        self.known_services[name].extend(virtual_parameters)
+        if self.to_update:
+            self.to_update.send_update(self)
+
+    def remove_ports_to_remote_device(
+        self, name, parameters: list[str | dict[str, Any]]
+    ):
+        param_names = [
+            f"{name}_{parameter.get('name')}"
+            for parameter in parameters
+            if isinstance(parameter, dict)
+        ]
+        service_parameters = self.known_services[name]
+        to_remove = [
+            parameter
+            for parameter in service_parameters
+            if parameter.name in param_names
+        ]
+        for parameter in to_remove:
+            service_parameters.remove(parameter)
+            delattr(
+                self.__class__,
+                parameter.cv_name,
+            )
+
+        if self.to_update:
+            self.to_update.send_update(self)
+
+    def configure_remote_device(self, name, parameters: list[str | dict[str, Any]]):
+        virtual_parameters = self._add_ports(name, parameters)
         self.known_services[name] = virtual_parameters
         if self.to_update:
             self.to_update.send_update(self)
