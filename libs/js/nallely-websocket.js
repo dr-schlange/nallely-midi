@@ -15,7 +15,7 @@ class NallelyService {
 		const nallelyId = params.get("nallelyId") || name;
 		const nallelyOrigin = params.get("nallelyOrigin") || address;
 		this.url = nallelyOrigin
-			? `ws://${nallelyOrigin}/${nallelyId}/autoconfig`
+			? `${nallelyOrigin}/${nallelyId}/autoconfig`
 			: `ws://${window.location.hostname}:6789/${nallelyId}/autoconfig`;
 		this.register = register;
 		this.autoRegister();
