@@ -5,6 +5,7 @@ import UplotReact from "uplot-react";
 import walkerSprites from "../../assets/walker.png";
 import DragNumberInput from "../DragInputs";
 import { Button, type WidgetProps } from "./BaseComponents";
+import { useTrevorSelector } from "../../store";
 
 const RECO_DELAY = 5000;
 const BUFFER_SIZE = 100;
@@ -109,6 +110,10 @@ export const Scope = ({
 	const elapsed = useRef(0);
 	const firstValue = useRef(false);
 
+	const host = useTrevorSelector((state) => state.general.trevorWebsocketURL);
+	const hostRef = useRef(host);
+	const userClosingRequest = useRef(false);
+
 	const [options, setOptions] = useState<uPlot.Options>(
 		buildOptions(displayMode, label, bufferSize, followModeRef.current),
 	);
@@ -186,11 +191,15 @@ export const Scope = ({
 	};
 
 	useEffect(() => {
+		isUnmounted.current = false;
+		userClosingRequest.current = false;
+		hostRef.current = host;
+
 		function connect() {
 			if (isUnmounted.current) return;
 
 			const ws = new WebSocket(
-				`ws://${window.location.hostname}:6789/${id}/autoconfig`,
+				`${hostRef.current.replace(":6788", ":6789")}/${id}/autoconfig`,
 			);
 			ws.binaryType = "arraybuffer";
 			wsRef.current = ws;
@@ -307,7 +316,9 @@ export const Scope = ({
 			};
 
 			ws.onerror = (err) => {
-				console.error("WebSocket error: ", err);
+				if (!userClosingRequest.current) {
+					console.error("WebSocket error: ", err);
+				}
 				firstValue.current = false;
 				ws.close();
 			};
@@ -321,6 +332,7 @@ export const Scope = ({
 			}
 			setTimeout(() => {
 				isUnmounted.current = true;
+				userClosingRequest.current = true;
 
 				if (retryTimeoutRef.current !== null) {
 					clearTimeout(retryTimeoutRef.current);
@@ -332,7 +344,7 @@ export const Scope = ({
 				}
 			}, 1000);
 		};
-	}, [id]);
+	}, [id, host]);
 
 	return (
 		<div className="scope" style={style ?? {}}>

@@ -26,10 +26,11 @@
   * Add LLM/RAG oriented skill file with instruction to help you generate connector for your language to build external neurons and implement Trevor protocol
 * Add various connectors for different languages
   * Add [connector for Pharo Smalltalk dialect](https://github.com/dr-schlange/nallely-pharo): create your neurons in Pharo
-  * Add connector for Ruby
-  * Add connector for Python (usefull for distributed computation over the network)
-  * Add connector for C
+  * Add connector for Ruby (LLM generated)
+  * Add connector for Python, usefull for distributed computation over the network (LLM generated, manually modified)
+  * Add connector for C (LLM generated)
 * Add possibility to add/remove parameters dynamically for a registered service on the websocket bus (protocol expansion)
+* Add auto-refresh for XYScope (2D scope) and XYZScope (3D scope)
 
 ### Fix
 
@@ -43,6 +44,7 @@
 * Fix oscilloscope for smoother experience with less refresh
 * Fix 2D oscilloscope for smoother experience with less refresh
 * Fix 3D oscilloscope for smoother experience with less refresh and new rotation capability (touch instead of buttons)
+* Fix oscilloscope widget reconnection on new remote host
 
 ## Nallely v0.4.0 -- Tepezcohuite
 

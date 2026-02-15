@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import DragNumberInput from "../DragInputs";
 import { Button, type WidgetProps } from "./BaseComponents";
+import { useTrevorSelector } from "../../store";
 
 const BUFFER_SIZE_MAX = 5000;
 const BUFFER_SIZE_MIN = 2;
@@ -14,6 +15,10 @@ export const XYZScope = ({ id, onClose, num }: WidgetProps) => {
 	const canvasRef = useRef<HTMLCanvasElement | null>(null);
 	const wsRef = useRef<WebSocket | null>(null);
 	const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const autorefreshTimerRef = useRef<ReturnType<typeof setInterval> | null>(
+		null,
+	);
+	const [autorefresh, setAutorefresh] = useState<boolean>(true);
 	const isUnmounted = useRef(false);
 	const [bufferSize, setBufferSize] = useState<number>(BUFFER_SIZE);
 	const bufferSizeRef = useRef(bufferSize);
@@ -23,6 +28,9 @@ export const XYZScope = ({ id, onClose, num }: WidgetProps) => {
 	const latestZ = useRef<number | null>(null);
 	const points = useRef<{ x: number; y: number; z: number }[]>([]);
 
+	const host = useTrevorSelector((state) => state.general.trevorWebsocketURL);
+	const hostRef = useRef(host);
+	const userClosingRequest = useRef(false);
 	const updateScheduled = useRef(false);
 
 	// Viewport transform refs
@@ -325,11 +333,15 @@ export const XYZScope = ({ id, onClose, num }: WidgetProps) => {
 	}, [bufferSize]);
 
 	useEffect(() => {
+		isUnmounted.current = false;
+		userClosingRequest.current = false;
+		hostRef.current = host;
+
 		function connect() {
 			if (isUnmounted.current) return;
 
 			const ws = new WebSocket(
-				`ws://${window.location.hostname}:6789/${id}/autoconfig`,
+				`${hostRef.current.replace(":6788", ":6789")}/${id}/autoconfig`,
 			);
 			ws.binaryType = "arraybuffer";
 			wsRef.current = ws;
@@ -422,7 +434,9 @@ export const XYZScope = ({ id, onClose, num }: WidgetProps) => {
 			};
 
 			ws.onerror = (err) => {
-				console.error("WebSocket error:", err);
+				if (!userClosingRequest.current) {
+					console.error("WebSocket error:", err);
+				}
 				ws.close();
 			};
 		}
@@ -431,10 +445,26 @@ export const XYZScope = ({ id, onClose, num }: WidgetProps) => {
 
 		return () => {
 			isUnmounted.current = true;
+			userClosingRequest.current = true;
 			if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
 			if (wsRef.current) wsRef.current.close();
 		};
-	}, [id]);
+	}, [id, host]);
+
+	useEffect(() => {
+		const timer = autorefreshTimerRef.current;
+		if (!autorefresh && timer) {
+			clearTimeout(timer);
+			autorefreshTimerRef.current = null;
+			return;
+		}
+		if (!autorefresh) {
+			return;
+		}
+		if (!timer) {
+			autorefreshTimerRef.current = setInterval(() => zoomToFit(), 1 / 60);
+		}
+	}, [autorefresh]);
 
 	return (
 		<div ref={containerRef} className="scope">
@@ -474,8 +504,14 @@ export const XYZScope = ({ id, onClose, num }: WidgetProps) => {
 					activated={expanded}
 					onClick={expand}
 					tooltip="Expand widget"
-				/>
-				{expanded && (
+				/>				<Button
+					text="a"
+					activated={autorefresh}
+					onClick={() => {
+						setAutorefresh((prev) => !prev);
+					}}
+					tooltip="Autorefresh"
+				/>				{expanded && (
 					<Button
 						text="d"
 						activated={dragRotateEnabled}
