@@ -5,7 +5,6 @@
 ### Features
 
 * KeySplitter gains ability to either suppress or keep the last note yielded by a range
-* Add rebinding of services registered to the websocket bus to other services registered on the websocket bus (extension of waiting room handling)
 * Add new neurons
   * Add experimental Universal Slope Generator in a Serge-style fashion (mostly LLM generated)
   * Add experimental Smooth Stepped Generator in a Serge-style fashion (mostly LLM generated)
@@ -14,12 +13,12 @@
   * Add experimental KineticShaper
   * Add experimental Transistor
 * Add current value and local bound display in the 1D scope
+* Add auto-refresh for XYScope (2D scope) and XYZScope (3D scope)
 * Add different precision handling on swipe fields for numbers in TrevorUI
 * Add documentation about how to write neurons (virtual devices)
 * Add new methods in neuron's reflexive API
   * Add methods to get incoming/outgoing links from a port
   * Add method to get incoming/outgoing links from a device
-* Websocket bus now considers Float64 by default
 * LLM makes it in Nallely, not as a dev, not as a contributor, but as a user:
   * Use LLMs (RAG) to build patches interactively
   * LLM/RAG can auto-register as an external neuron and monitor/debug patches
@@ -29,8 +28,10 @@
   * Add connector for Ruby (LLM generated)
   * Add connector for Python, usefull for distributed computation over the network (LLM generated, manually modified)
   * Add connector for C (LLM generated)
+* Add rebinding of services registered to the websocket bus to other services registered on the websocket bus (extension of waiting room handling)
 * Add possibility to add/remove parameters dynamically for a registered service on the websocket bus (protocol expansion)
-* Add auto-refresh for XYScope (2D scope) and XYZScope (3D scope)
+* Websocket bus now considers Float64 by default
+* Add first OSCBus implementation, works using a similar protocol than the one for the WebSocketBus
 
 ### Fix
 
