@@ -7,13 +7,10 @@ interface FriendModalProps {
 }
 
 const TrevorFriend = ({ ip, port, selected }) => {
-	// const [trevor, setTrevor] = useState(2);
 	const dispatch = useTrevorDispatch();
 
 	const changeTrevor = () => {
-		// const next = (trevor % 2) + 1;
-		// setTrevor(next);
-		dispatch(setWebsocketURL(`ws://${ip}:${port}/trevor`));
+		dispatch(setWebsocketURL(`ws://${ip}:${port}`));
 	};
 
 	return (
@@ -65,7 +62,7 @@ export const FriendModal = ({ onClose }: FriendModalProps) => {
 							key={`${ip}:${port}`}
 							ip={ip}
 							port={port}
-							selected={`ws://${ip}:${port}/trevor` === trevorURL}
+							selected={`ws://${ip}:${port}` === trevorURL}
 						/>
 					))}
 				{}
