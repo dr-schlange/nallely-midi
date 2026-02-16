@@ -16,6 +16,7 @@ import { setFullState } from "../store/trevorSlice";
 import { isPadOrdKey, isPadsOrdKeys, isVirtualParameter } from "../utils/utils";
 import * as RuntimeAPI from "../store/runtimeSlice";
 import * as TrevorAPI from "../store/trevorSlice";
+import * as GeneralAPI from "../store/generalSlice";
 
 // const WEBSOCKET_URL = `ws://${window.location.hostname}:6788/trevor`;
 
@@ -137,6 +138,12 @@ export class TrevorWebSocket {
 			if (message.command.startsWith("TrevorAPI::")) {
 				const apiCommand =
 					TrevorAPI[message.command.replace("TrevorAPI::", "")];
+				store.dispatch(apiCommand(message.arg));
+				return;
+			}
+			if (message.command.startsWith("GeneralAPI::")) {
+				const apiCommand =
+					GeneralAPI[message.command.replace("GeneralAPI::", "")];
 				store.dispatch(apiCommand(message.arg));
 				return;
 			}
@@ -627,6 +634,12 @@ export class TrevorWebSocket {
 		this.sendJsonMessage({
 			command: "unregister_service",
 			service_name,
+		});
+	}
+
+	scanForFriends() {
+		this.sendJsonMessage({
+			command: "scan_for_friends",
 		});
 	}
 }

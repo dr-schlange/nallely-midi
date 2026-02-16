@@ -504,14 +504,16 @@ export const XYZScope = ({ id, onClose, num }: WidgetProps) => {
 					activated={expanded}
 					onClick={expand}
 					tooltip="Expand widget"
-				/>				<Button
+				/>{" "}
+				<Button
 					text="a"
 					activated={autorefresh}
 					onClick={() => {
 						setAutorefresh((prev) => !prev);
 					}}
 					tooltip="Autorefresh"
-				/>				{expanded && (
+				/>{" "}
+				{expanded && (
 					<Button
 						text="d"
 						activated={dragRotateEnabled}

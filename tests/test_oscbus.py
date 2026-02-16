@@ -1,10 +1,10 @@
 import json
 import time
-import pytest
 
-from nallely.osc_bus import OSCBus
+import pytest
 from pythonosc.udp_client import SimpleUDPClient
 
+from nallely.osc_bus import OSCBus
 
 PORT = 6789
 

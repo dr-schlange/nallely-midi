@@ -1,6 +1,8 @@
+import base64
 import http.server
 import io
 import json
+import os
 import queue
 import socketserver
 import sys
@@ -15,7 +17,7 @@ from itertools import zip_longest
 from pathlib import Path
 from textwrap import indent
 
-from websockets import ConnectionClosed, ConnectionClosedError
+from websockets import ConnectionClosed, ConnectionClosedError, InvalidMessage
 from websockets.sync.server import serve
 
 from ..core import (
@@ -192,6 +194,8 @@ class TrevorBus(VirtualDevice):
     def setup(self):
         try:
             self.server.serve_forever()
+        except InvalidMessage as e:
+            print(f"[TrevorBus] Invalid message received, someone's scanning?")
         except Exception as e:
             print("[TrevorBus] Error while serving the trevor websocket server", e)
         return super().setup()
@@ -622,7 +626,7 @@ class TrevorBus(VirtualDevice):
         self.ws.unregister_service(service_name)
         return self.full_state()
 
-    def scan_for_friends(self):
+    def scan_for_friends(self, force=False):
         if self.current_scan is not None:
             return
 
@@ -632,6 +636,17 @@ class TrevorBus(VirtualDevice):
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.settimeout(TIMEOUT)
                 if s.connect_ex((ip, port)) == 0:
+                    pseudo_key = base64.b64encode(os.urandom(16)).decode("utf-8")
+                    header = (
+                        f"GET / HTTP/1.1\r\n"
+                        f"Host: {ip}\r\n"
+                        f"Upgrade: websocket\r\n"
+                        f"Connection: Upgrade\r\n"
+                        f"Sec-WebSocket-Key: {pseudo_key}\r\n"
+                        f"Sec-WebSocket-Version: 13\r\n"
+                        f"\r\n"
+                    )
+                    s.sendall(header.encode("utf-8"))
                     print(f"[TrevorBus] Friend found: {ip}:{port}")
                     self.current_scan.append((ip, port))
 
@@ -644,7 +659,9 @@ class TrevorBus(VirtualDevice):
                     executor.submit(check_port, ip, port)
         result = list(self.current_scan)
         self.current_scan = None
-        return result
+        self.send_message({"command": "GeneralAPI::setOnlineFriends", "arg": result})
+        if force:
+            return result
 
 
 import socket
@@ -881,7 +898,7 @@ def _trevor_menu(loaded_paths, init_script, trevor_bus=None, trevor_ui=None):
                         print(f"There is no device {num}")
             elif q == "sc":
                 if trevor_bus:
-                    friends = trevor_bus.scan_for_friends()
+                    friends = trevor_bus.scan_for_friends(force=True)
                     if not friends:
                         print("There is no friend around :(")
                         return

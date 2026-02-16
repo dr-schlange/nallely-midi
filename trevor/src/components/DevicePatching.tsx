@@ -43,6 +43,7 @@ import { MemoryModal } from "./modals/MemoryModal";
 import { setCurrentAddress } from "../store/runtimeSlice";
 import { Button } from "./widgets/BaseComponents";
 import { Portal } from "./Portal";
+import { FriendModal } from "./modals/FriendModal";
 
 const VERTICAL = "⇄";
 const HORIZONTAL = "⇅";
@@ -61,6 +62,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 	const [isAboutOpen, setIsAboutOpen] = useState(false);
 	const [isMemoryOpen, setIsMemoryOpen] = useState(false);
 	const [isPlaygroundOpen, setIsPlaygroundOpen] = useState(false);
+	const [isFriendsOpen, setIsFriendsOpen] = useState(false);
 
 	const [selectedSections, setSelectedSections] = useState<{
 		firstSection: MidiDeviceWithSection | VirtualDeviceWithSection | null;
@@ -705,6 +707,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 		setIsPlaygroundOpen(false);
 		// setAssociateMode(false);
 		setIsMemoryOpen(false);
+		setIsFriendsOpen(false);
 	};
 
 	const [linkMouseInteraction, setLinkMouseInteraction] = useState(false);
@@ -1266,6 +1269,23 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 						>
 							🌐
 						</button>
+						{/* <button
+							className="rightbar-button"
+							type="button"
+							onClick={() => open3DView?.(true)}
+						>
+							〰
+						</button> */}
+						<button
+							className="rightbar-button"
+							type="button"
+							onClick={() => {
+								setIsFriendsOpen(true);
+								trevorSocket?.scanForFriends();
+							}}
+						>
+							<p style={{ fontSize: "12px" }}>friends</p>
+						</button>
 					</div>
 				)}
 			</div>
@@ -1294,6 +1314,11 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 			{isMemoryOpen && (
 				<Portal>
 					<MemoryModal onClose={closeModal} onLoad={handleLoadOk} />
+				</Portal>
+			)}
+			{isFriendsOpen && (
+				<Portal>
+					<FriendModal onClose={closeModal} />
 				</Portal>
 			)}
 		</div>

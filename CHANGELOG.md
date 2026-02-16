@@ -32,6 +32,8 @@
 * Add possibility to add/remove parameters dynamically for a registered service on the websocket bus (protocol expansion)
 * Websocket bus now considers Float64 by default
 * Add first OSCBus implementation, works using a similar protocol than the one for the WebSocketBus
+* Add new service to detect running Nallely session on the local network
+* Add possitiliby to switch session from TrevorUI
 
 ### Fix
 

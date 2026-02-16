@@ -1,9 +1,10 @@
 import json
 import time
+
 import pytest
-from nallely import WebSocketBus
 from websockets.sync.client import connect
 
+from nallely import WebSocketBus
 
 PORT = 6789
 
