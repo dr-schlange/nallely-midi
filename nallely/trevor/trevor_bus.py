@@ -633,35 +633,48 @@ class TrevorBus(VirtualDevice):
         self.current_scan = []
 
         def check_port(ip, port):
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.settimeout(TIMEOUT)
-                if s.connect_ex((ip, port)) == 0:
-                    pseudo_key = base64.b64encode(os.urandom(16)).decode("utf-8")
-                    header = (
-                        f"GET / HTTP/1.1\r\n"
-                        f"Host: {ip}\r\n"
-                        f"Upgrade: websocket\r\n"
-                        f"Connection: Upgrade\r\n"
-                        f"Sec-WebSocket-Key: {pseudo_key}\r\n"
-                        f"Sec-WebSocket-Version: 13\r\n"
-                        f"\r\n"
-                    )
-                    s.sendall(header.encode("utf-8"))
-                    print(f"[TrevorBus] Friend found: {ip}:{port}")
-                    self.current_scan.append((ip, port))
+            try:
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                    s.settimeout(TIMEOUT)
+                    if s.connect_ex((ip, port)) == 0:
+                        pseudo_key = base64.b64encode(os.urandom(16)).decode("utf-8")
+                        header = (
+                            f"GET / HTTP/1.1\r\n"
+                            f"Host: {ip}\r\n"
+                            f"Upgrade: websocket\r\n"
+                            f"Connection: Upgrade\r\n"
+                            f"Sec-WebSocket-Key: {pseudo_key}\r\n"
+                            f"Sec-WebSocket-Version: 13\r\n"
+                            f"\r\n"
+                        )
+                        s.sendall(header.encode("utf-8"))
+                        print(f"[TrevorBus] Friend found: {ip}:{port}")
+                        self.current_scan.append((ip, port))
+            except Exception:
+                pass
 
-        prefix = ".".join(get_my_ip().split(".")[:-1])
-
-        with ThreadPoolExecutor(max_workers=100) as executor:
-            for i in range(1, 255):
-                ip = f"{prefix}.{i}"
-                for port in PORTS:
-                    executor.submit(check_port, ip, port)
-        result = list(self.current_scan)
-        self.current_scan = None
-        self.send_message({"command": "GeneralAPI::setOnlineFriends", "arg": result})
-        if force:
-            return result
+        my_ip = get_my_ip()
+        if my_ip is None:
+            self.send_message({"command": "GeneralAPI::setOnlineFriends", "arg": []})
+            if force:
+                return []
+        else:
+            prefix = ".".join(my_ip.split(".")[:-1])
+            try:
+                with ThreadPoolExecutor(max_workers=100) as executor:
+                    for i in range(1, 255):
+                        ip = f"{prefix}.{i}"
+                        for port in PORTS:
+                            executor.submit(check_port, ip, port)
+            except Exception:
+                pass
+            result = list(self.current_scan)
+            self.current_scan = None
+            self.send_message(
+                {"command": "GeneralAPI::setOnlineFriends", "arg": result}
+            )
+            if force:
+                return result
 
 
 import socket
@@ -677,6 +690,8 @@ def get_my_ip():
         s.connect(("8.8.8.8", 80))
         ip = s.getsockname()[0]
         return ip
+    except Exception:
+        return None
     finally:
         s.close()
 
