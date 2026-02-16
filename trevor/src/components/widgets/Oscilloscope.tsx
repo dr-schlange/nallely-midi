@@ -4,10 +4,8 @@ import type uPlot from "uplot";
 import UplotReact from "uplot-react";
 import walkerSprites from "../../assets/walker.png";
 import DragNumberInput from "../DragInputs";
-import { Button, type WidgetProps } from "./BaseComponents";
-import { useTrevorSelector } from "../../store";
+import { Button, useNallelyRegistration, type WidgetProps } from "./BaseComponents";
 
-const RECO_DELAY = 5000;
 const BUFFER_SIZE = 100;
 const BUFFER_UPPER = 2000;
 const BUFFER_LOWER = 2;
@@ -88,9 +86,6 @@ export const Scope = ({
 		x: Array.from({ length: bufferSize }, (_, i) => i),
 		y: new Array(bufferSize).fill(0),
 	});
-	const wsRef = useRef<WebSocket | null>(null);
-	const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-	const isUnmounted = useRef(false);
 	const chartRef = useRef<uPlot | null>(null);
 	const updateScheduled = useRef(false);
 	const inactivityTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -109,10 +104,6 @@ export const Scope = ({
 	const [chartKey, setChartKey] = useState(0);
 	const elapsed = useRef(0);
 	const firstValue = useRef(false);
-
-	const host = useTrevorSelector((state) => state.general.trevorWebsocketURL);
-	const hostRef = useRef(host);
-	const userClosingRequest = useRef(false);
 
 	const [options, setOptions] = useState<uPlot.Options>(
 		buildOptions(displayMode, label, bufferSize, followModeRef.current),
@@ -190,161 +181,96 @@ export const Scope = ({
 		elapsed.current = 0;
 	};
 
-	useEffect(() => {
-		isUnmounted.current = false;
-		userClosingRequest.current = false;
-		hostRef.current = host;
+	const scopeParameters = useRef({
+		data: { min: null, max: null, stream: true },
+	}).current;
+	const scopeConfig = useRef({}).current;
 
-		function connect() {
-			if (isUnmounted.current) return;
-
-			const ws = new WebSocket(
-				`${hostRef.current.replace(":6788", ":6789")}/${id}/autoconfig`,
-			);
-			ws.binaryType = "arraybuffer";
-			wsRef.current = ws;
-
-			ws.onopen = () => {
-				ws.send(
-					JSON.stringify({
-						kind: "oscilloscope",
-						parameters: [{ name: "data", stream: true }],
-					}),
-				);
-				firstValue.current = false;
-			};
-
-			ws.onmessage = (event) => {
-				if (inactivityTimeout.current) {
-					clearTimeout(inactivityTimeout.current);
-				}
-
-				inactivityTimeout.current = setTimeout(() => {
-					walkerRef.current?.classList.add("paused");
-				}, 1000);
-
-				walkerRef.current?.classList.remove("paused");
-
-				let message = {
-					on: undefined,
-					value: undefined,
-				};
-				const data = event.data;
-				if (typeof event.data === "string") {
-					message = JSON.parse(data);
-				} else {
-					const dv = new DataView(data);
-					const len = dv.getUint8(0);
-					const name = new TextDecoder().decode(new Uint8Array(data, 1, len));
-					const val = dv.getFloat64(1 + len, false);
-					message.on = name;
-					message.value = val;
-				}
-
-				const newValue = Number.parseFloat(message.value);
-				onMessage?.(message.value);
-				if (Number.isNaN(newValue)) return;
-
-				if (message.on !== labelRef.current) {
-					labelRef.current = message.on;
-					setLabel(message.on);
-				}
-
-				const buf = bufferRef.current;
-				const mode = followModeRef.current;
-				const size = bufferSizeRef.current;
-				if (mode === "cyclic") {
-					elapsed.current = (elapsed.current + 1) % size;
-					buf.y[elapsed.current] = newValue;
-				} else {
-					elapsed.current = elapsed.current + 1;
-					buf.x.push(elapsed.current);
-					buf.y.push(newValue);
-					if (buf.x.length > size) {
-						buf.x.shift();
-						buf.y.shift();
-					}
-				}
-
-				if (!updateScheduled.current) {
-					updateScheduled.current = true;
-					requestAnimationFrame(() => {
-						let min = Infinity,
-							max = -Infinity;
-						for (const v of buf.y) {
-							if (v < min) min = v;
-							if (v > max) max = v;
-						}
-						upperBound.current = max;
-						lowerBound.current = min;
-						if (chartRef.current) {
-							chartRef.current.batch(() => {
-								chartRef.current.setData([buf.x, buf.y], false);
-								if (buf.x.length > 0) {
-									chartRef.current.setScale("x", {
-										min: buf.x[0],
-										max: buf.x[buf.x.length - 1],
-									});
-								}
-								if (min !== Infinity) {
-									const pad = max === min ? 0.1 : 0;
-									chartRef.current.setScale("y", {
-										min: min - pad,
-										max: max + pad,
-									});
-								}
-							});
-						}
-						updateScheduled.current = false;
-						if (statsRef.current) {
-							statsRef.current.textContent = `min: ${min === Infinity ? "?" : min}\nval: ${newValue}\nmax: ${max === -Infinity ? "?" : max}`;
-						}
-					});
-				}
-				if (firstValue.current === false) {
-					firstValue.current = true;
-					resetBounds(followMode);
-				}
-			};
-
-			ws.onclose = () => {
-				if (!isUnmounted.current) {
-					console.warn("WebSocket closed, scheduling reconnect...");
-					firstValue.current = false;
-					retryTimeoutRef.current = setTimeout(connect, RECO_DELAY);
-				}
-			};
-
-			ws.onerror = (err) => {
-				if (!userClosingRequest.current) {
-					console.error("WebSocket error: ", err);
-				}
-				firstValue.current = false;
-				ws.close();
-			};
-		}
-
-		connect();
-
-		return () => {
+	useNallelyRegistration(
+		id,
+		scopeParameters,
+		scopeConfig,
+		"oscilloscope",
+		(message) => {
 			if (inactivityTimeout.current) {
 				clearTimeout(inactivityTimeout.current);
 			}
-			setTimeout(() => {
-				isUnmounted.current = true;
-				userClosingRequest.current = true;
 
-				if (retryTimeoutRef.current !== null) {
-					clearTimeout(retryTimeoutRef.current);
-				}
-
-				if (wsRef.current) {
-					wsRef.current.close();
-					wsRef.current = null;
-				}
+			inactivityTimeout.current = setTimeout(() => {
+				walkerRef.current?.classList.add("paused");
 			}, 1000);
-		};
-	}, [id, host]);
+
+			walkerRef.current?.classList.remove("paused");
+
+			const newValue = Number.parseFloat(message.value);
+			onMessage?.(message.value);
+			if (Number.isNaN(newValue)) return;
+
+			if (message.on !== labelRef.current) {
+				labelRef.current = message.on;
+				setLabel(message.on);
+			}
+
+			const buf = bufferRef.current;
+			const mode = followModeRef.current;
+			const size = bufferSizeRef.current;
+			if (mode === "cyclic") {
+				elapsed.current = (elapsed.current + 1) % size;
+				buf.y[elapsed.current] = newValue;
+			} else {
+				elapsed.current = elapsed.current + 1;
+				buf.x.push(elapsed.current);
+				buf.y.push(newValue);
+				if (buf.x.length > size) {
+					buf.x.shift();
+					buf.y.shift();
+				}
+			}
+
+			if (!updateScheduled.current) {
+				updateScheduled.current = true;
+				requestAnimationFrame(() => {
+					let min = Infinity,
+						max = -Infinity;
+					for (const v of buf.y) {
+						if (v < min) min = v;
+						if (v > max) max = v;
+					}
+					upperBound.current = max;
+					lowerBound.current = min;
+					if (chartRef.current) {
+						chartRef.current.batch(() => {
+							chartRef.current.setData([buf.x, buf.y], false);
+							if (buf.x.length > 0) {
+								chartRef.current.setScale("x", {
+									min: buf.x[0],
+									max: buf.x[buf.x.length - 1],
+								});
+							}
+							if (min !== Infinity) {
+								const pad = max === min ? 0.1 : 0;
+								chartRef.current.setScale("y", {
+									min: min - pad,
+									max: max + pad,
+								});
+							}
+						});
+					}
+					updateScheduled.current = false;
+					if (statsRef.current) {
+						statsRef.current.textContent = `min: ${min === Infinity ? "?" : min}\nval: ${newValue}\nmax: ${max === -Infinity ? "?" : max}`;
+					}
+				});
+			}
+			if (firstValue.current === false) {
+				firstValue.current = true;
+				resetBounds(followMode);
+			}
+		},
+		() => {
+			firstValue.current = false;
+		},
+	);
 
 	return (
 		<div className="scope" style={style ?? {}}>

@@ -78,8 +78,14 @@ export const useNallelyRegistration = (
 	parameters: any,
 	config: any,
 	category: string,
+	onmessage?: (message: { on: string; value: number }) => void,
+	onopen?: () => void,
 ) => {
 	const serviceRef = useRef<any>(null);
+	const onmessageRef = useRef(onmessage);
+	const onopenRef = useRef(onopen);
+	onmessageRef.current = onmessage;
+	onopenRef.current = onopen;
 	const host = useTrevorSelector((state) => state.general.trevorWebsocketURL);
 
 	useEffect(() => {
@@ -94,6 +100,8 @@ export const useNallelyRegistration = (
 			config,
 			host.replace(":6788", ":6789"),
 		);
+		service.onmessage = (msg: any) => onmessageRef.current?.(msg);
+		service.onopen = () => onopenRef.current?.();
 		serviceRef.current = service;
 		return () => {
 			serviceRef.current?.dispose();

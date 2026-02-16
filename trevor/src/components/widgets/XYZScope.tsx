@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import DragNumberInput from "../DragInputs";
-import { Button, type WidgetProps } from "./BaseComponents";
-import { useTrevorSelector } from "../../store";
+import { Button, useNallelyRegistration, type WidgetProps } from "./BaseComponents";
 
 const BUFFER_SIZE_MAX = 5000;
 const BUFFER_SIZE_MIN = 2;
@@ -13,13 +12,10 @@ export const XYZScope = ({ id, onClose, num }: WidgetProps) => {
 	const containerRef = useRef<HTMLDivElement | null>(null);
 	const [expanded, setExpanded] = useState(false);
 	const canvasRef = useRef<HTMLCanvasElement | null>(null);
-	const wsRef = useRef<WebSocket | null>(null);
-	const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const autorefreshTimerRef = useRef<ReturnType<typeof setInterval> | null>(
 		null,
 	);
 	const [autorefresh, setAutorefresh] = useState<boolean>(true);
-	const isUnmounted = useRef(false);
 	const [bufferSize, setBufferSize] = useState<number>(BUFFER_SIZE);
 	const bufferSizeRef = useRef(bufferSize);
 
@@ -28,9 +24,6 @@ export const XYZScope = ({ id, onClose, num }: WidgetProps) => {
 	const latestZ = useRef<number | null>(null);
 	const points = useRef<{ x: number; y: number; z: number }[]>([]);
 
-	const host = useTrevorSelector((state) => state.general.trevorWebsocketURL);
-	const hostRef = useRef(host);
-	const userClosingRequest = useRef(false);
 	const updateScheduled = useRef(false);
 
 	// Viewport transform refs
@@ -332,124 +325,72 @@ export const XYZScope = ({ id, onClose, num }: WidgetProps) => {
 		}
 	}, [bufferSize]);
 
-	useEffect(() => {
-		isUnmounted.current = false;
-		userClosingRequest.current = false;
-		hostRef.current = host;
+	const scopeParameters = useRef({
+		x: { min: null, max: null, stream: true },
+		y: { min: null, max: null, stream: true },
+		z: { min: null, max: null, stream: true },
+	}).current;
+	const scopeConfig = useRef({}).current;
 
-		function connect() {
-			if (isUnmounted.current) return;
+	useNallelyRegistration(
+		id,
+		scopeParameters,
+		scopeConfig,
+		"oscilloscope",
+		(message) => {
+			const val = Number.parseFloat(message.value);
+			if (Number.isNaN(val)) return;
 
-			const ws = new WebSocket(
-				`${hostRef.current.replace(":6788", ":6789")}/${id}/autoconfig`,
-			);
-			ws.binaryType = "arraybuffer";
-			wsRef.current = ws;
+			if (message.on === "x") {
+				latestX.current = val;
+			} else if (message.on === "y") {
+				latestY.current = val;
+			} else if (message.on === "z") {
+				latestZ.current = val;
+			}
 
-			ws.onopen = () => {
-				ws.send(
-					JSON.stringify({
-						kind: "oscilloscope",
-						parameters: [
-							{ name: "x", stream: true },
-							{ name: "y", stream: true },
-							{ name: "z", stream: true },
-						],
-					}),
-				);
+			if (
+				latestX.current != null &&
+				latestY.current != null &&
+				latestZ.current != null
+			) {
+				points.current.push({
+					x: latestX.current,
+					y: latestY.current,
+					z: latestZ.current,
+				});
+
+				if (points.current.length > bufferSizeRef.current) {
+					points.current = points.current.slice(-bufferSizeRef.current);
+				}
+
+				if (!updateScheduled.current) {
+					updateScheduled.current = true;
+					requestAnimationFrame(() => {
+						drawPoints();
+						updateScheduled.current = false;
+					});
+				}
+
 				latestX.current = null;
 				latestY.current = null;
 				latestZ.current = null;
-				points.current = [];
-				scaleX.current = 1;
-				scaleY.current = 1;
-				offsetX.current = 0;
-				offsetY.current = 0;
-				rotationX.current = 0;
-				rotationY.current = 0;
-				rotationCenter.current = { x: 0, y: 0, z: 0 };
-			};
-
-			ws.onmessage = (event) => {
-				let message = {
-					on: undefined,
-					value: undefined,
-				};
-				const data = event.data;
-				if (typeof event.data === "string") {
-					message = JSON.parse(data);
-				} else {
-					const dv = new DataView(data);
-					const len = dv.getUint8(0);
-					const name = new TextDecoder().decode(new Uint8Array(data, 1, len));
-					const val = dv.getFloat64(1 + len, false);
-					message.on = name;
-					message.value = val;
-				}
-
-				const val = Number.parseFloat(message.value);
-				if (Number.isNaN(val)) return;
-
-				if (message.on === "x") {
-					latestX.current = val;
-				} else if (message.on === "y") {
-					latestY.current = val;
-				} else if (message.on === "z") {
-					latestZ.current = val;
-				}
-
-				if (
-					latestX.current != null &&
-					latestY.current != null &&
-					latestZ.current != null
-				) {
-					points.current.push({
-						x: latestX.current,
-						y: latestY.current,
-						z: latestZ.current,
-					});
-
-					if (points.current.length > bufferSizeRef.current) {
-						points.current = points.current.slice(-bufferSizeRef.current);
-					}
-
-					if (!updateScheduled.current) {
-						updateScheduled.current = true;
-						requestAnimationFrame(() => {
-							drawPoints();
-							updateScheduled.current = false;
-						});
-					}
-
-					latestX.current = null;
-					latestY.current = null;
-					latestZ.current = null;
-				}
-			};
-
-			ws.onclose = () => {
-				if (!isUnmounted.current) {
-					retryTimeoutRef.current = setTimeout(connect, 5000);
-				}
-			};
-
-			ws.onerror = (err) => {
-				if (!userClosingRequest.current) {
-					console.error("WebSocket error:", err);
-				}
-				ws.close();
-			};
-		}
-
-		connect();
-
-		return () => {
-			isUnmounted.current = true;
-			userClosingRequest.current = true;
-			if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
-			if (wsRef.current) wsRef.current.close();
-		};
-	}, [id, host]);
+			}
+		},
+		() => {
+			latestX.current = null;
+			latestY.current = null;
+			latestZ.current = null;
+			points.current = [];
+			scaleX.current = 1;
+			scaleY.current = 1;
+			offsetX.current = 0;
+			offsetY.current = 0;
+			rotationX.current = 0;
+			rotationY.current = 0;
+			rotationCenter.current = { x: 0, y: 0, z: 0 };
+		},
+	);
 
 	useEffect(() => {
 		const timer = autorefreshTimerRef.current;
