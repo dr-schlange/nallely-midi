@@ -4,7 +4,11 @@ import type uPlot from "uplot";
 import UplotReact from "uplot-react";
 import walkerSprites from "../../assets/walker.png";
 import DragNumberInput from "../DragInputs";
-import { Button, useNallelyRegistration, type WidgetProps } from "./BaseComponents";
+import {
+	Button,
+	useNallelyRegistration,
+	type WidgetProps,
+} from "./BaseComponents";
 
 const BUFFER_SIZE = 100;
 const BUFFER_UPPER = 2000;

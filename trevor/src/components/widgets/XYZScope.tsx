@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import DragNumberInput from "../DragInputs";
-import { Button, useNallelyRegistration, type WidgetProps } from "./BaseComponents";
+import {
+	Button,
+	useNallelyRegistration,
+	type WidgetProps,
+} from "./BaseComponents";
 
 const BUFFER_SIZE_MAX = 5000;
 const BUFFER_SIZE_MIN = 2;

@@ -648,6 +648,18 @@ class TrevorBus(VirtualDevice):
                             f"\r\n"
                         )
                         s.sendall(header.encode("utf-8"))
+                        response = s.recv(1024)
+                        if b"101" not in response:
+                            return
+                        # Send a masked WebSocket close frame (status 1000)
+                        mask = os.urandom(4)
+                        payload = b"\x03\xe8"  # status 1000
+                        masked = bytes(b ^ mask[i % 4] for i, b in enumerate(payload))
+                        s.sendall(b"\x88\x82" + mask + masked)
+                        try:
+                            s.recv(128)
+                        except Exception:
+                            pass
                         print(f"[TrevorBus] Friend found: {ip}:{port}")
                         self.current_scan.append((ip, port))
             except Exception:
