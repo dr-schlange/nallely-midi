@@ -141,6 +141,7 @@ class TrevorBus(VirtualDevice):
         self.next_cc_update_time = time.perf_counter_ns() + self.cc_update_interval
         self.cc_update_package = defaultdict(make_ccvalues)
         self.refresh_ws_bus(WebSocketBus())
+        self.current_scan = None
 
     def refresh_ws_bus(self, ws=None):
         if ws is None:
@@ -621,6 +622,47 @@ class TrevorBus(VirtualDevice):
         self.ws.unregister_service(service_name)
         return self.full_state()
 
+    def scan_for_friends(self):
+        if self.current_scan is not None:
+            return
+
+        self.current_scan = []
+
+        def check_port(ip, port):
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.settimeout(TIMEOUT)
+                if s.connect_ex((ip, port)) == 0:
+                    print(f"[TrevorBus] Friend found: {ip}:{port}")
+                    self.current_scan.append((ip, port))
+
+        prefix = ".".join(get_my_ip().split(".")[:-1])
+
+        with ThreadPoolExecutor(max_workers=100) as executor:
+            for i in range(1, 255):
+                ip = f"{prefix}.{i}"
+                for port in PORTS:
+                    executor.submit(check_port, ip, port)
+        result = list(self.current_scan)
+        self.current_scan = None
+        return result
+
+
+import socket
+from concurrent.futures import ThreadPoolExecutor
+
+TIMEOUT = 0.3
+PORTS = [6788]
+
+
+def get_my_ip():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        return ip
+    finally:
+        s.close()
+
 
 def resource_path(relative_path):
     """Get absolute path to resource, works for dev and PyInstaller"""
@@ -801,6 +843,7 @@ def _trevor_menu(loaded_paths, init_script, trevor_bus=None, trevor_ui=None):
                     "   f: force all notes off on connected all MIDI devices\n"
                     "   ff: force all notes off on all MIDI devices of any channel of any MIDI port\n"
                     "   s: get some stats\n"
+                    "   sc: scan for friends!\n"
                 )
                 elprint(menu)
             elif q == "ff":
@@ -836,6 +879,17 @@ def _trevor_menu(loaded_paths, init_script, trevor_bus=None, trevor_ui=None):
                             trevor_bus.send_update()
                     except IndexError:
                         print(f"There is no device {num}")
+            elif q == "sc":
+                if trevor_bus:
+                    friends = trevor_bus.scan_for_friends()
+                    if not friends:
+                        print("There is no friend around :(")
+                        return
+                    print("There is some friends here!")
+                    for friend_ip, friend_port in friends:
+                        print(
+                            f" * {friend_ip}:{friend_port}  {"<-- this is us" if get_my_ip() == friend_ip else ""}"
+                        )
     except KeyboardInterrupt:
         ...
 
