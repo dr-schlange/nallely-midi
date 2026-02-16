@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTrevorSelector } from "../../store";
 
 export const Button = ({
 	activated = false,
@@ -78,24 +79,26 @@ export const useNallelyRegistration = (
 	config: any,
 	category: string,
 ) => {
-	const deviceRef = useRef<any>(null);
+	const serviceRef = useRef<any>(null);
 	const [device, setDevice] = useState<any>(null);
+	const host = useTrevorSelector((state) => state.general.trevorWebsocketURL);
 
 	useEffect(() => {
-		const registration = (window as any).NallelyWebsocketBus.register(
+		const service = (window as any).NallelyWebsocketBus.register(
 			category,
 			id,
 			parameters,
 			config,
+			host.replace(":6788", ":6789"),
 		);
 
-		deviceRef.current = registration;
-		setDevice(registration);
+		serviceRef.current = service;
+		setDevice(service);
 
 		return () => {
-			deviceRef.current?.dispose();
+			serviceRef.current?.dispose();
 		};
-	}, [id, category, parameters, config]);
+	}, [id, category, parameters, config, host]);
 
 	return device;
 };

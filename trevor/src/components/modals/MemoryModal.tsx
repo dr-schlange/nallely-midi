@@ -186,7 +186,6 @@ export const MemoryModal = ({ onClose, onLoad }: MemoryModalProps) => {
 	}, [usedAddresses]);
 
 	const checkLoad = () => {
-		console.log("DD", !selection || selection.status === "empty");
 		return !selection || selection.status === "empty";
 	};
 

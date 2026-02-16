@@ -44,7 +44,8 @@ export class TrevorWebSocket {
 
 		if (`${url}/trevor` !== this.url) {
 			this.url = `${url}/trevor`;
-			this.handleURLChange(this.url);
+			this.disconnect();
+			this.connect(url);
 		}
 	}
 
@@ -645,7 +646,10 @@ export const connectWebSocket = () => {
 		websocket = null;
 	}
 
-	console.debug("Create new Trevor websocket");
+	console.debug(
+		`Create new Trevor websocket for ${store.getState().general.trevorWebsocketURL}/trevor`,
+	);
+
 	websocket = new TrevorWebSocket(
 		`${store.getState().general.trevorWebsocketURL}/trevor`,
 	);
