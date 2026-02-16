@@ -80,7 +80,6 @@ export const useNallelyRegistration = (
 	category: string,
 ) => {
 	const serviceRef = useRef<any>(null);
-	const [device, setDevice] = useState<any>(null);
 	const host = useTrevorSelector((state) => state.general.trevorWebsocketURL);
 
 	useEffect(() => {
@@ -91,16 +90,14 @@ export const useNallelyRegistration = (
 			config,
 			host.replace(":6788", ":6789"),
 		);
-
 		serviceRef.current = service;
-		setDevice(service);
-
 		return () => {
 			serviceRef.current?.dispose();
+			serviceRef.current = null;
 		};
 	}, [id, category, parameters, config, host]);
 
-	return device;
+	return serviceRef.current;
 };
 
 export const HeaderButton = ({ onClick, text, ...props }) => {
