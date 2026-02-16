@@ -18,11 +18,12 @@ class NallelyService {
 			? `${nallelyOrigin}/${nallelyId}/autoconfig`
 			: `ws://${window.location.hostname}:6789/${nallelyId}/autoconfig`;
 		this.register = register;
+		this._disposed = false;
 		this.autoRegister();
 	}
 
 	autoRegister() {
-		// Clean up WebSocket if it exists
+		if (this._disposed) return;
 		if (this.ws) {
 			this.ws.removeEventListener("open", this._onOpen);
 			this.ws.removeEventListener("close", this._onClose);
@@ -48,7 +49,9 @@ class NallelyService {
 
 		this._onOpen = () => {
 			const data = Object.entries(this.parameters).map(([name, conf]) => {
-				return { name, range: [conf.min, conf.max] };
+				const entry = { name, range: [conf.min, conf.max] };
+				if (conf.stream) entry.stream = true;
+				return entry;
 			});
 			ws.send(
 				JSON.stringify({
@@ -60,6 +63,7 @@ class NallelyService {
 		};
 
 		this._onClose = (e) => {
+			if (this._disposed) return;
 			console.log(
 				"Socket is closed. Reconnect will be attempted in few seconds.",
 				e.reason,
@@ -71,6 +75,7 @@ class NallelyService {
 		};
 
 		this._onError = (err) => {
+			if (this._disposed) return;
 			console.error(
 				"Socket encountered error: ",
 				err.message,
@@ -84,9 +89,6 @@ class NallelyService {
 			) {
 				ws.close();
 			}
-			this._reconnectTimeout = setTimeout(() => {
-				this.autoRegister();
-			}, 1000);
 		};
 
 		this._onMessage = (event) => {
@@ -143,6 +145,7 @@ class NallelyService {
 	}
 
 	dispose() {
+		this._disposed = true;
 		if (this._reconnectTimeout) {
 			clearTimeout(this._reconnectTimeout);
 			this._reconnectTimeout = null;
