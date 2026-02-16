@@ -206,7 +206,7 @@ export const Scope = ({
 
 			walkerRef.current?.classList.remove("paused");
 
-			const newValue = Number.parseFloat(message.value);
+			const newValue = message.value;
 			onMessage?.(message.value);
 			if (Number.isNaN(newValue)) return;
 

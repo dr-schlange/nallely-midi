@@ -192,7 +192,7 @@ export const XYScope = ({ id, onClose, num }: WidgetProps) => {
 		scopeConfig,
 		"oscilloscope",
 		(message) => {
-			const val = Number.parseFloat(message.value);
+			const val = message.value;
 			if (Number.isNaN(val)) return;
 
 			if (message.on === "x") {
