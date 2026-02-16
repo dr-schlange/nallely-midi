@@ -83,6 +83,10 @@ export const useNallelyRegistration = (
 	const host = useTrevorSelector((state) => state.general.trevorWebsocketURL);
 
 	useEffect(() => {
+		if (serviceRef.current) {
+			serviceRef.current?.dispose();
+			serviceRef.current = null;
+		}
 		const service = (window as any).NallelyWebsocketBus.register(
 			category,
 			id,
