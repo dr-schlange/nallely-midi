@@ -39,14 +39,14 @@ const TrevorFriend = ({ ip, port, selected }) => {
 };
 
 export const FriendModal = ({ onClose }: FriendModalProps) => {
-	const localFriends = useTrevorSelector((state) => state.general.friends);
+	const friends = useTrevorSelector((state) => state.general.friends);
 	const trevorURL = useTrevorSelector(
 		(state) => state.general.trevorWebsocketURL,
 	);
-	const friends = useMemo(
-		() => [["localhost", "6788"], ...localFriends],
-		[localFriends],
-	);
+	// const friends = useMemo(
+	// 	() => [["localhost", "6788"], ...localFriends],
+	// 	[localFriends],
+	// );
 
 	return (
 		<div className="about-modal">

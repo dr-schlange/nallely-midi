@@ -678,6 +678,8 @@ class TrevorBus(VirtualDevice):
                         ip = f"{prefix}.{i}"
                         for port in PORTS:
                             executor.submit(check_port, ip, port)
+                    # for port in PORTS:
+                    #     executor.submit(check_port, "localhost", port)
             except Exception:
                 pass
             result = list(self.current_scan)
@@ -931,9 +933,14 @@ def _trevor_menu(loaded_paths, init_script, trevor_bus=None, trevor_ui=None):
                         return
                     print("There is some friends here!")
                     for friend_ip, friend_port in friends:
-                        print(
-                            f" * {friend_ip}:{friend_port}  {"<-- this is us" if get_my_ip() == friend_ip else ""}"
+                        local_us = friend_ip == "localhost"
+                        us = get_my_ip() == friend_ip
+                        flag = (
+                            f"<-- this is{" local" if local_us else ""} us {"on the local network" if us else ""}"
+                            if us or local_us
+                            else ""
                         )
+                        print(f" * {friend_ip}:{friend_port}  {flag}")
     except KeyboardInterrupt:
         ...
 
