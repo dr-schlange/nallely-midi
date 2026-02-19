@@ -742,7 +742,7 @@ class Integrator(VirtualDevice):
     category: math
     """
 
-    input_cv = VirtualParameter(name="input", range=(None, None), default=0.0)
+    input_cv = VirtualParameter(name="input", range=(-1.0, 1.0), default=0.0)
     initial_cv = VirtualParameter(name="initial", range=(None, None), default=0.0)
     gain_cv = VirtualParameter(name="gain", range=(0.0, 100.0), default=1.0)
     reset_cv = VirtualParameter(
