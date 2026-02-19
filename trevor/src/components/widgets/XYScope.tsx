@@ -1,10 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { Button, type WidgetProps } from "./BaseComponents";
 import DragNumberInput from "../DragInputs";
-import {
-	Button,
-	useNallelyRegistration,
-	type WidgetProps,
-} from "./BaseComponents";
+import { useEffect, useRef, useState } from "react";
+import { useScopeWorker } from "../../hooks/wsHooks";
 
 const BUFFER_SIZE_MAX = 5000;
 const BUFFER_SIZE_MIN = 2;
@@ -184,40 +181,39 @@ export const XYScope = ({ id, onClose, num }: WidgetProps) => {
 		x: { min: null, max: null, stream: true },
 		y: { min: null, max: null, stream: true },
 	}).current;
-	const scopeConfig = useRef({}).current;
 
-	useNallelyRegistration(
+	useScopeWorker(
 		id,
 		scopeParameters,
-		scopeConfig,
 		"oscilloscope",
-		(message) => {
-			const val = message.value;
-			if (Number.isNaN(val)) return;
+		(messages) => {
+			for (const message of messages) {
+				const val = message.value;
+				if (Number.isNaN(val)) continue;
 
-			if (message.on === "x") {
-				latestX.current = val;
-			} else if (message.on === "y") {
-				latestY.current = val;
+				if (message.on === "x") {
+					latestX.current = val;
+				} else if (message.on === "y") {
+					latestY.current = val;
+				}
+
+				if (latestX.current != null && latestY.current != null) {
+					points.current.push({ x: latestX.current, y: latestY.current });
+					latestX.current = null;
+					latestY.current = null;
+				}
 			}
 
-			if (latestX.current != null && latestY.current != null) {
-				points.current.push({ x: latestX.current, y: latestY.current });
+			if (points.current.length > bufferSizeRef.current) {
+				points.current = points.current.slice(-bufferSizeRef.current);
+			}
 
-				if (points.current.length > bufferSizeRef.current) {
-					points.current = points.current.slice(-bufferSizeRef.current);
-				}
-
-				if (!updateScheduled.current) {
-					updateScheduled.current = true;
-					requestAnimationFrame(() => {
-						drawPoints();
-						updateScheduled.current = false;
-					});
-				}
-
-				latestX.current = null;
-				latestY.current = null;
+			if (!updateScheduled.current) {
+				updateScheduled.current = true;
+				requestAnimationFrame(() => {
+					drawPoints();
+					updateScheduled.current = false;
+				});
 			}
 		},
 		() => {

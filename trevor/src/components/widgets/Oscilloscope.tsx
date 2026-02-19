@@ -4,11 +4,8 @@ import type uPlot from "uplot";
 import UplotReact from "uplot-react";
 import walkerSprites from "../../assets/walker.png";
 import DragNumberInput from "../DragInputs";
-import {
-	Button,
-	useNallelyRegistration,
-	type WidgetProps,
-} from "./BaseComponents";
+import { Button, type WidgetProps } from "./BaseComponents";
+import { useScopeWorker } from "../../hooks/wsHooks";
 
 const BUFFER_SIZE = 100;
 const BUFFER_UPPER = 2000;
@@ -188,14 +185,12 @@ export const Scope = ({
 	const scopeParameters = useRef({
 		data: { min: null, max: null, stream: true },
 	}).current;
-	const scopeConfig = useRef({}).current;
 
-	useNallelyRegistration(
+	useScopeWorker(
 		id,
 		scopeParameters,
-		scopeConfig,
 		"oscilloscope",
-		(message) => {
+		(messages) => {
 			if (inactivityTimeout.current) {
 				clearTimeout(inactivityTimeout.current);
 			}
@@ -206,33 +201,41 @@ export const Scope = ({
 
 			walkerRef.current?.classList.remove("paused");
 
-			const newValue = message.value;
-			onMessage?.(message.value);
-			if (Number.isNaN(newValue)) return;
-
-			if (message.on !== labelRef.current) {
-				labelRef.current = message.on;
-				setLabel(message.on);
-			}
-
 			const buf = bufferRef.current;
 			const mode = followModeRef.current;
 			const size = bufferSizeRef.current;
-			if (mode === "cyclic") {
-				elapsed.current = (elapsed.current + 1) % size;
-				buf.y[elapsed.current] = newValue;
-			} else {
-				elapsed.current = elapsed.current + 1;
-				buf.x.push(elapsed.current);
-				buf.y.push(newValue);
-				if (buf.x.length > size) {
-					buf.x.shift();
-					buf.y.shift();
+
+			let lastValue: number | undefined;
+			for (const message of messages) {
+				const newValue = message.value;
+				onMessage?.(newValue);
+				if (Number.isNaN(newValue)) continue;
+
+				if (message.on !== labelRef.current) {
+					labelRef.current = message.on;
+					setLabel(message.on);
 				}
+
+				if (mode === "cyclic") {
+					elapsed.current = (elapsed.current + 1) % size;
+					buf.y[elapsed.current] = newValue;
+				} else {
+					elapsed.current = elapsed.current + 1;
+					buf.x.push(elapsed.current);
+					buf.y.push(newValue);
+					if (buf.x.length > size) {
+						buf.x.shift();
+						buf.y.shift();
+					}
+				}
+				lastValue = newValue;
 			}
+
+			if (lastValue === undefined) return;
 
 			if (!updateScheduled.current) {
 				updateScheduled.current = true;
+				const capturedLastValue = lastValue;
 				requestAnimationFrame(() => {
 					let min = Infinity,
 						max = -Infinity;
@@ -262,7 +265,7 @@ export const Scope = ({
 					}
 					updateScheduled.current = false;
 					if (statsRef.current) {
-						statsRef.current.textContent = `min: ${min === Infinity ? "?" : min}\nval: ${newValue}\nmax: ${max === -Infinity ? "?" : max}`;
+						statsRef.current.textContent = `min: ${min === Infinity ? "?" : min}\nval: ${capturedLastValue}\nmax: ${max === -Infinity ? "?" : max}`;
 					}
 				});
 			}

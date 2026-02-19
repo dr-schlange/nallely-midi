@@ -1,9 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import {
-	Button,
-	useNallelyRegistration,
-	type WidgetProps,
-} from "./BaseComponents";
+import { Button, type WidgetProps } from "./BaseComponents";
+import { useNallelyRegistration } from "../../hooks/wsHooks";
 
 const symbols = "abcdefghijklmnopqrstuvwxyz0123456789";
 const special = [
