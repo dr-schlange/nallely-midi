@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { useTrevorSelector } from "../store";
 
 let worker: Worker | null = null;
-let refCount = 0;
+// let refCount = 0;
 
 function getWorker(): Worker {
 	if (!worker) {
@@ -10,18 +10,18 @@ function getWorker(): Worker {
 			type: "module",
 		});
 	}
-	refCount++;
+	// refCount++;
 	return worker;
 }
 
-function releaseWorker() {
-	refCount--;
-	if (refCount <= 0) {
-		worker?.terminate();
-		worker = null;
-		refCount = 0;
-	}
-}
+// function releaseWorker() {
+// 	refCount--;
+// 	if (refCount <= 0) {
+// 		worker?.terminate();
+// 		worker = null;
+// 		refCount = 0;
+// 	}
+// }
 
 export const useScopeWorker = (
 	id: string,
@@ -73,7 +73,7 @@ export const useScopeWorker = (
 		return () => {
 			w.removeEventListener("message", handleMessage);
 			w.postMessage({ type: "disconnect", scopeId });
-			releaseWorker();
+			// releaseWorker();
 		};
 	}, [id, kind, parameters, host]);
 };

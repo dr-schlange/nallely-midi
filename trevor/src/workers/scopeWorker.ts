@@ -6,7 +6,11 @@ interface ScopeEntry {
 	buffer: { on: string; value: number }[];
 	url: string;
 	kind: string;
-	parameters: { name: string; range: [number | null, number | null]; stream?: boolean }[];
+	parameters: {
+		name: string;
+		range: [number | null, number | null];
+		stream?: boolean;
+	}[];
 	disposed: boolean;
 	reconnectTimeout: ReturnType<typeof setTimeout> | null;
 }
@@ -61,7 +65,10 @@ function connectScope(entry: ScopeEntry, scopeId: string) {
 	ws.addEventListener("error", () => {
 		if (entry.disposed) return;
 		self.postMessage({ type: "error", scopeId });
-		if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+		if (
+			ws.readyState === WebSocket.OPEN ||
+			ws.readyState === WebSocket.CONNECTING
+		) {
 			ws.close();
 		}
 	});
