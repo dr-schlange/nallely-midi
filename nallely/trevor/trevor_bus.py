@@ -726,6 +726,28 @@ class SilentHandler(http.server.SimpleHTTPRequestHandler):
     def log_message(self, format, *args):
         pass
 
+    def end_headers(self):
+        self.send_header("Cache-Control", "no-cache")
+        super().end_headers()
+
+    def do_GET(self):
+        accept = self.headers.get("Accept-Encoding", "")
+        path = Path(self.translate_path(self.path))
+        gz_path = path.with_suffix(f"{path.suffix}.gz")
+
+        if "gzip" in accept and gz_path.exists():
+            ctype = self.guess_type(path)
+            data = gz_path.read_bytes()
+            self.send_response(200)
+            self.send_header("Content-Encoding", "gzip")
+            self.send_header("Content-Type", ctype)
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+            return
+
+        super().do_GET()
+
 
 class ReusableTCPServer(socketserver.TCPServer):
     allow_reuse_address = True
