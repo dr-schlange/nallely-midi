@@ -243,6 +243,9 @@ export const XYZScope = ({ id, onClose, num }: WidgetProps) => {
 	const toggleDragRotate = () => {
 		setDragRotateEnabled((prev) => {
 			dragRotateRef.current = !prev;
+			if (prev) {
+				isDragging.current = false;
+			}
 			return !prev;
 		});
 	};
@@ -275,11 +278,12 @@ export const XYZScope = ({ id, onClose, num }: WidgetProps) => {
 		};
 
 		const onPointerMove = (e: PointerEvent) => {
-			if (!isDragging.current) return;
+			if (!isDragging.current || !dragRotateRef.current) return;
 			const dx = e.clientX - lastPointer.current.x;
 			const dy = e.clientY - lastPointer.current.y;
-			rotationY.current += dx * 0.01;
-			rotationX.current += dy * 0.01;
+			if (Math.abs(dx) < 2 && Math.abs(dy) < 2) return;
+			rotationY.current += dx * 0.005;
+			rotationX.current += dy * 0.005;
 			lastPointer.current = { x: e.clientX, y: e.clientY };
 			drawPoints();
 		};
@@ -478,6 +482,7 @@ export const XYZScope = ({ id, onClose, num }: WidgetProps) => {
 					height: "100%",
 					display: "block",
 					cursor: dragRotateEnabled ? "grab" : "default",
+					touchAction: dragRotateEnabled ? "none" : "auto",
 				}}
 			/>
 		</div>
