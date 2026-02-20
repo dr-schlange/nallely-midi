@@ -1,6 +1,5 @@
-import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
-import { compression } from "vite-plugin-compression2";
+import react from "@vitejs/plugin-react";
 
 const isGH = process.env.GH === "true";
 const base = isGH ? "/nallely-midi/" : "/";
@@ -12,12 +11,5 @@ export default defineConfig({
 		outDir: "dist",
 		sourcemap: !isGH,
 	},
-	plugins: [
-		react(),
-		compression({
-			algorithms: ["brotli", "gzip"],
-			threshold: 1024,
-			logLevel: "info",
-		}),
-	],
+	plugins: [react()],
 });
