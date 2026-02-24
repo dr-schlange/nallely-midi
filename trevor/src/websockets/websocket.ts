@@ -600,7 +600,7 @@ export class TrevorWebSocket {
 		device_id: number,
 		section_name: string,
 		parameter_name: string,
-		value: number,
+		value: number | string,
 	) {
 		this.sendJsonMessage({
 			command: "set_parameter_value",

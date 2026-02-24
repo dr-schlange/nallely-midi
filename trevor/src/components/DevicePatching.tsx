@@ -181,7 +181,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 		) => {
 			const tempDevice = tempValues[device.id] || {};
 			const tempValue = tempDevice[parameter.name];
-			if (parameter.accepted_values.length > 0) {
+			if (parameter.accepted_values?.length > 0) {
 				return (
 					<select
 						style={{
@@ -265,22 +265,61 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 	const createMidiParameterInput = useCallback(
 		(device: MidiDevice, parameter: MidiParameter) => {
 			const tempDevice = tempValues[device.id] || {};
-			const key = `${parameter.section_name}::${parameter.name}`;
+			const sectionName = parameter.section_name;
+			const parameterName = parameter.name;
+			const key = `${sectionName}::${parameterName}`;
 			const tempValue = tempDevice[key];
 			const currentValue =
 				tempValue ??
-				device.config[parameter.section_name]?.[parameter.name]?.toString() ??
+				device.config[sectionName]?.[parameterName]?.toString() ??
 				"0";
+			if (parameter.accepted_values?.length > 0) {
+				const acceptedValues = parameter.accepted_values;
+				const nbAcceptedValues = acceptedValues.length;
+				const [, upper] = parameter.range;
+				const value =
+					acceptedValues[
+						Math.min(
+							nbAcceptedValues - 1,
+							Math.trunc(
+								(Number.parseInt(currentValue, 10) % (upper + 1)) /
+									Math.trunc(upper / nbAcceptedValues),
+							),
+						)
+					];
+				return (
+					<select
+						style={{
+							maxWidth: "100%",
+						}}
+						value={value ? value : "--"}
+						onChange={(e) =>
+							trevorSocket?.setParameterValue(
+								device.id,
+								sectionName,
+								parameterName,
+								e.target.value,
+							)
+						}
+					>
+						{parameter.accepted_values.map((v) => (
+							<option key={v.toString()} value={v.toString()}>
+								{v.toString()}
+							</option>
+						))}
+					</select>
+				);
+			}
 			return (
 				<DragNumberInput
 					value={currentValue}
 					onBlur={(value) => {
-						if (!Number.isNaN(Number.parseInt(value))) {
+						if (!Number.isNaN(Number.parseInt(value, 10))) {
 							trevorSocket?.setParameterValue(
 								device.id,
 								parameter.section_name,
 								parameter.name,
-								Number.parseInt(value),
+								Number.parseInt(value, 10),
 							);
 						}
 					}}

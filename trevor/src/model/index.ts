@@ -120,6 +120,7 @@ export interface MidiParameter {
 	name: string;
 	range: [number, number];
 	stream: boolean;
+	accepted_values: string[] | null;
 }
 
 export type Pitchwheel = PadOrKey;
