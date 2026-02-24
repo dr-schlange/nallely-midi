@@ -2,8 +2,9 @@ import json
 import traceback
 from collections import defaultdict
 from dataclasses import InitVar, asdict, dataclass, field
+from decimal import Decimal
 from pathlib import Path
-from typing import Any, Callable, Counter, Literal, Type
+from typing import Any, Callable, Counter, Literal, Sequence, Type
 
 import mido
 
@@ -30,6 +31,7 @@ class ModuleParameter:
     init_value: int = 0
     description: str | None = None
     range: tuple[int, int] = (0, 127)
+    accepted_values: Sequence[str] = ()
     type: Literal["program_change", "control_change"] = "control_change"
 
     def __post_init__(self):
@@ -79,6 +81,16 @@ class ModuleParameter:
             feeder.bind(getattr(to_module, self.name))
             return
 
+        accepted_values = self.accepted_values
+        if accepted_values and isinstance(feeder, str):
+            idx = accepted_values.index(feeder)
+            if idx == -1:
+                print(
+                    f"Unknown option {feeder}, accepted values are: {accepted_values}"
+                )
+                return
+            feeder = min(127, idx * int(128 / (len(accepted_values))))
+
         if send:
             # Normal case, we set a value through the descriptor, this triggers the send of the message
             if self.type == "control_change":
@@ -92,6 +104,15 @@ class ModuleParameter:
     def basic_set(self, device: "MidiDevice", value):
         # TODO update later when we will deal with multi-channels instruments
         getattr(device.modules, self.section_name).state[self.name].update(value)
+
+    def map2accepted_values(self, value: int):
+        accepted_values = self.accepted_values
+        if not accepted_values:
+            return str(value)
+        nb_accepted_values = len(accepted_values)
+        return accepted_values[
+            min(nb_accepted_values - 1, (value % 128) // (127 // nb_accepted_values))
+        ]
 
 
 @dataclass

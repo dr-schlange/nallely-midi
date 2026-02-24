@@ -155,6 +155,9 @@ class Int(int):
             f"{self.device.uuid}::{self.parameter.section_name}::{self.parameter.name}"
         )
 
+    def __str__(self):
+        return self.parameter.map2accepted_values(self.__wrapped__)
+
     @property
     def outgoing_links(self):
         links = []

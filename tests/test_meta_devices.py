@@ -1,4 +1,5 @@
 import pytest
+from sympy import N
 
 import nallely
 from nallely.devices import NTS1
@@ -91,3 +92,28 @@ def test__save_midi_device_nondefault_values(nts1):
     assert config["filter"]["cutoff"] == 15
     assert config["filter"]["resonance"] == 44
     assert config["arp"]["length"] == 100
+
+
+def test__accepted_values(nts1):
+    oscillator = nts1.ocs.type
+
+    assert oscillator == 0
+    assert str(oscillator) == "Sawtooth"
+
+    nts1.ocs.type = 127
+    oscillator = nts1.ocs.type
+
+    assert int(oscillator) == 127
+    assert str(oscillator) == "User"
+
+    nts1.ocs.type = "Square"
+    oscillator = nts1.ocs.type
+
+    assert int(oscillator) == 50
+    assert str(oscillator) == "Square"
+
+    nts1.ocs.type = "User"
+    oscillator = nts1.ocs.type
+
+    assert int(oscillator) == 100
+    assert str(oscillator) == "User"

@@ -11,14 +11,16 @@ from ..core import (
 
 @dataclass
 class ModSection(Module):
-    type = ModuleParameter(88)
+    type = ModuleParameter(
+        88, accepted_values=("OFF", "Chorus", "Ensemble", "Phase", "Flanger")
+    )
     time = ModuleParameter(28)
     depth = ModuleParameter(29)
 
 
 @dataclass
 class EGSection(Module):
-    type = ModuleParameter(14)
+    type = ModuleParameter(14, accepted_values=("ADSR", "AHR", "AR", "AR-Loop", "Open"))
     attack = ModuleParameter(16)
     release = ModuleParameter(19)
     tremolo_depth = ModuleParameter(20)
@@ -27,7 +29,9 @@ class EGSection(Module):
 
 @dataclass
 class OSCSection(Module):
-    type = ModuleParameter(53)
+    type = ModuleParameter(
+        53, accepted_values=("Sawtooth", "Triangle", "Square", "VPM", "User")
+    )
     shape = ModuleParameter(54)
     alt = ModuleParameter(55)
     lfo_rate = ModuleParameter(24)
@@ -36,7 +40,18 @@ class OSCSection(Module):
 
 @dataclass
 class FilterSection(Module):
-    type = ModuleParameter(42)
+    type = ModuleParameter(
+        42,
+        accepted_values=(
+            "Lowpass-2pole",
+            "Lowpass-4pole",
+            "Bandpass-2pole",
+            "Bandpass-4pole",
+            "Highpass-2pole",
+            "Highpass-4pole",
+            "Off",
+        ),
+    )
     cutoff = ModuleParameter(43)
     resonance = ModuleParameter(44)
     sweep_depth = ModuleParameter(45)
@@ -45,7 +60,9 @@ class FilterSection(Module):
 
 @dataclass
 class DelaySection(Module):
-    type = ModuleParameter(89)
+    type = ModuleParameter(
+        89, accepted_values=("OFF", "Stereo", "Mono", "Ping Pong", "HighPass", "Tape")
+    )
     time = ModuleParameter(30)
     depth = ModuleParameter(31)
     mix = ModuleParameter(33, init_value=128 // 2)
@@ -53,7 +70,9 @@ class DelaySection(Module):
 
 @dataclass
 class ReverbSection(Module):
-    type = ModuleParameter(90)
+    type = ModuleParameter(
+        90, accepted_values=("OFF", "Hall", "Plate", "Space", "Riser", "Submarine")
+    )
     time = ModuleParameter(34)
     depth = ModuleParameter(35)
     mix = ModuleParameter(36, init_value=128 // 2)
@@ -61,8 +80,12 @@ class ReverbSection(Module):
 
 @dataclass
 class ArpSection(Module):
-    pattern = ModuleParameter(117)
-    intervals = ModuleParameter(118)
+    pattern = ModuleParameter(
+        117, accepted_values=("Up", "Down", "Up-down", "Down-up", "Conv", "Div")
+    )
+    intervals = ModuleParameter(
+        118, accepted_values=("Oct", "Maj", "Sus", "Aug", "Min", "Dim")
+    )
     length = ModuleParameter(119)
 
 
