@@ -89,7 +89,7 @@ class ModuleParameter:
                     f"Unknown option {feeder}, accepted values are: {accepted_values}"
                 )
                 return
-            feeder = min(127, idx * int(128 / (len(accepted_values))))
+            feeder = min(127, idx * (128 // (len(accepted_values))))
 
         if send:
             # Normal case, we set a value through the descriptor, this triggers the send of the message
