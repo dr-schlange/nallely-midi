@@ -466,6 +466,48 @@ l.start()
 nts1.modules.reverb.time = l  #  we map an LFO to the reverb time
 ```
 
+#### Deal with multiple alternatives for CCs
+
+As you perhaps know, some CCs considers a discrete range, where each sub-range actually maps to a single value. This is what we usually find when a CC value needs to encode only few values. Those values are usually not representing a "level" or "amount" of a dedicated parameter, e.g: the cutoff "level", but they usually represent a qualification of the parameter. The easiest way to get that is to consider the type of oscillator. Most of the time, oscillator types can be selected between "Sawtooth", "Sine", "Triangle", etc. Those are qualifiers that are mapped to a value that depends on the number of choices for the CC. Nallely proposes a way to encode those in the `ModuleParameter` using the `accepted_values` entry. Let's see on the NTS1 example how this translates:
+
+```python
+@dataclass
+class OSCSection(Module):
+    type = ModuleParameter(
+        53, accepted_values=("Sawtooth", "Triangle", "Square", "VPM", "User")
+    )
+    shape = ModuleParameter(54)
+    alt = ModuleParameter(55)
+    lfo_rate = ModuleParameter(24)
+    lfo_depth = ModuleParameter(26)
+```
+
+The declaration still needs the CC number (here `53`), and accepts a list of the accepted values. Accepted values have to be a sequence, it can be a list, a tuple, etc. In this example, we just defined that the type of oscillator can ben either `Sawtooth` or `Triangle`, ... Please note that this list have to be ordered depending on the values that are encoded by each entry. In this example, `Sawtooth` is encoded in the range 0-24, then `Triangle` in the range 25-49, `Square` in the range 50-74, etc. You don't have to give the range, the range is automatically computed by the `ModuleParameter`, you just need to ensure that the entries are in the proper order.
+
+And now let's see how we can query those. When we query the parameter, we can basically either ask for the int value represented by the CC, or for the string representation. The value of the associated CC is what you get by default when accessing the parameter, exactly as for when we access, for example, the filter cutoff value.
+
+```python
+nts1.ocs.type  # will return the value as a number, for example 0
+```
+
+If you want to access the string representation of the choice done by the value, you can convert the result into a string using `str()`:
+
+```python
+str(nts1.ocs.type)    # will retun "Sawtooth" if type is 0
+print(nts1.ocs.type)  # will display "Sawtooth" if type is 0 as print calls "str()"
+```
+
+You can also set the value of those either by using a string, or a number:
+
+```python
+nts1.ocs.type = 50    # sets the type of oscillator to Square
+print(nts1.ocs.type)  # displays "Square"
+
+nts1.ocs.type = "Triangle"
+print(int(nts1.ocs.type))  # displays 25
+print(nts1.ocs.type)       # displays "Triangle"
+```
+
 #### Going further with your device configuration
 
 This configuration we declared works, and lets you use your newly declarated device this way:
