@@ -1,51 +1,595 @@
 Behringer:
   PROVS-MINI:
     oscillator:
-      voice_A_wave: { cc: 24, description: "", init: 0, max: 127, min: 0 }
+      voice_A_wave:
+        cc: 24
+        description: ""
+        init: 0
+        max: 127
+        min: 0
+        accepted_values:
+          - Twang
+          - Clav
+          - Xylophone
+          - Slippery Slope
+          - Enharmonic Square
+          - Xylogphone 2
+          - Mellow Square
+          - Chaos 1
+          - Chaos 2
+          - Chaos 3
+          - Chaos 4
+          - Bright Square
+          - Hollow
+          - BP Square
+          - Ski Slope
+          - Rasp
+          - Peal
+          - Fuzz
+          - Floss
+          - Excite
+          - Awaken
+          - Energize
+          - BP Twang
+          - Complex Pulse
+          - Mellow Square 2
+          - Harmonic Square
+          - Thin Ramp
+          - Xylophone 3
+          - Thin Square
+          - Harmonic Ramp
+          - Rouse
+          - Waken
+          - Sine
+          - Sawtooth
+          - Square
+          - Dome 1
+          - Dome 2
+          - Mellow Dome
+          - Dome 3
+          - Dome 4
+          - Rasp1
+          - Rasp 2
+          - Rasp 3
+          - Rasp 4
+          - Dome 5
+          - HP Saw
+          - High BP Saw
+          - High BP Square
+          - Vocal
+          - Squeeze Box
+          - Pulse
+          - Limp Saw
+          - Spark Wave 1
+          - Spark Wave 2
+          - Spark Wave 3
+          - Mid Wave 1
+          - Cacophonous Buzz 1
+          - Mid Buzz 1
+          - Dome 6
+          - Soft Dome 3
+          - Dome 7
+          - Spark Wave 4
+          - Spark Wave 5
+          - Soft Dome 4
+          - Dome 8
+          - Organ
+          - Spark Wave 6
+          - Soft Wave 1
+          - Soft Wave 2
+          - Spark Wave 7
+          - Reed
+          - Soft Wave 3
+          - Soft Wave 4
+          - Saxophone
+          - Soft Wave 5
+          - Trashy Wave 1
+          - Trashy Wave 2
+          - Trashy Wave 3
+          - Trashy Wave 4
+          - Trashy Wave 5
+          - Trashy Wave 6
+          - Jaw Harp 1
+          - Jaw Harp 2
+          - Soft Wave 6
+          - Thin 1
+          - Thin 2
+          - Spark Wave 8
+          - Spark Wave 9
+          - Spark Wave 10
+          - Soft Dome 5
+          - Soft Dome 6
+          - Cacophonous Buzz 2
+          - Thin 3
+          - Spark Wave 11
+          - Soft Dome 7
+          - Soft Wave 7
+          - Sine 2
+          - Sync'd Sine
+          - Thrashy Wave 7
+          - Twingle Pad
+          - Dome 9
+          - Thin 4
+          - Thin 5
+          - Thrashy Wave 8
+          - Thrashy Wave 9
+          - Thrashy Wave 10
+          - Thrashy Wave 11
+          - Thrashy Wave 12
+          - Thrashy Wave 13
+          - Spark Wave 12
+          - Spark Wave 13
+          - Thrashy Wave 14
+          - Thrashy Wave 15
+          - Rainbow
+          - Soft Dome 8
+          - Trashy Wave 16
+          - Soothing 1
+          - Soothing 2
+          - Space Wave
+          - 5th Rasp
+          - Octave Wave
+          - Triangle + Overtones
+          - Pulse + Overtones
+          - Rising Square
+          - Soft Wave 8
+          - Cacophonous Buzz 3
+          - Silence
+          - White Noise
       voice_A_coarse_tuning:
-        { cc: 115, description: "", init: 0, max: 99, min: 0 }
+        { cc: 115, description: "", init: 0, max: 127, min: 0 }
       voice_A_fine_tuning:
-        { cc: 111, description: "", init: 0, max: 99, min: 0 }
-      voice_B_wave: { cc: 25, description: "", init: 0, max: 127, min: 0 }
+        { cc: 111, description: "", init: 0, max: 127, min: 0 }
+      voice_B_wave:
+        cc: 25
+        description: ""
+        init: 0
+        max: 127
+        min: 0
+        accepted_values:
+          - Twang
+          - Clav
+          - Xylophone
+          - Slippery Slope
+          - Enharmonic Square
+          - Xylogphone 2
+          - Mellow Square
+          - Chaos 1
+          - Chaos 2
+          - Chaos 3
+          - Chaos 4
+          - Bright Square
+          - Hollow
+          - BP Square
+          - Ski Slope
+          - Rasp
+          - Peal
+          - Fuzz
+          - Floss
+          - Excite
+          - Awaken
+          - Energize
+          - BP Twang
+          - Complex Pulse
+          - Mellow Square 2
+          - Harmonic Square
+          - Thin Ramp
+          - Xylophone 3
+          - Thin Square
+          - Harmonic Ramp
+          - Rouse
+          - Waken
+          - Sine
+          - Sawtooth
+          - Square
+          - Dome 1
+          - Dome 2
+          - Mellow Dome
+          - Dome 3
+          - Dome 4
+          - Rasp1
+          - Rasp 2
+          - Rasp 3
+          - Rasp 4
+          - Dome 5
+          - HP Saw
+          - High BP Saw
+          - High BP Square
+          - Vocal
+          - Squeeze Box
+          - Pulse
+          - Limp Saw
+          - Spark Wave 1
+          - Spark Wave 2
+          - Spark Wave 3
+          - Mid Wave 1
+          - Cacophonous Buzz 1
+          - Mid Buzz 1
+          - Dome 6
+          - Soft Dome 3
+          - Dome 7
+          - Spark Wave 4
+          - Spark Wave 5
+          - Soft Dome 4
+          - Dome 8
+          - Organ
+          - Spark Wave 6
+          - Soft Wave 1
+          - Soft Wave 2
+          - Spark Wave 7
+          - Reed
+          - Soft Wave 3
+          - Soft Wave 4
+          - Saxophone
+          - Soft Wave 5
+          - Trashy Wave 1
+          - Trashy Wave 2
+          - Trashy Wave 3
+          - Trashy Wave 4
+          - Trashy Wave 5
+          - Trashy Wave 6
+          - Jaw Harp 1
+          - Jaw Harp 2
+          - Soft Wave 6
+          - Thin 1
+          - Thin 2
+          - Spark Wave 8
+          - Spark Wave 9
+          - Spark Wave 10
+          - Soft Dome 5
+          - Soft Dome 6
+          - Cacophonous Buzz 2
+          - Thin 3
+          - Spark Wave 11
+          - Soft Dome 7
+          - Soft Wave 7
+          - Sine 2
+          - Sync'd Sine
+          - Thrashy Wave 7
+          - Twingle Pad
+          - Dome 9
+          - Thin 4
+          - Thin 5
+          - Thrashy Wave 8
+          - Thrashy Wave 9
+          - Thrashy Wave 10
+          - Thrashy Wave 11
+          - Thrashy Wave 12
+          - Thrashy Wave 13
+          - Spark Wave 12
+          - Spark Wave 13
+          - Thrashy Wave 14
+          - Thrashy Wave 15
+          - Rainbow
+          - Soft Dome 8
+          - Trashy Wave 16
+          - Soothing 1
+          - Soothing 2
+          - Space Wave
+          - 5th Rasp
+          - Octave Wave
+          - Triangle + Overtones
+          - Pulse + Overtones
+          - Rising Square
+          - Soft Wave 8
+          - Cacophonous Buzz 3
+          - Silence
+          - White Noise
       voice_B_coarse_tuning:
-        { cc: 116, description: "", init: 0, max: 99, min: 0 }
+        { cc: 116, description: "", init: 0, max: 127, min: 0 }
       voice_B_fine_tuning:
-        { cc: 112, description: "", init: 0, max: 99, min: 0 }
-      voice_C_wave: { cc: 26, description: "", init: 0, max: 127, min: 0 }
+        { cc: 112, description: "", init: 0, max: 127, min: 0 }
+      voice_C_wave:
+        cc: 26
+        description: ""
+        init: 0
+        max: 127
+        min: 0
+        accepted_values:
+          - Twang
+          - Clav
+          - Xylophone
+          - Slippery Slope
+          - Enharmonic Square
+          - Xylogphone 2
+          - Mellow Square
+          - Chaos 1
+          - Chaos 2
+          - Chaos 3
+          - Chaos 4
+          - Bright Square
+          - Hollow
+          - BP Square
+          - Ski Slope
+          - Rasp
+          - Peal
+          - Fuzz
+          - Floss
+          - Excite
+          - Awaken
+          - Energize
+          - BP Twang
+          - Complex Pulse
+          - Mellow Square 2
+          - Harmonic Square
+          - Thin Ramp
+          - Xylophone 3
+          - Thin Square
+          - Harmonic Ramp
+          - Rouse
+          - Waken
+          - Sine
+          - Sawtooth
+          - Square
+          - Dome 1
+          - Dome 2
+          - Mellow Dome
+          - Dome 3
+          - Dome 4
+          - Rasp1
+          - Rasp 2
+          - Rasp 3
+          - Rasp 4
+          - Dome 5
+          - HP Saw
+          - High BP Saw
+          - High BP Square
+          - Vocal
+          - Squeeze Box
+          - Pulse
+          - Limp Saw
+          - Spark Wave 1
+          - Spark Wave 2
+          - Spark Wave 3
+          - Mid Wave 1
+          - Cacophonous Buzz 1
+          - Mid Buzz 1
+          - Dome 6
+          - Soft Dome 3
+          - Dome 7
+          - Spark Wave 4
+          - Spark Wave 5
+          - Soft Dome 4
+          - Dome 8
+          - Organ
+          - Spark Wave 6
+          - Soft Wave 1
+          - Soft Wave 2
+          - Spark Wave 7
+          - Reed
+          - Soft Wave 3
+          - Soft Wave 4
+          - Saxophone
+          - Soft Wave 5
+          - Trashy Wave 1
+          - Trashy Wave 2
+          - Trashy Wave 3
+          - Trashy Wave 4
+          - Trashy Wave 5
+          - Trashy Wave 6
+          - Jaw Harp 1
+          - Jaw Harp 2
+          - Soft Wave 6
+          - Thin 1
+          - Thin 2
+          - Spark Wave 8
+          - Spark Wave 9
+          - Spark Wave 10
+          - Soft Dome 5
+          - Soft Dome 6
+          - Cacophonous Buzz 2
+          - Thin 3
+          - Spark Wave 11
+          - Soft Dome 7
+          - Soft Wave 7
+          - Sine 2
+          - Sync'd Sine
+          - Thrashy Wave 7
+          - Twingle Pad
+          - Dome 9
+          - Thin 4
+          - Thin 5
+          - Thrashy Wave 8
+          - Thrashy Wave 9
+          - Thrashy Wave 10
+          - Thrashy Wave 11
+          - Thrashy Wave 12
+          - Thrashy Wave 13
+          - Spark Wave 12
+          - Spark Wave 13
+          - Thrashy Wave 14
+          - Thrashy Wave 15
+          - Rainbow
+          - Soft Dome 8
+          - Trashy Wave 16
+          - Soothing 1
+          - Soothing 2
+          - Space Wave
+          - 5th Rasp
+          - Octave Wave
+          - Triangle + Overtones
+          - Pulse + Overtones
+          - Rising Square
+          - Soft Wave 8
+          - Cacophonous Buzz 3
+          - Silence
+          - White Noise
       voice_C_coarse_tuning:
-        { cc: 117, description: "", init: 0, max: 99, min: 0 }
+        { cc: 117, description: "", init: 0, max: 127, min: 0 }
       voice_C_fine_tuning:
-        { cc: 113, description: "", init: 0, max: 99, min: 0 }
-      voice_D_wave: { cc: 27, description: "", init: 0, max: 127, min: 0 }
+        { cc: 113, description: "", init: 0, max: 127, min: 0 }
+      voice_D_wave:
+        cc: 27
+        description: ""
+        init: 0
+        max: 127
+        min: 0
+        accepted_values:
+          - Twang
+          - Clav
+          - Xylophone
+          - Slippery Slope
+          - Enharmonic Square
+          - Xylogphone 2
+          - Mellow Square
+          - Chaos 1
+          - Chaos 2
+          - Chaos 3
+          - Chaos 4
+          - Bright Square
+          - Hollow
+          - BP Square
+          - Ski Slope
+          - Rasp
+          - Peal
+          - Fuzz
+          - Floss
+          - Excite
+          - Awaken
+          - Energize
+          - BP Twang
+          - Complex Pulse
+          - Mellow Square 2
+          - Harmonic Square
+          - Thin Ramp
+          - Xylophone 3
+          - Thin Square
+          - Harmonic Ramp
+          - Rouse
+          - Waken
+          - Sine
+          - Sawtooth
+          - Square
+          - Dome 1
+          - Dome 2
+          - Mellow Dome
+          - Dome 3
+          - Dome 4
+          - Rasp1
+          - Rasp 2
+          - Rasp 3
+          - Rasp 4
+          - Dome 5
+          - HP Saw
+          - High BP Saw
+          - High BP Square
+          - Vocal
+          - Squeeze Box
+          - Pulse
+          - Limp Saw
+          - Spark Wave 1
+          - Spark Wave 2
+          - Spark Wave 3
+          - Mid Wave 1
+          - Cacophonous Buzz 1
+          - Mid Buzz 1
+          - Dome 6
+          - Soft Dome 3
+          - Dome 7
+          - Spark Wave 4
+          - Spark Wave 5
+          - Soft Dome 4
+          - Dome 8
+          - Organ
+          - Spark Wave 6
+          - Soft Wave 1
+          - Soft Wave 2
+          - Spark Wave 7
+          - Reed
+          - Soft Wave 3
+          - Soft Wave 4
+          - Saxophone
+          - Soft Wave 5
+          - Trashy Wave 1
+          - Trashy Wave 2
+          - Trashy Wave 3
+          - Trashy Wave 4
+          - Trashy Wave 5
+          - Trashy Wave 6
+          - Jaw Harp 1
+          - Jaw Harp 2
+          - Soft Wave 6
+          - Thin 1
+          - Thin 2
+          - Spark Wave 8
+          - Spark Wave 9
+          - Spark Wave 10
+          - Soft Dome 5
+          - Soft Dome 6
+          - Cacophonous Buzz 2
+          - Thin 3
+          - Spark Wave 11
+          - Soft Dome 7
+          - Soft Wave 7
+          - Sine 2
+          - Sync'd Sine
+          - Thrashy Wave 7
+          - Twingle Pad
+          - Dome 9
+          - Thin 4
+          - Thin 5
+          - Thrashy Wave 8
+          - Thrashy Wave 9
+          - Thrashy Wave 10
+          - Thrashy Wave 11
+          - Thrashy Wave 12
+          - Thrashy Wave 13
+          - Spark Wave 12
+          - Spark Wave 13
+          - Thrashy Wave 14
+          - Thrashy Wave 15
+          - Rainbow
+          - Soft Dome 8
+          - Trashy Wave 16
+          - Soothing 1
+          - Soothing 2
+          - Space Wave
+          - 5th Rasp
+          - Octave Wave
+          - Triangle + Overtones
+          - Pulse + Overtones
+          - Rising Square
+          - Soft Wave 8
+          - Cacophonous Buzz 3
+          - Silence
+          - White Noise
       voice_D_coarse_tuning:
-        { cc: 118, description: "", init: 0, max: 99, min: 0 }
+        { cc: 118, description: "", init: 0, max: 127, min: 0 }
       voice_D_fine_tuning:
-        { cc: 114, description: "", init: 0, max: 99, min: 0 }
+        { cc: 114, description: "", init: 0, max: 127, min: 0 }
     lfo:
-      lfo1_shape: { cc: 54, description: "", init: 0, max: 99, min: 0 }
-      lfo1_rate: { cc: 72, description: "", init: 0, max: 99, min: 0 }
-      lfo1_amount: { cc: 70, description: "", init: 0, max: 99, min: 0 }
-      lfo2_shape: { cc: 55, description: "", init: 0, max: 99, min: 0 }
-      lfo2_rate: { cc: 73, description: "", init: 0, max: 99, min: 0 }
-      lfo2_amount: { cc: 28, description: "", init: 0, max: 99, min: 0 }
+      lfo1_shape: { cc: 54, description: "", init: 0, max: 127, min: 0 }
+      lfo1_rate: { cc: 72, description: "", init: 0, max: 127, min: 0 }
+      lfo1_amount: { cc: 70, description: "", init: 0, max: 127, min: 0 }
+      lfo2_shape: { cc: 55, description: "", init: 0, max: 127, min: 0 }
+      lfo2_rate: { cc: 73, description: "", init: 0, max: 127, min: 0 }
+      lfo2_amount: { cc: 28, description: "", init: 0, max: 127, min: 0 }
     fil:
-      amount: { cc: 47, description: "", init: 0, min: 0, max: 99 }
-      attack: { cc: 85, description: "", init: 0, max: 99, min: 0 }
-      decay: { cc: 86, description: "", init: 0, max: 99, min: 0 }
-      sustain: { cc: 87, description: "", init: 0, max: 99, min: 0 }
-      release: { cc: 88, description: "", init: 0, max: 99, min: 0 }
+      amount: { cc: 47, description: "", init: 0, min: 0, max: 127 }
+      attack: { cc: 85, description: "", init: 0, max: 127, min: 0 }
+      decay: { cc: 86, description: "", init: 0, max: 127, min: 0 }
+      sustain: { cc: 87, description: "", init: 0, max: 127, min: 0 }
+      release: { cc: 88, description: "", init: 0, max: 127, min: 0 }
     vca:
-      attack: { cc: 81, description: "", init: 0, max: 99, min: 0 }
-      decay: { cc: 82, description: "", init: 0, max: 99, min: 0 }
-      sustain: { cc: 83, description: "", init: 0, max: 99, min: 0 }
-      release: { cc: 84, description: "", init: 0, max: 99, min: 0 }
+      attack: { cc: 81, description: "", init: 0, max: 127, min: 0 }
+      decay: { cc: 82, description: "", init: 0, max: 127, min: 0 }
+      sustain: { cc: 83, description: "", init: 0, max: 127, min: 0 }
+      release: { cc: 84, description: "", init: 0, max: 127, min: 0 }
     vcf:
-      cutoff: { cc: 74, description: "", init: 0, max: 99, min: 0 }
-      resonance: { cc: 71, description: "", init: 0, max: 99, min: 0 }
+      cutoff: { cc: 74, description: "", init: 0, max: 127, min: 0 }
+      resonance: { cc: 71, description: "", init: 0, max: 127, min: 0 }
     effect:
-      type: { cc: 9, description: "", init: 0, max: 127, min: 0 }
-      rate: { cc: 92, description: "", init: 0, max: 99, min: 0 }
-      depth: { cc: 91, description: "", init: 0, max: 99, min: 0 }
+      type:
+        cc: 9
+        description: ""
+        init: 0
+        max: 127
+        min: 0
+        accepted_values:
+          - Ensemble
+          - Reverb
+      rate: { cc: 92, description: "", init: 0, max: 127, min: 0 }
+      depth: { cc: 91, description: "", init: 0, max: 127, min: 0 }
     keys:
       notes: "keys_or_pads"
       pitchwheel: "pitchwheel"

@@ -103,7 +103,13 @@ Generated configuration for the {brand} - {device}
                         range = f", range=({min}, {max})"
                     descr = config.get("description")
                     descr = f", description={descr!r}" if descr else ""
-                    parameter_code = f"    {parameter_name} = nallely.ModuleParameter({cc}{range}{init}{descr})\n"
+                    accepted_values = config.get("accepted_values")
+                    accepted_values = (
+                        f", accepted_values={accepted_values!r}"
+                        if accepted_values
+                        else ""
+                    )
+                    parameter_code = f"    {parameter_name} = nallely.ModuleParameter({cc}{range}{init}{descr}{accepted_values})\n"
                 f.write(parameter_code)
             f.write("\n\n")
         device_name = device.replace("-", "").replace(" ", "")

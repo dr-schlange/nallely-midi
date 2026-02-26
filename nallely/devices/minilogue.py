@@ -10,10 +10,12 @@ class GeneralSection(nallely.Module):
     voice_depth = nallely.ModuleParameter(27)
     cross_mod_depth = nallely.ModuleParameter(41)
     pitch_eg_intensity = nallely.ModuleParameter(42)
-    sync = nallely.ModuleParameter(80)
-    ring = nallely.ModuleParameter(81)
-    velocity_key_track = nallely.ModuleParameter(82)
-    keyboard_track = nallely.ModuleParameter(83)
+    sync = nallely.ModuleParameter(80, accepted_values=("ON", "OFF"))
+    ring = nallely.ModuleParameter(81, accepted_values=("ON", "OFF"))
+    velocity_key_track = nallely.ModuleParameter(
+        82, accepted_values=("0%", "50%", "100%")
+    )
+    keyboard_track = nallely.ModuleParameter(83, accepted_values=("0%", "50%", "100%"))
 
 
 class EnvelopesSection(nallely.Module):
@@ -30,16 +32,20 @@ class EnvelopesSection(nallely.Module):
 class LfoSection(nallely.Module):
     rate = nallely.ModuleParameter(24)
     depth = nallely.ModuleParameter(26)
-    target = nallely.ModuleParameter(56)
-    eg_mod = nallely.ModuleParameter(57)
-    wave = nallely.ModuleParameter(58)
+    target = nallely.ModuleParameter(56, accepted_values=("Cutoff", "Shape", "Pitch"))
+    eg_mod = nallely.ModuleParameter(57, accepted_values=("OFF", "Rate", "Int"))
+    wave = nallely.ModuleParameter(
+        58, accepted_values=("Square", "Triangle", "Sawtooth")
+    )
 
 
 class DelaySection(nallely.Module):
     hipass = nallely.ModuleParameter(29)
     time = nallely.ModuleParameter(30)
     feedback = nallely.ModuleParameter(31)
-    output_routing = nallely.ModuleParameter(88)
+    output_routing = nallely.ModuleParameter(
+        88, accepted_values=("Bypass", "Pre-filter", "Post-filter")
+    )
 
 
 class VcoSection(nallely.Module):
@@ -47,10 +53,18 @@ class VcoSection(nallely.Module):
     vco_2_pitch = nallely.ModuleParameter(35)
     vco_1_shape = nallely.ModuleParameter(36)
     vco_2_shape = nallely.ModuleParameter(37)
-    vco_1_octave = nallely.ModuleParameter(48)
-    vco_2_octave = nallely.ModuleParameter(49)
-    vco_1_wave = nallely.ModuleParameter(50)
-    vco_2_wave = nallely.ModuleParameter(51)
+    vco_1_octave = nallely.ModuleParameter(
+        48, accepted_values=("Oct0", "Oct1", "Oct2", "Oct3")
+    )
+    vco_2_octave = nallely.ModuleParameter(
+        49, accepted_values=("Oct0", "Oct1", "Oct2", "Oct3")
+    )
+    vco_1_wave = nallely.ModuleParameter(
+        50, accepted_values=("Square", "Triangle", "Sawtooth")
+    )
+    vco_2_wave = nallely.ModuleParameter(
+        51, accepted_values=("Square", "Triangle", "Sawtooth")
+    )
 
 
 class MixSection(nallely.Module):
@@ -63,7 +77,7 @@ class FilterSection(nallely.Module):
     cutoff = nallely.ModuleParameter(43, init_value=127)
     resonance = nallely.ModuleParameter(44)
     eg_intensity = nallely.ModuleParameter(45)
-    type = nallely.ModuleParameter(84)
+    type = nallely.ModuleParameter(84, accepted_values=("2-pole", "4-pole"))
 
 
 class KeySection(nallely.Module):

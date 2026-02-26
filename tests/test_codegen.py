@@ -1,5 +1,6 @@
 import ast
 
+from nallely.codegen.midi_module_generator import generate_code
 from nallely.codegen.virtual_module_autogen import parsedoc, parsespec
 
 
@@ -102,3 +103,29 @@ def test__parse_docstring_with_spaces():
         assert spec.cv_name == exp[0]
         assert spec.name == exp[1]
         assert spec.range == exp[2]
+
+
+def test__midi_device_generator_accepted_values(tmp_path):
+    device = {
+        "KORG": {
+            "NTS1": {
+                "oscillator": {
+                    "alt": {
+                        "cc": 55,
+                        "description": "",
+                        "init": 0,
+                        "max": 127,
+                        "min": 0,
+                        "accepted_values": ["OFF", "ON", "NEW"],
+                    }
+                }
+            }
+        }
+    }
+
+    out_file = tmp_path / "mydev.py"
+    generate_code(device, out_file)
+
+    content = out_file.read_text()
+
+    assert "accepted_values=['OFF', 'ON', 'NEW']" in content

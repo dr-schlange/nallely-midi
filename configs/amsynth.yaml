@@ -6,80 +6,116 @@ nickdowell:
       preset_select: "program_change"
 
       filter_velocity_sens:
-        {
-          cc: 20,
-          description: "Filter Velocity Sensitivity",
-          init: 127,
-          min: 0,
-          max: 127,
-        }
+        cc: 20
+        description: "Filter Velocity Sensitivity"
+        init: 127
+        min: 0
+        max: 127
       amp_velocity_sens:
-        {
-          cc: 21,
-          description: "Amp Velocity Sensitivity",
-          init: 127,
-          min: 0,
-          max: 127,
-        }
+        cc: 21
+        description: "Amp Velocity Sensitivity"
+        init: 127
+        min: 0
+        max: 127
     oscillators:
       osc1_waveform:
-        {
-          cc: 103,
-          description: "Oscillator 1 Waveform",
-          init: 64,
-          min: 0,
-          max: 127,
-        }
+        cc: 103
+        description: "Oscillator 1 Waveform"
+        init: 64
+        min: 0
+        max: 127
+        accepted_values:
+          - Sine
+          - Square/Pulse
+          - Triangle/Sawtooth
+          - White Noise
+          - White Noise + Sample&Hold
       osc1_shape:
-        {
-          cc: 104,
-          description: "Oscillator 1 Shape",
-          init: 64,
-          min: 0,
-          max: 127,
-        }
+        cc: 104
+        description: "Oscillator 1 Shape"
+        init: 64
+        min: 0
+        max: 127
       osc2_waveform:
-        {
-          cc: 105,
-          description: "Oscillator 2 Waveform",
-          init: 64,
-          min: 0,
-          max: 127,
-        }
+        cc: 105
+        description: "Oscillator 2 Waveform"
+        init: 64
+        min: 0
+        max: 127
+        accepted_values:
+          - Sine
+          - Square/Pulse
+          - Triangle/Sawtooth
+          - White Noise
+          - White Noise + Sample&Hold
       osc2_shape:
-        {
-          cc: 106,
-          description: "Oscillator 2 Shape",
-          init: 64,
-          min: 0,
-          max: 127,
-        }
+        cc: 106
+        description: "Oscillator 2 Shape"
+        init: 64
+        min: 0
+        max: 127
       osc2_oct:
-        {
-          cc: 108,
-          description: "Oscillator 2 Range",
-          init: 64,
-          min: 0,
-          max: 127,
-        }
+        cc: 108
+        description: "Oscillator 2 Range"
+        init: 64
+        min: 0
+        max: 127
+        accepted_values:
+          - "-3 oct"
+          - "-2 oct"
+          - "-1 oct"
+          - "+0 oct"
+          - "+1 oct"
+          - "+2 oct"
+          - "+3 oct"
+          - "+4 oct"
       osc2_semitone:
-        {
-          cc: 109,
-          description: "Oscillator 2 Pitch",
-          init: 64,
-          min: 0,
-          max: 127,
-        }
+        cc: 109
+        description: "Oscillator 2 Pitch"
+        init: 64
+        min: 0
+        max: 127
+        accepted_values:
+          - "-12 semitones"
+          - "-11 semitones"
+          - "-10 semitones"
+          - "-9 semitones"
+          - "-8 semitones"
+          - "-7 semitones"
+          - "-6 semitones"
+          - "-5 semitones"
+          - "-4 semitones"
+          - "-3 semitones"
+          - "-2 semitones"
+          - "-1 semitones"
+          - "+0 semitones"
+          - "+1 semitones"
+          - "+2 semitones"
+          - "+3 semitones"
+          - "+4 semitones"
+          - "+5 semitones"
+          - "+6 semitones"
+          - "+7 semitones"
+          - "+8 semitones"
+          - "+9 semitones"
+          - "+10 semitones"
+          - "+11 semitones"
+          - "+12 semitones"
       osc2_detune:
-        {
-          cc: 110,
-          description: "Oscillator 2 Detune",
-          init: 64,
-          min: 0,
-          max: 127,
-        }
+        cc: 110
+        description: "Oscillator 2 Detune"
+        init: 64
+        min: 0
+        max: 127
       sync_oscillators:
-        { cc: 107, description: "Sync Oscillators", init: 64, min: 0, max: 127 }
+        cc: 107
+        description: "Sync Oscillators"
+        init: 64
+        min: 0
+        max: 127
+        accepted_values:
+          - OFF
+          - ON
       mix:
         { cc: 111, description: "Oscillator Mix", init: 64, min: 0, max: 127 }
       ring_mod:
@@ -98,63 +134,93 @@ nickdowell:
       release:
         { cc: 60, description: "Amp Release", init: 64, min: 0, max: 127 }
     filter:
-      type: { cc: 47, description: "Filter Type", init: 64, min: 0, max: 127 }
-      slope: { cc: 48, description: "Filter Slope", init: 0, min: 0, max: 127 }
+      type:
+        cc: 47
+        description: "Filter Type"
+        init: 64
+        min: 0
+        max: 127
+        accepted_values:
+          - Low-pass
+          - High-pass
+          - Band-pass
+          - Notch
+          - Shortcut
+      slope:
+        cc: 48
+        description: "Filter Slope"
+        init: 0
+        min: 0
+        max: 127
+        accepted_values:
+          - 12dB/oct
+          - 24dB/oct
       cutoff:
         { cc: 50, description: "Filter Cutoff", init: 0, min: 0, max: 127 }
       resonance:
         { cc: 49, description: "Filter Resonnance", init: 0, min: 0, max: 127 }
       key_track:
-        {
-          cc: 51,
-          description: "Filter Keyboard Track",
-          init: 127,
-          min: 0,
-          max: 127,
-        }
+        cc: 51
+        description: "Filter Keyboard Track"
+        init: 127
+        min: 0
+        max: 127
       env_amount:
-        {
-          cc: 52,
-          description: "Filter Env Amount",
-          init: 127,
-          min: 0,
-          max: 127,
-        }
+        cc: 52
+        description: "Filter Env Amount"
+        init: 127
+        min: 0
+        max: 127
       attack:
         { cc: 53, description: "Filter Env Attack", init: 0, min: 0, max: 127 }
       decay:
         { cc: 54, description: "Filter Env Decay", init: 64, min: 0, max: 127 }
       sustain:
-        {
-          cc: 55,
-          description: "Filter Env Sustain",
-          init: 64,
-          min: 0,
-          max: 127,
-        }
+        cc: 55
+        description: "Filter Env Sustain"
+        init: 64
+        min: 0
+        max: 127
       release:
-        {
-          cc: 56,
-          description: "Filter Env Release",
-          init: 64,
-          min: 0,
-          max: 127,
-        }
+        cc: 56
+        description: "Filter Env Release"
+        init: 64
+        min: 0
+        max: 127
     lfo:
       waveform:
-        { cc: 118, description: "LFO Waveform", init: 64, min: 0, max: 127 }
+        cc: 118
+        description: "LFO Waveform"
+        init: 64
+        min: 0
+        max: 127
+        accepted_values:
+          - Sine
+          - Square
+          - Triangle
+          - Noise
+          - Noise + Sample&Hold
+          - Sawtooth
+          - Inverted Sawtooth
       speed: { cc: 119, description: "LFO Speed", init: 64, min: 0, max: 127 }
-      target: { cc: 117, description: "LFO Target", init: 64, min: 0, max: 127 }
+      target:
+        cc: 117
+        description: "LFO Target"
+        init: 64
+        min: 0
+        max: 127
+        accepted_values:
+          - Osc 1+2
+          - Osc 1
+          - Osc 2
       freq_mod_amount:
         { cc: 1, description: "LFO Freq Mod Amount", init: 0, min: 0, max: 127 }
       filter_mod_amount:
-        {
-          cc: 116,
-          description: "Filter Mod Amount",
-          init: 64,
-          min: 0,
-          max: 127,
-        }
+        cc: 116
+        description: "Filter Mod Amount"
+        init: 64
+        min: 0
+        max: 127
       amp_mod_amount:
         { cc: 115, description: "Amp Mod Amount", init: 64, min: 0, max: 127 }
     reverb:
@@ -171,6 +237,21 @@ nickdowell:
       portamento:
         { cc: 22, description: "Portamento Time", init: 0, min: 0, max: 127 }
       portamento_mode:
-        { cc: 23, description: "Portamento Mode", init: 0, min: 0, max: 127 }
+        cc: 23
+        description: "Portamento Mode"
+        init: 0
+        min: 0
+        max: 127
+        accepted_values:
+          - Always
+          - Legato
       keyboard_mode:
-        { cc: 24, description: "Keyboard Mode", init: 0, min: 0, max: 127 }
+        cc: 24
+        description: "Keyboard Mode"
+        init: 0
+        min: 0
+        max: 127
+        accepted_values:
+          - Poly
+          - Mono
+          - Legato
