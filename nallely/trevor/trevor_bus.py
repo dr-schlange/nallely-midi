@@ -238,8 +238,10 @@ class TrevorBus(VirtualDevice):
             {"status": status, "message": message, "command": "notification"}
         )
 
-    def full_state(self):
-        return self.session.snapshot(spread_registered_services=True)
+    def full_state(self, save_defaultvalues=False):
+        return self.session.snapshot(
+            spread_registered_services=True, save_defaultvalues=save_defaultvalues
+        )
 
     def random_preset(self, device_id):  # type: ignore
         self.trevor.random_preset(device_id)
@@ -598,7 +600,7 @@ class TrevorBus(VirtualDevice):
 
     def set_parameter_value(self, device_id, section_name, parameter_name, value):
         self.trevor.set_parameter_value(device_id, section_name, parameter_name, value)
-        return self.full_state()
+        return self.full_state(save_defaultvalues=True)
 
     def set_device_channel(self, device_id, channel):
         self.trevor.set_device_channel(device_id, channel)
