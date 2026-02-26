@@ -180,7 +180,7 @@ class WebSocketBus(VirtualDevice):
 
     def parse_json(self, service_name: str, data: str):
         json_message = json.loads(data)
-        param_name = f"{service_name}_{json_message["on"]}"
+        param_name = f"{service_name}_{json_message['on']}"
         output = getattr(self, f"{param_name}_cv")
         value = float(json_message["value"])
         return param_name, value, output
@@ -465,3 +465,10 @@ class WebSocketBus(VirtualDevice):
                 )
         del self.connected[service_name]
         del self.known_services[service_name]
+
+    def services_in_waitingroom(self):
+        services = []
+        for key, room in self.__dict__.items():
+            if isinstance(room, WaitingRoom):
+                services.append({"key": key})
+        return services

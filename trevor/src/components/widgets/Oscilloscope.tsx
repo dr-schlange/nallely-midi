@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import "uplot/dist/uPlot.min.css";
 import type uPlot from "uplot";
 import UplotReact from "uplot-react";
+import "uplot/dist/uPlot.min.css";
 import walkerSprites from "../../assets/walker.png";
+import { useScopeWorker } from "../../hooks/wsHooks";
 import DragNumberInput from "../DragInputs";
 import { Button, type WidgetProps } from "./BaseComponents";
-import { useScopeWorker } from "../../hooks/wsHooks";
 
 const BUFFER_SIZE = 100;
 const BUFFER_UPPER = 2000;

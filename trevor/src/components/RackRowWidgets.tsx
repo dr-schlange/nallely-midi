@@ -1,11 +1,16 @@
-import { forwardRef, ReactElement, useImperativeHandle, useState } from "react";
+import {
+	forwardRef,
+	type ReactElement,
+	useImperativeHandle,
+	useState,
+} from "react";
+import { WindowWidget } from "./widgets/BaseWindowWidget";
 import { Scope } from "./widgets/Oscilloscope";
+import { Pads } from "./widgets/PadsWidget";
+import { Sliders } from "./widgets/SlidersWidget";
+import { XYPad } from "./widgets/XYPadWidget";
 import { XYScope } from "./widgets/XYScope";
 import { XYZScope } from "./widgets/XYZScope";
-import { Sliders } from "./widgets/SlidersWidget";
-import { Pads } from "./widgets/PadsWidget";
-import { XYPad } from "./widgets/XYPadWidget";
-import { WindowWidget } from "./widgets/BaseWindowWidget";
 
 interface WidgetRackProps {
 	onRackScroll?: () => void;
@@ -213,6 +218,18 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 
 // for sortable components
 import {
+	closestCenter,
+	DndContext,
+	PointerSensor,
+	useSensor,
+	useSensors,
+} from "@dnd-kit/core";
+import {
+	restrictToHorizontalAxis,
+	restrictToParentElement,
+	restrictToVerticalAxis,
+} from "@dnd-kit/modifiers";
+import {
 	arrayMove,
 	horizontalListSortingStrategy,
 	SortableContext,
@@ -220,18 +237,6 @@ import {
 	verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import {
-	restrictToHorizontalAxis,
-	restrictToParentElement,
-	restrictToVerticalAxis,
-} from "@dnd-kit/modifiers";
-import {
-	closestCenter,
-	DndContext,
-	PointerSensor,
-	useSensor,
-	useSensors,
-} from "@dnd-kit/core";
 import { findFirstMissingValue } from "../utils/utils";
 import { GPControl } from "./widgets/GPControlWidget";
 import { Keyboard } from "./widgets/KeyboardWidget";

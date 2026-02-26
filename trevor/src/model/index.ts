@@ -8,7 +8,12 @@ export interface NallelyState {
 	playground_code: string;
 	virtual_devices_schemas: VirtualDeviceSchema[];
 	midi_devices_schemas: MidiDeviceSchema[];
+	waiting_services: ExternalService[];
 }
+
+export type ExternalService = {
+	key: string;
+};
 
 export type VirtualDeviceSchema = {
 	name: string;

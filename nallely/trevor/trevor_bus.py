@@ -239,9 +239,12 @@ class TrevorBus(VirtualDevice):
         )
 
     def full_state(self, save_defaultvalues=False):
-        return self.session.snapshot(
+        snapshot = self.session.snapshot(
             spread_registered_services=True, save_defaultvalues=save_defaultvalues
         )
+        if self.ws:
+            snapshot["waiting_services"] = self.ws.services_in_waitingroom()
+        return snapshot
 
     def random_preset(self, device_id):  # type: ignore
         self.trevor.random_preset(device_id)
@@ -692,6 +695,10 @@ class TrevorBus(VirtualDevice):
             if force:
                 return result
 
+    def services_in_waitingroom(self):
+        if self.ws:
+            self.ws.services_in_waitingroom()
+
 
 import socket
 from concurrent.futures import ThreadPoolExecutor
@@ -802,7 +809,6 @@ def trevor_infos(header, loaded_paths, init_script, ui):
     info += f"  * Connected/existing devices [{len(devices)}]\n"
     if devices:
         for device in all_devices():
-
             info += f"    - {device.uid()} <{device.__class__.__name__}>"
             if isinstance(device, VirtualDevice) and device.paused:
                 info += f" [paused]"
@@ -960,7 +966,7 @@ def _trevor_menu(loaded_paths, init_script, trevor_bus=None, trevor_ui=None):
                         local_us = friend_ip == "localhost"
                         us = get_my_ip() == friend_ip
                         flag = (
-                            f"<-- this is{" local" if local_us else ""} us {"on the local network" if us else ""}"
+                            f"<-- this is{' local' if local_us else ''} us {'on the local network' if us else ''}"
                             if us or local_us
                             else ""
                         )

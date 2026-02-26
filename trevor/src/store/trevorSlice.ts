@@ -18,6 +18,7 @@ const initialState: NallelyState = {
 	playground_code: "",
 	virtual_devices_schemas: [],
 	midi_devices_schemas: [],
+	waiting_services: [],
 };
 
 const trevorSlice = createSlice({
@@ -35,6 +36,7 @@ const trevorSlice = createSlice({
 				midi: action.payload.classes.midi,
 			};
 			state.playground_code = action.payload.playground_code;
+			state.waiting_services = action.payload.waiting_services;
 		},
 		setAllVirtualDeviceSchemas: (
 			state,
