@@ -10,8 +10,8 @@ class GeneralSection(nallely.Module):
     voice_depth = nallely.ModuleParameter(27)
     cross_mod_depth = nallely.ModuleParameter(41)
     pitch_eg_intensity = nallely.ModuleParameter(42)
-    sync = nallely.ModuleParameter(80, accepted_values=("ON", "OFF"))
-    ring = nallely.ModuleParameter(81, accepted_values=("ON", "OFF"))
+    sync = nallely.ModuleParameter(80, accepted_values=("OFF", "ON"))
+    ring = nallely.ModuleParameter(81, accepted_values=("OFF", "ON"))
     velocity_key_track = nallely.ModuleParameter(
         82, accepted_values=("0%", "50%", "100%")
     )
