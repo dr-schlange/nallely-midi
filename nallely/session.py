@@ -335,6 +335,7 @@ playground_code={infos["playground_code"]}
 """
         porcelain.commit(repo, author=b"Nallely MIDI <drcoatl@proton.me>", committer=b"dr-schlange <drcoatl@proton.me>", message=message)  # type: ignore
         # repo.close()
+        print(f"[GIT-STORE] {address_file.absolute()} commited")
         return address_file
 
     def load_address(self, address, universe=None):
