@@ -77,7 +77,7 @@ export const WindowWidget = ({
 			{windowUrl && (
 				<iframe
 					ref={iframeRef}
-					src={`${windowUrl}?nallelyId=${id}&nallelyOrigin=${window.location.hostname}:6789`}
+					src={`${windowUrl}?nallelyId=${id}&nallelyOrigin=ws://${window.location.hostname}:6789`}
 					title="Window"
 					style={{
 						height: "86%",
