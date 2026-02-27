@@ -34,6 +34,7 @@
 * Add first OSCBus implementation, works using a similar protocol than the one for the WebSocketBus
 * Add new service to detect running Nallely session on the local network
 * Add possitiliby to switch session from TrevorUI
+* Device hot-patch/hot-swap doesn't commit the new code by default
 
 ### Fix
 

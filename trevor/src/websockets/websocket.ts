@@ -568,24 +568,31 @@ export class TrevorWebSocket {
 	// 	});
 	// }
 
-	compileInject(device_id: number, class_code) {
+	compileInject(
+		device_id: number,
+		class_code: string,
+		commit: boolean = false,
+	) {
 		this.sendJsonMessage({
 			command: "compile_inject",
 			device_id,
 			class_code,
+			commit,
 		});
 	}
 
 	compileInjectSave(
 		device_id: number,
-		class_code,
+		class_code: string,
 		force_name: string | undefined,
+		commit: boolean = false,
 	) {
 		this.sendJsonMessage({
 			command: "compile_inject_save",
 			device_id,
 			class_code,
 			force_name: force_name,
+			commit,
 		});
 	}
 

@@ -55,7 +55,12 @@ class MetaTrevorAPI:
         compiled_method.__source__ = method_code
 
     def object_centric_compile_inject(
-        self, device, class_code: str, tmp_name: bool = True, filename=None
+        self,
+        device,
+        class_code: str,
+        tmp_name: bool = True,
+        filename=None,
+        commit=False,
     ):
         current_cls = device.__class__
         # print("[DEBUG] Compiling dedicated class for", current_cls)
@@ -92,7 +97,9 @@ class MetaTrevorAPI:
                 f"class {device_name}", f"class {replace_name}"
             )
             print(f"[META] Create and save new version of {cls} in {filename}")
-            cls = self.session.compile_device_from_cls(cls, filename=filename)
+            cls = self.session.compile_device_from_cls(
+                cls, filename=filename, commit=commit
+            )
             cls.__tmp__ = None
             # We force a reload of the stored device
             self.session._load_device_file(filename)
@@ -108,12 +115,12 @@ class MetaTrevorAPI:
         self.session.migrate_instance(device, cls, temporary=True)
 
     def compile_save_new_class(
-        self, device, class_code: str, force_name: str | None = None
+        self, device, class_code: str, force_name: str | None = None, commit=False
     ):
         current_cls = device.__class__
         if force_name and force_name != current_cls.__name__:
             current_cls.__name__ = force_name
         device_file = self.session.devices_path / f"{current_cls.__name__.lower()}.py"
         self.object_centric_compile_inject(
-            device, class_code, tmp_name=False, filename=device_file
+            device, class_code, tmp_name=False, filename=device_file, commit=commit
         )

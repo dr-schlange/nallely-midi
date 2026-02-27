@@ -412,7 +412,7 @@ playground_code={infos["playground_code"]}
         repo.close()
 
     def compile_device_from_cls(
-        self, cls, temporary=False, filename=None, force_name=None
+        self, cls, temporary=False, filename=None, force_name=None, commit=False
     ):
         if not cls:
             return None
@@ -462,18 +462,21 @@ playground_code={infos["playground_code"]}
             device_code = inspect.getsource(new_cls)
             # module = getmodule(new_cls)
 
-            # We create a commit for the new version of the class
-            repo = self._get_repository(universe=self.universe)
-            porcelain.add(repo, filename)
-            session_id = hex(id(self))[2:].upper()
-            message = f"""Enhanced device class {new_cls.__name__} in session 0x{session_id}
+            if commit:
+                # We create a commit for the new version of the class
+                repo = self._get_repository(universe=self.universe)
+                porcelain.add(repo, filename)
+                session_id = hex(id(self))[2:].upper()
+                message = f"""Enhanced device class {new_cls.__name__} in session 0x{session_id}
 
 SESSION_ID=0x{session_id}
 original_file={read_from}
 """
-            porcelain.commit(repo, author=b"Nallely MIDI <drcoatl@proton.me>", committer=b"dr-schlange <drcoatl@proton.me>", message=message)  # type: ignore
-            print(f"[GIT-STORE] Commit {filename=} for device class {new_cls.__name__}")
-            repo.close()
+                porcelain.commit(repo, author=b"Nallely MIDI <drcoatl@proton.me>", committer=b"dr-schlange <drcoatl@proton.me>", message=message)  # type: ignore
+                print(
+                    f"[GIT-STORE] Commit {filename=} for device class {new_cls.__name__}"
+                )
+                repo.close()
 
         return new_cls
 

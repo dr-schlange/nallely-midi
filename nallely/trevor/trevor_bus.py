@@ -19,6 +19,7 @@ from textwrap import indent
 
 from websockets import ConnectionClosed, ConnectionClosedError, InvalidMessage
 from websockets.sync.server import serve
+from websockets.version import commit
 
 from ..core import (
     Int,
@@ -536,7 +537,7 @@ class TrevorBus(VirtualDevice):
             self.send_message(
                 {"arg": class_code, "command": "RuntimeAPI::setClassCode"}
             )
-        except:
+        except Exception:
             print(f"[TrevorBus] Couldn't find {device_id}")
 
     def get_class_code(self, device_id):
@@ -546,18 +547,19 @@ class TrevorBus(VirtualDevice):
             self.send_message(
                 {"arg": class_code, "command": "RuntimeAPI::setClassCode"}
             )
-        except:
+        except Exception:
             print(f"[TrevorBus] Couldn't find {device_id}")
 
-    # def compile_inject(self, device_id, method_name, method_code):
-    def compile_inject(self, device_id, class_code):
+    def compile_inject(self, device_id, class_code, commit=False):
         try:
             device = self.trevor.get_device_instance(device_id)
-        except Exception as e:
+        except Exception:
             print(f"[TrevorBus] Couldn't find {device_id}")
             return
         try:
-            self.session.meta_trevor.object_centric_compile_inject(device, class_code)
+            self.session.meta_trevor.object_centric_compile_inject(
+                device, class_code, commit=commit
+            )
             self.send_notification(
                 "ok",
                 f"Code for class {device.__class__.__name__} compiled, and instance {device_id} have been migrated",
@@ -570,15 +572,15 @@ class TrevorBus(VirtualDevice):
             print(e)
         return self.full_state()
 
-    def compile_inject_save(self, device_id, class_code, force_name=None):
+    def compile_inject_save(self, device_id, class_code, force_name=None, commit=False):
         try:
             device = self.trevor.get_device_instance(device_id)
-        except Exception as e:
+        except Exception:
             print(f"[TrevorBus] Couldn't find {device_id}")
             return
         try:
             self.session.meta_trevor.compile_save_new_class(
-                device, class_code, force_name
+                device, class_code, force_name, commit=commit
             )
             # TODO: migrate all instances but need a stronger hot-patch for structural changes
             self.send_notification(
