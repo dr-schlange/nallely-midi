@@ -4,6 +4,7 @@ import json
 import linecache
 import os
 import re
+import weakref
 from collections import Counter
 from inspect import getmodule
 from pathlib import Path
@@ -57,6 +58,7 @@ class Session:
         self.devices_path = self.universe_path(universe) / "devices"
         self.devices_path.mkdir(parents=True, exist_ok=True)
         self._load_all_devices()
+        self._finalizer = weakref.finalize(self, self._close_repo, self.repo)
 
     def save_code(self, code):
         self.code = code
@@ -332,7 +334,7 @@ patchs_number={infos["patches"]}
 playground_code={infos["playground_code"]}
 """
         porcelain.commit(repo, author=b"Nallely MIDI <drcoatl@proton.me>", committer=b"dr-schlange <drcoatl@proton.me>", message=message)  # type: ignore
-        repo.close()
+        # repo.close()
         return address_file
 
     def load_address(self, address, universe=None):
@@ -409,7 +411,7 @@ playground_code={infos["playground_code"]}
         session_id = hex(id(self))[2:].upper()
         message = f"""[0x{address}] Clear session 0x{session_id}"""
         porcelain.commit(repo, author=b"Nallely MIDI <drcoatl@proton.me>", committer=b"dr-schlange <drcoatl@proton.me>", message=message)  # type: ignore
-        repo.close()
+        # repo.close()
 
     def compile_device_from_cls(
         self, cls, temporary=False, filename=None, force_name=None, commit=False
@@ -476,7 +478,7 @@ original_file={read_from}
                 print(
                     f"[GIT-STORE] Commit {filename=} for device class {new_cls.__name__}"
                 )
-                repo.close()
+                # repo.close()
 
         return new_cls
 
@@ -597,7 +599,7 @@ original_file={read_from}
         patches = len(content["connections"])
         playground_code = content.get("playground_code")
         # repo = Repo(file.parent.parent)
-        repo = self.repo
+        # repo = self.repo
 
         commit_sha = self.get_last_commit_hash_for_file(file)
         if commit_sha:
@@ -613,7 +615,7 @@ original_file={read_from}
             "playground_code": bool(playground_code),
             "metadata": metadata,
         }
-        repo.close()
+        # repo.close()
         return details
 
     @staticmethod
@@ -639,3 +641,8 @@ original_file={read_from}
             return last_commit.id
         except StopIteration:
             return None
+
+    @staticmethod
+    def _close_repo(repo):
+        print("[GIT-STORE] Closing repository")
+        repo.close()
