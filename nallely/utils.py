@@ -2,6 +2,7 @@ import collections
 import importlib
 import importlib.util
 import json
+import socket
 import subprocess
 import sys
 import threading
@@ -282,3 +283,30 @@ def run_process(cmd, on_finish=None):
     watcher.start()
 
     return process
+
+
+def generate_acronym(name: str, length: int = 3, respect_case: bool = False) -> str:
+    vowels = set("aeiouAEIOU")
+
+    def shrink(word):
+        if len(word) <= length:
+            return word
+        return (word[0] + "".join(c for c in word[1:] if c not in vowels))[:length]
+
+    result = "".join(shrink(w) for w in name.split())
+    return result if respect_case else result.upper()
+
+
+PORTS = [6788]
+
+
+def get_my_ip():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        return ip
+    except Exception:
+        return None
+    finally:
+        s.close()

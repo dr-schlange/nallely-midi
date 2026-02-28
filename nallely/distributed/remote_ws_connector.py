@@ -36,8 +36,6 @@ import time
 
 from websockets.sync.client import connect as ws_connect
 
-from ..core import VirtualDevice
-
 
 class NallelyService:
     """A single external neuron connection to the Nallely WebSocket Bus.
@@ -201,45 +199,3 @@ class NallelyWebsocketBus:
         for name, service in self.registered.items():
             print(f"* {name}")
             service.dispose()
-
-
-class NeuronExposer:
-    def __init__(self, neuron: VirtualDevice, bus: NallelyWebsocketBus):
-        self.bus = bus
-        self.neuron = neuron
-        self.service: NallelyService | None = None
-        self.params = {}
-        self._setup()
-
-    def _setup(self):
-        self.neuron.register_observer(self)
-        config = {}
-        for port in self.neuron.all_parameters():
-            lower, upper = port.range
-            config[port.name] = {"min": lower, "max": upper}
-        service = self.bus.register("remote", self.uid(), config, self.params)
-        service.onmessage = self.receiving  # type: ignore
-        self.service = service
-
-    def receiving(self, data):
-        on = data.get("on")
-        if not on:
-            return
-        value = data.get("value")
-        self.neuron.set_parameter(on, value)
-
-    def uid(self):
-        return self.neuron.uid()
-
-    def triggered(self, value, ctx, outputs, from_):
-        service = self.service
-        if not service:
-            print(
-                f"[EXPOSER] service for {self.uid()} is not started, dropping value {value}"
-            )
-            return
-        for output in outputs:
-            service.send(output.name, value)
-
-    def dispose(self):
-        self.neuron.unregister_observer(self)

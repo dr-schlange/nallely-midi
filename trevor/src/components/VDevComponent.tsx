@@ -317,9 +317,11 @@ export const VDevice = React.memo(
 			[onClick, handleDoubleClick, device, dispatch, longPressEvents],
 		);
 
-    const color = selected ? "yellow" : (
-      device.proxy ? "rgba(187, 153, 90, 0.8)": "gray"
-		)
+		const color = selected
+			? "yellow"
+			: device.proxy
+				? "rgba(187, 153, 90, 0.8)"
+				: "gray";
 		return (
 			<div
 				style={{

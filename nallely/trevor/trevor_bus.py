@@ -4,6 +4,7 @@ import io
 import json
 import os
 import queue
+import socket
 import socketserver
 import sys
 import textwrap
@@ -11,6 +12,7 @@ import threading
 import time
 import traceback
 from collections import ChainMap, defaultdict
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from inspect import isfunction
 from itertools import zip_longest
@@ -19,7 +21,6 @@ from textwrap import indent
 
 from websockets import ConnectionClosed, ConnectionClosedError, InvalidMessage
 from websockets.sync.server import serve
-from websockets.version import commit
 
 from ..core import (
     Int,
@@ -37,7 +38,7 @@ from ..core import (
     virtual_devices,
 )
 from ..core.midi_device import MidiDevice, ModuleParameter
-from ..utils import StateEncoder, force_off_everywhere, load_modules
+from ..utils import StateEncoder, force_off_everywhere, get_my_ip, load_modules
 from ..websocket_bus import (  # noqa, we keep it so it's loaded in this namespace
     WebSocketBus,
 )
@@ -46,6 +47,9 @@ from .trevor_api import TrevorAPI
 _SYSTEM_STDOUT = sys.stdout
 _SYSTEM_STDERR = sys.stderr
 _SYSTEM_STDIN = sys.stdin
+
+TIMEOUT = 0.3
+PORTS = [6788]
 
 
 class IOCapture(io.StringIO):
@@ -702,30 +706,11 @@ class TrevorBus(VirtualDevice):
             self.ws.services_in_waitingroom()
 
 
-import socket
-from concurrent.futures import ThreadPoolExecutor
-
-TIMEOUT = 0.3
-PORTS = [6788]
-
-
-def get_my_ip():
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    try:
-        s.connect(("8.8.8.8", 80))
-        ip = s.getsockname()[0]
-        return ip
-    except Exception:
-        return None
-    finally:
-        s.close()
-
-
 def resource_path(relative_path):
     """Get absolute path to resource, works for dev and PyInstaller"""
     if hasattr(sys, "_MEIPASS"):
         # Running in PyInstaller bundle
-        base_path = Path(sys._MEIPASS)
+        base_path = Path(sys._MEIPASS)  # type: ignore
     else:
         # Running in normal python environment
         base_path = Path().cwd()
@@ -797,9 +782,7 @@ class HTTPServerThread:
 def trevor_infos(header, loaded_paths, init_script, ui):
     info = f"{header}\n"
     if ui:
-        info += (
-            f"  * Trevor-UI running on http://localhost:3000 or http://127.0.0.1:3000\n"
-        )
+        info += "  * Trevor-UI running on http://localhost:3000\n"
     info += f"  * init script = {init_script.resolve().absolute() if init_script else None}\n"
     info += "  * Loaded paths\n"
     for p in loaded_paths:
@@ -813,7 +796,7 @@ def trevor_infos(header, loaded_paths, init_script, ui):
         for device in all_devices():
             info += f"    - {device.uid()} <{device.__class__.__name__}>"
             if isinstance(device, VirtualDevice) and device.paused:
-                info += f" [paused]"
+                info += " [paused]"
             info += "\n"
 
     return info
