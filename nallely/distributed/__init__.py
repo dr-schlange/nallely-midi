@@ -2,8 +2,9 @@ from ..core import VirtualDevice
 from ..utils import generate_acronym, get_my_ip
 from .remote_ws_connector import NallelyService, NallelyWebsocketBus
 
+NAME_LIMIT = 5
 NAMES = [
-    generate_acronym(name, length=5)
+    generate_acronym(name, length=NAME_LIMIT)
     for name in (
         "ergotamine",
         "elymoclavine",

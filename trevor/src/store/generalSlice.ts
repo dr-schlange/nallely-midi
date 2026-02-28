@@ -7,7 +7,7 @@ export const initialGeneralState: GeneralState = {
 	trevorWebsocketURL: `ws://${window.location.hostname}:6788`,
 	connected: "disconnected",
 	firstLaunch: true,
-	friends: [],
+	friends: {},
 };
 
 const generalSlice = createSlice({
@@ -35,7 +35,10 @@ const generalSlice = createSlice({
 		disableFirstLaunch: (state) => {
 			state.firstLaunch = false;
 		},
-		setOnlineFriends: (state, action: PayloadAction<[string, number][]>) => {
+		setOnlineFriends: (
+			state,
+			action: PayloadAction<Record<string, [string, number]>>,
+		) => {
 			state.friends = action.payload;
 		},
 	},

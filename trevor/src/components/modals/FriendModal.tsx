@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { useTrevorDispatch, useTrevorSelector } from "../../store";
 import { setWebsocketURL } from "../../store/generalSlice";
 
@@ -6,7 +5,7 @@ interface FriendModalProps {
 	onClose: () => void;
 }
 
-const TrevorFriend = ({ ip, port, selected }) => {
+const TrevorFriend = ({ ip, port, selected, name }) => {
 	const dispatch = useTrevorDispatch();
 
 	const changeTrevor = () => {
@@ -31,6 +30,8 @@ const TrevorFriend = ({ ip, port, selected }) => {
 					onClick={changeTrevor}
 				/>
 				<p style={{ textAlign: "center", fontSize: "12px" }}>
+					{name}
+					<br />
 					{ip}:{port}
 				</p>
 			</div>
@@ -57,9 +58,10 @@ export const FriendModal = ({ onClose }: FriendModalProps) => {
 			</div>
 			<div className="about-modal-body">
 				{(!friends && <p>Scanning local network for friends...</p>) ||
-					friends.map(([ip, port]) => (
+					Object.entries(friends).map(([friend_name, [ip, port]]) => (
 						<TrevorFriend
 							key={`${ip}:${port}`}
+							name={friend_name}
 							ip={ip}
 							port={port}
 							selected={`ws://${ip}:${port}` === trevorURL}

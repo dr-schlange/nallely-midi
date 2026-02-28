@@ -22,6 +22,8 @@ from textwrap import indent
 from websockets import ConnectionClosed, ConnectionClosedError, InvalidMessage
 from websockets.sync.server import serve
 
+from nallely.distributed import NAME_LIMIT, name_me
+
 from ..core import (
     Int,
     Module,
@@ -641,7 +643,7 @@ class TrevorBus(VirtualDevice):
         if self.current_scan is not None:
             return
 
-        self.current_scan = []
+        self.current_scan = {}
 
         def check_port(ip, port):
             try:
@@ -672,9 +674,10 @@ class TrevorBus(VirtualDevice):
                         except Exception:
                             pass
                         print(f"[TrevorBus] Friend found: {ip}:{port}")
-                        self.current_scan.append((ip, port))
-            except Exception:
-                pass
+                        assert self.current_scan is not None
+                        self.current_scan[name_me(ip)] = (ip, port)
+            except Exception as e:
+                print("[TrevorBus] Error while scanning friends", e)
 
         my_ip = get_my_ip()
         if my_ip is None:
@@ -693,7 +696,8 @@ class TrevorBus(VirtualDevice):
                     #     executor.submit(check_port, "localhost", port)
             except Exception:
                 pass
-            result = list(self.current_scan)
+            result = self.current_scan
+            print("SEND", result)
             self.current_scan = None
             self.send_message(
                 {"command": "GeneralAPI::setOnlineFriends", "arg": result}
@@ -947,7 +951,7 @@ def _trevor_menu(loaded_paths, init_script, trevor_bus=None, trevor_ui=None):
                         print("There is no friend around :(")
                         return
                     print("There is some friends here!")
-                    for friend_ip, friend_port in friends:
+                    for friend_name, (friend_ip, friend_port) in friends.items():
                         local_us = friend_ip == "localhost"
                         us = get_my_ip() == friend_ip
                         flag = (
@@ -955,7 +959,9 @@ def _trevor_menu(loaded_paths, init_script, trevor_bus=None, trevor_ui=None):
                             if us or local_us
                             else ""
                         )
-                        print(f" * {friend_ip}:{friend_port}  {flag}")
+                        print(
+                            f" * {friend_name.ljust(NAME_LIMIT)} ({friend_ip}:{friend_port})  {flag}"
+                        )
     except KeyboardInterrupt:
         ...
 

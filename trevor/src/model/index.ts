@@ -169,7 +169,7 @@ export interface GeneralState {
 	trevorWebsocketURL: string;
 	connected: string;
 	firstLaunch: boolean;
-	friends: [string, number][];
+	friends: Record<string, [string, number]>;
 }
 
 export type CCValues = Record<
