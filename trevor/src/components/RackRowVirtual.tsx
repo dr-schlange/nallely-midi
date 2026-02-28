@@ -1,31 +1,31 @@
 /** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
 /** biome-ignore-all lint/a11y/useKeyWithClickEvents: <explanation> */
-import { useCallback, useEffect, useMemo, useState } from "react";
-import type { VirtualDevice } from "../model";
-import { useTrevorSelector } from "../store";
-import { useTrevorWebSocket } from "../websockets/websocket";
 import {
 	DndContext,
 	PointerSensor,
 	useSensor,
 	useSensors,
 } from "@dnd-kit/core";
+import { restrictToHorizontalAxis } from "@dnd-kit/modifiers";
 import {
 	arrayMove,
-	SortableContext,
-	rectSortingStrategy,
 	horizontalListSortingStrategy,
+	rectSortingStrategy,
+	SortableContext,
 } from "@dnd-kit/sortable";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type { VirtualDevice } from "../model";
+import { useTrevorSelector } from "../store";
 import {
+	devUID,
 	mergeDevicesPreservingOrder,
 	saveDeviceOrder,
-	devUID,
 } from "../utils/utils";
+import { useTrevorWebSocket } from "../websockets/websocket";
+import VDeviceSelectionModal from "./modals/VirtualDeviceSelectionModal";
+import { Portal } from "./Portal";
 import { MiniRack, moduleWeight } from "./VDevComponent";
 import { Button } from "./widgets/BaseComponents";
-import VDeviceSelectionModal from "./modals/VirtualDeviceSelectionModal";
-import { restrictToHorizontalAxis } from "@dnd-kit/modifiers";
-import { Portal } from "./Portal";
 
 const groupBySumLimit = (arr, limit) => {
 	const result = [];

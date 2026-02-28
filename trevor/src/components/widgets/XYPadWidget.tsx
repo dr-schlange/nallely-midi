@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
-import { Button, type WidgetProps } from "./BaseComponents";
 import { useNallelyRegistration } from "../../hooks/wsHooks";
+import { Button, type WidgetProps } from "./BaseComponents";
 
 const parameters = {
 	x: { min: 0, max: 127, fun: (device, value) => device?.send("x", value) },

@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
-import { Button, type WidgetProps } from "./BaseComponents";
-import DragNumberInput from "../DragInputs";
 import { useNallelyRegistration } from "../../hooks/wsHooks";
+import DragNumberInput from "../DragInputs";
+import { Button, type WidgetProps } from "./BaseComponents";
 
 const parameters = {
 	p0: { min: 0, max: 127, fun: (device, value) => device.send("p0", value) },

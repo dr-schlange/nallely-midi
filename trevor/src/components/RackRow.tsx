@@ -1,22 +1,22 @@
-import MidiDeviceComponent from "./DeviceComponent";
-import type { MidiDevice, MidiDeviceSection } from "../model";
-import { useTrevorSelector } from "../store";
-import { useTrevorWebSocket } from "../websockets/websocket";
 import {
-	DndContext,
 	closestCenter,
+	DndContext,
+	PointerSensor,
 	useSensor,
 	useSensors,
-	PointerSensor,
 } from "@dnd-kit/core";
 import {
-	SortableContext,
 	arrayMove,
 	horizontalListSortingStrategy,
+	SortableContext,
 	verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { useEffect, useState } from "react";
+import type { MidiDevice, MidiDeviceSection } from "../model";
+import { useTrevorSelector } from "../store";
 import { mergeDevicesPreservingOrder, saveDeviceOrder } from "../utils/utils";
+import { useTrevorWebSocket } from "../websockets/websocket";
+import MidiDeviceComponent from "./DeviceComponent";
 
 interface RackRowProps {
 	devices: MidiDevice[];
@@ -163,14 +163,14 @@ export const RackRow = ({
 };
 
 // for sortable components
-import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import type { HasId } from "../utils/utils";
 import {
 	restrictToHorizontalAxis,
 	restrictToParentElement,
 	restrictToVerticalAxis,
 } from "@dnd-kit/modifiers";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import type { HasId } from "../utils/utils";
 
 type SortableComponentProps<T extends HasId> = {
 	device: T;

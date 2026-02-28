@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
+import { useScopeWorker } from "../../hooks/wsHooks";
 import DragNumberInput from "../DragInputs";
 import { Button, type WidgetProps } from "./BaseComponents";
-import { useScopeWorker } from "../../hooks/wsHooks";
 
 const BUFFER_SIZE_MAX = 5000;
 const BUFFER_SIZE_MIN = 2;

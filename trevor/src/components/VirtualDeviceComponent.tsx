@@ -1,17 +1,17 @@
 /** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
-import { useState, useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { VirtualDevice, VirtualParameter } from "../model";
-import { useTrevorWebSocket } from "../websockets/websocket";
+import { useTrevorDispatch, useTrevorSelector } from "../store";
+import { setClassCodeMode } from "../store/runtimeSlice";
 import {
 	buildParameterId,
 	buildSectionId,
+	devUID,
 	generateAcronym,
 	setDebugMode,
-	devUID,
 } from "../utils/utils";
-import { useTrevorDispatch, useTrevorSelector } from "../store";
+import { useTrevorWebSocket } from "../websockets/websocket";
 import { ClassBrowser } from "./modals/ClassBrowser";
-import { setClassCodeMode } from "../store/runtimeSlice";
 import { Portal } from "./Portal";
 
 export interface VirtualDeviceComponentProps {

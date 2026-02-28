@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Button, type WidgetProps } from "./BaseComponents";
-import DragNumberInput from "../DragInputs";
 import { useNallelyRegistration } from "../../hooks/wsHooks";
+import DragNumberInput from "../DragInputs";
+import { Button, type WidgetProps } from "./BaseComponents";
 
 const MAX_ROWS = 4;
 const MAX_COLS = 24;

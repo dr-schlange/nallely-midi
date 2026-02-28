@@ -1,10 +1,10 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type {
-	RunTimeState,
-	ClassCode,
-	CCValues,
-	PatchDetails,
 	Address,
+	CCValues,
+	ClassCode,
+	PatchDetails,
+	RunTimeState,
 } from "../model";
 import { setFullState } from "./trevorSlice";
 

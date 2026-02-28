@@ -7,16 +7,16 @@ import type {
 	VirtualParameter,
 } from "../model";
 import { store } from "../store";
+import * as GeneralAPI from "../store/generalSlice";
 import {
+	setConnected,
 	setErrors,
 	setKnownPatches,
-	setConnected,
 } from "../store/generalSlice";
-import { setFullState } from "../store/trevorSlice";
-import { isPadOrdKey, isPadsOrdKeys, isVirtualParameter } from "../utils/utils";
 import * as RuntimeAPI from "../store/runtimeSlice";
 import * as TrevorAPI from "../store/trevorSlice";
-import * as GeneralAPI from "../store/generalSlice";
+import { setFullState } from "../store/trevorSlice";
+import { isPadOrdKey, isPadsOrdKeys, isVirtualParameter } from "../utils/utils";
 
 // const WEBSOCKET_URL = `ws://${window.location.hostname}:6788/trevor`;
 

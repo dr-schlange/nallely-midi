@@ -1,25 +1,12 @@
-import { useTrevorSelector } from "../../store";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import ForceGraph3D from "react-force-graph-3d";
-import {
-	buildParameterId,
-	buildSectionId,
-	connectionId,
-	findFirstMissingValue,
-} from "../../utils/utils";
-import SpriteText from "three-spritetext";
 import * as THREE from "three";
 import {
-	CSS3DRenderer,
 	CSS3DObject,
+	CSS3DRenderer,
 } from "three/addons/renderers/CSS3DRenderer.js";
-import { Button } from "../widgets/BaseComponents";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Scope } from "../widgets/Oscilloscope";
-import { createPortal } from "react-dom";
-import { XYScope } from "../widgets/XYScope";
-import { XYZScope } from "../widgets/XYZScope";
-import { useTrevorWebSocket } from "../../websockets/websocket";
-import { ScalerForm } from "../ScalerForm";
+import SpriteText from "three-spritetext";
 import type {
 	MidiConnection,
 	MidiDevice,
@@ -28,6 +15,19 @@ import type {
 	VirtualDevice,
 	VirtualParameter,
 } from "../../model";
+import { useTrevorSelector } from "../../store";
+import {
+	buildParameterId,
+	buildSectionId,
+	connectionId,
+	findFirstMissingValue,
+} from "../../utils/utils";
+import { useTrevorWebSocket } from "../../websockets/websocket";
+import { ScalerForm } from "../ScalerForm";
+import { Button } from "../widgets/BaseComponents";
+import { Scope } from "../widgets/Oscilloscope";
+import { XYScope } from "../widgets/XYScope";
+import { XYZScope } from "../widgets/XYZScope";
 import { ParametersForm } from "./ParametersForm";
 
 interface PatchingDevice3DProps {

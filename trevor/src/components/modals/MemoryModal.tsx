@@ -1,5 +1,5 @@
-import { ReactNode, useEffect, useMemo, useState } from "react";
-import { useTrevorWebSocket } from "../../websockets/websocket";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
+import type { Address } from "../../model";
 import {
 	LOCAL_STORAGE_RUNTIME,
 	useTrevorDispatch,
@@ -10,8 +10,8 @@ import {
 	setCurrentAddress,
 	setSaveDefaultValue as setSaveDefaultValueAction,
 } from "../../store/runtimeSlice";
+import { useTrevorWebSocket } from "../../websockets/websocket";
 import { Button } from "../widgets/BaseComponents";
-import type { Address } from "../../model";
 
 interface MemoryModalProps {
 	onClose: () => void;

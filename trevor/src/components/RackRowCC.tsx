@@ -6,11 +6,11 @@ import {
 	useRef,
 	useState,
 } from "react";
+import type { CCValues, MidiDevice } from "../model";
 import { useTrevorDispatch, useTrevorSelector } from "../store";
 import { resetCCState } from "../store/runtimeSlice";
 import { generateAcronym } from "../utils/utils";
 import { useTrevorWebSocket } from "../websockets/websocket";
-import { CCValues, MidiDevice } from "../model";
 
 interface CCsRackProps {
 	onRackScroll?: () => void;

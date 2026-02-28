@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import type { MidiConnection, MidiParameter, VirtualParameter } from "../model";
+import { isVirtualParameter } from "../utils/utils";
 import { useTrevorWebSocket } from "../websockets/websocket";
 import DragNumberInput from "./DragInputs";
-import { isVirtualParameter } from "../utils/utils";
 
 interface ScalerFormProps {
 	connection: MidiConnection;

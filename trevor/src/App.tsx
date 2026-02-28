@@ -1,14 +1,14 @@
-import InstanceCreation from "./components/InstanceCreation";
-import DevicePatching from "./components/DevicePatching";
-import { Provider } from "react-redux";
-import { store, useTrevorSelector } from "./store";
-import { connectWebSocket } from "./websockets/websocket";
-import { ErrorModal } from "./components/modals/ErrorModal";
 import { useMemo, useState } from "react";
+import { Provider } from "react-redux";
+import { PatchingDevice3D } from "./components/3d/PatchingDevice3D";
+import DevicePatching from "./components/DevicePatching";
+import InstanceCreation from "./components/InstanceCreation";
+import { ErrorModal } from "./components/modals/ErrorModal";
 import { WelcomeModal } from "./components/modals/WelcomeModal";
 import { NotificationBar } from "./components/NotificationBar";
-import { PatchingDevice3D } from "./components/3d/PatchingDevice3D";
 import { Portal } from "./components/Portal";
+import { store, useTrevorSelector } from "./store";
+import { connectWebSocket } from "./websockets/websocket";
 
 const App = () => {
 	useMemo(() => {

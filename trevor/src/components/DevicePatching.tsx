@@ -1,16 +1,12 @@
 /** biome-ignore-all lint/a11y/noLabelWithoutControl: <explanation> */
 import {
-	useEffect,
-	useState,
-	useRef,
-	type ReactElement,
-	useMemo,
 	useCallback,
-	use,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+	type ReactElement,
 } from "react";
-import { RackRow } from "./RackRow";
-import { selectChannels, useTrevorDispatch, useTrevorSelector } from "../store";
-
 import type {
 	MidiConnection,
 	MidiDevice,
@@ -22,10 +18,9 @@ import type {
 	VirtualDeviceWithSection,
 	VirtualParameter,
 } from "../model";
+import { selectChannels, useTrevorDispatch, useTrevorSelector } from "../store";
+import { setCurrentAddress } from "../store/runtimeSlice";
 import { drawConnection, drawCurvedConnection } from "../utils/svgUtils";
-import { RackRowVirtual } from "./RackRowVirtual";
-import { useTrevorWebSocket } from "../websockets/websocket";
-import DragNumberInput from "./DragInputs";
 import {
 	buildConnectionName,
 	buildSectionId,
@@ -33,17 +28,20 @@ import {
 	devUID,
 	isVirtualDevice,
 } from "../utils/utils";
-import { ScalerForm } from "./ScalerForm";
-import PatchingModal from "./modals/PatchingModal";
+import { useTrevorWebSocket } from "../websockets/websocket";
+import DragNumberInput from "./DragInputs";
 import { AboutModal } from "./modals/AboutModal";
-import { Playground } from "./modals/Playground";
-import { RackRowWidgets, type RackRowWidgetRef } from "./RackRowWidgets";
-import { type RackRowCCRef, RackRowCCs } from "./RackRowCC";
-import { MemoryModal } from "./modals/MemoryModal";
-import { setCurrentAddress } from "../store/runtimeSlice";
-import { Button } from "./widgets/BaseComponents";
-import { Portal } from "./Portal";
 import { FriendModal } from "./modals/FriendModal";
+import { MemoryModal } from "./modals/MemoryModal";
+import PatchingModal from "./modals/PatchingModal";
+import { Playground } from "./modals/Playground";
+import { Portal } from "./Portal";
+import { RackRow } from "./RackRow";
+import { type RackRowCCRef, RackRowCCs } from "./RackRowCC";
+import { RackRowVirtual } from "./RackRowVirtual";
+import { type RackRowWidgetRef, RackRowWidgets } from "./RackRowWidgets";
+import { ScalerForm } from "./ScalerForm";
+import { Button } from "./widgets/BaseComponents";
 
 const VERTICAL = "⇄";
 const HORIZONTAL = "⇅";

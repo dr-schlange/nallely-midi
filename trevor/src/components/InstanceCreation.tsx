@@ -1,16 +1,15 @@
 /** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
 /** biome-ignore-all lint/correctness/useUniqueElementIds: <explanation> */
 /** biome-ignore-all lint/a11y/useKeyWithClickEvents: <explanation> */
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import MidiDeviceComponent from "./DeviceComponent";
-import { useTrevorDispatch, useTrevorSelector } from "../store";
-import { drawConnection, drawCurvedConnection } from "../utils/svgUtils";
-import { useTrevorWebSocket, WsStatus } from "../websockets/websocket";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { MidiDevice } from "../model";
-import { SettingsModal } from "./modals/SettingsModal";
+import { useTrevorDispatch, useTrevorSelector } from "../store";
 import { setClassCodeMode, setLogMode } from "../store/runtimeSlice";
-import { Button } from "./widgets/BaseComponents";
+import { drawConnection } from "../utils/svgUtils";
+import { useTrevorWebSocket, WsStatus } from "../websockets/websocket";
+import { SettingsModal } from "./modals/SettingsModal";
 import { Portal } from "./Portal";
+import { Button } from "./widgets/BaseComponents";
 
 // const truncateName = (name: string, maxLength: number) => {
 // 	return name.length > maxLength ? `${name.slice(0, maxLength)}...` : name;

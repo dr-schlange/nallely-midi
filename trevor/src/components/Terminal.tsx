@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useRef, useState } from "react";
-import { AnsiParser } from "../utils/utils";
 import { useTrevorDispatch, useTrevorSelector } from "../store";
 import { addStdinWait, removeStdinWait } from "../store/runtimeSlice";
+import { AnsiParser } from "../utils/utils";
 
 export const Terminal = ({ stdout, stdin }) => {
 	const [triggered, setTriggered] = useState([]);

@@ -84,10 +84,10 @@ interface MiniRackProps {
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { useTrevorWebSocket } from "../websockets/websocket";
-import { ClassBrowser } from "./modals/ClassBrowser";
 import { useTrevorDispatch } from "../store";
 import { setClassCodeMode } from "../store/runtimeSlice";
+import { useTrevorWebSocket } from "../websockets/websocket";
+import { ClassBrowser } from "./modals/ClassBrowser";
 import { Portal } from "./Portal";
 
 export const MiniRack = ({

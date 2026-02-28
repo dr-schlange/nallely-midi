@@ -1,16 +1,13 @@
-import { useEffect, useState } from "react";
-import {
-	type TrevorWebSocket,
-	useTrevorWebSocket,
-} from "../../websockets/websocket";
+import { useState } from "react";
 import type {
 	MidiDevice,
 	MidiParameter,
 	VirtualDevice,
 	VirtualParameter,
 } from "../../model";
-import DragNumberInput from "../DragInputs";
 import { isVirtualDevice, isVirtualParameter } from "../../utils/utils";
+import { useTrevorWebSocket } from "../../websockets/websocket";
+import DragNumberInput from "../DragInputs";
 
 interface MidiSectionFormProps {
 	device: MidiDevice | VirtualDevice;

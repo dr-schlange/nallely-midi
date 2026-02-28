@@ -1,7 +1,13 @@
-import { ReactNode, useCallback, useEffect, useMemo, useState } from "react";
+import {
+	type ReactNode,
+	useCallback,
+	useEffect,
+	useMemo,
+	useState,
+} from "react";
+import type { VirtualDeviceSchema } from "../../model";
 import { useTrevorSelector } from "../../store";
 import { useTrevorWebSocket } from "../../websockets/websocket";
-import type { VirtualDeviceSchema } from "../../model";
 import VDeviceSchema from "../VDevSchemaComponent";
 import { Button } from "../widgets/BaseComponents";
 

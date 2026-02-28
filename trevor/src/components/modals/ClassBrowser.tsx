@@ -1,28 +1,27 @@
 /** biome-ignore-all lint/a11y/useKeyWithClickEvents: <explanation> */
 /** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
+
+import {
+	acceptCompletion,
+	autocompletion,
+	completionStatus,
+	startCompletion,
+} from "@codemirror/autocomplete";
+import { defaultKeymap } from "@codemirror/commands";
+import { python } from "@codemirror/lang-python";
+import { indentOnInput, indentUnit } from "@codemirror/language";
+import { type Diagnostic, linter } from "@codemirror/lint";
+import { Prec, StateEffect, StateField } from "@codemirror/state";
+import { EditorView, keymap } from "@codemirror/view";
+import { getCM, Vim, vim } from "@replit/codemirror-vim";
+import CodeMirror from "@uiw/react-codemirror";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import CodeMirror from "@uiw/react-codemirror";
-import { python } from "@codemirror/lang-python";
-import { EditorView, keymap } from "@codemirror/view";
-import { vim, getCM, Vim } from "@replit/codemirror-vim";
-
-import { indentOnInput, indentUnit } from "@codemirror/language";
-import { defaultKeymap } from "@codemirror/commands";
-import { useTrevorWebSocket } from "../../websockets/websocket";
-import { useTrevorSelector } from "../../store";
-import { Prec, StateEffect, StateField } from "@codemirror/state";
-
-import { type Diagnostic, linter } from "@codemirror/lint";
 import type { MidiDevice, VirtualDevice } from "../../model";
+import { useTrevorSelector } from "../../store";
+import { useTrevorWebSocket } from "../../websockets/websocket";
 import { Terminal } from "../Terminal";
 import { Button, HeaderButton } from "../widgets/BaseComponents";
-import {
-	autocompletion,
-	startCompletion,
-	acceptCompletion,
-	completionStatus,
-} from "@codemirror/autocomplete";
 import { Scope } from "../widgets/Oscilloscope";
 
 const ERROR_DELAY = 3000;

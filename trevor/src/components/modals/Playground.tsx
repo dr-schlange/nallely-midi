@@ -1,17 +1,17 @@
-import { useEffect, useRef, useState } from "react";
-import CodeMirror from "@uiw/react-codemirror";
-import { python } from "@codemirror/lang-python";
 import {
 	autocompletion,
 	type CompletionContext,
 } from "@codemirror/autocomplete";
-import { EditorView, keymap } from "@codemirror/view";
+import { defaultKeymap } from "@codemirror/commands";
+import { python } from "@codemirror/lang-python";
 import { indentOnInput, indentUnit } from "@codemirror/language";
-import { defaultKeymap, indentMore } from "@codemirror/commands";
 import { type Diagnostic, linter } from "@codemirror/lint";
-import { useTrevorWebSocket } from "../../websockets/websocket";
-import { useTrevorSelector } from "../../store";
 import { Prec } from "@codemirror/state";
+import { EditorView, keymap } from "@codemirror/view";
+import CodeMirror from "@uiw/react-codemirror";
+import { useEffect, useRef, useState } from "react";
+import { useTrevorSelector } from "../../store";
+import { useTrevorWebSocket } from "../../websockets/websocket";
 import { Terminal } from "../Terminal";
 
 // const AUTO_SAVE_DELAY = 2000;

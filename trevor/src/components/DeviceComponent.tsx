@@ -1,6 +1,7 @@
 /** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
-import { useState, useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { MidiDevice, MidiDeviceSection } from "../model";
+import { useTrevorSelector } from "../store";
 import {
 	buildSectionId,
 	generateAcronym,
@@ -8,7 +9,6 @@ import {
 	isLogMode,
 	setDebugMode,
 } from "../utils/utils";
-import { useTrevorSelector } from "../store";
 
 const collectAllSections = (device: MidiDevice) => {
 	const sections: string[] = [];

@@ -1,4 +1,5 @@
-import { useEffect, useState, useRef, useMemo, useCallback } from "react";
+import { createSelector } from "@reduxjs/toolkit";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
 	MidiConnection,
 	MidiDevice,
@@ -13,8 +14,6 @@ import type {
 } from "../../model";
 import { useTrevorSelector } from "../../store";
 import { drawConnection, findConnectorElement } from "../../utils/svgUtils";
-import { ScalerForm } from "../ScalerForm";
-import { useTrevorWebSocket } from "../../websockets/websocket";
 import {
 	buildConnectionName,
 	buildParameterId,
@@ -26,9 +25,10 @@ import {
 	isVirtualDevice,
 	parameterUUID,
 } from "../../utils/utils";
+import { useTrevorWebSocket } from "../../websockets/websocket";
 import { MidiGrid } from "../MidiGrid";
+import { ScalerForm } from "../ScalerForm";
 import { Button } from "../widgets/BaseComponents";
-import { createSelector } from "@reduxjs/toolkit";
 
 const collectAllVirtualParameters = (device: VirtualDevice) => {
 	return device.meta.parameters.map((p) => parameterUUID(device.id, p));

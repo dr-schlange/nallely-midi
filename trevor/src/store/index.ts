@@ -1,12 +1,12 @@
+import { configureStore, createSelector } from "@reduxjs/toolkit";
 import {
 	useDispatch,
 	useSelector,
 	type TypedUseSelectorHook,
 } from "react-redux";
-import { configureStore, createSelector } from "@reduxjs/toolkit";
-import trevorSlice from "./trevorSlice";
-import runTimeSlice, { initialRunTimeState } from "./runtimeSlice";
 import generalSlice, { initialGeneralState } from "./generalSlice";
+import runTimeSlice, { initialRunTimeState } from "./runtimeSlice";
+import trevorSlice from "./trevorSlice";
 
 export const LOCAL_STORAGE_SETTINGS = "settings";
 export const LOCAL_STORAGE_RUNTIME = "runtime";
