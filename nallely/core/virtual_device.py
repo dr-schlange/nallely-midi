@@ -225,6 +225,7 @@ class VirtualDevice(threading.Thread):
         self.closed_ports = set()
         self._param_last_values = {}
         self._internal_conversion_setup()
+        self.observers = []
         if autoconnect:
             self.start()
 
@@ -564,6 +565,18 @@ class VirtualDevice(threading.Thread):
                         raise e
                 ctx.last_values[last_value_key] = value
 
+        for observer in list(self.observers):
+            observer.triggered(value, ctx, selected_outputs, from_)
+
+    def register_observer(self, observer):
+        self.observers.append(observer)
+
+    def unregister_observer(self, observer):
+        try:
+            self.observers.remove(observer)
+        except ValueError:
+            pass
+
     def start(self):
         """Start the device thread."""
         if self.is_alive() or self.running:
@@ -581,10 +594,10 @@ class VirtualDevice(threading.Thread):
         for link in all_links().values():
             if link.dest.device is self or link.src.device is self:
                 link.uninstall()
+        for observer in self.observers:
+            observer.dispose()
         if self in virtual_devices:
             virtual_devices.remove(self)
-        if not self.running:
-            return
         self.running = False
         self.pause_event.set()
         if clear_queues:

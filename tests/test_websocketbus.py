@@ -4,13 +4,14 @@ import time
 import pytest
 from websockets.sync.client import connect
 
-from nallely import WebSocketBus
+from nallely import WebSocketBus, stop_all_connected_devices
 
 PORT = 6789
 
 
 @pytest.fixture(scope="module")
 def wsbus():
+    stop_all_connected_devices()
     ws = WebSocketBus()
     ws.start()
     yield ws

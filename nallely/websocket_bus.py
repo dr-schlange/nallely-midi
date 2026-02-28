@@ -284,7 +284,8 @@ class WebSocketBus(VirtualDevice):
                 pass
 
     def setup(self):
-        self.server.serve_forever()
+        if self.running:
+            self.server.serve_forever()
         return super().setup()
 
     def stop(self, clear_queues=False):
@@ -295,7 +296,7 @@ class WebSocketBus(VirtualDevice):
                 client.close(code=1000, reason="WebSocket Bus is shutting down")
                 # client.send(json.dumps({"on": "__close_bus__"}))
             clients.clear()
-        if self.running and self.server:
+        if self.server:
             print(f"[{self.NAME}] Shutting down websocket bus...")
             self.server.shutdown()
         for key, value in list(self.__class__.__dict__.items()):
