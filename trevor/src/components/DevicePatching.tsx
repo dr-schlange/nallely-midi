@@ -1,11 +1,13 @@
 /** biome-ignore-all lint/a11y/noLabelWithoutControl: <explanation> */
 import {
+	lazy,
+	type ReactElement,
+	Suspense,
 	useCallback,
 	useEffect,
 	useMemo,
 	useRef,
 	useState,
-	type ReactElement,
 } from "react";
 import type {
 	MidiConnection,
@@ -34,7 +36,7 @@ import { AboutModal } from "./modals/AboutModal";
 import { FriendModal } from "./modals/FriendModal";
 import { MemoryModal } from "./modals/MemoryModal";
 import PatchingModal from "./modals/PatchingModal";
-import { Playground } from "./modals/Playground";
+// import { Playground } from "./modals/Playground";
 import { Portal } from "./Portal";
 import { RackRow } from "./RackRow";
 import { type RackRowCCRef, RackRowCCs } from "./RackRowCC";
@@ -42,6 +44,12 @@ import { RackRowVirtual } from "./RackRowVirtual";
 import { type RackRowWidgetRef, RackRowWidgets } from "./RackRowWidgets";
 import { ScalerForm } from "./ScalerForm";
 import { Button } from "./widgets/BaseComponents";
+
+const Playground = lazy(() =>
+	import("./modals/Playground").then((module) => ({
+		default: module.Playground,
+	})),
+);
 
 const VERTICAL = "⇄";
 const HORIZONTAL = "⇅";
@@ -1345,7 +1353,9 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 			)}
 			{isPlaygroundOpen && (
 				<Portal>
-					<Playground onClose={closeModal} />
+					<Suspense fallback={null}>
+						<Playground onClose={closeModal} />
+					</Suspense>
 				</Portal>
 			)}
 			{isMemoryOpen && (

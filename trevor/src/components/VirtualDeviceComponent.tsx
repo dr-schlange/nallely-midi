@@ -1,5 +1,5 @@
 /** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import type { VirtualDevice, VirtualParameter } from "../model";
 import { useTrevorDispatch, useTrevorSelector } from "../store";
 import { setClassCodeMode } from "../store/runtimeSlice";
@@ -11,8 +11,14 @@ import {
 	setDebugMode,
 } from "../utils/utils";
 import { useTrevorWebSocket } from "../websockets/websocket";
-import { ClassBrowser } from "./modals/ClassBrowser";
+// import { ClassBrowser } from "./modals/ClassBrowser";
 import { Portal } from "./Portal";
+
+const ClassBrowser = lazy(() =>
+	import("./modals/ClassBrowser").then((module) => ({
+		default: module.ClassBrowser,
+	})),
+);
 
 export interface VirtualDeviceComponentProps {
 	margin?: number;
@@ -209,7 +215,9 @@ const VirtualDeviceComponent = ({
 			</div>
 			{isCodeOpen && (
 				<Portal>
-					<ClassBrowser onClose={handleClassBrowserClose} device={device} />
+					<Suspense fallback={null}>
+						<ClassBrowser onClose={handleClassBrowserClose} device={device} />
+					</Suspense>
 				</Portal>
 			)}
 		</div>

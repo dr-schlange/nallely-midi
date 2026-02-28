@@ -1,6 +1,8 @@
 /** biome-ignore-all lint/a11y/useKeyWithClickEvents: <explanation> */
 /** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
 import React, {
+	lazy,
+	Suspense,
 	useCallback,
 	useEffect,
 	useMemo,
@@ -87,8 +89,14 @@ import { CSS } from "@dnd-kit/utilities";
 import { useTrevorDispatch } from "../store";
 import { setClassCodeMode } from "../store/runtimeSlice";
 import { useTrevorWebSocket } from "../websockets/websocket";
-import { ClassBrowser } from "./modals/ClassBrowser";
+// import { ClassBrowser } from "./modals/ClassBrowser";
 import { Portal } from "./Portal";
+
+const ClassBrowser = lazy(() =>
+	import("./modals/ClassBrowser").then((module) => ({
+		default: module.ClassBrowser,
+	})),
+);
 
 export const MiniRack = ({
 	devices,
@@ -413,10 +421,12 @@ export const VDevice = React.memo(
 				))}
 				{isCodeOpen && (
 					<Portal>
-						<ClassBrowser
-							device={device}
-							onClose={() => setIsCodeOpen(false)}
-						/>
+						<Suspense fallback={null}>
+							<ClassBrowser
+								device={device}
+								onClose={() => setIsCodeOpen(false)}
+							/>
+						</Suspense>
 					</Portal>
 				)}
 			</div>

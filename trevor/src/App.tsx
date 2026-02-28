@@ -1,6 +1,5 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, lazy, Suspense } from "react";
 import { Provider } from "react-redux";
-import { PatchingDevice3D } from "./components/3d/PatchingDevice3D";
 import DevicePatching from "./components/DevicePatching";
 import InstanceCreation from "./components/InstanceCreation";
 import { ErrorModal } from "./components/modals/ErrorModal";
@@ -21,6 +20,12 @@ const App = () => {
 		</Provider>
 	);
 };
+
+const PatchingDevice3D = lazy(() =>
+	import("./components/3d/PatchingDevice3D").then((module) => ({
+		default: module.PatchingDevice3D,
+	})),
+);
 
 const Main = () => {
 	const errors = useTrevorSelector((state) => state.general.errors);
@@ -172,7 +177,11 @@ const Main = () => {
 				</svg>
 				<NotificationBar />
 			</div>
-		)) || <PatchingDevice3D onCloseView={() => swith3DOn(false)} />
+		)) || (
+			<Suspense fallback={null}>
+				<PatchingDevice3D onCloseView={() => swith3DOn(false)} />
+			</Suspense>
+		)
 	);
 };
 
