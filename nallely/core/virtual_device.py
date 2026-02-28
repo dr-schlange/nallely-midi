@@ -314,12 +314,12 @@ class VirtualDevice(threading.Thread):
             self.to_update.send_update()  # type: ignore -> to_update is set by the trevor bus dynamically
 
     def set_parameter(self, param: str, value: Any, ctx: ThreadContext | None = None):
-        if self.paused or param in self.closed_ports:
+        if self.paused or not self.running or param in self.closed_ports:
             return
         try:
             try:
                 previous = getattr(self, param)
-            except:
+            except Exception:
                 previous = None
             self.store_input(param, value)  # We store for immediate feedback
             self.input_queues[param].put_nowait(

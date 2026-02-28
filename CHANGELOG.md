@@ -49,6 +49,7 @@
 * Fix 2D oscilloscope for smoother experience with less refresh
 * Fix 3D oscilloscope for smoother experience with less refresh and new rotation capability (touch instead of buttons)
 * Fix oscilloscope widget reconnection on new remote host
+* Fix value burst after a long sleep for random non-running threads
 
 ## Nallely v0.4.0 -- Tepezcohuite
 
