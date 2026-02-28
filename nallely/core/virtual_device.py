@@ -597,7 +597,7 @@ class VirtualDevice(threading.Thread):
                     except Empty:
                         break
         if self.is_alive():
-            self.join()  # Wait for the thread to finish
+            self.join(timeout=2)  # Wait for the thread to finish
 
     def pause(self, duration=None):
         """Pause the device, optionally for a specific duration."""

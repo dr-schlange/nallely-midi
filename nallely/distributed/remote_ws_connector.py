@@ -149,7 +149,7 @@ class NallelyService:
         if self._thread and self._thread.is_alive():
             self._thread.join(timeout=2)
             self._thread = None
-        self.log(f"Service {self.name} disposed")
+        # self.log(f"Service {self.name} disposed")
 
     @staticmethod
     def _build_frame(name, value):
@@ -190,5 +190,7 @@ class NallelyWebsocketBus:
         self.registered[key].send(parameter, value)
 
     def close(self):
+        print("[REMOTE-BUS] Closing remote services")
         for name, service in self.registered.items():
+            print(f"* {name}")
             service.dispose()
