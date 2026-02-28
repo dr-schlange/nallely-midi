@@ -3,6 +3,7 @@ import traceback
 from collections import defaultdict
 from dataclasses import InitVar, asdict, dataclass, field
 from decimal import Decimal
+from math import isnan
 from pathlib import Path
 from typing import Any, Callable, Counter, Literal, Sequence, Type
 
@@ -55,7 +56,6 @@ class ModuleParameter:
 
     def generate_inner_fun_virtual(self, to_device, to_param):
         if to_param.consumer:
-
             return lambda value, ctx: to_device.receiving(
                 value,
                 on=to_param.name,
@@ -112,12 +112,11 @@ class ModuleParameter:
             return str(value)
         nb_accepted_values = len(accepted_values)
         _, upper = self.range
-        return accepted_values[
-            min(
-                nb_accepted_values - 1,
-                (value % (upper + 1)) // (upper // nb_accepted_values),
-            )
-        ]
+
+        safe_value = 0 if isnan(value) else value
+        bucket_size = (upper + 1) // nb_accepted_values
+        idx = min(nb_accepted_values - 1, (safe_value % (upper + 1)) // bucket_size)
+        return accepted_values[idx]
 
 
 @dataclass
@@ -319,15 +318,17 @@ class DeviceState:
     def __getattr__(self, name):
         return self.modules[name]
 
-    def as_dict_patch(self, with_meta=False, save_defaultvalues=False):
+    def as_dict_patch(self, with_meta=False, save_defaultvalues=False, conv_int=True):
         d = {}
         for name, module in self.modules.items():
             module_state = {}
             d[name] = module_state
             for parameter in module.meta.parameters:
                 value = getattr(getattr(self, name), parameter.name)
-                value = round(value)
-                if value != parameter.init_value or save_defaultvalues:
+                orig_value = value
+                if conv_int:
+                    value = round(value)
+                if int(orig_value) != parameter.init_value or save_defaultvalues:
                     module_state[parameter.name] = value
                 if with_meta:
                     module_state[parameter.name] = {
@@ -348,7 +349,7 @@ class DeviceState:
                 value = d[section_name][name]
                 setattr(self.modules[section_name], name, value)
                 del d[section_name][name]
-            except Exception as e:
+            except Exception:
                 pass
         if self.possible_bank:
             try:
@@ -358,7 +359,7 @@ class DeviceState:
                 value = d[section_name][name]
                 setattr(self.modules[section_name], name, value)
                 del d[section_name][name]
-            except Exception as e:
+            except Exception:
                 pass
         for sec_name, section in d.items():
             for param, value in section.items():
@@ -748,8 +749,8 @@ class MidiDevice:
         self.all_notes_off()
         return self
 
-    def current_preset(self, save_defaultvalues=False):
-        return self.modules.as_dict_patch(save_defaultvalues)
+    def current_preset(self, save_defaultvalues=False, conv_int=True):
+        return self.modules.as_dict_patch(save_defaultvalues, conv_int=conv_int)
 
     def save_preset(self, file: Path | str):
         Path(file).write_text(

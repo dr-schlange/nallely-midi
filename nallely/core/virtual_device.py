@@ -840,7 +840,7 @@ class VirtualDevice(threading.Thread):
     def all_parameters(cls) -> list[VirtualParameter]:
         return list(get_all_virtual_parameters(cls).values())
 
-    def current_preset(self):
+    def current_preset(self, **_):
         d = {}
         for parameter in self.all_parameters():
             try:

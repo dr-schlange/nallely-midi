@@ -283,22 +283,21 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 				const acceptedValues = parameter.accepted_values;
 				const nbAcceptedValues = acceptedValues.length;
 				const [, upper] = parameter.range;
-				const value =
-					acceptedValues[
-						Math.min(
-							nbAcceptedValues - 1,
-							Math.trunc(
-								(Number.parseInt(currentValue, 10) % (upper + 1)) /
-									Math.trunc(upper / nbAcceptedValues),
-							),
-						)
-					];
+
+				const parsedValue = Number.parseInt(currentValue, 10);
+				const safeValue = Number.isNaN(parsedValue) ? 0 : parsedValue;
+				const bucketSize = Math.floor((upper + 1) / nbAcceptedValues);
+				const index = Math.min(
+					nbAcceptedValues - 1,
+					Math.floor((safeValue % (upper + 1)) / bucketSize),
+				);
+				const value = acceptedValues[index];
 				return (
 					<select
 						style={{
 							maxWidth: "100%",
 						}}
-						value={value ? value : "--"}
+						value={value ?? "--"}
 						onChange={(e) =>
 							trevorSocket?.setParameterValue(
 								device.id,

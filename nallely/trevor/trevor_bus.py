@@ -17,6 +17,7 @@ from contextlib import contextmanager
 from inspect import isfunction
 from itertools import zip_longest
 from pathlib import Path
+from reprlib import Repr
 from textwrap import indent
 
 from websockets import ConnectionClosed, ConnectionClosedError, InvalidMessage
@@ -887,7 +888,7 @@ def _trevor_menu(loaded_paths, init_script, trevor_bus=None, trevor_ui=None):
         elprint = _print_with_trevor if trevor_bus else print
         while (
             q := input(
-                "Press 'q' to stop the script, press enter to display infos, press ? to display menu...\n> "
+                "Press 'q' to stop the session/script, press enter to display infos, press ? to display menu...\n> "
             )
         ) != "q":
             if not q:
@@ -902,6 +903,7 @@ def _trevor_menu(loaded_paths, init_script, trevor_bus=None, trevor_ui=None):
             elif q == "?":
                 menu = (
                     "[MENU]\n"
+                    "   i: inspect a virtual or MIDI device\n"
                     "   k: stop (kill) a virtual or MIDI device\n"
                     "   q: stop the script\n"
                     "   f: force all notes off on connected all MIDI devices\n"
@@ -961,6 +963,25 @@ def _trevor_menu(loaded_paths, init_script, trevor_bus=None, trevor_ui=None):
                         print(
                             f" * {friend_name.ljust(NAME_LIMIT)} ({friend_ip}:{friend_port})  {flag}"
                         )
+            elif q == "i":
+                menu = "[INSPECT DEVICE]\n"
+                devices = list(all_devices())
+                for num, device in enumerate(devices):
+                    menu += f"   {num} - {device.uid()}\n"
+
+                menu += "  enter - exit menu\n"
+                elprint(menu)
+                num = input("> ")
+                if num != "":
+                    num = int(num)
+                    try:
+                        device = devices[num]
+                        print(f"Preset for {device.uid()}")
+                        print(clirepr.repr(device.current_preset(conv_int=False)))
+                        if trevor_bus:
+                            trevor_bus.send_update()
+                    except IndexError:
+                        print(f"There is no device {num}")
     except KeyboardInterrupt:
         ...
 
@@ -1001,3 +1022,11 @@ def _print_with_trevor(text):
         final += f"{t}  {m}\n"
     print('  "Today I barked under the rain at a cat in a tree."')
     print(final[:-3])
+
+
+class TrevorCLIRepr(Repr):
+    def repr_Int(self, obj, level):
+        return f"{int(obj):>3} - {str(obj)}"
+
+
+clirepr = TrevorCLIRepr(indent="  ")
