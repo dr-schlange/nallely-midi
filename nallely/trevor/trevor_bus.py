@@ -512,11 +512,11 @@ class TrevorBus(VirtualDevice):
             try:
                 device = self.trevor.get_device_instance(device_or_link)
                 device.debug = True
-            except:
+            except Exception:
                 try:
                     link = all_links()[device_or_link]
                     link.debug = True
-                except:
+                except Exception:
                     print(f"[TrevorBus] Couldn't find {device_or_link}")
         self.redirector.start_capture()
 
@@ -525,11 +525,11 @@ class TrevorBus(VirtualDevice):
             try:
                 device = self.trevor.get_device_instance(device_or_link)
                 device.debug = False
-            except:
+            except Exception:
                 try:
                     link = all_links()[device_or_link]
                     link.debug = False
-                except:
+                except Exception:
                     print(f"[TrevorBus] Couldn't find {device_or_link}")
         self.redirector.stop_capture()
 
@@ -697,7 +697,6 @@ class TrevorBus(VirtualDevice):
             except Exception:
                 pass
             result = self.current_scan
-            print("SEND", result)
             self.current_scan = None
             self.send_message(
                 {"command": "GeneralAPI::setOnlineFriends", "arg": result}

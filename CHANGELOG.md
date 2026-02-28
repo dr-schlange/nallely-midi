@@ -35,6 +35,7 @@
 * Add new service to detect running Nallely session on the local network
 * Add possitiliby to switch session from TrevorUI
 * Device hot-patch/hot-swap doesn't commit the new code by default
+* Add base for distributed computation between various Nallely sessions on the same local network
 
 ### Fix
 
@@ -50,6 +51,7 @@
 * Fix 3D oscilloscope for smoother experience with less refresh and new rotation capability (touch instead of buttons)
 * Fix oscilloscope widget reconnection on new remote host
 * Fix value burst after a long sleep for random non-running threads
+* Improve TrevorUI bundle size
 
 ## Nallely v0.4.0 -- Tepezcohuite
 
