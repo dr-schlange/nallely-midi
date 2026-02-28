@@ -317,11 +317,14 @@ export const VDevice = React.memo(
 			[onClick, handleDoubleClick, device, dispatch, longPressEvents],
 		);
 
+    const color = selected ? "yellow" : (
+      device.proxy ? "rgba(187, 153, 90, 0.8)": "gray"
+		)
 		return (
 			<div
 				style={{
 					paddingTop: "1px",
-					border: `3px ${device.paused ? "dashed" : "solid"} ${selected ? "yellow" : "gray"}`,
+					border: `3px ${device.paused ? "dashed" : "solid"} ${selected ? "yellow" : color}`,
 					height: height,
 					width: `${width}px`,
 					minWidth: `${width}px`,
