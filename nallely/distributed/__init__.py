@@ -30,11 +30,17 @@ def name_me(ip: str | None = None):
 
 
 class NeuronExposer:
-    def __init__(self, neuron: VirtualDevice, bus: NallelyWebsocketBus):
+    def __init__(
+        self, neuron: VirtualDevice, bus: NallelyWebsocketBus, autoconnect=True
+    ):
         self.bus = bus
         self.neuron = neuron
         self.service: NallelyService | None = None
         self.params = {}
+        if autoconnect:
+            self.start()
+
+    def start(self):
         self._setup()
 
     def _setup(self):
@@ -54,8 +60,12 @@ class NeuronExposer:
         value = data.get("value")
         self.neuron.set_parameter(on, value)
 
+    @staticmethod
+    def compute_uid(neuron):
+        return f"{name_me()}:{neuron.uid()}"
+
     def uid(self):
-        return f"{name_me()}:{self.neuron.uid()}"
+        return self.compute_uid(self.neuron)
 
     def triggered(self, value, ctx, outputs, from_):
         service = self.service

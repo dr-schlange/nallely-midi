@@ -649,6 +649,22 @@ export class TrevorWebSocket {
 			command: "scan_for_friends",
 		});
 	}
+
+	exposeNeuron(device_id: number, friend_ip: string) {
+		this.sendJsonMessage({
+			command: "expose_neuron",
+			device_id,
+			friend_ip,
+		});
+	}
+
+	unexposeNeuron(device_id: number, friend_ip: string) {
+		this.sendJsonMessage({
+			command: "unexpose_neuron",
+			device_id,
+			friend_ip,
+		});
+	}
 }
 
 let websocket: TrevorWebSocket | null = null;

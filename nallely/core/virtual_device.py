@@ -569,6 +569,8 @@ class VirtualDevice(threading.Thread):
             observer.triggered(value, ctx, selected_outputs, from_)
 
     def register_observer(self, observer):
+        if observer in self.observers:
+            return
         self.observers.append(observer)
 
     def unregister_observer(self, observer):

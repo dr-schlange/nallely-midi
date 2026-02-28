@@ -23,7 +23,7 @@ from textwrap import indent
 from websockets import ConnectionClosed, ConnectionClosedError, InvalidMessage
 from websockets.sync.server import serve
 
-from nallely.distributed import NAME_LIMIT, name_me
+from nallely.distributed import NAME_LIMIT, NallelyWebsocketBus, NeuronExposer, name_me
 
 from ..core import (
     Int,
@@ -152,6 +152,8 @@ class TrevorBus(VirtualDevice):
         self.cc_update_package = defaultdict(make_ccvalues)
         self.refresh_ws_bus(WebSocketBus())
         self.current_scan = None
+        self.external_bus_register = {}
+        self.external_services_register = {}
 
     def refresh_ws_bus(self, ws=None):
         if ws is None:
@@ -708,6 +710,67 @@ class TrevorBus(VirtualDevice):
     def services_in_waitingroom(self):
         if self.ws:
             self.ws.services_in_waitingroom()
+
+    def expose_neuron(self, device_id, friend_ip):
+        try:
+            device = self.trevor.get_device_instance(device_id)
+            print(
+                f"[TrevorBus] Exposing {device.uid()} to {name_me(friend_ip)} ({friend_ip})"
+            )
+        except Exception:
+            print(f"[TrevorBus] Couldn't find {device_id}")
+            return self.full_state()
+
+        if friend_ip not in self.external_bus_register:
+            bus = NallelyWebsocketBus(address=friend_ip)
+            self.external_bus_register[friend_ip] = bus
+        else:
+            bus = self.external_bus_register[friend_ip]
+
+        if not isinstance(device, VirtualDevice):
+            msg = f"Non virtual devices exposition (like {device.uid()}) is not yet supported"
+            self.send_notification(
+                "error",
+                msg,
+            )
+            print(f"[TrevorBus] {msg}")
+            return
+
+        service_key = f"{name_me(friend_ip)}::{device.uid()}"
+        if service_key not in self.external_services_register:
+            self.external_services_register[service_key] = NeuronExposer(
+                neuron=device, bus=bus
+            )
+        else:
+            msg = f"Device {device.uid()} is already exposed to {name_me(friend_ip)} ({friend_ip})"
+            self.send_notification(
+                "warning",
+                msg,
+            )
+            print(f"[TrevorBus] {msg}")
+            return
+
+        return self.full_state()
+
+    def unexpose_neuron(self, device_id, friend_ip):
+        try:
+            device = self.trevor.get_device_instance(device_id)
+            print(
+                f"[TrevorBus] Exposing {device.uid()} to {name_me(friend_ip)} ({friend_ip})"
+            )
+        except Exception:
+            print(f"[TrevorBus] Couldn't find {device_id}")
+            return self.full_state()
+
+        service_key = f"{name_me(friend_ip)}::{device.uid()}"
+        if service_key not in self.external_services_register:
+            return self.full_state()
+
+        service = self.external_services_register[service_key]
+        service.dispose()
+        del self.external_services_register[service_key]
+
+        return self.full_state()
 
 
 def resource_path(relative_path):
