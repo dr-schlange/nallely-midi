@@ -331,10 +331,10 @@ export const VDevice = React.memo(
 
 		const color = selected
 			? "yellow"
-			: device.proxy
+			: exposed
 				? "rgba(187, 153, 90, 0.8)"
 				: "gray";
-		const backgroundColor = exposed ? "rgba(187, 153, 90, 0.15)" : "#e0e0e0";
+		const backgroundColor = device.proxy ? "rgba(187, 153, 90, 0.01)" : "#e0e0e0";
 		return (
 			<div
 				style={{
