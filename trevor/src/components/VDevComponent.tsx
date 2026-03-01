@@ -86,7 +86,7 @@ interface MiniRackProps {
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { useTrevorDispatch } from "../store";
+import { useTrevorDispatch, useTrevorSelector } from "../store";
 import { setClassCodeMode } from "../store/runtimeSlice";
 import { useTrevorWebSocket } from "../websockets/websocket";
 // import { ClassBrowser } from "./modals/ClassBrowser";
@@ -259,6 +259,10 @@ export const VDevice = React.memo(
 		const trevorSocket = useTrevorWebSocket();
 		const dispatch = useTrevorDispatch();
 		const [isCodeOpen, setIsCodeOpen] = useState(false);
+		const exposedDevices = useTrevorSelector(
+			(state) => state.nallely.exposed_services,
+		);
+		const exposed = Object.keys(exposedDevices).includes(device.id.toString());
 
 		const width =
 			nbParameters <= SMALL_PORTS_LIMIT ? 25 : nbParameters > 19 ? 81 : 58;
@@ -330,6 +334,7 @@ export const VDevice = React.memo(
 			: device.proxy
 				? "rgba(187, 153, 90, 0.8)"
 				: "gray";
+		const backgroundColor = exposed ? "rgba(187, 153, 90, 0.15)" : "#e0e0e0";
 		return (
 			<div
 				style={{
@@ -343,7 +348,7 @@ export const VDevice = React.memo(
 					flexDirection: "row",
 					gap: "0px",
 					justifyContent: "space-evenly",
-					backgroundColor: "#e0e0e0",
+					backgroundColor: backgroundColor,
 					userSelect: "none",
 				}}
 				onClick={handleClick}
