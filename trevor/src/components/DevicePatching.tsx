@@ -1325,7 +1325,6 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 							type="button"
 							onClick={() => {
 								setIsFriendsOpen(true);
-								trevorSocket?.scanForFriends();
 							}}
 						>
 							<p style={{ fontSize: "12px" }}>friends</p>

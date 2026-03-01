@@ -1,5 +1,7 @@
+import { useCallback, useEffect } from "react";
 import { useTrevorDispatch, useTrevorSelector } from "../../store";
 import { setWebsocketURL } from "../../store/generalSlice";
+import { useTrevorWebSocket } from "../../websockets/websocket";
 
 interface FriendModalProps {
 	onClose: () => void;
@@ -44,10 +46,23 @@ export const FriendModal = ({ onClose }: FriendModalProps) => {
 	const trevorURL = useTrevorSelector(
 		(state) => state.general.trevorWebsocketURL,
 	);
+	const trevorSocket = useTrevorWebSocket();
+
 	// const friends = useMemo(
 	// 	() => [["localhost", "6788"], ...localFriends],
 	// 	[localFriends],
 	// );
+
+	useEffect(() => {
+		if (friends && Object.keys(friends)?.length !== 0) {
+			return;
+		}
+		trevorSocket.scanForFriends();
+	}, [friends, trevorSocket]);
+
+	const refresh = useCallback(() => {
+		trevorSocket.scanForFriends();
+	}, [trevorSocket]);
 
 	return (
 		<div className="about-modal">
@@ -55,9 +70,15 @@ export const FriendModal = ({ onClose }: FriendModalProps) => {
 				<button type="button" className="close-button" onClick={onClose}>
 					Close
 				</button>
+
+				<button type="button" className="close-button" onClick={refresh}>
+					Refresh
+				</button>
 			</div>
 			<div className="about-modal-body">
-				{(!friends && <p>Scanning local network for friends...</p>) ||
+				{(!(friends || Object.keys(friends)?.length === 0) && (
+					<p>Scanning local network for friends...</p>
+				)) ||
 					Object.entries(friends).map(([friend_name, [ip, port]]) => (
 						<TrevorFriend
 							key={`${ip}:${port}`}
