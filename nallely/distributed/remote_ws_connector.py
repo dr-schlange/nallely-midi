@@ -82,7 +82,6 @@ class NallelyService:
     def _run(self):
         while self._running:
             try:
-                print("[DEBUG connecting on ", self.url)
                 with ws_connect(self.url) as ws:
                     self.ws = ws
 

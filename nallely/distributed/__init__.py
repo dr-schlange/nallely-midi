@@ -75,11 +75,12 @@ class NeuronExposer:
             )
             return
         for output in outputs:
-            print(f"[DEBUG] Sending {value} on {output.name}")
             service.send(output.name, value)
 
     def dispose(self):
         self.neuron.unregister_observer(self)
+        if self.service:
+            self.service.dispose()
 
 
 __all__ = ["NallelyWebsocketBus", "NallelyService", "NeuronExposer"]
