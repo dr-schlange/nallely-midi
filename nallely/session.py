@@ -51,14 +51,17 @@ class Session:
         )
         self.universe = universe
         self.repo = self._init_memory_repo(universe)
-        print(f"[GIT-STORE] gc universe: {universe}")
-        porcelain.gc(self.repo, auto=True)
+        # self.gc_universe(universe)
         self.code = ""
         self.devices_file = self.universe_path(universe) / "devices.py"
         self.devices_path = self.universe_path(universe) / "devices"
         self.devices_path.mkdir(parents=True, exist_ok=True)
         self._load_all_devices()
         self._finalizer = weakref.finalize(self, self._close_repo, self.repo)
+
+    def gc_universe(self, universe):
+        print(f"[GIT-STORE] gc universe: {universe}")
+        porcelain.gc(self.repo, auto=True)
 
     def save_code(self, code):
         self.code = code
@@ -333,7 +336,12 @@ SESSION_ID=0x{session_id}
 patchs_number={infos["patches"]}
 playground_code={infos["playground_code"]}
 """
-        porcelain.commit(repo, author=b"Nallely MIDI <drcoatl@proton.me>", committer=b"dr-schlange <drcoatl@proton.me>", message=message)  # type: ignore
+        porcelain.commit(
+            repo,
+            author=b"Nallely MIDI <drcoatl@proton.me>",
+            committer=b"dr-schlange <drcoatl@proton.me>",
+            message=message,
+        )  # type: ignore
         # repo.close()
         print(f"[GIT-STORE] {address_file.absolute()} commited")
         return address_file
@@ -363,10 +371,14 @@ playground_code={infos["playground_code"]}
 
         return {
             "input_ports": [
-                name for name in mido.get_input_names() if "RtMidi" not in name  # type: ignore type issue with mido
+                name
+                for name in mido.get_input_names()
+                if "RtMidi" not in name  # type: ignore type issue with mido
             ],
             "output_ports": [
-                name for name in mido.get_output_names() if "RtMidi" not in name  # type: ignore type issue with mido
+                name
+                for name in mido.get_output_names()
+                if "RtMidi" not in name  # type: ignore type issue with mido
             ],
             "midi_devices": [
                 device.to_dict(save_defaultvalues=save_defaultvalues)
@@ -411,7 +423,12 @@ playground_code={infos["playground_code"]}
 
         session_id = hex(id(self))[2:].upper()
         message = f"""[0x{address}] Clear session 0x{session_id}"""
-        porcelain.commit(repo, author=b"Nallely MIDI <drcoatl@proton.me>", committer=b"dr-schlange <drcoatl@proton.me>", message=message)  # type: ignore
+        porcelain.commit(
+            repo,
+            author=b"Nallely MIDI <drcoatl@proton.me>",
+            committer=b"dr-schlange <drcoatl@proton.me>",
+            message=message,
+        )  # type: ignore
         # repo.close()
 
     def compile_device_from_cls(
@@ -475,7 +492,12 @@ playground_code={infos["playground_code"]}
 SESSION_ID=0x{session_id}
 original_file={read_from}
 """
-                porcelain.commit(repo, author=b"Nallely MIDI <drcoatl@proton.me>", committer=b"dr-schlange <drcoatl@proton.me>", message=message)  # type: ignore
+                porcelain.commit(
+                    repo,
+                    author=b"Nallely MIDI <drcoatl@proton.me>",
+                    committer=b"dr-schlange <drcoatl@proton.me>",
+                    message=message,
+                )  # type: ignore
                 print(
                     f"[GIT-STORE] Commit {filename=} for device class {new_cls.__name__}"
                 )

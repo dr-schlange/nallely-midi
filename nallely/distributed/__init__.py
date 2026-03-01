@@ -75,6 +75,7 @@ class NeuronExposer:
             )
             return
         for output in outputs:
+            print(f"[DEBUG] Sending {value} on {output.name}")
             service.send(output.name, value)
 
     def dispose(self):

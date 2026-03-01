@@ -728,7 +728,11 @@ class TrevorBus(VirtualDevice):
             return self.full_state()
 
         if friend_ip not in self.external_bus_register:
-            bus = NallelyWebsocketBus(address=friend_ip)
+            # We hardcode the port at the moment, later it will be dynamic and allocated by the session
+            # websocket bus ports will grow from 6789 ->
+            # osc bus port will grow from 6787 <-
+            # this will avoid collisions
+            bus = NallelyWebsocketBus(address=f"{friend_ip}:6789")
             self.external_bus_register[friend_ip] = bus
         else:
             bus = self.external_bus_register[friend_ip]
