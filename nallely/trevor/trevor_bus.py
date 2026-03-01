@@ -254,6 +254,12 @@ class TrevorBus(VirtualDevice):
         )
         if self.ws:
             snapshot["waiting_services"] = self.ws.services_in_waitingroom()
+        # if self.external_services_register:
+        exposed_services = defaultdict(list)
+        snapshot["exposed_services"] = exposed_services
+        for device, friend_ip in self.external_services_register.keys():
+            exposed_services[device].append((name_me(friend_ip), friend_ip))
+
         return snapshot
 
     def random_preset(self, device_id):  # type: ignore
@@ -736,7 +742,7 @@ class TrevorBus(VirtualDevice):
             print(f"[TrevorBus] {msg}")
             return
 
-        service_key = f"{name_me(friend_ip)}::{device.uid()}"
+        service_key = (device.uuid, friend_ip)
         if service_key not in self.external_services_register:
             self.external_services_register[service_key] = NeuronExposer(
                 neuron=device, bus=bus
@@ -762,7 +768,7 @@ class TrevorBus(VirtualDevice):
             print(f"[TrevorBus] Couldn't find {device_id}")
             return self.full_state()
 
-        service_key = f"{name_me(friend_ip)}::{device.uid()}"
+        service_key = (device.uuid, friend_ip)
         if service_key not in self.external_services_register:
             return self.full_state()
 
