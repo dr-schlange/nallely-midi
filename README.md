@@ -82,6 +82,10 @@ Features:
   * full git-based versionning for each individual device,
   * debug a single instance of a device class without impacting the others,
   * exception handler mechanism: if a modification fails, only the impacted instances is stopped, you can then manually fix it and restart it.
+* Distribute computation accross multiple sessions on the local network
+  * Scan network for friend sessions
+  * Expose virtual neurons to friend sessions in a transparent way
+  * Distribute computation accross the local network 
 * (currently disabled) _bind/unbind any Python function to any control/pad/key of your MIDI Device_,
 
 Planned:
