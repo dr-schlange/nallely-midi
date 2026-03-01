@@ -87,8 +87,11 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 		() => [...midi_devices, ...virtual_devices],
 		[midi_devices, virtual_devices],
 	);
-	// const device_classes = useTrevorSelector((state) => state.nallely.classes);
 	const trevorSocket = useTrevorWebSocket();
+	const friends = useTrevorSelector((state) => state.general.friends);
+	const exposedServices = useTrevorSelector(
+		(state) => state.nallely.exposed_services,
+	);
 	const [information, setInformation] = useState<ReactElement>();
 	const [currentSelected, setCurrentSelected] = useState<number>();
 	const [selectedConnection, setSelectedConnection] = useState<string>();
@@ -367,6 +370,10 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 				return;
 			}
 			if (isVirtualDevice(device)) {
+				if (friends && Object.keys(friends).length === 0) {
+					trevorSocket.scanForFriends();
+				}
+				const exposedTo = exposedServices[device.id]?.map(([, ip]) => ip) ?? [];
 				setInformation(
 					<>
 						<hr />
@@ -397,6 +404,46 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 								</label>
 							</div>
 						))}
+						<hr />
+						<div
+							style={{
+								display: "flex",
+								flexDirection: "row",
+								alignItems: "center",
+								gap: "10px",
+							}}
+						>
+							<p style={{ paddingLeft: "10px" }}>Expose to friends</p>
+							<select
+								style={{
+									border: "unset",
+									boxShadow: "none",
+									height: "18px",
+									width: "18px",
+								}}
+								value={""}
+								title="Select friends"
+								onChange={(e) => {
+									console.log("SElected", e.target.value);
+									const ip = e.target.value;
+									if (ip.startsWith("*")) {
+										trevorSocket.unexposeNeuron(device.id, ip.slice(1));
+									} else {
+										trevorSocket.exposeNeuron(device.id, ip);
+									}
+								}}
+							>
+								<option value={""}>--</option>
+								{Object.entries(friends).map(([name, [ip, _]]) => (
+									<option
+										key={`${ip}`}
+										value={`${exposedTo.includes(ip) ? "*" : ""}${ip}`}
+									>
+										{`${exposedTo.includes(ip) ? "*" : " "} ${name} (${ip})`}
+									</option>
+								))}
+							</select>
+						</div>
 						<hr />
 						<details>
 							<summary>Danger zone</summary>
@@ -587,6 +634,8 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 			createMidiParameterInput,
 			channels,
 			createVirtualInput,
+			friends,
+			exposedServices,
 		],
 	);
 

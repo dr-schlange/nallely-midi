@@ -9,6 +9,7 @@ export interface NallelyState {
 	virtual_devices_schemas: VirtualDeviceSchema[];
 	midi_devices_schemas: MidiDeviceSchema[];
 	waiting_services: ExternalService[];
+	exposed_services: Record<string, [string, string][]>;
 }
 
 export type ExternalService = {

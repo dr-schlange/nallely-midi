@@ -19,6 +19,7 @@ const initialState: NallelyState = {
 	virtual_devices_schemas: [],
 	midi_devices_schemas: [],
 	waiting_services: [],
+	exposed_services: {},
 };
 
 const trevorSlice = createSlice({
@@ -37,6 +38,7 @@ const trevorSlice = createSlice({
 			};
 			state.playground_code = action.payload.playground_code;
 			state.waiting_services = action.payload.waiting_services;
+			state.exposed_services = action.payload.exposed_services;
 		},
 		setAllVirtualDeviceSchemas: (
 			state,
