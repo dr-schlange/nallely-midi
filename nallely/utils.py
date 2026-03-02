@@ -8,6 +8,7 @@ import sys
 import threading
 from dataclasses import asdict
 from decimal import Decimal
+from functools import lru_cache
 from inspect import getmodule, getmro, getsource, isclass, isfunction, ismethod, unwrap
 from pathlib import Path
 from textwrap import dedent
@@ -300,6 +301,7 @@ def generate_acronym(name: str, length: int = 3, respect_case: bool = False) -> 
 PORTS = [6788]
 
 
+@lru_cache()
 def get_my_ip():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:

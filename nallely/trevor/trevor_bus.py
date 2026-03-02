@@ -254,12 +254,12 @@ class TrevorBus(VirtualDevice):
         )
         if self.ws:
             snapshot["waiting_services"] = self.ws.services_in_waitingroom()
-        # if self.external_services_register:
+
         exposed_services = defaultdict(list)
         snapshot["exposed_services"] = exposed_services
         for device, friend_ip in self.external_services_register.keys():
             exposed_services[device].append((name_me(friend_ip), friend_ip))
-
+        snapshot["myname"] = name_me()
         return snapshot
 
     def random_preset(self, device_id):  # type: ignore

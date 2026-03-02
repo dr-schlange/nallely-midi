@@ -33,7 +33,6 @@ import {
 import { useTrevorWebSocket } from "../websockets/websocket";
 import DragNumberInput from "./DragInputs";
 import { AboutModal } from "./modals/AboutModal";
-import { FriendModal } from "./modals/FriendModal";
 import { MemoryModal } from "./modals/MemoryModal";
 import PatchingModal from "./modals/PatchingModal";
 // import { Playground } from "./modals/Playground";
@@ -68,7 +67,6 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 	const [isAboutOpen, setIsAboutOpen] = useState(false);
 	const [isMemoryOpen, setIsMemoryOpen] = useState(false);
 	const [isPlaygroundOpen, setIsPlaygroundOpen] = useState(false);
-	const [isFriendsOpen, setIsFriendsOpen] = useState(false);
 
 	const [selectedSections, setSelectedSections] = useState<{
 		firstSection: MidiDeviceWithSection | VirtualDeviceWithSection | null;
@@ -88,7 +86,6 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 		[midi_devices, virtual_devices],
 	);
 	const trevorSocket = useTrevorWebSocket();
-	const friends = useTrevorSelector((state) => state.general.friends);
 	const exposedServices = useTrevorSelector(
 		(state) => state.nallely.exposed_services,
 	);
@@ -634,7 +631,6 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 			createMidiParameterInput,
 			channels,
 			createVirtualInput,
-			friends,
 			exposedServices,
 		],
 	);
@@ -800,7 +796,6 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 		setIsPlaygroundOpen(false);
 		// setAssociateMode(false);
 		setIsMemoryOpen(false);
-		setIsFriendsOpen(false);
 	};
 
 	const [linkMouseInteraction, setLinkMouseInteraction] = useState(false);
@@ -1369,15 +1364,6 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 						>
 							〰
 						</button> */}
-						<button
-							className="rightbar-button"
-							type="button"
-							onClick={() => {
-								setIsFriendsOpen(true);
-							}}
-						>
-							<p style={{ fontSize: "12px" }}>friends</p>
-						</button>
 					</div>
 				)}
 			</div>
@@ -1408,11 +1394,6 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 			{isMemoryOpen && (
 				<Portal>
 					<MemoryModal onClose={closeModal} onLoad={handleLoadOk} />
-				</Portal>
-			)}
-			{isFriendsOpen && (
-				<Portal>
-					<FriendModal onClose={closeModal} />
 				</Portal>
 			)}
 		</div>

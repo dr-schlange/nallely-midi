@@ -4,16 +4,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { MidiDevice } from "../model";
 import { useTrevorDispatch, useTrevorSelector } from "../store";
+import { setWebsocketURL } from "../store/generalSlice";
 import { setClassCodeMode, setLogMode } from "../store/runtimeSlice";
 import { drawConnection } from "../utils/svgUtils";
 import { useTrevorWebSocket, WsStatus } from "../websockets/websocket";
+import { FriendModal } from "./modals/FriendModal";
 import { SettingsModal } from "./modals/SettingsModal";
 import { Portal } from "./Portal";
 import { Button } from "./widgets/BaseComponents";
-
-// const truncateName = (name: string, maxLength: number) => {
-// 	return name.length > maxLength ? `${name.slice(0, maxLength)}...` : name;
-// };
 
 interface MidiPort {
 	name: string;
@@ -26,9 +24,29 @@ const InstanceCreation = () => {
 	const trevorSocket = useTrevorWebSocket();
 	const midiInPorts = useTrevorSelector((state) => state.nallely.input_ports);
 	const midiOutPorts = useTrevorSelector((state) => state.nallely.output_ports);
+	const currentName = useTrevorSelector((state) => state.nallely.myname);
+	const myip = useTrevorSelector((state) => state.general.trevorWebsocketURL);
+	const friendsRegister = useTrevorSelector((state) => state.general.friends);
 	const devices = useTrevorSelector((state) => state.nallely.midi_devices);
 	const [selectedDevice, setSelectedDevice] = useState<MidiDevice | null>();
 	const [selectedPort, setSelectedPort] = useState<MidiPort | null>();
+	const [isFriendsOpen, setFriendsOpen] = useState(false);
+	const friends = useMemo(
+		() => Object.keys(friendsRegister),
+		[friendsRegister],
+	);
+	const friendIdx = useMemo(
+		() => friends.indexOf(currentName),
+		[friends, currentName],
+	);
+	const [prevFriend, nextFriend] = useMemo(() => {
+		const nbFriends = friends.length;
+		const nextFriendIdx = (friendIdx + 1) % nbFriends;
+		const prevFriendIdx = (friendIdx - 1) % nbFriends;
+		const prev = friendsRegister[friends[prevFriendIdx]];
+		const next = friendsRegister[friends[nextFriendIdx]];
+		return [prev, next];
+	}, [friendIdx, friends, friendsRegister]);
 
 	const [isExpanded, setIsExpanded] = useState<boolean>(false);
 	const websocketStatus = useTrevorSelector((state) => state.general.connected);
@@ -210,6 +228,7 @@ const InstanceCreation = () => {
 	const handleClose = () => {
 		updateConnections();
 		setIsSettingsOpen(false);
+		setFriendsOpen(false);
 	};
 
 	const handleSettingsClick = () => {
@@ -235,6 +254,20 @@ const InstanceCreation = () => {
 			document.body.style.cursor = "auto";
 		}
 		dispatch(setClassCodeMode(!classCodeMode));
+	};
+
+	const handleFriendClick = () => {
+		setFriendsOpen(true);
+	};
+
+	const setNextFriend = () => {
+		const [ip, port] = nextFriend;
+		dispatch(setWebsocketURL(`ws://${ip}:${port}`));
+	};
+
+	const setPrevFriend = () => {
+		const [ip, port] = prevFriend;
+		dispatch(setWebsocketURL(`ws://${ip}:${port}`));
 	};
 
 	useEffect(() => {
@@ -295,6 +328,44 @@ const InstanceCreation = () => {
 						onClick={handleLogMode}
 						style={{ border: "unset" }}
 					/>
+
+					<div
+						style={{ display: "flex", flexDirection: "row", fontSize: "14px" }}
+					>
+						{friends.length > 1 && (
+							<Button
+								disabled={friends.length <= 1}
+								text="<"
+								tooltip="prev"
+								variant="big"
+								onClick={setPrevFriend}
+								style={{ border: "unset" }}
+							/>
+						)}
+
+						<Button
+							text={currentName}
+							tooltip={`${myip}`}
+							variant="big"
+							onClick={handleFriendClick}
+							style={{
+								width: "100%",
+								border: "unset",
+								paddingLeft: "4px",
+								paddingRight: "4px",
+							}}
+						/>
+						{friends.length > 1 && (
+							<Button
+								disabled={friends.length <= 1}
+								text=">"
+								tooltip="next"
+								variant="big"
+								onClick={setNextFriend}
+								style={{ border: "unset" }}
+							/>
+						)}
+					</div>
 					<Button
 						text={"⚙"}
 						tooltip="Settings"
@@ -312,17 +383,8 @@ const InstanceCreation = () => {
 						}
 						variant="big"
 						onClick={handleSettingsClick}
-						style={{ border: "unset" }}
+						style={{ border: "unset", color: "gray" }}
 					/>
-					{/* <span
-						title={
-							(websocketStatus === WsStatus.CONNECTED &&
-								`Connected to ${connectionUrl}`) ||
-							`Not connected, trying on ${connectionUrl}`
-						}
-					>
-						{displayWebsocketStatus()}
-					</span> */}
 				</div>
 				{isExpanded && (
 					<>
@@ -391,28 +453,6 @@ const InstanceCreation = () => {
 												);
 											},
 										)}
-										{/* {midiInPorts.map((port) => (
-											// biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
-											<div
-												key={port}
-												className="midi-port"
-												title={port}
-												onClick={() => handlePortClick(port, "output")}
-											>
-												<span className="midi-port-name">{port}</span>
-												<div
-													className="midi-port-circle"
-													id={`output-${port}`}
-													style={{
-														borderColor:
-															selectedPort?.name === port &&
-															selectedPort?.direction
-																? "yellow"
-																: "",
-													}}
-												/>
-											</div>
-										))} */}
 									</div>
 								</div>
 								<div
@@ -426,7 +466,6 @@ const InstanceCreation = () => {
 									>
 										{devices.map((device, i) => (
 											<SmallMidiDeviceComponent
-												// classConnections
 												key={device.id}
 												device={device}
 												selected={selectedDevice === device}
@@ -436,21 +475,6 @@ const InstanceCreation = () => {
 									</div>
 								</div>
 							</div>
-
-							{/* <div
-								className="device-class-left-panel device-list"
-								onScroll={() => updateConnections()}
-							>
-								{devices.map((device, i) => (
-									<SmallMidiDeviceComponent
-										// classConnections
-										key={device.id}
-										device={device}
-										selected={selectedDevice === device}
-										onDeviceClick={() => selectDevice(device)}
-									/>
-								))}
-							</div> */}
 						</div>
 						<svg className="connection-svg" ref={svgRef}>
 							<title>MIDI Device Port Mapping</title>
@@ -515,6 +539,11 @@ const InstanceCreation = () => {
 						<SettingsModal onClose={handleClose} />
 					</Portal>
 				)}
+				{isFriendsOpen && (
+					<Portal>
+						<FriendModal onClose={handleClose} />
+					</Portal>
+				)}
 			</div>
 		</>
 	);
@@ -536,7 +565,6 @@ const SmallMidiDeviceComponent = ({
 	};
 
 	return (
-		// biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
 		<div
 			className="device-component"
 			style={{

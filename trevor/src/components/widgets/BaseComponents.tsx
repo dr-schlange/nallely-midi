@@ -11,7 +11,7 @@ export const Button = ({
 }: {
 	activated?: boolean;
 	onClick?: (event) => void;
-	text: string;
+	text: string | React.ReactElement;
 	tooltip: undefined | string;
 	variant?: "big" | "small";
 	style?: React.CSSProperties;
@@ -23,7 +23,7 @@ export const Button = ({
 		// biome-ignore lint/a11y/noStaticElementInteractions: <explanation>
 		<div
 			style={{
-				color: "gray",
+				color: disabled ? "rgba(127, 127, 127, 0.4)" : "gray",
 				zIndex: 1,
 				backgroundColor:
 					clickColor ||

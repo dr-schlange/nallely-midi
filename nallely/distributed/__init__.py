@@ -1,3 +1,5 @@
+from functools import lru_cache
+
 from ..core import VirtualDevice
 from ..utils import generate_acronym, get_my_ip
 from .remote_ws_connector import NallelyService, NallelyWebsocketBus
@@ -22,6 +24,7 @@ NAMES = [
 ]
 
 
+@lru_cache()
 def name_me(ip: str | None = None):
     ip = get_my_ip() if ip is None else ip
     last = int(ip.split(".")[-1])  # type: ignore we know ip cannot be None here
