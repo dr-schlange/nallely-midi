@@ -42,7 +42,7 @@ const InstanceCreation = () => {
 	const [prevFriend, nextFriend] = useMemo(() => {
 		const nbFriends = friends.length;
 		const nextFriendIdx = (friendIdx + 1) % nbFriends;
-		const prevFriendIdx = (friendIdx - 1) % nbFriends;
+		const prevFriendIdx = (nbFriends + (friendIdx - 1)) % nbFriends;
 		const prev = friendsRegister[friends[prevFriendIdx]];
 		const next = friendsRegister[friends[nextFriendIdx]];
 		return [prev, next];

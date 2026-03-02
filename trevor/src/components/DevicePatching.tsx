@@ -106,8 +106,8 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 	// Refs for stable updateConnections function
 	const allConnectionsRef = useRef(allConnections);
 	const selectedConnectionRef = useRef(selectedConnection);
-  const selectionRef = useRef(selection);
-	const friends = useTrevorSelector((state) => state.general.friends)
+	const selectionRef = useRef(selection);
+	const friends = useTrevorSelector((state) => state.general.friends);
 
 	const [displayedSection, setDisplayedSection] = useState<
 		MidiDeviceWithSection | VirtualDeviceWithSection | undefined
