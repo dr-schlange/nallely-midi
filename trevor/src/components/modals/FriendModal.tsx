@@ -15,28 +15,26 @@ const TrevorFriend = ({ ip, port, selected, name }) => {
 	};
 
 	return (
-		<div className="about-modal-body">
-			<div
-				style={{
-					display: "flex",
-					flexDirection: "column",
-					alignItems: "center",
-					margin: "10px",
-				}}
-			>
-				{/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
-				<img
-					src={`/trevor${selected ? 1 : 2}.svg`}
-					alt={`Nallely session running on ${ip}: ${port}`}
-					style={{ width: "45px", height: "45px", margin: "10px" }}
-					onClick={changeTrevor}
-				/>
-				<p style={{ textAlign: "center", fontSize: "12px" }}>
-					{name}
-					<br />
-					{ip}:{port}
-				</p>
-			</div>
+		<div
+			style={{
+				display: "flex",
+				flexDirection: "column",
+				alignItems: "center",
+				margin: "10px",
+			}}
+		>
+			{/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
+			<img
+				src={`/trevor${selected ? 1 : 2}.svg`}
+				alt={`Nallely session running on ${ip}: ${port}`}
+				style={{ width: "45px", height: "45px", margin: "10px" }}
+				onClick={changeTrevor}
+			/>
+			<p style={{ textAlign: "center", fontSize: "12px" }}>
+				{name}
+				<br />
+				{ip}:{port}
+			</p>
 		</div>
 	);
 };
@@ -75,7 +73,14 @@ export const FriendModal = ({ onClose }: FriendModalProps) => {
 					Refresh
 				</button>
 			</div>
-			<div className="about-modal-body">
+			<div
+				className="about-modal-body"
+				style={{
+					flexWrap: "wrap",
+					justifyContent: "space-evenly",
+					overflow: "auto",
+				}}
+			>
 				{(!(friends || Object.keys(friends)?.length === 0) && (
 					<p>Scanning local network for friends...</p>
 				)) ||
