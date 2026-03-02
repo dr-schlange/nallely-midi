@@ -51,7 +51,7 @@ _SYSTEM_STDOUT = sys.stdout
 _SYSTEM_STDERR = sys.stderr
 _SYSTEM_STDIN = sys.stdin
 
-TIMEOUT = 0.3
+TIMEOUT = 5
 PORTS = [6788]
 
 
