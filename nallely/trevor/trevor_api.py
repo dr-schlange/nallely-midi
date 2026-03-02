@@ -199,7 +199,7 @@ class TrevorAPI:
         return src_device.links_registry.get((from_path, to_path))
 
     def associate_midi_port(self, device, port, direction):
-        dev: MidiDevice = self.get_device_instance(device)  # type:ignore
+        dev: MidiDevice = self.get_device_instance(device)  # type: ignore
         if direction == "output":
             if dev.outport_name == port:
                 dev.close_out()

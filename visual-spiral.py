@@ -8,7 +8,6 @@ from nallely.core import (
 from nallely import LFO, WebSocketBus
 from nallely.session import Session
 
-
 try:
     # Creates the ws server that will send values to the module that registers on it
     ws = WebSocketBus()
