@@ -51,7 +51,7 @@ _SYSTEM_STDOUT = sys.stdout
 _SYSTEM_STDERR = sys.stderr
 _SYSTEM_STDIN = sys.stdin
 
-TIMEOUT = 2
+TIMEOUT = 0.5
 PORTS = [6788]
 
 
@@ -700,6 +700,12 @@ class TrevorBus(VirtualDevice):
                     for i in range(1, 255):
                         ip = f"{prefix}.{i}"
                         for port in PORTS:
+                            if ip == my_ip:
+                                print(
+                                    f"[TrevorBus] Friend found: {ip}:{port}  (This is us!)"
+                                )
+                                self.current_scan[name_me(ip)] = (ip, port)
+                                continue
                             executor.submit(check_port, ip, port)
                     # for port in PORTS:
                     #     executor.submit(check_port, "localhost", port)
