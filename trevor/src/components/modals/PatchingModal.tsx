@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
 import { createSelector } from "@reduxjs/toolkit";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
@@ -614,10 +615,6 @@ const PatchingModal = ({
 				</svg>
 				<div className="left-panel">
 					<div className="top-left-panel" onScroll={updateConnections}>
-						{/* <h3>
-							{currentFirstSection?.device.repr}{" "}
-							{currentFirstSection?.section.name}
-						</h3> */}
 						{buildDropDown(
 							currentFirstSection,
 							setCurrentFirstSection,
@@ -637,7 +634,6 @@ const PatchingModal = ({
 									/>
 								</div>
 							)}
-							{/* {currentFirstSection?.section.parameters.map((param) => { */}
 							{firstSectionParameters.map((param) => {
 								const incoming = srcAllIncoming.includes(
 									parameterUUID(currentFirstSection.device.id, param),
@@ -668,7 +664,11 @@ const PatchingModal = ({
 											id={`${buildParameterId(currentFirstSection.device.id, param)}`}
 										/>
 										<div className="text-wrapper">
-											<span className="parameter-name left">{param.name}</span>
+											<span className="parameter-name left">
+												{currentFirstSection.device.proxy
+													? param.name.slice(param.name.indexOf("_") + 1)
+													: param.name}
+											</span>
 										</div>
 									</div>
 								);
@@ -676,10 +676,6 @@ const PatchingModal = ({
 						</div>
 					</div>
 					<div className="bottom-left-panel" onScroll={updateConnections}>
-						{/* <h3>
-							{currentSecondSection?.device.repr}{" "}
-							{currentSecondSection?.section.name}
-						</h3> */}
 						{buildDropDown(
 							currentSecondSection,
 							setCurrentSecondSection,
@@ -736,7 +732,11 @@ const PatchingModal = ({
 											className={`parameter-box ${incoming || outgoing ? "occupied" : ""}`}
 											id={`${buildParameterId(currentSecondSection.device.id, param)}`}
 										/>
-										<span className="parameter-name right">{param.name}</span>
+										<span className="parameter-name right">
+											{currentSecondSection.device.proxy
+												? param.name.slice(param.name.indexOf("_") + 1)
+												: param.name}
+										</span>
 									</div>
 								);
 							})}

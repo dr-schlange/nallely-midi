@@ -9,7 +9,7 @@ import React, {
 	useRef,
 	useState,
 } from "react";
-import type { VirtualDevice, VirtualParameter } from "../model";
+import type { MidiDevice, VirtualDevice, VirtualParameter } from "../model";
 import {
 	buildSectionId,
 	clamp,
@@ -173,10 +173,13 @@ const Port = React.memo(
 		parameter,
 		reverse = false,
 	}: {
-		device;
+		device: VirtualDevice | MidiDevice;
 		parameter: VirtualParameter;
 		reverse?: boolean;
 	}) => {
+		const paramName = device.proxy
+			? parameter.name.slice(parameter.name.indexOf("_") + 1)
+			: parameter.name;
 		return (
 			<div
 				style={{
@@ -193,9 +196,9 @@ const Port = React.memo(
 						margin: 0,
 						color: "gray",
 					}}
-					title={parameter.name}
+					title={paramName}
 				>
-					{generateAcronym(parameter.name, 4)}
+					{generateAcronym(paramName, 4)}
 				</p>
 				<div
 					style={{

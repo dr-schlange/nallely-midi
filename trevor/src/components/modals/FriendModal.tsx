@@ -62,6 +62,8 @@ export const FriendModal = ({ onClose }: FriendModalProps) => {
 		trevorSocket.scanForFriends();
 	}, [trevorSocket]);
 
+	const friendPresents = friends && Object.keys(friends).length > 0;
+
 	return (
 		<div className="about-modal">
 			<div className="modal-header">
@@ -81,9 +83,9 @@ export const FriendModal = ({ onClose }: FriendModalProps) => {
 					overflow: "auto",
 				}}
 			>
-				{(!(friends || Object.keys(friends)?.length === 0) && (
+				{!friendPresents ? (
 					<p>Scanning local network for friends...</p>
-				)) ||
+				) : (
 					Object.entries(friends).map(([friend_name, [ip, port]]) => (
 						<TrevorFriend
 							key={`${ip}:${port}`}
@@ -92,7 +94,8 @@ export const FriendModal = ({ onClose }: FriendModalProps) => {
 							port={port}
 							selected={`ws://${ip}:${port}` === trevorURL}
 						/>
-					))}
+					))
+				)}
 				{}
 			</div>
 		</div>
