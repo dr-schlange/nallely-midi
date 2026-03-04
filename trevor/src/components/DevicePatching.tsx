@@ -402,46 +402,51 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 								</label>
 							</div>
 						))}
-						<hr />
-						<div
-							style={{
-								display: "flex",
-								flexDirection: "row",
-								alignItems: "center",
-								gap: "10px",
-							}}
-						>
-							<p style={{ paddingLeft: "10px" }}>Expose to friends</p>
-							<select
-								style={{
-									border: "unset",
-									boxShadow: "none",
-									height: "18px",
-									width: "18px",
-								}}
-								value={""}
-								title="Select friends"
-								onChange={(e) => {
-									console.log("SElected", e.target.value);
-									const ip = e.target.value;
-									if (ip.startsWith("*")) {
-										trevorSocket.unexposeNeuron(device.id, ip.slice(1));
-									} else {
-										trevorSocket.exposeNeuron(device.id, ip);
-									}
-								}}
-							>
-								<option value={""}>--</option>
-								{Object.entries(friends).map(([name, [ip, _]]) => (
-									<option
-										key={`${ip}`}
-										value={`${exposedTo.includes(ip) ? "*" : ""}${ip}`}
+						{!device.proxy && (
+							<>
+								<hr />
+								<div
+									style={{
+										display: "flex",
+										flexDirection: "row",
+										alignItems: "center",
+										gap: "10px",
+									}}
+								>
+									<p style={{ paddingLeft: "10px" }}>Expose to friends</p>
+									<select
+										style={{
+											border: "unset",
+											boxShadow: "none",
+											height: "18px",
+											width: "18px",
+										}}
+										value={""}
+										title="Select friends"
+										onChange={(e) => {
+											console.log("SElected", e.target.value);
+											const ip = e.target.value;
+											if (ip.startsWith("*")) {
+												trevorSocket.unexposeNeuron(device.id, ip.slice(1));
+											} else {
+												trevorSocket.exposeNeuron(device.id, ip);
+											}
+										}}
 									>
-										{`${exposedTo.includes(ip) ? "*" : " "} ${name} (${ip})`}
-									</option>
-								))}
-							</select>
-						</div>
+										<option value={""}>--</option>
+										{Object.entries(friends).map(([name, [ip, _]]) => (
+											<option
+												key={`${ip}`}
+												value={`${exposedTo.includes(ip) ? "*" : ""}${ip}`}
+											>
+												{`${exposedTo.includes(ip) ? "*" : " "} ${name} (${ip})`}
+											</option>
+										))}
+									</select>
+								</div>
+							</>
+						)}
+
 						<hr />
 						<details>
 							<summary>Danger zone</summary>
@@ -633,6 +638,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 			channels,
 			createVirtualInput,
 			exposedServices,
+			friends,
 		],
 	);
 
