@@ -51,7 +51,7 @@ class NeuronExposer:
         config = {}
         for port in self.neuron.all_parameters():
             lower, upper = port.range
-            config[port.name] = {"min": lower, "max": upper}
+            config[port.name] = {"min": lower, "max": upper, "stream": True}
         service = self.bus.register("remote", self.uid(), config, self.params)
         service.onmessage = self.receiving  # type: ignore
         self.service = service
