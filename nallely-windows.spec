@@ -33,6 +33,7 @@ exe = EXE(
     upx=True,
     console=True,
     exclude_binaries=True,
+    runtime_hooks=['force_nogil.py'],
 )
 
 coll = COLLECT(

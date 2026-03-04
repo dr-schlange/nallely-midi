@@ -39,4 +39,5 @@ exe = EXE(
     upx_exclude=[],
     runtime_tmpdir=None,
     console=True,
+    runtime_hooks=['force_nogil.py'],
 )
