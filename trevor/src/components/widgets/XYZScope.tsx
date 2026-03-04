@@ -48,6 +48,10 @@ export const XYZScope = ({ id, onClose, num }: WidgetProps) => {
 		z: 0,
 	});
 
+	const isPinching = useRef(false);
+	const initialPinchDistance = useRef(0);
+	const initialPinchScale = useRef(1);
+
 	const commitBufferSize = (valueStr: string) => {
 		let newSize = Number.parseFloat(valueStr);
 		if (Number.isNaN(newSize)) newSize = BUFFER_SIZE_MIN;
@@ -278,6 +282,7 @@ export const XYZScope = ({ id, onClose, num }: WidgetProps) => {
 		};
 
 		const onPointerMove = (e: PointerEvent) => {
+			if (isPinching.current) return;
 			if (!isDragging.current || !dragRotateRef.current) return;
 			const dx = e.clientX - lastPointer.current.x;
 			const dy = e.clientY - lastPointer.current.y;
@@ -294,14 +299,67 @@ export const XYZScope = ({ id, onClose, num }: WidgetProps) => {
 			canvas.releasePointerCapture(e.pointerId);
 		};
 
+		const getTouchDistance = (t1: Touch, t2: Touch) => {
+			const dx = t1.clientX - t2.clientX;
+			const dy = t1.clientY - t2.clientY;
+			return Math.sqrt(dx * dx + dy * dy);
+		};
+
+		const onTouchStart = (e: TouchEvent) => {
+			if (!dragRotateRef.current) return;
+			if (e.touches.length === 2) {
+				e.preventDefault();
+				isPinching.current = true;
+				initialPinchDistance.current = getTouchDistance(
+					e.touches[0],
+					e.touches[1],
+				);
+				initialPinchScale.current = scaleX.current;
+			}
+		};
+
+		const onTouchMove = (e: TouchEvent) => {
+			if (!isPinching.current || e.touches.length !== 2) return;
+			e.preventDefault();
+			const newDist = getTouchDistance(e.touches[0], e.touches[1]);
+			const newScale =
+				(newDist / initialPinchDistance.current) * initialPinchScale.current;
+			scaleX.current = newScale;
+			scaleY.current = newScale;
+			drawPoints();
+		};
+
+		const onTouchEnd = (e: TouchEvent) => {
+			if (e.touches.length < 2) {
+				isPinching.current = false;
+			}
+		};
+
+		const onWheel = (e: WheelEvent) => {
+			if (!dragRotateRef.current) return;
+			e.preventDefault();
+			const factor = e.deltaY > 0 ? 0.9 : 1.1;
+			scaleX.current *= factor;
+			scaleY.current *= factor;
+			drawPoints();
+		};
+
 		canvas.addEventListener("pointerdown", onPointerDown);
 		canvas.addEventListener("pointermove", onPointerMove);
 		canvas.addEventListener("pointerup", onPointerUp);
+		canvas.addEventListener("touchstart", onTouchStart, { passive: false });
+		canvas.addEventListener("touchmove", onTouchMove, { passive: false });
+		canvas.addEventListener("touchend", onTouchEnd);
+		canvas.addEventListener("wheel", onWheel, { passive: false });
 
 		return () => {
 			canvas.removeEventListener("pointerdown", onPointerDown);
 			canvas.removeEventListener("pointermove", onPointerMove);
 			canvas.removeEventListener("pointerup", onPointerUp);
+			canvas.removeEventListener("touchstart", onTouchStart);
+			canvas.removeEventListener("touchmove", onTouchMove);
+			canvas.removeEventListener("touchend", onTouchEnd);
+			canvas.removeEventListener("wheel", onWheel);
 		};
 	}, []);
 
