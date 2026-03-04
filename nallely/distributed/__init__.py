@@ -34,12 +34,17 @@ def name_me(ip: str | None = None):
 
 class NeuronExposer:
     def __init__(
-        self, neuron: VirtualDevice, bus: NallelyWebsocketBus, autoconnect=True
+        self,
+        neuron: VirtualDevice,
+        bus: NallelyWebsocketBus,
+        autoconnect=True,
+        stream=False,
     ):
         self.bus = bus
         self.neuron = neuron
         self.service: NallelyService | None = None
         self.params = {}
+        self.stream = stream
         if autoconnect:
             self.start()
 
@@ -50,8 +55,11 @@ class NeuronExposer:
         self.neuron.register_observer(self)
         config = {}
         for port in self.neuron.all_parameters():
-            lower, upper = port.range
-            config[port.name] = {"min": lower, "max": upper, "stream": True}
+            if port is VirtualDevice.output_cv:  # type: ignore
+                lower, upper = self.neuron.range
+            else:
+                lower, upper = port.range
+            config[port.name] = {"min": lower, "max": upper, "stream": self.stream}
         service = self.bus.register("remote", self.uid(), config, self.params)
         service.onmessage = self.receiving  # type: ignore
         self.service = service
