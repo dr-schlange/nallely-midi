@@ -37,6 +37,7 @@
 * Device hot-patch/hot-swap doesn't commit the new code by default
 * Add base for distributed computation between various Nallely sessions on the same local network
 * Add possibility to expose virtual neurons (virtual devices) to remote session, thus exploiting remote machine to externalize computation
+* Add "main" generation based on docstring spec
 
 ### Fix
 

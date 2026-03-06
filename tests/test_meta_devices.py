@@ -1,6 +1,4 @@
 import pytest
-from sympy import N
-
 import nallely
 from nallely.devices import NTS1
 

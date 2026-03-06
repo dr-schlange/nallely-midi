@@ -3,6 +3,7 @@ import time
 import pytest
 
 from nallely import LFO, WebSocketBus
+from nallely.core import VirtualDevice
 from nallely.core.virtual_device import VirtualParameter
 from nallely.core.world import ThreadContext
 
@@ -180,3 +181,27 @@ def test__access_links_incoming_from_device():
     lfo1.speed_cv -= lfo2.output_cv
 
     assert len(lfo1.incoming_links) == 0
+
+
+def test__introspection_allparameters_nonstandardoutput():
+    class A(VirtualDevice):
+        input_cv = VirtualParameter(name="input", range=(-1, 1), conversion_policy="round", default=0)
+        output_cv = VirtualParameter(name="output", range=(-5, 5))
+
+
+    parameters = A.all_parameters()
+
+    assert len(parameters) == 3  # we have the input/output and the set_pause
+
+    a, b, c = parameters
+    assert a.name == "output"
+    assert b.name == "set_pause"
+    assert c.name == "input"
+
+    assert a.range == (-5, 5)
+    assert b.range == (0, 1)
+    assert c.range == (-1, 1)
+
+    assert c.conversion_policy == "round"
+    assert a.conversion_policy is None
+    assert b.conversion_policy is None

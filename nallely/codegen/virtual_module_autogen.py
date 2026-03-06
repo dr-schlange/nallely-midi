@@ -81,7 +81,8 @@ def generate_class_node(
     cls_def,
     inputs: list[InputPort],
     outputs: list[OutputPort],
-    meta,
+    meta_default_output,
+    main_section,
     remove_decorator=True,
 ):
     if remove_decorator:
@@ -112,7 +113,7 @@ def generate_class_node(
                 has_default_range = True
             case ast.FunctionDef(name="__post_init__"):
                 has_post_init = True
-    default_output = None
+    # default_output = None
     for input in inputs[::-1]:
         if input.cv_name not in var_names:
             cls_def.body.insert(1, input.port_definition_node())
@@ -132,19 +133,21 @@ def generate_class_node(
             cls_def.body.extend(missing_methods)
     for output in outputs:
         if output.cv_name not in var_names:
-            if output.default_output:
-                default_output = output
-                continue
+            # if output.default_output:
+            #     default_output = output
+            #     continue
             cls_def.body.insert(len(inputs) + 1, output.port_definition_node())
         else:
             idx = cls_def.body.index(var_names[output.cv_name])
             cls_def.body[idx] = output.port_definition_node()
-    if not has_post_init and meta:
-        cls_def.body.insert(len(inputs) + len(outputs) + 1, meta)
-    if not has_default_range and default_output:
-        cls_def.body.insert(
-            len(inputs) + len(outputs) + 1, default_output.range_method_nodes()
-        )
+    if not has_post_init and meta_default_output:
+        cls_def.body.insert(len(inputs) + len(outputs) + 1, meta_default_output)
+    # if not has_default_range and default_output:
+    #     cls_def.body.insert(
+    #         len(inputs) + len(outputs) + 1, default_output.range_method_nodes()
+    #     )
+    if main_section:
+        cls_def.body.append(main_section)
     return cls_def
 
 
@@ -227,9 +230,9 @@ def gen_class_code(
                     not has_imports and level == 0
                 ):
                     copied_imports.append(imp)
-        assert (
-            classdef
-        ), f"No class definition for {cls.__name__} or t_{cls.__name__} found"
+        assert classdef, (
+            f"No class definition for {cls.__name__} or t_{cls.__name__} found"
+        )
         # new_class.body[idx] = classdef
 
         if cls_file.exists():
@@ -313,16 +316,6 @@ def gen_class_code(
     if autogen_import and not keep_decorator:
         file_code.body.remove(autogen_import)
     if not has_nallely_imports:
-        # file_code.body.insert(
-        #     0,
-        #     ast.ImportFrom(
-        #         module="nallely",
-        #         names=[
-        #             ast.alias("*"),
-        #         ],
-        #         level=0,
-        #     ),
-        # )
         file_code.body.insert(
             0,
             ast.ImportFrom(
@@ -440,7 +433,9 @@ def parsedoc(doc: str | None):
                 code = cat.rsplit(":", 1)
                 input_specs.append(code)
             line = cat
-        if line and line.startswith("outputs:"):
+        if not line:
+            continue
+        if line.startswith("outputs:"):
             while cat := next(doc_iter, None):
                 cat = cat.strip()
                 if not cat:
@@ -449,15 +444,19 @@ def parsedoc(doc: str | None):
                     code = cat.rsplit(":", 1)
                     output_specs.append(code)
             line = cat
-        if line and line.startswith("meta:"):
+        elif line.startswith("meta:") or line.startswith("type:"):
             meta.append(line.split(":")[1].strip())
     inputs = parsespec(input_specs)
     outputs = parsespec(output_specs, are_outputs=True)
-    if meta == ["disable default output"]:
-        meta = ast.parse(
+    if "disable default output" in meta:
+        default_output = ast.parse(
             f'\ndef __post_init__(self, **kwargs):\n    return {{\n        "disable_output": True\n    }}\n',
             mode="exec",
         ).body[0]
     else:
-        meta = None
-    return (inputs, outputs, meta)
+        default_output = None
+    if "continuous" in meta or "hybrid" in meta:
+        main_section = ast.parse("def main(self, ctx):\n    ...").body[0]
+    else:
+        main_section = None
+    return (inputs, outputs, default_output, main_section)

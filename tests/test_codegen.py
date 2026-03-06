@@ -1,7 +1,7 @@
 import ast
 
 from nallely.codegen.midi_module_generator import generate_code
-from nallely.codegen.virtual_module_autogen import parsedoc, parsespec
+from nallely.codegen.virtual_module_autogen import parsedoc
 
 
 def test__parse_docstring():
@@ -21,9 +21,10 @@ def test__parse_docstring():
     category: clock
     meta: disable default output
     """
-    ins, outs, post = parsedoc(docstring)
+    ins, outs, post, main = parsedoc(docstring)
 
     assert post
+    assert main is None
     assert "'disable_output': True" in ast.unparse(post)
 
     expected_inputs = [
@@ -69,13 +70,14 @@ def test__parse_docstring_with_spaces():
 
     * out1_cv [0, 127]: first output
 
-    type: ondemand
+    type: hybrid
     category: clock
     meta: disable default output
     """
-    ins, outs, post = parsedoc(docstring)
+    ins, outs, post, main = parsedoc(docstring)
 
     assert post
+    assert main
     assert "'disable_output': True" in ast.unparse(post)
 
     expected_inputs = [
@@ -129,3 +131,53 @@ def test__midi_device_generator_accepted_values(tmp_path):
     content = out_file.read_text()
 
     assert "accepted_values=['OFF', 'ON', 'NEW']" in content
+
+
+def test__parse_docstring_type():
+    docstring = """
+    Simple module
+
+    inputs:
+
+    outputs:
+
+    type: hybrid
+    category: clock
+    meta: disable default output
+    """
+    _, _, post, main = parsedoc(docstring)
+
+    assert post
+    assert main
+
+
+    docstring = """
+    Simple module
+
+    inputs:
+
+    outputs:
+
+    type: continuous
+    category: clock
+    """
+    _, _, post, main = parsedoc(docstring)
+
+    assert post is None
+    assert main
+
+
+    docstring = """
+    Simple module
+
+    inputs:
+
+    outputs:
+
+    type: ondemand
+    category: clock
+    """
+    _, _, post, main = parsedoc(docstring)
+
+    assert post is None
+    assert main is None
