@@ -150,7 +150,6 @@ def test__parse_docstring_type():
     assert post
     assert main
 
-
     docstring = """
     Simple module
 
@@ -165,7 +164,6 @@ def test__parse_docstring_type():
 
     assert post is None
     assert main
-
 
     docstring = """
     Simple module

@@ -230,9 +230,9 @@ def gen_class_code(
                     not has_imports and level == 0
                 ):
                     copied_imports.append(imp)
-        assert classdef, (
-            f"No class definition for {cls.__name__} or t_{cls.__name__} found"
-        )
+        assert (
+            classdef
+        ), f"No class definition for {cls.__name__} or t_{cls.__name__} found"
         # new_class.body[idx] = classdef
 
         if cls_file.exists():

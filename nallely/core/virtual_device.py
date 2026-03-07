@@ -12,6 +12,7 @@ from types import GeneratorType
 from typing import Any, Callable, Literal, Sequence, Type
 
 from ..utils import (
+    MetaDecorator,
     diff0_cv_property,
     map2values_cv_property,
     round_cv_property,
@@ -81,6 +82,9 @@ class VirtualParameter:
         if self.range and self.range[0] is not None:
             return self.range[0]
         return 0
+
+    def __class_getitem__(cls, key):
+        return cls[key]
 
 
 class OnChange:
@@ -179,7 +183,7 @@ class VirtualDevice(threading.Thread):
     def __new__(cls, *args, **kwargs):
         instance = super().__new__(cls)
         instance._devices_count[cls.__name__] += 1
-        instance._number = instance._devices_count[cls.__name__]
+        instance._number = instance._devices_count[cls.__name__]  # type: ignore
         # instance._devices_count[cls] += 1
         # instance._number = instance._devices_count[cls]  # type: ignore
         return instance

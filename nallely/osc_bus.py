@@ -3,7 +3,7 @@ import math
 from collections import defaultdict
 
 from pythonosc.dispatcher import Dispatcher
-from pythonosc.osc_server import BlockingOSCUDPServer, ThreadingOSCUDPServer
+from pythonosc.osc_server import ThreadingOSCUDPServer
 from pythonosc.udp_client import SimpleUDPClient
 
 from .core.virtual_device import VirtualDevice, VirtualParameter
@@ -48,10 +48,9 @@ class OSCBus(WebSocketBus):
         parameter = "_".join(parameter)
 
         # devices = self.connected[device]
-        # print(f"[DEBUG] set {parameter=}, {value=}")
         setattr(self, parameter, value)
 
-        for _, client in self.connected[device]:
+        for _, client in self.connected[device].items():
             address = f"/{device}/{parameter}"
             client.send_message(address, value)
 
@@ -93,10 +92,9 @@ class SelfRegisterDispatcher(Dispatcher):
         sender_server_host, _ = client_address
         sender_callback_key = (sender_server_host, sender_server_port)
         sender_callbacks = self.server.connected[service_name]
-        if sender_callback_key not in sender_callbacks:
-            sender_callbacks[sender_callback_key] = SimpleUDPClient(
-                sender_server_host, sender_server_port
-            )
+        sender_callbacks[sender_callback_key] = SimpleUDPClient(
+            sender_server_host, sender_server_port
+        )
 
     def add_parameters(self, client_address, address, str_config: str):
         if not isinstance(str_config, str):
