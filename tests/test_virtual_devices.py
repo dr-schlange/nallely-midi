@@ -185,9 +185,10 @@ def test__access_links_incoming_from_device():
 
 def test__introspection_allparameters_nonstandardoutput():
     class A(VirtualDevice):
-        input_cv = VirtualParameter(name="input", range=(-1, 1), conversion_policy="round", default=0)
+        input_cv = VirtualParameter(
+            name="input", range=(-1, 1), conversion_policy="round", default=0
+        )
         output_cv = VirtualParameter(name="output", range=(-5, 5))
-
 
     parameters = A.all_parameters()
 
@@ -205,3 +206,8 @@ def test__introspection_allparameters_nonstandardoutput():
     assert c.conversion_policy == "round"
     assert a.conversion_policy is None
     assert b.conversion_policy is None
+
+
+def test__introspection_meta_new_syntaxe():
+    @VirtualDevice
+    class A: ...

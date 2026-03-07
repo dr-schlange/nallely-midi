@@ -312,3 +312,11 @@ def get_my_ip():
         return None
     finally:
         s.close()
+
+
+class MetaDecorator(type):
+    def __call__(cls, decorated_cls):
+        name = decorated_cls.__name__
+        bases = (cls,) + decorated_cls.__bases__
+        namespace = dict(decorated_cls.__dict__)
+        return type(name, bases, namespace)

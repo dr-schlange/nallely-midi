@@ -1,4 +1,5 @@
 import pytest
+
 import nallely
 from nallely.devices import NTS1
 

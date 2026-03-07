@@ -33,6 +33,7 @@ from .logicals import (
     Operator,
     WindowDetector,
 )
+from .osc_bus import OSCBus
 from .sequencer import EuclidianSequencer, Sequencer, Sequencer8, TuringMachine
 from .shifter import (
     Arpegiator,
