@@ -36,8 +36,8 @@ class Bridge(MidiDevice):
         self.instance_number += 1
         # self.inport = mido.open_input(f"{self.virtual_port_name}", virtual=True)  # type: ignore mido error
         # self.outport = mido.open_output(f"{self.virtual_port_name}", virtual=True)  # type: ignore mido error
-        self.inport = mido.open_ioport(f"{self.virtual_port_name}", virtual=True)
-        self.outport = self.inport
+        self.inport = mido.open_ioport(f"{self.virtual_port_name}", virtual=True)   # type: ignore mido error
+        self.outport = self.inport   # type: ignore mido error
 
     def uid(self):
         return f"{self.__class__.__name__}{self.instance_uid}"
