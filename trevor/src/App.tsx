@@ -1,4 +1,4 @@
-import { useMemo, useState, lazy, Suspense } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
 import { Provider } from "react-redux";
 import DevicePatching from "./components/DevicePatching";
 import InstanceCreation from "./components/InstanceCreation";

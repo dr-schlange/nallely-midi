@@ -181,7 +181,8 @@ class TrevorBus(VirtualDevice):
             f"[TrevorBus] Connected on {service_name} [{len(connected_clients)} clients]"
         )
         try:
-            client.send(self.to_json(self.full_state()))
+            # Send first full state with default values
+            client.send(self.to_json(self.full_state(with_defaultvalues=True)))
             for message in client:
                 self.handleMessage(client, message)
         except (ConnectionClosed, TimeoutError) as e:
@@ -248,9 +249,9 @@ class TrevorBus(VirtualDevice):
             {"status": status, "message": message, "command": "notification"}
         )
 
-    def full_state(self, save_defaultvalues=False):
+    def full_state(self, with_defaultvalues=False):
         snapshot = self.session.snapshot(
-            spread_registered_services=True, save_defaultvalues=save_defaultvalues
+            spread_registered_services=True, save_defaultvalues=with_defaultvalues
         )
         if self.ws:
             snapshot["waiting_services"] = self.ws.services_in_waitingroom()
@@ -620,7 +621,7 @@ class TrevorBus(VirtualDevice):
 
     def set_parameter_value(self, device_id, section_name, parameter_name, value):
         self.trevor.set_parameter_value(device_id, section_name, parameter_name, value)
-        return self.full_state(save_defaultvalues=True)
+        return self.full_state(with_defaultvalues=True)
 
     def set_device_channel(self, device_id, channel):
         self.trevor.set_device_channel(device_id, channel)
