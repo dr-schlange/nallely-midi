@@ -133,7 +133,7 @@ class FilterSection(Module):
     mode = ModuleParameter(
         "mode", accepted_values=("Digital", "Analog"), init_value=127
     )
-    type = ModuleParameter("type", accepted_values=("LPF", "HPF", "BPF"), init_value=0)
+    type = ModuleParameter("type", accepted_values=("LPF", "HPF", "BPF"))
     cutoff = ModuleParameter("cutoff", range=(0, 100), init_value=50)
     resonance = ModuleParameter("resonance", range=(0, 100))
     analog_bias = ModuleParameter("analog_bias", range=(0, 100), init_value=5)
@@ -284,12 +284,22 @@ class COMOL(MidiDevice):
         del self._allocated[note]
 
     def control_change(self, control, value=0, channel=None):
-        if control == "generate" and value > 0:
+        if control == "generate":
             preset_folder = self.current_preset_folder
-            if self._generating:
+            if value > 0 and self._generating:
                 print(f"[COMOL] Already generating wavetable in {preset_folder}")
                 return
-            self._generate(preset_folder)
+            elif value == 0 and self._generating:
+                print(
+                    f"[COMOL] Already generating wavetable in {preset_folder}, stopping generation"
+                )
+                self.stop_signal.clear()
+                self.stop_signal.set()
+                if self._generator_thread and self._generator_thread.is_alive():
+                    self._generator_thread.join()
+            elif value > 0:
+                self.stop_signal.clear()
+                self._generate(preset_folder)
         elif self._generating:
             print(
                 f"[COMOL] Processing, discarding {control}={value:.4f} progress={self.general.progress:.4f}%"
@@ -316,12 +326,13 @@ class COMOL(MidiDevice):
         print(
             f"[COMOL] {'Generating' if preset_folder.exists() else 'Creating'} in {preset_folder} for {nb_octaves} octaves [{lower_octave}..{upper_octave}]"
         )
+        parameters = self._build_sequence("OCT", "NOTE")
+        print(f"        Parameters={parameters}")
         preset_folder.mkdir(exist_ok=True, parents=True)
         total_notes = (nb_octaves + 1) * len(notes)
         current_note = 0
         self.send_cc("progress", 0)
         lock = Lock()
-        self.stop_signal.clear()
 
         def generate_note(octave, note_name, note, total_notes, stop_event):
             if stop_event.is_set():
@@ -351,7 +362,7 @@ class COMOL(MidiDevice):
 
         def generate_all_notes(instance, lower_octave, upper_octave, notes, stop_event):
             print("[COMOL-GENERATOR] Starting generator thread...")
-            with ThreadPoolExecutor(max_workers=2) as executor:
+            with ThreadPoolExecutor(max_workers=3) as executor:
                 for octave in range(lower_octave, upper_octave + 1):  # type: ignore
                     for note, note_name in enumerate(notes):
                         if stop_event.is_set():
@@ -372,6 +383,7 @@ class COMOL(MidiDevice):
                     return
             instance._generator_thread = None
             instance._generating = False
+            instance.stop_signal.clear()
             print(f"[COMOL-GENERATOR] Generation finished in {preset_folder}")
 
         self._generator_thread = Thread(
