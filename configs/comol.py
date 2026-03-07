@@ -1,10 +1,27 @@
+#
+# Integration of COMOL-1: The COBOL Wavetable Synth
+#   COMOL1 is a creation of DZeman23
+#   github profile:    https://github.com/DZeman23
+#   github repository: https://github.com/DZeman23/COMOL-1-The-COBOL-Wavetable-Synthesizer
+#
 import struct
 import subprocess
 import sys
 import tempfile
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from threading import Event, Lock, Thread
 
-import playsound3
+try:
+    import playsound3  # type: ignore
+except ImportError:
+    print("[COMOL] No lib to play sound loaded")
+
+    class playsound3:
+        @staticmethod
+        def playsound(*args, **kwargs):
+            print("[COMOL] No playsound3 lib, ignoring the sound playing :(")
+
 
 from nallely import MidiDevice, Module, ModulePadsOrKeys, ModuleParameter, ThreadContext
 
@@ -12,15 +29,25 @@ from nallely import MidiDevice, Module, ModulePadsOrKeys, ModuleParameter, Threa
 #
 # Utils functions
 #
-def execute_command_with_stdin(command_args: list[str], stdin_data: str):
+def execute_command_with_stdin(
+    command_args: list[str], stdin_data: str, display_stdout=False
+):
     try:
-        process = subprocess.Popen(
-            command_args,
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            text=True,
-            bufsize=5,
-        )
+        if display_stdout:
+            process = subprocess.Popen(
+                command_args,
+                stdin=subprocess.PIPE,
+                text=True,
+                bufsize=50,
+            )
+        else:
+            process = subprocess.Popen(
+                command_args,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                text=True,
+                bufsize=50,
+            )
 
         stdout, stderr = process.communicate(input=stdin_data)
 
@@ -99,7 +126,7 @@ class GeneralSection(Module):
     preset = ModuleParameter("preset", range=(0, 10))
     notes = ModulePadsOrKeys()
     lower_octave = ModuleParameter("lower_octave", range=(0, 6), init_value=3)
-    upper_octave = ModuleParameter("lower_octave", range=(0, 6), init_value=6)
+    upper_octave = ModuleParameter("upper_octave", range=(0, 6), init_value=6)
 
 
 class FilterSection(Module):
@@ -159,6 +186,9 @@ class COMOL(MidiDevice):
         self.presets_folder = self.comol_exec.parent
         self._tmp_output_raw = Path(tempfile.gettempdir())
         self._allocated = {}
+        self._generator_thread: Thread | None = None
+        self.stop_signal = Event()
+        self.stop_signal.clear()
 
     @property
     def general(self) -> GeneralSection:
@@ -254,17 +284,20 @@ class COMOL(MidiDevice):
         del self._allocated[note]
 
     def control_change(self, control, value=0, channel=None):
-        preset_folder = self.current_preset_folder
-
         if control == "generate" and value > 0:
+            preset_folder = self.current_preset_folder
             if self._generating:
                 print(f"[COMOL] Already generating wavetable in {preset_folder}")
                 return
             self._generate(preset_folder)
-
         elif self._generating:
-            print(f"[COMOL] Processing, discarding progress={self.general.progress}%")
+            print(
+                f"[COMOL] Processing, discarding {control}={value:.4f} progress={self.general.progress:.4f}%"
+            )
             return
+
+        # We need to update the state! This is tricky, should change
+        self._update_state(control, value)
 
     @property
     def current_preset_folder(self):
@@ -276,48 +309,76 @@ class COMOL(MidiDevice):
     def _generate(self, preset_folder):
         self._generating = True
         notes = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
-        lower_octave, upper_octave = (
-            (
-                self.general.lower_octave,
-                self.general.upper_octave + 1,  # type: ignore
-            )
-            if self.general.lower_octave < self.general.upper_octave  # type: ignore
-            else (
-                self.general.upper_octave,
-                self.general.lower_octave + 1,  # type: ignore
-            )
-        )
+        lo = round(self.general.lower_octave)  # type: ignore
+        hi = round(self.general.upper_octave)  # type: ignore
+        lower_octave, upper_octave = (lo, hi) if lo < hi else (hi, lo)
         nb_octaves = upper_octave - lower_octave  # type: ignore
         print(
             f"[COMOL] {'Generating' if preset_folder.exists() else 'Creating'} in {preset_folder} for {nb_octaves} octaves [{lower_octave}..{upper_octave}]"
         )
         preset_folder.mkdir(exist_ok=True, parents=True)
-        total_notes = nb_octaves * len(notes)
+        total_notes = (nb_octaves + 1) * len(notes)
         current_note = 0
         self.send_cc("progress", 0)
-        for octave in range(lower_octave, upper_octave):  # type: ignore
-            for note, note_name in enumerate(notes):
-                print(
-                    f"[COMOL] Generating {note_name}{octave} ({current_note}/{total_notes}) [{(current_note / total_notes) * 100:.2f}%]"
-                )
-                sequence = "\n".join(str(s) for s in self._build_sequence(octave, note))
-                execute_command_with_stdin(
-                    [f"{self.comol_exec.resolve().absolute()}", "/tmp/"], sequence
-                )
-                midi_note_number = octave * len(notes) + note
-                raw_file_path = self._tmp_output_raw / f"{midi_note_number}.raw"
-                wav_path = preset_folder / f"{midi_note_number}.wav"
-                print(f"[COMOL] Converting raw to wav as {wav_path}")
-                raw_to_wav(
-                    raw_path=raw_file_path,
-                    wav_path=wav_path,
-                    debug=False,
-                )
+        lock = Lock()
+        self.stop_signal.clear()
+
+        def generate_note(octave, note_name, note, total_notes, stop_event):
+            if stop_event.is_set():
+                return
+            nonlocal current_note
+            print(
+                f"[COMOL] Generating {note_name}{octave} ({current_note}/{total_notes}) [{(current_note / total_notes) * 100:.2f}%]"
+            )
+            sequence = "\n".join(str(s) for s in self._build_sequence(octave, note))
+            execute_command_with_stdin(
+                [f"{self.comol_exec.resolve().absolute()}", "/tmp/"],
+                sequence,
+                display_stdout=False,
+            )
+            midi_note_number = octave * len(notes) + note
+            raw_file_path = self._tmp_output_raw / f"{midi_note_number}.raw"
+            wav_path = preset_folder / f"{midi_note_number}.wav"
+            print(f"[COMOL] Converting raw to wav as {wav_path}")
+            raw_to_wav(
+                raw_path=raw_file_path,
+                wav_path=wav_path,
+                debug=False,
+            )
+            with lock:
                 current_note += 1
                 self.send_cc("progress", (current_note / total_notes) * 100)
 
-        self._generating = False
-        print(f"[COMOL] Generation finished in {preset_folder}")
+        def generate_all_notes(instance, lower_octave, upper_octave, notes, stop_event):
+            print("[COMOL-GENERATOR] Starting generator thread...")
+            with ThreadPoolExecutor(max_workers=2) as executor:
+                for octave in range(lower_octave, upper_octave + 1):  # type: ignore
+                    for note, note_name in enumerate(notes):
+                        if stop_event.is_set():
+                            break
+                        executor.submit(
+                            generate_note,
+                            octave,
+                            note_name,
+                            note,
+                            total_notes,
+                            stop_event,
+                        )
+                    if stop_event.is_set():
+                        break
+                if stop_event.is_set():
+                    executor.shutdown(wait=True, cancel_futures=True)
+                    print("[COMOL-GENERATOR] Generation interrupted...")
+                    return
+            instance._generator_thread = None
+            instance._generating = False
+            print(f"[COMOL-GENERATOR] Generation finished in {preset_folder}")
+
+        self._generator_thread = Thread(
+            target=generate_all_notes,
+            args=(self, lower_octave, upper_octave, notes, self.stop_signal),
+        )
+        self._generator_thread.start()
 
     def send_cc(self, cc, value, channel=None):
         for link in self.links.get(("control_change", cc, channel), []):
@@ -329,3 +390,15 @@ class COMOL(MidiDevice):
                 }
             )
             link.trigger(value if value is not None else 0, ctx)
+            self._update_state(cc, value)
+
+    def close(self, delete=True):
+        if self._generator_thread and self._generator_thread.is_alive():
+            self.stop_signal.clear()
+            self.stop_signal.set()
+            timeout = 5
+            print(
+                f"[COMOL-GENERATOR] Stopping generator thread (timeout={timeout}s)..."
+            )
+            self._generator_thread.join(timeout=timeout)
+        super().close(delete=delete)
