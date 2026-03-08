@@ -320,12 +320,12 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 				<DragNumberInput
 					value={currentValue}
 					onBlur={(value) => {
-						if (!Number.isNaN(Number.parseInt(value, 10))) {
+						if (!Number.isNaN(Number.parseFloat(value))) {
 							trevorSocket?.setParameterValue(
 								device.id,
 								parameter.section_name,
 								parameter.name,
-								Number.parseInt(value, 10),
+								Number.parseFloat(value),
 							);
 						}
 					}}

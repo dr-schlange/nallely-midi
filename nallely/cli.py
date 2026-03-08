@@ -117,7 +117,7 @@ def main():
     else:
         from nallely.trevor.trevor_bus import _print_with_trevor
 
-        welcome = f"""-= Welcome to Nallely a small organic live programmable modular brain =-
+        welcome = """-= Welcome to Nallely a small organic live programmable modular brain =-
 
 To launch a session with the Trevor protocol and UI, use the "run" subcommand:
 

@@ -12,6 +12,7 @@
   * Add experimental Laplace transformation
   * Add experimental KineticShaper
   * Add experimental Transistor
+  * Add experimental integration for [COMOL-1](https://github.com/DZeman23/COMOL-1-The-COBOL-Wavetable-Synthesizer) a COBOL Wavetable Synth
 * Add current value and local bound display in the 1D scope
 * Add auto-refresh for XYScope (2D scope) and XYZScope (3D scope)
 * Add different precision handling on swipe fields for numbers in TrevorUI

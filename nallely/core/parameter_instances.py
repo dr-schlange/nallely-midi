@@ -127,6 +127,30 @@ class Int(int):
             auto=min is None and max is None,
         )
 
+    def __index__(self):
+        return self.__wrapped__
+
+    def __lt__(self, other):
+        return self.__wrapped__ < other
+
+    def __le__(self, other):
+        return self.__wrapped__ <= other
+
+    def __gt__(self, other):
+        return self.__wrapped__ > other
+
+    def __ge__(self, other):
+        return self.__wrapped__ >= other
+
+    def __eq__(self, other):
+        return self.__wrapped__ == other
+
+    def __ne__(self, other):
+        return self.__wrapped__ != other
+
+    def __hash__(self):
+        return hash(self.__wrapped__)
+
     def __repr__(self):
         return str(self.__wrapped__)
 
@@ -379,21 +403,19 @@ class PadOrKey:
     def generate_inner_fun_virtual_consumer(self, to_device, to_param):
         if self.mode == "hold":
             return lambda value, ctx: (
-                (
-                    to_device.receiving(
-                        value,
-                        on=to_param.name,
-                        ctx=ThreadContext(
-                            {
-                                **ctx,
-                                "param": f"key/pad #{self.cc_note}",
-                                "mode": self.mode,
-                            }
-                        ),
-                    )
-                    if ctx.type == "note_on"
-                    else ...
+                to_device.receiving(
+                    value,
+                    on=to_param.name,
+                    ctx=ThreadContext(
+                        {
+                            **ctx,
+                            "param": f"key/pad #{self.cc_note}",
+                            "mode": self.mode,
+                        }
+                    ),
                 )
+                if ctx.type == "note_on"
+                else ...
             )
         if self.mode == "latch":
 

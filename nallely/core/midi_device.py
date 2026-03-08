@@ -495,11 +495,13 @@ class MidiDevice:
         channel = None if channel == self.channel else channel
         return self.reverse_map.get(("control_change", cc, channel))
 
-    def _update_state(self, cc, value, msg):
-        control: ModuleParameter | None = self._get_control(cc, msg.channel)
+    def _update_state(self, cc, value, msg=None):
+        control: ModuleParameter | None = self._get_control(
+            cc, msg.channel if msg else None
+        )
         if control:
             control.basic_set(self, value)
-            if self.on_midi_message:
+            if self.on_midi_message and msg:
                 try:
                     self.on_midi_message(self, msg, control)
                 except:

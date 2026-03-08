@@ -510,6 +510,11 @@ meta: disable default output
 </details>
 
 <details>
+    <summary>OSCBus: No description/documentation</summary>
+
+</details>
+
+<details>
     <summary>Operator: No description/documentation</summary>
 
 </details>
@@ -847,9 +852,9 @@ Waveshaper
 Modulate a signal waveform to reshape it.
 
 inputs:
-* input_cv [0, 127] <any>: Input signal.
+* input_cv [-5, 5] <any>: Input signal.
 * mode_cv [linear, exp, log, sigmoid, fold, quantize]: Choose how to shape the input waveform.
-* amount_cv [0, 1]: The filter type (default=lowpass).
+* amount_cv [0, 1]: Dry/wet mix (0 = fully shaped, 1 = fully dry).
 * symmetry_cv [-1.0, 1] init=0.0: Adjusts the balance between "positive" and "negative" portions of the reshaped waveform.
 * bias_cv [0.0, 5.0]: Offsets the input signal before applying the shaping function.
 * exp_power_cv [0.1, 50]: Controls the exponent used in the exponential shaping mode.
@@ -862,7 +867,7 @@ inputs:
                                   continuous = value produced at the cycle speed of the module.
 
 outputs:
-* output_cv [0, 127]: The reshaped signal.
+* output_cv [-5, 5]: The reshaped signal.
 
 type: ondemand, continuous
 category: filter
@@ -980,15 +985,15 @@ A pure mathematical integrator for emergent
 non-determinism in async feedback loops.
 
 inputs:
-* input_cv [None, None] init=0.0 round: Integrator input in integrator unit
+* input_cv [None, None] init=0.0: Integrator input in integrator unit
 * initial_cv [None, None] init=0.0 <any>: Initial condition
 * gain_cv [0.0, 100.0] init=1.0: Integrator gain
 * reset_cv [0, 1.0] round: Reset integrator
-* limits_cv [unbound, -1..1, leakage]: behavior when approaching limits
+* limits_cv [-1..1, unbound, leakage]: behavior when approaching limits
 * leakage_factor_cv [0.0, 0.1] init=0.00001: leakage factor
 
 outputs:
-* output_cv [None, None]: main output
+* output_cv [-1, 1]: main output
 
 type: continuous
 category: math
@@ -1087,6 +1092,36 @@ category: math
 </details>
 
 <details>
+    <summary>LorenzAttractor: Simple implementation of Lorenz Attractor equation using wall-clock time</summary>
+
+
+```
+Lorenz Attractor
+
+Simple implementation of Lorenz Attractor equation using wall-clock time
+
+inputs:
+* sigma_cv [-20, 20] init=5:
+* rho_cv [-50, 50] init=10:
+* beta_cv [-5, 5] init=1:
+* gain_cv [0.001, 100] init=1: gain applied to the transformation result
+* tsleep_cv [0.1, 30] init=10: sleep time in ms between each step computation
+* reset_cv [0, 1] round <rising>: reset the transformation internal state
+
+outputs:
+* x_cv [-30, 30]: x output
+* y_cv [-30, 30]: y output
+* z_cv [-60, 60]: z output
+
+type: hybrid
+category: math
+meta: disable default output
+
+```
+
+</details>
+
+<details>
     <summary>LorenzProjector: No description/documentation</summary>
 
 </details>
@@ -1137,6 +1172,37 @@ outputs:
 type: continuous
 category: function-generator
 meta: disable default output
+
+```
+
+</details>
+
+<details>
+    <summary>Transistor: Minimal nonlinear gain element with internal state (Behavioral, Minimal).</summary>
+
+
+```
+Transistor
+
+Minimal nonlinear gain element with internal state (Behavioral, Minimal).
+Designed to be patched freely, including in feedback loops,
+and to behave qualitatively like a transistor (gain, saturation,
+finite response time).
+
+NOTE: 100% LLM generated (beside the code generation from the docstring)
+
+inputs:
+* input_cv [-10, 10] init=0: Input drive signal (base / gate equivalent)
+* gain_cv [0.0, 20.0] init=2.0: Small-signal gain (loop gain control)
+* sat_cv [0.1, 20.0] init=5.0: Output saturation level (rail / limiting)
+* response_cv [0.001, 1.0] init=0.1: Response speed (0 = very slow, 1 = instantaneous)
+* reset_cv [0, 1] round <rising>: Reset internal state (output memory)
+
+outputs:
+* output_cv [-20, 20]: Output signal (collector / emitter / drain equivalent)
+
+type: hybrid
+category: nonlinear
 
 ```
 
