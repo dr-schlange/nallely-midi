@@ -1,40 +1,34 @@
-import { configureStore, createSelector } from "@reduxjs/toolkit";
+import {
+	combineReducers,
+	configureStore,
+	createSelector,
+} from "@reduxjs/toolkit";
 import {
 	type TypedUseSelectorHook,
 	useDispatch,
 	useSelector,
 } from "react-redux";
-import generalSlice, { initialGeneralState } from "./generalSlice";
+import { extractCurrentIP } from "../utils/utils";
+import generalSlice, {
+	initialGeneralState,
+	setWebsocketURL,
+} from "./generalSlice";
 import runTimeSlice, { initialRunTimeState } from "./runtimeSlice";
 import trevorSlice from "./trevorSlice";
 
 export const LOCAL_STORAGE_SETTINGS = "settings";
 export const LOCAL_STORAGE_RUNTIME = "runtime";
 
-// Copy the function here, otherwise, from utils it's not loaded properly
-// const incrDecrFilename = (filename: string, increment: boolean = false) => {
-// 	const match = filename.match(/^(.*?)-(\d+)$/);
-// 	if (!match) {
-// 		return `${filename}-001`;
-// 	}
-
-// 	const base = match[1];
-// 	const numStr = match[2];
-// 	const width = numStr.length;
-// 	let num = parseInt(numStr, 10);
-
-// 	num = increment ? num + 1 : num - 1;
-// 	if (num < 0) num = 0;
-
-// 	const newNumStr = num.toString().padStart(width, "0");
-// 	return `${base}-${newNumStr}`;
-// };
-
 // Loads general settings from the local storage
-function loadSettings() {
+function loadSettings(newURL = undefined) {
 	try {
-		const savedSettings = localStorage.getItem(LOCAL_STORAGE_SETTINGS);
-		const savedRuntime = localStorage.getItem(LOCAL_STORAGE_RUNTIME);
+		const initURL = newURL ?? initialGeneralState.trevorWebsocketURL;
+		const currentIp = extractCurrentIP(initURL);
+		const settingsKey = `${LOCAL_STORAGE_SETTINGS}@${currentIp}`;
+		const runtimeKey = `${LOCAL_STORAGE_RUNTIME}@${currentIp}`;
+
+		const savedSettings = localStorage.getItem(settingsKey);
+		const savedRuntime = localStorage.getItem(runtimeKey);
 		if (!savedSettings && !savedRuntime) {
 			return undefined;
 		}
@@ -56,14 +50,34 @@ function loadSettings() {
 	return undefined;
 }
 
+const combinedReducer = combineReducers({
+	nallely: trevorSlice,
+	general: generalSlice,
+	runTime: runTimeSlice,
+});
+
+const rootReducer = (state, action) => {
+	if (action.type === setWebsocketURL.type) {
+		const newURL = action.payload;
+		const newMachineData = saveLoadSharedSettings(state, newURL);
+
+		return combinedReducer(newMachineData, action);
+	}
+	return combinedReducer(state, action);
+};
+
 export const store = configureStore({
-	reducer: {
-		nallely: trevorSlice,
-		general: generalSlice,
-		runTime: runTimeSlice,
-	},
+	reducer: rootReducer,
 	preloadedState: loadSettings(),
 });
+
+const saveLoadSharedSettings = (state, newURL: string) => {
+	const friends = state.general.friends;
+	const targetSettings =
+		loadSettings(newURL) ?? ({} as ReturnType<typeof loadSettings>);
+	targetSettings.general = { friends };
+	return targetSettings;
+};
 
 store.subscribe(() => {
 	const state = store.getState();
@@ -71,16 +85,24 @@ store.subscribe(() => {
 	const settings = {
 		trevorWebsocketURL: state.general.trevorWebsocketURL,
 		firstLaunch: state.general.firstLaunch,
+		friends: state.general.friends,
 	};
 
 	const runtime = {
-		// currentAddress: state.runTime.currentAddress,
+		currentAddress: state.runTime.currentAddress,
 		saveDefaultValue: state.runTime.saveDefaultValue,
 		usedAddresses: state.runTime.usedAddresses,
+		stdin: state.runTime.stdin,
 	};
 
-	localStorage.setItem(LOCAL_STORAGE_SETTINGS, JSON.stringify(settings));
-	localStorage.setItem(LOCAL_STORAGE_RUNTIME, JSON.stringify(runtime));
+	const currentIp = extractCurrentIP(
+		store.getState().general.trevorWebsocketURL,
+	);
+	const settingsKey = `${LOCAL_STORAGE_SETTINGS}@${currentIp}`;
+	const runtimeKey = `${LOCAL_STORAGE_RUNTIME}@${currentIp}`;
+
+	localStorage.setItem(settingsKey, JSON.stringify(settings));
+	localStorage.setItem(runtimeKey, JSON.stringify(runtime));
 });
 
 // Infer RootState and AppDispatch types

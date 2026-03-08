@@ -10,6 +10,7 @@ import {
 	setCurrentAddress,
 	setSaveDefaultValue as setSaveDefaultValueAction,
 } from "../../store/runtimeSlice";
+import { extractCurrentIP } from "../../utils/utils";
 import { useTrevorWebSocket } from "../../websockets/websocket";
 import { Button } from "../widgets/BaseComponents";
 
@@ -18,16 +19,19 @@ interface MemoryModalProps {
 	onLoad?: () => void;
 }
 
-const saveCurrentAddress = (address: Address) => {
-	try {
-		const raw = localStorage.getItem(LOCAL_STORAGE_RUNTIME);
-		const runtimeValues = raw ? JSON.parse(raw) : {};
-		runtimeValues.currentAddress = address;
-		localStorage.setItem(LOCAL_STORAGE_RUNTIME, JSON.stringify(runtimeValues));
-	} catch {
-		console.debug(`Cannot read properly ${LOCAL_STORAGE_RUNTIME}`);
-	}
-};
+// const saveCurrentAddress = (address: Address) => {
+//   const currentIp = extractCurrentIP()
+//    const runtimeKey = `${LOCAL_STORAGE_RUNTIME}@${currentIp}`
+
+// 	try {
+// 		const raw = localStorage.getItem(runtimeKey);
+// 		const runtimeValues = raw ? JSON.parse(raw) : {};
+// 		runtimeValues.currentAddress = address;
+// 		localStorage.setItem(runtimeKey, JSON.stringify(runtimeValues));
+// 	} catch {
+// 		console.debug(`Cannot read properly ${runtimeKey}`);
+// 	}
+// };
 
 interface AddressBlock {
 	hex: string;
@@ -84,6 +88,7 @@ export const MemoryModal = ({ onClose, onLoad }: MemoryModalProps) => {
 		if (!addr) {
 			return;
 		}
+		// saveCurrentAddress(addr)
 		dispatch(setCurrentAddress(addr));
 	};
 

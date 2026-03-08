@@ -209,7 +209,10 @@ const JSONClone = (d) => {
 
 export const loadDeviceOrder = (rack: string): string[] | number[] => {
 	try {
-		const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
+		const currentIp = extractCurrentIP();
+		const orderInRackKey = `${LOCAL_STORAGE_KEY}@${currentIp}`;
+
+		const raw = localStorage.getItem(orderInRackKey);
 		return raw ? JSON.parse(raw)[rack] : [];
 	} catch {
 		return [];
@@ -217,14 +220,16 @@ export const loadDeviceOrder = (rack: string): string[] | number[] => {
 };
 
 export const saveDeviceOrder = (rack: string, ids: string[] | number[]) => {
+	const currentIp = extractCurrentIP();
+	const orderInRackKey = `${LOCAL_STORAGE_KEY}@${currentIp}`;
 	try {
-		const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
+		const raw = localStorage.getItem(orderInRackKey);
 		const orderMem = raw ? JSON.parse(raw) : JSONClone(EMPTY_ORDER);
 		orderMem[rack] = ids;
-		localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(orderMem));
+		localStorage.setItem(orderInRackKey, JSON.stringify(orderMem));
 	} catch {
 		console.debug(
-			`Cannot read properly ${LOCAL_STORAGE_KEY}, removing the previously saved order if any`,
+			`Cannot read properly ${orderInRackKey}, removing the previously saved order if any`,
 		);
 	}
 };
@@ -346,3 +351,8 @@ export const AnsiParser = new AnsiUp();
 
 export const clamp = (value: number, min: number, max: number) =>
 	Math.min(Math.max(value, min), max);
+
+export const extractCurrentIP = (fromURL = undefined) => {
+	const url = fromURL ?? store.getState().general.trevorWebsocketURL;
+	return url.replace(/ws.?:\/\/([^:]+):.*/, "$1");
+};

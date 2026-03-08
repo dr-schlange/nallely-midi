@@ -26,12 +26,12 @@ export const WelcomeModal = () => {
 					button on the top-right of your screen.
 					<br />
 					The circle indicator let you know the status of the connection:
-					<ul>
-						<li>🟢 connected</li>
-						<li>🟡 trying to connect or reconnect</li>
-						<li>🔴 connection error, a reconnection will be attempted</li>
-					</ul>
 				</p>
+				<ul>
+					<li>🟢 connected</li>
+					<li>🟡 trying to connect or reconnect</li>
+					<li>🔴 connection error, a reconnection will be attempted</li>
+				</ul>
 				<p>Note: the default url is set to {defaultURL}</p>
 				<p>
 					Note2: Nallely runs with Trevor on a normal webocket, not a secure
