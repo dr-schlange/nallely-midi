@@ -1,0 +1,24 @@
+[Unit]
+Description=Nallely service, launched with a Trevor bus
+After=network.target
+
+[Service]
+StandardOutput=journal
+StandardError=journal
+Environment=SYSTEMD_LOG_LEVEL=debug
+User=drschlange
+Group=drschlange
+Environment=HOME=/home/drschlange
+Environment=MAMBA_ROOT_PREFIX=/home/drschlange/micromamba
+Environment=MAMBA_EXE=/home/drschlange/.local/bin/micromamba
+Environment=PATH=/home/drschlange/.local/bin:/home/drschlange/micromamba/condabin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/games:/usr/games
+WorkingDirectory=/home/drschlange
+Type=forking
+ExecStart=/usr/bin/tmux new-session -s nallely -d '/home/drschlange/start-nallely.bash'
+ExecStop=/usr/bin/tmux kill-session -t nallely
+Restart=no
+RemainAfterExit=yes
+
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,13 @@
+[Unit]
+Description=Trevor UI Server
+After=network.target 
+
+[Service]
+User=drschlange
+Group=drschlange
+WorkingDirectory=/home/drschlange
+ExecStart=/home/drschlange/serve-trevor-ui.bash
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
