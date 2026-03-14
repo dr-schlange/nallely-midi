@@ -449,7 +449,7 @@ class WebSocketBus(VirtualDevice):
                 if link.dest.parameter is param or link.src.parameter is param:
                     print(f"[{self.NAME}] unbinding link {link} for {service_name}")
                     link.uninstall()
-            print(f"[{self.NAME}] Removing {param.cv_name} from bus")
+            print(f"[{self.NAME}] Removing {param.cv_name} from {self.NAME}")
             try:
                 delattr(self.__class__, param.cv_name)
             except Exception as e:

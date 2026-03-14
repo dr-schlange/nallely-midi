@@ -10,6 +10,10 @@ from .core.virtual_device import VirtualDevice, VirtualParameter
 from .core.world import ThreadContext
 from .websocket_bus import WebSocketBus
 
+# We monkey patch to make it polymorphic at the moment
+# that's not the best, but that's ok right now.
+SimpleUDPClient.close = lambda self: ...  # type: ignore
+
 
 class OSCBus(WebSocketBus):
     NAME = "OSC"
@@ -23,7 +27,7 @@ class OSCBus(WebSocketBus):
             server_address=(host, port), dispatcher=self.dispatcher
         )
         self.known_services = {}
-        self.connected = defaultdict(dict)
+        self.connected = defaultdict(list)
         self.to_update = None
         VirtualDevice.__init__(
             self, target_cycle_time=10, disable_output=True, **kwargs
@@ -34,6 +38,7 @@ class OSCBus(WebSocketBus):
         if self.running and self.server:
             print(f"[{self.NAME}] Shutting down osc bus...", end="\t")
             self.server.shutdown()
+            self.server = None
             print("Done")
         for key, value in list(self.__class__.__dict__.items()):
             if isinstance(value, VirtualParameter):
@@ -50,9 +55,22 @@ class OSCBus(WebSocketBus):
 
         setattr(self, parameter, value)
 
-        for _, client in self.connected[device].items():
+        for client in self.connected[device]:
             address = f"/{device}/{parameter}"
             client.send_message(address, value)
+
+    def unregister_service(self, service_name, _from_dispatcher=False):
+        if service_name not in self.known_services:
+            return
+        self.dispatcher.unregister_service(service_name)
+        self.dispatcher.clean_dynamic_routes(
+            service_name, from_dispatcher=_from_dispatcher
+        )
+        clients = self.connected[service_name]
+        super().unregister_service(service_name)
+        for client in clients:
+            address = f"/{service_name}/unregister"
+            client.send_message(address, 0)
 
 
 class SelfRegisterDispatcher(Dispatcher):
@@ -67,7 +85,6 @@ class SelfRegisterDispatcher(Dispatcher):
                 f"[{self.server.NAME}] Autoconfig parameter should be a JSON string, but is {str_config}, type={type(str_config)}"
             )
             return
-
         service_name, *_ = address[1:].split("/")
         print(f"[{self.server.NAME}] Autoconfig for {service_name}")
 
@@ -90,10 +107,8 @@ class SelfRegisterDispatcher(Dispatcher):
             return
 
         sender_server_host, _ = client_address
-        sender_callback_key = (sender_server_host, sender_server_port)
-        sender_callbacks = self.server.connected[service_name]
-        sender_callbacks[sender_callback_key] = SimpleUDPClient(
-            sender_server_host, sender_server_port
+        self.server.connected[service_name].append(
+            SimpleUDPClient(sender_server_host, sender_server_port)
         )
 
     def add_parameters(self, client_address, address, str_config: str):
@@ -134,13 +149,15 @@ class SelfRegisterDispatcher(Dispatcher):
 
     def unregister(self, client_address, address, _):
         service_name, *_ = address[1:].split("/")
+        self.server.unregister_service(service_name, _from_dispatcher=True)
 
+    def unregister_service(self, service_name):
         # We do it manually, unmap is not practical to use unmap in our case, we want to unmap all handlers
         self._map[f"/{service_name}/autoconfig"].clear()
         self._map[f"/{service_name}/unregister"].clear()
         self._map[f"/{service_name}/autoconfig/add_parameters"].clear()
         self._map[f"/{service_name}/autoconfig/remove_parameters"].clear()
-        self.server.unregister_service(service_name)
+        self._map[f"/{service_name}/*"].clear()
 
     def receive_value(self, client_address, address, value: float | str):
         if (
@@ -203,3 +220,21 @@ class SelfRegisterDispatcher(Dispatcher):
             self.register_service(client_address, address, args[0])
             return
         print(f"[{self.server.NAME}] Does not understand {address}: {args}")
+
+    def handlers_for_address(self, address_pattern: str):
+        yield from super().handlers_for_address(address_pattern)
+        if address_pattern.endswith("/unregister"):
+            service_name, *_ = address_pattern[1:].split("/")
+            self.clean_dynamic_routes(service_name, False)
+
+    def clean_dynamic_routes(self, service_name, from_dispatcher=True):
+        if from_dispatcher is True:
+            return
+        try:
+            del self._map[f"/{service_name}/autoconfig"]
+            del self._map[f"/{service_name}/unregister"]
+            del self._map[f"/{service_name}/autoconfig/add_parameters"]
+            del self._map[f"/{service_name}/autoconfig/remove_parameters"]
+            del self._map[f"/{service_name}/*"]
+        except Exception:
+            pass

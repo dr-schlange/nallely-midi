@@ -481,7 +481,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 									type="button"
 									className={"ugly-button"}
 									onClick={() => {
-										trevorSocket?.unregisterService(device.repr);
+										trevorSocket?.unregisterService(device.id, device.repr);
 									}}
 								>
 									Unregister

@@ -11,19 +11,19 @@ const BUFFER_SIZE = 100;
 const BUFFER_UPPER = 2000;
 const BUFFER_LOWER = 2;
 
-const Walker = ({ fps = 8, paused = false }) => {
-	const duration = 5 / fps;
+// const Walker = ({ fps = 8, paused = false }) => {
+// 	const duration = 5 / fps;
 
-	return (
-		<div
-			className={`walker ${paused ? "paused" : ""}`}
-			style={{
-				backgroundImage: `url(${walkerSprites})`,
-				animationDuration: `${duration}s`,
-			}}
-		/>
-	);
-};
+// 	return (
+// 		<div
+// 			className={`walker ${paused ? "paused" : ""}`}
+// 			style={{
+// 				backgroundImage: `url(${walkerSprites})`,
+// 				animationDuration: `${duration}s`,
+// 			}}
+// 		/>
+// 	);
+// };
 
 type DisplayModes = "line" | "points";
 type FollowModes = "cyclic" | "linear";

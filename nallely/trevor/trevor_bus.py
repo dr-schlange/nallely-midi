@@ -645,8 +645,14 @@ class TrevorBus(VirtualDevice):
                 instance.on_midi_message = self.send_control_value_update
         return self.full_state()
 
-    def unregister_service(self, service_name):
-        self.ws.unregister_service(service_name)
+    def unregister_service(self, bus_id, service_name):
+        try:
+            bus = self.trevor.get_device_instance(bus_id)
+            unregister_service = getattr(bus, "unregister_service", None)
+            if unregister_service:
+                unregister_service(service_name)
+        except Exception:
+            print(f"[TrevorBus] Couldn't find bus {bus_id}")
         return self.full_state()
 
     def scan_for_friends(self, force=False):
