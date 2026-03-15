@@ -691,7 +691,8 @@ class TrevorBus(VirtualDevice):
                             pass
                         print(f"[TrevorBus] Friend found: {ip}:{port}")
                         assert self.current_scan is not None
-                        self.current_scan[name_me(ip)] = (ip, port)
+                        self.current_scan[ip] = (name_me(ip), port)
+                        # self.current_scan[name_me(ip)] = (ip, port)
             except Exception as e:
                 print("[TrevorBus] Error while scanning friends", e)
 
@@ -711,7 +712,7 @@ class TrevorBus(VirtualDevice):
                                 print(
                                     f"[TrevorBus] Friend found: {ip}:{port}  (This is us!)"
                                 )
-                                self.current_scan[name_me(ip)] = (ip, port)
+                                self.current_scan[ip] = (name_me(ip), port)
                                 continue
                             executor.submit(check_port, ip, port)
                     # for port in PORTS:

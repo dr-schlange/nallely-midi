@@ -639,7 +639,7 @@ export class TrevorWebSocket {
 
 	unregisterService(bus_id: number, service_name: string) {
 		this.sendJsonMessage({
-      command: "unregister_service",
+			command: "unregister_service",
 			bus_id,
 			service_name,
 		});

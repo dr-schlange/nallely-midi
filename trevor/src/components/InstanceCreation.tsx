@@ -32,7 +32,7 @@ const InstanceCreation = () => {
 	const [selectedPort, setSelectedPort] = useState<MidiPort | null>();
 	const [isFriendsOpen, setFriendsOpen] = useState(false);
 	const friends = useMemo(
-		() => Object.keys(friendsRegister),
+		() => Object.values(friendsRegister).map(([name]) => name),
 		[friendsRegister],
 	);
 	const friendIdx = useMemo(
@@ -40,13 +40,20 @@ const InstanceCreation = () => {
 		[friends, currentName],
 	);
 	const [prevFriend, nextFriend] = useMemo(() => {
-		const nbFriends = friends.length;
-		const nextFriendIdx = (friendIdx + 1) % nbFriends;
-		const prevFriendIdx = (nbFriends + (friendIdx - 1)) % nbFriends;
-		const prev = friendsRegister[friends[prevFriendIdx]];
-		const next = friendsRegister[friends[nextFriendIdx]];
-		return [prev, next];
-	}, [friendIdx, friends, friendsRegister]);
+		const friendIPs = Object.keys(friendsRegister);
+		const nbFriends = friendIPs.length;
+		const idx = friendIdx < 0 ? 0 : friendIdx;
+		const nextFriendIdx = (idx + 1) % nbFriends;
+		const prevFriendIdx = (nbFriends + (idx - 1)) % nbFriends;
+		const prevIP = friendIPs[prevFriendIdx];
+		const nextIP = friendIPs[nextFriendIdx];
+		const prev = friendsRegister[prevIP];
+		const next = friendsRegister[nextIP];
+		return [
+			[prevIP, prev[1]],
+			[nextIP, next[1]],
+		];
+	}, [friendIdx, friendsRegister]);
 
 	const [isExpanded, setIsExpanded] = useState<boolean>(false);
 	const websocketStatus = useTrevorSelector((state) => state.general.connected);
@@ -262,11 +269,13 @@ const InstanceCreation = () => {
 
 	const setNextFriend = () => {
 		const [ip, port] = nextFriend;
+		console.log("Connect on ", ip, port);
 		dispatch(setWebsocketURL(`ws://${ip}:${port}`));
 	};
 
 	const setPrevFriend = () => {
 		const [ip, port] = prevFriend;
+		console.log("Connect on ", ip, port);
 		dispatch(setWebsocketURL(`ws://${ip}:${port}`));
 	};
 

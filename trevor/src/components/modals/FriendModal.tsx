@@ -86,10 +86,10 @@ export const FriendModal = ({ onClose }: FriendModalProps) => {
 				{!friendPresents ? (
 					<p>Scanning local network for friends...</p>
 				) : (
-					Object.entries(friends).map(([friend_name, [ip, port]]) => (
+					Object.entries(friends).map(([ip, [friendName, port]]) => (
 						<TrevorFriend
 							key={`${ip}:${port}`}
-							name={friend_name}
+							name={friendName}
 							ip={ip}
 							port={port}
 							selected={`ws://${ip}:${port}` === trevorURL}

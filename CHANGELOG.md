@@ -29,6 +29,7 @@
   * Add connector for Ruby (LLM generated)
   * Add connector for Python, usefull for distributed computation over the network (LLM generated, manually modified)
   * Add connector for C (LLM generated)
+  * Add first experimental connector for SuperCollider
 * Add rebinding of services registered to the websocket bus to other services registered on the websocket bus (extension of waiting room handling)
 * Add possibility to add/remove parameters dynamically for a registered service on the websocket bus (protocol expansion)
 * Websocket bus now considers Float64 by default
