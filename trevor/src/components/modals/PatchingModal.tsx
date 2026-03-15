@@ -25,6 +25,7 @@ import {
 	isPadsOrdKeys,
 	isVirtualDevice,
 	parameterUUID,
+	rejectedClasses,
 } from "../../utils/utils";
 import { useTrevorWebSocket } from "../../websockets/websocket";
 import { MidiGrid } from "../MidiGrid";
@@ -81,9 +82,7 @@ const selectAllVirtualDeviceSection = createSelector(
 	[(state) => state.nallely.virtual_devices],
 	(devices) =>
 		devices
-			.filter(
-				(e) => e.meta.name !== "TrevorBus" && e.meta.name !== "WebSocketBus",
-			)
+			.filter((e) => rejectedClasses.includes(e.meta.name))
 			.flatMap(
 				(device) =>
 					({

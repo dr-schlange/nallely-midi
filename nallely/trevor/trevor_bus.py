@@ -264,6 +264,11 @@ class TrevorBus(VirtualDevice):
         )
         if self.ws:
             snapshot["waiting_services"] = self.ws.services_in_waitingroom()
+        if self.osc:
+            if "waiting_services" in snapshot:
+                snapshot["waiting_services"].extend(self.osc.services_in_waitingroom())
+            else:
+                snapshot["waiting_services"] = self.osc.services_in_waitingroom()
 
         exposed_services = defaultdict(list)
         snapshot["exposed_services"] = exposed_services

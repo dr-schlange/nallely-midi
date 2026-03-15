@@ -7,7 +7,7 @@ from pythonosc.osc_server import ThreadingOSCUDPServer
 from pythonosc.udp_client import SimpleUDPClient
 
 from .core.virtual_device import VirtualDevice, VirtualParameter
-from .core.world import ThreadContext
+from .core.world import ThreadContext, no_registration
 from .websocket_bus import WebSocketBus
 
 # We monkey patch to make it polymorphic at the moment
@@ -15,6 +15,7 @@ from .websocket_bus import WebSocketBus
 SimpleUDPClient.close = lambda self: ...  # type: ignore
 
 
+@no_registration
 class OSCBus(WebSocketBus):
     NAME = "OSC"
 

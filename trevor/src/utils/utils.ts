@@ -356,3 +356,5 @@ export const extractCurrentIP = (fromURL = undefined) => {
 	const url = fromURL ?? store.getState().general.trevorWebsocketURL;
 	return url.replace(/ws.?:\/\/([^:]+):.*/, "$1");
 };
+
+export const rejectedClasses = ["TrevorBus", "WebSocketBus", "OSCBus"];

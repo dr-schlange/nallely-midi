@@ -29,6 +29,7 @@ import {
 	connectionId,
 	devUID,
 	isVirtualDevice,
+	rejectedClasses,
 } from "../utils/utils";
 import { useTrevorWebSocket } from "../websockets/websocket";
 import DragNumberInput from "./DragInputs";
@@ -1131,9 +1132,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 				/>
 				<RackRowVirtual
 					devices={virtual_devices.filter(
-						(device) =>
-							!device.meta.name.includes("TrevorBus") &&
-							!device.meta.name.includes("WebSocketBus"),
+						(device) => !rejectedClasses.includes(device.meta.name),
 					)}
 					onParameterClick={handleParameterClick}
 					onNonSectionClick={handleNonSectionClick}
