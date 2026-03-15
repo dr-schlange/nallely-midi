@@ -24,6 +24,7 @@ from websockets import ConnectionClosed, ConnectionClosedError, InvalidMessage
 from websockets.sync.server import serve
 
 from nallely.distributed import NAME_LIMIT, NallelyWebsocketBus, NeuronExposer, name_me
+from nallely.osc_bus import OSCBus
 
 from ..core import (
     Int,
@@ -150,23 +151,31 @@ class TrevorBus(VirtualDevice):
         self.cc_update_interval = int(0.05e9)  # every X ns
         self.next_cc_update_time = time.perf_counter_ns() + self.cc_update_interval
         self.cc_update_package = defaultdict(make_ccvalues)
-        self.refresh_ws_bus(WebSocketBus())
+        self.refresh_websocket_bus(WebSocketBus())
+        self.refresh_osc_bus(OSCBus())
         self.current_scan = None
         self.external_bus_register = {}
         self.external_services_register = {}
 
-    def refresh_ws_bus(self, ws=None):
-        if ws is None:
-            for dev in get_virtual_devices():
-                if isinstance(dev, WebSocketBus):
-                    ws = dev
-                    break
-        if ws is None:
-            print("[TrevorBus] No Websocket bus to refresh/reconnect to")
-            return
-        ws.to_update = self  # type: ignore
-        ws.start()
+    def refresh_websocket_bus(self, ws=None):
+        self._refresh_bus(WebSocketBus, bus=ws)
         self.ws = ws
+
+    def refresh_osc_bus(self, bus=None):
+        self._refresh_bus(OSCBus, bus=bus)
+        self.osc = bus
+
+    def _refresh_bus(self, cls, bus=None):
+        if bus is None:
+            for dev in get_virtual_devices():
+                if isinstance(dev, cls):
+                    bus = dev
+                    break
+        if bus is None:
+            print(f"[TrevorBus] No {cls.NAME} to refresh/reconnect to")
+            return
+        bus.to_update = self  # type: ignore
+        bus.start()
 
     @staticmethod
     def to_json(obj, **kwargs):
@@ -428,7 +437,8 @@ class TrevorBus(VirtualDevice):
 
     def reset_all(self):
         self.trevor.reset_all()
-        self.refresh_ws_bus(WebSocketBus())
+        self.refresh_websocket_bus(WebSocketBus())
+        self.refresh_osc_bus(OSCBus())
         return self.full_state()
 
     def associate_parameters(
@@ -458,7 +468,8 @@ class TrevorBus(VirtualDevice):
         errors = self.session.load_all(name)
         if errors:
             self.send_message({"errors": errors})
-        self.refresh_ws_bus()
+        self.refresh_websocket_bus()
+        self.refresh_osc_bus()
         return self.full_state()
 
     def save_all(self, name, save_defaultvalues=False):
@@ -930,7 +941,8 @@ def start_trevor(
             trevor.session.load_all(init_script)
         if address:
             trevor.session.load_address(address)
-            trevor.refresh_ws_bus()
+            trevor.refresh_websocket_bus()
+            trevor.refresh_osc_bus()
         _trevor_menu(loaded_paths, init_script, trevor, serve_ui)
         print("Shutting down...")
     finally:

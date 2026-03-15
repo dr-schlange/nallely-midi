@@ -5,6 +5,7 @@ import pytest
 from pythonosc.udp_client import SimpleUDPClient
 
 from nallely.osc_bus import OSCBus
+from nallely.websocket_bus import WebSocketBus
 
 PORT = 6789
 
@@ -17,9 +18,12 @@ def oscbus():
     bus.stop()
 
 
-# @pytest.fixture(scope="module")
-# def oscserver():
-#     server =
+@pytest.fixture(scope="module")
+def wsbus():
+    ws = WebSocketBus()
+    ws.start()
+    yield ws
+    ws.stop()
 
 
 def test__oscbus_register(oscbus):
@@ -210,3 +214,20 @@ def test__oscbus_remove_unexisting_parameter(oscbus):
     time.sleep(0.1)
     assert "mydev8_input_cv" in oscbus.__class__.__dict__
     assert "mydev8" in oscbus.known_services
+
+
+def test__parameter_registration_isolation(oscbus, wsbus):
+    assert "mydev9_input_cv" not in oscbus.__class__.__dict__
+    assert "mydev9" not in oscbus.known_services
+
+    client = SimpleUDPClient(address="0.0.0.0", port=6787)
+    client.send_message(
+        "/mydev9/autoconfig",
+        json.dumps({"parameters": [{"name": "input", "range": (0, 127)}]}),
+    )
+
+    time.sleep(0.1)
+    assert "mydev9_input_cv" not in wsbus.__class__.__dict__
+    assert "mydev9" not in wsbus.known_services
+    assert "mydev9_input_cv" in oscbus.__class__.__dict__
+    assert "mydev9" in oscbus.known_services
