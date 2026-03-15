@@ -4,42 +4,57 @@
 
 ### Features
 
+#### Neurons Improvements
+
 * KeySplitter gains ability to either suppress or keep the last note yielded by a range
-* Add new neurons
-  * Add experimental Universal Slope Generator in a Serge-style fashion (mostly LLM generated)
-  * Add experimental Smooth Stepped Generator in a Serge-style fashion (mostly LLM generated)
-  * Add experimentatl pure integrator
-  * Add experimental Laplace transformation
-  * Add experimental KineticShaper
-  * Add experimental Transistor
-  * Add experimental integration for [COMOL-1](https://github.com/DZeman23/COMOL-1-The-COBOL-Wavetable-Synthesizer) a COBOL Wavetable Synth
+* Add experimental Universal Slope Generator in a Serge-style fashion (mostly LLM generated)
+* Add experimental Smooth Stepped Generator in a Serge-style fashion (mostly LLM generated)
+* Add experimentatl pure integrator
+* Add experimental Laplace transformation
+* Add experimental KineticShaper
+* Add experimental Transistor
+* Add experimental integration for [COMOL-1](https://github.com/DZeman23/COMOL-1-The-COBOL-Wavetable-Synthesizer) a COBOL Wavetable Synth
+
+#### TrevorUI and UX
+
+* Add different precision handling on swipe fields for numbers in TrevorUI
 * Add current value and local bound display in the 1D scope
 * Add auto-refresh for XYScope (2D scope) and XYZScope (3D scope)
-* Add different precision handling on swipe fields for numbers in TrevorUI
+
+#### Internal API and Device Dev
+
 * Add documentation about how to write neurons (virtual devices)
 * Add new methods in neuron's reflexive API
   * Add methods to get incoming/outgoing links from a port
   * Add method to get incoming/outgoing links from a device
+* Device hot-patch/hot-swap doesn't commit the new code by default
+* Add "main" generation based on docstring spec
+
+#### External Connectors
+
+* Add [connector for Pharo Smalltalk dialect](https://github.com/dr-schlange/nallely-pharo): create your neurons in Pharo
+* Add connector for Ruby (LLM generated)
+* Add connector for Python, usefull for distributed computation over the network (LLM generated, manually modified)
+* Add connector for C (LLM generated)
+* Add first experimental connector for SuperCollider
 * LLM makes it in Nallely, not as a dev, not as a contributor, but as a user:
   * Use LLMs (RAG) to build patches interactively
   * LLM/RAG can auto-register as an external neuron and monitor/debug patches
   * Add LLM/RAG oriented skill file with instruction to help you generate connector for your language to build external neurons and implement Trevor protocol
-* Add various connectors for different languages
-  * Add [connector for Pharo Smalltalk dialect](https://github.com/dr-schlange/nallely-pharo): create your neurons in Pharo
-  * Add connector for Ruby (LLM generated)
-  * Add connector for Python, usefull for distributed computation over the network (LLM generated, manually modified)
-  * Add connector for C (LLM generated)
-  * Add first experimental connector for SuperCollider
-* Add rebinding of services registered to the websocket bus to other services registered on the websocket bus (extension of waiting room handling)
-* Add possibility to add/remove parameters dynamically for a registered service on the websocket bus (protocol expansion)
+
+#### Network Buses
+
 * Websocket bus now considers Float64 by default
 * Add first OSCBus implementation, works using a similar protocol than the one for the WebSocketBus
+* Add possibility to add/remove parameters dynamically for a registered service on the websocket bus (protocol expansion)
+* Add rebinding of services registered to the websocket bus to other services registered on the websocket bus (extension of waiting room handling)
+
+#### Distributed Computation
+
 * Add new service to detect running Nallely session on the local network
-* Add possitiliby to switch session from TrevorUI
-* Device hot-patch/hot-swap doesn't commit the new code by default
-* Add base for distributed computation between various Nallely sessions on the same local network
+* Add distributed computation between various Nallely sessions on the same local network
 * Add possibility to expose virtual neurons (virtual devices) to remote session, thus exploiting remote machine to externalize computation
-* Add "main" generation based on docstring spec
+* Add possitiliby to switch session from TrevorUI
 
 ### Fix
 
@@ -56,6 +71,7 @@
 * Fix oscilloscope widget reconnection on new remote host
 * Fix value burst after a long sleep for random non-running threads
 * Improve TrevorUI bundle size
+
 
 ## Nallely v0.4.0 -- Tepezcohuite
 
@@ -333,3 +349,10 @@ Assets
 ## Nallely -- Ololiuhqui beta
 
 * First official beta for v.0.0.1. The binaries have been built from github actions using pyinstaller. Tested on linux, but not tested for windows or macos.
+
+
+Phases:
+
+* Ololiuhqui    - first dreams
+* Tlitliltzin   - transition
+* Tepezcohuite  - towards a new universe
