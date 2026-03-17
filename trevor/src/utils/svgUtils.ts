@@ -1,7 +1,7 @@
-import type { MidiConnection } from "../model";
+import type { Connection } from "../model";
 import { buildParameterId, setDebugMode } from "./utils";
 
-export const findConnectorElement = (connection: MidiConnection) => {
+export const findConnectorElement = (connection: Connection) => {
 	let srcId = buildParameterId(connection.src.device, connection.src.parameter);
 	let destId = buildParameterId(
 		connection.dest.device,
@@ -30,7 +30,7 @@ export const findConnectorElement = (connection: MidiConnection) => {
 };
 
 export const findSvgConnection = (
-	connection: MidiConnection,
+	connection: Connection,
 ): SVGElement | null => {
 	const [fromElement, toElement] = findConnectorElement(connection);
 	if (!fromElement || !toElement) {

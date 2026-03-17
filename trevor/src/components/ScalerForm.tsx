@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import type { MidiConnection, MidiParameter, VirtualParameter } from "../model";
+import type { Connection, MidiParameter, VirtualParameter } from "../model";
 import { isVirtualParameter } from "../utils/utils";
 import { useTrevorWebSocket } from "../websockets/websocket";
 import DragNumberInput from "./DragInputs";
 
 interface ScalerFormProps {
-	connection: MidiConnection;
+	connection: Connection;
 }
 
 export const ScalerForm = ({ connection }: ScalerFormProps) => {
@@ -18,6 +18,7 @@ export const ScalerForm = ({ connection }: ScalerFormProps) => {
 	const [max, setMax] = useState(connection.src.chain?.to_max ?? "");
 	const [velocity, setVelocity] = useState<number | null>(connection.velocity);
 	const [method, setMethod] = useState(connection.src.chain?.method ?? "lin");
+	const [extraZero, setExtraZero] = useState(connection.extra_zero);
 	const [asInt, setAsInt] = useState(connection.src.chain?.as_int ?? false);
 
 	useEffect(() => {
@@ -227,6 +228,27 @@ export const ScalerForm = ({ connection }: ScalerFormProps) => {
 						)
 					}
 				/>
+			</label>
+			<label>
+				extra-0
+				<select
+					value={extraZero}
+					onChange={(e) => {
+						const val = e.target.value;
+						setExtraZero(val);
+						trevorSocket?.setLinkExtraZero(
+							connection.src.device,
+							connection.src.parameter,
+							connection.dest.device,
+							connection.dest.parameter,
+							val,
+						);
+					}}
+				>
+					<option value="none">none</option>
+					<option value="after">after</option>
+					<option value="before">before</option>
+				</select>
 			</label>
 		</div>
 	);

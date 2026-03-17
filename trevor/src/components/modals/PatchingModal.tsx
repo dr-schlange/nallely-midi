@@ -2,7 +2,7 @@
 import { createSelector } from "@reduxjs/toolkit";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
-	MidiConnection,
+	Connection,
 	MidiDevice,
 	MidiDeviceWithSection,
 	MidiParameter,
@@ -255,7 +255,7 @@ const PatchingModal = ({
 	);
 
 	const handleConnectionClick = useCallback(
-		(connection: MidiConnection) => {
+		(connection: Connection) => {
 			if (selectedConnection === connectionId(connection)) {
 				setSelectedConnection(null);
 				return;

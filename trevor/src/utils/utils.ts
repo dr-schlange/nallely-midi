@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
 import type {
-	MidiConnection,
+	Connection,
 	MidiDevice,
 	MidiDeviceSection,
 	MidiParameter,
@@ -75,7 +75,7 @@ export const parameterUUID = (
 	return `${id}::${parameter.section_name}::${parameterName}`;
 };
 
-export const connectionId = (connection: MidiConnection): string => {
+export const connectionId = (connection: Connection): string => {
 	const srcId = connection.src.device;
 	const dstId = connection.dest.device;
 	const fromP = isVirtualParameter(connection.src.parameter)
@@ -112,7 +112,7 @@ export const isPadsOrdKeys = (
 };
 
 export const connectionsOfInterest = (
-	connection: MidiConnection,
+	connection: Connection,
 	destDeviceId: number | undefined,
 	destParameter: string | undefined,
 ) => {
@@ -124,7 +124,7 @@ export const connectionsOfInterest = (
 	);
 };
 
-export const buildConnectionName = (connection: MidiConnection) => {
+export const buildConnectionName = (connection: Connection) => {
 	const srcParam = connection.src.parameter;
 	let srcSection = "";
 	if (!isVirtualParameter(srcParam)) {

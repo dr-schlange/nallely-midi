@@ -8,7 +8,7 @@ import {
 } from "three/addons/renderers/CSS3DRenderer.js";
 import SpriteText from "three-spritetext";
 import type {
-	MidiConnection,
+	Connection,
 	MidiDevice,
 	MidiDeviceSection,
 	MidiParameter,
@@ -264,7 +264,7 @@ export const PatchingDevice3D = ({ onCloseView }: PatchingDevice3DProps) => {
 		{
 			id: string;
 			component: React.FC<any>;
-			object: MidiConnection | MidiDeviceSection | VirtualDevice;
+			object: Connection | MidiDeviceSection | VirtualDevice;
 			parameters?: VirtualParameter[] | MidiParameter[];
 			device?: MidiDevice[] | VirtualDevice[];
 			repr?: string;

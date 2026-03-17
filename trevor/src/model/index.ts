@@ -3,7 +3,7 @@ export interface NallelyState {
 	output_ports: string[];
 	midi_devices: MidiDevice[];
 	virtual_devices: VirtualDevice[];
-	connections: MidiConnection[];
+	connections: Connection[];
 	classes: NallelyClasses;
 	playground_code: string;
 	virtual_devices_schemas: VirtualDeviceSchema[];
@@ -74,16 +74,17 @@ export interface MidiDevice {
 // 	connections: MidiConnectionEnd[];
 // }
 
-export interface MidiConnection {
-	src: MidiConnectionEnd;
-	dest: MidiConnectionEnd;
+export interface Connection {
+	src: ConnectionEnd;
+	dest: ConnectionEnd;
 	bouncy: boolean;
 	muted: boolean;
 	velocity: number;
+	extra_zero: string;
 	id: number;
 }
 
-export interface MidiConnectionEnd {
+export interface ConnectionEnd {
 	device: number;
 	repr: string;
 	parameter: MidiParameter | VirtualParameter;

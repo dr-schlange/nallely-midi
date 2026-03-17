@@ -10,7 +10,7 @@ import {
 	useState,
 } from "react";
 import type {
-	MidiConnection,
+	Connection,
 	MidiDevice,
 	MidiDeviceSection,
 	MidiDeviceWithSection,
@@ -959,7 +959,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 		return [...midi_devices, ...virtual_devices].find((d) => d.id === deviceId);
 	};
 
-	const displayConnectionMenu = (connection: MidiConnection) => {
+	const displayConnectionMenu = (connection: Connection) => {
 		setSelectedConnection(connectionId(connection));
 		setCurrentSelected(connection.id);
 		const srcDevice = findDevice(connection.src.device);
@@ -997,7 +997,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 		);
 	};
 
-	const handleConnectionClick = (connection: MidiConnection) => {
+	const handleConnectionClick = (connection: Connection) => {
 		const coId = connectionId(connection);
 		if (selectedConnection === coId) {
 			setSelectedConnection(undefined);
