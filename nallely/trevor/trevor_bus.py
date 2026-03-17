@@ -440,6 +440,10 @@ class TrevorBus(VirtualDevice):
         self.trevor.set_link_velocity(from_parameter, to_parameter, velocity)
         return self.full_state()
 
+    def set_link_extrazero(self, from_parameter, to_parameter, extra_zero):
+        self.trevor.set_link_extrazero(from_parameter, to_parameter, extra_zero)
+        return self.full_state()
+
     def reset_all(self):
         self.trevor.reset_all()
         self.refresh_websocket_bus(WebSocketBus())

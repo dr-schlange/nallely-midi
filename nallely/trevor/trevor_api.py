@@ -22,7 +22,6 @@ from ..core.world import (
 
 
 class TrevorAPI:
-
     @staticmethod
     def get_device_instance(device_id) -> VirtualDevice | MidiDevice:
         return next(
@@ -100,32 +99,41 @@ class TrevorAPI:
                     return scaler
         return None
 
-    def make_link_bouncy(self, from_parameter, to_parameter, bouncy):
+    def set_link_property(
+        self, from_parameter, to_parameter, property_name, property_value
+    ):
         from_device, _, _ = from_parameter.split("::")
-
         src_device = self.get_device_instance(from_device)
-
         link = src_device.links_registry.get((from_parameter, to_parameter))
         if link:
-            link.bouncy = bouncy
+            setattr(link, property_name, property_value)
+
+    def make_link_bouncy(self, from_parameter, to_parameter, bouncy):
+        # from_device, _, _ = from_parameter.split("::")
+        # src_device = self.get_device_instance(from_device)
+        # link = src_device.links_registry.get((from_parameter, to_parameter))
+        # if link:
+        #     link.bouncy = bouncy
+        self.set_link_property(from_parameter, to_parameter, "bouncy", bouncy)
 
     def mute_link(self, from_parameter, to_parameter, muted):
-        from_device, _, _ = from_parameter.split("::")
-
-        src_device = self.get_device_instance(from_device)
-
-        link = src_device.links_registry.get((from_parameter, to_parameter))
-        if link:
-            link.muted = muted
+        # from_device, _, _ = from_parameter.split("::")
+        # src_device = self.get_device_instance(from_device)
+        # link = src_device.links_registry.get((from_parameter, to_parameter))
+        # if link:
+        #     link.muted = muted
+        self.set_link_property(from_parameter, to_parameter, "muted", muted)
 
     def set_link_velocity(self, from_parameter, to_parameter, velocity):
-        from_device, _, _ = from_parameter.split("::")
+        # from_device, _, _ = from_parameter.split("::")
+        # src_device = self.get_device_instance(from_device)
+        # link = src_device.links_registry.get((from_parameter, to_parameter))
+        # if link:
+        #     link.velocity = velocity
+        self.set_link_property(from_parameter, to_parameter, "velocity", velocity)
 
-        src_device = self.get_device_instance(from_device)
-
-        link = src_device.links_registry.get((from_parameter, to_parameter))
-        if link:
-            link.velocity = velocity
+    def set_link_extrazero(self, from_parameter, to_parameter, extra_zero):
+        self.set_link_property(from_parameter, to_parameter, "extra_zero", extra_zero)
 
     def reset_all(self, skip_unregistered=True):
         stop_all_connected_devices(skip_unregistered)

@@ -56,6 +56,10 @@
 * Add possibility to expose virtual neurons (virtual devices) to remote session, thus exploiting remote machine to externalize computation
 * Add possitiliby to switch session from TrevorUI
 
+#### Core Model
+
+* Add possibility to inject an extra 0 before or after a value changes on a link. This allows to reuse values that do not pass by 0 (e.g: pitch shifter, sequencer, etc) to be considered as a trigger for other neurons that requires a clear transition from 0 to non-0.
+
 ### Fix
 
 * Fix imports during virtual module code generation

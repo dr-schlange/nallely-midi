@@ -1,5 +1,5 @@
 from dataclasses import asdict
-from typing import cast
+from typing import Literal, cast
 
 from ..utils import get_note_name
 from .parameter_instances import (
@@ -49,6 +49,7 @@ class Link:
         bouncy: bool = False,
         muted: bool = False,
         velocity: int | None = None,
+        extra_zero: Literal["none", "after", "before"] = "none",
     ):
         self.src_feeder = src_feeder
         self.dest = dest
@@ -56,6 +57,7 @@ class Link:
         self.uuid = uuid if uuid else id(self)
         self.muted = muted
         self.velocity = velocity
+        self.extra_zero = extra_zero
         self.__post_init__()
 
     @classmethod
@@ -102,8 +104,12 @@ class Link:
             ctx = ThreadContext({**ctx})
             ctx.velocity = self.velocity
         if self.debug:
-            print(f"# {value} -- {self.callback.__qualname__}\n" f"  {ctx}\n")
+            print(f"# {value} -- {self.callback.__qualname__}\n  {ctx}\n")
+        if self.extra_zero == "before":
+            self.callback(0, ThreadContext({}))
         result = self.callback(value, ctx)
+        if self.extra_zero == "after":
+            self.callback(0, ThreadContext({}))
         if self.bouncy:
             self.dest.device.bounce_link(self.dest, value, ctx)
         return result
@@ -172,6 +178,7 @@ class Link:
             "bouncy": self.bouncy,
             "muted": self.muted,
             "velocity": self.velocity,
+            "extra_zero": self.extra_zero,
         }
 
     def scaler_as_dict(self):
