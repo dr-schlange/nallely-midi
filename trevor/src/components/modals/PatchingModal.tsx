@@ -82,7 +82,7 @@ const selectAllVirtualDeviceSection = createSelector(
 	[(state) => state.nallely.virtual_devices],
 	(devices) =>
 		devices
-			.filter((e) => rejectedClasses.includes(e.meta.name))
+			.filter((e) => !rejectedClasses.includes(e.meta.name))
 			.flatMap(
 				(device) =>
 					({
@@ -534,7 +534,11 @@ const PatchingModal = ({
 					onChange={(e) => {
 						const change = e.target.value;
 						const selected = allSections
-							.filter((s) => !s.device.repr.includes("WebSocketBus"))
+							.filter(
+								(s) =>
+									!s.device.repr.includes("WebSocketBus") &&
+									!s.device.repr.includes("OSCBus"),
+							)
 							.find(
 								(s) =>
 									`${devUID(s.device)}::${s.section.name ?? s.device.repr}` ===
