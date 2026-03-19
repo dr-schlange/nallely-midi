@@ -10,7 +10,7 @@ def create_class(name):
     outputs:
     # * %outname [%range]: %doc
 
-    type: <ondemand | continuous>
+    type: <ondemand | continuous | hybrid>
     category: <category>
     # meta: disable default output
     \"\"\"

@@ -93,6 +93,7 @@ def generate_class_node(
     has_default_range = False
     edges = defaultdict(list)
     has_post_init = False
+    has_main = False
     for node in cls_def.body:
         match node:
             case ast.Assign(targets=[ast.Name() as n]):
@@ -113,6 +114,8 @@ def generate_class_node(
                 has_default_range = True
             case ast.FunctionDef(name="__post_init__"):
                 has_post_init = True
+            case ast.FunctionDef(name="main"):
+                has_main = True
     # default_output = None
     for input in inputs[::-1]:
         if input.cv_name not in var_names:
@@ -146,7 +149,7 @@ def generate_class_node(
     #     cls_def.body.insert(
     #         len(inputs) + len(outputs) + 1, default_output.range_method_nodes()
     #     )
-    if main_section:
+    if not has_main and main_section:
         cls_def.body.append(main_section)
     return cls_def
 
