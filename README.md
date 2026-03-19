@@ -46,7 +46,7 @@ One fundamental thing: Nallely is all about signal shaping, signal manipulation.
 | ![Manage your patchs as a versioned memory](https://github.com/user-attachments/assets/177cb536-dee2-4f1d-9275-49cf0805fb13) | ![Trevor loves you](https://github.com/user-attachments/assets/13b208d3-14b3-44aa-8e28-9344eca69f60) | ![Get a Smalltalk-like playground](https://github.com/user-attachments/assets/e247e41e-8850-4987-80a1-2ce6d98d72b6) | ![Explore your patch in 3D](https://github.com/user-attachments/assets/6d5abee2-73af-4ea8-a68a-7445e64cf0e6) |
 
 
-Features:
+## Features
 * modular-synthesis like for CV signals that can be output as MIDI note, MIDI CC, MIDI pitchweel value, ...,
 * abstraction to access your MIDI devices,
 * virtual devices (LFO, Harmonizer, Sequencer, Quantizer, ...) you can connect to your MIDI devices, as source to control your MIDI device or as target to be controled by your MIDI controller/synth, generate patterns/sequences, use/write reactive devices to alter what you are playing or how you play it,
