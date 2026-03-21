@@ -2,7 +2,7 @@ Arturia:
   Minilab3 MIDI :
     general:
       shift: {cc: 9, description: 'Shift button', init: 0, min: 0, max: 127}
-      # selector: {cc: 114, init: 0, min: 0, max:127}
+      selector: {cc: 114, init: 0, min: 0, max: 127}
     keys:
       notes: 'keys_or_pads'
       mod: {cc: 1, description: '', init: 0, min: 0, max: 127}

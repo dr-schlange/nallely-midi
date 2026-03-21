@@ -5,6 +5,7 @@ import nallely
 
 class GeneralSection(nallely.Module):
     shift = nallely.ModuleParameter(9, description='Shift button')
+    selector = nallely.ModuleParameter(114)
 
 
 class KeysSection(nallely.Module):
@@ -15,14 +16,10 @@ class KeysSection(nallely.Module):
 
 class PadsSection(nallely.Module):
     notes = nallely.ModulePadsOrKeys()
-    p1 = nallely.ModuleParameter(110)
-    p2 = nallely.ModuleParameter(112)
-    p3 = nallely.ModuleParameter(114)
-    p4 = nallely.ModuleParameter(116)
-    p5 = nallely.ModuleParameter(118)
-    p6 = nallely.ModuleParameter(120)
-    p7 = nallely.ModuleParameter(122)
-    p8 = nallely.ModuleParameter(124)
+    p4 = nallely.ModuleParameter(105)
+    p5 = nallely.ModuleParameter(106)
+    p6 = nallely.ModuleParameter(107)
+    p7 = nallely.ModuleParameter(108)
 
 
 class ButtonsSection(nallely.Module):
@@ -43,7 +40,7 @@ class SlidersSection(nallely.Module):
     s4 = nallely.ModuleParameter(17)
 
 
-class Minilab3(nallely.MidiDevice):
+class Minilab3midi(nallely.MidiDevice):
     general: GeneralSection  # type: ignore
     keys: KeysSection  # type: ignore
     pads: PadsSection  # type: ignore
@@ -76,3 +73,4 @@ class Minilab3(nallely.MidiDevice):
     @property
     def sliders(self) -> SlidersSection:
         return self.modules.sliders
+
