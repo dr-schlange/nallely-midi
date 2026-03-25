@@ -39,10 +39,10 @@ const InstanceCreation = () => {
 		() => friends.indexOf(currentName),
 		[friends, currentName],
 	);
-  const [prevFriend, nextFriend] = useMemo(() => {
-    const friendIPs = Object.keys(friendsRegister);
-    if (friendIPs.length === 0) {
-      return [[], []];
+	const [prevFriend, nextFriend] = useMemo(() => {
+		const friendIPs = Object.keys(friendsRegister);
+		if (friendIPs.length === 0) {
+			return [[], []];
 		}
 		const nbFriends = friendIPs.length;
 		const idx = friendIdx < 0 ? 0 : friendIdx;

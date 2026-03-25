@@ -369,17 +369,25 @@ playground_code={infos["playground_code"]}
                     continue
                 vdevs.extend(dev)
 
+        midi_inputs = [
+            name
+            for name in mido.get_input_names()  # type: ignore type issue with mido
+            if "RtMidi" not in name
+        ]
+        midi_outputs = [
+            name
+            for name in mido.get_output_names()  # type: ignore type issue with mido
+            if "RtMidi" not in name
+        ]
+        for device in connected_devices:
+            if device.should_reconnect_output(midi_outputs):
+                device.reconnect_output(exact=True)
+            if device.should_reconnect_input(midi_inputs):
+                device.reconnect_input(exact=True)
+
         return {
-            "input_ports": [
-                name
-                for name in mido.get_input_names()
-                if "RtMidi" not in name  # type: ignore type issue with mido
-            ],
-            "output_ports": [
-                name
-                for name in mido.get_output_names()
-                if "RtMidi" not in name  # type: ignore type issue with mido
-            ],
+            "input_ports": midi_inputs,
+            "output_ports": midi_outputs,
             "midi_devices": [
                 device.to_dict(save_defaultvalues=save_defaultvalues)
                 for device in connected_devices

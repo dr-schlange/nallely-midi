@@ -22,7 +22,10 @@ class Bridge(MidiDevice):
     instance_number = 0
 
     def __init__(self, device_name=None, *args, **kwargs):
-        self.virtual_port_name = device_name or f"NallelyBridge{self.instance_number}"
+        self.virtual_port_prefix = "NallelyBridge"
+        self.virtual_port_name = (
+            device_name or f"{self.virtual_port_prefix}{self.instance_number}"
+        )
         kwargs.pop(
             "autoconnect", None
         )  # We ditch the auto-connect to avoid connection on the wrong port
@@ -34,13 +37,25 @@ class Bridge(MidiDevice):
         )
         self.instance_uid = self.instance_number
         self.instance_number += 1
-        # self.inport = mido.open_input(f"{self.virtual_port_name}", virtual=True)  # type: ignore mido error
-        # self.outport = mido.open_output(f"{self.virtual_port_name}", virtual=True)  # type: ignore mido error
         self.inport = mido.open_ioport(f"{self.virtual_port_name}", virtual=True)  # type: ignore mido error
         self.outport = self.inport  # type: ignore mido error
 
     def uid(self):
         return f"{self.__class__.__name__}{self.instance_uid}"
+
+    def should_reconnect_input(self, in_midi_pool):
+        return (
+            super().should_reconnect_input(in_midi_pool)
+            and self.inport
+            and self.virtual_port_prefix not in str(self.inport.name)
+        )
+
+    def should_reconnect_output(self, out_midi_pool):
+        return (
+            super().should_reconnect_output(out_midi_pool)
+            and self.outport
+            and self.virtual_port_prefix not in str(self.outport.name)
+        )
 
 
 class X0Section(Module):

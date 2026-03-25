@@ -59,6 +59,7 @@
 #### Core Model
 
 * Add possibility to inject an extra 0 before or after a value changes on a link. This allows to reuse values that do not pass by 0 (e.g: pitch shifter, sequencer, etc) to be considered as a trigger for other neurons that requires a clear transition from 0 to non-0.
+* Add auto-reconnection of MIDI devices when a connection is lost (reconnection on session snapshot)
 
 ### Fix
 

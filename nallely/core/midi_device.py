@@ -2,7 +2,6 @@ import json
 import traceback
 from collections import defaultdict
 from dataclasses import InitVar, asdict, dataclass, field
-from decimal import Decimal
 from math import isnan
 from pathlib import Path
 from typing import Any, Callable, Counter, Literal, Sequence, Type
@@ -436,6 +435,8 @@ class MidiDevice:
             if not read_input_only:
                 self.connect()
             self.listen()
+        self._retry_input = False
+        self._retry_output = False
 
     def connect(self):
         self.outport = mido.open_output(self.outport_name, autoreset=True)  # type: ignore
@@ -475,6 +476,56 @@ class MidiDevice:
             self.listen(False)
             self.inport = None
             self.inport_name = None
+
+    def reconnect_input(self, on=None, exact=True):
+        # Refactor with close_out, close_in
+        print(f"[MIDI] Trying to reconnect input for {self.__class__.__name__}...")
+        if exact and self.inport:
+            inname = self.inport.name
+        else:
+            inname = on or self.inport_name
+        if self.inport:
+            try:
+                newport = mido.open_input(inname)  # type: ignore
+                newport.callback = self._sync_state  # type: ignore
+                self.inport = newport
+            except OSError:
+                print(f"[MIDI] Reconnection on {inname} failed")
+                self._retry_input = True
+                return False
+            print(f"[MIDI] Reconnection on MIDI input {str(inname)} successful")
+        self._retry_input = False
+        return True
+
+    def reconnect_output(self, on=None, exact=True):
+        # Refactor with close_out, close_in
+        print(f"[MIDI] Trying to reconnect output for {self.__class__.__name__}...")
+        if exact and self.outport:
+            outname = self.outport.name
+        else:
+            outname = on or self.outport_name
+        if self.outport:
+            try:
+                newport = mido.open_output(outname, autoreset=True)  # type: ignore
+                self.outport.close()
+                self.outport = newport
+            except OSError:
+                print(f"[MIDI] Reconnection on {outname} failed")
+                self._retry_output = True
+                return False
+            print(f"[MIDI] Reconnection on MIDI output {str(outname)} successful")
+        self._retry_output = False
+        return True
+
+    def should_reconnect_input(self, in_midi_pool):
+        return self._retry_input or self.inport and self.inport.name not in in_midi_pool
+
+    def should_reconnect_output(self, out_midi_pool):
+        return (
+            self._retry_output
+            or self.outport
+            and self.outport.name not in out_midi_pool
+        )
 
     def close(self, delete=True):
         self.all_notes_off()
