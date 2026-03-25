@@ -230,7 +230,7 @@ export const ScalerForm = ({ connection }: ScalerFormProps) => {
 				/>
 			</label>
 			<label>
-				extra-0
+				Retrigger
 				<select
 					value={extraZero}
 					onChange={(e) => {
@@ -245,9 +245,9 @@ export const ScalerForm = ({ connection }: ScalerFormProps) => {
 						);
 					}}
 				>
-					<option value="none">none</option>
-					<option value="after">after</option>
+					<option value="none">never</option>
 					<option value="before">before</option>
+					<option value="after">after</option>
 				</select>
 			</label>
 		</div>
