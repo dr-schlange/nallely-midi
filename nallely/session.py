@@ -32,6 +32,7 @@ from .core.world import (
     virtual_device_classes,
 )
 from .newmodule import create_class
+from .osc_bus import OSCBus
 from .trevor import TrevorAPI
 from .trevor.meta_trevor_api import MetaTrevorAPI
 from .utils import StateEncoder, find_class, load_modules, longest_common_substring
@@ -167,7 +168,7 @@ class Session:
                     vdev.pause()  # We pause it right away before we do the patch
                     if not device.get("paused", True):
                         vdev_to_resume.append(vdev)
-                if cls_name == WebSocketBus.__name__:
+                if cls_name in [WebSocketBus.__name__, OSCBus.__name__]:
                     continue
                 for key, value in device["config"].items():
                     setattr(vdev, key, value)
