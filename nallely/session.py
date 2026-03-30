@@ -247,7 +247,7 @@ class Session:
         return errors
 
     def save_all(self, path, save_defaultvalues=False) -> Path:
-        d = self.snapshot(save_defaultvalues=save_defaultvalues)
+        d = self.snapshot(save_defaultvalues=save_defaultvalues, spread_registered_services=False)
         del d["input_ports"]
         del d["output_ports"]
         del d["classes"]
