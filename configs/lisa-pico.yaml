@@ -1,0 +1,112 @@
+drschlange:
+  lisa:
+    general:
+      master_volume:
+        cc: 7
+        description: "General Volume"
+        init: 0
+        min: 0
+        max: 127
+      engine_select:
+        cc: 8
+        description: "Engine Selection"
+        init: 0
+        min: 0
+        max: 127
+      sustain:
+        cc: 64
+        description: "Sustain (Hold notes)"
+        init: 0
+        min: 0
+        max: 127
+    buttons:
+      b1:
+        cc: 120
+        description: "B1"
+        init: 0
+        min: 0
+        max: 127
+      b2:
+        cc: 121
+        description: "B2"
+        init: 0
+        min: 0
+        max: 127
+      b3:
+        cc: 122
+        description: "B3"
+        init: 0
+        min: 0
+        max: 127
+      b4:
+        cc: 123
+        description: "B4"
+        init: 0
+        min: 0
+        max: 127
+      b5:
+        cc: 124
+        description: "B5"
+        init: 0
+        min: 0
+        max: 127
+    envelope:
+      attack:
+        cc: 11
+        description: "Envelope Attack"
+        init: 0
+        min: 0
+        max: 127
+      release:
+        cc: 12
+        description: "Envelope Release"
+        init: 0
+        min: 0
+        max: 127
+    filter:
+      cutoff:
+        cc: 74
+        description: "Filter Cutoff"
+        init: 0
+        min: 0
+        max: 127
+      resonance:
+        cc: 71
+        description: "Filter Resonance"
+        init: 0
+        min: 0
+        max: 127
+    modulation:
+      timbre:
+        cc: 9
+        description: "Timbre"
+        init: 0
+        min: 0
+        max: 127
+      timbre_mod:
+        cc: 16
+        description: "Timbre Modulation"
+        init: 0
+        min: 0
+        max: 127
+      color:
+        cc: 10
+        description: "Color"
+        init: 0
+        min: 0
+        max: 127
+      color_mod:
+        cc: 17
+        description: "Color Modulation"
+        init: 0
+        min: 0
+        max: 127
+      FM_mod:
+        cc: 15
+        description: "FM Modulation"
+        init: 0
+        min: 0
+        max: 127
+    keys:
+      notes: "keys_or_pads"
+      pitchwheel: "pitchwheel"
