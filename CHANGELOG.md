@@ -4,6 +4,10 @@
 
 ### Features
 
+#### New Member in the Family
+
+* [LISA](https://github.com/dr-schlange/LISA) joined the family! LISA is a hardware digital synth based on [Vija v1.0.2](https://github.com/ledlaux/vija-pico-synth) which have been modified to propose a MIDI controller mode, various special features, and on the long run will be integrated also as external neuron via websocket (currently only via USB-MIDI) and add a kinetic mode for the buttons! You can control LISA from Nallely, and use the physical buttons from LISA as MIDI controller to either enhance your own experience with LISA, or to control neurons in Nallely! 
+
 #### Neurons Improvements
 
 * KeySplitter gains ability to either suppress or keep the last note yielded by a range
@@ -14,6 +18,7 @@
 * Add experimental KineticShaper
 * Add experimental Transistor
 * Add experimental integration for [COMOL-1](https://github.com/DZeman23/COMOL-1-The-COBOL-Wavetable-Synthesizer) a COBOL Wavetable Synth
+* Add a new curve/linear mode (default curve) on the ASDR neuron. It also lets the possibility to shape the curve independently for the attack, the decay and the release
 
 #### TrevorUI and UX
 
