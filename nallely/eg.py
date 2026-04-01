@@ -1,4 +1,4 @@
-from typing import Any
+import math
 
 from .core import VirtualDevice, VirtualParameter, on
 from .core.world import ThreadContext
@@ -18,6 +18,10 @@ class ADSREnvelope(VirtualDevice):
     * decay_cv [0.0, 1.0] init=0.2: Decay time control in seconds
     * sustain_cv [0.0, 1.0] init=0.7: Sustain level control (0 -> 0%, 1 -> 100%)
     * release_cv [0.0, 1.0] init=0.3: Release time control in seconds
+    * mode_cv [curve, linear]: Type of transition between the states, curve or linear
+    * attack_curve_cv [-6.0, 6.0] init=-4.0: Shapes the curve response of the attack in curve-mode
+    * decay_curve_cv [-6.0, 6.0] init=-4.0: Shapes the curve response of the attack in curve-mode
+    * release_curve_cv [-6.0, 6.0] init=-4.0: Shapes the curve response of the attack in curve-mode
 
     outputs:
     * output_cv [0, 1]: the generated envelope
@@ -26,23 +30,26 @@ class ADSREnvelope(VirtualDevice):
     category: envelope-generator
     """
 
-    gate_cv = VirtualParameter(name="gate", range=(0, 1), conversion_policy="!=0")
-    attack_cv = VirtualParameter(name="attack", range=(0.0, 1.0))
-    decay_cv = VirtualParameter(name="decay", range=(0.0, 1.0))
-    sustain_cv = VirtualParameter(name="sustain", range=(0.0, 1.0))
-    release_cv = VirtualParameter(name="release", range=(0.0, 1.0))
-
-    def __init__(self, attack=0.1, decay=0.2, sustain=0.7, release=0.3, **kwargs):
-        self.attack = attack
-        self.decay = decay
-        self.sustain = sustain
-        self.release = release
-        self.gate = 0  # False
-        super().__init__(**kwargs)
+    gate_cv = VirtualParameter(name="gate", range=(0.0, 1.0), conversion_policy="!=0")
+    attack_cv = VirtualParameter(name="attack", range=(0.0, 1.0), default=0.101)
+    decay_cv = VirtualParameter(name="decay", range=(0.0, 1.0), default=0.201)
+    sustain_cv = VirtualParameter(name="sustain", range=(0.0, 1.0), default=0.701)
+    release_cv = VirtualParameter(name="release", range=(0.0, 1.0), default=0.301)
+    mode_cv = VirtualParameter(name="mode", accepted_values=["curve", "linear"])
+    attack_curve_cv = VirtualParameter(
+        name="attack_curve", range=(-6.0, 6.0), default=-4.0
+    )
+    decay_curve_cv = VirtualParameter(
+        name="decay_curve", range=(-6.0, 6.0), default=-4.0
+    )
+    release_curve_cv = VirtualParameter(
+        name="release_curve", range=(-6.0, 6.0), default=-4.0
+    )
+    output_cv = VirtualParameter(name="output", range=(0.0, 1.0))
 
     def setup(self):
         ctx = super().setup()
-        self._phase = "idle"  # 'attack', 'decay', 'sustain', 'release', 'idle'
+        self._phase = "idle"
         self._time_in_phase = 0.0
         self._level = 0.0
         self._release_start_level = 0.0
@@ -50,9 +57,15 @@ class ADSREnvelope(VirtualDevice):
 
     def debug_print(self, ctx):
         super().debug_print(ctx)
-        print(f" * {self._phase=}")
-        print(f" * {self._time_in_phase=}")
-        print(f" * {self._level=}")
+        print(f" * self._phase={self._phase!r}")
+        print(f" * self._time_in_phase={self._time_in_phase!r}")
+        print(f" * self._level={self._level!r}")
+
+    @classmethod
+    def _curve(cls, t: float, curve: float = 4.0) -> float:
+        if abs(curve) < 1e-6:
+            return t  # fallback to linear
+        return (math.exp(curve * t) - 1.0) / (math.exp(curve) - 1.0)
 
     @on(gate_cv, edge="rising")
     def on_gate_1(self, _, ctx):
@@ -68,53 +81,54 @@ class ADSREnvelope(VirtualDevice):
             self._release_start_level = self._level
 
     def main(self, ctx):
-
         dt = self.target_cycle_time
         self._time_in_phase += dt
-
         if self._phase == "attack":
             if self.attack == 0:
                 self._level = 1.0
                 self._phase = "decay"
                 self._time_in_phase = 0.0
             else:
-                self._level = min(1.0, self._time_in_phase / self.attack)
+                t = min(1.0, self._time_in_phase / self.attack)
+                if self.mode == "curve":
+                    self._level = self._curve(t, curve=self.attack_curve)
+                else:
+                    self._level = t
                 if self._level >= 1.0:
                     self._phase = "decay"
                     self._time_in_phase = 0.0
-
         elif self._phase == "decay":
             if self.decay == 0:
                 self._level = self.sustain
                 self._phase = "sustain"
             else:
-                decay_progress = self._time_in_phase / self.decay
-                self._level = 1.0 - (1.0 - self.sustain) * min(1.0, decay_progress)
+                decay_progress = min(1.0, self._time_in_phase / self.decay)
+                if self.mode == "curve":
+                    shaped = self._curve(decay_progress, curve=self.decay_curve)
+                else:
+                    shaped = decay_progress
+                self._level = 1.0 - (1.0 - self.sustain) * shaped
                 if decay_progress >= 1.0:
                     self._phase = "sustain"
-
         elif self._phase == "sustain":
             self._level = self.sustain
-
         elif self._phase == "release":
             if self.release == 0:
                 self._level = 0.0
                 self._phase = "idle"
             else:
                 release_progress = min(1.0, self._time_in_phase / self.release)
-                self._level = self._release_start_level * (1.0 - release_progress)
+                if self.mode == "curve":
+                    shaped = self._curve(release_progress, curve=self.release_curve)
+                else:
+                    shaped = release_progress
+                self._level = self._release_start_level * (1.0 - shaped)
                 if release_progress >= 1.0:
                     self._level = 0.0
                     self._phase = "idle"
-
         elif self._phase == "idle":
             self._level = 0.0
-
         return self._level
-
-    @property
-    def range(self):
-        return (0.0, 1.0)
 
 
 class VCA(VirtualDevice):
