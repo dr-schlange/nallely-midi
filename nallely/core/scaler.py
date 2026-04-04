@@ -119,9 +119,9 @@ class Scaler:
         if isinstance(value, Decimal):
             value = float(value)
         if self.method == "lin":
-            res = self._convert_lin(value, from_min=from_min, from_max=from_max)
+            res = self.convert_lin(value, from_min=from_min, from_max=from_max)
         elif self.method == "log":
-            res = self._convert_log(value, from_max=from_max)
+            res = self.convert_log(value, from_max=from_max)
         else:
             raise Exception("Unknown conversion method")
         res = int(res) if self.as_int else res

@@ -22,9 +22,21 @@ inputs:
 * decay_cv [0.0, 1.0] init=0.2: Decay time control in seconds
 * sustain_cv [0.0, 1.0] init=0.7: Sustain level control (0 -> 0%, 1 -> 100%)
 * release_cv [0.0, 1.0] init=0.3: Release time control in seconds
+* mode_cv [curve, linear]: Type of transition between the states, curve or linear
+* attack_curve_cv [-6.0, 6.0] init=-4.0: Shapes the curve response of the attack in curve-mode
+* decay_curve_cv [-6.0, 6.0] init=-4.0: Shapes the curve response of the attack in curve-mode
+* release_curve_cv [-6.0, 6.0] init=-4.0: Shapes the curve response of the attack in curve-mode
 
 outputs:
 * output_cv [0, 1]: the generated envelope
+* soa_cv [0, 1]: rise edge at start of attack
+* sod_cv [0, 1]: rise edge at start of decay
+* sos_cv [0, 1]: rise edge at start of sustain
+* sor_cv [0, 1]: rise edge at start of release
+* eoa_cv [0, 1]: rise edge at end of attack
+* eod_cv [0, 1]: rise edge at end of decay
+* eos_cv [0, 1]: rise edge at end of sustain
+* eor_cv [0, 1]: rise edge at end of release
 
 type: continuous
 category: envelope-generator
@@ -510,11 +522,6 @@ meta: disable default output
 </details>
 
 <details>
-    <summary>OSCBus: No description/documentation</summary>
-
-</details>
-
-<details>
     <summary>Operator: No description/documentation</summary>
 
 </details>
@@ -781,6 +788,34 @@ outputs:
 
 type: ondemand
 category: amplitude-modulation
+
+```
+
+</details>
+
+<details>
+    <summary>VScaler: Let's you scale signal from 0..127 to any output range.</summary>
+
+
+```
+Virtual Multi Scaler
+
+Let's you scale signal from 0..127 to any output range.
+
+inputs:
+* in0_cv [0.0, 127.0] <any>: input 0
+* in1_cv [0.0, 127.0] <any>: input 1
+* min0_cv [0.0, 127.0]: min range input 0
+* max0_cv [0.0, 127.0]: max range input 0
+* min1_cv [0.0, 127.0]: min range input 1
+* max1_cv [0.0, 127.0]: max range input 1
+
+outputs:
+* out0_cv [0.0, 127.0]: scaled values for input 0
+* out1_cv [0.0, 127.0]: scaled values for input 1
+
+type: ondemand
+category: scaler
 
 ```
 
