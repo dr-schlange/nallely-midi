@@ -25,6 +25,14 @@ class ADSREnvelope(VirtualDevice):
 
     outputs:
     * output_cv [0, 1]: the generated envelope
+    * soa_cv [0, 1]: rise edge at start of attack
+    * sod_cv [0, 1]: rise edge at start of decay
+    * sos_cv [0, 1]: rise edge at start of sustain
+    * sor_cv [0, 1]: rise edge at start of release
+    * eoa_cv [0, 1]: rise edge at end of attack
+    * eod_cv [0, 1]: rise edge at end of decay
+    * eos_cv [0, 1]: rise edge at end of sustain
+    * eor_cv [0, 1]: rise edge at end of release
 
     type: continuous
     category: envelope-generator
@@ -45,6 +53,14 @@ class ADSREnvelope(VirtualDevice):
     release_curve_cv = VirtualParameter(
         name="release_curve", range=(-6.0, 6.0), default=-4.0
     )
+    eor_cv = VirtualParameter(name="eor", range=(0.0, 1.0))
+    eos_cv = VirtualParameter(name="eos", range=(0.0, 1.0))
+    eod_cv = VirtualParameter(name="eod", range=(0.0, 1.0))
+    eoa_cv = VirtualParameter(name="eoa", range=(0.0, 1.0))
+    sor_cv = VirtualParameter(name="sor", range=(0.0, 1.0))
+    sos_cv = VirtualParameter(name="sos", range=(0.0, 1.0))
+    sod_cv = VirtualParameter(name="sod", range=(0.0, 1.0))
+    soa_cv = VirtualParameter(name="soa", range=(0.0, 1.0))
     output_cv = VirtualParameter(name="output", range=(0.0, 1.0))
 
     def setup(self):
@@ -67,16 +83,32 @@ class ADSREnvelope(VirtualDevice):
             return t  # fallback to linear
         return (math.exp(curve * t) - 1.0) / (math.exp(curve) - 1.0)
 
+    def sync_starts(self, soa, sod, sos, sor):
+        yield soa, [self.soa_cv]
+        yield sod, [self.sod_cv]
+        yield sos, [self.sos_cv]
+        yield sor, [self.sor_cv]
+
+    def sync_ends(self, eoa, eod, eos, eor):
+        yield eoa, [self.eoa_cv]
+        yield eod, [self.eod_cv]
+        yield eos, [self.eos_cv]
+        yield eor, [self.eor_cv]
+
     @on(gate_cv, edge="rising")
     def on_gate_1(self, _, ctx):
         if self._phase in ["idle", "release"]:
+            yield from self.sync_ends(0, 0, 0, 0)
             self._phase = "attack"
+            yield from self.sync_starts(1, 0, 0, 0)
             self._time_in_phase = 0.0
 
     @on(gate_cv, edge="falling")
     def on_gate_0(self, _, ctx):
         if self._phase not in ["release", "idle"]:
+            yield from self.sync_ends(0, 0, 1, 0)
             self._phase = "release"
+            yield from self.sync_starts(0, 0, 0, 1)
             self._time_in_phase = 0.0
             self._release_start_level = self._level
 
@@ -86,7 +118,9 @@ class ADSREnvelope(VirtualDevice):
         if self._phase == "attack":
             if self.attack == 0:
                 self._level = 1.0
+                yield from self.sync_ends(1, 0, 0, 0)
                 self._phase = "decay"
+                yield from self.sync_starts(0, 1, 0, 0)
                 self._time_in_phase = 0.0
             else:
                 t = min(1.0, self._time_in_phase / self.attack)
@@ -95,12 +129,16 @@ class ADSREnvelope(VirtualDevice):
                 else:
                     self._level = t
                 if self._level >= 1.0:
+                    yield from self.sync_ends(1, 0, 0, 0)
                     self._phase = "decay"
+                    yield from self.sync_starts(0, 1, 0, 0)
                     self._time_in_phase = 0.0
         elif self._phase == "decay":
             if self.decay == 0:
                 self._level = self.sustain
+                yield from self.sync_ends(0, 1, 0, 0)
                 self._phase = "sustain"
+                yield from self.sync_starts(0, 0, 1, 0)
             else:
                 decay_progress = min(1.0, self._time_in_phase / self.decay)
                 if self.mode == "curve":
@@ -109,13 +147,17 @@ class ADSREnvelope(VirtualDevice):
                     shaped = decay_progress
                 self._level = 1.0 - (1.0 - self.sustain) * shaped
                 if decay_progress >= 1.0:
+                    yield from self.sync_ends(0, 1, 0, 0)
                     self._phase = "sustain"
+                    yield from self.sync_starts(0, 0, 1, 0)
         elif self._phase == "sustain":
             self._level = self.sustain
         elif self._phase == "release":
             if self.release == 0:
                 self._level = 0.0
+                yield from self.sync_ends(0, 0, 0, 1)
                 self._phase = "idle"
+                yield from self.sync_starts(0, 0, 0, 0)
             else:
                 release_progress = min(1.0, self._time_in_phase / self.release)
                 if self.mode == "curve":
@@ -125,7 +167,9 @@ class ADSREnvelope(VirtualDevice):
                 self._level = self._release_start_level * (1.0 - shaped)
                 if release_progress >= 1.0:
                     self._level = 0.0
+                    yield from self.sync_ends(0, 0, 0, 1)
                     self._phase = "idle"
+                    yield from self.sync_starts(0, 0, 0, 1)
         elif self._phase == "idle":
             self._level = 0.0
         return self._level
