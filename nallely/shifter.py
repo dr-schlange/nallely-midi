@@ -660,7 +660,9 @@ class ChordGenerator(VirtualDevice):
         return intervals
 
     def apply_inversion(self, intervals):
-        nb_inversions = self.inversion_cv.parameter.accepted_values.index(self.inversion)  # type: ignore
+        nb_inversions = self.inversion_cv.parameter.accepted_values.index(
+            self.inversion
+        )  # type: ignore
         for _ in range(nb_inversions):
             intervals.append(intervals.pop(0) + OCTAVE)
         return intervals
@@ -673,7 +675,9 @@ class ChordGenerator(VirtualDevice):
         else:
             intervals = CHORD_INTERVALS[self.chord]  # type: ignore
         intervals = self.apply_drop(self.apply_inversion(self.apply_omit(intervals)))
-        chord = tuple((self.input + interval) + self.octave * OCTAVE for interval in intervals)  # type: ignore
+        chord = tuple(
+            (self.input + interval) + self.octave * OCTAVE for interval in intervals
+        )  # type: ignore
         for note, out in zip(chord, self.outs[: len(chord)]):
             yield note, [out]
 
@@ -1006,3 +1010,50 @@ class FineTuneNote(VirtualDevice):
             yield (0, [self.note_out_cv])
         yield (closest_note, [self.note_out_cv])
         yield (pitchwheel, [self.pitchwheel_out_cv])
+
+
+class VScaler(VirtualDevice):
+    """Virtual Multi Scaler
+
+    Let's you scale signal from 0..127 to any output range.
+
+    inputs:
+    * in0_cv [0.0, 127.0] <any>: input 0
+    * in1_cv [0.0, 127.0] <any>: input 1
+    * min0_cv [0.0, 127.0]: min range input 0
+    * max0_cv [0.0, 127.0]: max range input 0
+    * min1_cv [0.0, 127.0]: min range input 1
+    * max1_cv [0.0, 127.0]: max range input 1
+
+    outputs:
+    * out0_cv [0.0, 127.0]: scaled values for input 0
+    * out1_cv [0.0, 127.0]: scaled values for input 1
+
+    type: ondemand
+    category: scaler
+    """
+
+    in0_cv = VirtualParameter(name="in0", range=(0.0, 127.0))
+    in1_cv = VirtualParameter(name="in1", range=(0.0, 127.0))
+    min0_cv = VirtualParameter(name="min0", range=(0.0, 127.0))
+    max0_cv = VirtualParameter(name="max0", range=(0.0, 127.0))
+    min1_cv = VirtualParameter(name="min1", range=(0.0, 127.0))
+    max1_cv = VirtualParameter(name="max1", range=(0.0, 127.0))
+    out1_cv = VirtualParameter(name="out1", range=(0.0, 127.0))
+    out0_cv = VirtualParameter(name="out0", range=(0.0, 127.0))
+
+    @on(in1_cv, edge="any")
+    def on_in1_any(self, value, ctx):
+        from .core.scaler import Scaler
+
+        return Scaler.lin_conversion(value, 0, 127, self.min1, self.max1), [
+            self.out1_cv
+        ]
+
+    @on(in0_cv, edge="any")
+    def on_in0_any(self, value, ctx):
+        from .core.scaler import Scaler
+
+        return Scaler.lin_conversion(value, 0, 127, self.min0, self.max0), [
+            self.out0_cv
+        ]

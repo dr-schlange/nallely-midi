@@ -46,6 +46,7 @@ from .shifter import (
     PitchShifter,
     Quantizer,
     VoiceAllocator,
+    VScaler,
 )
 from .switchs import (
     BitCounter,
@@ -137,4 +138,5 @@ __all__ = [
     "FineTuneNote",
     "SuperShiftRegister",
     "KeySplitter",
+    "VScaler",
 ]

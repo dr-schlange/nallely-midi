@@ -41,12 +41,13 @@ class Scaler:
 
         Link.create(self, target)
 
-    def convert_lin(self, value, from_min, from_max):
+    @staticmethod
+    def lin_conversion(value, from_min, from_max, to_min, to_max):
         if from_min is not None and value < from_min:
             value = from_min
         elif from_max is not None and value > from_max:
             value = from_max
-        match from_min, from_max, self.to_min, self.to_max:
+        match from_min, from_max, to_min, to_max:
             case _, _, None, None:
                 return value
             case None, from_max, to_min, None:
@@ -79,13 +80,15 @@ class Scaler:
                 return to_min + scaled_value * (to_max - to_min)
 
             case _:
-                print(
-                    f"No match: {self.from_min}, {self.from_max}, {self.to_min}, {self.to_max}"
-                )
+                print(f"No match: {from_min}, {from_max}, {to_min}, {to_max}")
                 return float(value)
 
-    def convert_log(self, value, from_max) -> int | float:
-        if self.to_min is None or self.to_max is None:
+    def convert_lin(self, value, from_min, from_max):
+        return self.lin_conversion(value, from_min, from_max, self.to_min, self.to_max)
+
+    @staticmethod
+    def log_conversion(value, from_max, to_min, to_max) -> int | float:
+        if to_min is None or to_max is None:
             print("Logarithmic scaling requires both min and max to be defined.")
             return value
 
@@ -93,13 +96,16 @@ class Scaler:
             print(f"Logarithmic scaling is undefined for non-positive values {value}.")
             return value
 
-        if self.to_min == 0:
-            self.to_min = 0.001
+        if to_min == 0:
+            to_min = 0.001
 
-        log_min = math.log(self.to_min)
-        log_max = math.log(self.to_max)
+        log_min = math.log(to_min)
+        log_max = math.log(to_max)
 
         return math.exp(log_min + (value / from_max) * (log_max - log_min))
+
+    def convert_log(self, value, from_max) -> int | float:
+        return self.log_conversion(value, from_max, self.to_min, self.to_max)
 
     def convert(self, value):
         from .parameter_instances import Int
@@ -113,9 +119,9 @@ class Scaler:
         if isinstance(value, Decimal):
             value = float(value)
         if self.method == "lin":
-            res = self.convert_lin(value, from_min=from_min, from_max=from_max)
+            res = self._convert_lin(value, from_min=from_min, from_max=from_max)
         elif self.method == "log":
-            res = self.convert_log(value, from_max=from_max)
+            res = self._convert_log(value, from_max=from_max)
         else:
             raise Exception("Unknown conversion method")
         res = int(res) if self.as_int else res
