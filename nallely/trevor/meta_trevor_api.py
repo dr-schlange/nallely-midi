@@ -121,9 +121,7 @@ class MetaTrevorAPI:
             current_cls.__name__ = force_name
         elif getattr(current_cls, "__tmp__", None):
             old_name = current_cls.__name__
-            current_cls.__name__ = old_name[
-                2 if old_name.startswith("t_") else 0 :
-            ]
+            current_cls.__name__ = old_name[2 if old_name.startswith("t_") else 0 :]
             if old_name != current_cls.__name__:
                 replace_name = old_name
                 device_name = current_cls.__name__

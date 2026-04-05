@@ -720,7 +720,7 @@ export function ClassBrowser({ device, onClose }: ClassBrowserProps) {
 	useEffect(() => {
 		trevorSocket.getClassCode(device.id);
 		trevorSocket.startCaptureIO();
-    return () => {
+		return () => {
 			trevorSocket.stopCaptureIO();
 		};
 	}, [trevorSocket, trevorSocket.socket]);
@@ -799,7 +799,7 @@ mod-?:     displays this entry
 		if (focusing && focusedPanel !== "code-editor") {
 			setFocusedPanel("code-editor");
 		}
-		return;
+		return null;
 	});
 	const cbStdinRequest = useCallback(() => {
 		if (focusedPanel !== "terminal") {

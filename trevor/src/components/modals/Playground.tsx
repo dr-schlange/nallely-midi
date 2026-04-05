@@ -152,10 +152,10 @@ export function Playground({ onClose }: PlaygroundProps) {
 			}
 		};
 
-			trevorSocket?.socket?.addEventListener("message", onMessageHandler);
+		trevorSocket?.socket?.addEventListener("message", onMessageHandler);
 
 		return () => {
-				trevorSocket?.socket?.removeEventListener("message", onMessageHandler);
+			trevorSocket?.socket?.removeEventListener("message", onMessageHandler);
 		};
 	}, [trevorSocket?.socket]);
 
