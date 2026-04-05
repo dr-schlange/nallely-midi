@@ -73,9 +73,16 @@ class WaitingRoom:
                 src_parameter = src_parameter.scale(*out_entry.scaler)
                 # print(f"[DEBUG] scaler {src_parameter}")
             try:
-                setattr(target_device, target_parameter.cv_name, src_parameter)
+                section = getattr(target_device, target_parameter.section_name)
             except AttributeError:
-                setattr(target_device, target_parameter.name, src_parameter)
+                print(
+                    f"[REBIND] The target device {target_device.__class__.__name__} doesn't have a {target_parameter.section_name} section, skipping this connection"
+                )
+                continue
+            try:
+                setattr(section, target_parameter.cv_name, src_parameter)
+            except AttributeError:
+                setattr(section, target_parameter.name, src_parameter)
             self.outputs_queue.remove(out_entry)
         # self.flush_outputs()
 
