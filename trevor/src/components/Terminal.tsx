@@ -1,9 +1,16 @@
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useTrevorDispatch, useTrevorSelector } from "../store";
 import { addStdinWait, removeStdinWait } from "../store/runtimeSlice";
 import { AnsiParser } from "../utils/utils";
 
-export const Terminal = ({ stdout, stdin }) => {
+export const Terminal = ({
+	stdout,
+	stdin,
+	onStdinRequest = undefined,
+	canFocus = undefined,
+	onEnter = undefined,
+	disableAfterTrigger = false,
+}) => {
 	const [triggered, setTriggered] = useState([]);
 	const pending = useTrevorSelector((state) => state.runTime.stdin.queue);
 	const dispatch = useTrevorDispatch();
@@ -12,8 +19,10 @@ export const Terminal = ({ stdout, stdin }) => {
 	);
 	const inputRef = useRef(null);
 
-	const output = AnsiParser.ansi_to_html(stdout);
-	const parts = output.split(/&lt;stdin:(\d+)&gt;/g);
+	const parts = useMemo(
+		() => AnsiParser.ansi_to_html(stdout).split(/&lt;stdin:(\d+)&gt;/g),
+		[stdout],
+	);
 
 	useEffect(() => {
 		const matches = Array.from(stdout.matchAll(/<stdin:(\d+)>/g), (m) =>
@@ -21,16 +30,22 @@ export const Terminal = ({ stdout, stdin }) => {
 		);
 
 		if (matches.length === 0) {
-			setTriggered([]);
+			if (triggered.length > 0) {
+				setTriggered([]);
+				return;
+			}
 			setDisplayPending(true);
 			return;
 		}
 
 		setDisplayPending(false);
 		for (const id of matches) {
+			if (triggered.includes(id)) {
+				continue;
+			}
 			dispatch(addStdinWait(id));
 		}
-	}, [stdout, dispatch]);
+	}, [stdout, dispatch, triggered]);
 
 	const handleSubmit = (id, value, i = undefined) => {
 		const key = i !== undefined ? `${id}-${i}` : `${id}`;
@@ -74,12 +89,16 @@ export const Terminal = ({ stdout, stdin }) => {
 								fontSize: "inherit",
 							}}
 							name={`stdin-${key}`}
-							disabled={triggered.includes(key)}
+							disabled={disableAfterTrigger && triggered.includes(key)}
 							onKeyDown={(event) => {
 								if (event.key === "Enter") {
 									event.preventDefault();
+									onEnter?.();
 									handleSubmit(id, event.currentTarget.value, i);
 								}
+							}}
+							onClick={(input) => {
+								onStdinRequest?.(inputRef.current);
 							}}
 						/>
 					</form>
@@ -90,7 +109,11 @@ export const Terminal = ({ stdout, stdin }) => {
 	});
 
 	useEffect(() => {
-		if (inputRef.current) {
+		if (
+			inputRef.current &&
+			!inputRef.current.disabled &&
+			canFocus?.(inputRef.current)
+		) {
 			inputRef.current.focus();
 		}
 	}, [reactElements, triggered]);
@@ -118,6 +141,7 @@ export const Terminal = ({ stdout, stdin }) => {
 							>
 								<input
 									id={`stdin-${key}`}
+									ref={inputRef}
 									type="text"
 									enterKeyHint="send"
 									style={{
@@ -132,8 +156,12 @@ export const Terminal = ({ stdout, stdin }) => {
 									onKeyDown={(event) => {
 										if (event.key === "Enter") {
 											event.preventDefault();
+											onEnter?.();
 											handleSubmit(n, event.currentTarget.value);
 										}
+									}}
+									onClick={(input) => {
+										onStdinRequest?.(inputRef.current);
 									}}
 								/>
 							</form>

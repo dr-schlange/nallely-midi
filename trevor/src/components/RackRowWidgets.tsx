@@ -2,6 +2,7 @@ import {
 	forwardRef,
 	type ReactElement,
 	useImperativeHandle,
+	useMemo,
 	useState,
 } from "react";
 import { WindowWidget } from "./widgets/BaseWindowWidget";
@@ -93,6 +94,17 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 			{ num: number; id: string; type: string; component: React.FC<any> }[]
 		>([]);
 		const [typeIds, setTypeIds] = useState<Record<string, number>>({});
+		const virtualDevices = useTrevorSelector(
+			(state) => state.nallely.virtual_devices,
+		);
+		const proxyWidgetCandidatest = useMemo(
+			() =>
+				virtualDevices.filter((e) => {
+					const availableWidgets = widgets.map((w) => w.id);
+					return e.proxy && !availableWidgets.includes(e.repr);
+				}),
+			[virtualDevices, widgets],
+		);
 
 		const sensors = useSensors(
 			useSensor(PointerSensor, {
@@ -208,6 +220,7 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 							{widgets.length === 0 && (
 								<p style={{ color: "#808080" }}>Widgets</p>
 							)}
+							{/*{proxyWidgetCandidatest.map()}*/}
 						</SortableContext>
 					</DndContext>
 				</div>
@@ -241,6 +254,7 @@ import { findFirstMissingValue } from "../utils/utils";
 import { GPControl } from "./widgets/GPControlWidget";
 import { Keyboard } from "./widgets/KeyboardWidget";
 import { ViewMatrix } from "./widgets/ViewMatrix";
+import { useTrevorSelector } from "../store";
 
 const SortableWidget = ({
 	id,

@@ -14,8 +14,8 @@ export interface NallelyState {
 }
 
 export type ExternalService = {
-  key: string;
-  target: string;
+	key: string;
+	target: string;
 };
 
 export type VirtualDeviceSchema = {

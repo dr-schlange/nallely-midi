@@ -389,9 +389,18 @@ mod-?:     displays this entry
 					}}
 				>
 					<Terminal
+						disableAfterTrigger
 						stdout={stdout}
 						stdin={(id, text) => {
 							trevorSocket.sendStdin(id, text);
+						}}
+						onEnter={() => {
+							if (editorRef.current) {
+								editorRef.current.focus();
+							}
+						}}
+						canFocus={() => {
+							return true;
 						}}
 					/>
 				</div>

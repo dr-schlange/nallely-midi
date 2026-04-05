@@ -15,7 +15,7 @@ import { Prec, StateEffect, StateField } from "@codemirror/state";
 import { EditorView, keymap } from "@codemirror/view";
 import { getCM, Vim, vim } from "@replit/codemirror-vim";
 import CodeMirror from "@uiw/react-codemirror";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { MidiDevice, VirtualDevice } from "../../model";
 import { useTrevorSelector } from "../../store";
@@ -733,11 +733,12 @@ export function ClassBrowser({ device, onClose }: ClassBrowserProps) {
 				displayError(editorRef.current, message.details);
 			}
 			if (message.command === "stdout") {
-				setStdout((prev) =>
-					prev.length > TERMINAL_MAX_CHARS
-						? `${prev.slice(message.line.length)}${message.line}`
-						: `${prev}${message.line}`,
-				);
+				setStdout((prev) => {
+					if (prev.length > TERMINAL_MAX_CHARS) {
+						return `${prev.slice(message.line.length)}${message.line}`;
+					}
+					return `${prev}${message.line}`;
+				});
 			}
 		};
 
@@ -794,6 +795,32 @@ mod-?:     displays this entry
 		autocapitalize: "off",
 		spellcheck: "false",
 	});
+
+	const [focusedPanel, setFocusedPanel] = useState<
+		"code-editor" | "terminal" | undefined
+	>(undefined);
+	const focusExtension = EditorView.focusChangeEffect.of((state, focusing) => {
+		if (focusing && focusedPanel !== "code-editor") {
+			setFocusedPanel("code-editor");
+		}
+		return;
+	});
+	const cbStdinRequest = useCallback(() => {
+		if (focusedPanel !== "terminal") {
+			setFocusedPanel("terminal");
+		} else {
+			editorRef.current.focus();
+		}
+	}, [focusedPanel]);
+
+	const cbFocus = useCallback(
+		() => focusedPanel === "terminal",
+		[focusedPanel],
+	);
+	const cbStdin = useCallback(
+		(id, text) => trevorSocket.sendStdin(id, text),
+		[trevorSocket],
+	);
 
 	const modalContent = (
 		<div className="patching-modal">
@@ -901,6 +928,7 @@ mod-?:     displays this entry
 							linter(customLinter),
 							myCustomKeymap,
 							activeSnippetField,
+							focusExtension,
 							Prec.high(
 								// Add new keymaps for recursive snippets
 								// completion
@@ -988,9 +1016,9 @@ mod-?:     displays this entry
 					>
 						<Terminal
 							stdout={stdout}
-							stdin={(id, text) => {
-								trevorSocket.sendStdin(id, text);
-							}}
+							stdin={cbStdin}
+							onStdinRequest={cbStdinRequest}
+							canFocus={cbFocus}
 						/>
 					</div>
 				}
