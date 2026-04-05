@@ -108,6 +108,9 @@ class Session:
             common_port = longest_common_substring(
                 device["ports"]["input"], device["ports"]["output"]
             )
+            is_proxy = device.get("proxy", False)
+            if is_proxy:
+                continue
             device_class_name = device["class"]
             try:
                 cls = find_class(device_class_name)

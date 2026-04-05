@@ -498,6 +498,8 @@ class TrevorBus(VirtualDevice):
         errors = self.session.load_address(address, universe=universe)
         if errors:
             self.send_message({"errors": errors})
+        self.refresh_websocket_bus()
+        self.refresh_osc_bus()
         return self.full_state()
 
     def clear_address(self, address, universe="memory"):

@@ -18,6 +18,10 @@ def wsbus():
     ws.stop()
 
 
+def test__websocketbus_attribute_access(wsbus):
+    assert len(wsbus.links_registry) == 0
+
+
 def test__websocketbus_register(wsbus):
     assert "mydev_input_cv" not in wsbus.__class__.__dict__
     assert "mydev" not in wsbus.known_services

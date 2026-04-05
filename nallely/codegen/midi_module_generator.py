@@ -70,9 +70,11 @@ def generate_code(d: dict, out: Path | str):
     device = next(iter(d[brand]))
     sections = d[brand][device]
     with out.open("w") as f:
-        f.write(f'''"""
+        f.write(
+            f'''"""
 Generated configuration for the {brand} - {device}
-"""\n''')
+"""\n'''
+        )
         f.write("import nallely\n\n")
         for section, parameters in sections.items():
             f.write(f"class {section.capitalize()}Section(nallely.Module):\n")

@@ -2,21 +2,10 @@ import time
 
 import pytest
 
-from nallely import LFO, WebSocketBus
+from nallely import LFO
 from nallely.core import VirtualDevice
 from nallely.core.virtual_device import VirtualParameter
 from nallely.core.world import ThreadContext
-
-
-@pytest.mark.asyncio
-async def test__websocketbus_attribute_access():
-    ws = WebSocketBus(autoconnect=True)
-    assert len(ws.links_registry) == 0
-    ws.stop()
-
-    ws = WebSocketBus(autoconnect=False)
-    assert len(ws.links_registry) == 0
-    ws.stop()
 
 
 @pytest.fixture
@@ -31,7 +20,7 @@ def FakeLFO():
 
 
 def test__direct_set_pause():
-    l = LFO(waveform="square", speed=2)
+    l = LFO(waveform="square", speed=1)
     l.start()
 
     assert l.running is True

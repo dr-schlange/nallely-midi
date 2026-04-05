@@ -38,7 +38,7 @@ class OSCBus(WebSocketBus):
         self.connected.clear()
         if self.running and self.server:
             print(f"[{self.NAME}] Shutting down osc bus...", end="\t")
-            self.server.shutdown()
+            self.server.server_close()
             self.server = None
             print("Done")
         for key, value in list(self.__class__.__dict__.items()):
