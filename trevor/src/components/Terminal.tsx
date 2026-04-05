@@ -97,7 +97,8 @@ export const Terminal = ({
 									handleSubmit(id, event.currentTarget.value, i);
 								}
 							}}
-							onClick={(input) => {
+              onClick={(event) => {
+                event.preventDefault()
 								onStdinRequest?.(inputRef.current);
 							}}
 						/>
@@ -160,7 +161,8 @@ export const Terminal = ({
 											handleSubmit(n, event.currentTarget.value);
 										}
 									}}
-									onClick={(input) => {
+                  onClick={(event) => {
+                    event.preventDefault()
 										onStdinRequest?.(inputRef.current);
 									}}
 								/>

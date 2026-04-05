@@ -720,10 +720,10 @@ export function ClassBrowser({ device, onClose }: ClassBrowserProps) {
 	useEffect(() => {
 		trevorSocket.getClassCode(device.id);
 		trevorSocket.startCaptureIO();
-		return () => {
+    return () => {
 			trevorSocket.stopCaptureIO();
 		};
-	}, []);
+	}, [trevorSocket, trevorSocket.socket]);
 
 	useEffect(() => {
 		const onMessageHandler = (event) => {
@@ -742,14 +742,10 @@ export function ClassBrowser({ device, onClose }: ClassBrowserProps) {
 			}
 		};
 
-		if (trevorSocket) {
-			trevorSocket?.socket?.addEventListener("message", onMessageHandler);
-		}
+		trevorSocket?.socket?.addEventListener("message", onMessageHandler);
 
 		return () => {
-			if (trevorSocket) {
-				trevorSocket?.socket?.removeEventListener("message", onMessageHandler);
-			}
+			trevorSocket?.socket?.removeEventListener("message", onMessageHandler);
 		};
 	}, [trevorSocket?.socket]);
 

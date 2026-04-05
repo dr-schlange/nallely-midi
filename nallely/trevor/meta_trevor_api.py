@@ -120,10 +120,16 @@ class MetaTrevorAPI:
         if force_name and force_name != current_cls.__name__:
             current_cls.__name__ = force_name
         elif getattr(current_cls, "__tmp__", None):
-            print("TMP class, we just skip the t_")
-            current_cls.__name__ = current_cls.__name__[
-                2 if current_cls.__name__.startswith("t_") else 0 :
+            old_name = current_cls.__name__
+            current_cls.__name__ = old_name[
+                2 if old_name.startswith("t_") else 0 :
             ]
+            if old_name != current_cls.__name__:
+                replace_name = old_name
+                device_name = current_cls.__name__
+                class_code = class_code.replace(
+                    f"class {replace_name}", f"class {device_name}"
+                )
         device_file = self.session.devices_path / f"{current_cls.__name__.lower()}.py"
         self.object_centric_compile_inject(
             device, class_code, tmp_name=False, filename=device_file, commit=commit
