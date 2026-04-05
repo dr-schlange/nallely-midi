@@ -81,6 +81,7 @@
 * Fix oscilloscope widget reconnection on new remote host
 * Fix value burst after a long sleep for random non-running threads
 * Improve TrevorUI bundle size
+* Fix logic saving a new class after a patch when opening the patch class first (eg. creating -> patching -> close the editor, repoen on the tmp instance -> save)
 
 
 ## Nallely v0.4.0 -- Tepezcohuite

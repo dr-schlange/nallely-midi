@@ -158,10 +158,10 @@ class TrevorBus(VirtualDevice):
         self.external_services_register = {}
 
     def refresh_websocket_bus(self, ws=None):
-        self.ws = self._refresh_bus(WebSocketBus, bus=ws)
+        self.ws: WebSocketBus = self._refresh_bus(WebSocketBus, bus=ws)  # type: ignore
 
     def refresh_osc_bus(self, bus=None):
-        self.osc = self._refresh_bus(OSCBus, bus=bus)
+        self.osc: OSCBus = self._refresh_bus(OSCBus, bus=bus)  # type: ignore
 
     def _refresh_bus(self, cls, bus=None):
         if bus is None:

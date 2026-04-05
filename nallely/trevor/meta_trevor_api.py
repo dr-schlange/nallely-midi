@@ -6,7 +6,6 @@ from ..utils import get_source
 
 
 class MetaTrevorAPI:
-
     def __init__(self, session, exec_context=None):
         from ..session import Session
 
@@ -120,6 +119,11 @@ class MetaTrevorAPI:
         current_cls = device.__class__
         if force_name and force_name != current_cls.__name__:
             current_cls.__name__ = force_name
+        elif getattr(current_cls, "__tmp__", None):
+            print("TMP class, we just skip the t_")
+            current_cls.__name__ = current_cls.__name__[
+                2 if current_cls.__name__.startswith("t_") else 0 :
+            ]
         device_file = self.session.devices_path / f"{current_cls.__name__.lower()}.py"
         self.object_centric_compile_inject(
             device, class_code, tmp_name=False, filename=device_file, commit=commit
