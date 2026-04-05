@@ -158,12 +158,10 @@ class TrevorBus(VirtualDevice):
         self.external_services_register = {}
 
     def refresh_websocket_bus(self, ws=None):
-        self._refresh_bus(WebSocketBus, bus=ws)
-        self.ws = ws
+        self.ws = self._refresh_bus(WebSocketBus, bus=ws)
 
     def refresh_osc_bus(self, bus=None):
-        self._refresh_bus(OSCBus, bus=bus)
-        self.osc = bus
+        self.osc = self._refresh_bus(OSCBus, bus=bus)
 
     def _refresh_bus(self, cls, bus=None):
         if bus is None:
@@ -176,6 +174,7 @@ class TrevorBus(VirtualDevice):
             return
         bus.to_update = self  # type: ignore
         bus.start()
+        return bus
 
     @staticmethod
     def to_json(obj, **kwargs):
@@ -211,11 +210,19 @@ class TrevorBus(VirtualDevice):
             except ValueError:
                 pass
 
+    def brodcast_full_state(self):
+        for service_name, connected_clients in self.connected.items():
+            print(
+                f"[TrevorBus] Brodcasting full state on /{service_name} for {len(connected_clients)} clients"
+            )
+            for client in connected_clients:
+                client.send(self.to_json(self.full_state(with_defaultvalues=True)))
+
     def setup(self):
         try:
             self.server.serve_forever()
         except InvalidMessage as e:
-            print(f"[TrevorBus] Invalid message received, someone's scanning?")
+            print("[TrevorBus] Invalid message received, someone's scanning?")
         except Exception as e:
             print("[TrevorBus] Error while serving the trevor websocket server", e)
         return super().setup()
@@ -749,10 +756,6 @@ class TrevorBus(VirtualDevice):
             if force:
                 return result
 
-    def services_in_waitingroom(self):
-        if self.ws:
-            self.ws.services_in_waitingroom()
-
     def expose_neuron(self, device_id, friend_ip):
         try:
             device = self.trevor.get_device_instance(device_id)
@@ -949,11 +952,11 @@ def start_trevor(
         trevor = TrevorBus()
         trevor.start()
         if init_script and init_script.suffix == ".nly":
-            trevor.session.load_all(init_script)
+            # trevor.session.load_all(init_script)
+            trevor.load_all(init_script)
         if address:
-            trevor.session.load_address(address)
-            trevor.refresh_websocket_bus()
-            trevor.refresh_osc_bus()
+            trevor.load_address(address)
+        trevor.brodcast_full_state()
         _trevor_menu(loaded_paths, init_script, trevor, serve_ui)
         print("Shutting down...")
     finally:

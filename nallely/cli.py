@@ -39,12 +39,12 @@ def parse_args(argv):
         "-b",
         "--builtin-devices",
         action="store_true",
-        help=f"Loads builtin MIDI devices (Korg NTS1, Korg Minilogue)",
+        help="Loads builtin MIDI devices (Korg NTS1, Korg Minilogue)",
     )
     run_parser.add_argument(
         "--experimental",
         action="store_true",
-        help=f"Loads experimental virtuals devices",
+        help="Loads experimental virtuals devices",
     )
     run_parser.add_argument(
         "-i",

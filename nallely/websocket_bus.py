@@ -478,5 +478,6 @@ class WebSocketBus(VirtualDevice):
         services = []
         for key, room in self.__dict__.items():
             if isinstance(room, WaitingRoom):
-                services.append({"key": key})
+                service_name, target_cv = key.split("_", 1)
+                services.append({"key": service_name, "target": target_cv})
         return services
