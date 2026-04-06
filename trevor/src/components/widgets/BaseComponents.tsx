@@ -23,7 +23,6 @@ export const Button = ({
 		// biome-ignore lint/a11y/noStaticElementInteractions: <explanation>
 		<div
 			style={{
-				color: disabled ? "rgba(127, 127, 127, 0.4)" : "gray",
 				zIndex: 1,
 				backgroundColor:
 					clickColor ||
@@ -40,6 +39,7 @@ export const Button = ({
 				justifyContent: "center",
 				pointerEvents: "auto",
 				...(style ?? {}),
+				color: disabled ? "rgba(127, 127, 127, 0.4)" : (style?.color ?? "gray"),
 			}}
 			onMouseDown={(event) => {
 				event.stopPropagation();
@@ -137,5 +137,70 @@ export const TextInput = ({
 			}}
 			{...props}
 		/>
+	);
+};
+
+export const PlaceholderWidget = ({
+	id,
+	componentKey,
+	onClose,
+	children,
+	onClickLoad,
+	removeCloseButton = false,
+}: {
+	componentKey: string;
+	id: string;
+	onClose?: (e: string) => void;
+	children: React.ReactNode;
+	removeCloseButton?: boolean;
+	onClickLoad?: (service: string, componentKey: string) => void;
+}) => {
+	return (
+		<div className="scope">
+			<div
+				style={{
+					position: "absolute",
+					color: "gray",
+					zIndex: 1,
+					top: "1%",
+					right: "1%",
+					width: "90%",
+					textAlign: "center",
+					cursor: "pointer",
+					display: "flex",
+					justifyContent: "flex-end",
+					flexDirection: "row",
+					pointerEvents: "none",
+					gap: "4px",
+				}}
+			>
+				{!removeCloseButton && (
+					<Button
+						text="x"
+						onClick={() => onClose?.(id)}
+						tooltip="Close window"
+					/>
+				)}
+			</div>
+			<div
+				style={{
+					height: "100%",
+					display: "flex",
+					flexDirection: "column",
+					justifyContent: "space-between",
+					alignItems: "center",
+				}}
+			>
+				{children}
+				<Button
+					text="Load"
+					onClick={() => onClickLoad?.(componentKey, id)}
+					tooltip="Load the widget"
+					style={{
+						width: "100%",
+					}}
+				/>
+			</div>
+		</div>
 	);
 };

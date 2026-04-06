@@ -25,6 +25,7 @@
 * Add different precision handling on swipe fields for numbers in TrevorUI
 * Add current value and local bound display in the 1D scope
 * Add auto-refresh for XYScope (2D scope) and XYZScope (3D scope)
+* Add a way of seeing pending widgets services (widgets that are not loaded, but for which there is a connection to in the current patch)
 
 #### Internal API and Device Dev
 
@@ -83,6 +84,7 @@
 * Improve TrevorUI bundle size
 * Fix logic saving a new class after a patch when opening the patch class first (eg. creating -> patching -> close the editor, repoen on the tmp instance -> save)
 * Fix refresh logic between the terminal and code mirror
+* Fix button size and orientation for the racks
 
 
 ## Nallely v0.4.0 -- Tepezcohuite

@@ -94,17 +94,28 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 			{ num: number; id: string; type: string; component: React.FC<any> }[]
 		>([]);
 		const [typeIds, setTypeIds] = useState<Record<string, number>>({});
-		const virtualDevices = useTrevorSelector(
-			(state) => state.nallely.virtual_devices,
+		const waitingServices = useTrevorSelector(
+			(state) => state.nallely.waiting_services,
 		);
-		const proxyWidgetCandidatest = useMemo(
-			() =>
-				virtualDevices.filter((e) => {
-					const availableWidgets = widgets.map((w) => w.id);
-					return e.proxy && !availableWidgets.includes(e.repr);
-				}),
-			[virtualDevices, widgets],
-		);
+		const proxyWidgetCandidates = useMemo(() => {
+			const components = Object.keys(WidgetComponents);
+
+			const services = waitingServices
+				.map(({ key }) => key)
+				.map((service) => {
+					for (const candidate of components) {
+						const cName = candidate.toLocaleLowerCase();
+						const regex = new RegExp(`^(${cName})([0-9]+)$`);
+						if (service.match(regex)) {
+							return [candidate, service.replace(regex, "$1::$2")];
+						}
+					}
+					return undefined;
+				})
+				.filter((e) => e !== undefined);
+			return services;
+		}, [waitingServices]);
+		const [displayWaitingServices, setDisplayWaitingServices] = useState(false);
 
 		const sensors = useSensors(
 			useSensor(PointerSensor, {
@@ -129,6 +140,25 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 					{
 						id: widgetId,
 						num: nextId,
+						type: widgetType,
+						component: Component,
+					},
+				];
+			});
+		};
+
+		const loadWidget = (componentKey: string, widgetId: string) => {
+			setWidgets((oldWidgets) => {
+				const [widgetType, idNum] = widgetId.split("::");
+				const Component = WidgetComponents[componentKey];
+				setTimeout(() => {
+					onAddWidget?.(widgetId, Component);
+				}, 10);
+				return [
+					...oldWidgets,
+					{
+						id: widgetId,
+						num: Number.parseInt(idNum, 10),
 						type: widgetType,
 						component: Component,
 					},
@@ -171,23 +201,45 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 				className={`rack-row ${horizontal ? "horizontal" : ""}`}
 				onScroll={() => onRackScroll?.()}
 			>
-				<select
-					value={""}
-					title="Adds a new widget to the system"
-					onChange={(e) => {
-						const val = e.target.value;
-						if (val && WidgetComponents[val]) {
-							addWidget(WidgetComponents[val], val.toLocaleLowerCase());
+				<div className="rack-top-bar">
+					<select
+						style={{
+							height: horizontal ? "40%" : "87%",
+							width: "40%",
+						}}
+						value={""}
+						title="Adds a new widget to the system"
+						onChange={(e) => {
+							const val = e.target.value;
+							if (val && WidgetComponents[val]) {
+								addWidget(WidgetComponents[val], val.toLocaleLowerCase());
+							}
+						}}
+					>
+						<option value={""}>--</option>
+						{Object.keys(WidgetComponents).map((name) => (
+							<option key={name} value={name}>
+								{name}
+							</option>
+						))}
+					</select>
+					<Button
+						text={`Waiting Services ${proxyWidgetCandidates.length === 0 ? "" : `[${proxyWidgetCandidates.length}]`}`}
+						tooltip="Show waiting services"
+						disabled={proxyWidgetCandidates.length === 0}
+						activated={
+							displayWaitingServices && proxyWidgetCandidates.length > 0
 						}
-					}}
-				>
-					<option value={""}>--</option>
-					{Object.keys(WidgetComponents).map((name) => (
-						<option key={name} value={name}>
-							{name}
-						</option>
-					))}
-				</select>
+						variant="small"
+						style={{
+							width: "100%",
+							height: "71%",
+							color: "black",
+							fontSize: "14px",
+						}}
+						onClick={() => setDisplayWaitingServices((prev) => !prev)}
+					/>
+				</div>
 				<div className={"inner-rack-row"} onScroll={() => onRackScroll?.()}>
 					<DndContext
 						sensors={sensors}
@@ -216,11 +268,23 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 									/>
 								</SortableWidget>
 							))}
-
-							{widgets.length === 0 && (
+							{displayWaitingServices &&
+								proxyWidgetCandidates.map(([component, service]) => (
+									<SortableWidget key={service} id={service}>
+										<PlaceholderWidget
+											id={service}
+											onClose={closeWidget}
+											onClickLoad={loadWidget}
+											componentKey={component}
+											removeCloseButton
+										>
+											<p>Placeholder for {service.replace("::", "")}</p>
+										</PlaceholderWidget>
+									</SortableWidget>
+								))}
+							{widgets.length === 0 && proxyWidgetCandidates.length === 0 && (
 								<p style={{ color: "#808080" }}>Widgets</p>
 							)}
-							{/*{proxyWidgetCandidatest.map()}*/}
 						</SortableContext>
 					</DndContext>
 				</div>
@@ -250,11 +314,12 @@ import {
 	verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useTrevorSelector } from "../store";
 import { findFirstMissingValue } from "../utils/utils";
+import { Button, PlaceholderWidget } from "./widgets/BaseComponents";
 import { GPControl } from "./widgets/GPControlWidget";
 import { Keyboard } from "./widgets/KeyboardWidget";
 import { ViewMatrix } from "./widgets/ViewMatrix";
-import { useTrevorSelector } from "../store";
 
 const SortableWidget = ({
 	id,

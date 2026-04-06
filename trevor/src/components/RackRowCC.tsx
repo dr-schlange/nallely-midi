@@ -11,6 +11,7 @@ import { useTrevorDispatch, useTrevorSelector } from "../store";
 import { resetCCState } from "../store/runtimeSlice";
 import { generateAcronym } from "../utils/utils";
 import { useTrevorWebSocket } from "../websockets/websocket";
+import { Button } from "./widgets/BaseComponents";
 
 interface CCsRackProps {
 	onRackScroll?: () => void;
@@ -344,18 +345,20 @@ export const RackRowCCs = forwardRef<RackRowCCRef, CCsRackProps>(
 				// @ts-expect-error: all good, but should check later
 				style={switchOrientation(horizontal)}
 			>
-				<button
-					type="button"
-					style={{
-						width: "100%",
-						height: "27px",
-						backgroundColor: seeAll ? "orange" : "",
-					}}
-					onClick={handleSeeAll}
-				>
-					{/* {seeAll ? "𜲦𜲧" : "𜲨𜲩"} */}
-					see all
-				</button>
+				<div className="rack-top-bar" style={{ fontSize: "14px" }}>
+					<Button
+						style={{
+							fontSize: "14px",
+							height: horizontal ? "100%" : "87%",
+							width: "100%",
+							color: "black",
+						}}
+						text="see all"
+						activated={seeAll}
+						onClick={handleSeeAll}
+						tooltip="Show all MIDI parameters"
+					/>
+				</div>
 				{updateCCs()}
 			</div>
 		);

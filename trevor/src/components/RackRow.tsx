@@ -107,21 +107,26 @@ export const RackRow = ({
 				}
 			}}
 		>
-			<select
-				value=""
-				title="Adds a MIDI device to the system"
-				onChange={(e) => {
-					const val = e.target.value;
-					if (val) handleDeviceClassClick(val);
-				}}
-			>
-				<option value="">--</option>
-				{midiClasses.map((cls) => (
-					<option key={cls} value={cls}>
-						{cls}
-					</option>
-				))}
-			</select>
+			<div className="rack-top-bar">
+				<select
+					style={{
+						height: horizontal ? "100%" : "87%",
+					}}
+					value=""
+					title="Adds a MIDI device to the system"
+					onChange={(e) => {
+						const val = e.target.value;
+						if (val) handleDeviceClassClick(val);
+					}}
+				>
+					<option value="">--</option>
+					{midiClasses.map((cls) => (
+						<option key={cls} value={cls}>
+							{cls}
+						</option>
+					))}
+				</select>
+			</div>
 			<div className={"inner-rack-row"} onScroll={() => onSectionScroll?.()}>
 				<DndContext
 					sensors={sensors}
