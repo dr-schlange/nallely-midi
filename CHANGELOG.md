@@ -40,7 +40,7 @@
 
 * Add [connector for Pharo Smalltalk dialect](https://github.com/dr-schlange/nallely-pharo): create your neurons in Pharo
 * Add connector for Ruby (LLM generated)
-* Add connector for Python, usefull for distributed computation over the network (LLM generated, manually modified)
+* Add connector for Python, usefull to distribute behaviors over the network (LLM generated, manually modified)
 * Add connector for C (LLM generated)
 * Add first experimental connector for SuperCollider
 * LLM makes it in Nallely, not as a dev, not as a contributor, but as a user:
@@ -55,10 +55,10 @@
 * Add possibility to add/remove parameters dynamically for a registered service on the websocket bus (protocol expansion)
 * Add rebinding of services registered to the websocket bus to other services registered on the websocket bus (extension of waiting room handling)
 
-#### Distributed Computation
+#### Distributed Behavior
 
 * Add new service to detect running Nallely session on the local network
-* Add distributed computation between various Nallely sessions on the same local network
+* Add distributed behavior between various Nallely sessions on the same local network
 * Add possibility to expose virtual neurons (virtual devices) to remote session, thus exploiting remote machine to externalize computation
 * Add possitiliby to switch session from TrevorUI
 
