@@ -152,7 +152,6 @@ class Sequencer8(VirtualDevice):
     * step5_cv [0, 127]: Set the output value of step 6.
     * step6_cv [0, 127]: Set the output value of step 7.
     * step7_cv [0, 127]: Set the output value of step 8.
-
     * active0_cv [0, 1] init=1 >0: Set the output as active if >1.
     * active1_cv [0, 1] init=1 >0: Set the output as active if >1.
     * active2_cv [0, 1] init=1 >0: Set the output as active if >1.

@@ -85,6 +85,7 @@
 * Fix logic saving a new class after a patch when opening the patch class first (eg. creating -> patching -> close the editor, repoen on the tmp instance -> save)
 * Fix refresh logic between the terminal and code mirror
 * Fix button size and orientation for the racks
+* Fix wrong class overlay picked when a patch is reloaded
 
 
 ## Nallely v0.4.0 -- Tepezcohuite

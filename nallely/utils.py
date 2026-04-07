@@ -43,10 +43,11 @@ def longest_common_substring(s1: str, s2: str) -> str:
 
 
 def find_class(name):
-    for module in list(sys.modules.values()):
+    for module in list(sys.modules.values())[::-1]:
         if module:
             cls = getattr(module, name, None)
             if isinstance(cls, type):
+                # print(f"[DEBUG] Finding {cls} for {name} in {module}")
                 return cls
     raise ValueError(f"Class {name} couldn't be found")
 
