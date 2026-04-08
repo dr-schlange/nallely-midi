@@ -93,9 +93,9 @@ select {
 	border: 2px solid #808080; /* Amiga-style border */
 	color: #000000;
 	padding: 4px;
-	box-shadow:
+	/*box-shadow:
 		inset -1px -1px 0px #ffffff,
-		inset 1px 1px 0px #000000; /* Amiga-style 3D effect */
+		inset 1px 1px 0px #000000;*/
 	cursor: pointer;
 }
 button:hover,
