@@ -147,6 +147,7 @@ export const PlaceholderWidget = ({
 	children,
 	onClickLoad,
 	removeCloseButton = false,
+	visible = true,
 }: {
 	componentKey: string;
 	id: string;
@@ -154,9 +155,10 @@ export const PlaceholderWidget = ({
 	children: React.ReactNode;
 	removeCloseButton?: boolean;
 	onClickLoad?: (service: string, componentKey: string) => void;
+	visible: boolean;
 }) => {
 	return (
-		<div className="scope">
+		<div className="scope" style={{ display: visible ? "block" : "none" }}>
 			<div
 				style={{
 					position: "absolute",

@@ -100,20 +100,20 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 		const proxyWidgetCandidates = useMemo(() => {
 			const components = Object.keys(WidgetComponents);
 
-			const services = waitingServices
+			const uniqueServices = new Map();
+			waitingServices
 				.map(({ key }) => key)
-				.map((service) => {
+				.forEach((service) => {
 					for (const candidate of components) {
 						const cName = candidate.toLocaleLowerCase();
 						const regex = new RegExp(`^(${cName})([0-9]+)$`);
-						if (service.match(regex)) {
-							return [candidate, service.replace(regex, "$1::$2")];
+						const serviceId = service.replace(regex, "$1::$2");
+						if (service.match(regex) && !uniqueServices.has(serviceId)) {
+							uniqueServices.set(serviceId, [candidate, serviceId]);
 						}
 					}
-					return undefined;
-				})
-				.filter((e) => e !== undefined);
-			return services;
+				});
+			return [...uniqueServices.values()];
 		}, [waitingServices]);
 		const [displayWaitingServices, setDisplayWaitingServices] = useState(false);
 
@@ -169,7 +169,9 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 		useImperativeHandle(ref, () => ({
 			resetAll() {
 				setWidgets([]);
+				setWidgets([]);
 				setTypeIds({});
+				setDisplayWaitingServices(false);
 			},
 		}));
 
@@ -268,20 +270,19 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 									/>
 								</SortableWidget>
 							))}
-							{displayWaitingServices &&
-								proxyWidgetCandidates.map(([component, service]) => (
-									<SortableWidget key={service} id={service}>
-										<PlaceholderWidget
-											id={service}
-											onClose={closeWidget}
-											onClickLoad={loadWidget}
-											componentKey={component}
-											removeCloseButton
-										>
-											<p>Placeholder for {service.replace("::", "")}</p>
-										</PlaceholderWidget>
-									</SortableWidget>
-								))}
+							{proxyWidgetCandidates.map(([component, service]) => (
+								<PlaceholderWidget
+									key={service}
+									id={service}
+									onClose={closeWidget}
+									onClickLoad={loadWidget}
+									componentKey={component}
+									removeCloseButton
+									visible={displayWaitingServices}
+								>
+									<p>Placeholder for {service.replace("::", "")}</p>
+								</PlaceholderWidget>
+							))}
 							{widgets.length === 0 && proxyWidgetCandidates.length === 0 && (
 								<p style={{ color: "#808080" }}>Widgets</p>
 							)}
@@ -324,9 +325,11 @@ import { ViewMatrix } from "./widgets/ViewMatrix";
 const SortableWidget = ({
 	id,
 	children,
+	hidden = false,
 }: {
 	id: string;
 	children: React.ReactNode;
+	hidden?: boolean;
 }) => {
 	const { attributes, listeners, setNodeRef, transform, transition } =
 		useSortable({ id });
@@ -335,6 +338,7 @@ const SortableWidget = ({
 		transform: CSS.Transform.toString(transform),
 		transition,
 		position: "relative",
+		display: hidden ? "none" : "block",
 	} as const satisfies React.CSSProperties;
 
 	return (
@@ -352,7 +356,6 @@ const SortableWidget = ({
 					color: "gray",
 					width: "20px",
 					height: "20px",
-					display: "flex",
 					alignItems: "center",
 					justifyContent: "center",
 					touchAction: "none",
