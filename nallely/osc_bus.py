@@ -38,6 +38,8 @@ class OSCBus(WebSocketBus):
         self.connected.clear()
         if self.running and self.server:
             print(f"[{self.NAME}] Shutting down osc bus...", end="\t")
+            self.dispatcher.clear()
+            self.server.shutdown()
             self.server.server_close()
             self.server = None
             print("Done")
@@ -239,3 +241,6 @@ class SelfRegisterDispatcher(Dispatcher):
             del self._map[f"/{service_name}/*"]
         except Exception:
             pass
+
+    def clear(self):
+        self._map.clear()
