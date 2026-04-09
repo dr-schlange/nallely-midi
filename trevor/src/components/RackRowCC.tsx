@@ -101,10 +101,10 @@ const CircularSlider = ({ value, param, onManualSliderChange }) => {
 	const onMouseUp = () => endDrag();
 	const onTouchEnd = () => endDrag();
 
-	useEffect(() => {
-		setGhostValue(null);
-		ghostValueRef.current = null;
-	}, [value]);
+	// useEffect(() => {
+	// 	setGhostValue(null);
+	// 	ghostValueRef.current = null;
+	// }, [value]);
 
 	return (
 		<div
@@ -194,15 +194,15 @@ const switchOrientation = (orientation) => {
 };
 
 const switchSizeOrientation = (orientation) => {
-	if (orientation) {
+	if (orientation === "horizontal") {
 		return {
 			// width: "100%",
-			height: "100px",
+			// height: "100px",
 		};
 	}
 	return {
 		width: "90px",
-		height: "100%",
+		// height: "100%",
 	};
 };
 
@@ -285,13 +285,24 @@ export const RackRowCCs = forwardRef<RackRowCCRef, CCsRackProps>(
 							padding: "1px",
 						}}
 					>
-						<p style={{ fontSize: "16px", margin: "0px" }}>{deviceName}</p>
+						<p
+							style={{
+								fontSize: "16px",
+								margin: "0",
+								padding: "4px",
+								backgroundColor: "gray",
+								color: "lightgray",
+							}}
+						>
+							{deviceName}
+						</p>
 						<div
 							key={`${deviceName}-body`}
 							style={{
 								display: "flex",
 								flexDirection: orientation === "horizontal" ? "row" : "column",
 								justifyContent: "center",
+								gap: "4px",
 							}}
 						>
 							{Object.entries(sortObjectByKey(section)).map(
@@ -299,37 +310,56 @@ export const RackRowCCs = forwardRef<RackRowCCRef, CCsRackProps>(
 									<div
 										key={`${deviceName}::${sectionName}`}
 										style={{
-											border: "2px solid #808080",
-											// borderTop: "2px solid #808080",
-											// borderRight: "2px solid #808080",
 											width: "100%",
 											display: "flex",
 											flexDirection:
-												orientation === "horizontal" ? "row" : "column",
-											borderRadius: "3px",
-											margin: "1px",
+												orientation === "horizontal" ? "column" : "row",
+											alignItems: "center",
+											flexWrap: orientation === "vertical" ? "wrap" : "unset",
 										}}
 									>
-										<p style={{ fontSize: "12px" }}>
+										<p
+											style={{
+												fontSize: "12px",
+												backgroundColor: "orange",
+												color: "black",
+												width: "100%",
+												margin: "0",
+												borderTop: "3px solid gray",
+												padding: "2px",
+												marginBottom: "4px",
+											}}
+										>
 											{generateAcronym(sectionName, 5)}
 										</p>
-										{Object.entries(sortObjectByKey(parameter)).map(
-											([paramName, value]) => (
-												<CircularSlider
-													key={`${deviceName}::${sectionName}::${paramName}`}
-													value={value}
-													param={paramName}
-													onManualSliderChange={(value) =>
-														handleParameterChange(
-															deviceId,
-															sectionName,
-															paramName,
-															value,
-														)
-													}
-												/>
-											),
-										)}
+										<div
+											style={{
+												display: "flex",
+												flexDirection: "row",
+												flexWrap: orientation === "vertical" ? "wrap" : "unset",
+												gap: "1px",
+												marginBottom: "4px",
+												justifyContent: "space-around",
+											}}
+										>
+											{Object.entries(sortObjectByKey(parameter)).map(
+												([paramName, value]) => (
+													<CircularSlider
+														key={`${deviceName}::${sectionName}::${paramName}`}
+														value={value}
+														param={paramName}
+														onManualSliderChange={(value) =>
+															handleParameterChange(
+																deviceId,
+																sectionName,
+																paramName,
+																value,
+															)
+														}
+													/>
+												),
+											)}
+										</div>
 									</div>
 								),
 							)}
