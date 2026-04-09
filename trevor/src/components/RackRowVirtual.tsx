@@ -182,7 +182,7 @@ export const RackRowVirtual = ({
 					}
 				}}
 			>
-				<div className="rack-top-bar" style={{ fontSize: "14px" }}>
+				<div className="rack-top-bar">
 					<Button
 						text="Add many"
 						tooltip="Add multiple virtual devices at once"

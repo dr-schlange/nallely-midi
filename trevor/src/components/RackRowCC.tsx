@@ -346,7 +346,7 @@ export const RackRowCCs = forwardRef<RackRowCCRef, CCsRackProps>(
 				// @ts-expect-error: all good, but should check later
 				style={switchOrientation(orientation)}
 			>
-				<div className="rack-top-bar" style={{ fontSize: "14px" }}>
+				<div className="rack-top-bar">
 					<Button
 						style={{
 							color: "black",
@@ -357,7 +357,7 @@ export const RackRowCCs = forwardRef<RackRowCCRef, CCsRackProps>(
 						tooltip="Show all MIDI parameters"
 					/>
 				</div>
-				{updateCCs()}
+				<div className="inner-rack-row">{updateCCs()}</div>
 			</div>
 		);
 	},

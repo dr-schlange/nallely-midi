@@ -1,7 +1,7 @@
 /** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
 /** biome-ignore-all lint/correctness/useUniqueElementIds: <explanation> */
 /** biome-ignore-all lint/a11y/useKeyWithClickEvents: <explanation> */
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { MidiDevice } from "../model";
 import { useTrevorDispatch, useTrevorSelector } from "../store";
 import { setWebsocketURL } from "../store/generalSlice";
@@ -85,10 +85,6 @@ const InstanceCreation = () => {
 		return groups;
 	}, [midiInPorts, midiOutPorts]);
 
-	useEffect(() => {
-		updateConnections();
-	}, [devices]);
-
 	// Handling of the log window START
 	const [position, setPosition] = useState({ x: 0, y: 0 });
 	const logWindowRef = useRef<HTMLDivElement>(null);
@@ -152,7 +148,7 @@ const InstanceCreation = () => {
 
 	// Handling of the log window END
 
-	const updateConnections = () => {
+	const updateConnections = useCallback(() => {
 		if (!svgRef.current) {
 			return;
 		}
@@ -178,11 +174,11 @@ const InstanceCreation = () => {
 				drawConnection(svg, fromElement, toOutput);
 			}
 		}
-	};
+	}, [devices]);
 
 	useEffect(() => {
 		updateConnections();
-	}, [devices]);
+	}, [updateConnections]);
 
 	useEffect(() => {
 		const handleResize = () => {
@@ -197,7 +193,7 @@ const InstanceCreation = () => {
 		return () => {
 			observer.disconnect();
 		};
-	}, [devices]);
+	}, [updateConnections]);
 
 	const establishConnection = (device: MidiDevice, port: MidiPort) => {
 		trevorSocket?.associatePort(device, port.name, port.direction);
@@ -230,21 +226,21 @@ const InstanceCreation = () => {
 		}
 	};
 
-	const handleExpand = () => {
+	const handleExpand = useCallback(() => {
 		setTimeout(() => updateConnections(), 10);
 		setIsExpanded((prev) => !prev);
-	};
+	}, [updateConnections]);
 
-	const handleClose = () => {
+	const handleClose = useCallback(() => {
 		updateConnections();
 		setIsSettingsOpen(false);
 		setFriendsOpen(false);
-	};
+	}, [updateConnections]);
 
-	const handleSettingsClick = () => {
+	const handleSettingsClick = useCallback(() => {
 		updateConnections();
 		setIsSettingsOpen(true);
-	};
+	}, [updateConnections]);
 
 	const displayWebsocketStatus = () => {
 		switch (websocketStatus) {
@@ -309,7 +305,7 @@ const InstanceCreation = () => {
 						flexDirection: "row",
 						flexWrap: "nowrap",
 						alignItems: "center",
-						// gap: "2px",
+						gap: "1px",
 						width: "100%",
 					}}
 				>
@@ -326,23 +322,6 @@ const InstanceCreation = () => {
 							paddingLeft: "4px",
 						}}
 					/>
-					<Button
-						activated={classCodeMode}
-						text={"C"}
-						tooltip="Class code"
-						variant="big"
-						onClick={handleClassCodeMode}
-						style={{ borderLeft: "unset", borderRight: "unset" }}
-					/>
-					<Button
-						activated={logMode}
-						text={"🔍"}
-						tooltip="Log mode"
-						variant="big"
-						onClick={handleLogMode}
-						style={{ borderLeft: "unset", borderRight: "unset" }}
-					/>
-
 					<div
 						style={{ display: "flex", flexDirection: "row", fontSize: "14px" }}
 					>
@@ -353,7 +332,7 @@ const InstanceCreation = () => {
 								tooltip="prev"
 								variant="big"
 								onClick={setPrevFriend}
-								style={{ borderLeft: "unset", borderRight: "unset" }}
+								style={{ border: "2px" }}
 							/>
 						)}
 
@@ -364,10 +343,9 @@ const InstanceCreation = () => {
 							onClick={handleFriendClick}
 							style={{
 								width: "100%",
-								borderLeft: "unset",
-								borderRight: "unset",
 								paddingLeft: "4px",
 								paddingRight: "4px",
+								border: "2px",
 							}}
 						/>
 						{friends.length > 1 && (
@@ -377,16 +355,30 @@ const InstanceCreation = () => {
 								tooltip="next"
 								variant="big"
 								onClick={setNextFriend}
-								style={{ borderLeft: "unset", borderRight: "unset" }}
+								style={{ border: "2px" }}
 							/>
 						)}
 					</div>
+					<Button
+						activated={classCodeMode}
+						text={"C"}
+						tooltip="Class code"
+						variant="big"
+						onClick={handleClassCodeMode}
+					/>
+					<Button
+						activated={logMode}
+						text={"L"}
+						tooltip="Log mode"
+						variant="big"
+						onClick={handleLogMode}
+					/>
+
 					<Button
 						text={"⚙"}
 						tooltip="Settings"
 						variant="big"
 						onClick={handleSettingsClick}
-						style={{ borderLeft: "unset", borderRight: "unset" }}
 					/>
 					<Button
 						disabled
@@ -398,7 +390,7 @@ const InstanceCreation = () => {
 						}
 						variant="big"
 						onClick={handleSettingsClick}
-						style={{ color: "gray", borderLeft: "unset" }}
+						style={{ color: "gray", border: "unset", fontSize: "10px" }}
 					/>
 				</div>
 				{isExpanded && (
@@ -481,7 +473,7 @@ const InstanceCreation = () => {
 										className="midi-ports-grid"
 										style={{ alignItems: "flex-start" }}
 									>
-										{devices.map((device, i) => (
+										{devices.map((device) => (
 											<SmallMidiDeviceComponent
 												key={device.id}
 												device={device}

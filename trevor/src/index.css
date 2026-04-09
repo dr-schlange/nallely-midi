@@ -27,18 +27,23 @@
 	text-rendering: optimizeLegibility;
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
-
-	width: 100%;
-	height: 100%;
 }
 
 html {
 	filter: sepia(0.15) hue-rotate(5deg);
 }
 
-html,
-body,
+body {
+	padding: 0;
+	margin: 0;
+
+	width: 100vw;
+	height: 100vh;
+}
+
 #root {
+	display: flex;
+	flex-direction: column;
 	margin: 0;
 	padding: 0;
 	width: 100%;
@@ -53,12 +58,6 @@ pre,
 textarea,
 input {
 	font-family: inherit;
-}
-
-body {
-	display: flex;
-	flex-direction: column;
-	background-color: #c0c0c0; /* Amiga Workbench background */
 }
 
 pre {
@@ -124,6 +123,20 @@ label select:disabled + span {
 
 input[type="text"]:disabled {
 	color: #808080; /* Greyish text for disabled text inputs */
+}
+
+.app-layout {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	width: 100%;
+	background-color: lightgray;
+}
+
+.top-section {
+	display: flex;
+	padding: 2px;
+	padding-bottom: 1px;
 }
 
 .Button {
@@ -281,6 +294,7 @@ input[type="text"]:disabled {
 	width: 100%;
 	height: auto;
 	background-color: #d0d0d0;
+	gap: 2px;
 }
 
 .instance-creation-main-panel {
@@ -410,18 +424,17 @@ input[type="text"]:disabled {
 	display: flex;
 	width: 100%;
 	height: 100%;
-	background-color: #d0d0d0;
-	border: 2px solid #808080;
-	/* box-shadow: inset -1px -1px 0px #ffffff, inset 1px 1px 0px #000000; */
+	/*background-color: #d0d0d0;*/
+	padding: 2px;
+	padding-top: 1px;
 }
 
 .device-patching-main-section {
 	display: flex;
 	flex-direction: row;
-	border-right: 2px solid #808080;
 	width: 100%;
-	position: relative;
 	overflow-x: auto;
+	position: relative;
 }
 
 .device-patching-side-section {
@@ -487,9 +500,10 @@ input[type="text"]:disabled {
 	align-items: center;
 	justify-content: flex-start;
 	overflow-x: auto;
-	gap: 5px;
+	gap: 2px;
 	flex-direction: column;
 	min-width: 200px;
+	border-top: unset;
 }
 
 .inner-rack-row {
@@ -499,7 +513,9 @@ input[type="text"]:disabled {
 	overflow-x: inherit;
 	gap: inherit;
 	flex-direction: inherit;
-	height: auto;
+	height: 100%;
+	width: 100%;
+	/*border: 2px solid gray;*/
 }
 
 .rack-row[data-slot]:hover {
@@ -524,13 +540,13 @@ input[type="text"]:disabled {
 	}
 	align-items: center;
 	width: 100%;
-	height: 150px;
-	min-height: 150px;
+	height: 155px;
+	min-height: 155px;
 	flex-direction: row;
 }
 
-.rack-row.horizontal select {
-	width: 20px;
+.rack-row.horizontal .rack-top-bar select {
+	width: 19.5px;
 	height: 100%;
 }
 
@@ -543,14 +559,14 @@ input[type="text"]:disabled {
 
 .rack-row.vertical .rack-top-bar .Button {
 	width: 100%;
-	height: auto;
+	height: 16px;
 	min-width: unset;
 	min-height: unset;
 }
 
-.rack-row.vertical select {
+.rack-row.vertical .rack-top-bar select {
 	width: 250px;
-	height: 20px;
+	height: 19.5px;
 }
 
 .rack-row.vertical .rack-top-bar {
@@ -1205,23 +1221,10 @@ button.active {
 	color: #000000;
 }
 
-.app-layout {
-	flex: 1;
-	display: flex;
-	flex-direction: column;
-	height: 100vh;
-	background-color: #c0c0c0;
-}
-
-.top-section {
-	width: 100%;
-	display: flex;
-}
-
 .bottom-section {
-	flex: auto;
-	/* min-height: 80%; */
 	display: flex;
+	height: 100%;
+	width: 100%;
 }
 
 .connection-svg {
@@ -1580,7 +1583,8 @@ h3.details {
 	flex-direction: row;
 	width: 100%;
 	z-index: 20;
-	font-size: 14px;
+	font-size: 12px;
+	gap: 1px;
 }
 
 /* landscape */
@@ -1634,9 +1638,9 @@ h3.details {
 		max-height: 90%;
 	} */
 
-	.bottom-section {
+	/*.bottom-section {
 		min-height: 84%;
-	}
+	}*/
 
 	.parameters-grid {
 		flex-wrap: nowrap;
@@ -1812,7 +1816,6 @@ h3.details {
 	}
 	.rack-row {
 		align-items: center;
-		/* height: 100%; */
 		width: 200px;
 		min-width: 200px;
 	}
@@ -1824,10 +1827,6 @@ h3.details {
 
 	.device-patching-main-section {
 		overflow-x: auto;
-	}
-
-	.bottom-section {
-		min-height: 93%;
 	}
 
 	.parameters-grid {
@@ -1901,19 +1900,6 @@ h3.details {
 		max-width: 100%;
 		max-height: 30%;
 	}
-
-	/* .parameters-grid.left {
-		display: block;
-		overflow-x: auto;
-		white-space: nowrap;
-		padding-left: 0;
-		height: auto;
-		min-height: unset;
-		margin-top: 0;
-		margin-bottom: 0;
-		padding-top: 0;
-		padding-bottom: 0;
-	} */
 
 	.parameter-box {
 		width: 20px;

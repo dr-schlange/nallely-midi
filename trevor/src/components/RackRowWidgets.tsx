@@ -203,12 +203,8 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 				className={`rack-row ${orientation}`}
 				onScroll={() => onRackScroll?.()}
 			>
-				<div className="rack-top-bar" style={{ fontSize: "14px" }}>
+				<div className="rack-top-bar">
 					<select
-						style={{
-							height: orientation === "horizontal" ? "40%" : "100%",
-							width: orientation === "horizontal" ? "100%" : "40%",
-						}}
 						value={""}
 						title="Adds a new widget to the system"
 						onChange={(e) => {

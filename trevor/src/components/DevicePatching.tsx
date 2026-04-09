@@ -1161,8 +1161,12 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 			</div>
 
 			<div
-				style={
-					isExpanded
+				style={{
+					display: "flex",
+					flexDirection: "column",
+					gap: "2px",
+					paddingLeft: "2px",
+					...(isExpanded
 						? {
 								minWidth: "262px",
 								overflowY: "auto",
@@ -1170,22 +1174,23 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 								backgroundColor: "rgb(192, 192, 192)",
 								zIndex: 20,
 							}
-						: {}
-				}
+						: {
+								minWidth: "40px",
+							}),
+				}}
 			>
-				<button
+				<Button
+					text={isExpanded ? "»" : "«"}
+					tooltip={isExpanded ? "Open panel" : "Close panel"}
+					onClick={handleExpand}
+					activated={isExpanded}
 					style={{
-						width: "100%",
-						padding: "4px 0px 0px 5px",
+						width: "inherit",
 						textAlign: "left",
-						fontSize: "20px",
+						paddingLeft: "4px",
+						height: "20px",
 					}}
-					type="button"
-					title={isExpanded ? "Open panel" : "Close panel"}
-					onClick={() => handleExpand()}
-				>
-					{isExpanded ? "»" : "«"}
-				</button>
+				/>
 				{(isExpanded && (
 					<div className="device-patching-side-section">
 						<div style={{ display: "flex", gap: "4px", alignItems: "center" }}>
@@ -1335,24 +1340,44 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 						</div>
 					</div>
 				)) || (
-					<div
-						style={{ display: "flex", flexDirection: "column", width: "50px" }}
-					>
-						<button
-							className="rightbar-button"
-							type="button"
+					<div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+						<Button
+							text={ORIENTATIONS[orientation]}
+							tooltip="Change orientation"
 							onClick={toggleOrientation}
-						>
-							{ORIENTATIONS[orientation]}
-						</button>
-						<button
+							style={{
+								width: "inherit",
+								height: "37px",
+							}}
+						/>
+						<Button
+							text="💾"
+							tooltip="Save patch"
+							onClick={savePatch}
+							style={{
+								width: "inherit",
+								height: "37px",
+							}}
+						/>
+						<Button
+							text={`0x${currentAddress?.hex ?? "????"}`}
+							tooltip="Manage memory"
+							onClick={() => setIsMemoryOpen?.(true)}
+							style={{
+								width: "inherit",
+								height: "37px",
+								fontSize: "11px",
+								color: "black",
+							}}
+						/>
+						{/*<button
 							className="rightbar-button"
 							type="button"
 							onClick={savePatch}
 						>
 							💾
-						</button>
-						<button
+						</button>*/}
+						{/*<button
 							className="rightbar-button"
 							type="button"
 							onClick={() => setIsMemoryOpen?.(true)}
@@ -1360,21 +1385,14 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 							<p style={{ fontSize: "12px" }}>
 								0x{currentAddress?.hex ?? "????"}
 							</p>
-						</button>
-						<button
+						</button>*/}
+						{/*<button
 							className="rightbar-button"
 							type="button"
 							onClick={() => open3DView?.(true)}
 						>
 							🌐
-						</button>
-						{/* <button
-							className="rightbar-button"
-							type="button"
-							onClick={() => open3DView?.(true)}
-						>
-							〰
-						</button> */}
+						</button>*/}
 					</div>
 				)}
 			</div>
