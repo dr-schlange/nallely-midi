@@ -21,11 +21,11 @@ const App = () => {
 	);
 };
 
-const PatchingDevice3D = lazy(() =>
-	import("./components/3d/PatchingDevice3D").then((module) => ({
-		default: module.PatchingDevice3D,
-	})),
-);
+// const PatchingDevice3D = lazy(() =>
+// 	import("./components/3d/PatchingDevice3D").then((module) => ({
+// 		default: module.PatchingDevice3D,
+// 	})),
+// );
 
 const Main = () => {
 	const errors = useTrevorSelector((state) => state.general.errors);
@@ -50,7 +50,7 @@ const Main = () => {
 	// }, [trevorWebSocket, trevorWebSocket?.socket]);
 
 	return (
-		(mode === "2D" && (
+		mode === "2D" && (
 			<div className="app-layout">
 				<div className="top-section">
 					<InstanceCreation />
@@ -177,11 +177,12 @@ const Main = () => {
 				</svg>
 				<NotificationBar />
 			</div>
-		)) || (
-			<Suspense fallback={null}>
-				<PatchingDevice3D onCloseView={() => swith3DOn(false)} />
-			</Suspense>
 		)
+		//   || (
+		// 	<Suspense fallback={null}>
+		// 		<PatchingDevice3D onCloseView={() => swith3DOn(false)} />
+		// 	</Suspense>
+		// )
 	);
 };
 
