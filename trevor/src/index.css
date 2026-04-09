@@ -122,6 +122,29 @@ input[type="text"]:disabled {
 	color: #808080; /* Greyish text for disabled text inputs */
 }
 
+.Button {
+	display: flex;
+	flex-direction: column;
+	text-align: center;
+	justify-content: center;
+	border: 2px solid gray;
+	cursor: pointer;
+	pointer-events: auto;
+}
+
+.Button.small {
+	min-width: 12px;
+	min-height: 12px;
+	width: 12px;
+}
+
+.Button.big {
+	min-width: 23px;
+	min-height: 23px;
+	width: 23px;
+	height: 23px;
+}
+
 .logWindow {
 	position: fixed;
 	background: black;
@@ -486,24 +509,23 @@ input[type="text"]:disabled {
 	height: 100%;
 }
 
+.rack-row.horizontal .rack-top-bar .Button {
+	width: auto;
+	height: 100%;
+	min-width: unset;
+	min-height: unset;
+}
+
+.rack-row.vertical .rack-top-bar .Button {
+	width: 100%;
+	height: auto;
+	min-width: unset;
+	min-height: unset;
+}
+
 .rack-row.vertical select {
 	width: 250px;
 	height: 20px;
-}
-
-.rack-row.horizontal > button {
-	height: 100% !important;
-	width: 20px !important;
-	writing-mode: vertical-rl;
-	text-orientation: sideways;
-	transform: rotate(-180deg);
-}
-
-.rack-row.horizontal > select {
-	height: 100%;
-	writing-mode: vertical-rl;
-	text-orientation: sideways;
-	transform: rotate(-180deg);
 }
 
 .rack-row.vertical .rack-top-bar {

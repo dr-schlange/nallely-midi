@@ -349,8 +349,6 @@ export const RackRowCCs = forwardRef<RackRowCCRef, CCsRackProps>(
 				<div className="rack-top-bar" style={{ fontSize: "14px" }}>
 					<Button
 						style={{
-							height: "100%",
-							width: "100%",
 							color: "black",
 						}}
 						text="see all"

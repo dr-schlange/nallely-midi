@@ -234,8 +234,6 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 						}
 						variant="small"
 						style={{
-							width: "100%",
-							height: "100%",
 							color: "black",
 						}}
 						onClick={() => setDisplayWaitingServices((prev) => !prev)}

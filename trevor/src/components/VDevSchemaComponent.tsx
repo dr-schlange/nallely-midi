@@ -42,8 +42,8 @@ const Port = React.memo(
 				</p>
 				<div
 					style={{
-						width: "6px",
-						height: "6px",
+						width: "4px",
+						height: "4px",
 						backgroundColor: "orange",
 						borderRadius: "50%",
 					}}

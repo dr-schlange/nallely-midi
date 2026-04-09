@@ -391,7 +391,13 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 									alignItems: "center",
 								}}
 							>
-								<label style={{ width: "100%", display: "flex" }}>
+								<label
+									style={{
+										width: "100%",
+										display: "flex",
+										alignItems: "baseline",
+									}}
+								>
 									<p
 										style={{
 											margin: "0px 0px 3px",
@@ -515,7 +521,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 
 										flexDirection: "row",
 										justifyContent: "space-between",
-										alignItems: "center",
+										alignItems: "baseline",
 										width: "99%",
 									}}
 								>
@@ -564,7 +570,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 							width: "100%",
 							display: "flex",
 							marginLeft: "10px",
-							alignItems: "center",
+							alignItems: "baseline",
 						}}
 					>
 						<p

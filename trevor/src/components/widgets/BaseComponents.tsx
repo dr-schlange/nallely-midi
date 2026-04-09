@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
 import { useState } from "react";
 
 export const Button = ({
@@ -20,26 +21,13 @@ export const Button = ({
 	const [clickColor, setClickColor] = useState<string | undefined>(undefined);
 
 	return (
-		<button
-			type="button"
+		<div
+			className={`Button ${variant} ${activated}`}
 			style={{
-				// zIndex: 1,
+				...(style ?? {}),
 				backgroundColor:
 					clickColor ||
 					(activated ? "yellow" : (style?.backgroundColor ?? "#e0e0e0")),
-				minWidth: variant === "small" ? "12px" : "23px",
-				width: variant === "small" ? "12px" : "23px",
-				minHeight: variant === "small" ? "18px" : "23px",
-				height: variant === "small" ? "18px" : "23px",
-				textAlign: "center",
-				cursor: "pointer",
-				border: "2px solid gray",
-				padding: "4px",
-				display: "flex",
-				flexDirection: "column",
-				justifyContent: "center",
-				pointerEvents: "auto",
-				...(style ?? {}),
 				color: disabled ? "rgba(127, 127, 127, 0.4)" : (style?.color ?? "gray"),
 			}}
 			onMouseDown={(event) => {
@@ -62,7 +50,7 @@ export const Button = ({
 			title={tooltip}
 		>
 			{text}
-		</button>
+		</div>
 	);
 };
 
