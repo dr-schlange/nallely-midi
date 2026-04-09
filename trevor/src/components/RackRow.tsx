@@ -27,7 +27,7 @@ interface RackRowProps {
 	onNonSectionClick: () => void;
 	onSectionScroll?: () => void;
 	onDeviceClick?: (device: MidiDevice) => void;
-	horizontal?: boolean;
+	orientation?: "horizontal" | "vertical";
 }
 
 export const RackRow = ({
@@ -39,7 +39,7 @@ export const RackRow = ({
 	onNonSectionClick,
 	onSectionScroll,
 	onDeviceClick,
-	horizontal,
+	orientation,
 }: RackRowProps) => {
 	const midiClasses = useTrevorSelector((state) => state.nallely.classes.midi);
 	const [localDeviceOrder, setLocalDeviceOrder] =
@@ -94,7 +94,7 @@ export const RackRow = ({
 
 	return (
 		<div
-			className={`rack-row ${horizontal ? "horizontal" : ""}`}
+			className={`rack-row ${orientation}`}
 			onScroll={() => onSectionScroll?.()}
 			onClick={(event) => {
 				if (
@@ -109,9 +109,6 @@ export const RackRow = ({
 		>
 			<div className="rack-top-bar">
 				<select
-					style={{
-						height: horizontal ? "100%" : "87%",
-					}}
 					value=""
 					title="Adds a MIDI device to the system"
 					onChange={(e) => {
@@ -134,14 +131,16 @@ export const RackRow = ({
 					onDragEnd={handleDragEnd}
 					onDragMove={onSectionScroll}
 					modifiers={[
-						horizontal ? restrictToHorizontalAxis : restrictToVerticalAxis,
+						orientation === "horizontal"
+							? restrictToHorizontalAxis
+							: restrictToVerticalAxis,
 						restrictToParentElement,
 					]}
 				>
 					<SortableContext
 						items={localDeviceOrder.map((d) => d.id)}
 						strategy={
-							horizontal
+							orientation === "horizontal"
 								? horizontalListSortingStrategy
 								: verticalListSortingStrategy
 						}

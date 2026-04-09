@@ -74,7 +74,7 @@ interface RackRowVirtualProps {
 	selectedSections: string[];
 	onNonSectionClick: () => void;
 	onSectionScroll?: () => void;
-	horizontal?: boolean;
+	orientation?: "vertical" | "horizontal";
 }
 
 export const RackRowVirtual = ({
@@ -85,7 +85,7 @@ export const RackRowVirtual = ({
 	selectedSections,
 	onNonSectionClick,
 	onSectionScroll,
-	horizontal,
+	orientation,
 }: RackRowVirtualProps) => {
 	const [selectorOpened, setSelectorOpened] = useState(false);
 	const [codeEditorOpened, setCodeEditorOpened] = useState(false);
@@ -167,7 +167,7 @@ export const RackRowVirtual = ({
 	return (
 		<>
 			<div
-				className={`rack-row ${horizontal ? "horizontal" : ""}`}
+				className={`rack-row ${orientation}`}
 				onScroll={() => onSectionScroll()}
 				onClick={(event) => {
 					if (
@@ -189,7 +189,7 @@ export const RackRowVirtual = ({
 						variant="small"
 						style={{
 							width: "100%",
-							height: "87%",
+							height: "100%",
 							color: "black",
 						}}
 						onClick={() => setSelectorOpened((prev) => !prev)}
@@ -200,7 +200,7 @@ export const RackRowVirtual = ({
 						variant="small"
 						style={{
 							width: "100%",
-							height: "87%",
+							height: "100%",
 							color: "black",
 						}}
 						onClick={() => handleCreateNew()}
@@ -210,12 +210,16 @@ export const RackRowVirtual = ({
 					<DndContext
 						sensors={sensors}
 						onDragEnd={handleDragEnd}
-						modifiers={horizontal ? [restrictToHorizontalAxis] : []}
+						modifiers={
+							orientation === "horizontal" ? [restrictToHorizontalAxis] : []
+						}
 					>
 						<SortableContext
 							items={localDeviceOrder.map((d) => devUID(d))}
 							strategy={
-								horizontal ? horizontalListSortingStrategy : rectSortingStrategy
+								orientation === "horizontal"
+									? horizontalListSortingStrategy
+									: rectSortingStrategy
 							}
 						>
 							{groupedDevices.map((rack, i) => (

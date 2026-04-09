@@ -20,10 +20,10 @@ export const Button = ({
 	const [clickColor, setClickColor] = useState<string | undefined>(undefined);
 
 	return (
-		// biome-ignore lint/a11y/noStaticElementInteractions: <explanation>
-		<div
+		<button
+			type="button"
 			style={{
-				zIndex: 1,
+				// zIndex: 1,
 				backgroundColor:
 					clickColor ||
 					(activated ? "yellow" : (style?.backgroundColor ?? "#e0e0e0")),
@@ -34,6 +34,7 @@ export const Button = ({
 				textAlign: "center",
 				cursor: "pointer",
 				border: "2px solid gray",
+				padding: "4px",
 				display: "flex",
 				flexDirection: "column",
 				justifyContent: "center",
@@ -61,7 +62,7 @@ export const Button = ({
 			title={tooltip}
 		>
 			{text}
-		</div>
+		</button>
 	);
 };
 

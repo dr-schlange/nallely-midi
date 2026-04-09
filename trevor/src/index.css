@@ -89,13 +89,10 @@ button,
 input,
 textarea,
 select {
-	background-color: #d0d0d0; /* Amiga-style button background */
-	border: 2px solid #808080; /* Amiga-style border */
+	background-color: #d0d0d0;
+	border: 2px solid gray;
 	color: #000000;
 	padding: 4px;
-	/*box-shadow:
-		inset -1px -1px 0px #ffffff,
-		inset 1px 1px 0px #000000;*/
 	cursor: pointer;
 }
 button:hover,
@@ -485,14 +482,18 @@ input[type="text"]:disabled {
 }
 
 .rack-row.horizontal select {
-	min-width: 21px;
-	width: 21px;
+	width: 20px;
 	height: 100%;
+}
+
+.rack-row.vertical select {
+	width: 250px;
+	height: 20px;
 }
 
 .rack-row.horizontal > button {
 	height: 100% !important;
-	width: 22px !important;
+	width: 20px !important;
 	writing-mode: vertical-rl;
 	text-orientation: sideways;
 	transform: rotate(-180deg);
@@ -507,14 +508,14 @@ input[type="text"]:disabled {
 
 .rack-row.vertical .rack-top-bar {
 	display: flex;
-	flex-direction: column-reverse;
-	height: 100%;
-	width: 17px;
+	flex-direction: row;
+	height: 20px;
+	width: 100%;
 }
 
 .rack-row.horizontal .rack-top-bar {
 	height: 100%;
-	width: 17px;
+	width: 20px;
 	writing-mode: vertical-rl;
 	text-orientation: sideways;
 	transform: rotate(-180deg);
@@ -1534,6 +1535,7 @@ h3.details {
 	flex-direction: row;
 	width: 100%;
 	z-index: 20;
+	font-size: 14px;
 }
 
 /* landscape */

@@ -16,7 +16,7 @@ import { XYZScope } from "./widgets/XYZScope";
 interface WidgetRackProps {
 	onRackScroll?: () => void;
 	onDragEnd?: () => void;
-	horizontal?: boolean;
+	orientation?: "vertical" | "horizontal";
 	onAddWidget?: (id: string, component: ReactElement) => void;
 }
 
@@ -87,7 +87,7 @@ const WidgetComponents = {
 
 export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 	(
-		{ onRackScroll, onDragEnd, horizontal, onAddWidget }: WidgetRackProps,
+		{ onRackScroll, onDragEnd, orientation, onAddWidget }: WidgetRackProps,
 		ref,
 	) => {
 		const [widgets, setWidgets] = useState<
@@ -200,14 +200,14 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 
 		return (
 			<div
-				className={`rack-row ${horizontal ? "horizontal" : ""}`}
+				className={`rack-row ${orientation}`}
 				onScroll={() => onRackScroll?.()}
 			>
-				<div className="rack-top-bar">
+				<div className="rack-top-bar" style={{ fontSize: "14px" }}>
 					<select
 						style={{
-							height: horizontal ? "40%" : "87%",
-							width: "40%",
+							height: orientation === "horizontal" ? "40%" : "100%",
+							width: orientation === "horizontal" ? "100%" : "40%",
 						}}
 						value={""}
 						title="Adds a new widget to the system"
@@ -226,7 +226,7 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 						))}
 					</select>
 					<Button
-						text={`Waiting Services ${proxyWidgetCandidates.length === 0 ? "" : `[${proxyWidgetCandidates.length}]`}`}
+						text={`Waiting ${proxyWidgetCandidates.length === 0 ? "" : `[${proxyWidgetCandidates.length}]`}`}
 						tooltip="Show waiting services"
 						disabled={proxyWidgetCandidates.length === 0}
 						activated={
@@ -235,9 +235,8 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 						variant="small"
 						style={{
 							width: "100%",
-							height: "71%",
+							height: "100%",
 							color: "black",
-							fontSize: "14px",
 						}}
 						onClick={() => setDisplayWaitingServices((prev) => !prev)}
 					/>
@@ -249,14 +248,16 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 						onDragEnd={handleDragEnd}
 						onDragMove={onRackScroll}
 						modifiers={[
-							horizontal ? restrictToHorizontalAxis : restrictToVerticalAxis,
+							orientation === "horizontal"
+								? restrictToHorizontalAxis
+								: restrictToVerticalAxis,
 							restrictToParentElement,
 						]}
 					>
 						<SortableContext
 							items={widgets.map((w) => w.id)}
 							strategy={
-								horizontal
+								orientation === "horizontal"
 									? horizontalListSortingStrategy
 									: verticalListSortingStrategy
 							}

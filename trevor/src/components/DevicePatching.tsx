@@ -51,8 +51,10 @@ const Playground = lazy(() =>
 	})),
 );
 
-const VERTICAL = "⇄";
-const HORIZONTAL = "⇅";
+const ORIENTATIONS = {
+	horizontal: "⇅",
+	vertical: "⇄",
+};
 
 interface DevicePatchingProps {
 	open3DView?: (open: boolean) => void;
@@ -100,8 +102,8 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 	const widgetRack = useRef<RackRowWidgetRef>(null);
 	const ccsRack = useRef<RackRowCCRef>(null);
 	const [isExpanded, setIsExpanded] = useState<boolean>(false);
-	const [orientation, setOrientation] = useState<string>(
-		window.innerHeight < 450 ? HORIZONTAL : VERTICAL,
+	const [orientation, setOrientation] = useState<"horizontal" | "vertical">(
+		window.innerHeight < 450 ? "horizontal" : "vertical",
 	);
 
 	// Refs for stable updateConnections function
@@ -1022,7 +1024,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 	};
 
 	const toggleOrientation = () => {
-		setOrientation((prev) => (prev === VERTICAL ? HORIZONTAL : VERTICAL));
+		setOrientation((prev) => (prev === "vertical" ? "horizontal" : "vertical"));
 	};
 
 	const usedAddresses = useTrevorSelector(
@@ -1111,14 +1113,12 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 	);
 
 	return (
-		<div
-			className={`device-patching ${orientation === VERTICAL ? "vertical" : ""}`}
-		>
+		<div className={`device-patching ${orientation}`}>
 			<div
-				className={`device-patching-main-section ${orientation === HORIZONTAL ? "horizontal" : ""}`}
+				className={`device-patching-main-section ${orientation}`}
 				ref={mainSectionRef}
 			>
-				<RackRowCCs ref={ccsRack} horizontal={orientation === HORIZONTAL} />
+				<RackRowCCs ref={ccsRack} orientation={orientation} />
 				<RackRow
 					devices={midi_devices}
 					onSectionClick={handleSectionClick}
@@ -1126,7 +1126,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 					selectedSections={selectedSectionIds}
 					onSectionScroll={updateConnectionsThrottled}
 					onDeviceClick={handleMidiDeviceClick}
-					horizontal={orientation === HORIZONTAL}
+					orientation={orientation}
 					onDeviceDrop={updateConnections}
 					onDragEnd={updateConnections}
 				/>
@@ -1138,21 +1138,18 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 					onNonSectionClick={handleNonSectionClick}
 					selectedSections={selectedVirtualSectionIds}
 					onSectionScroll={updateConnectionsThrottled}
-					horizontal={orientation === HORIZONTAL}
+					orientation={orientation}
 					onDeviceDrop={updateConnections}
 					onDragEnd={updateConnections}
 				/>
 				<RackRowWidgets
 					ref={widgetRack}
 					onAddWidget={updateConnections}
-					horizontal={orientation === HORIZONTAL}
+					orientation={orientation}
 					onDragEnd={updateConnections}
 					onRackScroll={updateConnectionsThrottled}
 				/>
-				<svg
-					className={`device-patching-svg ${orientation === HORIZONTAL ? "horizontal" : ""}`}
-					ref={svgRef}
-				/>
+				<svg className={`device-patching-svg ${orientation}`} ref={svgRef} />
 			</div>
 
 			<div
@@ -1338,7 +1335,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 							type="button"
 							onClick={toggleOrientation}
 						>
-							{orientation}
+							{ORIENTATIONS[orientation]}
 						</button>
 						<button
 							className="rightbar-button"

@@ -15,7 +15,7 @@ import { Button } from "./widgets/BaseComponents";
 
 interface CCsRackProps {
 	onRackScroll?: () => void;
-	horizontal?: boolean;
+	orientation?: "horizontal" | "vertical";
 }
 
 export interface RackRowCCRef {
@@ -176,8 +176,8 @@ const sortObjectByKey = (obj) => {
 	);
 };
 
-const switchOrientation = (horizontal) => {
-	if (horizontal) {
+const switchOrientation = (orientation) => {
+	if (orientation === "horizontal") {
 		return {
 			maxHeight: "125px",
 			minHeight: "125px",
@@ -193,8 +193,8 @@ const switchOrientation = (horizontal) => {
 	};
 };
 
-const switchSizeOrientation = (horizontal) => {
-	if (horizontal) {
+const switchSizeOrientation = (orientation) => {
+	if (orientation) {
 		return {
 			// width: "100%",
 			height: "100px",
@@ -233,7 +233,7 @@ const buildFullParameters = (
 };
 
 export const RackRowCCs = forwardRef<RackRowCCRef, CCsRackProps>(
-	({ onRackScroll, horizontal }: CCsRackProps, ref) => {
+	({ onRackScroll, orientation }: CCsRackProps, ref) => {
 		const ccs = useTrevorSelector((state) => state.runTime.ccValues);
 		const devices = useTrevorSelector((state) => state.nallely.midi_devices);
 		const [seeAll, setSeeAll] = useState(false);
@@ -281,7 +281,7 @@ export const RackRowCCs = forwardRef<RackRowCCRef, CCsRackProps>(
 						style={{
 							backgroundColor: "#e0e0e0",
 							border: "3px solid #808080",
-							...switchSizeOrientation(horizontal),
+							...switchSizeOrientation(orientation),
 							padding: "1px",
 						}}
 					>
@@ -290,7 +290,7 @@ export const RackRowCCs = forwardRef<RackRowCCRef, CCsRackProps>(
 							key={`${deviceName}-body`}
 							style={{
 								display: "flex",
-								flexDirection: horizontal ? "row" : "column",
+								flexDirection: orientation === "horizontal" ? "row" : "column",
 								justifyContent: "center",
 							}}
 						>
@@ -304,7 +304,8 @@ export const RackRowCCs = forwardRef<RackRowCCRef, CCsRackProps>(
 											// borderRight: "2px solid #808080",
 											width: "100%",
 											display: "flex",
-											flexDirection: horizontal ? "row" : "column",
+											flexDirection:
+												orientation === "horizontal" ? "row" : "column",
 											borderRadius: "3px",
 											margin: "1px",
 										}}
@@ -340,16 +341,15 @@ export const RackRowCCs = forwardRef<RackRowCCRef, CCsRackProps>(
 
 		return (
 			<div
-				className={`rack-row ${horizontal ? "horizontal" : ""}`}
+				className={`rack-row ${orientation}`}
 				onScroll={() => onRackScroll?.()}
 				// @ts-expect-error: all good, but should check later
-				style={switchOrientation(horizontal)}
+				style={switchOrientation(orientation)}
 			>
 				<div className="rack-top-bar" style={{ fontSize: "14px" }}>
 					<Button
 						style={{
-							fontSize: "14px",
-							height: horizontal ? "100%" : "87%",
+							height: "100%",
 							width: "100%",
 							color: "black",
 						}}
