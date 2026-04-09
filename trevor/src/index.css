@@ -20,7 +20,7 @@
 	font-weight: 400;
 
 	color-scheme: light;
-	color: #000000; /* Amiga Workbench text color */
+	color: black;
 	background-color: #c0c0c0; /* Amiga Workbench background color */
 
 	font-synthesis: none;
@@ -77,7 +77,7 @@ a:hover {
 h1 {
 	font-size: 1.5em;
 	line-height: 1.2;
-	color: #000000;
+	color: black;
 }
 
 h3 {
@@ -91,7 +91,7 @@ textarea,
 select {
 	background-color: #d0d0d0;
 	border: 2px solid gray;
-	color: #000000;
+	color: black;
 	padding: 4px;
 	cursor: pointer;
 }
@@ -110,11 +110,15 @@ select:focus {
 	border-color: orange;
 }
 
+label {
+	color: #000;
+}
+
 input:disabled,
 select:disabled,
 label input:disabled + span,
 label select:disabled + span {
-	color: #808080; /* Slightly greyish text for disabled fields */
+	color: black;
 	background-color: #e0e0e0; /* Keep the Amiga-style background */
 }
 
@@ -130,6 +134,19 @@ input[type="text"]:disabled {
 	border: 2px solid gray;
 	cursor: pointer;
 	pointer-events: auto;
+	color: gray;
+}
+
+.Button:not(.clicked):hover {
+	background-color: #e0e0e0;
+}
+
+.Button.clicked:hover {
+	background-color: orange;
+}
+
+.Button.active {
+	background-color: gold;
 }
 
 .Button.small {
@@ -143,6 +160,12 @@ input[type="text"]:disabled {
 	min-height: 23px;
 	width: 23px;
 	height: 23px;
+}
+
+.information-panel input,
+.information-panel label,
+.information-panel select {
+	color: gray;
 }
 
 .logWindow {
@@ -189,6 +212,7 @@ input[type="text"]:disabled {
 .information-panel {
 	display: flex;
 	flex-direction: column;
+	gap: 2px;
 }
 
 .top-right-panel,
@@ -262,8 +286,9 @@ input[type="text"]:disabled {
 .instance-creation-main-panel {
 	display: flex;
 	width: 100%;
-	flex-direction: column;
+	flex-direction: row;
 	background-color: #e0e0e0;
+	max-height: 250px;
 }
 
 .instance-creation-midi-output,
@@ -300,7 +325,7 @@ input[type="text"]:disabled {
 
 .info-content {
 	font-size: 18px;
-	color: #000000;
+	color: black;
 	text-align: center;
 	background-color: #f0f0f0;
 	padding: 10px;
@@ -330,7 +355,7 @@ input[type="text"]:disabled {
 .device-name {
 	font-size: 18px;
 	font-weight: bold;
-	color: #000000;
+	color: black;
 	text-align: center;
 	margin-bottom: 3px;
 }
@@ -617,11 +642,11 @@ input[type="text"]:disabled {
 
 .device-section.selected .device-section-box,
 .device-section.selected .occupied {
-	background-color: yellow;
+	background-color: gold;
 }
 
 .device-section-box:hover {
-	background-color: yellow;
+	background-color: gold;
 }
 
 .device-section-name {
@@ -667,14 +692,14 @@ input[type="text"]:disabled {
 }
 
 .ugly-button.active {
-	background-color: yellow;
+	background-color: gold;
 	box-shadow:
 		inset 1px 1px 0px #808080,
 		inset -1px -1px 0px #ffffff; /* Inverted 3D effect */
 }
 
 button.active {
-	background-color: yellow;
+	background-color: gold;
 	box-shadow:
 		inset 1px 1px 0px #808080,
 		inset -1px -1px 0px #ffffff;
@@ -1189,10 +1214,8 @@ button.active {
 }
 
 .top-section {
-	/* flex: auto; */
-	/* max-height: 20%; */
+	width: 100%;
 	display: flex;
-	border-bottom: 2px solid #808080;
 }
 
 .bottom-section {

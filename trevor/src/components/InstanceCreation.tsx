@@ -309,28 +309,30 @@ const InstanceCreation = () => {
 						flexDirection: "row",
 						flexWrap: "nowrap",
 						alignItems: "center",
-						gap: "2px",
+						// gap: "2px",
+						width: "100%",
 					}}
 				>
-					<button
+					<Button
+						text={isExpanded ? "- MIDI IOs" : "+ MIDI IOs"}
+						tooltip={isExpanded ? "Collapse panel" : "Expand panel"}
+						variant="big"
+						onClick={handleExpand}
 						style={{
 							width: "100%",
+							fontSize: "14px",
 							textAlign: "left",
-							paddingLeft: "5px",
+							color: "black",
+							paddingLeft: "4px",
 						}}
-						type="button"
-						title={isExpanded ? "Collapse panel" : "Expand panel"}
-						onClick={() => handleExpand()}
-					>
-						{isExpanded ? "- MIDI IOs" : "+ MIDI IOs"}
-					</button>
+					/>
 					<Button
 						activated={classCodeMode}
 						text={"C"}
 						tooltip="Class code"
 						variant="big"
 						onClick={handleClassCodeMode}
-						style={{ border: "unset" }}
+						style={{ borderLeft: "unset", borderRight: "unset" }}
 					/>
 					<Button
 						activated={logMode}
@@ -338,7 +340,7 @@ const InstanceCreation = () => {
 						tooltip="Log mode"
 						variant="big"
 						onClick={handleLogMode}
-						style={{ border: "unset" }}
+						style={{ borderLeft: "unset", borderRight: "unset" }}
 					/>
 
 					<div
@@ -351,7 +353,7 @@ const InstanceCreation = () => {
 								tooltip="prev"
 								variant="big"
 								onClick={setPrevFriend}
-								style={{ border: "unset" }}
+								style={{ borderLeft: "unset", borderRight: "unset" }}
 							/>
 						)}
 
@@ -362,7 +364,8 @@ const InstanceCreation = () => {
 							onClick={handleFriendClick}
 							style={{
 								width: "100%",
-								border: "unset",
+								borderLeft: "unset",
+								borderRight: "unset",
 								paddingLeft: "4px",
 								paddingRight: "4px",
 							}}
@@ -374,7 +377,7 @@ const InstanceCreation = () => {
 								tooltip="next"
 								variant="big"
 								onClick={setNextFriend}
-								style={{ border: "unset" }}
+								style={{ borderLeft: "unset", borderRight: "unset" }}
 							/>
 						)}
 					</div>
@@ -383,7 +386,7 @@ const InstanceCreation = () => {
 						tooltip="Settings"
 						variant="big"
 						onClick={handleSettingsClick}
-						style={{ border: "unset" }}
+						style={{ borderLeft: "unset", borderRight: "unset" }}
 					/>
 					<Button
 						disabled
@@ -395,13 +398,15 @@ const InstanceCreation = () => {
 						}
 						variant="big"
 						onClick={handleSettingsClick}
-						style={{ border: "unset", color: "gray" }}
+						style={{ color: "gray", borderLeft: "unset" }}
 					/>
 				</div>
 				{isExpanded && (
 					<>
 						<div className="instance-creation-main-panel">
-							<div style={{ display: "flex", maxHeight: "250px" }}>
+							<div
+								style={{ display: "flex", maxHeight: "250px", width: "100%" }}
+							>
 								<div
 									className="instance-creation-midi"
 									onScroll={() => updateConnections()}
@@ -432,7 +437,7 @@ const InstanceCreation = () => {
 																		borderColor:
 																			selectedPort?.name === portName &&
 																			selectedPort?.direction === "output"
-																				? "yellow"
+																				? "gold"
 																				: "",
 																	}}
 																/>
@@ -455,7 +460,7 @@ const InstanceCreation = () => {
 																		borderColor:
 																			selectedPort?.name === portName &&
 																			selectedPort?.direction === "input"
-																				? "yellow"
+																				? "gold"
 																				: "",
 																	}}
 																/>
@@ -546,17 +551,17 @@ const InstanceCreation = () => {
 						</svg>
 					</>
 				)}
-				{isSettingsOpen && (
-					<Portal>
-						<SettingsModal onClose={handleClose} />
-					</Portal>
-				)}
-				{isFriendsOpen && (
-					<Portal>
-						<FriendModal onClose={handleClose} />
-					</Portal>
-				)}
 			</div>
+			{isSettingsOpen && (
+				<Portal>
+					<SettingsModal onClose={handleClose} />
+				</Portal>
+			)}
+			{isFriendsOpen && (
+				<Portal>
+					<FriendModal onClose={handleClose} />
+				</Portal>
+			)}
 		</>
 	);
 };

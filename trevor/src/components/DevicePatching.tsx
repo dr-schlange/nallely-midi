@@ -382,13 +382,15 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 							<div
 								key={param.name}
 								style={{
-									marginTop: 0,
-									marginBottom: 2,
-									marginLeft: "10px",
-									marginRight: "5px",
-									display: "flex",
-									flexDirection: "row",
-									alignItems: "center",
+									// marginTop: 0,
+									// marginBottom: 2,
+									// marginLeft: "10px",
+									// marginRight: "5px",
+									// display: "flex",
+									// flexDirection: "row",
+									// alignItems: "center",
+									paddingLeft: "4px",
+									paddingRight: "4px",
 								}}
 							>
 								<label

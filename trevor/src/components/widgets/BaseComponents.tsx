@@ -22,12 +22,9 @@ export const Button = ({
 
 	return (
 		<div
-			className={`Button ${variant} ${activated}`}
+			className={`Button ${variant} ${activated ? "active" : ""} ${clickColor ? "clicked" : ""}`}
 			style={{
 				...(style ?? {}),
-				backgroundColor:
-					clickColor ||
-					(activated ? "yellow" : (style?.backgroundColor ?? "#e0e0e0")),
 				color: disabled ? "rgba(127, 127, 127, 0.4)" : (style?.color ?? "gray"),
 			}}
 			onMouseDown={(event) => {
