@@ -135,7 +135,7 @@ const VDeviceSchema = React.memo(
 								margin: 0,
 								whiteSpace: "nowrap",
 								fontSize: "14px",
-								color: "black",
+								color: "var(--black)",
 								writingMode: "vertical-rl",
 								textOrientation: "sideways",
 								transform: "rotate(180deg)",

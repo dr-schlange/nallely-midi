@@ -307,7 +307,7 @@ export const MemoryModal = ({ onClose, onLoad }: MemoryModalProps) => {
 							const activated =
 								ad.hex === currentAddress?.hex && selection?.hex !== ad.hex;
 							const borderColor = activated
-								? "3px solid yellow"
+								? "3px solid gold"
 								: selection?.hex === ad.hex
 									? "3px solid orange"
 									: "2px solid gray";

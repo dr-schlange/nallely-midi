@@ -20,13 +20,16 @@
 	font-weight: 400;
 
 	color-scheme: light;
-	color: black;
+	/*color: black;*/
 	background-color: #c0c0c0; /* Amiga Workbench background color */
 
 	font-synthesis: none;
 	text-rendering: optimizeLegibility;
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
+	--black: #2c281e;
+
+	color: var(--black);
 }
 
 html {
@@ -76,7 +79,7 @@ a:hover {
 h1 {
 	font-size: 1.5em;
 	line-height: 1.2;
-	color: black;
+	color: var(--black);
 }
 
 h3 {
@@ -90,7 +93,7 @@ textarea,
 select {
 	background-color: #d0d0d0;
 	border: 2px solid gray;
-	color: black;
+	color: var(--black);
 	padding: 4px;
 	cursor: pointer;
 }
@@ -117,7 +120,7 @@ input:disabled,
 select:disabled,
 label input:disabled + span,
 label select:disabled + span {
-	color: black;
+	color: var(--black);
 	background-color: #e0e0e0; /* Keep the Amiga-style background */
 }
 
@@ -178,12 +181,12 @@ input[type="text"]:disabled {
 .information-panel input,
 .information-panel label,
 .information-panel select {
-	color: black;
+	color: var(--black);
 }
 
 .logWindow {
 	position: fixed;
-	background: black;
+	background: var(--black);
 	color: white;
 	padding: 4px 8px;
 	border-radius: 4px;
@@ -339,7 +342,7 @@ input[type="text"]:disabled {
 
 .info-content {
 	font-size: 18px;
-	color: black;
+	color: var(--black);
 	text-align: center;
 	background-color: #f0f0f0;
 	padding: 10px;
@@ -369,7 +372,7 @@ input[type="text"]:disabled {
 .device-name {
 	font-size: 18px;
 	font-weight: bold;
-	color: black;
+	color: var(--black);
 	text-align: center;
 	margin-bottom: 3px;
 }
@@ -668,7 +671,7 @@ input[type="text"]:disabled {
 .device-section-name {
 	font-size: 13px;
 	font-weight: bold;
-	color: #000000;
+	color: var(--black);
 }
 
 .device-section-name.left {
@@ -917,7 +920,7 @@ button.active {
 		inset -1px -1px 0px #ffffff,
 		inset 1px 1px 0px #000000;
 	background-color: #d0d0d0;
-	color: #000000;
+	color: var(--black);
 }
 
 .settings-modal-body input[type="text"] {
@@ -928,7 +931,7 @@ button.active {
 		inset -1px -1px 0px #ffffff,
 		inset 1px 1px 0px #000000;
 	background-color: #d0d0d0;
-	color: #000000;
+	color: var(--black);
 }
 
 .left-panel {
@@ -1088,7 +1091,7 @@ button.active {
 .parameter-name {
 	font-size: 15px;
 	font-weight: bold;
-	color: #000000; /* Black text for parameter names */
+	color: var(--black); /* Black text for parameter names */
 	position: absolute;
 	text-align: left; /* Align the text to the left */
 	white-space: nowrap; /* Adjust to align with the center of the parameter box */
@@ -1132,7 +1135,7 @@ button.active {
 }
 
 .connection-setup {
-	color: #000000;
+	color: var(--black);
 	background-color: #e0e0e0;
 	padding: 10px;
 	border: 2px solid #808080;
@@ -1172,7 +1175,7 @@ button.active {
 		inset -1px -1px 0px #ffffff,
 		inset 1px 1px 0px #000000;
 	background-color: #d0d0d0;
-	color: #000000;
+	color: var(--black);
 }
 
 .connection-setup select {
@@ -1183,7 +1186,7 @@ button.active {
 		inset -1px -1px 0px #ffffff,
 		inset 1px 1px 0px #000000;
 	background-color: #d0d0d0;
-	color: #000000;
+	color: var(--black);
 }
 
 .connection-item.selected {
@@ -1218,7 +1221,7 @@ button.active {
 .connections-list li {
 	font-size: 15px;
 	margin-bottom: 5px;
-	color: #000000;
+	color: var(--black);
 }
 
 .bottom-section {
@@ -1276,7 +1279,7 @@ button.active {
 .midi-port-name {
 	font-size: 13px;
 	font-weight: bold;
-	color: #000000;
+	color: var(--black);
 	/* white-space-collapse: collapse; */
 }
 
@@ -1304,7 +1307,7 @@ button.active {
 
 @media (prefers-color-scheme: light) {
 	:root {
-		color: #000000;
+		color: var(--black);
 		background-color: #c0c0c0;
 	}
 	a:hover {
@@ -1320,7 +1323,7 @@ button.active {
 		"TopazPlusA1200", system-ui, Avenir, Helvetica, Arial, sans-serif;
 	background-color: #d0d0d0;
 	border: 2px solid #808080;
-	color: #000000;
+	color: var(--black);
 	font-size: 21px;
 	font-weight: bold;
 	padding: 5px 5px;

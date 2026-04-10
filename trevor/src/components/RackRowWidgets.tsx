@@ -230,7 +230,7 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 						}
 						variant="small"
 						style={{
-							color: "black",
+							color: "var(--black)",
 						}}
 						onClick={() => setDisplayWaitingServices((prev) => !prev)}
 					/>

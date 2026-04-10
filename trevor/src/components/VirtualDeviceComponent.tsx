@@ -112,7 +112,7 @@ const VirtualDeviceComponent = ({
 			className="device-component"
 			style={{
 				boxSizing: "border-box",
-				borderColor: isSelected ? "yellow" : "",
+				borderColor: isSelected ? "orange" : "",
 				userSelect: "none",
 			}}
 			id={`${devUID(device)}-__virtual__`}

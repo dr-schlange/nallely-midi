@@ -421,7 +421,7 @@ export const RackRowCCs = forwardRef<RackRowCCRef, CCsRackProps>(
 				<div className="rack-top-bar">
 					<Button
 						style={{
-							color: "black",
+							color: "var(--black)",
 						}}
 						text="see all"
 						activated={seeAll}

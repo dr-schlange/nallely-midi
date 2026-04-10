@@ -318,7 +318,7 @@ const InstanceCreation = () => {
 							width: "100%",
 							fontSize: "14px",
 							textAlign: "left",
-							color: "black",
+							color: "var(--black)",
 							paddingLeft: "4px",
 						}}
 					/>
@@ -578,7 +578,7 @@ const SmallMidiDeviceComponent = ({
 			className="device-component"
 			style={{
 				boxSizing: "border-box",
-				borderColor: selected ? "yellow" : "",
+				borderColor: selected ? "gold" : "",
 				position: "relative",
 				userSelect: "none",
 				minWidth: "auto",

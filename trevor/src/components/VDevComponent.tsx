@@ -333,7 +333,7 @@ export const VDevice = React.memo(
 		);
 
 		const color = selected
-			? "yellow"
+			? "gold"
 			: exposed
 				? "rgba(187, 153, 90, 0.8)"
 				: "gray";
@@ -344,7 +344,7 @@ export const VDevice = React.memo(
 			<div
 				style={{
 					paddingTop: "1px",
-					border: `3px ${device.paused ? "dashed" : "solid"} ${selected ? "yellow" : color}`,
+					border: `3px ${device.paused ? "dashed" : "solid"} ${selected ? "gold" : color}`,
 					height: height,
 					width: `${width}px`,
 					minWidth: `${width}px`,
@@ -385,7 +385,7 @@ export const VDevice = React.memo(
 								margin: 0,
 								whiteSpace: "nowrap",
 								fontSize: "14px",
-								color: "black",
+								color: "var(--black)",
 								writingMode: "vertical-rl",
 								textOrientation: "sideways",
 								transform: "rotate(180deg)",

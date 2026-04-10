@@ -1376,7 +1376,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 								width: "inherit",
 								height: "37px",
 								fontSize: "11px",
-								color: "black",
+								color: "var(--black)",
 							}}
 						/>
 						{/*<button

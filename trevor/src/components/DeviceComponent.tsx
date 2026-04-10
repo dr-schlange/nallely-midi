@@ -84,7 +84,7 @@ const MidiDeviceComponent = ({
 			className="device-component"
 			style={{
 				boxSizing: "border-box",
-				borderColor: selected ? "yellow" : "",
+				borderColor: selected ? "gold" : "",
 				position: "relative",
 				userSelect: "none",
 			}}
