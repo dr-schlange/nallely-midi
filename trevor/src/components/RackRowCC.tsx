@@ -248,7 +248,7 @@ const DeviceSectionCC = ({
 		<div
 			key={`${deviceName}::${sectionName}`}
 			style={{
-				height: isOpen ? "100%" : "20px",
+				height: isOpen ? "100%" : "17px",
 				width: "100%",
 				display: "flex",
 				flexDirection: orientation === "horizontal" ? "column" : "row",
@@ -263,10 +263,9 @@ const DeviceSectionCC = ({
 					backgroundColor: "orange",
 					color: "#7b550f",
 					width: "100%",
-					margin: "0",
-					borderTop: "3px solid gray",
-					padding: "2px",
-					marginBottom: "4px",
+					margin: "1px",
+					padding: "3px",
+					marginBottom: "0",
 					cursor: "pointer",
 				}}
 				onClick={() => setIsOpen((prev) => !prev)}
@@ -338,6 +337,7 @@ const DeviceCC = ({
 					display: isOpen ? "flex" : "none",
 					flexDirection: orientation === "horizontal" ? "row" : "column",
 					justifyContent: "center",
+					paddingBottom: "3px",
 				}}
 			>
 				{/* section level */}
