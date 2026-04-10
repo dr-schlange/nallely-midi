@@ -490,12 +490,12 @@ export const XYZScope = ({ id, onClose, num }: WidgetProps) => {
 			>
 				<DragNumberInput
 					range={[BUFFER_SIZE_MIN, BUFFER_SIZE_MAX]}
-					width="30px"
 					value={bufferSize.toString()}
 					onChange={(value) => setBufferSize(Number.parseFloat(value))}
 					onBlur={(value) => commitBufferSize(value)}
 					style={{
 						height: "10px",
+						width: "30px",
 						color: "gray",
 						fontSize: "14px",
 						textAlign: "right",

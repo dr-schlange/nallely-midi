@@ -6,7 +6,6 @@ interface DragNumberInputProps {
 	range: [number | null, number | null];
 	value: string;
 	disabled?: boolean;
-	width?: string;
 	style?: React.CSSProperties;
 	nullable?: boolean;
 }

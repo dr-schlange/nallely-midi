@@ -263,7 +263,6 @@ export const XYScope = ({ id, onClose, num }: WidgetProps) => {
 			>
 				<DragNumberInput
 					range={[BUFFER_SIZE_MIN, BUFFER_SIZE_MAX]}
-					width="30px"
 					value={bufferSize.toString()}
 					onChange={(value) => setBufferSize(Number.parseFloat(value))}
 					onBlur={(value) => commitBufferSize(value)}
@@ -273,6 +272,7 @@ export const XYScope = ({ id, onClose, num }: WidgetProps) => {
 						fontSize: "14px",
 						textAlign: "right",
 						boxShadow: "unset",
+						width: "30px",
 					}}
 				/>
 				<Button

@@ -306,7 +306,6 @@ export const Scope = ({
 				/>
 				<DragNumberInput
 					range={[BUFFER_LOWER, BUFFER_UPPER]}
-					width="30px"
 					value={bufferSize.toString()}
 					onChange={(value) => setBufferSize((_) => Number.parseFloat(value))}
 					onBlur={commitBufferSize}
@@ -318,6 +317,7 @@ export const Scope = ({
 						paddingRight: "1px",
 						paddingLeft: "0px",
 						boxShadow: "unset",
+						width: "30px",
 					}}
 				/>
 				<Button

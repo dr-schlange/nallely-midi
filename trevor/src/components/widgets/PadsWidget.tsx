@@ -50,7 +50,6 @@ const Pad = ({ title, onChange }: { title; onChange }) => {
 
 				<DragNumberInput
 					range={[0, 127]}
-					width="21px"
 					value={indicator.toString()}
 					onChange={(value) => {
 						onChange(Number(indicator));
@@ -62,6 +61,7 @@ const Pad = ({ title, onChange }: { title; onChange }) => {
 						fontSize: "14px",
 						textAlign: "right",
 						boxShadow: "unset",
+						width: "21px",
 					}}
 				/>
 				<p

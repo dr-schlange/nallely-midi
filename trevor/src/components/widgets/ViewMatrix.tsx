@@ -175,7 +175,6 @@ export const ViewMatrix = ({ id, onClose, num }: WidgetProps) => {
 			>
 				<DragNumberInput
 					range={[1, MAX_ROWS]}
-					width="30px"
 					value={rows?.toString()}
 					onChange={(value) => setRows((_) => Number.parseInt(value, 10))}
 					onBlur={(value) => parameters.rows.send(device, value)}
@@ -185,11 +184,11 @@ export const ViewMatrix = ({ id, onClose, num }: WidgetProps) => {
 						fontSize: "14px",
 						textAlign: "right",
 						boxShadow: "unset",
+						width: "30px",
 					}}
 				/>
 				<DragNumberInput
 					range={[1, MAX_COLS]}
-					width="30px"
 					value={cols?.toString()}
 					onChange={(value) => setColumns((_) => Number.parseInt(value, 10))}
 					onBlur={(value) => parameters.cols.send(device, value)}
@@ -199,6 +198,7 @@ export const ViewMatrix = ({ id, onClose, num }: WidgetProps) => {
 						fontSize: "14px",
 						textAlign: "right",
 						boxShadow: "unset",
+						width: "30px",
 					}}
 				/>
 				<Button

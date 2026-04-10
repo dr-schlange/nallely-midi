@@ -63,7 +63,9 @@ export const ScalerForm = ({ connection }: ScalerFormProps) => {
 		}
 		return (
 			<DragNumberInput
-				width="100%"
+				style={{
+					width: "100%",
+				}}
 				disabled={!scalerEnabled}
 				value={variable.toString()}
 				range={parameter.range}
@@ -206,7 +208,9 @@ export const ScalerForm = ({ connection }: ScalerFormProps) => {
 					velocity
 				</p>
 				<DragNumberInput
-					width="100%"
+					style={{
+						width: "100%",
+					}}
 					disabled={!scalerEnabled}
 					value={velocity?.toString() || ""}
 					range={[0, 127]}
