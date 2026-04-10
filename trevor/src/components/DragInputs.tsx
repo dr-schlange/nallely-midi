@@ -18,7 +18,6 @@ export default function DragNumberInput({
 	value,
 	disabled,
 	style = {},
-	width = "50%",
 	nullable = false,
 }: DragNumberInputProps) {
 	const [isDragging, setIsDragging] = useState(false);
@@ -145,8 +144,6 @@ export default function DragNumberInput({
 			style={{
 				touchAction: "none",
 				userSelect: "none",
-				maxWidth: width,
-				width: width,
 				pointerEvents: "auto",
 				...style,
 			}}

@@ -195,7 +195,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 				return (
 					<select
 						style={{
-							maxWidth: "52.1%",
+							width: "132px",
 						}}
 						value={value ? value.toString() : "--"}
 						onChange={(e) =>
@@ -215,6 +215,9 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 			if (typeof value === "number") {
 				return (
 					<DragNumberInput
+						style={{
+							width: "100%",
+						}}
 						value={currentValue}
 						onBlur={(value) => {
 							if (!Number.isNaN(Number.parseFloat(value))) {
@@ -237,6 +240,9 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 			if (typeof value === "string") {
 				return (
 					<input
+						style={{
+							width: "100%",
+						}}
 						type="text"
 						value={currentValue}
 						onChange={(e) => {
@@ -299,7 +305,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 				return (
 					<select
 						style={{
-							maxWidth: "100%",
+							minWidth: "132px",
 						}}
 						value={value ?? "--"}
 						onChange={(e) =>
@@ -321,6 +327,9 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 			}
 			return (
 				<DragNumberInput
+					style={{
+						width: "100%",
+					}}
 					value={currentValue}
 					onBlur={(value) => {
 						if (!Number.isNaN(Number.parseFloat(value))) {
@@ -395,16 +404,16 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 							>
 								<label
 									style={{
-										width: "100%",
 										display: "flex",
 										alignItems: "baseline",
+										width: "100%",
 									}}
 								>
 									<p
 										style={{
 											margin: "0px 0px 3px",
-											width: "50%",
 											overflowInline: "auto",
+											width: "100%",
 										}}
 									>
 										{param.name}
@@ -519,19 +528,19 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 								<label
 									key={param.name}
 									style={{
+										width: "100%",
 										display: "flex",
-
 										flexDirection: "row",
-										justifyContent: "space-between",
 										alignItems: "baseline",
-										width: "99%",
 									}}
 								>
 									<p
 										style={{
-											marginTop: 0,
-											marginBottom: 0,
-											marginLeft: "10px",
+											margin: 0,
+											paddingLeft: "4px",
+											paddingRight: "4px",
+											width: "100%",
+											overflowInline: "auto",
 										}}
 									>
 										{param.name}

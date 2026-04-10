@@ -178,7 +178,7 @@ input[type="text"]:disabled {
 .information-panel input,
 .information-panel label,
 .information-panel select {
-	color: gray;
+	color: black;
 }
 
 .logWindow {
