@@ -261,7 +261,7 @@ const DeviceSectionCC = ({
 				style={{
 					fontSize: "12px",
 					backgroundColor: "orange",
-					color: "black",
+					color: "#7b550f",
 					width: "100%",
 					margin: "0",
 					borderTop: "3px solid gray",
