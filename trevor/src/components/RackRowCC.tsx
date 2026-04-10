@@ -1,3 +1,5 @@
+/** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
+/** biome-ignore-all lint/a11y/useKeyWithClickEvents: <explanation> */
 import {
 	forwardRef,
 	useEffect,
@@ -232,6 +234,131 @@ const buildFullParameters = (
 	return fullParameters;
 };
 
+const DeviceSectionCC = ({
+	deviceId,
+	deviceName,
+	sectionName,
+	parameters,
+	handleParameterChange,
+	orientation,
+}) => {
+	const [isOpen, setIsOpen] = useState(false);
+
+	return (
+		<div
+			key={`${deviceName}::${sectionName}`}
+			style={{
+				height: isOpen ? "100%" : "20px",
+				width: "100%",
+				display: "flex",
+				flexDirection: orientation === "horizontal" ? "column" : "row",
+				alignItems: "center",
+				flexWrap: orientation === "vertical" ? "wrap" : "unset",
+			}}
+		>
+			{/* CircularSlider container section */}
+			<p
+				style={{
+					fontSize: "12px",
+					backgroundColor: "orange",
+					color: "black",
+					width: "100%",
+					margin: "0",
+					borderTop: "3px solid gray",
+					padding: "2px",
+					marginBottom: "4px",
+					cursor: "pointer",
+				}}
+				onClick={() => setIsOpen((prev) => !prev)}
+			>
+				{`${generateAcronym(sectionName, 5)}`}
+			</p>
+			<div
+				style={{
+					display: isOpen ? "flex" : "none",
+					flexDirection: "row",
+					flexWrap: orientation === "vertical" ? "wrap" : "unset",
+					gap: "1px",
+					justifyContent: "space-around",
+				}}
+			>
+				{Object.entries(sortObjectByKey(parameters)).map(
+					([paramName, value]) => (
+						<CircularSlider
+							key={`${deviceName}::${sectionName}::${paramName}`}
+							value={value}
+							param={paramName}
+							onManualSliderChange={(value) =>
+								handleParameterChange(deviceId, sectionName, paramName, value)
+							}
+						/>
+					),
+				)}
+			</div>
+		</div>
+	);
+};
+
+const DeviceCC = ({
+	deviceId,
+	deviceName,
+	section,
+	handleParameterChange,
+	orientation,
+}) => {
+	const [isOpen, setIsOpen] = useState(false);
+
+	return (
+		<div
+			key={deviceName}
+			style={{
+				backgroundColor: "#e0e0e0",
+				border: "3px solid #808080",
+				...switchSizeOrientation(orientation),
+				padding: "1px",
+			}}
+		>
+			<p
+				style={{
+					fontSize: "16px",
+					margin: "0",
+					padding: "4px",
+					backgroundColor: "gray",
+					color: "lightgray",
+					cursor: "pointer",
+				}}
+				onClick={() => setIsOpen((prev) => !prev)}
+			>
+				{deviceName}
+			</p>
+			{/* body container */}
+			<div
+				key={`${deviceName}-body`}
+				style={{
+					display: isOpen ? "flex" : "none",
+					flexDirection: orientation === "horizontal" ? "row" : "column",
+					justifyContent: "center",
+				}}
+			>
+				{/* section level */}
+				{Object.entries(sortObjectByKey(section)).map(
+					([sectionName, parameter]) => (
+						<DeviceSectionCC
+							deviceId={deviceId}
+							deviceName={deviceName}
+							handleParameterChange={handleParameterChange}
+							orientation={orientation}
+							parameters={parameter}
+							sectionName={sectionName}
+							key={`${deviceId}::${sectionName}`}
+						/>
+					),
+				)}
+			</div>
+		</div>
+	);
+};
+
 export const RackRowCCs = forwardRef<RackRowCCRef, CCsRackProps>(
 	({ onRackScroll, orientation }: CCsRackProps, ref) => {
 		const ccs = useTrevorSelector((state) => state.runTime.ccValues);
@@ -274,97 +401,17 @@ export const RackRowCCs = forwardRef<RackRowCCRef, CCsRackProps>(
 			if (Object.values(root).length === 0) {
 				return <p style={{ color: "#808080" }}>CCs values</p>;
 			}
+			// Device level
 			return Object.entries(root).map(([deviceId, config]) =>
 				Object.entries(config).map(([deviceName, section]) => (
-					<div
-						key={deviceName}
-						style={{
-							backgroundColor: "#e0e0e0",
-							border: "3px solid #808080",
-							...switchSizeOrientation(orientation),
-							padding: "1px",
-						}}
-					>
-						<p
-							style={{
-								fontSize: "16px",
-								margin: "0",
-								padding: "4px",
-								backgroundColor: "gray",
-								color: "lightgray",
-							}}
-						>
-							{deviceName}
-						</p>
-						<div
-							key={`${deviceName}-body`}
-							style={{
-								display: "flex",
-								flexDirection: orientation === "horizontal" ? "row" : "column",
-								justifyContent: "center",
-								gap: "4px",
-							}}
-						>
-							{Object.entries(sortObjectByKey(section)).map(
-								([sectionName, parameter]) => (
-									<div
-										key={`${deviceName}::${sectionName}`}
-										style={{
-											width: "100%",
-											display: "flex",
-											flexDirection:
-												orientation === "horizontal" ? "column" : "row",
-											alignItems: "center",
-											flexWrap: orientation === "vertical" ? "wrap" : "unset",
-										}}
-									>
-										<p
-											style={{
-												fontSize: "12px",
-												backgroundColor: "orange",
-												color: "black",
-												width: "100%",
-												margin: "0",
-												borderTop: "3px solid gray",
-												padding: "2px",
-												marginBottom: "4px",
-											}}
-										>
-											{generateAcronym(sectionName, 5)}
-										</p>
-										<div
-											style={{
-												display: "flex",
-												flexDirection: "row",
-												flexWrap: orientation === "vertical" ? "wrap" : "unset",
-												gap: "1px",
-												marginBottom: "4px",
-												justifyContent: "space-around",
-											}}
-										>
-											{Object.entries(sortObjectByKey(parameter)).map(
-												([paramName, value]) => (
-													<CircularSlider
-														key={`${deviceName}::${sectionName}::${paramName}`}
-														value={value}
-														param={paramName}
-														onManualSliderChange={(value) =>
-															handleParameterChange(
-																deviceId,
-																sectionName,
-																paramName,
-																value,
-															)
-														}
-													/>
-												),
-											)}
-										</div>
-									</div>
-								),
-							)}
-						</div>
-					</div>
+					<DeviceCC
+						deviceId={deviceId}
+						deviceName={deviceName}
+						handleParameterChange={handleParameterChange}
+						orientation={orientation}
+						section={section}
+						key={`${deviceId}::${deviceName}`}
+					/>
 				)),
 			);
 		};
