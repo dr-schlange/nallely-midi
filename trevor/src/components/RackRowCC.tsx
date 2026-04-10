@@ -2,7 +2,6 @@
 /** biome-ignore-all lint/a11y/useKeyWithClickEvents: <explanation> */
 import {
 	forwardRef,
-	useEffect,
 	useImperativeHandle,
 	useMemo,
 	useRef,
@@ -22,10 +21,6 @@ interface CCsRackProps {
 
 export interface RackRowCCRef {
 	resetAll: () => void;
-}
-
-interface RackRowCCs {
-	id: string;
 }
 
 const CircularSlider = ({ value, param, onManualSliderChange }) => {
@@ -263,10 +258,10 @@ const DeviceSectionCC = ({
 					backgroundColor: "orange",
 					color: "#7b550f",
 					width: "100%",
-					margin: "1px",
-					padding: "3px",
-					marginBottom: "0",
+					margin: orientation === "horizontal" ? "0" : "1px",
+					padding: orientation === "horizontal" ? "2px" : "3px",
 					cursor: "pointer",
+					borderTop: orientation === "horizontal" ? "2px solid gray" : "unset",
 				}}
 				onClick={() => setIsOpen((prev) => !prev)}
 			>
@@ -321,7 +316,7 @@ const DeviceCC = ({
 				style={{
 					fontSize: "16px",
 					margin: "0",
-					padding: "4px",
+					padding: orientation === "horizontal" ? "2px" : "4px",
 					backgroundColor: "gray",
 					color: "lightgray",
 					cursor: "pointer",
@@ -337,7 +332,7 @@ const DeviceCC = ({
 					display: isOpen ? "flex" : "none",
 					flexDirection: orientation === "horizontal" ? "row" : "column",
 					justifyContent: "center",
-					paddingBottom: "3px",
+					paddingBottom: orientation === "horizontal" ? "0" : "3px",
 				}}
 			>
 				{/* section level */}
