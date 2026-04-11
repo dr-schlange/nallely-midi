@@ -11,11 +11,11 @@ class GeneralSection(nallely.Module):
 
 
 class ButtonsSection(nallely.Module):
-    b1 = nallely.ModuleParameter(120, description='B1')
-    b2 = nallely.ModuleParameter(121, description='B2')
-    b3 = nallely.ModuleParameter(122, description='B3')
-    b4 = nallely.ModuleParameter(123, description='B4')
-    b5 = nallely.ModuleParameter(124, description='B5')
+    b1 = nallely.ModuleParameter(100, description='B1')
+    b2 = nallely.ModuleParameter(101, description='B2')
+    b3 = nallely.ModuleParameter(102, description='B3')
+    b4 = nallely.ModuleParameter(103, description='B4')
+    b5 = nallely.ModuleParameter(104, description='B5')
 
 
 class EnvelopeSection(nallely.Module):
@@ -38,6 +38,11 @@ class ModulationSection(nallely.Module):
 
 class WavetableSection(nallely.Module):
     stream_input = nallely.ModulePitchwheel(stream=True)
+    phase_reset = nallely.ModuleParameter(126, description='Reset the phase')
+    phase_offset = nallely.ModuleParameter(125, description='Add an offset to the phase')
+    retrigger = nallely.ModuleParameter(124, description='Reset the phase on note strike', accepted_values=['OFF', 'ON'])
+    freeze = nallely.ModuleParameter(123, description='Freeze the current wavetables', accepted_values=['OFF', 'ON'])
+    capture_mode = nallely.ModuleParameter(122, description='Selects the type of capture mode', accepted_values=['forward', 'backward', 'rolling', 'buf-forward-rl', 'buf-backward-lr'])
 
 
 class KeysSection(nallely.Module):

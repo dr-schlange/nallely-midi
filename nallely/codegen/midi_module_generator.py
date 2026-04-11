@@ -85,6 +85,10 @@ Generated configuration for the {brand} - {device}
                     parameter_code = (
                         f"    {parameter_name} = nallely.ModulePitchwheel()\n"
                     )
+                elif config == "pitchwheel+stream":
+                    parameter_code = (
+                        f"    {parameter_name} = nallely.ModulePitchwheel(stream=True)\n"
+                    )
                 elif config == "program_change":
                     parameter_code = f"    {parameter_name} = nallely.ModuleParameter(type='program_change')\n"
                 else:
@@ -115,14 +119,14 @@ Generated configuration for the {brand} - {device}
         for section in sections:
             f.write(f"    {section}: {section.capitalize()}Section  # type: ignore\n")
         f.write("\n")
-        f.write(f"    def __init__(self, device_name=None, *args, **kwargs):\n")
-        f.write(f"        super().__init__(\n")
-        f.write(f"            *args\n,")
+        f.write("    def __init__(self, device_name=None, *args, **kwargs):\n")
+        f.write("        super().__init__(\n")
+        f.write("            *args\n,")
         f.write(f"            device_name=device_name or {device!r},\n")
-        f.write(f"            **kwargs,\n")
-        f.write(f"        )\n\n")
+        f.write("            **kwargs,\n")
+        f.write("        )\n\n")
         for section in sections:
-            f.write(f"    @property\n")
+            f.write("    @property\n")
             f.write(f"    def {section}(self) -> {section.capitalize()}Section:\n")
             f.write(f"        return self.modules.{section}\n\n")
 

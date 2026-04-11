@@ -44,7 +44,7 @@ class SlidersSection(nallely.Module):
     s4 = nallely.ModuleParameter(17)
 
 
-class Minilab3midi(nallely.MidiDevice):
+class Minilab3(nallely.MidiDevice):
     general: GeneralSection  # type: ignore
     keys: KeysSection  # type: ignore
     pads: PadsSection  # type: ignore
@@ -77,4 +77,3 @@ class Minilab3midi(nallely.MidiDevice):
     @property
     def sliders(self) -> SlidersSection:
         return self.modules.sliders
-

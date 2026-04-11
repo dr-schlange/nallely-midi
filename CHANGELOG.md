@@ -19,6 +19,7 @@
 * Add experimental Transistor
 * Add experimental integration for [COMOL-1](https://github.com/DZeman23/COMOL-1-The-COBOL-Wavetable-Synthesizer) a COBOL Wavetable Synth
 * Add a new curve/linear mode (default curve) on the ASDR neuron. It also lets the possibility to shape the curve independently for the attack, the decay and the release
+* Add possibility to disable auto sampling rate (computed from speed) on the LFO
 
 #### TrevorUI and UX
 
@@ -66,6 +67,7 @@
 
 * Add possibility to inject an extra 0 before or after a value changes on a link. This allows to reuse values that do not pass by 0 (e.g: pitch shifter, sequencer, etc) to be considered as a trigger for other neurons that requires a clear transition from 0 to non-0.
 * Add auto-reconnection of MIDI devices when a connection is lost (reconnection on session snapshot)
+* Add possibility to remove note-off or 0 on the MIDI keys -> MIDI keys and Neuron port -> MIDI keys patchs 
 
 ### Fix
 
