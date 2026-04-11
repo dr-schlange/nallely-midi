@@ -1,5 +1,5 @@
 """
-Generated configuration for the drschlange - LISA
+Generated configuration for the drschlange - lisa
 """
 import nallely
 
@@ -36,6 +36,10 @@ class ModulationSection(nallely.Module):
     FM_mod = nallely.ModuleParameter(15, description='FM Modulation')
 
 
+class WavetableSection(nallely.Module):
+    stream_input = nallely.ModulePitchwheel(stream=True)
+
+
 class KeysSection(nallely.Module):
     notes = nallely.ModulePadsOrKeys()
     pitchwheel = nallely.ModulePitchwheel()
@@ -47,6 +51,7 @@ class Lisa(nallely.MidiDevice):
     envelope: EnvelopeSection  # type: ignore
     filter: FilterSection  # type: ignore
     modulation: ModulationSection  # type: ignore
+    wavetable: WavetableSection  # type: ignore
     keys: KeysSection  # type: ignore
 
     def __init__(self, device_name=None, *args, **kwargs):
@@ -75,6 +80,10 @@ class Lisa(nallely.MidiDevice):
     @property
     def modulation(self) -> ModulationSection:
         return self.modules.modulation
+
+    @property
+    def wavetable(self) -> WavetableSection:
+        return self.modules.wavetable
 
     @property
     def keys(self) -> KeysSection:

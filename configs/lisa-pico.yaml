@@ -19,6 +19,11 @@ drschlange:
         init: 0
         min: 0
         max: 127
+      midi_dev:
+        cc: 127
+        description: "Dev functions"
+        min: 0
+        max: 127
     buttons:
       b1:
         cc: 120
@@ -107,6 +112,8 @@ drschlange:
         init: 0
         min: 0
         max: 127
+    wavetable:
+        stream_input: "pitchwheel"
     keys:
       notes: "keys_or_pads"
       pitchwheel: "pitchwheel"

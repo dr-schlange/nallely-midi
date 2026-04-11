@@ -157,9 +157,7 @@ class ModulePitchwheel:
     name: str = NOT_INIT
     cc_note: int = -1
     range: tuple[int, int] = (-8192, 8192)
-
-    def __post_init__(self):
-        self.stream = True
+    stream: bool = False
 
     def __get__(self, instance, owner=None):
         if instance is None:
