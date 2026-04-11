@@ -9,10 +9,14 @@ Arturia:
       pitchwheel: 'pitchwheel'
     pads:
       notes: 'keys_or_pads'
-      p4: {cc: 105, description: '', init: 0, min: 0, max: 127}
-      p5: {cc: 106, description: '', init: 0, min: 0, max: 127}
-      p6: {cc: 107, description: '', init: 0, min: 0, max: 127}
-      p7: {cc: 108, description: '', init: 0, min: 0, max: 127}
+      p1: {cc: 110, description: '', init: 0, min: 0, max: 127}
+      p2: {cc: 112, description: '', init: 0, min: 0, max: 127}
+      p3: {cc: 114, description: '', init: 0, min: 0, max: 127}
+      p4: {cc: 116, description: '', init: 0, min: 0, max: 127}
+      p5: {cc: 118, description: '', init: 0, min: 0, max: 127}
+      p6: {cc: 120, description: '', init: 0, min: 0, max: 127}
+      p7: {cc: 122, description: '', init: 0, min: 0, max: 127}
+      p8: {cc: 124, description: '', init: 0, min: 0, max: 127}
     buttons:
       b1: {cc: 74, description: '', init: 0, min: 0, max: 127}
       b2: {cc: 71, description: '', init: 0, min: 0, max: 127}
