@@ -249,9 +249,10 @@ export const ScalerForm = ({ connection }: ScalerFormProps) => {
 						);
 					}}
 				>
-					<option value="none">never</option>
+					<option value="none">-</option>
 					<option value="before">before</option>
 					<option value="after">after</option>
+					<option value="remove-note-off">remove note off</option>
 				</select>
 			</label>
 		</div>

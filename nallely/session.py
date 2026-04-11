@@ -235,6 +235,7 @@ class Session:
                 # the websocket bus is not fully initialized
                 # i.e: it doesn't have all the services from before registered yet (they are in waiting room)
                 link.bouncy = serialized_link.get("bouncy", False)
+                link.extra_zero = serialized_link.get("extra_zero", "none")
                 result_chain = link.chain
                 if result_chain and with_chain:
                     del with_chain["id"]

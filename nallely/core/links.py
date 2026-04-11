@@ -49,7 +49,7 @@ class Link:
         bouncy: bool = False,
         muted: bool = False,
         velocity: int | None = None,
-        extra_zero: Literal["none", "after", "before"] = "none",
+        extra_zero: Literal["none", "before", "after", "remove-note-off"] = "none",
     ):
         self.src_feeder = src_feeder
         self.dest = dest
@@ -64,6 +64,7 @@ class Link:
     def create(cls, src_feeder, dest):
         link = cls(src_feeder, dest)
         link.install()
+        assert link.callback
         return link
 
     def __post_init__(self):
@@ -96,7 +97,6 @@ class Link:
     def trigger(self, value, ctx):
         if self.muted:
             return
-        assert self.callback
         ctx.raw_value = value
         if self.chain:
             value = self.chain(value, ctx)
@@ -106,10 +106,10 @@ class Link:
         if self.debug:
             print(f"# {value} -- {self.callback.__qualname__}\n  {ctx}\n")
         if self.extra_zero == "before":
-            self.callback(0, ThreadContext({}))
-        result = self.callback(value, ctx)
+            self.callback(0, ThreadContext({}))  # type: ignore
+        result = self.callback(value, ctx)  # type: ignore
         if self.extra_zero == "after":
-            self.callback(0, ThreadContext({}))
+            self.callback(0, ThreadContext({}))  # type: ignore
         if self.bouncy:
             self.dest.device.bounce_link(self.dest, value, ctx)
         return result
@@ -126,14 +126,6 @@ class Link:
     @property
     def is_stream(self):
         return self.dest.parameter.stream
-
-    # @staticmethod
-    # def get_channel(prop: Int | PadOrKey | PadsOrKeysInstance | PitchwheelInstance):
-    #     return (
-    #         prop.parameter.channel
-    #         if prop.parameter.channel is not None
-    #         else prop.device.channel
-    #     )
 
     def to_dict(self):
         src = self.src.parameter
@@ -474,12 +466,17 @@ class Link:
 
         self.cleanup_callback = lambda: dest.device.all_notes_off()
 
-        return lambda value, ctx: dest.device.note(
-            note=value,
-            velocity=ctx.get("velocity", DEFAULT_VELOCITY),
-            type=ctx.get("type", "note_off" if ctx.raw_value else "note_on"),
-            channel=dest.parameter.channel,
-        )
+        def foo(value, ctx):
+            if self.extra_zero == "remove-note-off" and ctx.get("type") == "note_off":
+                return
+            return dest.device.note(
+                note=value,
+                velocity=ctx.get("velocity", DEFAULT_VELOCITY),
+                type=ctx.get("type", "note_off" if ctx.raw_value else "note_on"),
+                channel=dest.parameter.channel,
+            )
+
+        return foo
 
     # MIDI pad/key -> MIDI pads/keys
     def _install_PadOrKey__PadsOrKeysInstance(self):
@@ -524,6 +521,11 @@ class Link:
             value = round(value)
             nonlocal count
             type = ctx.get("type", None)
+            if self.extra_zero == "remove-note-off":
+                if type == "note_off" or value == 0:
+                    return
+                if value in count:
+                    return
             if type == "note_on":
                 count[value] = ctx.get("velocity", DEFAULT_VELOCITY)
                 return dest.device.note(
