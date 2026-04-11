@@ -915,6 +915,7 @@ class TimeBasedDevice(VirtualDevice):
     subdiv_cv = VirtualParameter("subdiv", accepted_values=(tuple(SUBDIVISIONS.keys())))
     phase_cv = VirtualParameter("phase", range=(0.0, 1.0))
     sampling_rate_cv = VirtualParameter("sampling_rate", range=(0.001, None))
+    auto_srate_cv = VirtualParameter("auto_srate", accepted_values=("ON", "OFF"))
 
     def __init__(
         self,
@@ -923,7 +924,7 @@ class TimeBasedDevice(VirtualDevice):
         **kwargs,
     ):
         self._speed = Decimal(speed)
-        self.auto_sampling_rate = sampling_rate == "auto"
+        self.auto_srate = "ON" if sampling_rate == "auto" else "OFF"
         self._sampling_rate = (
             self.compute_sampling_rate() if sampling_rate == "auto" else sampling_rate
         )
@@ -944,7 +945,7 @@ class TimeBasedDevice(VirtualDevice):
     @speed.setter
     def speed(self, value):
         self._speed = Decimal(value)
-        if self.auto_sampling_rate:
+        if self.auto_srate == "ON":
             self._sampling_rate = self.compute_sampling_rate()
         self.time_step = Decimal(value) / self._sampling_rate
         self.target_cycle_time = float(1 / self._sampling_rate)
