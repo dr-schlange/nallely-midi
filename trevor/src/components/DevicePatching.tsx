@@ -195,7 +195,8 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 				return (
 					<select
 						style={{
-							width: "132px",
+							minWidth: "132px",
+							maxWidth: "132px",
 						}}
 						value={value ? value.toString() : "--"}
 						onChange={(e) =>
@@ -306,6 +307,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 					<select
 						style={{
 							minWidth: "132px",
+							maxWidth: "132px",
 						}}
 						value={value ?? "--"}
 						onChange={(e) =>
@@ -470,42 +472,28 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 						<hr />
 						<details>
 							<summary>Danger zone</summary>
-							<button
-								style={{
-									fontSize: "16px",
-								}}
-								type="button"
-								className={"ugly-button"}
+							<Button
+								text="Random preset"
+								tooltip="Generates a random preset"
 								onClick={() => trevorSocket?.randomPreset(device.id)}
-							>
-								random preset
-							</button>
+								className="menu-button"
+							/>
 							{!device.proxy ? (
-								<button
-									style={{
-										fontSize: "16px",
-									}}
-									type="button"
-									className={"ugly-button"}
-									onClick={() => {
-										trevorSocket?.killDevice(device.id);
-									}}
-								>
-									Kill
-								</button>
+								<Button
+									text="Kill"
+									tooltip="Kill the device and removes it from the session"
+									onClick={() => trevorSocket?.killDevice(device.id)}
+									className="menu-button"
+								/>
 							) : (
-								<button
-									style={{
-										fontSize: "16px",
-									}}
-									type="button"
-									className={"ugly-button"}
-									onClick={() => {
-										trevorSocket?.unregisterService(device.id, device.repr);
-									}}
-								>
-									Unregister
-								</button>
+								<Button
+									text="Unregister"
+									tooltip="Unregister the service from the network bus"
+									onClick={() =>
+										trevorSocket?.unregisterService(device.id, device.repr)
+									}
+									className="menu-button"
+								/>
 							)}
 						</details>
 						<hr />
@@ -550,16 +538,12 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 							);
 						})}
 						<hr />
-						<button
-							style={{
-								fontSize: "16px",
-							}}
-							type="button"
-							className={"ugly-button"}
+						<Button
+							text="Back to device view"
+							tooltip="Returns to the main device view"
 							onClick={() => handleMidiDeviceClick(device)}
-						>
-							back to device view
-						</button>
+							className="menu-button"
+						/>
 					</>,
 				);
 				return;
@@ -568,13 +552,12 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 			setInformation(
 				<>
 					<p style={{ marginLeft: "5px", fontSize: "18px" }}>{device.repr}</p>
-					<button
-						type="button"
-						className={"ugly-button"}
+					<Button
+						text="Random preset"
+						tooltip="Generates a random preset"
 						onClick={() => trevorSocket?.randomPreset(device.id)}
-					>
-						random preset
-					</button>
+						className="menu-button"
+					/>
 					<hr />
 					<label
 						style={{
@@ -609,42 +592,29 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 					</label>
 					<hr />
 					{device.meta.sections?.map((section) => (
-						<button
-							style={{
-								fontSize: "16px",
-							}}
+						<Button
 							key={section.name}
-							type="button"
-							className={"ugly-button"}
+							text={`${section.name}`}
+							tooltip={`Opens section ${section.name}`}
 							onClick={() => updateInfo(device, section)}
-						>
-							{section.name}
-						</button>
+							className="menu-button"
+						/>
 					))}
 					<hr />
-					<button
-						style={{
-							fontSize: "16px",
-						}}
-						type="button"
-						className={"ugly-button"}
+					<Button
+						text="Force not off"
+						tooltip="Send multiple note off to the device"
 						onClick={() => trevorSocket?.forceNoteOff(device.id)}
-					>
-						Force note off
-					</button>
+						className="menu-button"
+					/>
 					<details>
 						<summary>Danger zone</summary>
-
-						<button
-							style={{
-								fontSize: "16px",
-							}}
-							type="button"
-							className={"ugly-button"}
+						<Button
+							text="Kill device"
+							tooltip="Kills the device"
 							onClick={() => trevorSocket?.killDevice(device.id)}
-						>
-							Kill device
-						</button>
+							className="menu-button"
+						/>
 					</details>
 					<hr />
 				</>,
@@ -994,9 +964,9 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 					}}
 				>
 					{srcDevice && destDevice && (
-						<button
-							type="button"
-							className={"ugly-button}"}
+						<Button
+							text="Delete"
+							tooltip="Delete patch"
 							onClick={() => {
 								setSelectedConnection(undefined);
 								trevorSocket?.associateParameters(
@@ -1007,9 +977,8 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 									true,
 								);
 							}}
-						>
-							Delete
-						</button>
+							className="menu-button"
+						/>
 					)}
 				</div>
 			</>,
@@ -1288,64 +1257,57 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 										</ul>
 									</div>
 									{allConnections?.length > 0 && (
-										<button
-											type="button"
-											className={"ugly-button"}
+										<Button
+											text="Delete all"
+											tooltip="Deletes all patchs from the session"
 											onClick={deleteAllConnections}
+											className="menu-button"
 											style={{
-												height: "auto",
+												width: "100%",
 											}}
-										>
-											Delete All
-										</button>
+										/>
 									)}
 								</details>
 							</div>
 						</div>
 						<div className="device-patching-top-panel">
-							<button
-								type="button"
-								className={"ugly-button"}
+							<Button
+								text="Manage addresses"
+								tooltip="Opens the memory manager"
 								onClick={() => setIsMemoryOpen?.(true)}
-							>
-								Manage Addresses
-							</button>
-						</div>
-						<div className="device-patching-top-panel">
-							<button
-								className={"ugly-button"}
-								type="button"
+								activated={isMemoryOpen}
+								className="menu-button"
+							/>
+							<Button
+								text={`Save at 0x${currentAddress?.hex ?? "????"}`}
+								tooltip={`Save the session at address  0x${currentAddress?.hex ?? "????"}`}
 								onClick={savePatch}
-							>
-								Save at 0x{currentAddress?.hex ?? "????"}
-							</button>
+								className="menu-button"
+							/>
 						</div>
 						<div className="device-patching-top-panel">
-							<button
-								type="button"
-								className={"ugly-button"}
+							<Button
+								text="Open playground"
+								tooltip="Opens the playground"
 								onClick={openPlayground}
-							>
-								Playground
-							</button>
+								className="menu-button"
+							/>
 						</div>
 						<div className="device-patching-top-panel">
-							<button
-								type="button"
-								className={"ugly-button"}
+							<Button
+								text="Reset all"
+								tooltip="Reset the session"
 								onClick={resetAll}
-							>
-								Reset All
-							</button>
+								className="menu-button"
+							/>
 						</div>
 						<div className="device-patching-top-panel">
-							<button
-								type="button"
-								className={"ugly-button"}
+							<Button
+								text="About"
+								tooltip="Opens the about menu"
 								onClick={openAboutModal}
-							>
-								About
-							</button>
+								className="menu-button"
+							/>
 						</div>
 					</div>
 				)) || (

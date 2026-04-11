@@ -9,6 +9,7 @@ export const Button = ({
 	variant = "small",
 	style = undefined,
 	disabled = false,
+	className = "",
 }: {
 	activated?: boolean;
 	onClick?: (event) => void;
@@ -17,15 +18,22 @@ export const Button = ({
 	variant?: "big" | "small";
 	style?: React.CSSProperties;
 	disabled?: boolean;
+	className?: string;
 }) => {
 	const [clickColor, setClickColor] = useState<string | undefined>(undefined);
 
 	return (
 		<div
-			className={`Button ${variant} ${activated ? "active" : ""} ${clickColor ? "clicked" : ""}`}
+			className={`Button ${variant} ${activated ? "active" : ""} ${clickColor ? "clicked" : ""} ${className}`}
 			style={{
 				...(style ?? {}),
-				color: disabled ? "rgba(127, 127, 127, 0.4)" : (style?.color ?? "gray"),
+				...(className?.length > 0
+					? {}
+					: {
+							color: disabled
+								? "rgba(127, 127, 127, 0.4)"
+								: (style?.color ?? "gray"),
+						}),
 			}}
 			onMouseDown={(event) => {
 				event.stopPropagation();

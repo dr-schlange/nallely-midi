@@ -86,9 +86,7 @@ Generated configuration for the {brand} - {device}
                         f"    {parameter_name} = nallely.ModulePitchwheel()\n"
                     )
                 elif config == "pitchwheel+stream":
-                    parameter_code = (
-                        f"    {parameter_name} = nallely.ModulePitchwheel(stream=True)\n"
-                    )
+                    parameter_code = f"    {parameter_name} = nallely.ModulePitchwheel(stream=True)\n"
                 elif config == "program_change":
                     parameter_code = f"    {parameter_name} = nallely.ModuleParameter(type='program_change')\n"
                 else:
