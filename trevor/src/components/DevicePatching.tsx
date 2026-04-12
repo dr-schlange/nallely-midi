@@ -195,8 +195,14 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 				return (
 					<select
 						style={{
-							minWidth: "132px",
-							maxWidth: "132px",
+							minWidth: "0",
+							direction: "rtl",
+							textAlign: "left",
+							height: "24px",
+							lineHeight: "24px",
+							paddingTop: "2px",
+							paddingBottom: "4px",
+							width: "100%",
 						}}
 						value={value ? value.toString() : "--"}
 						onChange={(e) =>
@@ -218,6 +224,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 					<DragNumberInput
 						style={{
 							width: "100%",
+							fontSize: "12px",
 						}}
 						value={currentValue}
 						onBlur={(value) => {
@@ -243,6 +250,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 					<input
 						style={{
 							width: "100%",
+							fontSize: "12px",
 						}}
 						type="text"
 						value={currentValue}
@@ -393,13 +401,6 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 							<div
 								key={param.name}
 								style={{
-									// marginTop: 0,
-									// marginBottom: 2,
-									// marginLeft: "10px",
-									// marginRight: "5px",
-									// display: "flex",
-									// flexDirection: "row",
-									// alignItems: "center",
 									paddingLeft: "4px",
 									paddingRight: "4px",
 								}}
@@ -409,6 +410,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 										display: "flex",
 										alignItems: "baseline",
 										width: "100%",
+										fontSize: "14px",
 									}}
 								>
 									<p
@@ -1272,7 +1274,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 						</div>
 						<div className="device-patching-top-panel">
 							<Button
-								text="Manage addresses"
+								text="Addresses"
 								tooltip="Opens the memory manager"
 								onClick={() => setIsMemoryOpen?.(true)}
 								activated={isMemoryOpen}
