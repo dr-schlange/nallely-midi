@@ -696,24 +696,30 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 							display: "flex",
 							flexDirection: "column",
 							justifyContent: "space-evenly",
+							marginTop: "10px",
 						}}
 					>
 						{srcDevice && destDevice && (
-							<Button
-								text="Delete"
-								tooltip="Delete patch"
-								onClick={() => {
-									setSelectedConnection(undefined);
-									trevorSocket?.associateParameters(
-										srcDevice,
-										connection.src.parameter,
-										destDevice,
-										connection.dest.parameter,
-										true,
-									);
-								}}
-								className="menu-button"
-							/>
+							<details>
+								<summary>Danger zone</summary>
+								<div className="details-content">
+									<Button
+										text="Delete"
+										tooltip="Delete patch"
+										onClick={() => {
+											setSelectedConnection(undefined);
+											trevorSocket?.associateParameters(
+												srcDevice,
+												connection.src.parameter,
+												destDevice,
+												connection.dest.parameter,
+												true,
+											);
+										}}
+										className="menu-button"
+									/>
+								</div>
+							</details>
 						)}
 					</div>
 				</>,

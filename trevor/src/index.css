@@ -95,6 +95,10 @@ p {
 	font-size: 14px;
 }
 
+input[type="checkbox"] {
+	border: 2px solid gray;
+}
+
 button,
 input,
 textarea,
@@ -1190,18 +1194,12 @@ button.active {
 
 .connection-setup h3 {
 	margin: 0 0 10px 0;
-	font-size: 19px;
 	font-weight: bold;
-}
-
-.connection-setup label {
-	display: block;
-	margin-bottom: 10px;
-	font-size: 18px;
 }
 
 .connection-setup input[type="checkbox"] {
 	margin-right: 5px;
+	border: 2px solid gray;
 }
 
 .connection-setup .form-group {
@@ -1211,26 +1209,10 @@ button.active {
 	align-items: flex-end;
 }
 
-.connection-setup input[type="text"] {
-	width: 45%;
-	padding: 5px;
-	border: 2px solid #808080;
-	box-shadow:
-		inset -1px -1px 0px #ffffff,
-		inset 1px 1px 0px #000000;
-	background-color: var(--rack-bg-color);
-	color: var(--black);
-}
-
 .connection-setup select {
-	width: 100%;
-	padding: 5px;
-	border: 2px solid #808080;
-	box-shadow:
-		inset -1px -1px 0px #ffffff,
-		inset 1px 1px 0px #000000;
-	background-color: var(--rack-bg-color);
-	color: var(--black);
+	height: 23px;
+	padding-bottom: 2px;
+	padding-top: 1px;
 }
 
 .connection-item {
