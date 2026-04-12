@@ -291,7 +291,7 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 								</PlaceholderWidget>
 							))}
 							{widgets.length === 0 && proxyWidgetCandidates.length === 0 && (
-								<p style={{ color: "#808080" }}>Widgets</p>
+								<p style={{ color: "gray" }}>Widgets</p>
 							)}
 						</SortableContext>
 					</DndContext>

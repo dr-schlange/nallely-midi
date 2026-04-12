@@ -1,5 +1,6 @@
 /** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
 /** biome-ignore-all lint/a11y/useKeyWithClickEvents: <explanation> */
+/** biome-ignore-all lint/a11y/noSvgWithoutTitle: <explanation> */
 import {
 	forwardRef,
 	useImperativeHandle,
@@ -112,7 +113,6 @@ const CircularSlider = ({ value, param, onManualSliderChange }) => {
 			onTouchStart={handleTouchStart}
 		>
 			<span style={{ fontSize: "12px" }}>{generateAcronym(param, 5)}</span>
-			{/* biome-ignore lint/a11y/noSvgWithoutTitle: <explanation> */}
 			<svg width={size} height={size}>
 				<circle
 					cx={center}
@@ -397,7 +397,7 @@ export const RackRowCCs = forwardRef<RackRowCCRef, CCsRackProps>(
 		const updateCCs = () => {
 			const root = seeAll ? fullCCs : ccs;
 			if (Object.values(root).length === 0) {
-				return <p style={{ color: "#808080" }}>CCs values</p>;
+				return <p style={{ color: "gray" }}>CCs values</p>;
 			}
 			// Device level
 			return Object.entries(root).map(([deviceId, config]) =>

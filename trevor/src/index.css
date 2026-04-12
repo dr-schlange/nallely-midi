@@ -1543,7 +1543,11 @@ button.active {
 	justify-content: flex-start;
 	align-items: center;
 	padding: 0 10px;
-	background-color: #a0a0a0;
+	background-color: gray;
+}
+
+.notification-bar p {
+	color: lightgray;
 }
 
 p.details,

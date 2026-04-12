@@ -152,7 +152,7 @@ export const RackRow = ({
 						))}
 
 						{localDeviceOrder.length === 0 && (
-							<p style={{ color: "#808080" }}>MIDI devices</p>
+							<p style={{ color: "gray" }}>MIDI devices</p>
 						)}
 					</SortableContext>
 				</DndContext>
