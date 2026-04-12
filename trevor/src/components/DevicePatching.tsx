@@ -807,6 +807,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 					}),
 				} as VirtualDeviceSection;
 				setSelection([{ device, section: virtualSection }]);
+				setIsExpanded(true);
 				return;
 			}
 			if (selection.length < 2) {
@@ -850,6 +851,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 				setCurrentSelected(device.id);
 				setDisplayedSection((_) => ({ device, section }));
 				setSelection([{ device, section }]);
+				setIsExpanded(true);
 				return;
 			}
 			if (
