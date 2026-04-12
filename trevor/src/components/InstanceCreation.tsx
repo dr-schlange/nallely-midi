@@ -324,12 +324,12 @@ const InstanceCreation = () => {
 						text={isExpanded ? "- MIDI IOs" : "+ MIDI IOs"}
 						tooltip={isExpanded ? "Collapse panel" : "Expand panel"}
 						variant="big"
-						onClick={handleExpand}
+            onClick={handleExpand}
+						activated={isExpanded}
 						style={{
 							width: "100%",
 							fontSize: "14px",
 							textAlign: "left",
-							color: "var(--black)",
 							paddingLeft: "4px",
 						}}
 					/>
