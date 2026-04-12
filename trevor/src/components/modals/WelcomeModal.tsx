@@ -28,9 +28,17 @@ export const WelcomeModal = () => {
 					The circle indicator let you know the status of the connection:
 				</p>
 				<ul>
-					<li>🟢 connected</li>
-					<li>🟡 trying to connect or reconnect</li>
-					<li>🔴 connection error, a reconnection will be attempted</li>
+					<li>
+						<span style={{ color: "mediumseagreen" }}>⬤</span> connected
+					</li>
+					<li>
+						<span style={{ color: "gold" }}>⬤</span> trying to connect or
+						reconnect
+					</li>
+					<li>
+						<span style={{ color: "gray" }}>⬤</span> connection error, a
+						reconnection will be attempted
+					</li>
 				</ul>
 				<p>Note: the default url is set to {defaultURL}</p>
 				<p>

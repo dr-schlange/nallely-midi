@@ -5,7 +5,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { MidiDevice } from "../model";
 import { useTrevorDispatch, useTrevorSelector } from "../store";
 import { setWebsocketURL } from "../store/generalSlice";
-import { setClassCodeMode, setLogMode } from "../store/runtimeSlice";
+import {
+	setAssociateMode,
+	setClassCodeMode,
+	setLogMode,
+} from "../store/runtimeSlice";
 import { drawConnection } from "../utils/svgUtils";
 import { useTrevorWebSocket, WsStatus } from "../websockets/websocket";
 import { FriendModal } from "./modals/FriendModal";
@@ -96,6 +100,9 @@ const InstanceCreation = () => {
 	);
 	const classCodeMode = useTrevorSelector(
 		(state) => state.runTime.classCodeMode,
+	);
+	const associateMode = useTrevorSelector(
+		(state) => state.runTime.associateMode,
 	);
 
 	useEffect(() => {
@@ -242,14 +249,14 @@ const InstanceCreation = () => {
 		setIsSettingsOpen(true);
 	}, [updateConnections]);
 
-	const displayWebsocketStatus = () => {
+	const statusColor = () => {
 		switch (websocketStatus) {
 			case WsStatus.DISCONNECTED:
-				return "🔴";
+				return "gray";
 			case WsStatus.CONNECTED:
-				return "🟢";
+				return "mediumseagreen";
 			default:
-				return "🟡";
+				return "gold";
 		}
 	};
 
@@ -260,6 +267,10 @@ const InstanceCreation = () => {
 			document.body.style.cursor = "auto";
 		}
 		dispatch(setClassCodeMode(!classCodeMode));
+	};
+
+	const toggleAssociateMode = () => {
+		dispatch(setAssociateMode(!associateMode));
 	};
 
 	const handleFriendClick = () => {
@@ -360,6 +371,13 @@ const InstanceCreation = () => {
 						)}
 					</div>
 					<Button
+						activated={associateMode}
+						text={"A"}
+						tooltip="Associate mode"
+						variant="big"
+						onClick={toggleAssociateMode}
+					/>
+					<Button
 						activated={classCodeMode}
 						text={"C"}
 						tooltip="Class code"
@@ -382,7 +400,7 @@ const InstanceCreation = () => {
 					/>
 					<Button
 						disabled
-						text={displayWebsocketStatus()}
+						text="⬤"
 						tooltip={
 							(websocketStatus === WsStatus.CONNECTED &&
 								`Connected to ${connectionUrl}`) ||
@@ -390,7 +408,11 @@ const InstanceCreation = () => {
 						}
 						variant="big"
 						onClick={handleSettingsClick}
-						style={{ color: "gray", border: "unset", fontSize: "10px" }}
+						style={{
+							color: statusColor(),
+							border: "unset",
+							fontSize: "10px",
+						}}
 					/>
 				</div>
 				{isExpanded && (

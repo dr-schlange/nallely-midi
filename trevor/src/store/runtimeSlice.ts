@@ -15,6 +15,7 @@ export const initialRunTimeState: RunTimeState = {
 	saveDefaultValue: false,
 	classCodeMode: false,
 	classCode: undefined,
+	associateMode: true,
 	ccValues: {},
 	patchDetails: undefined,
 	usedAddresses: [],
@@ -49,6 +50,9 @@ const runtimeSlice = createSlice({
 		},
 		setClassCodeMode: (state, action: PayloadAction<boolean>) => {
 			state.classCodeMode = action.payload;
+		},
+		setAssociateMode: (state, action: PayloadAction<boolean>) => {
+			state.associateMode = action.payload;
 		},
 		setClassCode: (state, action: PayloadAction<ClassCode>) => {
 			state.classCode = {
@@ -136,6 +140,7 @@ export const {
 	setLogComponent,
 	setCurrentAddress,
 	setClassCodeMode,
+	setAssociateMode,
 	setClassCode,
 	setSaveDefaultValue,
 	updateCCState,

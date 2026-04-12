@@ -187,6 +187,7 @@ export interface RunTimeState {
 	currentAddress: Address | undefined;
 	saveDefaultValue: boolean;
 	classCodeMode: boolean;
+	associateMode: boolean;
 	classCode: ClassCode;
 	ccValues: CCValues;
 	patchDetails: PatchDetails | undefined;

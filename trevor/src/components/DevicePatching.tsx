@@ -60,9 +60,19 @@ interface DevicePatchingProps {
 	open3DView?: (open: boolean) => void;
 }
 
+const findDevice = (
+	deviceId: number,
+	midi_devices: MidiDevice[],
+	virtual_devices: VirtualDevice[],
+) => {
+	return [...midi_devices, ...virtual_devices].find((d) => d.id === deviceId);
+};
+
 const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 	const mainSectionRef = useRef(null);
-	const [associateMode, setAssociateMode] = useState(true);
+	const associateMode = useTrevorSelector(
+		(state) => state.runTime.associateMode,
+	);
 	const [selection, setSelection] = useState<
 		(MidiDeviceWithSection | VirtualDeviceWithSection)[]
 	>([]);
@@ -169,11 +179,6 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 			document.removeEventListener("mousedown", handleClickOutside);
 		};
 	}, []);
-
-	const toggleAssociateMode = () => {
-		setAssociateMode((prev) => !prev);
-		setSelection([]); // Reset selections when toggling mode
-	};
 
 	const openAboutModal = () => {
 		setIsAboutOpen(true);
@@ -283,6 +288,31 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 					/>
 				);
 			}
+			// If we have a "undefined" as input
+			// return (
+			// 	<DragNumberInput
+			// 		style={{
+			// 			width: "100%",
+			// 			fontSize: "12px",
+			// 		}}
+			// 		value={currentValue}
+			// 		onBlur={(value) => {
+			// 			if (!Number.isNaN(Number.parseFloat(value))) {
+			// 				trevorSocket?.setVirtualValue(device, parameter, value);
+			// 			}
+			// 		}}
+			// 		onChange={(value) => {
+			// 			setTempValues({
+			// 				...tempValues,
+			// 				[device.id]: {
+			// 					...tempValues[device.id],
+			// 					[parameter.name]: value,
+			// 				},
+			// 			});
+			// 		}}
+			// 		range={parameter.range}
+			// 	/>
+			// );
 		},
 		[trevorSocket, tempValues],
 	);
@@ -429,49 +459,32 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 						{!device.proxy && (
 							<>
 								<hr />
-								<div
-									style={{
-										display: "flex",
-										flexDirection: "row",
-										alignItems: "center",
-										gap: "10px",
-									}}
-								>
-									<p style={{ paddingLeft: "10px" }}>Expose to friends</p>
-									<select
-										style={{
-											border: "unset",
-											boxShadow: "none",
-											height: "18px",
-											width: "18px",
-										}}
-										value={""}
-										title="Select friends"
-										onChange={(e) => {
-											console.log("SElected", e.target.value);
-											const ip = e.target.value;
-											if (ip.startsWith("*")) {
-												trevorSocket.unexposeNeuron(device.id, ip.slice(1));
-											} else {
-												trevorSocket.exposeNeuron(device.id, ip);
-											}
-										}}
-									>
-										<option value={""}>--</option>
-										{Object.entries(friends).map(([name, [ip, _]]) => (
-											<option
+								<details>
+									<summary>Expose to friends</summary>
+									<div className="details-content">
+										{Object.entries(friends).map(([ip, [name, _]]) => (
+											<Button
 												key={`${ip}`}
-												value={`${exposedTo.includes(ip) ? "*" : ""}${ip}`}
-											>
-												{`${exposedTo.includes(ip) ? "*" : " "} ${name} (${ip})`}
-											</option>
+												text={`${name} - ${ip}`}
+												tooltip={`Expose neuron to ${name} living at ${ip}`}
+												activated={exposedTo.includes(ip)}
+												onClick={() => {
+													if (exposedTo.includes(ip)) {
+														trevorSocket.unexposeNeuron(device.id, ip);
+													} else {
+														trevorSocket.exposeNeuron(device.id, ip);
+													}
+												}}
+												className="menu-button"
+												style={{
+													fontSize: "13px",
+												}}
+											/>
 										))}
-									</select>
-								</div>
+									</div>
+								</details>
 							</>
 						)}
-
-						<hr />
 						<details>
 							<summary>Danger zone</summary>
 							<div className="details-content">
@@ -485,22 +498,31 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 									<Button
 										text="Kill"
 										tooltip="Kill the device and removes it from the session"
-										onClick={() => trevorSocket?.killDevice(device.id)}
+										onClick={() => {
+											trevorSocket?.killDevice(device.id);
+											setCurrentSelected(undefined);
+											setSelectedConnection(undefined);
+											setSelection([]);
+											setInformation(undefined);
+										}}
 										className="menu-button"
 									/>
 								) : (
 									<Button
 										text="Unregister"
 										tooltip="Unregister the service from the network bus"
-										onClick={() =>
-											trevorSocket?.unregisterService(device.id, device.repr)
-										}
+										onClick={() => {
+											trevorSocket?.unregisterService(device.id, device.repr);
+											setCurrentSelected(undefined);
+											setSelectedConnection(undefined);
+											setSelection([]);
+											setInformation(undefined);
+										}}
 										className="menu-button"
 									/>
 								)}
 							</div>
 						</details>
-						<hr />
 					</>,
 				);
 				return;
@@ -653,6 +675,54 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 		updateConnections();
 	}, [selection]);
 
+	const displayConnectionMenu = useCallback(
+		(connection: Connection) => {
+			setSelectedConnection(connectionId(connection));
+			setCurrentSelected(connection.id);
+			const srcDevice = findDevice(
+				connection.src.device,
+				midi_devices,
+				virtual_devices,
+			);
+			const destDevice = findDevice(
+				connection.dest.device,
+				midi_devices,
+				virtual_devices,
+			);
+			setInformation(
+				<>
+					<ScalerForm connection={connection} />
+					<div
+						style={{
+							display: "flex",
+							flexDirection: "column",
+							justifyContent: "space-evenly",
+						}}
+					>
+						{srcDevice && destDevice && (
+							<Button
+								text="Delete"
+								tooltip="Delete patch"
+								onClick={() => {
+									setSelectedConnection(undefined);
+									trevorSocket?.associateParameters(
+										srcDevice,
+										connection.src.parameter,
+										destDevice,
+										connection.dest.parameter,
+										true,
+									);
+								}}
+								className="menu-button"
+							/>
+						)}
+					</div>
+				</>,
+			);
+		},
+		[trevorSocket, trevorSocket?.socket, midi_devices, virtual_devices],
+	);
+
 	useEffect(() => {
 		const newTempvalues = { ...tempValues };
 		for (const device of midi_devices) {
@@ -701,7 +771,16 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 			return;
 		}
 		setInformation(undefined);
-	}, [tempValues, midi_devices, virtual_devices, allConnections, channels]);
+	}, [
+		tempValues,
+		midi_devices,
+		virtual_devices,
+		allConnections,
+		displayedSection,
+		currentSelected,
+		updateInfo,
+		displayConnectionMenu,
+	]);
 
 	const handleParameterClick = useCallback(
 		(device: VirtualDevice) => {
@@ -709,6 +788,12 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 			if (!associateMode) {
 				updateInfoRef.current?.(device);
 				setCurrentSelected((_) => device.id);
+				const virtualSection = {
+					parameters: device.meta.parameters.map((e) => {
+						return { ...e, name: e.cv_name };
+					}),
+				} as VirtualDeviceSection;
+				setSelection([{ device, section: virtualSection }]);
 				return;
 			}
 			if (selection.length < 2) {
@@ -751,6 +836,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 				updateInfoRef.current?.(device, section);
 				setCurrentSelected(device.id);
 				setDisplayedSection((_) => ({ device, section }));
+				setSelection([{ device, section }]);
 				return;
 			}
 			if (
@@ -797,7 +883,6 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 		setIsAboutOpen(false);
 		setSelection([]);
 		setIsPlaygroundOpen(false);
-		// setAssociateMode(false);
 		setIsMemoryOpen(false);
 	};
 
@@ -948,48 +1033,8 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 	const handleNonSectionClick = useCallback(() => {
 		setSelection([]); // Deselect sections
 		setDisplayedSection(undefined);
+		setInformation(undefined);
 	}, []);
-
-	const findDevice = (deviceId: number) => {
-		return [...midi_devices, ...virtual_devices].find((d) => d.id === deviceId);
-	};
-
-	const displayConnectionMenu = (connection: Connection) => {
-		setSelectedConnection(connectionId(connection));
-		setCurrentSelected(connection.id);
-		const srcDevice = findDevice(connection.src.device);
-		const destDevice = findDevice(connection.dest.device);
-		setInformation(
-			<>
-				<ScalerForm connection={connection} />
-				<div
-					style={{
-						display: "flex",
-						flexDirection: "column",
-						justifyContent: "space-evenly",
-					}}
-				>
-					{srcDevice && destDevice && (
-						<Button
-							text="Delete"
-							tooltip="Delete patch"
-							onClick={() => {
-								setSelectedConnection(undefined);
-								trevorSocket?.associateParameters(
-									srcDevice,
-									connection.src.parameter,
-									destDevice,
-									connection.dest.parameter,
-									true,
-								);
-							}}
-							className="menu-button"
-						/>
-					)}
-				</div>
-			</>,
-		);
-	};
 
 	const handleConnectionClick = (connection: Connection) => {
 		const coId = connectionId(connection);
@@ -1013,6 +1058,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 
 	const handleExpand = () => {
 		setIsExpanded((prev) => !prev);
+		setSelection([]);
 	};
 
 	const toggleOrientation = () => {
@@ -1349,29 +1395,6 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 								color: "var(--black)",
 							}}
 						/>
-						{/*<button
-							className="rightbar-button"
-							type="button"
-							onClick={savePatch}
-						>
-							💾
-						</button>*/}
-						{/*<button
-							className="rightbar-button"
-							type="button"
-							onClick={() => setIsMemoryOpen?.(true)}
-						>
-							<p style={{ fontSize: "12px" }}>
-								0x{currentAddress?.hex ?? "????"}
-							</p>
-						</button>*/}
-						{/*<button
-							className="rightbar-button"
-							type="button"
-							onClick={() => open3DView?.(true)}
-						>
-							🌐
-						</button>*/}
 					</div>
 				)}
 			</div>

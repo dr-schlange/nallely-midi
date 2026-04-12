@@ -26,9 +26,7 @@
 		"ansi_up": "^6.0.6",
 		"react": "^19.2.4",
 		"react-dom": "^19.2.4",
-		"react-force-graph-3d": "^1.29.1",
 		"react-redux": "^9.2.0",
-		"three-spritetext": "^1.10.0",
 		"uplot": "^1.6.32",
 		"uplot-react": "^1.2.4"
 	},

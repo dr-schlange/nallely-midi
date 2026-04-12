@@ -31,7 +31,7 @@ export const Button = ({
 					? {}
 					: {
 							color: disabled
-								? "rgba(127, 127, 127, 0.4)"
+								? (style?.color ?? "rgba(127, 127, 127, 0.4)")
 								: (style?.color ?? "gray"),
 						}),
 			}}

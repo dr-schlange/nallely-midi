@@ -218,6 +218,7 @@ details[open]::details-content {
 .information-panel label,
 .information-panel select {
 	color: var(--black);
+	font-size: 12px;
 }
 
 .logWindow {
@@ -741,6 +742,12 @@ details[open]::details-content {
 	background-color: darkgray;
 	color: var(--black);
 	border: 2px solid gray;
+}
+
+.Button.menu-button.active {
+	background-color: gold;
+	color: gray;
+	background-clip: unset;
 }
 
 button.active {
