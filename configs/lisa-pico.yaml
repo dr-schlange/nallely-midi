@@ -105,6 +105,7 @@ drschlange:
             - rolling
             - buf-forward-rl
             - buf-backward-lr
+            - rolling-backward
     keys:
       notes: "keys_or_pads"
       pitchwheel: "pitchwheel"

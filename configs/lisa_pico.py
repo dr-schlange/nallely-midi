@@ -42,7 +42,7 @@ class WavetableSection(nallely.Module):
     phase_offset = nallely.ModuleParameter(125, description='Add an offset to the phase')
     retrigger = nallely.ModuleParameter(124, description='Reset the phase on note strike', accepted_values=['OFF', 'ON'])
     freeze = nallely.ModuleParameter(123, description='Freeze the current wavetables', accepted_values=['OFF', 'ON'])
-    capture_mode = nallely.ModuleParameter(122, description='Selects the type of capture mode', accepted_values=['forward', 'backward', 'rolling', 'buf-forward-rl', 'buf-backward-lr'])
+    capture_mode = nallely.ModuleParameter(122, description='Selects the type of capture mode', accepted_values=['forward', 'backward', 'rolling', 'buf-forward-rl', 'buf-backward-lr', 'rolling-backward'])
 
 
 class KeysSection(nallely.Module):
