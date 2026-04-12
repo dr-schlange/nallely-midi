@@ -433,7 +433,13 @@ const InstanceCreation = () => {
 										{Object.entries(groupedPorts).map(
 											([portName, { input, output }]) => {
 												return (
-													<div key={portName}>
+													<div
+														key={portName}
+														style={{
+															border: "2px solid gray",
+															paddingRight: "2px",
+														}}
+													>
 														{output && (
 															<div
 																key={`${portName}-output`}
@@ -443,17 +449,24 @@ const InstanceCreation = () => {
 																	handlePortClick(portName, "output")
 																}
 															>
-																<span className="midi-port-name">{`[to] ${portName} ⬅`}</span>
+																{/*<span className="midi-port-name">{`[to] ${portName} ⬅`}</span>*/}
+																<Button
+																	text={`[to] ${portName} ⬅`}
+																	tooltip={`Send midi messages to ${portName}`}
+																	className="midi-port-name"
+																	activated={
+																		selectedPort?.name === portName &&
+																		selectedPort?.direction === "output"
+																	}
+																/>
 																<div
-																	className="midi-port-circle"
+																	className={`midi-port-circle ${
+																		selectedPort?.name === portName &&
+																		selectedPort?.direction === "output"
+																			? "selected"
+																			: ""
+																	}`}
 																	id={`output-${portName}`}
-																	style={{
-																		borderColor:
-																			selectedPort?.name === portName &&
-																			selectedPort?.direction === "output"
-																				? "gold"
-																				: "",
-																	}}
 																/>
 															</div>
 														)}
@@ -466,17 +479,23 @@ const InstanceCreation = () => {
 																	handlePortClick(portName, "input")
 																}
 															>
-																<span className="midi-port-name">{`[from] ${portName} ➡`}</span>
+																<Button
+																	text={`[from] ${portName} ➡`}
+																	tooltip={`Receive midi messages from ${portName}`}
+																	className="midi-port-name"
+																	activated={
+																		selectedPort?.name === portName &&
+																		selectedPort?.direction === "input"
+																	}
+																/>
 																<div
-																	className="midi-port-circle"
+																	className={`midi-port-circle ${
+																		selectedPort?.name === portName &&
+																		selectedPort?.direction === "input"
+																			? "selected"
+																			: ""
+																	}`}
 																	id={`input-${portName}`}
-																	style={{
-																		borderColor:
-																			selectedPort?.name === portName &&
-																			selectedPort?.direction === "input"
-																				? "gold"
-																				: "",
-																	}}
 																/>
 															</div>
 														)}

@@ -1315,30 +1315,22 @@ button.active {
 .midi-port-name {
 	font-size: 13px;
 	font-weight: bold;
-	color: var(--black);
-	/* white-space-collapse: collapse; */
+	color: var(--browntext);
+	width: 100% !important;
+	border: unset;
+	background-color: orange;
 }
 
-/* .midi-port-name:hover {
-	overflow: visible;
-	white-space: normal;
-	background-color: #ffffff;
-	padding: 2px;
-	border: 1px solid #808080;
-	position: absolute;
-	top: -20px;
-	z-index: 1;
-} */
-
 .midi-port-circle {
-	min-width: 17px;
-	min-height: 17px;
+	min-width: 10px;
+	min-height: 10px;
 	background-color: var(--rack-bg-color);
-	border: 2px solid #808080;
+	border: 2px solid gray;
 	border-radius: 50%;
-	box-shadow:
-		inset -1px -1px 0px #ffffff,
-		inset 1px 1px 0px #000000;
+}
+
+.midi-port-circle.selected {
+	background-color: gold;
 }
 
 @media (prefers-color-scheme: light) {
