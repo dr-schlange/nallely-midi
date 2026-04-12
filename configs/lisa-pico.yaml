@@ -78,6 +78,16 @@ drschlange:
         init: 0
     wavetable:
         stream_input: "pitchwheel+stream"
+        capture_mode:
+          cc: 122
+          description: "Selects the type of capture mode"
+          accepted_values:
+            - forward
+            - backward
+            - rolling
+            - buf-forward-rl
+            - buf-backward-lr
+            - rolling-backward
         phase_reset:
           cc: 126
           description: "Reset the phase"
@@ -96,16 +106,6 @@ drschlange:
           accepted_values:
             - OFF
             - ON
-        capture_mode:
-          cc: 122
-          description: "Selects the type of capture mode"
-          accepted_values:
-            - forward
-            - backward
-            - rolling
-            - buf-forward-rl
-            - buf-backward-lr
-            - rolling-backward
     keys:
       notes: "keys_or_pads"
       pitchwheel: "pitchwheel"
