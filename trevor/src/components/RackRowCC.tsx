@@ -24,7 +24,7 @@ export interface RackRowCCRef {
 }
 
 const CircularSlider = ({ value, param, onManualSliderChange }) => {
-	const radius = 20;
+	const radius = 16;
 	const strokeWidth = 2;
 	const size = radius * 2 + strokeWidth;
 	const center = radius + strokeWidth / 2;
@@ -98,11 +98,6 @@ const CircularSlider = ({ value, param, onManualSliderChange }) => {
 	const onMouseUp = () => endDrag();
 	const onTouchEnd = () => endDrag();
 
-	// useEffect(() => {
-	// 	setGhostValue(null);
-	// 	ghostValueRef.current = null;
-	// }, [value]);
-
 	return (
 		<div
 			style={{
@@ -111,13 +106,12 @@ const CircularSlider = ({ value, param, onManualSliderChange }) => {
 				alignItems: "center",
 				userSelect: "none",
 				touchAction: "none",
+				marginTop: "4px",
 			}}
 			onPointerDown={handlePointerDown}
 			onTouchStart={handleTouchStart}
 		>
-			<p style={{ fontSize: "12px", margin: "5px 0 0 5px" }}>
-				{generateAcronym(param, 5)}
-			</p>
+			<span style={{ fontSize: "12px" }}>{generateAcronym(param, 5)}</span>
 			{/* biome-ignore lint/a11y/noSvgWithoutTitle: <explanation> */}
 			<svg width={size} height={size}>
 				<circle
@@ -139,7 +133,7 @@ const CircularSlider = ({ value, param, onManualSliderChange }) => {
 					y="50%"
 					textAnchor="middle"
 					dy="4px"
-					fontSize="14px"
+					fontSize="12px"
 					fill="#333"
 				>
 					{value}
@@ -249,6 +243,7 @@ const DeviceSectionCC = ({
 				flexDirection: orientation === "horizontal" ? "column" : "row",
 				alignItems: "center",
 				flexWrap: orientation === "vertical" ? "wrap" : "unset",
+				justifyContent: "space-around",
 			}}
 		>
 			{/* CircularSlider container section */}
@@ -272,8 +267,16 @@ const DeviceSectionCC = ({
 					display: isOpen ? "flex" : "none",
 					flexDirection: "row",
 					flexWrap: orientation === "vertical" ? "wrap" : "unset",
-					gap: "1px",
+					gap:
+						orientation === "vertical"
+							? Object.values(parameters).length > 2
+								? "unset"
+								: "3px"
+							: "2px",
 					justifyContent: "space-around",
+					marginBottom: "3px",
+					marginLeft: orientation === "vertical" ? "unset" : "7px",
+					marginRight: orientation === "vertical" ? "unset" : "2px",
 				}}
 			>
 				{Object.entries(sortObjectByKey(parameters)).map(
