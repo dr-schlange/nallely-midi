@@ -238,7 +238,7 @@ const generateNameWithAcronym = (
 	return acronym + number;
 };
 
-const HIDE = new Set<string>();
+const HIDE = new Set<string>(["set_pause"]);
 const MAX_ROWS = 2;
 export const VDevice = React.memo(
 	({

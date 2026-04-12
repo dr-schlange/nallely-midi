@@ -1040,6 +1040,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 		setDisplayedSection(undefined);
 		setInformation(undefined);
 		setCurrentSelected(undefined);
+		setSelectedConnection(undefined);
 	}, []);
 
 	const handleConnectionClick = (connection: Connection) => {
