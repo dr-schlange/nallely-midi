@@ -426,7 +426,6 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 				const exposedTo = exposedServices[device.id]?.map(([, ip]) => ip) ?? [];
 				setInformation(
 					<>
-						<hr />
 						{device.meta.parameters.map((param) => (
 							<div
 								key={param.name}
@@ -1034,6 +1033,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 		setSelection([]); // Deselect sections
 		setDisplayedSection(undefined);
 		setInformation(undefined);
+		setCurrentSelected(undefined);
 	}, []);
 
 	const handleConnectionClick = (connection: Connection) => {
@@ -1186,6 +1186,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 					orientation={orientation}
 					onDragEnd={updateConnections}
 					onRackScroll={updateConnectionsThrottled}
+					onNonSectionClick={handleNonSectionClick}
 				/>
 				<svg className={`device-patching-svg ${orientation}`} ref={svgRef} />
 			</div>
@@ -1223,9 +1224,23 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 				/>
 				{(isExpanded && (
 					<div className="device-patching-side-section">
-						<div style={{ display: "flex", gap: "4px", alignItems: "center" }}>
+						<div
+							style={{
+								display: "flex",
+								gap: "4px",
+								alignItems: "center",
+								padding: "4px",
+							}}
+						>
+							<Button
+								text={"⟳"}
+								tooltip="Pull full state"
+								variant={"big"}
+								style={{ backgroundColor: "var(--button-bg-color)" }}
+								onClick={() => trevorSocket?.pullFullState()}
+							/>
 							<select
-								style={{ width: "100%", fontSize: "18px" }}
+								style={{ width: "100%" }}
 								value={selection?.[0]?.device.id ?? ""}
 								title="Select device to associate"
 								onChange={(e) => {
@@ -1250,13 +1265,6 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 									</option>
 								))}
 							</select>
-							<Button
-								text={"⟳"}
-								tooltip="Pull full state"
-								variant={"big"}
-								style={{ border: "unset" }}
-								onClick={() => trevorSocket?.pullFullState()}
-							/>
 						</div>
 						<div>
 							<div className="device-patching-middle-panel">
@@ -1265,10 +1273,8 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 										information
 									) : (
 										<>
-											<h3>Information</h3>
-											<p>
-												Select a section to view details or associate sections
-											</p>
+											<h3>Settings panel</h3>
+											<p>Select a neuron to view details</p>
 										</>
 									)}
 								</div>

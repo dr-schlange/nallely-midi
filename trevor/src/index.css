@@ -30,6 +30,7 @@
 	--black: #2c281e;
 	--browntext: rgb(123, 85, 15);
 	--rack-bg-color: #d0d0d0;
+	--button-bg-color: #d0d0d0;
 
 	color: var(--black);
 }
@@ -87,6 +88,11 @@ h1 {
 h3 {
 	margin-top: 0px;
 	margin-bottom: 2px;
+	font-size: 16px;
+}
+
+p {
+	font-size: 14px;
 }
 
 button,
@@ -117,6 +123,11 @@ select:focus {
 label {
 	color: #000;
 	font-size: 14px;
+}
+
+select {
+	direction: rtl;
+	text-align: left;
 }
 
 input:disabled,

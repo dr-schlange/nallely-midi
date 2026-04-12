@@ -98,15 +98,8 @@ export const RackRow = ({
 		<div
 			className={`rack-row ${orientation}`}
 			onScroll={() => onSectionScroll?.()}
-			onClick={(event) => {
-				if (
-					!(event.target as HTMLElement).classList.contains(
-						"rack-section-box",
-					) &&
-					!(event.target as HTMLElement).classList.contains("rack-section-name")
-				) {
-					onNonSectionClick();
-				}
+			onClick={() => {
+				onNonSectionClick();
 			}}
 		>
 			<div className="rack-top-bar">

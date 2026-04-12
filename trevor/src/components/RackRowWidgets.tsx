@@ -1,3 +1,5 @@
+/** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
+/** biome-ignore-all lint/a11y/useKeyWithClickEvents: <explanation> */
 import {
 	forwardRef,
 	type ReactElement,
@@ -18,6 +20,7 @@ interface WidgetRackProps {
 	onDragEnd?: () => void;
 	orientation?: "vertical" | "horizontal";
 	onAddWidget?: (id: string, component: ReactElement) => void;
+	onNonSectionClick: () => void;
 }
 
 export interface RackRowWidgetRef {
@@ -87,7 +90,13 @@ const WidgetComponents = {
 
 export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 	(
-		{ onRackScroll, onDragEnd, orientation, onAddWidget }: WidgetRackProps,
+		{
+			onRackScroll,
+			onDragEnd,
+			orientation,
+			onAddWidget,
+			onNonSectionClick,
+		}: WidgetRackProps,
 		ref,
 	) => {
 		const [widgets, setWidgets] = useState<
@@ -202,6 +211,9 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 			<div
 				className={`rack-row ${orientation}`}
 				onScroll={() => onRackScroll?.()}
+				onClick={() => {
+					onNonSectionClick();
+				}}
 			>
 				<div className="rack-top-bar">
 					<select
