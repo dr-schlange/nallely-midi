@@ -261,6 +261,7 @@ const PatchingModal = ({
 				return;
 			}
 			setSelectedConnection(connectionId(connection));
+			setSelectedParameters([]);
 		},
 		[selectedConnection],
 	);
@@ -652,7 +653,7 @@ const PatchingModal = ({
 												? "selected"
 												: ""
 										}`}
-										id={buildParameterId(currentFirstSection.device.id, param)}
+										id={`container-${buildParameterId(currentFirstSection.device.id, param)}`}
 										onClick={() =>
 											handleParameterClick(currentFirstSection.device, param)
 										}
@@ -713,7 +714,7 @@ const PatchingModal = ({
 												? "selected"
 												: ""
 										}`}
-										id={buildParameterId(currentSecondSection.device.id, param)}
+										id={`container-${buildParameterId(currentSecondSection.device.id, param)}`}
 										onClick={() =>
 											handleParameterClick(currentSecondSection.device, param)
 										}

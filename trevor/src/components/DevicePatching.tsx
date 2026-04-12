@@ -690,6 +690,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 			);
 			setInformation(
 				<>
+					<h3>Patch setup</h3>
 					<ScalerForm connection={connection} />
 					<div
 						style={{

@@ -266,17 +266,6 @@ details[open]::details-content {
 		inset 1px 1px 0px #000000;
 }
 
-.left-panel {
-	width: 80%; /* 80% of the horizontal space */
-	display: flex;
-	flex-direction: column;
-	border-right: 2px solid #808080;
-	background-color: var(--rack-bg-color);
-	box-shadow:
-		inset -1px -1px 0px #ffffff,
-		inset 1px 1px 0px #000000;
-}
-
 .information-panel {
 	display: flex;
 	flex-direction: column;
@@ -287,7 +276,8 @@ details[open]::details-content {
 
 .top-right-panel,
 .bottom-right-panel {
-	flex: 1;
+	width: 100%;
+	height: 100%;
 	display: flex;
 	flex-direction: column;
 	align-items: flex-start;
@@ -299,6 +289,7 @@ details[open]::details-content {
 
 .bottom-right-panel {
 	border-bottom: none;
+	overflow: auto;
 }
 
 .top-panel {
@@ -794,7 +785,7 @@ button.active {
 .patching-modal {
 	width: 80%;
 	height: 60%;
-	z-index: 10;
+	z-index: 30;
 }
 
 .about-modal {
@@ -821,7 +812,7 @@ button.active {
 }
 
 .settings-modal {
-	z-index: 10;
+	z-index: 30;
 	width: 680px;
 	height: 100px;
 }
@@ -924,10 +915,12 @@ button.active {
 .settings-modal-body,
 .save-modal-body,
 .load-modal-body {
-	flex: 1;
+	width: 100%;
 	display: flex;
 	flex-direction: row;
-	height: 100%;
+	flex: 1;
+	min-height: 0;
+	overflow: hidden;
 }
 
 .about-modal-body,
@@ -983,13 +976,30 @@ button.active {
 }
 
 .left-panel {
-	flex: 4; /* 80% of the horizontal space */
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	display: flex;
+	flex-direction: row;
+	border-right: 2px solid gray;
+	background-color: var(--rack-bg-color);
+	/*box-shadow:
+		inset -1px -1px 0px #ffffff,
+		inset 1px 1px 0px #000000;*/
+}
+
+/*.left-panel {
+    height: 100%;
+    width: 100%;
 	display: flex;
 	flex-direction: row;
 	border-right: 2px solid #808080;
-}
+}*/
 
 .top-left-panel {
+	overflow: auto;
+	min-width: 0;
+	min-height: 0;
 	flex: 1;
 	background-color: #e0e0e0;
 	border-bottom: 2px solid #808080;
@@ -998,13 +1008,10 @@ button.active {
 	align-items: flex-end;
 	justify-content: flex-start;
 	padding: 10px;
-	overflow-y: auto;
 	border: 2px solid #808080;
 	box-shadow:
 		inset -1px -1px 0px #ffffff,
 		inset 1px 1px 0px #000000;
-	overflow-x: auto;
-	position: relative !important;
 }
 
 .top-left-panel .panel-dropdown {
@@ -1034,7 +1041,9 @@ button.active {
 }
 
 .bottom-left-panel {
-	flex: 1; /* 50% of the vertical space */
+	min-width: 0;
+	min-height: 0;
+	flex: 1;
 	background-color: #e0e0e0;
 	border-bottom: 2px solid #808080;
 	display: flex;
@@ -1042,12 +1051,11 @@ button.active {
 	align-items: flex-start !important;
 	justify-content: flex-start;
 	padding: 10px;
-	overflow-y: auto; /* Allow scrolling if content overflows */
+	overflow: auto;
 	border: 2px solid #808080;
-	box-shadow:
+	/*box-shadow:
 		inset -1px -1px 0px #ffffff,
-		inset 1px 1px 0px #000000;
-	position: relative !important;
+		inset 1px 1px 0px #000000;*/
 }
 
 .bottom-left-panel h3 {
@@ -1072,8 +1080,8 @@ button.active {
 	display: flex;
 	flex-direction: column; /* nécessaire pour empiler top et bottom */
 	background-color: #f0f0f0;
-	border-left: 2px solid #808080;
-	max-width: 340px;
+	border: 2px solid #808080;
+	max-width: 25%;
 }
 
 .modal-content {
@@ -1235,7 +1243,7 @@ button.active {
 }
 
 .parameter-info {
-	height: 100%; /* Ensure consistent height */
+	height: 100%;
 	display: flex;
 	flex-direction: column;
 	justify-content: flex-start;
@@ -1261,10 +1269,9 @@ button.active {
 
 .connection-svg {
 	position: absolute;
-	top: 30px;
-	left: 0;
 	width: 100%;
 	height: 100%;
+	padding: 2px;
 	pointer-events: none; /* Allow clicks to pass through the SVG */
 }
 
@@ -1655,12 +1662,13 @@ h3.details {
 	}
 
 	.right-panel {
+		flex: 1;
 		max-width: 35%;
 	}
 
-	.connection-svg {
+	/*.connection-svg {
 		top: 30px;
-	}
+	}*/
 
 	.settings-modal {
 		width: 90%;
@@ -1744,6 +1752,11 @@ h3.details {
 		flex-direction: column;
 	}
 
+	.left-panel {
+		flex-direction: row;
+		min-height: 0;
+	}
+
 	.top-left-panel {
 		gap: 5px;
 	}
@@ -1783,6 +1796,10 @@ h3.details {
 
 	.terminal {
 		font-size: 11px;
+	}
+
+	.bottom-right-panel {
+		max-height: 90%;
 	}
 }
 
@@ -1826,9 +1843,9 @@ h3.details {
 		flex-wrap: nowrap;
 	}
 
-	.connection-svg {
+	/*.connection-svg {
 		top: 30px;
-	}
+	}*/
 
 	.settings-modal {
 		width: 90%;
@@ -1866,7 +1883,7 @@ h3.details {
 
 	.patching-modal {
 		width: 92%;
-		height: 70%;
+		height: 80%;
 	}
 
 	.modal-header label {
@@ -1884,14 +1901,15 @@ h3.details {
 	.left-panel {
 		flex-direction: column;
 		width: 100%;
-		flex: 2.5;
-		min-height: 30%;
+		height: 100%;
 	}
 
 	.right-panel {
 		flex-direction: row-reverse;
+		width: 100%;
+		height: 35%;
 		max-width: 100%;
-		max-height: 30%;
+		max-height: 32%;
 	}
 
 	.parameter-box {
@@ -2003,7 +2021,7 @@ h3.details {
 	}
 
 	.top-left-panel {
-		/* flex-direction: row-reverse; */
+		flex-direction: column;
 		align-items: flex-end !important;
 	}
 
@@ -2027,8 +2045,7 @@ h3.details {
 		position: absolute;
 		left: 10px;
 		bottom: 0px;
-		z-index: 10;
-		background: inherit;
+		z-index: 30;
 		margin-bottom: 0;
 		width: auto;
 	}

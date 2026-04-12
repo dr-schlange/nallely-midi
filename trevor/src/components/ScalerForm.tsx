@@ -37,7 +37,7 @@ export const ScalerForm = ({ connection }: ScalerFormProps) => {
 
 	return (
 		<div className="connection-setup">
-			<h3>Patch Setup</h3>
+			{/*<h3>Patch Setup</h3>*/}
 			<div style={{ display: "flex", width: "100%" }}>
 				<div
 					style={{ display: "flex", flexDirection: "column", width: "100%" }}
