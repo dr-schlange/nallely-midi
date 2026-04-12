@@ -402,13 +402,19 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 			(device?: VirtualDevice | MidiDevice, section?: MidiDeviceSection) => void
 		>(null);
 
-	const handleMidiDeviceClick = useCallback((device: MidiDevice) => {
-		setCurrentSelected(device.id);
-		setSelectedConnection(undefined);
-		setSelection([]);
-		setDisplayedSection(undefined);
-		updateInfoRef.current?.(device);
-	}, []);
+	const handleMidiDeviceClick = useCallback(
+		(device: MidiDevice) => {
+			setCurrentSelected(device.id);
+			if (!associateMode) {
+				setIsExpanded(true);
+			}
+			setSelectedConnection(undefined);
+			setSelection([]);
+			setDisplayedSection(undefined);
+			updateInfoRef.current?.(device);
+		},
+		[associateMode],
+	);
 
 	const updateInfo = useCallback(
 		(
@@ -656,6 +662,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 			createVirtualInput,
 			exposedServices,
 			friends,
+			currentSelected,
 		],
 	);
 
@@ -1065,7 +1072,12 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 	};
 
 	const handleExpand = () => {
-		setIsExpanded((prev) => !prev);
+		setIsExpanded((isExpanded) => {
+			if (isExpanded) {
+				setInformation(undefined);
+			}
+			return !isExpanded;
+		});
 		setSelection([]);
 	};
 

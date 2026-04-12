@@ -71,7 +71,8 @@ const MidiDeviceComponent = ({
 		setIsNameOnLeft(leftSections.length > rightSections.length);
 	}, [leftSections, rightSections]);
 
-	const handleDeviceClick = (device: MidiDevice) => {
+	const handleDeviceClick = (device: MidiDevice, event: React.MouseEvent) => {
+		event.stopPropagation();
 		if (isLogMode()) {
 			return;
 		}
@@ -89,7 +90,7 @@ const MidiDeviceComponent = ({
 				userSelect: "none",
 			}}
 			id={`${device.id}`}
-			onClick={() => handleDeviceClick(device)}
+			onClick={(event) => handleDeviceClick(device, event)}
 			onMouseEnter={(e) => setDebugMode(e, device.id, true)}
 			onMouseLeave={(e) => setDebugMode(e, device.id, false)}
 			onTouchStart={(e) => setDebugMode(e, device.id, true)}
