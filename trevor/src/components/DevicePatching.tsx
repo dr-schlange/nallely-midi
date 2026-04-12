@@ -474,29 +474,31 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 						<hr />
 						<details>
 							<summary>Danger zone</summary>
-							<Button
-								text="Random preset"
-								tooltip="Generates a random preset"
-								onClick={() => trevorSocket?.randomPreset(device.id)}
-								className="menu-button"
-							/>
-							{!device.proxy ? (
+							<div className="details-content">
 								<Button
-									text="Kill"
-									tooltip="Kill the device and removes it from the session"
-									onClick={() => trevorSocket?.killDevice(device.id)}
+									text="Random preset"
+									tooltip="Generates a random preset"
+									onClick={() => trevorSocket?.randomPreset(device.id)}
 									className="menu-button"
 								/>
-							) : (
-								<Button
-									text="Unregister"
-									tooltip="Unregister the service from the network bus"
-									onClick={() =>
-										trevorSocket?.unregisterService(device.id, device.repr)
-									}
-									className="menu-button"
-								/>
-							)}
+								{!device.proxy ? (
+									<Button
+										text="Kill"
+										tooltip="Kill the device and removes it from the session"
+										onClick={() => trevorSocket?.killDevice(device.id)}
+										className="menu-button"
+									/>
+								) : (
+									<Button
+										text="Unregister"
+										tooltip="Unregister the service from the network bus"
+										onClick={() =>
+											trevorSocket?.unregisterService(device.id, device.repr)
+										}
+										className="menu-button"
+									/>
+								)}
+							</div>
 						</details>
 						<hr />
 					</>,
@@ -611,12 +613,14 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 					/>
 					<details>
 						<summary>Danger zone</summary>
-						<Button
-							text="Kill device"
-							tooltip="Kills the device"
-							onClick={() => trevorSocket?.killDevice(device.id)}
-							className="menu-button"
-						/>
+						<div className="details-content">
+							<Button
+								text="Kill device"
+								tooltip="Kills the device"
+								onClick={() => trevorSocket?.killDevice(device.id)}
+								className="menu-button"
+							/>
+						</div>
 					</details>
 					<hr />
 				</>,
@@ -1226,37 +1230,39 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 							<div className="bottom-right-panel">
 								<details>
 									<summary>Connections</summary>
-									<div
-										className="connection-setup"
-										style={{
-											height: "150px",
-											position: "relative",
-											overflowY: "scroll",
-										}}
-									>
-										<ul className="connections-list">
-											{allConnections.map((connection) => {
-												return (
-													<li
-														key={buildConnectionName(connection)}
-														onClick={() => handleConnectionClick(connection)}
-														onKeyDown={(e) => {
-															if (e.key === "Enter" || e.key === " ") {
-																handleConnectionClick(connection);
-															}
-														}}
-														onKeyUp={(e) => {
-															if (e.key === "Enter" || e.key === " ") {
-																e.preventDefault();
-															}
-														}}
-														className={`connection-item ${selectedConnection === connectionId(connection) ? "selected" : ""}`}
-													>
-														{buildConnectionName(connection)}
-													</li>
-												);
-											})}
-										</ul>
+									<div className="details-content">
+										<div
+											className="connection-setup"
+											style={{
+												height: "150px",
+												position: "relative",
+												overflowY: "scroll",
+											}}
+										>
+											<ul className="connections-list">
+												{allConnections.map((connection) => {
+													return (
+														<li
+															key={buildConnectionName(connection)}
+															onClick={() => handleConnectionClick(connection)}
+															onKeyDown={(e) => {
+																if (e.key === "Enter" || e.key === " ") {
+																	handleConnectionClick(connection);
+																}
+															}}
+															onKeyUp={(e) => {
+																if (e.key === "Enter" || e.key === " ") {
+																	e.preventDefault();
+																}
+															}}
+															className={`connection-item ${selectedConnection === connectionId(connection) ? "selected" : ""}`}
+														>
+															{buildConnectionName(connection)}
+														</li>
+													);
+												})}
+											</ul>
+										</div>
 									</div>
 									{allConnections?.length > 0 && (
 										<Button

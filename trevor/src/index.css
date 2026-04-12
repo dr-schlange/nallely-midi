@@ -29,6 +29,7 @@
 	-moz-osx-font-smoothing: grayscale;
 	--black: #2c281e;
 	--browntext: rgb(123, 85, 15);
+	--rack-bg-color: #d0d0d0;
 
 	color: var(--black);
 }
@@ -92,7 +93,7 @@ button,
 input,
 textarea,
 select {
-	background-color: #d0d0d0;
+	background-color: var(--rack-bg-color);
 	border: 2px solid gray;
 	color: var(--black);
 	padding: 4px;
@@ -115,6 +116,7 @@ select:focus {
 
 label {
 	color: #000;
+	font-size: 14px;
 }
 
 input:disabled,
@@ -127,6 +129,39 @@ label select:disabled + span {
 
 input[type="text"]:disabled {
 	color: #808080; /* Greyish text for disabled text inputs */
+}
+
+details {
+	width: 100%;
+	font-size: 15px;
+	color: var(--browntext);
+}
+
+details > summary {
+	background-color: orange;
+	padding: 5px;
+	padding-bottom: 7px;
+	cursor: pointer;
+}
+
+details[open]::details-content {
+	padding-left: 6px;
+	padding-right: 5px;
+	padding-top: 3px;
+}
+
+.details-content {
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+}
+
+.details-content .Button {
+	text-align: left;
+}
+
+.details-content .Button span {
+	padding-left: 5px;
 }
 
 .app-layout {
@@ -208,8 +243,8 @@ input[type="text"]:disabled {
 .three-panel-layout {
 	display: flex;
 	height: 100vh;
-	background-color: #d0d0d0; /* Amiga-style panel background */
-	border: 2px solid #808080; /* Amiga-style border */
+	background-color: var(--rack-bg-color);
+	border: 2px solid #808080;
 	box-shadow:
 		inset -1px -1px 0px #ffffff,
 		inset 1px 1px 0px #000000;
@@ -220,7 +255,7 @@ input[type="text"]:disabled {
 	display: flex;
 	flex-direction: column;
 	border-right: 2px solid #808080;
-	background-color: #d0d0d0;
+	background-color: var(--rack-bg-color);
 	box-shadow:
 		inset -1px -1px 0px #ffffff,
 		inset 1px 1px 0px #000000;
@@ -241,13 +276,13 @@ input[type="text"]:disabled {
 	flex-direction: column;
 	align-items: flex-start;
 	justify-content: flex-start;
-	padding: 10px;
+	padding: 4px;
 	border-bottom: 2px solid #808080;
 	overflow-y: auto;
 }
 
 .bottom-right-panel {
-	border-bottom: none; /* Remove border for the last panel */
+	border-bottom: none;
 }
 
 .top-panel {
@@ -299,7 +334,7 @@ input[type="text"]:disabled {
 	flex-direction: column;
 	width: 100%;
 	height: auto;
-	background-color: #d0d0d0;
+	background-color: var(--rack-bg-color);
 	gap: 2px;
 }
 
@@ -357,7 +392,7 @@ input[type="text"]:disabled {
 
 .device-class-left-panel {
 	flex: 4;
-	background-color: #d0d0d0;
+	background-color: var(--rack-bg-color);
 	border-right: 2px solid #808080;
 }
 
@@ -384,7 +419,7 @@ input[type="text"]:disabled {
 	font-size: 18px;
 	padding: 5px;
 	cursor: pointer;
-	background-color: #d0d0d0;
+	background-color: var(--rack-bg-color);
 	border: 1px solid #808080;
 	margin-bottom: 5px;
 	text-align: left;
@@ -416,7 +451,7 @@ input[type="text"]:disabled {
 	font-size: 18px;
 	padding: 5px;
 	cursor: pointer;
-	background-color: #d0d0d0;
+	background-color: var(--rack-bg-color);
 	border: 1px solid #808080;
 	margin-bottom: 5px;
 	text-align: left;
@@ -430,7 +465,7 @@ input[type="text"]:disabled {
 	display: flex;
 	width: 100%;
 	height: 100%;
-	/*background-color: #d0d0d0;*/
+	/*background-color: var(--rack-bg-color);*/
 	padding: 2px;
 	padding-top: 1px;
 }
@@ -457,7 +492,7 @@ input[type="text"]:disabled {
 	flex-direction: row;
 	align-items: center;
 	justify-content: center;
-	background-color: #d0d0d0;
+	background-color: var(--rack-bg-color);
 	padding: 4px;
 	gap: 2px;
 }
@@ -492,7 +527,7 @@ input[type="text"]:disabled {
 
 .rack-row {
 	position: relative;
-	background-color: #d0d0d0; /* Darker gray for RackRow */
+	background-color: var(--rack-bg-color); /* Darker gray for RackRow */
 	border: 1px solid #aaa; /* Slightly darker border */
 	margin-bottom: 5px;
 	width: 250px;
@@ -520,7 +555,7 @@ input[type="text"]:disabled {
 }
 
 .rack-row[data-slot]:hover {
-	background-color: #d0d0d0; /* Highlight slot during drag-over */
+	background-color: var(--rack-bg-color); /* Highlight slot during drag-over */
 	border: 2px dashed #808080; /* Dashed border for drop area */
 }
 
@@ -780,7 +815,7 @@ button.active {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	background-color: #d0d0d0;
+	background-color: var(--rack-bg-color);
 	border-bottom: 2px solid #808080;
 	padding: 0 10px;
 }
@@ -853,7 +888,7 @@ button.active {
 }
 
 .close-button {
-	background-color: #d0d0d0;
+	background-color: var(--rack-bg-color);
 	border: 2px solid #808080;
 	padding: 5px 10px;
 	cursor: pointer;
@@ -910,7 +945,7 @@ button.active {
 	box-shadow:
 		inset -1px -1px 0px #ffffff,
 		inset 1px 1px 0px #000000;
-	background-color: #d0d0d0;
+	background-color: var(--rack-bg-color);
 	color: var(--black);
 }
 
@@ -921,7 +956,7 @@ button.active {
 	box-shadow:
 		inset -1px -1px 0px #ffffff,
 		inset 1px 1px 0px #000000;
-	background-color: #d0d0d0;
+	background-color: var(--rack-bg-color);
 	color: var(--black);
 }
 
@@ -1071,7 +1106,7 @@ button.active {
 	width: 20px;
 	height: 20px;
 	border-radius: 4px;
-	background-color: #d0d0d0; /* Gray square for parameters */
+	background-color: var(--rack-bg-color); /* Gray square for parameters */
 	border: 2px solid #808080; /* Amiga-style border */
 	box-shadow:
 		inset -1px -1px 0px #ffffff,
@@ -1117,7 +1152,7 @@ button.active {
 }
 
 .parameter:not(.selected) .parameter-box {
-	background-color: #d0d0d0;
+	background-color: var(--rack-bg-color);
 }
 
 .parameter:not(.selected) .parameter-box.occupied {
@@ -1127,12 +1162,12 @@ button.active {
 
 .connection-setup {
 	color: var(--black);
-	background-color: #e0e0e0;
-	padding: 10px;
-	border: 2px solid #808080;
-	box-shadow:
-		inset -1px -1px 0px #ffffff,
-		inset 1px 1px 0px #000000;
+	/*background-color: #e0e0e0;*/
+	padding-left: 4px;
+	padding-right: 4px;
+	padding-top: 0px;
+	border: 0;
+	/*border: 2px solid gray;*/
 }
 
 .connection-setup h3 {
@@ -1165,7 +1200,7 @@ button.active {
 	box-shadow:
 		inset -1px -1px 0px #ffffff,
 		inset 1px 1px 0px #000000;
-	background-color: #d0d0d0;
+	background-color: var(--rack-bg-color);
 	color: var(--black);
 }
 
@@ -1176,18 +1211,27 @@ button.active {
 	box-shadow:
 		inset -1px -1px 0px #ffffff,
 		inset 1px 1px 0px #000000;
-	background-color: #d0d0d0;
+	background-color: var(--rack-bg-color);
 	color: var(--black);
+}
+
+.connection-item {
+	font-size: 13px;
+	margin-bottom: 5px;
+	border: 2px solid gray;
+	padding: 3px;
+	background-color: var(--rack-bg-color);
+	cursor: pointer;
 }
 
 .connection-item.selected {
 	background-color: orange;
-	font-weight: bold;
+	font-size: 13px;
+	color: var(--browntext);
 }
 
 .connection-item:hover {
 	background-color: #c0c0c0;
-	font-weight: bold;
 }
 
 .parameter-info {
@@ -1205,14 +1249,8 @@ button.active {
 
 .connections-list {
 	list-style-type: none;
-	padding: 0;
+	padding: 3px;
 	margin: 0;
-}
-
-.connections-list li {
-	font-size: 15px;
-	margin-bottom: 5px;
-	color: var(--black);
 }
 
 .bottom-section {
@@ -1288,7 +1326,7 @@ button.active {
 .midi-port-circle {
 	min-width: 17px;
 	min-height: 17px;
-	background-color: #d0d0d0;
+	background-color: var(--rack-bg-color);
 	border: 2px solid #808080;
 	border-radius: 50%;
 	box-shadow:
@@ -1305,14 +1343,14 @@ button.active {
 		color: #0000ff;
 	}
 	button {
-		background-color: #d0d0d0;
+		background-color: var(--rack-bg-color);
 	}
 }
 
 .amiga-button {
 	font-family:
 		"TopazPlusA1200", system-ui, Avenir, Helvetica, Arial, sans-serif;
-	background-color: #d0d0d0;
+	background-color: var(--rack-bg-color);
 	border: 2px solid #808080;
 	color: var(--black);
 	font-size: 21px;
@@ -1583,22 +1621,6 @@ h3.details {
 
 /* landscape */
 @media (max-height: 450px) {
-	h3 {
-		font-size: 20px;
-	}
-
-	li {
-		font-size: 16px !important;
-	}
-
-	p {
-		font-size: 18px;
-	}
-
-	/* .device-patching.vertical {
-		height: 145%;
-	} */
-
 	.parameters-grid {
 		flex-wrap: nowrap;
 	}
@@ -1623,14 +1645,6 @@ h3.details {
 		/* height: 100%; */
 		min-width: 200px;
 	}
-
-	/* .top-section {
-		max-height: 90%;
-	} */
-
-	/*.bottom-section {
-		min-height: 84%;
-	}*/
 
 	.parameters-grid {
 		flex-wrap: nowrap;
@@ -1770,10 +1784,6 @@ h3.details {
 
 /* portrait */
 @media (max-width: 600px) {
-	h3 {
-		font-size: 20px;
-	}
-
 	.top-left-panel h3 {
 		transform: rotate(90deg);
 		transform-origin: right;
@@ -1793,13 +1803,6 @@ h3.details {
 		margin-right: 5px;
 	}
 
-	li {
-		font-size: 16px !important;
-	}
-
-	p {
-		font-size: 18px;
-	}
 	.rack-row {
 		align-items: center;
 		width: 200px;

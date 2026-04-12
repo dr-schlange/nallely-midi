@@ -54,7 +54,7 @@ export const Button = ({
 			}}
 			title={tooltip}
 		>
-			{text}
+			<span>{text}</span>
 		</div>
 	);
 };
