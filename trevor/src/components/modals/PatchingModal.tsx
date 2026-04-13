@@ -42,9 +42,10 @@ const collectAllMidiParameters = (device: MidiDevice) => {
 		if (section.pads_or_keys) {
 			parameters.push(section.pads_or_keys);
 		}
-		if (section.pitchwheel) {
-			parameters.push(section.pitchwheel);
-		}
+		// if (section.pitchwheel) {
+		// 	parameters.push(section.pitchwheel);
+		// }
+		parameters.push(...section.pitchwheels);
 		parameters.push(...section.parameters);
 	}
 	return parameters.map((p) => parameterUUID(device.id, p));
@@ -61,8 +62,8 @@ const getSectionParameters = (sectionWrapper, reverseOrder = false) => {
 	if (!sectionWrapper) {
 		return [];
 	}
-	const pitchwheel = sectionWrapper.section.pitchwheel
-		? [sectionWrapper.section.pitchwheel]
+	const pitchwheels = sectionWrapper.section.pitchwheels
+		? sectionWrapper.section.pitchwheels
 		: [];
 	const mainOutputIndex = sectionWrapper.section.parameters.findIndex(
 		(e) => e.name === "output_cv",
@@ -73,9 +74,9 @@ const getSectionParameters = (sectionWrapper, reverseOrder = false) => {
 		params.push(...output);
 	}
 	if (reverseOrder) {
-		return [...params.reverse(), ...pitchwheel];
+		return [...params.reverse(), ...pitchwheels];
 	}
-	return [...params, ...pitchwheel];
+	return [...params, ...pitchwheels];
 };
 
 const selectAllVirtualDeviceSection = createSelector(
@@ -157,15 +158,8 @@ const PatchingModal = ({
 	const [currentSecondSection, setCurrentSecondSection] =
 		useState(secondSection);
 
-	const firstSectionName =
-		currentFirstSection?.section.parameters[0]?.section_name ||
-		currentFirstSection?.section.pads_or_keys?.section_name ||
-		currentFirstSection?.section.pitchwheel?.section_name;
-
-	const secondSectionName =
-		currentSecondSection?.section.parameters[0]?.section_name ||
-		currentSecondSection?.section.pads_or_keys?.section_name ||
-		currentSecondSection?.section.pitchwheel?.section_name;
+	const firstSectionName = internalSectionName(currentFirstSection?.section);
+	const secondSectionName = internalSectionName(currentSecondSection?.section);
 
 	const connections = useMemo(
 		() =>

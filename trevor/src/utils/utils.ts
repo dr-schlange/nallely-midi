@@ -285,7 +285,7 @@ export const internalSectionName = (
 ) =>
 	section.parameters?.[0]?.section_name ||
 	section.pads_or_keys?.section_name ||
-	section.pitchwheel?.section_name ||
+	section.pitchwheels?.[0]?.section_name ||
 	"unknown";
 
 export const findFirstMissingValue = (arr: number[]): number => {

@@ -162,7 +162,7 @@ class ModulePitchwheel:
     def __get__(self, instance, owner=None):
         if instance is None:
             return self
-        return instance.state[f"{self.section_name}_pitch"]
+        return instance.state[f"{self.section_name}_pitch_{self.channel or 'default'}"]
 
     def __set__(self, target, feeder):
         if feeder is None:
@@ -184,7 +184,7 @@ class MetaModule:
     name: str
     parameters: list[ModuleParameter]
     pads_or_keys: ModulePadsOrKeys | None
-    pitchwheel: ModulePitchwheel | None
+    pitchwheels: list[ModulePitchwheel]
 
 
 @dataclass
@@ -200,7 +200,7 @@ class Module:
         super().__init_subclass__(**kwargs)
         parameters = []
         pads = None
-        pitchwheel = None
+        pitchwheels = []
         for name, value in vars(cls).items():
             if isinstance(value, ModuleParameter):
                 value.name = name
@@ -209,9 +209,9 @@ class Module:
                 pads = value
                 value.name = name
             if isinstance(value, ModulePitchwheel):
-                pitchwheel = value
                 value.name = name
-        cls.meta = MetaModule(cls.__name__, parameters, pads, pitchwheel)
+                pitchwheels.append(value)
+        cls.meta = MetaModule(cls.__name__, parameters, pads, pitchwheels)
 
     def __post_init__(self):
         self.meta = self.__class__.meta
@@ -226,11 +226,11 @@ class Module:
             self.state[f"{state_name}_note"] = PadsOrKeysInstance(
                 self.meta.pads_or_keys, self.device
             )
-        if self.meta.pitchwheel:
-            self.meta.pitchwheel.section_name = self.__class__.state_name
-            state_name = self.meta.pitchwheel.section_name
-            self.state[f"{state_name}_pitch"] = PitchwheelInstance(
-                self.meta.pitchwheel, self.device
+        for pitchwheel in self.meta.pitchwheels:
+            pitchwheel.section_name = self.__class__.state_name
+            state_name = pitchwheel.section_name
+            self.state[f"{state_name}_pitch_{pitchwheel.channel or "default"}"] = (
+                PitchwheelInstance(pitchwheel, self.device)
             )
         self._keys_notes = {}
 
@@ -307,9 +307,10 @@ class DeviceState:
             if moduleInstance.meta.pads_or_keys:
                 param = moduleInstance.meta.pads_or_keys
                 device.reverse_map[(param.type, None, param.channel)] = param
-            if moduleInstance.meta.pitchwheel:
-                param = moduleInstance.meta.pitchwheel
-                device.reverse_map[(param.type, None, param.channel)] = param
+            for pitchwheel in moduleInstance.meta.pitchwheels:
+                device.reverse_map[(pitchwheel.type, None, pitchwheel.channel)] = (
+                    pitchwheel
+                )
         self.modules = init_modules
 
     def __getattr__(self, name):
@@ -859,10 +860,10 @@ class MidiDevice:
         return None
 
     def pitchwheel_meta(self):
+        pitchwheels = []
         for section in self.all_sections():
-            if section.meta.pitchwheel:
-                return section.meta.pitchwheel
-        return None
+            pitchwheels.extend(section.pitchwheel_meta)
+        return pitchwheels
 
     def random_preset(self):
         import random

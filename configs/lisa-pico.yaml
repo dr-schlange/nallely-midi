@@ -77,7 +77,10 @@ drschlange:
         description: "FM Modulation"
         init: 0
     wavetable:
-        stream_input: "pitchwheel+stream"
+        stream_table1: "pitchwheel+stream"
+        stream_table2: "pitchwheel+stream"
+        stream_table3: "pitchwheel+stream"
+        stream_table4: "pitchwheel+stream"
         capture_mode:
           cc: 122
           description: "Selects the type of capture mode"

@@ -97,7 +97,7 @@ export interface ConnectionEnd {
 export interface MidiDeviceSection {
 	name: string;
 	pads_or_keys: PadsOrKeys | null;
-	pitchwheel: Pitchwheel | null;
+	pitchwheels: Pitchwheel[];
 	parameters: MidiParameter[];
 	virtual: false;
 }
@@ -149,7 +149,7 @@ export interface VirtualDeviceSection {
 	virtual: true;
 	name: "__virtual__";
 	pads_or_keys: null;
-	pitchwheel: null;
+	pitchwheels: [];
 }
 
 export interface NallelyClasses {

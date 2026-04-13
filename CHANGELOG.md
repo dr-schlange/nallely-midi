@@ -68,6 +68,7 @@
 * Add possibility to inject an extra 0 before or after a value changes on a link. This allows to reuse values that do not pass by 0 (e.g: pitch shifter, sequencer, etc) to be considered as a trigger for other neurons that requires a clear transition from 0 to non-0.
 * Add auto-reconnection of MIDI devices when a connection is lost (reconnection on session snapshot)
 * Add possibility to remove note-off or 0 on the MIDI keys -> MIDI keys and Neuron port -> MIDI keys patchs 
+* Add support for multi-channels pitchwheel on a same device
 
 ### Fix
 
