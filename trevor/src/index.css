@@ -204,12 +204,14 @@ details[open]::details-content {
 	color: gray;
 }
 
-.Button:not(.clicked):hover {
-	background-color: #e0e0e0;
-}
+@media (hover: hover) and (pointer: fine) {
+	.Button.clicked:hover {
+		background-color: orange;
+	}
 
-.Button.clicked:hover {
-	background-color: orange;
+	.Button:not(.clicked):hover {
+		background-color: #e0e0e0;
+	}
 }
 
 .Button.active {
