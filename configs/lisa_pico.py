@@ -41,7 +41,7 @@ class WavetableSection(nallely.Module):
     stream_table2 = nallely.ModulePitchwheel(stream=True, channel=1)
     stream_table3 = nallely.ModulePitchwheel(stream=True, channel=2)
     stream_table4 = nallely.ModulePitchwheel(stream=True, channel=3)
-    capture_mode = nallely.ModuleParameter(122, description='Selects the type of capture mode', accepted_values=['forward', 'backward', 'rolling', 'buf-forward-rl', 'buf-backward-lr', 'rolling-backward'])
+    capture_mode = nallely.ModuleParameter(122, description='Selects the type of capture mode', accepted_values=['forward', 'backward', 'rolling', 'buf-forward-rl', 'buf-backward-lr', 'rolling-backward', 'independent wavetables'])
     phase_reset = nallely.ModuleParameter(126, description='Reset the phase')
     phase_offset = nallely.ModuleParameter(125, description='Add an offset to the phase')
     retrigger = nallely.ModuleParameter(124, description='Reset the phase on note strike', accepted_values=['OFF', 'ON'])

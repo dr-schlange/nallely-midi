@@ -91,6 +91,7 @@ drschlange:
             - buf-forward-rl
             - buf-backward-lr
             - rolling-backward
+            - independent wavetables
         phase_reset:
           cc: 126
           description: "Reset the phase"
