@@ -85,13 +85,13 @@ drschlange:
           cc: 122
           description: "Selects the type of capture mode"
           accepted_values:
+            - independent wavetables
             - forward
             - backward
             - rolling
             - buf-forward-rl
             - buf-backward-lr
             - rolling-backward
-            - independent wavetables
         phase_reset:
           cc: 126
           description: "Reset the phase"
