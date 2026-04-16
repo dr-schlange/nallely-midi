@@ -41,11 +41,17 @@ class WavetableSection(nallely.Module):
     stream_table2 = nallely.ModulePitchwheel(stream=True, channel=1)
     stream_table3 = nallely.ModulePitchwheel(stream=True, channel=2)
     stream_table4 = nallely.ModulePitchwheel(stream=True, channel=3)
-    capture_mode = nallely.ModuleParameter(122, description='Selects the type of capture mode', accepted_values=['independent wavetables', 'forward', 'backward', 'rolling', 'buf-forward-rl', 'buf-backward-lr', 'rolling-backward'])
     phase_reset = nallely.ModuleParameter(126, description='Reset the phase')
     phase_offset = nallely.ModuleParameter(125, description='Add an offset to the phase')
     retrigger = nallely.ModuleParameter(124, description='Reset the phase on note strike', accepted_values=['OFF', 'ON'])
-    freeze = nallely.ModuleParameter(123, description='Freeze the current wavetables', accepted_values=['OFF', 'ON'])
+    freeze_all = nallely.ModuleParameter(123, description='Freeze all the current wavetables', accepted_values=['OFF', 'ON'])
+    freeze_wt4 = nallely.ModuleParameter(122, description='Freezes wavetable 4', accepted_values=['OFF', 'ON'])
+    freeze_wt3 = nallely.ModuleParameter(121, description='Freezes wavetable 3', accepted_values=['OFF', 'ON'])
+    freeze_wt2 = nallely.ModuleParameter(120, description='Freezes wavetable 2', accepted_values=['OFF', 'ON'])
+    freeze_wt1 = nallely.ModuleParameter(119, description='Freezes wavetable 1', accepted_values=['OFF', 'ON'])
+    reset_all_write_idx = nallely.ModuleParameter(118, description='Reset all write indices', accepted_values=['OFF', 'ON'])
+    reset_all_wt = nallely.ModuleParameter(117, description='Reset all wavetables', accepted_values=['OFF', 'ON'])
+    double_buffer = nallely.ModuleParameter(116, description='Activates double buffering', accepted_values=['OFF', 'ON'])
 
 
 class KeysSection(nallely.Module):

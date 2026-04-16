@@ -81,17 +81,17 @@ drschlange:
         stream_table2: "pitchwheel+stream"
         stream_table3: "pitchwheel+stream"
         stream_table4: "pitchwheel+stream"
-        capture_mode:
-          cc: 122
-          description: "Selects the type of capture mode"
-          accepted_values:
-            - independent wavetables
-            - forward
-            - backward
-            - rolling
-            - buf-forward-rl
-            - buf-backward-lr
-            - rolling-backward
+        # capture_mode:
+        #   cc: 122
+        #   description: "Selects the type of capture mode"
+        #   accepted_values:
+        #     - independent wavetables
+        #     - forward
+        #     - backward
+        #     - rolling
+        #     - buf-forward-rl
+        #     - buf-backward-lr
+        #     - rolling-backward
         phase_reset:
           cc: 126
           description: "Reset the phase"
@@ -104,9 +104,51 @@ drschlange:
           accepted_values:
             - OFF
             - ON
-        freeze:
+        freeze_all:
           cc: 123
-          description: "Freeze the current wavetables"
+          description: "Freeze all the current wavetables"
+          accepted_values:
+            - OFF
+            - ON
+        freeze_wt4:
+          cc: 122
+          description: "Freezes wavetable 4"
+          accepted_values:
+            - OFF
+            - ON
+        freeze_wt3:
+          cc: 121
+          description: "Freezes wavetable 3"
+          accepted_values:
+            - OFF
+            - ON
+        freeze_wt2:
+          cc: 120
+          description: "Freezes wavetable 2"
+          accepted_values:
+            - OFF
+            - ON
+        freeze_wt1:
+          cc: 119
+          description: "Freezes wavetable 1"
+          accepted_values:
+            - OFF
+            - ON
+        reset_all_write_idx:
+          cc: 118
+          description: "Reset all write indices"
+          accepted_values:
+            - OFF
+            - ON
+        reset_all_wt:
+          cc: 117
+          description: "Reset all wavetables"
+          accepted_values:
+            - OFF
+            - ON
+        double_buffer:
+          cc: 116
+          description: "Activates double buffering"
           accepted_values:
             - OFF
             - ON
