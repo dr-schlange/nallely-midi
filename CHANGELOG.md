@@ -6,7 +6,12 @@
 
 #### New Member in the Family
 
-* [LISA](https://github.com/dr-schlange/LISA) joined the family! LISA is a hardware digital synth based on [Vija v1.0.2](https://github.com/ledlaux/vija-pico-synth) which have been modified to propose a MIDI controller mode, various special features, and on the long run will be integrated also as external neuron via websocket (currently only via USB-MIDI) and add a kinetic mode for the buttons! You can control LISA from Nallely, and use the physical buttons from LISA as MIDI controller to either enhance your own experience with LISA, or to control neurons in Nallely! 
+* [LISA](https://github.com/dr-schlange/LISA) joined the family! LISA is a hardware digital synth based on [Vija v1.0.2](https://github.com/ledlaux/vija-pico-synth) which have been modified to propose:
+  * a MIDI controller mode, 
+  * a kinetic mode for the buttons (spring-damped feel buttons, customizable),
+  * 4 dynamic live wavetables: you can stream your signals from Nallely to a dedicated wavetable and listen to the result while the wavetables are rewriten in live,
+  * on the long run will be integrated also as external neuron via websocket (currently only via USB-MIDI). 
+  You can control LISA from Nallely, stream waveforms to any of the 4 wavetables and cross-blend them (vector synth like) and use the physical buttons from LISA as MIDI controller to either enhance your own experience with LISA (remap function buttons to any parameter or parameters), or to control neurons in Nallely.
 
 #### Neurons Improvements
 
