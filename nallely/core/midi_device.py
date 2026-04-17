@@ -229,7 +229,7 @@ class Module:
         for pitchwheel in self.meta.pitchwheels:
             pitchwheel.section_name = self.__class__.state_name
             state_name = pitchwheel.section_name
-            self.state[f"{state_name}_pitch_{pitchwheel.channel or "default"}"] = (
+            self.state[f"{state_name}_pitch_{pitchwheel.channel or 'default'}"] = (
                 PitchwheelInstance(pitchwheel, self.device)
             )
         self._keys_notes = {}
@@ -420,22 +420,25 @@ class MidiDevice:
         self.listening = False
         self.outport_name = self.device_name
         self.inport_name = self.device_name
-        if autoconnect:
-            try:
-                self.outport_name = next(
-                    (
-                        dev_name
-                        for dev_name in mido.get_output_names()  # type: ignore
-                        if self.device_name == dev_name or self.device_name in dev_name
-                    ),
-                )
-            except StopIteration:
-                raise DeviceNotFound(self.device_name)
-            if not read_input_only:
-                self.connect()
-            self.listen()
         self._retry_input = False
         self._retry_output = False
+        if autoconnect:
+            self.try_connection(read_input_only)
+
+    def try_connection(self, read_input_only=False):
+        try:
+            self.outport_name = next(
+                (
+                    dev_name
+                    for dev_name in mido.get_output_names()  # type: ignore
+                    if self.device_name == dev_name or self.device_name in dev_name
+                ),
+            )
+        except StopIteration:
+            raise DeviceNotFound(self.device_name)
+        if not read_input_only:
+            self.connect()
+        self.listen()
 
     def connect(self):
         self.outport = mido.open_output(self.outport_name, autoreset=True)  # type: ignore

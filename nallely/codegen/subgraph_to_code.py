@@ -1,6 +1,6 @@
 import ast
 from collections import Counter
-from dataclasses import InitVar, dataclass, field
+from dataclasses import dataclass, field
 from decimal import Decimal
 from typing import Sequence
 
@@ -37,7 +37,7 @@ class Import(Stmt):
 @dataclass(unsafe_hash=True)
 class ImportFrom(Import):
     def __post_init__(self):
-        self.ast_node = ast.ImportFrom(module=self.module, names=[ast.alias(self.name)])
+        self.ast_node = ast.ImportFrom(module=self.module, names=[ast.alias(self.name)])  # type: ignore
 
     def gen_body(self) -> Sequence[ast.stmt]:
         return [self.ast_node]
@@ -91,7 +91,7 @@ class MidiDeviceInstance(DeviceInstance):
                 value=ast.Call(func=ast.Name(id=self.device.__class__.__name__)),
             )
         ]
-        for section, content in self.device.current_preset().items():
+        for section, content in self.device.current_preset(save_defaultvalues=False).items():
             for parameter, value in content.items():
                 self.ast_nodes.append(
                     ast.Assign(
@@ -121,7 +121,7 @@ class VirtualDeviceInstance(DeviceInstance):
                 value=ast.Call(func=ast.Name(id=self.device.__class__.__name__)),
             )
         ]
-        for key, value in self.device.current_preset().items():
+        for key, value in self.device.current_preset(save_defaultvalues=False).items():
             self.ast_nodes.append(
                 ast.Assign(
                     targets=[ast.Attribute(value=ast.Name(id=self.name), attr=key)],

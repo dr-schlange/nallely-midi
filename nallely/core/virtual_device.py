@@ -246,7 +246,8 @@ class VirtualDevice(threading.Thread):
 
         params = cls.all_parameters()
 
-        def __init__(self, **kwargs):
+        def __init__(self, uuid=None, **kwargs):
+            self.uuid = uuid if uuid else id(self)
             for param in params:
                 if param.no_init:
                     continue
