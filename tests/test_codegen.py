@@ -1,7 +1,10 @@
 import ast
 
+from nallely import LFO
 from nallely.codegen.midi_module_generator import generate_code
+from nallely.codegen.subgraph_to_code import gen_subgraph_code
 from nallely.codegen.virtual_module_autogen import parsedoc
+from nallely.devices import NTS1
 
 
 def test__parse_docstring():
@@ -179,3 +182,19 @@ def test__parse_docstring_type():
 
     assert post is None
     assert main is None
+
+
+def test__generate_code_from_preset():
+    nts1 = NTS1(autoconnect=False)
+    nts1.filter.cutoff = 23
+    lfo = LFO(waveform="triangle")
+    lfo2 = LFO()
+    lfo2.speed_cv = lfo
+    nts1.filter.resonance = lfo2
+    code = gen_subgraph_code([lfo, lfo2, nts1])
+
+    graph_ast = code.ast()
+    print(code.unparse())
+    assert isinstance(graph_ast, ast.Module)
+    assert isinstance(graph_ast.body[0], ast.ImportFrom)
+    # need to expand
