@@ -69,6 +69,7 @@
 * Add auto-reconnection of MIDI devices when a connection is lost (reconnection on session snapshot)
 * Add possibility to remove note-off or 0 on the MIDI keys -> MIDI keys and Neuron port -> MIDI keys patchs 
 * Add support for multi-channels pitchwheel on a same device
+* Add possibility to generate the python code that will recreate/clone a subset of a session graph (or full session graph) in the same state
 
 ### Fix
 

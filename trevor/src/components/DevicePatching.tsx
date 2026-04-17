@@ -1047,9 +1047,6 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 
 	const handleNonSectionClick = useCallback(() => {
 		setSelection([]); // Deselect sections
-		setDisplayedSection(undefined);
-		setInformation(undefined);
-		setCurrentSelected(undefined);
 		setSelectedConnection(undefined);
 	}, []);
 
@@ -1263,7 +1260,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 							/>
 							<select
 								style={{ width: "100%" }}
-								value={selection?.[0]?.device.id ?? ""}
+								value={currentSelected ?? ""}
 								title="Select device to associate"
 								onChange={(e) => {
 									const val = e.target.value;
