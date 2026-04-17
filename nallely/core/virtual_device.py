@@ -807,7 +807,7 @@ class VirtualDevice(threading.Thread):
         return []
 
     def to_dict(self, save_defaultvalues=False):
-        config = self.current_preset()
+        config = self.current_preset(save_defaultvalues=save_defaultvalues)
         return {
             "id": self.uuid,
             "repr": self.uid(),
@@ -846,11 +846,17 @@ class VirtualDevice(threading.Thread):
     def all_parameters(cls) -> list[VirtualParameter]:
         return list(get_all_virtual_parameters(cls).values())
 
-    def current_preset(self, **_):
+    def current_preset(self, save_defaultvalues=True, **_):
         d = {}
         for parameter in self.all_parameters():
             try:
                 value = object.__getattribute__(self, parameter.name)
+                if not save_defaultvalues:
+                    val = (
+                        str(float(value)) if isinstance(value, Decimal) else str(value)
+                    )
+                    if val == str(parameter.get_default()):
+                        continue
                 # if (isinstance(value, property)):
                 #     value = getattr(self, parameter.name)
                 if value is not None:
@@ -910,11 +916,15 @@ SUBDIVISIONS = {
 
 @no_registration
 class TimeBasedDevice(VirtualDevice):
-    speed_cv = VirtualParameter("speed", range=(0, 10.0))
+    speed_cv = VirtualParameter("speed", range=(0, 10.0), default=0.01)
     sync_cv = VirtualParameter("sync")
-    subdiv_cv = VirtualParameter("subdiv", accepted_values=(tuple(SUBDIVISIONS.keys())))
+    subdiv_cv = VirtualParameter(
+        "subdiv", accepted_values=(tuple(SUBDIVISIONS.keys())), default="1/1"
+    )
     phase_cv = VirtualParameter("phase", range=(0.0, 1.0))
-    sampling_rate_cv = VirtualParameter("sampling_rate", range=(0.001, None))
+    sampling_rate_cv = VirtualParameter(
+        "sampling_rate", range=(0.001, None), default=50
+    )
     auto_srate_cv = VirtualParameter("auto_srate", accepted_values=("ON", "OFF"))
 
     def __init__(

@@ -369,7 +369,8 @@ playground_code={infos["playground_code"]}
     def snapshot(self, save_defaultvalues=False, spread_registered_services=False):
         vdevs = []
         for device in virtual_devices:
-            vdevs.append(device.to_dict(save_defaultvalues=save_defaultvalues))
+            # vdevs.append(device.to_dict(save_defaultvalues=save_defaultvalues))
+            vdevs.append(device.to_dict(save_defaultvalues=True))
             dev = device.spread_registered_services()
             if spread_registered_services:
                 if not dev:

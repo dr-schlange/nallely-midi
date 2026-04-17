@@ -45,12 +45,13 @@ def test__pads_or_key_section(nts1):
 def test__virtual_device_current_preset():
     l = nallely.LFO(waveform="sine", min_value=20, max_value=1000, speed=50)
 
-    d = l.current_preset()
-    assert len(d) == 12
+    d = l.current_preset(save_defaultvalues=False)
+    assert len(d) == 4
     assert d["max_value"] == 1000
     assert d["min_value"] == 20
     assert d["speed"] == 50
-    assert d["waveform"] == "sine"
+    assert d["sampling_rate"] == 1000
+    assert "waveform" not in d
 
 
 def test__virtual_device_load_preset():

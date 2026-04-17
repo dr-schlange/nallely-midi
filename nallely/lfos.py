@@ -30,11 +30,11 @@ class LFO(TimeBasedDevice):
             "tent_map",
         ],
     )
-    invert_polarity_cv = VirtualParameter("invert_polarity")
-    min_value_cv = VirtualParameter("min_value")
-    max_value_cv = VirtualParameter("max_value")
-    pulse_width_cv = VirtualParameter("pulse_width", range=(0.0, 1.0))
-    step_size_cv = VirtualParameter("step_size", range=(0.0, 5.0))
+    invert_polarity_cv = VirtualParameter("invert_polarity", default=0.0)
+    min_value_cv = VirtualParameter("min_value", default=0)
+    max_value_cv = VirtualParameter("max_value", default=127.0)
+    pulse_width_cv = VirtualParameter("pulse_width", range=(0.0, 1.0), default=0.3)
+    step_size_cv = VirtualParameter("step_size", range=(0.0, 5.0), default=0.2)
 
     def __init__(
         self,
