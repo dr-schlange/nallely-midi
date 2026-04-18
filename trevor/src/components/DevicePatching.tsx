@@ -1222,7 +1222,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 								overflowY: "auto",
 								height: "100%",
 								backgroundColor: "rgb(192, 192, 192)",
-								zIndex: 20,
+								zIndex: 35,
 							}
 						: {
 								minWidth: "40px",
