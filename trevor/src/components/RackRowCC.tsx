@@ -266,17 +266,20 @@ const DeviceSectionCC = ({
 	const [isOpen, setIsOpen] = useState(false);
 
 	const buildWidget = useCallback(
-		({ value, meta }: { value: number; meta: MidiParameter }) => {
-			if (meta.accepted_values.length > 0) {
+		(
+			{ value, meta }: { value: number; meta: MidiParameter },
+			paramName: string,
+		) => {
+			if (meta?.accepted_values.length > 0) {
 				// TODO
 			}
 			return (
 				<CircularSlider
-					key={`${deviceName}::${sectionName}::${meta.name}`}
+					key={`${deviceName}::${sectionName}::${paramName}`}
 					value={value}
-					param={meta}
+					param={meta ?? ({ name: paramName } as MidiParameter)}
 					onManualSliderChange={(value) =>
-						handleParameterChange(deviceId, sectionName, meta.name, value)
+						handleParameterChange(deviceId, sectionName, paramName, value)
 					}
 				/>
 			);
@@ -330,16 +333,8 @@ const DeviceSectionCC = ({
 					marginRight: orientation === "vertical" ? "unset" : "2px",
 				}}
 			>
-				{Object.entries(parameters).map(([_, paramInfo]) =>
-					// <CircularSlider
-					// 	key={`${deviceName}::${sectionName}::${paramName}`}
-					// 	value={paramValue.value}
-					// 	param={paramName}
-					// 	onManualSliderChange={(value) =>
-					// 		handleParameterChange(deviceId, sectionName, paramName, value)
-					// 	}
-					// />
-					buildWidget(paramInfo),
+				{Object.entries(parameters).map(([paramName, paramInfo]) =>
+					buildWidget(paramInfo, paramName),
 				)}
 			</div>
 		</div>
@@ -373,7 +368,7 @@ const DeviceCC = ({
 
 	return (
 		<div
-			key={deviceName}
+			key={`${deviceName}::${deviceId}`}
 			style={{
 				backgroundColor: "#e0e0e0",
 				border: "3px solid #808080",
