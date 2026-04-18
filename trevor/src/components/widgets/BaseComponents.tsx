@@ -1,5 +1,5 @@
 /** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export const Button = ({
 	activated = false,
@@ -24,7 +24,7 @@ export const Button = ({
 
 	return (
 		<div
-			className={`Button ${variant} ${activated ? "active" : ""} ${clickColor ? "clicked" : ""} ${className}`}
+			className={`${className} Button ${variant} ${activated ? "active" : ""} ${clickColor ? "clicked" : ""}`}
 			style={{
 				...(style ?? {}),
 				...(className?.length > 0

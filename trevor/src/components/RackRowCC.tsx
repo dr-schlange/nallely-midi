@@ -3,12 +3,13 @@
 /** biome-ignore-all lint/a11y/noSvgWithoutTitle: <explanation> */
 import {
 	forwardRef,
+	useCallback,
 	useImperativeHandle,
 	useMemo,
 	useRef,
 	useState,
 } from "react";
-import type { CCValues, MidiDevice } from "../model";
+import type { CCValues, MidiDevice, MidiParameter } from "../model";
 import { useTrevorDispatch, useTrevorSelector } from "../store";
 import { resetCCState } from "../store/runtimeSlice";
 import { generateAcronym } from "../utils/utils";
@@ -24,7 +25,15 @@ export interface RackRowCCRef {
 	resetAll: () => void;
 }
 
-const CircularSlider = ({ value, param, onManualSliderChange }) => {
+const CircularSlider = ({
+	value,
+	param,
+	onManualSliderChange,
+}: {
+	value: number;
+	param: MidiParameter;
+	onManualSliderChange: (value: number) => void;
+}) => {
 	const radius = 16;
 	const strokeWidth = 2;
 	const size = radius * 2 + strokeWidth;
@@ -112,7 +121,7 @@ const CircularSlider = ({ value, param, onManualSliderChange }) => {
 			onPointerDown={handlePointerDown}
 			onTouchStart={handleTouchStart}
 		>
-			<span style={{ fontSize: "12px" }}>{generateAcronym(param, 5)}</span>
+			<span style={{ fontSize: "12px" }}>{generateAcronym(param.name, 5)}</span>
 			<svg width={size} height={size}>
 				<circle
 					cx={center}
@@ -156,16 +165,22 @@ const CircularSlider = ({ value, param, onManualSliderChange }) => {
 	);
 };
 
-const collator = new Intl.Collator(undefined, {
-	numeric: true,
-	sensitivity: "base",
-});
-
-const sortObjectByKey = (obj) => {
-	return Object.fromEntries(
-		Object.entries(obj).sort(([keyA], [keyB]) => collator.compare(keyA, keyB)),
-	);
-};
+export type CCValuesExtended = Record<
+	number, // deviceId
+	Record<
+		string, // device repr
+		Record<
+			string, // section name
+			Record<
+				string, // parameter name
+				{
+					value: number; // value
+					meta: MidiParameter; // meta infos
+				}
+			>
+		>
+	>
+>;
 
 const switchOrientation = (orientation) => {
 	if (orientation === "horizontal") {
@@ -200,7 +215,7 @@ const switchSizeOrientation = (orientation) => {
 const buildFullParameters = (
 	devices: MidiDevice[],
 	ccValues: CCValues,
-): CCValues => {
+): CCValuesExtended => {
 	const fullParameters = {};
 	for (const device of devices) {
 		const config = {};
@@ -210,10 +225,13 @@ const buildFullParameters = (
 			let sectionName = undefined;
 			for (const parameter of section.parameters) {
 				sectionName = parameter.section_name;
-				sectionConfig[parameter.name] =
-					ccValues?.[device.id]?.[device.repr]?.[parameter.section_name]?.[
-						parameter.name
-					] || parameter.init_value;
+				sectionConfig[parameter.name] = {
+					value:
+						ccValues?.[device.id]?.[device.repr]?.[parameter.section_name]?.[
+							parameter.name
+						] || parameter.init_value,
+					meta: parameter,
+				};
 			}
 			if (sectionName) {
 				config[sectionName] = sectionConfig;
@@ -223,6 +241,20 @@ const buildFullParameters = (
 	return fullParameters;
 };
 
+interface DevicesectionCCProps {
+	deviceId: number;
+	deviceName: string;
+	sectionName: string;
+	parameters: Record<string, { value: number; meta: MidiParameter }>;
+	handleParameterChange: (
+		deviceId: number,
+		sectionName: string,
+		parameterName: string,
+		value: number,
+	) => void;
+	orientation: "horizontal" | "vertical";
+}
+
 const DeviceSectionCC = ({
 	deviceId,
 	deviceName,
@@ -230,8 +262,27 @@ const DeviceSectionCC = ({
 	parameters,
 	handleParameterChange,
 	orientation,
-}) => {
+}: DevicesectionCCProps) => {
 	const [isOpen, setIsOpen] = useState(false);
+
+	const buildWidget = useCallback(
+		({ value, meta }: { value: number; meta: MidiParameter }) => {
+			if (meta.accepted_values.length > 0) {
+				// TODO
+			}
+			return (
+				<CircularSlider
+					key={`${deviceName}::${sectionName}::${meta.name}`}
+					value={value}
+					param={meta}
+					onManualSliderChange={(value) =>
+						handleParameterChange(deviceId, sectionName, meta.name, value)
+					}
+				/>
+			);
+		},
+		[deviceName, sectionName, deviceId, handleParameterChange],
+	);
 
 	return (
 		<div
@@ -279,22 +330,37 @@ const DeviceSectionCC = ({
 					marginRight: orientation === "vertical" ? "unset" : "2px",
 				}}
 			>
-				{Object.entries(sortObjectByKey(parameters)).map(
-					([paramName, value]) => (
-						<CircularSlider
-							key={`${deviceName}::${sectionName}::${paramName}`}
-							value={value}
-							param={paramName}
-							onManualSliderChange={(value) =>
-								handleParameterChange(deviceId, sectionName, paramName, value)
-							}
-						/>
-					),
+				{Object.entries(parameters).map(([_, paramInfo]) =>
+					// <CircularSlider
+					// 	key={`${deviceName}::${sectionName}::${paramName}`}
+					// 	value={paramValue.value}
+					// 	param={paramName}
+					// 	onManualSliderChange={(value) =>
+					// 		handleParameterChange(deviceId, sectionName, paramName, value)
+					// 	}
+					// />
+					buildWidget(paramInfo),
 				)}
 			</div>
 		</div>
 	);
 };
+
+interface DeviceCCProps {
+	deviceId: number;
+	deviceName: string;
+	section: Record<
+		string,
+		Record<string, { value: number; meta: MidiParameter }>
+	>;
+	handleParameterChange: (
+		deviceId: number,
+		sectionName: string,
+		parameterName: string,
+		value: number,
+	) => void;
+	orientation: "horizontal" | "vertical";
+}
 
 const DeviceCC = ({
 	deviceId,
@@ -302,7 +368,7 @@ const DeviceCC = ({
 	section,
 	handleParameterChange,
 	orientation,
-}) => {
+}: DeviceCCProps) => {
 	const [isOpen, setIsOpen] = useState(false);
 
 	return (
@@ -339,19 +405,17 @@ const DeviceCC = ({
 				}}
 			>
 				{/* section level */}
-				{Object.entries(sortObjectByKey(section)).map(
-					([sectionName, parameter]) => (
-						<DeviceSectionCC
-							deviceId={deviceId}
-							deviceName={deviceName}
-							handleParameterChange={handleParameterChange}
-							orientation={orientation}
-							parameters={parameter}
-							sectionName={sectionName}
-							key={`${deviceId}::${sectionName}`}
-						/>
-					),
-				)}
+				{Object.entries(section).map(([sectionName, parameters]) => (
+					<DeviceSectionCC
+						deviceId={deviceId}
+						deviceName={deviceName}
+						handleParameterChange={handleParameterChange}
+						orientation={orientation}
+						parameters={parameters}
+						sectionName={sectionName}
+						key={`${deviceId}::${sectionName}`}
+					/>
+				))}
 			</div>
 		</div>
 	);
@@ -376,10 +440,10 @@ export const RackRowCCs = forwardRef<RackRowCCRef, CCsRackProps>(
 		}));
 
 		const handleParameterChange = (
-			deviceId,
-			sectionName,
-			parameterName,
-			value,
+			deviceId: number,
+			sectionName: string,
+			parameterName: string,
+			value: number,
 		) => {
 			trevorSocket.setParameterValue(
 				deviceId,
@@ -395,7 +459,7 @@ export const RackRowCCs = forwardRef<RackRowCCRef, CCsRackProps>(
 		};
 
 		const updateCCs = () => {
-			const root = seeAll ? fullCCs : ccs;
+			const root = (seeAll ? fullCCs : ccs) as CCValuesExtended;
 			if (Object.values(root).length === 0) {
 				return <p style={{ color: "gray" }}>CCs values</p>;
 			}
@@ -403,7 +467,7 @@ export const RackRowCCs = forwardRef<RackRowCCRef, CCsRackProps>(
 			return Object.entries(root).map(([deviceId, config]) =>
 				Object.entries(config).map(([deviceName, section]) => (
 					<DeviceCC
-						deviceId={deviceId}
+						deviceId={Number.parseInt(deviceId, 10)}
 						deviceName={deviceName}
 						handleParameterChange={handleParameterChange}
 						orientation={orientation}

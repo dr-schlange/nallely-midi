@@ -121,7 +121,7 @@ textarea:focus,
 select:focus {
 	outline: none;
 	/* border-color: #0000ff; */
-	border-color: orange;
+	border-color: gold;
 }
 
 label {
@@ -229,6 +229,18 @@ details[open]::details-content {
 	min-height: 23px;
 	width: 23px;
 	height: 23px;
+}
+
+.floatingselect {
+	position: fixed;
+	z-index: 50;
+	visibility: hidden;
+}
+
+.Button.floatingselectentry {
+	width: 100%;
+	background-color: var(--button-bg-color);
+	font-size: 12px;
 }
 
 .information-panel input,
