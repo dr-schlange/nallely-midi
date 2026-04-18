@@ -1078,6 +1078,7 @@ def _trevor_menu(loaded_paths, init_script, trevor_bus=None, trevor_ui=None):
                         )
             elif q == "p":
                 from ..codegen.subgraph_to_code import gen_subgraph_code
+
                 print(gen_subgraph_code(all_devices()).unparse())
             elif q == "i":
                 menu = "[INSPECT DEVICE]\n"

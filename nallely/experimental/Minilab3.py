@@ -1,10 +1,12 @@
 """
 Generated configuration for the Arturia - Minilab3 MIDI
 """
+
 import nallely
 
+
 class GeneralSection(nallely.Module):
-    shift = nallely.ModuleParameter(9, description='Shift button')
+    shift = nallely.ModuleParameter(9, description="Shift button")
     selector = nallely.ModuleParameter(114)
 
 
@@ -53,8 +55,8 @@ class Minilab3(nallely.MidiDevice):
 
     def __init__(self, device_name=None, *args, **kwargs):
         super().__init__(
-            *args
-,            device_name=device_name or 'Minilab3 MIDI',
+            *args,
+            device_name=device_name or "Minilab3 MIDI",
             **kwargs,
         )
 

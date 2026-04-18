@@ -47,6 +47,13 @@ drschlange:
         description: "Envelope Release"
         init: 0
     filter:
+      type:
+        cc: 75
+        description: "Filter Type"
+        accepted_values:
+          - lowpass
+          - highpass
+          - bandpass
       cutoff:
         cc: 74
         description: "Filter Cutoff"

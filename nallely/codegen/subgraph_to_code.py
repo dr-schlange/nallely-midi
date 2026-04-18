@@ -91,7 +91,9 @@ class MidiDeviceInstance(DeviceInstance):
                 value=ast.Call(func=ast.Name(id=self.device.__class__.__name__)),
             )
         ]
-        for section, content in self.device.current_preset(save_defaultvalues=False).items():
+        for section, content in self.device.current_preset(
+            save_defaultvalues=False
+        ).items():
             for parameter, value in content.items():
                 self.ast_nodes.append(
                     ast.Assign(
