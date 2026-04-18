@@ -117,6 +117,15 @@ class ModuleParameter:
         idx = min(nb_accepted_values - 1, (safe_value % (upper + 1)) // bucket_size)
         return accepted_values[idx]
 
+    # Method is only here for IDEs
+    def scale(
+        self,
+        min: int | float | None = None,
+        max: int | float | None = None,
+        method: Literal["lin", "log"] = "lin",
+        as_int: bool = False,
+    ): ...
+
 
 @dataclass
 class ModulePadsOrKeys:
