@@ -6,6 +6,7 @@ import nallely
 
 
 class GeneralSection(nallely.Module):
+    gain = nallely.ModuleParameter(3, init_value=32, description="General Gain")
     master_volume = nallely.ModuleParameter(7, description="General Volume")
     engine_select = nallely.ModuleParameter(8, description="Engine Selection")
     sustain = nallely.ModuleParameter(64, description="Sustain (Hold notes)")

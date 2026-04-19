@@ -1,6 +1,10 @@
 drschlange:
   lisa:
     general:
+      gain:
+        cc: 3
+        description: "General Gain"
+        init: 32
       master_volume:
         cc: 7
         description: "General Volume"
