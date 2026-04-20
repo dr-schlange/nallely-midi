@@ -23,7 +23,7 @@ class LISA(VirtualDevice):
     * wt4_amplitude_cv [0, 1] init=1 <any>: amplitude for waveform of wavetable 4
     * reconnect_cv [0, 1] init=0 <rising>: force a reconnection to MIDI devices
     * shift_cv [0, 1] init=0 <rising, falling>: access to second layer of buttons/sliders
-    * perf_impact_cv [LOW, HIGH] <any>: low or high impact on CPU (low = slower buffers fill)
+    * perf_impact_cv [LOW, MEDIUM, HIGH] init=HIGH <any>: low or high impact on CPU (low = slower buffers fill)
 
     type: ondemand
     category: hardware-integration
@@ -31,7 +31,7 @@ class LISA(VirtualDevice):
     """
 
     perf_impact_cv = VirtualParameter(
-        name="perf_impact", accepted_values=["LOW", "HIGH"]
+        name="perf_impact", accepted_values=["LOW", "MEDIUM", "HIGH"], default="HIGH"
     )
     shift_cv = VirtualParameter(name="shift", range=(0.0, 1.0), default=0.0)
     wt1_amplitude_cv = VirtualParameter(
@@ -49,10 +49,10 @@ class LISA(VirtualDevice):
     reconnect_cv = VirtualParameter(name="reconnect", range=(0.0, 1.0), default=0.0)
 
     def _setup_lfos(self, lisa: Lisa, minilab: Minilab3):
-        self.lfo1 = LFO(speed=0.20, sampling_rate=50)
-        self.lfo2 = LFO(speed=0.20, sampling_rate=50)
-        self.lfo3 = LFO(speed=0.20, sampling_rate=50)
-        self.lfo4 = LFO(speed=0.20, sampling_rate=50)
+        self.lfo1 = LFO(speed=1, sampling_rate=259)
+        self.lfo2 = LFO(speed=1, sampling_rate=259)
+        self.lfo3 = LFO(speed=1, sampling_rate=259)
+        self.lfo4 = LFO(speed=1, sampling_rate=259)
         for i in range(1, 4):
             lfo = getattr(self, f"lfo{i}")
             lfo.set_parameter("auto_srate", "OFF")
@@ -91,6 +91,14 @@ class LISA(VirtualDevice):
             non_shift_map.append(links[0])
             shift_map.append(links[1])
             links[1].muted = True
+
+        slds = minilab.sliders
+        for i in range(1, 5):
+            src = getattr(slds, f"s{i}")
+            links = src.outgoing_links
+            non_shift_map.append(links[0])
+            shift_map.append(links[1])
+            links[1].muted = True
         self.non_shift_map = non_shift_map
         self.shift_map = shift_map
 
@@ -118,11 +126,17 @@ class LISA(VirtualDevice):
         lisa.wavetable.reset_all_write_idx = minilab.pads.p7
         self._setup_lfos(lisa, minilab)
 
-        # map shifts
+        # map non-shifts
         self.wt1_amplitude_cv = minilab.sliders.s1.scale(0, 1)
         self.wt2_amplitude_cv = minilab.sliders.s2.scale(0, 1)
         self.wt3_amplitude_cv = minilab.sliders.s3.scale(0, 1)
         self.wt4_amplitude_cv = minilab.sliders.s4.scale(0, 1)
+
+        # map shifts
+        lisa.modulation.timbre = minilab.sliders.s1.scale(0, 127)
+        lisa.modulation.color = minilab.sliders.s2.scale(0, 127)
+        lisa.envelope.attack = minilab.sliders.s3.scale(0, 127)
+        lisa.envelope.release = minilab.sliders.s4.scale(0, 127)
         lisa.wavetable.reset_all_write_idx = "ON"
         lisa.wavetable.reset_all_write_idx = "OFF"
         self.collect_mappings(minilab)
@@ -192,8 +206,11 @@ class LISA(VirtualDevice):
     def on_perf_impact_any(self, value, ctx):
         if self.perf_impact == "LOW":
             sr, freq = 50, 0.2
+        elif self.perf_impact == "MEDIUM":
+            sr, freq = 130, 0.5
         else:
             sr, freq = 259, 1
         for i in range(1, 5):
-            getattr(self, f"lfo{i}").set_parameter("speed", freq)
-            getattr(self, f"lfo{i}").set_parameter("sampling_rate", sr)
+            lfo = getattr(self, f"lfo{i}")
+            lfo.set_parameter("speed", freq)
+            lfo.set_parameter("sampling_rate", sr)
