@@ -24,7 +24,6 @@ def no_registration(cls):
         ...
     try:
         del virtual_device_classes[cls.__name__]
-        # virtual_device_classes.remove(cls)
     except KeyError:
         ...
     return cls

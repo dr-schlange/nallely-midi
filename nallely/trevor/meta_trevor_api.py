@@ -1,5 +1,4 @@
 import inspect
-import textwrap
 from collections import ChainMap
 
 from ..utils import get_source
