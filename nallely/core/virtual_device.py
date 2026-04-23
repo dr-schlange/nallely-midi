@@ -12,7 +12,6 @@ from types import GeneratorType
 from typing import Any, Callable, Literal, Sequence, Type
 
 from ..utils import (
-    MetaDecorator,
     diff0_cv_property,
     map2values_cv_property,
     round_cv_property,
@@ -171,6 +170,36 @@ def on(
     return wrapper
 
 
+@dataclass
+class VRef(object):
+    cls: Type
+    default: dict[str, Any] | None = None
+    name: str | None = None
+
+    def __set_name__(self, owner, name):
+        if self.name is None:
+            self.name = name
+        owner._has_vrefs = (
+            True  # if vref is added dynamically, needs to be set manually
+        )
+
+    def __get__(self, instance, owner=None):
+        return instance.__dict__[self.name]
+
+    def __set__(self, instance, value):
+        ## Will see if needs to be reactivated later
+        #     prev = instance.__dict__.get(self.name)
+        #     if prev:
+        #         try:
+        #             del prev._ref
+        #             del prev._owner
+        #         except AttributeError:
+        #             ...  # should never happen
+        #     value._ref = self
+        #     value._owner = instance
+        instance.__dict__[self.name] = value
+
+
 class VirtualDevice(threading.Thread):
     _devices_count: dict[str, int] = defaultdict(int)
     output_cv = VirtualParameter(name="output", range=(0, 127))
@@ -184,8 +213,10 @@ class VirtualDevice(threading.Thread):
         instance = super().__new__(cls)
         instance._devices_count[cls.__name__] += 1
         instance._number = instance._devices_count[cls.__name__]  # type: ignore
-        # instance._devices_count[cls] += 1
-        # instance._number = instance._devices_count[cls]  # type: ignore
+        if not hasattr(cls, "_has_vrefs"):
+            instance._vrefs = {}  # type: ignore
+            return instance
+        cls._install_vrefs(instance, __vrefs__=kwargs.pop("__vrefs__", {}))
         return instance
 
     def __init__(
@@ -262,8 +293,34 @@ class VirtualDevice(threading.Thread):
         super().__init_subclass__()
 
     def internal_setup(self):
+        # TODO revive perhaps
         self._internal_init()
         self._internal_conversion_setup()
+
+    def try_connection(self, read_input_only=False):
+        self.start()
+        return True
+
+    @classmethod
+    def _install_vrefs(cls, instance, __vrefs__):
+        vrefs = [e for e in cls.__dict__.values() if isinstance(e, VRef)]
+        rebind = __vrefs__
+        rebind_key = rebind.keys()
+        cache = {}
+        for key, val in rebind.items():
+            setattr(instance, key, val)
+            cache[key] = val.uuid
+        for ref in vrefs:
+            rname = ref.name
+            rdefault = ref.default if ref.default else {}
+            rdefault["autoconnect"] = False
+            if rname in rebind_key:
+                continue
+            v = ref.cls(**rdefault)
+            v.try_connection()
+            cache[rname] = v.uuid
+            setattr(instance, rname, v)
+        instance._vrefs = cache  # type: ignore
 
     def _internal_init(self):
         for param in self.__class__.all_parameters():
@@ -817,6 +874,7 @@ class VirtualDevice(threading.Thread):
             "running": self.running,
             "config": config,
             "proxy": False,
+            "vrefs": self._vrefs,
         }
 
     @classmethod

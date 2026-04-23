@@ -444,10 +444,11 @@ class MidiDevice:
                 ),
             )
         except StopIteration:
-            raise DeviceNotFound(self.device_name)
+            return False
         if not read_input_only:
             self.connect()
         self.listen()
+        return True
 
     def connect(self):
         self.outport = mido.open_output(self.outport_name, autoreset=True)  # type: ignore

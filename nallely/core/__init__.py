@@ -13,7 +13,7 @@ from .midi_device import (
 )
 from .parameter_instances import Int, PadOrKey, PadsOrKeysInstance, ParameterInstance
 from .scaler import Scaler
-from .virtual_device import TimeBasedDevice, VirtualDevice, VirtualParameter, on
+from .virtual_device import TimeBasedDevice, VirtualDevice, VirtualParameter, VRef, on
 from .world import (
     CallbackRegistryEntry,
     DeviceNotFound,
@@ -68,4 +68,5 @@ __all__ = [
     "Bridge",
     "MIDIBridge",
     "Keyboard",
+    "VRef",
 ]

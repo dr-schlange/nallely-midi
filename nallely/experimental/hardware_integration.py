@@ -1,9 +1,9 @@
 from nallely import (
     LFO,
-    DeviceNotFound,
     ThreadContext,
     VirtualDevice,
     VirtualParameter,
+    VRef,
     on,
 )
 from nallely.codegen import gencode
@@ -47,16 +47,22 @@ class LISA(VirtualDevice):
         name="wt4_amplitude", range=(0.0, 1.0), default=1.0
     )
     reconnect_cv = VirtualParameter(name="reconnect", range=(0.0, 1.0), default=0.0)
+    lfo1 = VRef(
+        LFO,
+        default={
+            "waveform": "sine",
+            "sampling_rate": 259,
+            "speed": 1,
+            "auto_srate": "OFF",
+        },
+    )
+    lfo2 = VRef(LFO, default=lfo1.default)
+    lfo3 = VRef(LFO, default=lfo1.default)
+    lfo4 = VRef(LFO, default=lfo1.default)
+    lisa = VRef(Lisa)
+    minilab = VRef(Minilab3)
 
     def _setup_lfos(self, lisa: Lisa, minilab: Minilab3):
-        self.lfo1 = LFO(speed=1, sampling_rate=259)
-        self.lfo2 = LFO(speed=1, sampling_rate=259)
-        self.lfo3 = LFO(speed=1, sampling_rate=259)
-        self.lfo4 = LFO(speed=1, sampling_rate=259)
-        for i in range(1, 4):
-            lfo = getattr(self, f"lfo{i}")
-            lfo.set_parameter("auto_srate", "OFF")
-
         # map non-shift needs to be declared first
         lisa.general.master_volume = minilab.buttons.b1.scale(0, 127)
         lisa.general.gain = minilab.buttons.b2.scale(0, 127)
@@ -103,20 +109,12 @@ class LISA(VirtualDevice):
         self.shift_map = shift_map
 
     def __post_init__(self, **kwargs):
-        lisa = Lisa(autoconnect=False)
-        try:
-            lisa.try_connection()
-        except DeviceNotFound:
-            print("[LISA] Couldn't find LISA synth, needs to be connected manually")
-        self.lisa = lisa
-        minilab = Minilab3(autoconnect=False)
-        try:
-            minilab.try_connection(read_input_only=True)
-        except DeviceNotFound:
-            print(
-                "[LISA] Couldn't find the Minilab3 controller, needs to be connected manually"
-            )
-        self.minilab = minilab
+        self.prepare_all()
+        return {"disable_output": True}
+
+    def prepare_all(self):
+        lisa = self.lisa
+        minilab = self.minilab
         lisa.keys.notes = minilab.keys.notes
         lisa.wavetable.freeze_wt1 = minilab.pads.p1
         lisa.wavetable.freeze_wt2 = minilab.pads.p2
@@ -140,7 +138,6 @@ class LISA(VirtualDevice):
         lisa.wavetable.reset_all_write_idx = "ON"
         lisa.wavetable.reset_all_write_idx = "OFF"
         self.collect_mappings(minilab)
-        return {"disable_output": True}
 
     def setup(self) -> ThreadContext:
         self.lfo1.start()

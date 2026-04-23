@@ -12,6 +12,7 @@ from .core import (
     ThreadContext,
     VirtualDevice,
     VirtualParameter,
+    VRef,
     all_devices,
     connected_devices,
     get_virtual_device_classes,
@@ -139,4 +140,5 @@ __all__ = [
     "SuperShiftRegister",
     "KeySplitter",
     "VScaler",
+    "VRef",
 ]

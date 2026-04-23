@@ -96,13 +96,13 @@ class Session:
             content = json.load(f)
         if not content:
             return self.snapshot()
-
         self.trevor.reset_all()
 
         self.code = content.get("playground_code")
 
         # loads the midi and virtual devices
         device_map = {}
+        device_refs = {}
         errors = []
         for device in content.get("midi_devices", []):
             common_port = longest_common_substring(
@@ -114,34 +114,22 @@ class Session:
             device_class_name = device["class"]
             try:
                 cls = find_class(device_class_name)
-                devices = all_devices()
                 channel = device.get("channel", 0)
                 uuid = device.get("id", 0)
-                try:
-                    autoconnect = common_port or False
-                    mididev: MidiDevice = cls(
-                        device_name=common_port,
-                        channel=channel,
-                        autoconnect=autoconnect,
-                    )
-                    if uuid:
-                        mididev.uuid = uuid
-                except DeviceNotFound:
-                    # If there is a problem we remove the auto-connection
-                    diff = next(
-                        (item for item in all_devices() if item not in devices),
-                        None,
-                    )
-                    if diff:
-                        diff.stop()
-                    mididev = cls(channel=channel, autoconnect=False)
-                    if uuid:
-                        mididev.uuid = uuid
+                mididev: MidiDevice = cls(
+                    device_name=common_port,
+                    channel=channel,
+                    autoconnect=False,
+                )
+                if uuid:
+                    mididev.uuid = uuid
+                connected = mididev.try_connection()
+                if not connected:
                     errors.append(
                         f'MIDI device ports "{common_port}" for {device_class_name} could not be found. Is your device connected or MIDI ports existing? Your device was still created, but it was not connected to any MIDI port.'
                     )
-                # device_map[device["id"]] = id(mididev)
                 device_map[device["id"]] = mididev.uuid
+                device_refs[mididev.uuid] = mididev
                 if self.trevor_bus:
                     mididev.on_midi_message = self.trevor_bus.send_control_value_update
                 mididev.load_preset(dct=device["config"])
@@ -151,21 +139,28 @@ class Session:
                 )
 
         vdev_to_resume = []
-        for device in content.get("virtual_devices", []):
+        vdevs = sorted(
+            content.get("virtual_devices", []),
+            key=lambda dev: len(dev.get("vrefs", [])) > 0,
+        )
+        for device in vdevs:
             cls_name = device["class"]
             if cls_name == TrevorBus.__name__:
                 continue
             try:
                 cls = find_class(cls_name)
                 uuid = device.get("id", 0)
-
-                vdev: VirtualDevice = cls()
+                vrefs = {
+                    k: device_refs[device_map[v]]
+                    for k, v in device.get("vrefs").items()
+                }
+                vdev: VirtualDevice = cls(__vrefs__=vrefs)
                 if uuid:
                     vdev.uuid = uuid
                 if self.trevor_bus:
                     vdev.to_update = self.trevor_bus  # type: ignore
-                # device_map[device["id"]] = id(vdev)
                 device_map[device["id"]] = vdev.uuid
+                device_refs[vdev.uuid] = vdev
                 if device.get("running", False):
                     vdev.start()  # We start the device
                     vdev.pause()  # We pause it right away before we do the patch
