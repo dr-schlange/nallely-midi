@@ -124,12 +124,6 @@ class OnChange:
         cond = self.condition_func
         assert cond
         lock = self._lock
-        # send_out = lambda vdev, ctx, value, selected_outputs: vdev.send_out(
-        #     value,
-        #     selected_outputs=selected_outputs,
-        #     ctx=ctx,
-        #     from_=self.parameter.name,
-        # )
 
         @wraps(original)
         def wrapped(instance, value, last_value, ctx):
@@ -138,7 +132,6 @@ class OnChange:
                 last_value = value
 
             if condition_met:
-                # ctx.send_out = partial(instance.send_out, ctx=ctx)
                 return True, original(instance, value, ctx)  # type: ignore
             return False, None
 
@@ -282,7 +275,9 @@ class VirtualDevice(threading.Thread):
             for param in params:
                 if param.no_init:
                     continue
-                setattr(self, param.name, kwargs.pop(param.name, param.get_default()))
+                setattr(
+                    self, f"_{param.name}", kwargs.pop(param.name, param.get_default())
+                )
             additional_kargs = self.__post_init__(**kwargs)
             if additional_kargs is not None:
                 kwargs |= additional_kargs
@@ -555,16 +550,6 @@ class VirtualDevice(threading.Thread):
                 finished = handle_generator_or_output(main_gen, "_default_idle", ctx)
                 if finished:
                     main_gen = None
-                # if queue_level > self.input_queue.maxsize * 0.8:
-                #     # Skip sleep to catch up faster
-                #     print(
-                #         f"[{self.uid()}] High queue pressure, skipping sleep for this cycle."
-                #     )
-                # else:
-                #     # Adaptive sleep
-                #     elapsed_time = time.perf_counter() - start_time
-                #     sleep_time = max(0, self.target_cycle_time - elapsed_time)
-                #     time.sleep(sleep_time)
 
                 # Adaptive sleep
                 elapsed_time = time.perf_counter() - start_time
@@ -586,10 +571,6 @@ class VirtualDevice(threading.Thread):
     ):
         if value is None:
             return
-        # try:
-        #     self.output_queue.put_nowait((value, ctx))
-        # except Full:
-        #     pass  # Drop if full
 
         # True -> stream; False -> non stream
         outputs = None
@@ -883,11 +864,6 @@ class VirtualDevice(threading.Thread):
     @classmethod
     def schema_as_dict(cls):
         virtual_parameters = cls.all_parameters()
-        # return {
-        #     "name": cls.__name__,
-        #     "parameters": [asdict(p) for p in virtual_parameters if not p.hidden],
-        #     "doc": cls.__doc__,
-        # }
         return cls._schema_as_dict(cls.__name__, virtual_parameters, cls.__doc__)
 
     @classmethod
