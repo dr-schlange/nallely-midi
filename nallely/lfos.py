@@ -236,33 +236,33 @@ class LFO(TimeBasedDevice):
 
     def __add__(self, lfo):
         if isinstance(lfo, int):
-            return AddLFO(self, ConstLFO(lfo))
-        return AddLFO(self, lfo)
+            return AddLFO(lfo1=self, lfo2=ConstLFO(lfo))
+        return AddLFO(lfo1=self, lfo2=lfo)
 
     def __sub__(self, lfo):
         if isinstance(lfo, int):
-            return SubLFO(self, ConstLFO(lfo))
-        return SubLFO(self, lfo)
+            return SubLFO(lfo1=self, lfo2=ConstLFO(lfo))
+        return SubLFO(lfo1=self, lfo2=lfo)
 
     def __mul__(self, lfo):
         if isinstance(lfo, int):
-            return MulLFO(self, ConstLFO(lfo))
-        return MulLFO(self, lfo)
+            return MulLFO(lfo1=self, lfo2=ConstLFO(lfo))
+        return MulLFO(lfo1=self, lfo2=lfo)
 
     def __truediv__(self, lfo):
         if isinstance(lfo, int):
-            return DivLFO(self, ConstLFO(lfo))
-        return DivLFO(self, lfo)
+            return DivLFO(lfo1=self, lfo2=ConstLFO(lfo))
+        return DivLFO(lfo1=self, lfo2=lfo)
 
     def __gt__(self, lfo):
         if isinstance(lfo, int):
-            return MaxLFO(self, ConstLFO(lfo))
-        return MaxLFO(self, lfo)
+            return MaxLFO(lfo1=self, lfo2=ConstLFO(lfo))
+        return MaxLFO(lfo1=self, lfo2=lfo)
 
     def __lt__(self, lfo):
         if isinstance(lfo, int):
-            return MinLFO(self, ConstLFO(lfo))
-        return MinLFO(self, lfo)
+            return MinLFO(lfo1=self, lfo2=ConstLFO(lfo))
+        return MinLFO(lfo1=self, lfo2=lfo)
 
 
 @no_registration
@@ -280,8 +280,8 @@ class CombinedLFO(LFO):
             waveform="combined",
             min_value=min_value,
             max_value=max_value,
-            speed=speed,
             sampling_rate=sampling_rate,
+            speed=speed,
         )
 
     def normalize(self, value):
