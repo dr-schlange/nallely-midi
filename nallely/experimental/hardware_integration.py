@@ -200,5 +200,5 @@ class LISA(VirtualDevice):
             sr, freq = 259, 1
         for i in range(1, 5):
             lfo = getattr(self, f"lfo{i}")
-            lfo.set_parameter("speed", freq)
-            lfo.set_parameter("sampling_rate", sr)
+            lfo.speed = freq
+            lfo.sampling_rate = sr

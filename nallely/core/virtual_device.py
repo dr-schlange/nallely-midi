@@ -275,9 +275,11 @@ class VirtualDevice(threading.Thread):
             for param in params:
                 if param.no_init:
                     continue
-                setattr(
-                    self, f"_{param.name}", kwargs.pop(param.name, param.get_default())
-                )
+                setattr(self, f"_{param.name}", param.get_default())
+            for param in params:
+                if param.no_init:
+                    continue
+                setattr(self, param.name, kwargs.pop(param.name, param.get_default()))
             additional_kargs = self.__post_init__(**kwargs)
             if additional_kargs is not None:
                 kwargs |= additional_kargs
@@ -841,7 +843,9 @@ class VirtualDevice(threading.Thread):
                     ctx=ThreadContext({**ctx, "param": self.__class__.__name__}),
                 )
             else:
-                return lambda value, ctx: to_device.set_parameter(to_param.name, value)
+                return lambda value, ctx: to_device.set_parameter(
+                    to_param.name, value, ctx
+                )
         else:
             return lambda value, ctx: setattr(to_device, to_param.name, value)
 
