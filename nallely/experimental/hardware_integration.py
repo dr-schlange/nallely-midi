@@ -146,14 +146,14 @@ class LISA(VirtualDevice):
         self.lfo4.start()
         return super().setup()
 
-    def stop(self, clear_queues=True):
-        self.lfo1.stop()
-        self.lfo2.stop()
-        self.lfo3.stop()
-        self.lfo4.stop()
-        self.lisa.stop()
-        self.minilab.stop()
-        return super().stop(clear_queues)
+    # def stop(self, clear_queues=True):
+    #     self.lfo1.stop()
+    #     self.lfo2.stop()
+    #     self.lfo3.stop()
+    #     self.lfo4.stop()
+    #     self.lisa.stop()
+    #     self.minilab.stop()
+    #     return super().stop(clear_queues)
 
     def adapt_range(self, lfo, coef):
         for link in lfo.outgoing_links:

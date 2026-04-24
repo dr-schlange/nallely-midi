@@ -309,7 +309,7 @@ class VirtualDevice(threading.Thread):
         cache = {}
         for key, val in rebind.items():
             setattr(instance, key, val)
-            cache[key] = val.uuid
+            cache[key] = val
         for ref in vrefs:
             rname = ref.name
             rdefault = ref.default if ref.default else {}
@@ -318,7 +318,7 @@ class VirtualDevice(threading.Thread):
                 continue
             v = ref.cls(**rdefault)
             v.try_connection()
-            cache[rname] = v.uuid
+            cache[rname] = v
             setattr(instance, rname, v)
         instance._vrefs = cache  # type: ignore
 
@@ -660,6 +660,9 @@ class VirtualDevice(threading.Thread):
                 link.uninstall()
         for observer in self.observers:
             observer.dispose()
+        for prop, vdev in self._vrefs.items():
+            vdev.stop()
+            setattr(self, prop, None)
         if self in virtual_devices:
             virtual_devices.remove(self)
         self.running = False
@@ -874,7 +877,7 @@ class VirtualDevice(threading.Thread):
             "running": self.running,
             "config": config,
             "proxy": False,
-            "vrefs": self._vrefs,
+            "vrefs": {k: v.uuid for k, v in self._vrefs.items()},
         }
 
     @classmethod

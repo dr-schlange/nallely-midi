@@ -4,7 +4,8 @@ import time
 import pytest
 from websockets.sync.client import connect
 
-from nallely import WebSocketBus, stop_all_connected_devices
+from nallely import LFO, WebSocketBus, stop_all_connected_devices
+from nallely.core import get_connected_devices, get_virtual_devices
 from nallely.session import Session
 
 PORT = 6789
@@ -52,3 +53,24 @@ def test__session_snapshot_without_proxy(wsbus, session):
 
     assert dev.get("proxy", False) is False
     assert dev["meta"]["name"] == WebSocketBus.__name__
+
+
+def test__session_create_hw_integration_stop_all_flushed(wsbus, session):
+    wsbus.stop()
+    from nallely.experimental.hardware_integration import LISA
+
+    lisa = LISA()
+    lisa.start()
+
+    vdevs = get_virtual_devices()
+    midis = get_connected_devices()
+    assert len(vdevs) == 5
+    assert len(midis) == 2
+    assert isinstance(lisa.lfo1, LFO)
+
+    lisa.stop()
+    vdevs = get_virtual_devices()
+    midis = get_connected_devices()
+    assert len(vdevs) == 0
+    assert len(midis) == 0
+    assert lisa.lfo1 is None

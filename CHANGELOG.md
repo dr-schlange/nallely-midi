@@ -75,6 +75,7 @@
 * Add possibility to remove note-off or 0 on the MIDI keys -> MIDI keys and Neuron port -> MIDI keys patchs 
 * Add support for multi-channels pitchwheel on a same device
 * Add possibility to generate the python code that will recreate/clone a subset of a session graph (or full session graph) in the same state
+* Introduction of a VRef element which represents a relationship between a virtual device and other devices (midi or virtual). This allows to properly save and allocate devices to another one and tie their lifecycles.
 
 ### Fix
 
