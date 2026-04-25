@@ -25,6 +25,7 @@
 * Add experimental integration for [COMOL-1](https://github.com/DZeman23/COMOL-1-The-COBOL-Wavetable-Synthesizer) a COBOL Wavetable Synth
 * Add a new curve/linear mode (default curve) on the ASDR neuron. It also lets the possibility to shape the curve independently for the attack, the decay and the release
 * Add possibility to disable auto sampling rate (computed from speed) on the LFO
+* Operator have now a lower and upper bound to be able to scale better
 
 #### TrevorUI and UX
 
@@ -75,7 +76,8 @@
 * Add possibility to remove note-off or 0 on the MIDI keys -> MIDI keys and Neuron port -> MIDI keys patchs 
 * Add support for multi-channels pitchwheel on a same device
 * Add possibility to generate the python code that will recreate/clone a subset of a session graph (or full session graph) in the same state
-* Introduction of a VRef element which represents a relationship between a virtual device and other devices (midi or virtual). This allows to properly save and allocate devices to another one and tie their lifecycles.
+* Introduction of a VRef element which represents a relationship between a virtual device and other devices (midi or virtual). This allows to properly save and allocate devices to another one and tie their lifecycles
+* Fix LFO arithmetic
 
 ### Fix
 

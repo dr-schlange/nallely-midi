@@ -108,23 +108,33 @@ class WindowDetector(VirtualDevice):
 
 
 class Operator(VirtualDevice):
-    a_cv = VirtualParameter(name="a", range=(None, None))
-    b_cv = VirtualParameter(name="b", range=(None, None))
+    """Operator
+
+    Basic operator for point by point operations over 2 signals.
+    Supported operations are: +, -, /, *, mod, min, max, clamp, pow
+
+
+    inputs:
+    * a_cv [-8192, 8192] init=0: left-hand operand
+    * b_cv [-8192, 8192] init=0: righ-hand operand
+    * operator_cv [+, -, /, *, mod, min, max, clamp, pow] <any>: Shapes the curve response of the attack in curve-mode
+    * type_cv [ondemand, continuous]: type of computation
+
+    outputs:
+    * output_cv [-8192, 8192]: result of the computation
+
+    type: hybrid
+    category: operator
+    """
+
+    a_cv = VirtualParameter(name="a", range=(-8192.0, 8192.0), default=0.0)
+    b_cv = VirtualParameter(name="b", range=(-8192.0, 8192.0), default=0.0)
     operator_cv = VirtualParameter(
         name="operator",
-        accepted_values=(
-            "+",
-            "-",
-            "/",
-            "*",
-            "mod",
-            "min",
-            "max",
-            "clamp",
-            "pow",
-        ),
+        accepted_values=["+", "-", "/", "*", "mod", "min", "max", "clamp", "pow"],
     )
-    type_cv = VirtualParameter(name="type", accepted_values=("ondemand", "continuous"))
+    type_cv = VirtualParameter(name="type", accepted_values=["ondemand", "continuous"])
+    output_cv = VirtualParameter(name="output", range=(-8192.0, 8192.0))
 
     @property
     def min_range(self):
@@ -147,8 +157,8 @@ class Operator(VirtualDevice):
     }
 
     def store_input(self, param, value):
-        if param == "b" and self.operator == "/" and value == 0:
-            value = 0.0001  # avoid division by 0
+        if param == "b" and self.operator == "/" and (value == 0):
+            value = 0.0001
         super().store_input(param, value)
 
     def __init__(self, a=0, b=0, operator="+", type="ondemand", **kwargs):
