@@ -72,8 +72,6 @@ class ParameterInstance:
 
     @property
     def incoming_links(self):
-        from .world import all_devices
-
         links = []
         self_repr = self.repr()
         for device in all_devices():
