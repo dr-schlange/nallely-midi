@@ -432,7 +432,9 @@ class MidiDevice:
         self._retry_input = False
         self._retry_output = False
         if autoconnect:
-            self.try_connection(read_input_only)
+            connected = self.try_connection(read_input_only)
+            if not connected:
+                raise DeviceNotFound(self.device_name)
 
     def try_connection(self, read_input_only=False):
         try:
