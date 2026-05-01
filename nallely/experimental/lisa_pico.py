@@ -42,6 +42,9 @@ class ModulationSection(nallely.Module):
     color = nallely.ModuleParameter(10, description="Color")
     color_mod = nallely.ModuleParameter(17, description="Color Modulation")
     FM_mod = nallely.ModuleParameter(15, description="FM Modulation")
+    FM_slew = nallely.ModuleParameter(
+        18, description="Slew applied to the FM modulation"
+    )
 
 
 class WavetableSection(nallely.Module):

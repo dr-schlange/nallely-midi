@@ -87,6 +87,10 @@ drschlange:
         cc: 15
         description: "FM Modulation"
         init: 0
+      FM_slew:
+        cc: 18
+        description: "Slew applied to the FM modulation"
+        init: 0
     wavetable:
         stream_table1: "pitchwheel+stream"
         stream_table2: "pitchwheel+stream"
