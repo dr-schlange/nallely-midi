@@ -181,28 +181,21 @@ class VCA(VirtualDevice):
     Simple VCA implementation with gain
 
     inputs:
-    * input_cv [0, 127] <any>: Input signal
+    * input_cv [-1, 1] <any>: Input signal
     * amplitude_cv [0.0, 1.0] init=0.0 <any>: Signal amplitude (0.0 -> 0%, 1.0 -> 100%)
     * gain_cv [1.0, 2.0] init=1.0: Signal gain (default is 1.0)
 
     outputs:
-    * output_cv [0, 127]: The amplified signal
+    * output_cv [-1, 1]: The amplified signal
 
     type: ondemand
     category: amplitude-modulation
     """
 
-    input_cv = VirtualParameter("input", range=(0, 127))
+    output_cv = VirtualParameter("output", range=(-1.0, 1.0))
+    input_cv = VirtualParameter("input", range=(-1.0, 1.0))
     amplitude_cv = VirtualParameter("amplitude", range=(0.0, 1.0))
     gain_cv = VirtualParameter("gain", range=(1.0, 2.0))
-
-    @property
-    def min_range(self):
-        return 0.0
-
-    @property
-    def max_range(self):
-        return 127.0
 
     @on(input_cv, edge="any")
     def sending_modulated_input(self, value, ctx):
@@ -288,7 +281,7 @@ class EnvelopeSlew(VirtualDevice):
     The Slew Limiter restricts how quickly the signal can change, smoothing rapid variations.
 
     inputs:
-    * input_cv [0, 127] <any>: Input signal.
+    * input_cv [-1, 1] <any>: Input signal.
     * attack_cv [0, 99.99] init=50.0: Attack control in %.
     * release_cv [0, 99.99] init=50.0: Release control in %.
     * type_cv [envelope, slew]: Choose between Envelope Follower and Slew Limiter
@@ -297,13 +290,14 @@ class EnvelopeSlew(VirtualDevice):
                                       continuous = value produced at the cycle speed of the module.
 
     outputs:
-    * output_cv [0, 127]: The filtered signal.
+    * output_cv [-1, 1]: The filtered signal.
 
     type: ondemand, continuous
     category: filter
     """
 
-    input_cv = VirtualParameter(name="input", range=(0, 127))
+    output_cv = VirtualParameter(name="output", range=(-1.0, 1.0))
+    input_cv = VirtualParameter(name="input", range=(-1.0, 1.0))
     attack_cv = VirtualParameter(name="attack", range=(0.0, 99.99), default=50.0)
     release_cv = VirtualParameter(name="release", range=(0.0, 99.99), default=50.0)
     type_cv = VirtualParameter(name="type", accepted_values=("envelope", "slew"))
@@ -313,21 +307,11 @@ class EnvelopeSlew(VirtualDevice):
         self.prev_value = 0
 
     def compute(self):
-        half = self.input_cv.parameter.range[1] / 2  # type: ignore
-        if self.type == "envelope":  # type: ignore
-            rectified_input = abs(self.input)  # type: ignore
-        else:
-            rectified_input = self.input - half  # type: ignore
         prev_value = self.prev_value
-
-        delta = rectified_input - prev_value
+        delta = self.input - prev_value  # type: ignore
         smoothing = 1.0 - ((self.attack if delta > 0 else self.release) / 100.0)  # type: ignore
         output = prev_value + smoothing * delta
         self.prev_value = output
-
-        # We need to rectify for the slew
-        if self.type == "slew":  # type: ignore
-            output += half
         return output
 
     @on(input_cv, edge="any")

@@ -12,7 +12,7 @@ class MultiPoleFilter(VirtualDevice):
 
 
     inputs:
-    * input_cv [0, 127] <any>: Input signal.
+    * input_cv [-1, 1] <any>: Input signal.
     * filter_cv [lowpass, highpass, bandpass]: The filter type (default=lowpass).
     * mode_cv [cutoff, smoothing]: Choose between cutoff control or smoothing control.
     * cutoff_cv [0.0, 3000.0] init=1.0: Control cutoff frequency.
@@ -24,14 +24,15 @@ class MultiPoleFilter(VirtualDevice):
                                       continuous = value produced at the cycle speed of the module.
 
     outputs:
-    * output_cv [0, 127]: The filtered signal.
+    * output_cv [-1, 1]: The filtered signal.
 
     type: ondemand, continuous
     category: filter
     """
 
     MAX_POLES = 4
-    input_cv = VirtualParameter(name="input", range=(0, 127))
+    output_cv = VirtualParameter(name="output", range=(-1.0, 1.0))
+    input_cv = VirtualParameter(name="input", range=(-1.0, 1.0))
 
     filter_cv = VirtualParameter(
         name="filter", accepted_values=("lowpass", "highpass", "bandpass")
@@ -167,6 +168,7 @@ class Waveshaper(VirtualDevice):
     category: filter
     """
 
+    output_cv = VirtualParameter(name="output", range=(-5.0, 5.0))
     input_cv = VirtualParameter(name="input", range=(-5.0, 5.0))
     mode_cv = VirtualParameter(
         name="mode",
@@ -195,14 +197,6 @@ class Waveshaper(VirtualDevice):
         self.type = "ondemand"
         self.exp_power = 2
         super().__init__(*args, **kwargs)
-
-    @property
-    def min_range(self):
-        return -5.0
-
-    @property
-    def max_range(self):
-        return 5.0
 
     def process(self):
         lo, hi = self.input_cv.parameter.range
@@ -259,40 +253,39 @@ class Mixer(VirtualDevice):
     Simple 4-in mixer.
 
     inputs:
-    * in0_cv [0, 127] <any>: Input signal.
-    * in1_cv [0, 127] <any>: Input signal.
-    * in2_cv [0, 127] <any>: Input signal.
-    * in3_cv [0, 127] <any>: Input signal.
-    * level0_cv [0, 100] <any>: Input signal level.
-    * level1_cv [0, 100] <any>: Input signal level.
-    * level2_cv [0, 100] <any>: Input signal level.
-    * level3_cv [0, 100] <any>: Input signal level.
-    * nums_cv [2, 4] init=4 round <any>: The number of input to consider.
+    * in0_cv [-1, 1] <any>: Input signal.
+    * in1_cv [-1, 1] <any>: Input signal.
+    * in2_cv [-1, 1] <any>: Input signal.
+    * in3_cv [-1, 1] <any>: Input signal.
+    * level0_cv [0, 100] init=50 <any>: Input signal level.
+    * level1_cv [0, 100] init=50 <any>: Input signal level.
+    * level2_cv [0, 100] init=50 <any>: Input signal level.
+    * level3_cv [0, 100] init=50 <any>: Input signal level.
+    * nums_cv [2, 4] init=2 round <any>: The number of input to consider.
     * type_cv [ondemand, continuous]: Choose between a ondemand or continuous value production.
                                       ondemand = value produced when reacting to an input only.
                                       continuous = value produced at the cycle speed of the module.
 
     outputs:
-    * output_cv [0, 127]: The filtered signal.
+    * output_cv [-1, 1]: The filtered signal.
 
     type: ondemand, continuous
     category: mixing
     """
 
-    in0_cv = VirtualParameter(name="in0", range=(0, 127))
-    in1_cv = VirtualParameter(name="in1", range=(0, 127))
-    in2_cv = VirtualParameter(name="in2", range=(0, 127))
-    in3_cv = VirtualParameter(name="in3", range=(0, 127))
-
-    level0_cv = VirtualParameter(name="level0", range=(0, 100), default=50)
-    level1_cv = VirtualParameter(name="level1", range=(0, 100), default=50)
-    level2_cv = VirtualParameter(name="level2", range=(0, 100), default=50)
-    level3_cv = VirtualParameter(name="level3", range=(0, 100), default=50)
-
+    in0_cv = VirtualParameter(name="in0", range=(-1.0, 1.0))
+    in1_cv = VirtualParameter(name="in1", range=(-1.0, 1.0))
+    in2_cv = VirtualParameter(name="in2", range=(-1.0, 1.0))
+    in3_cv = VirtualParameter(name="in3", range=(-1.0, 1.0))
+    level0_cv = VirtualParameter(name="level0", range=(0.0, 100.0), default=50.0)
+    level1_cv = VirtualParameter(name="level1", range=(0.0, 100.0), default=50.0)
+    level2_cv = VirtualParameter(name="level2", range=(0.0, 100.0), default=50.0)
+    level3_cv = VirtualParameter(name="level3", range=(0.0, 100.0), default=50.0)
     nums_cv = VirtualParameter(
-        name="nums", range=(2, 4), conversion_policy="round", default=4
+        name="nums", range=(2.0, 4.0), conversion_policy="round", default=2.0
     )
-    type_cv = VirtualParameter(name="type", accepted_values=("ondemand", "continuous"))
+    type_cv = VirtualParameter(name="type", accepted_values=["ondemand", "continuous"])
+    output_cv = VirtualParameter(name="output", range=(-1.0, 1.0))
 
     @on(in0_cv, edge="any")
     def in0_change(self, value, ctx):
@@ -356,33 +349,32 @@ class Crossfade(VirtualDevice):
     Dual crossfader, proposes 2 inputs and 2 outputs.
 
     inputs:
-    * in0_cv [0, 127] <any>: Input signal.
-    * in1_cv [0, 127] <any>: Input signal.
-    * in2_cv [0, 127] <any>: Input signal.
-    * in3_cv [0, 127] <any>: Input signal.
-    * level_cv [0, 100] <any>: Crossfader level.
+    * in0_cv [-1, 1] <any>: Input signal.
+    * in1_cv [-1, 1] <any>: Input signal.
+    * in2_cv [-1, 1] <any>: Input signal.
+    * in3_cv [-1, 1] <any>: Input signal.
+    * level_cv [0, 100] init=50 <any>: Crossfader level.
     * type_cv [ondemand, continuous]: Choose between a ondemand or continuous value production.
                                       ondemand = value produced when reacting to an input only.
                                       continuous = value produced at the cycle speed of the module.
 
     outputs:
-    * out0_cv [0, 127]: The crossfaded signal for in0 and in1.
-    * out1_cv [0, 127]: The filtered signal for in2 and in3.
+    * out0_cv [-1, 1]: The crossfaded signal for in0 and in1.
+    * out1_cv [-1, 1]: The filtered signal for in2 and in3.
 
     type: ondemand, continuous
     category: filter
     meta: disable default output
     """
 
-    in0_cv = VirtualParameter(name="in0", range=(0, 127))
-    in1_cv = VirtualParameter(name="in1", range=(0, 127))
-    in2_cv = VirtualParameter(name="in2", range=(0, 127))
-    in3_cv = VirtualParameter(name="in3", range=(0, 127))
-    level_cv = VirtualParameter(name="level", range=(0, 100), default=50)
-    type_cv = VirtualParameter(name="type", accepted_values=("ondemand", "continuous"))
-
-    out0_cv = VirtualParameter(name="out0", range=(0, 127))
-    out1_cv = VirtualParameter(name="out1", range=(0, 127))
+    in0_cv = VirtualParameter(name="in0", range=(-1.0, 1.0))
+    in1_cv = VirtualParameter(name="in1", range=(-1.0, 1.0))
+    in2_cv = VirtualParameter(name="in2", range=(-1.0, 1.0))
+    in3_cv = VirtualParameter(name="in3", range=(-1.0, 1.0))
+    level_cv = VirtualParameter(name="level", range=(0.0, 100.0), default=50.0)
+    type_cv = VirtualParameter(name="type", accepted_values=["ondemand", "continuous"])
+    out0_cv = VirtualParameter(name="out0", range=(-1.0, 1.0))
+    out1_cv = VirtualParameter(name="out1", range=(-1.0, 1.0))
 
     def __post_init__(self, **kwargs):
         return {"disable_output": True}

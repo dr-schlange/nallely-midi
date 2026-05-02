@@ -26,6 +26,8 @@
 * Add a new curve/linear mode (default curve) on the ASDR neuron. It also lets the possibility to shape the curve independently for the attack, the decay and the release
 * Add possibility to disable auto sampling rate (computed from speed) on the LFO
 * Operator have now a lower and upper bound to be able to scale better
+* `Envelope/Slew`, `VCA`, `MultipolFilter` becomes bipolar and start to migrate to the last version of the internal API
+* Fix current step output in `Sequencer8`
 
 #### TrevorUI and UX
 
