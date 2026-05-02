@@ -240,19 +240,21 @@ class Sequencer8(VirtualDevice):
         self.edit_step = 0
 
     def next_step(self):
-        if self.current_step > self.length - 1:
+        current_step = self.current_step
+        if current_step > self.length - 1:
             next_step = 0
         else:
-            next_step = (self.current_step + 1) % int(self.length)
+            next_step = (current_step + 1) % int(self.length)
         yield (next_step, [self.current_step_cv])
         if self.current_step_active():
             yield (1, [self.trig_out_cv])
             yield (0, [self.trig_out_cv])
-            output_value = getattr(self, f"step{int(self.current_step)}")
+            output_value = getattr(self, f"step{int(current_step)}")
             yield output_value
-            yield (output_value, [getattr(self, f"step{int(self.current_step)}_cv")])
+            yield (output_value, [getattr(self, f"step{int(current_step)}_cv")])
         else:
             yield 0
+        self.current_step = next_step
 
     def clear_outs(self):
         for output in [self.trig_out_cv, self.output_cv, self.current_step_cv]:
