@@ -24,7 +24,7 @@ class Scaler:
     as_int: bool | None = False
     # from_min: int | float | None = None
     # from_max: int | float | None = None
-    auto: bool = False
+    auto: bool = True
 
     def __post_init__(self):
         if self.to_min == 0 and self.method == "log":

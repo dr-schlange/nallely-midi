@@ -1,3 +1,6 @@
+import time
+
+from nallely.eg import ADSREnvelope
 from nallely.lfos import LFO
 
 
@@ -103,3 +106,28 @@ def test__scaler_lin_x_y_identity():
 
     assert scaler.convert_lin(24, 24, 108) == 24
     assert scaler.convert_lin(60, 24, 108) == 60
+
+
+def test__scaler_default_scale_virtual():
+    lfo = LFO(autoconnect=True)
+    adsr = ADSREnvelope(autoconnect=True, attack=0, decay=0, sustain=1.0)
+
+    assert lfo.speed != 10
+
+    lfo.speed_cv = adsr.output_cv.scale()
+    adsr.set_parameter("gate", 1)
+    time.sleep(0.1)
+    assert adsr.output == 1
+    assert lfo.speed == 10
+
+
+def test__scaler_default_scale_midi():
+    adsr = ADSREnvelope(autoconnect=True, attack=0, decay=0, sustain=1.0)
+    from nallely.experimental.lisa_pico import Lisa
+
+    lisa = Lisa(autoconnect=False)
+    lisa.modulation.color = adsr.scale()
+    adsr.set_parameter("gate", 1)
+    time.sleep(0.1)
+
+    assert lisa.modulation.color == 127

@@ -60,6 +60,13 @@ class VirtualParameter:
         return ParameterInstance(parameter=self, device=device)
 
     def __set__(self, device: "VirtualDevice", value, append=True, chain=None):
+        if (
+            isinstance(value, Scaler)
+            and value.auto
+            and value.to_min is None
+            and value.to_max is None
+        ):
+            value.to_min, value.to_max = self.range
         if hasattr(value, "bind"):
             assert self.cv_name
             value.bind(getattr(device, self.cv_name))

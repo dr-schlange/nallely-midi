@@ -9,6 +9,7 @@ from typing import Any, Callable, Counter, Literal, Sequence, Type
 import mido
 
 from .parameter_instances import Int, PadOrKey, PadsOrKeysInstance, PitchwheelInstance
+from .scaler import Scaler
 from .virtual_device import VirtualParameter
 from .world import (
     DeviceNotFound,
@@ -75,6 +76,14 @@ class ModuleParameter:
     def __set__(self, to_module, feeder, send=True):
         if feeder is None:
             return
+
+        if (
+            isinstance(feeder, Scaler)
+            and feeder.auto
+            and feeder.to_min is None
+            and feeder.to_max is None
+        ):
+            feeder.to_min, feeder.to_max = self.range
 
         if hasattr(feeder, "bind"):
             feeder.bind(getattr(to_module, self.name))
