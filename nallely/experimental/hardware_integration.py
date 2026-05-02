@@ -64,14 +64,14 @@ class LISA(VirtualDevice):
 
     def _setup_lfos(self, lisa: Lisa, minilab: Minilab3):
         # map non-shift needs to be declared first
-        lisa.general.master_volume = minilab.buttons.b1.scale(0, 127)
-        lisa.general.gain = minilab.buttons.b2.scale(0, 127)
-        lisa.envelope.attack = minilab.buttons.b3.scale(0, 127)
-        lisa.envelope.release = minilab.buttons.b4.scale(0, 127)
-        lisa.filter.cutoff = minilab.buttons.b5.scale(0, 127)
-        lisa.filter.resonance = minilab.buttons.b6.scale(0, 127)
-        lisa.filter.type = minilab.buttons.b7.scale(0, 127)
-        lisa.modulation.FM_mod = minilab.buttons.b8.scale(0, 127)
+        lisa.general.master_volume = minilab.buttons.b1.scale()
+        lisa.general.gain = minilab.buttons.b2.scale()
+        lisa.envelope.attack = minilab.buttons.b3.scale()
+        lisa.envelope.release = minilab.buttons.b4.scale()
+        lisa.filter.cutoff = minilab.buttons.b5.scale()
+        lisa.filter.resonance = minilab.buttons.b6.scale()
+        lisa.filter.type = minilab.buttons.b7.scale()
+        lisa.modulation.FM_mod = minilab.buttons.b8.scale()
 
         # map shifts
         self.lfo1.sampling_rate_cv = minilab.buttons.b1.scale(20, 1000)
@@ -82,10 +82,10 @@ class LISA(VirtualDevice):
         self.lfo2.speed_cv = minilab.buttons.b6.scale(0.5, 7)
         self.lfo3.speed_cv = minilab.buttons.b7.scale(0.5, 7)
         self.lfo4.speed_cv = minilab.buttons.b8.scale(0.5, 7)
-        lisa.wavetable.stream_table1 = self.lfo1.scale(-8192, 8192)
-        lisa.wavetable.stream_table2 = self.lfo2.scale(-8192, 8192)
-        lisa.wavetable.stream_table3 = self.lfo3.scale(-8192, 8192)
-        lisa.wavetable.stream_table4 = self.lfo4.scale(-8192, 8192)
+        lisa.wavetable.stream_table1 = self.lfo1.scale()
+        lisa.wavetable.stream_table2 = self.lfo2.scale()
+        lisa.wavetable.stream_table3 = self.lfo3.scale()
+        lisa.wavetable.stream_table4 = self.lfo4.scale()
 
     def collect_mappings(self, minilab: Minilab3):
         non_shift_map = []
@@ -125,16 +125,16 @@ class LISA(VirtualDevice):
         self._setup_lfos(lisa, minilab)
 
         # map non-shifts
-        self.wt1_amplitude_cv = minilab.sliders.s1.scale(0, 1)
-        self.wt2_amplitude_cv = minilab.sliders.s2.scale(0, 1)
-        self.wt3_amplitude_cv = minilab.sliders.s3.scale(0, 1)
-        self.wt4_amplitude_cv = minilab.sliders.s4.scale(0, 1)
+        self.wt1_amplitude_cv = minilab.sliders.s1.scale()
+        self.wt2_amplitude_cv = minilab.sliders.s2.scale()
+        self.wt3_amplitude_cv = minilab.sliders.s3.scale()
+        self.wt4_amplitude_cv = minilab.sliders.s4.scale()
 
         # map shifts
-        lisa.modulation.timbre = minilab.sliders.s1.scale(0, 127)
-        lisa.modulation.color = minilab.sliders.s2.scale(0, 127)
-        lisa.envelope.attack = minilab.sliders.s3.scale(0, 127)
-        lisa.envelope.release = minilab.sliders.s4.scale(0, 127)
+        lisa.modulation.timbre = minilab.sliders.s1.scale()
+        lisa.modulation.color = minilab.sliders.s2.scale()
+        lisa.envelope.attack = minilab.sliders.s3.scale()
+        lisa.envelope.release = minilab.sliders.s4.scale()
         lisa.wavetable.reset_all_write_idx = "ON"
         lisa.wavetable.reset_all_write_idx = "OFF"
         self.collect_mappings(minilab)
