@@ -10,7 +10,7 @@ class GeneralSection(nallely.Module):
     master_volume = nallely.ModuleParameter(7, description="General Volume")
     engine_select = nallely.ModuleParameter(8, description="Engine Selection")
     voice_mode = nallely.ModuleParameter(
-        2, description="Mode for the voices", accepted_values=["poly", "unison"]
+        2, description="Mode for the voices", accepted_values=["poly", "unison", "mono"]
     )
     sustain = nallely.ModuleParameter(64, description="Sustain (Hold notes)")
     midi_dev = nallely.ModuleParameter(127, description="Dev functions")

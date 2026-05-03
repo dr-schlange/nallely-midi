@@ -19,6 +19,7 @@ drschlange:
         accepted_values:
           - poly
           - unison
+          - mono
       sustain:
         cc: 64
         description: "Sustain (Hold notes)"
