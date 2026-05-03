@@ -13,6 +13,12 @@ drschlange:
         cc: 8
         description: "Engine Selection"
         init: 0
+      voice_mode:
+        cc: 2
+        description: "Mode for the voices"
+        accepted_values:
+          - poly
+          - unison
       sustain:
         cc: 64
         description: "Sustain (Hold notes)"
