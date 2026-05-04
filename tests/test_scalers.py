@@ -127,7 +127,24 @@ def test__scaler_default_scale_midi():
 
     lisa = Lisa(autoconnect=False)
     lisa.modulation.color = adsr.scale()
+    lisa.wavetable.stream_table1 = adsr.scale()
+    lisa.keys.notes = adsr.scale()
     adsr.set_parameter("gate", 1)
     time.sleep(0.1)
 
     assert lisa.modulation.color == 127
+
+    link = lisa.modulation.color.incoming_links[0]
+    assert link.chain is not None
+    assert link.chain.to_min == 0
+    assert link.chain.to_max == 127
+
+    link = lisa.wavetable.stream_table1.incoming_links[0]
+    assert link.chain is not None
+    assert link.chain.to_min == -8192
+    assert link.chain.to_max == 8192
+
+    link = lisa.keys.notes.incoming_links[0]
+    assert link.chain is not None
+    assert link.chain.to_min == 0
+    assert link.chain.to_max == 127

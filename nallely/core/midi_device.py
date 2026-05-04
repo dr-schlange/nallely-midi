@@ -158,6 +158,14 @@ class ModulePadsOrKeys:
         if feeder is None:
             return
 
+        if (
+            isinstance(feeder, Scaler)
+            and feeder.auto
+            and feeder.to_min is None
+            and feeder.to_max is None
+        ):
+            feeder.to_min, feeder.to_max = self.range
+
         if isinstance(feeder, list):
             for f in feeder:
                 f.bind(getattr(target, self.name))
@@ -185,6 +193,14 @@ class ModulePitchwheel:
     def __set__(self, target, feeder):
         if feeder is None:
             return
+
+        if (
+            isinstance(feeder, Scaler)
+            and feeder.auto
+            and feeder.to_min is None
+            and feeder.to_max is None
+        ):
+            feeder.to_min, feeder.to_max = self.range
 
         if isinstance(feeder, list):
             for f in feeder:

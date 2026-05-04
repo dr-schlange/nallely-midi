@@ -246,6 +246,26 @@ class PadsOrKeysInstance:
             auto=min is None and max is None,
         )
 
+    @property
+    def incoming_links(self):
+        links = []
+        self_repr = self.repr()
+        for device in all_devices():
+            for (_, dst), link in device.links_registry.items():
+                if dst == self_repr:
+                    links.append(link)
+        return links
+
+    @property
+    def outgoing_links(self):
+        links = []
+        self_repr = self.repr()
+        for (src, _), link in self.device.links_registry.items():
+            if src == self_repr:
+                links.append(link)
+
+        return links
+
 
 class PitchwheelInstance:
     def __init__(self, parameter: "ModulePitchwheel", device: "MidiDevice"):
@@ -275,6 +295,26 @@ class PitchwheelInstance:
             as_int=as_int,
             auto=min is None and max is None,
         )
+
+    @property
+    def incoming_links(self):
+        links = []
+        self_repr = self.repr()
+        for device in all_devices():
+            for (_, dst), link in device.links_registry.items():
+                if dst == self_repr:
+                    links.append(link)
+        return links
+
+    @property
+    def outgoing_links(self):
+        links = []
+        self_repr = self.repr()
+        for (src, _), link in self.device.links_registry.items():
+            if src == self_repr:
+                links.append(link)
+
+        return links
 
 
 class padproperty(property):
