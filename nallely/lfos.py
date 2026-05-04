@@ -26,6 +26,7 @@ class LFO(TimeBasedDevice):
             "ramp_down",
             "step",
             "white_noise",
+            "white_noise2",
             "half_wave_rectified_sine",
             "tent_map",
         ],
@@ -203,6 +204,9 @@ class LFO(TimeBasedDevice):
                 * step_size
             )
         elif waveform == "white_noise":
+            import os
+            return os.urandom(1)[0] >> 1
+        elif waveform == "white_noise2":
             result = random.uniform(float(self.min_value), float(self.max_value))
         elif waveform == "half_wave_rectified_sine":
             result = self.min_value + (self.max_value - self.min_value) * max(
