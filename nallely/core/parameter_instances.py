@@ -29,7 +29,7 @@ class ParameterInstance:
     def bind(self, target):
         from .links import Link
 
-        Link.create(self, target)
+        return Link.create(self, target)
 
     def __isub__(self, other):
         other.device.unbind_link(other, self)
@@ -104,7 +104,7 @@ class Int(int):
     def bind(self, target):
         from .links import Link
 
-        Link.create(self, target)
+        return Link.create(self, target)
 
     def scale(
         self,
@@ -216,7 +216,7 @@ class PadsOrKeysInstance:
     def bind(self, target):
         from .links import Link
 
-        Link.create(self, target)
+        return Link.create(self, target)
 
     def __isub__(self, other):
         other.device.unbind_link(other, self)
@@ -384,7 +384,7 @@ class PadOrKey:
     def bind(self, target):
         from .links import Link
 
-        Link.create(self, target)
+        return Link.create(self, target)
 
     def copy(self, device, cc_note, type, mode="note"):
         return self.__class__(

@@ -7,8 +7,10 @@ from nallely import (
     on,
 )
 from nallely.codegen import gencode
+from nallely.core import get_virtual_devices
 from nallely.experimental.lisa_pico import Lisa
 from nallely.experimental.Minilab3 import Minilab3
+from nallely.trevor import TrevorBus
 
 
 # @gencode(keep_decorator=True)
@@ -63,56 +65,81 @@ class LISA(VirtualDevice):
     minilab = VRef(Minilab3)
 
     def _setup_lfos(self, lisa: Lisa, minilab: Minilab3):
-        # map non-shift needs to be declared first
-        lisa.general.master_volume = minilab.buttons.b1.scale()
-        lisa.general.gain = minilab.buttons.b2.scale()
-        lisa.envelope.attack = minilab.buttons.b3.scale()
-        lisa.envelope.release = minilab.buttons.b4.scale()
-        lisa.filter.cutoff = minilab.buttons.b5.scale()
-        lisa.filter.resonance = minilab.buttons.b6.scale()
-        lisa.filter.type = minilab.buttons.b7.scale()
-        lisa.modulation.FM_mod = minilab.buttons.b8.scale()
+        # default layer
+        self.map_on_layer(
+            idx=0, src=minilab.keys.mod.scale(), dst=lisa.general.master_volume
+        )
+        self.map_on_layer(idx=0, src=minilab.buttons.b1.scale(), dst=lisa.general.gain)
+        self.map_on_layer(
+            idx=0, src=minilab.buttons.b3.scale(), dst=lisa.envelope.attack
+        )
+        self.map_on_layer(
+            idx=0, src=minilab.buttons.b4.scale(), dst=lisa.envelope.release
+        )
+        self.map_on_layer(idx=0, src=minilab.buttons.b5.scale(), dst=lisa.filter.cutoff)
+        self.map_on_layer(
+            idx=0, src=minilab.buttons.b6.scale(), dst=lisa.filter.resonance
+        )
+        self.map_on_layer(idx=0, src=minilab.buttons.b7.scale(), dst=lisa.filter.type)
+        self.map_on_layer(
+            idx=0, src=minilab.buttons.b8.scale(), dst=lisa.modulation.FM_mod
+        )
 
-        # map shifts
-        self.lfo1.sampling_rate_cv = minilab.buttons.b1.scale(20, 1000)
-        self.lfo2.sampling_rate_cv = minilab.buttons.b2.scale(20, 1000)
-        self.lfo3.sampling_rate_cv = minilab.buttons.b3.scale(20, 1000)
-        self.lfo4.sampling_rate_cv = minilab.buttons.b4.scale(20, 1000)
-        self.lfo1.speed_cv = minilab.buttons.b5.scale(0.5, 7)
-        self.lfo2.speed_cv = minilab.buttons.b6.scale(0.5, 7)
-        self.lfo3.speed_cv = minilab.buttons.b7.scale(0.5, 7)
-        self.lfo4.speed_cv = minilab.buttons.b8.scale(0.5, 7)
+        # upper layer
+        self.map_on_layer(
+            idx=1, src=minilab.buttons.b1.scale(0.5, 7), dst=self.lfo1.speed_cv
+        )
+        self.map_on_layer(
+            idx=1, src=minilab.buttons.b2.scale(0.5, 7), dst=self.lfo2.speed_cv
+        )
+        self.map_on_layer(
+            idx=1, src=minilab.buttons.b3.scale(0.5, 7), dst=self.lfo3.speed_cv
+        )
+        self.map_on_layer(
+            idx=1, src=minilab.buttons.b4.scale(0.5, 7), dst=self.lfo4.speed_cv
+        )
+        self.map_on_layer(
+            idx=1,
+            src=minilab.buttons.b5.scale(20, 1000),
+            dst=self.lfo1.sampling_rate_cv,
+        )
+        self.map_on_layer(
+            idx=1,
+            src=minilab.buttons.b6.scale(20, 1000),
+            dst=self.lfo2.sampling_rate_cv,
+        )
+        self.map_on_layer(
+            idx=1,
+            src=minilab.buttons.b7.scale(20, 1000),
+            dst=self.lfo3.sampling_rate_cv,
+        )
+        self.map_on_layer(
+            idx=1,
+            src=minilab.buttons.b8.scale(20, 1000),
+            dst=self.lfo4.sampling_rate_cv,
+        )
+
+        # wavetables
         lisa.wavetable.stream_table1 = self.lfo1.scale()
         lisa.wavetable.stream_table2 = self.lfo2.scale()
         lisa.wavetable.stream_table3 = self.lfo3.scale()
         lisa.wavetable.stream_table4 = self.lfo4.scale()
 
-    def collect_mappings(self, minilab: Minilab3):
-        non_shift_map = []
-        shift_map = []
-        btns = minilab.buttons
-        for i in range(1, 9):
-            src = getattr(btns, f"b{i}")
-            links = src.outgoing_links
-            non_shift_map.append(links[0])
-            shift_map.append(links[1])
-            links[1].muted = True
-
-        slds = minilab.sliders
-        for i in range(1, 5):
-            src = getattr(slds, f"s{i}")
-            links = src.outgoing_links
-            non_shift_map.append(links[0])
-            shift_map.append(links[1])
-            links[1].muted = True
-        self.non_shift_map = non_shift_map
-        self.shift_map = shift_map
-
     def __post_init__(self, **kwargs):
+        # for device in get_virtual_devices():
+        #     if isinstance(device, TrevorBus):
+        #         self.trevor_bus = device
+        #         break
+        # else:
+        #     self.trevor_bus = None
         self.prepare_all()
         return {"disable_output": True}
 
+    def map_on_layer(self, idx, dst, src):
+        self.layers[idx].append(src.bind(dst))
+
     def prepare_all(self):
+        self.layers = [[], []]
         lisa = self.lisa
         minilab = self.minilab
         lisa.keys.notes = minilab.keys.notes
@@ -124,20 +151,38 @@ class LISA(VirtualDevice):
         lisa.wavetable.reset_all_write_idx = minilab.pads.p7
         self._setup_lfos(lisa, minilab)
 
-        # map non-shifts
-        self.wt1_amplitude_cv = minilab.sliders.s1.scale()
-        self.wt2_amplitude_cv = minilab.sliders.s2.scale()
-        self.wt3_amplitude_cv = minilab.sliders.s3.scale()
-        self.wt4_amplitude_cv = minilab.sliders.s4.scale()
+        # default layer
+        self.map_on_layer(
+            idx=0, src=minilab.sliders.s1.scale(), dst=self.wt1_amplitude_cv
+        )
+        self.map_on_layer(
+            idx=0, src=minilab.sliders.s2.scale(), dst=self.wt2_amplitude_cv
+        )
+        self.map_on_layer(
+            idx=0, src=minilab.sliders.s3.scale(), dst=self.wt3_amplitude_cv
+        )
+        self.map_on_layer(
+            idx=0, src=minilab.sliders.s4.scale(), dst=self.wt4_amplitude_cv
+        )
 
-        # map shifts
-        lisa.modulation.timbre = minilab.sliders.s1.scale()
-        lisa.modulation.color = minilab.sliders.s2.scale()
-        lisa.envelope.attack = minilab.sliders.s3.scale()
-        lisa.envelope.release = minilab.sliders.s4.scale()
+        # upper layer
+        self.map_on_layer(
+            idx=1, src=minilab.sliders.s1.scale(), dst=lisa.modulation.timbre
+        )
+        self.map_on_layer(
+            idx=1, src=minilab.sliders.s2.scale(), dst=lisa.modulation.color
+        )
+        self.map_on_layer(
+            idx=1, src=minilab.sliders.s3.scale(), dst=lisa.envelope.attack
+        )
+        self.map_on_layer(
+            idx=1, src=minilab.sliders.s4.scale(), dst=lisa.envelope.release
+        )
+
+        # reset wavetables
         lisa.wavetable.reset_all_write_idx = "ON"
         lisa.wavetable.reset_all_write_idx = "OFF"
-        self.collect_mappings(minilab)
+        self._activate_layer(0)
 
     def setup(self) -> ThreadContext:
         self.lfo1.start()
@@ -176,25 +221,27 @@ class LISA(VirtualDevice):
         self.lisa.reconnect_output(exact=False)
         self.minilab.reconnect_input(exact=False)
 
+    def _activate_layer(self, idx):
+        for i, layer in enumerate(self.layers):
+            mute = i != idx
+            for link in layer:
+                link.muted = mute
+        # if self.trevor_bus:
+        #     self.trevor_bus.send_update()
+
     @on(shift_cv, edge="rising")
     def on_shift_rising(self, value, ctx):
-        for link in self.non_shift_map:
-            link.muted = True
-        for link in self.shift_map:
-            link.muted = False
+        self._activate_layer(0)
 
     @on(shift_cv, edge="falling")
     def on_shift_falling(self, value, ctx):
-        for link in self.non_shift_map:
-            link.muted = False
-        for link in self.shift_map:
-            link.muted = True
+        self._activate_layer(1)
 
     @on(perf_impact_cv, edge="any")
     def on_perf_impact_any(self, value, ctx):
-        if self.perf_impact == "LOW":
+        if self.perf_impact == "LOW":  # type: ignore
             sr, freq = 50, 0.2
-        elif self.perf_impact == "MEDIUM":
+        elif self.perf_impact == "MEDIUM":  # type: ignore
             sr, freq = 130, 0.5
         else:
             sr, freq = 259, 1

@@ -39,7 +39,7 @@ class Scaler:
     def bind(self, target):
         from .links import Link
 
-        Link.create(self, target)
+        return Link.create(self, target)
 
     @staticmethod
     def lin_conversion(value, from_min, from_max, to_min, to_max):

@@ -791,7 +791,7 @@ class VirtualDevice(threading.Thread):
     def bind(self, target):
         from .links import Link
 
-        Link.create(self.output_cv, target)
+        return Link.create(self.output_cv, target)
 
     @property
     def stream_links(self):
