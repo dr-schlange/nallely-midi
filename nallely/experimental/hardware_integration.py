@@ -25,7 +25,7 @@ class LISA(VirtualDevice):
     * wt4_amplitude_cv [0, 1] init=1 <any>: amplitude for waveform of wavetable 4
     * reconnect_cv [0, 1] init=0 <rising>: force a reconnection to MIDI devices
     * shift_cv [0, 1] init=0 <rising, falling>: access to second layer of buttons/sliders
-    * perf_impact_cv [LOW, MEDIUM, HIGH] init=HIGH <any>: low or high impact on CPU (low = slower buffers fill)
+    * perf_impact_cv [LOW, MEDIUM, HIGH] init="HIGH" <any>: low or high impact on CPU (low = slower buffers fill)
 
     type: ondemand
     category: hardware-integration
@@ -143,6 +143,7 @@ class LISA(VirtualDevice):
         lisa = self.lisa
         minilab = self.minilab
         lisa.keys.notes = minilab.keys.notes
+        self.shift_cv = minilab.general.shift
         lisa.wavetable.freeze_wt1 = minilab.pads.p1
         lisa.wavetable.freeze_wt2 = minilab.pads.p2
         lisa.wavetable.freeze_wt3 = minilab.pads.p3
@@ -153,16 +154,16 @@ class LISA(VirtualDevice):
 
         # default layer
         self.map_on_layer(
-            idx=0, src=minilab.sliders.s1.scale(), dst=self.wt1_amplitude_cv
+            idx=0, src=minilab.sliders.s1.scale(0, 1), dst=self.wt1_amplitude_cv
         )
         self.map_on_layer(
-            idx=0, src=minilab.sliders.s2.scale(), dst=self.wt2_amplitude_cv
+            idx=0, src=minilab.sliders.s2.scale(0, 1), dst=self.wt2_amplitude_cv
         )
         self.map_on_layer(
-            idx=0, src=minilab.sliders.s3.scale(), dst=self.wt3_amplitude_cv
+            idx=0, src=minilab.sliders.s3.scale(0, 1), dst=self.wt3_amplitude_cv
         )
         self.map_on_layer(
-            idx=0, src=minilab.sliders.s4.scale(), dst=self.wt4_amplitude_cv
+            idx=0, src=minilab.sliders.s4.scale(0, 1), dst=self.wt4_amplitude_cv
         )
 
         # upper layer
@@ -231,20 +232,20 @@ class LISA(VirtualDevice):
 
     @on(shift_cv, edge="rising")
     def on_shift_rising(self, value, ctx):
-        self._activate_layer(0)
+        self._activate_layer(1)
 
     @on(shift_cv, edge="falling")
     def on_shift_falling(self, value, ctx):
-        self._activate_layer(1)
+        self._activate_layer(0)
 
     @on(perf_impact_cv, edge="any")
     def on_perf_impact_any(self, value, ctx):
         if self.perf_impact == "LOW":  # type: ignore
-            sr, freq = 50, 0.2
+            sr, freq = (50, 0.2)
         elif self.perf_impact == "MEDIUM":  # type: ignore
-            sr, freq = 130, 0.5
+            sr, freq = (130, 0.5)
         else:
-            sr, freq = 259, 1
+            sr, freq = (259, 1)
         for i in range(1, 5):
             lfo = getattr(self, f"lfo{i}")
             lfo.speed = freq
