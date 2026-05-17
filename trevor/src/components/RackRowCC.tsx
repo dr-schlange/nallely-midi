@@ -42,9 +42,11 @@ const CircularSlider = ({
 	const startAngle = (5 * Math.PI) / 4;
 	const totalAngle = (3 * Math.PI) / 2;
 
-	const [ghostValue, setGhostValue] = useState(null);
-	const ghostValueRef = useRef(null);
-	const startY = useRef(null);
+	const [ghostValue, setGhostValue] = useState<number | null>(null);
+	const ghostValueRef = useRef<number | null>(null);
+	const startY = useRef<number | null>(null);
+	const startValue = useRef<number>(value);
+	const dragging = useRef(false);
 
 	const angle = startAngle - (value / 127) * totalAngle;
 	const cx = center + radius * Math.cos(angle);
@@ -57,56 +59,41 @@ const CircularSlider = ({
 	const ghostCy =
 		ghostAngle !== null ? center - radius * Math.sin(ghostAngle) : null;
 
-	const startDrag = (y) => {
-		startY.current = y;
-		window.addEventListener("mousemove", onMouseMove);
-		window.addEventListener("mouseup", onMouseUp);
-		window.addEventListener("touchmove", onTouchMove);
-		window.addEventListener("touchend", onTouchEnd);
-	};
-
-	const handlePointerDown = (e) => {
+	const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
 		e.preventDefault();
-		const y = e.clientY;
-		startDrag(y);
+		e.currentTarget.setPointerCapture(e.pointerId);
+		startY.current = e.clientY;
+		startValue.current = value;
+		ghostValueRef.current = null;
+		dragging.current = true;
 	};
 
-	const handleTouchStart = (e) => {
-		const y = e.touches[0].clientY;
-		startDrag(y);
-	};
-
-	const onMouseMove = (e) => {
-		handleDrag(e.clientY);
-	};
-
-	const onTouchMove = (e) => {
-		if (e.touches.length > 0) {
-			handleDrag(e.touches[0].clientY);
-		}
-	};
-
-	const handleDrag = (currentY) => {
-		const delta = startY.current - currentY;
+	const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+		if (!dragging.current || startY.current === null) return;
+		const delta = startY.current - e.clientY;
 		const deltaValue = Math.round(delta / 2);
-		const newValue = Math.min(127, Math.max(0, value + deltaValue));
+		const newValue = Math.min(
+			127,
+			Math.max(0, startValue.current + deltaValue),
+		);
 		ghostValueRef.current = newValue;
 		setGhostValue(newValue);
 	};
 
-	const endDrag = () => {
-		window.removeEventListener("mousemove", onMouseMove);
-		window.removeEventListener("mouseup", onMouseUp);
-		window.removeEventListener("touchmove", onTouchMove);
-		window.removeEventListener("touchend", onTouchEnd);
-
-		if (ghostValueRef.current !== null && ghostValueRef.current !== value) {
-			onManualSliderChange?.(ghostValueRef.current);
+	const endDrag = (e: React.PointerEvent<HTMLDivElement>) => {
+		if (!dragging.current) return;
+		dragging.current = false;
+		if (e.currentTarget.hasPointerCapture?.(e.pointerId)) {
+			e.currentTarget.releasePointerCapture(e.pointerId);
+		}
+		const committed = ghostValueRef.current;
+		startY.current = null;
+		ghostValueRef.current = null;
+		setGhostValue(null);
+		if (committed !== null && committed !== value) {
+			onManualSliderChange?.(committed);
 		}
 	};
-
-	const onMouseUp = () => endDrag();
-	const onTouchEnd = () => endDrag();
 
 	return (
 		<div
@@ -119,7 +106,9 @@ const CircularSlider = ({
 				marginTop: "4px",
 			}}
 			onPointerDown={handlePointerDown}
-			onTouchStart={handleTouchStart}
+			onPointerMove={handlePointerMove}
+			onPointerUp={endDrag}
+			onPointerCancel={endDrag}
 		>
 			<span style={{ fontSize: "12px" }}>{generateAcronym(param.name, 5)}</span>
 			<svg width={size} height={size}>

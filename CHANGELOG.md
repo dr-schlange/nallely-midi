@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## Nallely v0.5.1 -- Tepezcohuite
+
+### Fixes
+
+* Fix interaction with the circular sliders
+
+
 ## Nallely v0.5.0 -- Tepezcohuite
 
 ### Features
