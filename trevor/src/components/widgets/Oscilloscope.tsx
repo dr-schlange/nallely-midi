@@ -159,7 +159,7 @@ export const Scope = ({
 		setOptions(
 			buildOptions(
 				displayMode,
-				label,
+				labelRef.current,
 				bufferSizeRef.current,
 				followModeRef.current,
 			),

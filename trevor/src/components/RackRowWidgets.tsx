@@ -9,6 +9,7 @@ import {
 } from "react";
 import { WindowWidget } from "./widgets/BaseWindowWidget";
 import { Scope } from "./widgets/Oscilloscope";
+import { MultiChanScope } from "./widgets/MultiChanScope";
 import { Pads } from "./widgets/PadsWidget";
 import { Sliders } from "./widgets/SlidersWidget";
 import { XYPad } from "./widgets/XYPadWidget";
@@ -33,6 +34,7 @@ interface RackRowWidget {
 
 const WidgetComponents = {
 	Scope,
+	MultiChanScope,
 	XYScope,
 	XYZScope,
 	Sliders,
