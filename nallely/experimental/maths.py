@@ -1190,3 +1190,45 @@ class Transistor(VirtualDevice):
         self.y += a * (y_target - self.y)
 
         return self.y
+
+
+class TriggerSchmitt(VirtualDevice):
+    """
+    Simple trigger Schmitt device
+
+    inputs:
+    # * %inname [%range] %options: %doc
+    * input_cv [-1.0, 1.0] <any>: input signal
+    * h_thres_cv [-1.0, 1.0] init=0.2: high threshold
+    * l_thres_cv [-1.0, 1.0] init=-0.2: low threshold
+    * type_cv [continuous, ondemand]: type
+
+    outputs:
+    # * %outname [%range]: %doc
+    * output_cv [0, 1]: output
+
+    type: hybrid
+    category: math
+    # meta: disable default output
+    """
+
+    input_cv = VirtualParameter(name="input", range=(-1.0, 1.0))
+    h_thres_cv = VirtualParameter(name="h_thres", range=(-1.0, 1.0), default=0.2)
+    l_thres_cv = VirtualParameter(name="l_thres", range=(-1.0, 1.0), default=-0.2)
+    type_cv = VirtualParameter(name="type", accepted_values=["continuous", "ondemand"])
+    output_cv = VirtualParameter(name="output", range=(0.0, 1.0))
+
+    def process(self, input):
+        if input > self.h_thres:
+            return 1
+        if input < self.l_thres:
+            return 0
+
+    @on(input_cv, edge="any")
+    def on_input_any(self, value, ctx):
+        if self.type == "ondemand":
+            return self.process(value)
+
+    def main(self, ctx):
+        if self.type == "continuous":
+            return self.process(self.input)
