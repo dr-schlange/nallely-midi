@@ -733,7 +733,7 @@ class Integrator(VirtualDevice):
     * gain_cv [0.0, 100.0] init=1.0: Integrator gain
     * reset_cv [0, 1.0] round: Reset integrator
     * limits_cv [-1..1, unbound, leakage]: behavior when approaching limits
-    * leakage_factor_cv [0.0, 0.1] init=0.00001: leakage factor
+    * leakage_factor_cv [0.0, 0.1] init=0.01: leakage factor
 
     outputs:
     * output_cv [-1, 1]: main output
@@ -752,7 +752,7 @@ class Integrator(VirtualDevice):
         name="limits", accepted_values=["-1..1", "unbound", "leakage"]
     )
     leakage_factor_cv = VirtualParameter(
-        name="leakage_factor", range=(0.0, 0.1), default=1e-05
+        name="leakage_factor", range=(0.0, 0.1), default=0.01
     )
 
     @property
