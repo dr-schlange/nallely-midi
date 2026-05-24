@@ -279,7 +279,7 @@ class WebSocketBus(VirtualDevice):
                     #         )
                     #     except Exception:
                     #         pass
-        except (ConnectionClosed, TimeoutError):
+        except ConnectionClosed, TimeoutError:
             print(
                 f"[{self.NAME}] Client {client} on {service_name} disconnected unexpectedly [{len(connected_devices)} clients]"
             )

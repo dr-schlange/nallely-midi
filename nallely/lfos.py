@@ -205,6 +205,7 @@ class LFO(TimeBasedDevice):
             )
         elif waveform == "white_noise":
             import os
+
             return os.urandom(1)[0] >> 1
         elif waveform == "white_noise2":
             result = random.uniform(float(self.min_value), float(self.max_value))
