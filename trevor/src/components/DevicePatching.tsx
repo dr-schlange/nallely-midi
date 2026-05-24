@@ -62,10 +62,9 @@ interface DevicePatchingProps {
 
 const findDevice = (
 	deviceId: number,
-	midi_devices: MidiDevice[],
-	virtual_devices: VirtualDevice[],
+	allDevices: Array<MidiDevice | VirtualDevice>,
 ) => {
-	return [...midi_devices, ...virtual_devices].find((d) => d.id === deviceId);
+	return allDevices.find((d) => d.id === deviceId);
 };
 
 const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
@@ -103,7 +102,14 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 		(state) => state.nallely.exposed_services,
 	);
 	const [information, setInformation] = useState<ReactElement>();
-	const [currentSelected, setCurrentSelected] = useState<number>();
+	const [currentSelected, setCurrentSelected] = useState<string>();
+	const setCurrentSelectedDevice = useCallback(
+		(device: MidiDevice | VirtualDevice) => {
+			setCurrentSelected(`${device.id}::${device.repr}`);
+		},
+		[],
+	);
+
 	const [selectedConnection, setSelectedConnection] = useState<string>();
 	const [tempValues, setTempValues] = useState<
 		Record<number, Record<string, string | undefined>>
@@ -404,7 +410,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 
 	const handleMidiDeviceClick = useCallback(
 		(device: MidiDevice) => {
-			setCurrentSelected(device.id);
+			setCurrentSelectedDevice(device);
 			if (!associateMode) {
 				setIsExpanded(true);
 			}
@@ -413,7 +419,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 			setDisplayedSection(undefined);
 			updateInfoRef.current?.(device);
 		},
-		[associateMode],
+		[associateMode, setCurrentSelectedDevice],
 	);
 
 	const updateInfo = useCallback(
@@ -684,17 +690,9 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 	const displayConnectionMenu = useCallback(
 		(connection: Connection) => {
 			setSelectedConnection(connectionId(connection));
-			setCurrentSelected(connection.id);
-			const srcDevice = findDevice(
-				connection.src.device,
-				midi_devices,
-				virtual_devices,
-			);
-			const destDevice = findDevice(
-				connection.dest.device,
-				midi_devices,
-				virtual_devices,
-			);
+			setCurrentSelected(connection.id.toString());
+			const srcDevice = findDevice(connection.src.device, all_devices);
+			const destDevice = findDevice(connection.dest.device, all_devices);
 			setInformation(
 				<>
 					<h3>Patch setup</h3>
@@ -733,7 +731,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 				</>,
 			);
 		},
-		[trevorSocket, trevorSocket?.socket, midi_devices, virtual_devices],
+		[trevorSocket, trevorSocket?.socket, all_devices],
 	);
 
 	useEffect(() => {
@@ -765,19 +763,19 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 	// Updates depending on the new devices or connections
 	useEffect(() => {
 		const device = [...midi_devices, ...virtual_devices].find(
-			(d) => d.id === currentSelected,
+			(d) => `${d.id}::${d.repr}` === currentSelected,
 		);
 		if (device) {
 			updateInfo(
 				[...midi_devices, ...virtual_devices].find(
-					(d) => d.id === currentSelected,
+					(d) => `${d.id}::${d.repr}` === currentSelected,
 				),
 				displayedSection?.section as MidiDeviceSection,
 			);
 			return;
 		}
 		const connection = [...allConnections].find(
-			(d) => d.id === currentSelected,
+			(d) => d?.id.toString() === currentSelected,
 		);
 		if (connection) {
 			displayConnectionMenu(connection);
@@ -800,7 +798,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 			setSelectedConnection(undefined);
 			if (!associateMode) {
 				updateInfoRef.current?.(device);
-				setCurrentSelected((_) => device.id);
+				setCurrentSelectedDevice(device);
 				const virtualSection = {
 					parameters: device.meta.parameters.map((e) => {
 						return { ...e, name: e.cv_name };
@@ -835,12 +833,12 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 				} else {
 					setSelection((prev) => [...prev, newElement]);
 					updateInfoRef.current?.(device);
-					setCurrentSelected(device.id);
+					setCurrentSelectedDevice(device);
 					setDisplayedSection(newElement);
 				}
 			}
 		},
-		[associateMode, isExpanded, selection],
+		[associateMode, isExpanded, selection, setCurrentSelectedDevice],
 	);
 
 	const handleSectionClick = useCallback(
@@ -848,7 +846,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 			setSelectedConnection(undefined);
 			if (!associateMode) {
 				updateInfoRef.current?.(device, section);
-				setCurrentSelected(device.id);
+				setCurrentSelectedDevice(device);
 				setDisplayedSection((_) => ({ device, section }));
 				setSelection([{ device, section }]);
 				setIsExpanded(true);
@@ -885,12 +883,12 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 					setIsModalOpen(true);
 				} else {
 					updateInfoRef.current?.(device, section);
-					setCurrentSelected(device.id);
+					setCurrentSelectedDevice(device);
 					setSelection((prev) => [...prev, newElement]);
 				}
 			}
 		},
-		[associateMode, isExpanded, selection],
+		[associateMode, isExpanded, selection, setCurrentSelectedDevice],
 	);
 
 	const closeModal = () => {
@@ -1127,7 +1125,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 			}
 			setIsExpanded(true);
 			setDisplayedSection(deviceSection);
-			setCurrentSelected(deviceSection.device.id);
+			setCurrentSelectedDevice(deviceSection.device);
 			updateInfoRef.current?.(
 				deviceSection.device,
 				isVirtualDevice(deviceSection.device)
@@ -1135,7 +1133,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 					: (deviceSection.section as MidiDeviceSection),
 			);
 		},
-		[displayedSection, isExpanded],
+		[displayedSection, isExpanded, setCurrentSelectedDevice],
 	);
 
 	const selectedSectionIds = useMemo(
@@ -1158,7 +1156,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 				return;
 			}
 			setDisplayedSection(deviceSection);
-			setCurrentSelected(deviceSection.device.id);
+			setCurrentSelectedDevice(deviceSection.device);
 			updateInfoRef.current?.(
 				deviceSection.device,
 				isVirtualDevice(deviceSection.device)
@@ -1166,7 +1164,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 					: (deviceSection.section as MidiDeviceSection),
 			);
 		},
-		[isExpanded],
+		[isExpanded, setCurrentSelectedDevice],
 	);
 
 	return (
@@ -1261,17 +1259,29 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 							<select
 								style={{ width: "100%" }}
 								value={currentSelected ?? ""}
-								title="Select device to associate"
+								title="Select device to setup"
 								onChange={(e) => {
 									const val = e.target.value;
 									const device = all_devices.filter(
-										(d) => d.id.toString() === val,
+										(d) => `${d.id}::${d.repr}` === val,
 									)?.[0];
 									if (!device) {
 										return;
 									}
 									if (isVirtualDevice(device)) {
-										handleParameterClick(device);
+										// Reset all selection to avoid trigger patching modal
+										setSelectedConnection(undefined);
+										setDisplayedSection(undefined);
+										setCurrentSelectedDevice(device);
+										setIsExpanded(true);
+										const virtualSection = {
+											parameters: device.meta.parameters.map((e) => ({
+												...e,
+												name: e.cv_name,
+											})),
+										} as VirtualDeviceSection;
+										setSelection([{ device, section: virtualSection }]);
+										updateInfoRef.current?.(device);
 									} else {
 										handleMidiDeviceClick(device);
 									}
@@ -1280,9 +1290,13 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 								<option value={""} dir="ltr">
 									--
 								</option>
-								{all_devices.map((cls) => (
-									<option key={cls.repr} value={cls.id} dir="ltr">
-										{cls.repr}
+								{all_devices.map((device) => (
+									<option
+										key={device.repr}
+										value={`${device.id}::${device.repr}`}
+										dir="ltr"
+									>
+										{device.repr}
 									</option>
 								))}
 							</select>
