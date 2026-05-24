@@ -1020,7 +1020,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 
 	useEffect(() => {
 		updateConnections();
-	}, [updateConnections]);
+	}, [allConnections, midi_devices, virtual_devices, updateConnections]);
 
 	useEffect(() => {
 		let resizeTimeout: number;

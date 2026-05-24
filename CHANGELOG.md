@@ -7,6 +7,7 @@
 * Fix interaction with the circular sliders
 * Fix dropdown reversed symbols
 * Fix right bar when patching a device and for proxy devices
+* Fix issue with patch/link refresh
 
 ## Nallely v0.5.0 -- Tepezcohuite
 

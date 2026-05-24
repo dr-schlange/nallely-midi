@@ -523,7 +523,7 @@ interface SortableVDeviceProps {
 }
 const SortableVDevice = React.memo(
 	({ device, onClick, selectedSections, onDrag }: SortableVDeviceProps) => {
-		const { attributes, listeners, setNodeRef, transform, isDragging } =
+		const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
 			useSortable({
 				id: devUID(device),
 			});
@@ -561,7 +561,7 @@ const SortableVDevice = React.memo(
 				? `${CSS.Transform.toString(transform)} scale(1.05)`
 				: CSS.Transform.toString(transform),
 			boxShadow: isDragging ? "5px 5px rgba(255,165,0,0.7)" : undefined,
-			transition: "transform 0.15s ease",
+			transition,
 			touchAction: isDragging ? "pan-y" : "auto",
 		};
 
