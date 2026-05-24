@@ -77,7 +77,7 @@ const ValueListInput = ({
 			}
 		>
 			{parameter.accepted_values.map((v) => (
-				<option key={v.toString()} value={v.toString()}>
+				<option key={v.toString()} value={v.toString()} dir="ltr">
 					{v.toString()}
 				</option>
 			))}

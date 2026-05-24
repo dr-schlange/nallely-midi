@@ -1067,11 +1067,14 @@ mod-?:     displays this entry
 							);
 						}}
 					>
-						<option value={""}>-</option>
+						<option value={""} dir="ltr">
+							-
+						</option>
 						{(device as VirtualDevice).meta.parameters.map((p) => (
 							<option
 								key={`${p.cv_name}`}
 								value={`${debuggedPortNames.includes(p.name) ? "*" : ""}${p.cv_name}`}
+								dir="ltr"
 							>
 								{`${debuggedPortNames.includes(p.name) ? "*" : " "} ${p.cv_name}`}
 							</option>

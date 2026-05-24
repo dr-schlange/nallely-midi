@@ -272,9 +272,15 @@ mod-?:     displays this entry
 							insertAssignmentAtCursor(`${val} = connected_devices[${index}]`);
 						}}
 					>
-						<option value={""}>--</option>
+						<option value={""} dir="ltr">
+							--
+						</option>
 						{midiDevices.map((device) => (
-							<option value={device.repr.toLowerCase()} key={device.id}>
+							<option
+								value={device.repr.toLowerCase()}
+								key={device.id}
+								dir="ltr"
+							>
 								{device.repr}
 							</option>
 						))}
@@ -291,11 +297,17 @@ mod-?:     displays this entry
 							insertAssignmentAtCursor(`${val} = virtual_devices[${index}]`);
 						}}
 					>
-						<option value="">--</option>
+						<option value="" dir="ltr">
+							--
+						</option>
 						{virtualDevices
 							.filter((e) => !e.proxy)
 							.map((device) => (
-								<option value={device.repr.toLowerCase()} key={device.id}>
+								<option
+									value={device.repr.toLowerCase()}
+									key={device.id}
+									dir="ltr"
+								>
 									{device.repr}
 								</option>
 							))}

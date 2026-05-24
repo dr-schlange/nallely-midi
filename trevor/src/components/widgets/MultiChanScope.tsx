@@ -12,7 +12,12 @@ const BUFFER_UPPER = 2000;
 const BUFFER_LOWER = 2;
 const MAX_CHANNELS = 4;
 const CHANNEL_NAMES = ["ch1", "ch2", "ch3", "ch4"] as const;
-const CHANNEL_COLORS = ["orange", "rgb(128, 128, 128)", "rgb(123, 85, 15)", "rgb(44, 40, 30)"] as const;
+const CHANNEL_COLORS = [
+	"orange",
+	"rgb(128, 128, 128)",
+	"rgb(123, 85, 15)",
+	"rgb(44, 40, 30)",
+] as const;
 
 type DisplayModes = "line" | "points";
 type FollowModes = "cyclic" | "linear";
@@ -68,12 +73,7 @@ const makeBuffer = (size: number, mode: FollowModes) => ({
 	) as number[][],
 });
 
-export const MultiChanScope = ({
-	id,
-	onClose,
-	num,
-	style,
-}: WidgetProps) => {
+export const MultiChanScope = ({ id, onClose, num, style }: WidgetProps) => {
 	const [bufferSize, setBufferSize] = useState<number>(BUFFER_SIZE);
 	const bufferSizeRef = useRef<number>(BUFFER_SIZE);
 
@@ -157,7 +157,10 @@ export const MultiChanScope = ({
 
 	const commitBufferSize = (value: string) => {
 		const bufSize = Math.round(Number.parseFloat(value));
-		const clamped = Math.max(BUFFER_LOWER, Math.min(BUFFER_UPPER, bufSize || BUFFER_LOWER));
+		const clamped = Math.max(
+			BUFFER_LOWER,
+			Math.min(BUFFER_UPPER, bufSize || BUFFER_LOWER),
+		);
 		bufferSizeRef.current = clamped;
 		setBufferSize(clamped);
 		resetBuffer(followModeRef.current, clamped);
@@ -182,7 +185,9 @@ export const MultiChanScope = ({
 			const size = bufferSizeRef.current;
 			const nCh = numChannelsRef.current;
 
-			const lastValues: (number | undefined)[] = new Array(MAX_CHANNELS).fill(undefined);
+			const lastValues: (number | undefined)[] = new Array(MAX_CHANNELS).fill(
+				undefined,
+			);
 
 			for (const message of messages) {
 				const chIdx = CHANNEL_NAMES.indexOf(
@@ -310,9 +315,7 @@ export const MultiChanScope = ({
 				<DragNumberInput
 					range={[BUFFER_LOWER, BUFFER_UPPER]}
 					value={bufferSize.toString()}
-					onChange={(value) =>
-						setBufferSize(Number.parseFloat(value))
-					}
+					onChange={(value) => setBufferSize(Number.parseFloat(value))}
 					onBlur={commitBufferSize}
 					style={{
 						height: "10px",
@@ -331,11 +334,7 @@ export const MultiChanScope = ({
 					onClick={toggleCyclicFollowMode}
 					tooltip="Toggle cyclic mode"
 				/>
-				<Button
-					text="r"
-					onClick={() => doReset(followMode)}
-					tooltip="Reset"
-				/>
+				<Button text="r" onClick={() => doReset(followMode)} tooltip="Reset" />
 				<Button
 					text="p"
 					activated={displayMode === "points"}
@@ -352,7 +351,10 @@ export const MultiChanScope = ({
 			<UplotReact
 				key={chartKey}
 				options={options}
-				data={[bufferRef.current.x, ...bufferRef.current.ys.slice(0, numChannels)]}
+				data={[
+					bufferRef.current.x,
+					...bufferRef.current.ys.slice(0, numChannels),
+				]}
 				onCreate={(chart) => {
 					chartRef.current = chart;
 				}}

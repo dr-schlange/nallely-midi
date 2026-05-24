@@ -588,6 +588,7 @@ const PatchingModal = ({
 							<option
 								key={`${devUID(s.device)}::${sectionName}`}
 								value={`${devUID(s.device)}::${sectionName}`}
+								dir="ltr"
 							>
 								{s.section.name
 									? `${s.device.repr} - ${s.section.name} [${linkageStatus}]`

@@ -206,8 +206,12 @@ export const ScalerForm = ({ connection }: ScalerFormProps) => {
 							trevorSocket?.setScalerValue(scalerId, "method", val);
 						}}
 					>
-						<option value="lin">Lin</option>
-						<option value="log">Log</option>
+						<option value="lin" dir="ltr">
+							Lin
+						</option>
+						<option value="log" dir="ltr">
+							Log
+						</option>
 					</select>
 				</label>
 
@@ -257,10 +261,18 @@ export const ScalerForm = ({ connection }: ScalerFormProps) => {
 							);
 						}}
 					>
-						<option value="none">-</option>
-						<option value="before">before</option>
-						<option value="after">after</option>
-						<option value="remove-note-off">remove note off</option>
+						<option value="none" dir="ltr">
+							-
+						</option>
+						<option value="before" dir="ltr">
+							before
+						</option>
+						<option value="after" dir="ltr">
+							after
+						</option>
+						<option value="remove-note-off" dir="ltr">
+							remove note off
+						</option>
 					</select>
 				</label>
 			</div>

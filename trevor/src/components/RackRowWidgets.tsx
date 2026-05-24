@@ -228,9 +228,11 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 							}
 						}}
 					>
-						<option value={""}>--</option>
+						<option value={""} dir="ltr">
+							--
+						</option>
 						{Object.keys(WidgetComponents).map((name) => (
-							<option key={name} value={name}>
+							<option key={name} value={name} dir="ltr">
 								{name}
 							</option>
 						))}

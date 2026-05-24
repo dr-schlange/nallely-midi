@@ -111,9 +111,11 @@ export const RackRow = ({
 						if (val) handleDeviceClassClick(val);
 					}}
 				>
-					<option value="">--</option>
+					<option value="" dir="ltr">
+						--
+					</option>
 					{midiClasses.map((cls) => (
-						<option key={cls} value={cls}>
+						<option key={cls} value={cls} dir="ltr">
 							{cls}
 						</option>
 					))}

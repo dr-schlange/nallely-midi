@@ -215,7 +215,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 						}
 					>
 						{parameter.accepted_values.map((v) => (
-							<option key={v.toString()} value={v.toString()}>
+							<option key={v.toString()} value={v.toString()} dir="ltr">
 								{v.toString()}
 							</option>
 						))}
@@ -358,7 +358,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 						}
 					>
 						{parameter.accepted_values.map((v) => (
-							<option key={v.toString()} value={v.toString()}>
+							<option key={v.toString()} value={v.toString()} dir="ltr">
 								{v.toString()}
 							</option>
 						))}
@@ -1277,9 +1277,11 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 									}
 								}}
 							>
-								<option value={""}>--</option>
+								<option value={""} dir="ltr">
+									--
+								</option>
 								{all_devices.map((cls) => (
-									<option key={cls.repr} value={cls.id}>
+									<option key={cls.repr} value={cls.id} dir="ltr">
 										{cls.repr}
 									</option>
 								))}
