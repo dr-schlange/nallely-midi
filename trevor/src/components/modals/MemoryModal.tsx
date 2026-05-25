@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import type { Address } from "../../model";
 import {
 	LOCAL_STORAGE_RUNTIME,
@@ -37,6 +37,7 @@ interface AddressBlock {
 	hex: string;
 	path: string;
 	status: "used" | "empty" | "error";
+	metaColor?: string;
 }
 
 const generateAddressList = (
@@ -50,6 +51,7 @@ const generateAddressList = (
 			hex,
 			path: usedAddress?.path,
 			status: (usedAddress ? "used" : "empty") as "used" | "empty" | "error",
+			metaColor: usedAddress?.metadata?.color,
 		};
 	});
 
@@ -78,6 +80,15 @@ export const MemoryModal = ({ onClose, onLoad }: MemoryModalProps) => {
 	const patchDetails = useTrevorSelector((state) => state.runTime.patchDetails);
 	const [details, setDetails] = useState<ReactNode>();
 	const [selection, setSelection] = useState<AddressBlock>(null);
+	const [metaName, setMetaName] = useState<string>("");
+	const [metaColor, setMetaColor] = useState<string>("#75a759");
+	const [showMeta, setShowMeta] = useState<boolean>(false);
+	const [searchQuery, setSearchQuery] = useState<string>("");
+
+	const selectionRef = useRef(selection);
+	useEffect(() => {
+		selectionRef.current = selection;
+	});
 
 	useEffect(() => {
 		trevorWebSocket?.getUsedAddresses();
@@ -135,9 +146,20 @@ export const MemoryModal = ({ onClose, onLoad }: MemoryModalProps) => {
 		return generateAddressList(usedAddresses);
 	}, [usedAddresses]);
 
+	const matchingHexes = useMemo(() => {
+		const q = searchQuery.trim().toLowerCase();
+		if (!q) return new Set<string>();
+		return new Set(
+			usedAddresses
+				.filter((a) => a.metadata?.name?.toLowerCase().includes(q))
+				.map((a) => a.hex),
+		);
+	}, [searchQuery, usedAddresses]);
+
 	useEffect(() => {
 		if (!patchDetails) {
 			setDetails(undefined);
+			setShowMeta(false);
 			dispatch(resetPatchDetails());
 			return;
 		}
@@ -157,6 +179,7 @@ export const MemoryModal = ({ onClose, onLoad }: MemoryModalProps) => {
 				</li>,
 			);
 		}
+		setShowMeta(true);
 		setDetails(
 			<>
 				<p className="details">MIDI [{midiDetails.length}]</p>
@@ -173,22 +196,43 @@ export const MemoryModal = ({ onClose, onLoad }: MemoryModalProps) => {
 		);
 	}, [patchDetails]);
 
+	const saveMetadata = (name: string, color: string) => {
+		const hex = selection?.hex ?? currentAddress?.hex;
+		if (!hex) return;
+		trevorWebSocket?.saveAddressMetadata(hex, name, color);
+	};
+
 	const setAddressSelection = (address) => {
 		setSelection(address);
 		if (!address.path) {
 			setDetails(<p className="details">Empty address</p>);
+			setShowMeta(false);
 			return;
 		}
+		const addrMeta = usedAddresses.find((a) => a.hex === address.hex)?.metadata;
+		setMetaName(addrMeta?.name ?? "");
+		setMetaColor(addrMeta?.color ?? "#75a759");
 		trevorWebSocket?.fetchPathInfos(address.path);
 		setDetails(<p className="details">fetching details...</p>);
 	};
 
 	useEffect(() => {
-		const addr = usedAddresses.find((a) => a.hex === selection?.hex);
-		if (addr) {
-			trevorWebSocket?.fetchPathInfos(addr.path);
+		const sel = selectionRef.current;
+		if (sel?.hex) {
+			// force a refetch info after a save
+			const addr = usedAddresses.find((a) => a.hex === sel.hex);
+			if (addr?.path) trevorWebSocket?.fetchPathInfos(addr.path);
+		} else if (currentAddress?.hex) {
+			// if no selection, but hex addr, then we fetch infos
+			const found = usedAddresses.find((a) => a.hex === currentAddress.hex);
+			if (found?.path) {
+				setMetaName(found.metadata?.name ?? "");
+				setMetaColor(found.metadata?.color ?? "#75a759");
+				trevorWebSocket?.fetchPathInfos(found.path);
+				setDetails(<p className="details">fetching details...</p>);
+			}
 		}
-	}, [usedAddresses]);
+	}, [usedAddresses, currentAddress, trevorWebSocket]);
 
 	const checkLoad = () => {
 		return !selection || selection.status === "empty";
@@ -283,6 +327,37 @@ export const MemoryModal = ({ onClose, onLoad }: MemoryModalProps) => {
 						</p>
 					)} */}
 					{details}
+					{showMeta && (
+						<div
+							style={{
+								display: "flex",
+								flexDirection: "column",
+								gap: "4px",
+								marginTop: "8px",
+							}}
+						>
+							<input
+								type="text"
+								placeholder="Name"
+								value={metaName}
+								onChange={(e) => setMetaName(e.target.value)}
+								onBlur={() => saveMetadata(metaName, metaColor)}
+							/>
+							<input
+								type="color"
+								value={metaColor}
+								onChange={(e) => setMetaColor(e.target.value)}
+								onBlur={() => saveMetadata(metaName, metaColor)}
+							/>
+						</div>
+					)}
+					<input
+						type="text"
+						placeholder="Search by name…"
+						value={searchQuery}
+						onChange={(e) => setSearchQuery(e.target.value)}
+						style={{ marginTop: "12px" }}
+					/>
 				</div>
 				<div
 					style={{
@@ -303,14 +378,23 @@ export const MemoryModal = ({ onClose, onLoad }: MemoryModalProps) => {
 					>
 						{addresses.map((ad) => {
 							const label = `0x${ad.hex.padStart(4, "0").toUpperCase()}`;
-							const color = ad.status === "used" ? "#75a759ff" : "#e0e0e0";
+							const isMatch = matchingHexes.has(ad.hex);
+							const isSearchActive = matchingHexes.size > 0;
+							const color =
+								ad.status === "used"
+									? (ad.metaColor ?? "#75a759ff")
+									: "#e0e0e0";
+							const opacity =
+								isSearchActive && ad.status === "used" && !isMatch ? 0.3 : 1;
 							const activated =
 								ad.hex === currentAddress?.hex && selection?.hex !== ad.hex;
-							const borderColor = activated
-								? "3px solid gold"
-								: selection?.hex === ad.hex
-									? "3px solid orange"
-									: "2px solid gray";
+							const borderColor = isMatch
+								? "3px solid var(--browntext)"
+								: activated
+									? "3px solid gold"
+									: selection?.hex === ad.hex
+										? "3px solid orange"
+										: "2px solid gray";
 							return (
 								<Button
 									key={label}
@@ -326,6 +410,7 @@ export const MemoryModal = ({ onClose, onLoad }: MemoryModalProps) => {
 										backgroundColor: color,
 										boxSizing: "border-box",
 										border: borderColor,
+										opacity,
 									}}
 								/>
 							);

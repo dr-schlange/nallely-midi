@@ -295,14 +295,14 @@ class Session:
         meta = self.metadata.metadata_for(address)
         meta.write({"name": name, "color": color})
         print(
-            f"[GIT-STORE] Metadata saved for address={hex(int(address))} in {meta.address_frag}"
+            f"[GIT-STORE] Metadata saved for address={address} in {meta.address_frag}"
         )
 
     def read_metadata(self, address: str):
         meta = self.metadata.metadata_for(address)
-        print(
-            f"[GIT-STORE] Access metadata for address={hex(int(address))} in {meta.address_frag}"
-        )
+        # print(
+        #     f"[GIT-STORE] Access metadata for address={address} in {meta.address_frag}"
+        # )
         return meta.read()
 
     def save_address(

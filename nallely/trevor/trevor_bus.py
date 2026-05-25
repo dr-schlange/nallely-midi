@@ -515,6 +515,7 @@ class TrevorBus(VirtualDevice):
 
     def save_address_metadata(self, address, name, color):
         self.session.save_metadata(address, name, color)
+        self.get_used_addresses()
         self.send_notification(
             "ok",
             f"Metadata address 0x{address} saved",

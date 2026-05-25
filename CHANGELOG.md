@@ -1,6 +1,10 @@
 # CHANGELOG
 
-## Nallely v0.5.1 -- Tepezcohuite
+## Nallely v0.6.0 -- Tepezcohuite
+
+### Features
+
+* Add metadata support for addresses, let the possibility to set color and name for a dedicated address
 
 ### Fixes
 

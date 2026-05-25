@@ -215,7 +215,7 @@ export interface PatchDetails {
 export interface Address {
 	hex: string;
 	path: string;
-	metadata: AddressMetadata;
+	metadata?: AddressMetadata;
 }
 
 export interface AddressMetadata {
