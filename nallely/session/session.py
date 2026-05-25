@@ -36,6 +36,7 @@ from ..trevor import TrevorAPI
 from ..trevor.meta_trevor_api import MetaTrevorAPI
 from ..utils import StateEncoder, find_class, load_modules, longest_common_substring
 from ..websocket_bus import WebSocketBus
+from .metadata import SessionMetadata
 from .utils import address2path, universe_path
 
 DEFAULT_UNIVERSE = "memory"
@@ -52,6 +53,7 @@ class Session:
         )
         self.universe = universe
         self.repo = self._init_memory_repo(universe)
+        self.metadata = SessionMetadata(self.repo)
         # self.gc_universe(universe)
         self.code = ""
         self.devices_file = universe_path(universe) / "devices.py"
@@ -288,6 +290,20 @@ class Session:
             print(f"[GIT-STORE] Opening existing store: {location.name}")
             repo = Repo(location)
         return repo
+
+    def save_metadata(self, address: str, name: str, color: str):
+        meta = self.metadata.metadata_for(address)
+        meta.write({"name": name, "color": color})
+        print(
+            f"[GIT-STORE] Metadata saved for address={hex(int(address))} in {meta.address_frag}"
+        )
+
+    def read_metadata(self, address: str):
+        meta = self.metadata.metadata_for(address)
+        print(
+            f"[GIT-STORE] Access metadata for address={hex(int(address))} in {meta.address_frag}"
+        )
+        return meta.read()
 
     def save_address(
         self, address: str, universe=None, message=None, save_defaultvalues=False
