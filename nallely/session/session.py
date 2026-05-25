@@ -15,8 +15,7 @@ from dulwich import porcelain
 from dulwich.notes import get_note_path
 from dulwich.repo import Repo
 
-from .core import (
-    DeviceNotFound,
+from ..core import (
     MidiDevice,
     VirtualDevice,
     VirtualParameter,
@@ -26,17 +25,18 @@ from .core import (
     midi_device_classes,
     virtual_devices,
 )
-from .core.world import (
+from ..core.world import (
     register_virtual_device_class,
     unregister_virtual_device_class,
     virtual_device_classes,
 )
-from .newmodule import create_class
-from .osc_bus import OSCBus
-from .trevor import TrevorAPI
-from .trevor.meta_trevor_api import MetaTrevorAPI
-from .utils import StateEncoder, find_class, load_modules, longest_common_substring
-from .websocket_bus import WebSocketBus
+from ..newmodule import create_class
+from ..osc_bus import OSCBus
+from ..trevor import TrevorAPI
+from ..trevor.meta_trevor_api import MetaTrevorAPI
+from ..utils import StateEncoder, find_class, load_modules, longest_common_substring
+from ..websocket_bus import WebSocketBus
+from .utils import address2path, universe_path
 
 DEFAULT_UNIVERSE = "memory"
 
@@ -54,8 +54,8 @@ class Session:
         self.repo = self._init_memory_repo(universe)
         # self.gc_universe(universe)
         self.code = ""
-        self.devices_file = self.universe_path(universe) / "devices.py"
-        self.devices_path = self.universe_path(universe) / "devices"
+        self.devices_file = universe_path(universe) / "devices.py"
+        self.devices_path = universe_path(universe) / "devices"
         self.devices_path.mkdir(parents=True, exist_ok=True)
         self._load_all_devices()
         self._finalizer = weakref.finalize(self, self._close_repo, self.repo)
@@ -88,7 +88,7 @@ class Session:
         return json.dumps(obj, cls=StateEncoder, **kwargs)
 
     def load_all(self, name):
-        from .trevor.trevor_bus import TrevorBus
+        from ..trevor.trevor_bus import TrevorBus
 
         file = Path(name)
         content = None
@@ -310,7 +310,7 @@ class Session:
 
         repo = self._get_repository(universe=universe)
 
-        address_file = self.address2path(universe, address)
+        address_file = address2path(universe, address)
         address_file.parent.mkdir(exist_ok=True, parents=True)
 
         self.save_all(address_file, save_defaultvalues=save_defaultvalues)
@@ -349,7 +349,7 @@ playground_code={infos["playground_code"]}
         return address_file
 
     def load_address(self, address, universe=None):
-        address_file = self.address2path(self._which_universe(universe), address)
+        address_file = address2path(self._which_universe(universe), address)
         print(f"[GIT-STORE] Loading {address=} from file {address_file.resolve()}")
         return self.load_all(address_file)
 
@@ -420,7 +420,7 @@ playground_code={infos["playground_code"]}
         return addresses
 
     def clear_address(self, address, universe=None):
-        address_file = self.address2path(universe, address)
+        address_file = address2path(universe, address)
         print(
             f"[GIT-STORE] Deleting {address=} by deleting address file {address_file.resolve()}"
         )
@@ -448,7 +448,7 @@ playground_code={infos["playground_code"]}
         if not cls:
             return None
 
-        from .codegen import gen_class_code
+        from ..codegen import gen_class_code
 
         buffer = Path(filename) if filename else io.StringIO()
         read_from = inspect.getsourcefile(cls)
@@ -464,7 +464,7 @@ playground_code={infos["playground_code"]}
 
         module = getmodule(cls)
         if filename:
-            from .core.world import virtual_device_classes
+            from ..core.world import virtual_device_classes
 
             print("[COMPILE] Force reload generated code module")
             self._load_device_file(filename)
@@ -483,7 +483,7 @@ playground_code={infos["playground_code"]}
             filename=filename,
         )
         if filename:
-            from .core.world import virtual_device_classes
+            from ..core.world import virtual_device_classes
 
             print("[COMPILE] Force reload compiled generated module code")
             self._load_device_file(filename)
@@ -606,7 +606,7 @@ original_file={read_from}
         if is_vdev:
             instance.internal_setup()
             instance._internal_default_output_setup(instance.__post_init__())
-            print(f"[META] Instance migrated, resume the instance")
+            print("[META] Instance migrated, resume the instance")
             instance.resume()
         elif issubclass(new_cls, VirtualDevice):
             print("[META] Instance migrated, start the instance")
@@ -651,17 +651,6 @@ original_file={read_from}
         }
         # repo.close()
         return details
-
-    @staticmethod
-    def universe_path(universe):
-        return (Path.cwd() / universe).resolve()
-
-    @classmethod
-    def address2path(cls, universe, address):
-        location = cls.universe_path(universe)
-        frags = [address[i : i + 2] for i in range(0, len(address), 2)]
-        address_file = location / (Path().with_segments(*frags)).with_suffix(".nly")
-        return address_file
 
     def get_last_commit_hash_for_file(self, file_path):
         if not file_path.exists():

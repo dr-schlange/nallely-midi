@@ -523,10 +523,16 @@ interface SortableVDeviceProps {
 }
 const SortableVDevice = React.memo(
 	({ device, onClick, selectedSections, onDrag }: SortableVDeviceProps) => {
-		const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-			useSortable({
-				id: devUID(device),
-			});
+		const {
+			attributes,
+			listeners,
+			setNodeRef,
+			transform,
+			transition,
+			isDragging,
+		} = useSortable({
+			id: devUID(device),
+		});
 
 		useEffect(() => {
 			const handleTouchMove = (e: TouchEvent) => {

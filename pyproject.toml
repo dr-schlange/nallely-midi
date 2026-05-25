@@ -62,6 +62,7 @@ packages = [
     "nallely.experimental",
     "nallely.codegen",
     "nallely.distributed",
+    "nallely.session",
 ]
 include-package-data = true
 
