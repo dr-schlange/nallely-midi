@@ -513,6 +513,13 @@ class TrevorBus(VirtualDevice):
         self.session.clear_address(address, universe=universe)
         self.get_used_addresses(universe=universe)
 
+    def save_address_metadata(self, address, name, color):
+        self.session.save_metadata(address, name, color)
+        self.send_notification(
+            "ok",
+            f"Metadata address 0x{address} saved",
+        )
+
     def get_used_addresses(self, universe="memory"):
         addresses = self.session.get_used_addresses(universe=universe)
         self.send_message({"command": "RuntimeAPI::setUsedAddresses", "arg": addresses})

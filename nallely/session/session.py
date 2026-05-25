@@ -424,15 +424,17 @@ playground_code={infos["playground_code"]}
         cwd = Path.cwd()
         location = (cwd / self._which_universe(universe)).resolve()
         used_addresses = sorted(location.rglob("*.nly"))
-        addresses = [
-            {
+        addresses = []
+        for a in used_addresses:
+            address_hex = (
+                str(a.relative_to(location).with_suffix("")).replace(os.sep, "").upper()
+            )
+            addr = {
                 "path": str(a.relative_to(cwd)),
-                "hex": str(a.relative_to(location).with_suffix(""))
-                .replace(os.sep, "")
-                .upper(),
+                "hex": address_hex,
+                "metadata": self.read_metadata(address_hex),
             }
-            for a in used_addresses
-        ]
+            addresses.append(addr)
         return addresses
 
     def clear_address(self, address, universe=None):
@@ -648,24 +650,21 @@ original_file={read_from}
         )
         patches = len(content["connections"])
         playground_code = content.get("playground_code")
-        # repo = Repo(file.parent.parent)
-        # repo = self.repo
 
-        commit_sha = self.get_last_commit_hash_for_file(file)
-        if commit_sha:
-            note_id = get_note_path(commit_sha)
-            metadata = json.loads(note_id.decode("utf-8"))
-        else:
-            metadata = {}
+        # commit_sha = self.get_last_commit_hash_for_file(file)
+        # if commit_sha:
+        #     note_id = get_note_path(commit_sha)
+        #     metadata = json.loads(note_id.decode("utf-8"))
+        # else:
+        #     metadata = {}
 
         details = {
             "midi": midi_classes,
             "virtual": virtual_classes_count,
             "patches": patches,
             "playground_code": bool(playground_code),
-            "metadata": metadata,
+            # "metadata": metadata,
         }
-        # repo.close()
         return details
 
     def get_last_commit_hash_for_file(self, file_path):

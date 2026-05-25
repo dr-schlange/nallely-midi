@@ -689,6 +689,15 @@ export class TrevorWebSocket {
 			friend_ip,
 		});
 	}
+
+	saveAddressMetadata(address: string, name: string, color: string) {
+		this.sendJsonMessage({
+			command: "save_address_metadata",
+			address,
+			name,
+			color,
+		});
+	}
 }
 
 let websocket: TrevorWebSocket | null = null;
