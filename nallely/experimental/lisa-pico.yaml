@@ -103,6 +103,22 @@ drschlange:
         stream_table2: "pitchwheel+stream"
         stream_table3: "pitchwheel+stream"
         stream_table4: "pitchwheel+stream"
+        level_table1:
+          cc: 96
+          description: "Wavetable 1 mix level"
+          init: 127
+        level_table2:
+          cc: 97
+          description: "Wavetable 2 mix level"
+          init: 127
+        level_table3:
+          cc: 98
+          description: "Wavetable 3 mix level"
+          init: 127
+        level_table4:
+          cc: 99
+          description: "Wavetable 4 mix level"
+          init: 127
         # capture_mode:
         #   cc: 122
         #   description: "Selects the type of capture mode"

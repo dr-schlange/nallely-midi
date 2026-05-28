@@ -168,16 +168,16 @@ class LISA(VirtualDevice):
 
         # upper layer
         self.map_on_layer(
-            idx=1, src=minilab.sliders.s1.scale(), dst=lisa.modulation.timbre
+            idx=1, src=minilab.sliders.s1.scale(0, 127), dst=lisa.wavetable.level_table1
         )
         self.map_on_layer(
-            idx=1, src=minilab.sliders.s2.scale(), dst=lisa.modulation.color
+            idx=1, src=minilab.sliders.s2.scale(0, 127), dst=lisa.wavetable.level_table2
         )
         self.map_on_layer(
-            idx=1, src=minilab.sliders.s3.scale(), dst=lisa.envelope.attack
+            idx=1, src=minilab.sliders.s3.scale(0, 127), dst=lisa.wavetable.level_table3
         )
         self.map_on_layer(
-            idx=1, src=minilab.sliders.s4.scale(), dst=lisa.envelope.release
+            idx=1, src=minilab.sliders.s4.scale(0, 127), dst=lisa.wavetable.level_table4
         )
 
         # reset wavetables

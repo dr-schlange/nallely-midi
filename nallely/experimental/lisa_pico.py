@@ -55,6 +55,18 @@ class WavetableSection(nallely.Module):
     stream_table2 = nallely.ModulePitchwheel(stream=True, channel=1)
     stream_table3 = nallely.ModulePitchwheel(stream=True, channel=2)
     stream_table4 = nallely.ModulePitchwheel(stream=True, channel=3)
+    level_table1 = nallely.ModuleParameter(
+        96, init_value=127, description="Wavetable 1 mix level"
+    )
+    level_table2 = nallely.ModuleParameter(
+        97, init_value=127, description="Wavetable 2 mix level"
+    )
+    level_table3 = nallely.ModuleParameter(
+        98, init_value=127, description="Wavetable 3 mix level"
+    )
+    level_table4 = nallely.ModuleParameter(
+        99, init_value=127, description="Wavetable 4 mix level"
+    )
     phase_reset = nallely.ModuleParameter(126, description="Reset the phase")
     phase_offset = nallely.ModuleParameter(
         125, description="Add an offset to the phase"
