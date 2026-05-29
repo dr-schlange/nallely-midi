@@ -194,6 +194,11 @@ drschlange:
           accepted_values:
             - OFF
             - ON
+    features:
+        peak_envelope:
+          cc: 95
+          description: "Computed peak envelope"
+          init: 0
     keys:
       notes: "keys_or_pads"
       pitchwheel: "pitchwheel"

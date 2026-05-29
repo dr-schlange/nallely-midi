@@ -105,6 +105,10 @@ class WavetableSection(nallely.Module):
     )
 
 
+class FeaturesSection(nallely.Module):
+    peak_envelope = nallely.ModuleParameter(95, description="Computed peak envelope")
+
+
 class KeysSection(nallely.Module):
     notes = nallely.ModulePadsOrKeys()
     pitchwheel = nallely.ModulePitchwheel()
@@ -117,6 +121,7 @@ class Lisa(nallely.MidiDevice):
     filter: FilterSection  # type: ignore
     modulation: ModulationSection  # type: ignore
     wavetable: WavetableSection  # type: ignore
+    features: FeaturesSection  # type: ignore
     keys: KeysSection  # type: ignore
 
     def __init__(self, device_name=None, *args, **kwargs):
@@ -149,6 +154,10 @@ class Lisa(nallely.MidiDevice):
     @property
     def wavetable(self) -> WavetableSection:
         return self.modules.wavetable
+
+    @property
+    def features(self) -> FeaturesSection:
+        return self.modules.features
 
     @property
     def keys(self) -> KeysSection:
