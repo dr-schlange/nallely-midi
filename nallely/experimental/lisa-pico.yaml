@@ -20,6 +20,10 @@ drschlange:
           - poly
           - unison
           - mono
+      detune:
+        cc: 4
+        description: "Detune applied to secondary voice in unison mode"
+        init: 70
       sustain:
         cc: 64
         description: "Sustain (Hold notes)"

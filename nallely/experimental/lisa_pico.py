@@ -12,6 +12,9 @@ class GeneralSection(nallely.Module):
     voice_mode = nallely.ModuleParameter(
         2, description="Mode for the voices", accepted_values=["poly", "unison", "mono"]
     )
+    detune = nallely.ModuleParameter(
+        4, init_value=70, description="Detune applied to secondary voice in unison mode"
+    )
     sustain = nallely.ModuleParameter(64, description="Sustain (Hold notes)")
     midi_dev = nallely.ModuleParameter(127, description="Dev functions")
 

@@ -86,6 +86,7 @@ class LISA(VirtualDevice):
         )
 
         # upper layer
+        self.map_on_layer(idx=1, src=minilab.keys.mod.scale(), dst=lisa.general.detune)
         self.map_on_layer(
             idx=1, src=minilab.buttons.b1.scale(0.5, 7), dst=self.lfo1.speed_cv
         )
