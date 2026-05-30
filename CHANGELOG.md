@@ -6,6 +6,7 @@
 
 * Add metadata support for addresses, let the possibility to set color, name and descriptionk for a dedicated address
 * Add wavetable mix-level support for LISA
+* Add new neuron that lets you convert a signal as continuous or ondemand
 
 ### Fixes
 

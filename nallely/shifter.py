@@ -3,6 +3,7 @@ import math
 import random
 from decimal import Decimal
 
+from .core.scaler import Scaler
 from .core.virtual_device import VirtualDevice, VirtualParameter, on
 
 
@@ -1044,16 +1045,50 @@ class VScaler(VirtualDevice):
 
     @on(in1_cv, edge="any")
     def on_in1_any(self, value, ctx):
-        from .core.scaler import Scaler
-
         return Scaler.lin_conversion(value, 0, 127, self.min1, self.max1), [
             self.out1_cv
         ]
 
     @on(in0_cv, edge="any")
     def on_in0_any(self, value, ctx):
-        from .core.scaler import Scaler
-
         return Scaler.lin_conversion(value, 0, 127, self.min0, self.max0), [
             self.out0_cv
         ]
+
+
+class SignalConverter(VirtualDevice):
+    """
+    Converts a signal to a continuous or ondemand signal
+
+    inputs:
+    # * %inname [%range] %options: %doc
+    * input_cv [-1, 1] init=0 <both>: input signal
+    * mode_cv [continuous, ondemand] init='continuous': conversion mode
+    * max_cv [-1, 1] init=1: Max value
+    * min_cv [-1, 1] init=-1: Min value
+
+    outputs:
+    # * %outname [%range]: %doc
+    * output_cv [-1, 1]: converted output
+
+    type: hybrid
+    category: converter
+    # meta: disable default output
+    """
+
+    max_cv = VirtualParameter(name="max", range=(-1.0, 1.0), default=1.0)
+    min_cv = VirtualParameter(name="min", range=(-1.0, 1.0), default=-1.0)
+    input_cv = VirtualParameter(name="input", range=(-1.0, 1.0), default=0.0)
+    mode_cv = VirtualParameter(
+        name="mode", accepted_values=["continuous", "ondemand"], default="continuous"
+    )
+    output_cv = VirtualParameter(name="output", range=(-1.0, 1.0))
+
+    @on(input_cv, edge="both")
+    def on_input_both(self, value, ctx):
+        if self.mode == "ondemand":
+            return Scaler.lin_conversion(value, -1, 1, self.min, self.max)
+
+    def main(self, ctx):
+        if self.mode == "continuous":
+            return Scaler.lin_conversion(self.input, -1, 1, self.min, self.max)
