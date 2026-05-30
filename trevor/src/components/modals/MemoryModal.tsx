@@ -1,7 +1,7 @@
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import type { Address } from "../../model";
 import {
-	LOCAL_STORAGE_RUNTIME,
+	// LOCAL_STORAGE_RUNTIME,
 	useTrevorDispatch,
 	useTrevorSelector,
 } from "../../store";
@@ -10,7 +10,7 @@ import {
 	setCurrentAddress,
 	setSaveDefaultValue as setSaveDefaultValueAction,
 } from "../../store/runtimeSlice";
-import { extractCurrentIP } from "../../utils/utils";
+// import { extractCurrentIP } from "../../utils/utils";
 import { useTrevorWebSocket } from "../../websockets/websocket";
 import { Button } from "../widgets/BaseComponents";
 
@@ -82,6 +82,7 @@ export const MemoryModal = ({ onClose, onLoad }: MemoryModalProps) => {
 	const [selection, setSelection] = useState<AddressBlock>(null);
 	const [metaName, setMetaName] = useState<string>("");
 	const [metaColor, setMetaColor] = useState<string>("#75a759");
+	const [metaDescr, setMetaDescr] = useState<string>("");
 	const [showMeta, setShowMeta] = useState<boolean>(false);
 	const [searchQuery, setSearchQuery] = useState<string>("");
 
@@ -194,12 +195,12 @@ export const MemoryModal = ({ onClose, onLoad }: MemoryModalProps) => {
 				</p>
 			</>,
 		);
-	}, [patchDetails]);
+	}, [patchDetails, dispatch]);
 
-	const saveMetadata = (name: string, color: string) => {
+	const saveMetadata = (name: string, color: string, description: string) => {
 		const hex = selection?.hex ?? currentAddress?.hex;
 		if (!hex) return;
-		trevorWebSocket?.saveAddressMetadata(hex, name, color);
+		trevorWebSocket?.saveAddressMetadata(hex, name, color, description);
 	};
 
 	const setAddressSelection = (address) => {
@@ -212,6 +213,7 @@ export const MemoryModal = ({ onClose, onLoad }: MemoryModalProps) => {
 		const addrMeta = usedAddresses.find((a) => a.hex === address.hex)?.metadata;
 		setMetaName(addrMeta?.name ?? "");
 		setMetaColor(addrMeta?.color ?? "#75a759");
+		setMetaDescr(addrMeta?.description ?? "");
 		trevorWebSocket?.fetchPathInfos(address.path);
 		setDetails(<p className="details">fetching details...</p>);
 	};
@@ -228,6 +230,7 @@ export const MemoryModal = ({ onClose, onLoad }: MemoryModalProps) => {
 			if (found?.path) {
 				setMetaName(found.metadata?.name ?? "");
 				setMetaColor(found.metadata?.color ?? "#75a759");
+				setMetaDescr(found.metadata?.description ?? "");
 				trevorWebSocket?.fetchPathInfos(found.path);
 				setDetails(<p className="details">fetching details...</p>);
 			}
@@ -341,13 +344,18 @@ export const MemoryModal = ({ onClose, onLoad }: MemoryModalProps) => {
 								placeholder="Name"
 								value={metaName}
 								onChange={(e) => setMetaName(e.target.value)}
-								onBlur={() => saveMetadata(metaName, metaColor)}
+								onBlur={() => saveMetadata(metaName, metaColor, metaDescr)}
 							/>
 							<input
 								type="color"
 								value={metaColor}
 								onChange={(e) => setMetaColor(e.target.value)}
-								onBlur={() => saveMetadata(metaName, metaColor)}
+								onBlur={() => saveMetadata(metaName, metaColor, metaDescr)}
+							/>
+							<textarea
+								value={metaDescr}
+								onChange={(e) => setMetaDescr(e.target.value)}
+								onBlur={() => saveMetadata(metaName, metaColor, metaDescr)}
 							/>
 						</div>
 					)}

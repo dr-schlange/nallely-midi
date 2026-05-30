@@ -221,4 +221,5 @@ export interface Address {
 export interface AddressMetadata {
 	name?: string;
 	color?: string;
+	description?: string;
 }

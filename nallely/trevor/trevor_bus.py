@@ -513,8 +513,8 @@ class TrevorBus(VirtualDevice):
         self.session.clear_address(address, universe=universe)
         self.get_used_addresses(universe=universe)
 
-    def save_address_metadata(self, address, name, color):
-        self.session.save_metadata(address, name, color)
+    def save_address_metadata(self, address, name, color, description):
+        self.session.save_metadata(address, name, color, description)
         self.get_used_addresses()
         self.send_notification(
             "ok",

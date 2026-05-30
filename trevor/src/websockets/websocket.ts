@@ -690,12 +690,18 @@ export class TrevorWebSocket {
 		});
 	}
 
-	saveAddressMetadata(address: string, name: string, color: string) {
+	saveAddressMetadata(
+		address: string,
+		name: string,
+		color: string,
+		description: string,
+	) {
 		this.sendJsonMessage({
 			command: "save_address_metadata",
 			address,
 			name,
 			color,
+			description,
 		});
 	}
 }

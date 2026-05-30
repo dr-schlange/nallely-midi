@@ -291,9 +291,9 @@ class Session:
             repo = Repo(location)
         return repo
 
-    def save_metadata(self, address: str, name: str, color: str):
+    def save_metadata(self, address: str, name: str, color: str, description: str):
         meta = self.metadata.metadata_for(address)
-        meta.write({"name": name, "color": color})
+        meta.write({"name": name, "color": color, "description": description})
         print(
             f"[GIT-STORE] Metadata saved for address={address} in {meta.address_frag}"
         )

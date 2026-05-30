@@ -4,7 +4,7 @@
 
 ### Features
 
-* Add metadata support for addresses, let the possibility to set color and name for a dedicated address
+* Add metadata support for addresses, let the possibility to set color, name and description for a dedicated address
 * Add wavetable mix-level support for LISA
 
 ### Fixes
