@@ -130,6 +130,8 @@ class Lisa(nallely.MidiDevice):
             device_name=device_name or "LISA",
             **kwargs,
         )
+        # We send 1 on midi dev to get the current state of the synth
+        self.general.midi_dev = 1
 
     @property
     def general(self) -> GeneralSection:
