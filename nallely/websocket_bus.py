@@ -297,6 +297,8 @@ class WebSocketBus(VirtualDevice):
 
     def stop(self, clear_queues=False):
         # print("[DEBUG] Stopping server")
+        self.running = False
+        self.pause_event.set()
         for service, clients in self.connected.items():
             for client in clients:
                 print(f"[{self.NAME}] Closing connection for {client} on {service}")

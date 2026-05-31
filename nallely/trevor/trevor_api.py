@@ -10,13 +10,15 @@ from ..core import (
     all_devices,
     connected_devices,
     midi_device_classes,
-    stop_all_connected_devices,
     unbind_all,
     virtual_devices,
 )
 from ..core.world import (
     ThreadContext,
+    all_links,
+    get_connected_devices,
     get_virtual_device_classes,
+    get_virtual_devices,
     virtual_device_classes,
 )
 
@@ -136,7 +138,38 @@ class TrevorAPI:
         self.set_link_property(from_parameter, to_parameter, "extra_zero", extra_zero)
 
     def reset_all(self, skip_unregistered=True):
-        stop_all_connected_devices(skip_unregistered)
+        # we mute first all the links to stop any sound
+        for _, link in all_links().items():
+            link.muted = True
+
+        # we get the list of all existing devices and directly clear them
+        vdevs = list(get_virtual_devices())
+        mididevs = list(get_connected_devices())
+        get_connected_devices().clear()
+        get_virtual_devices().clear()
+
+        # we run the stop of all devices in a thread to be non-blocking
+        # we don't wait for it to finish, it will
+        def stop_devices(vdevs, mididevs, skip_unregistered):
+            device = None
+            for device in vdevs:
+                if skip_unregistered and getattr(device, "forever", False):
+                    continue
+                device.stop()
+            if device:
+                device._devices_count.clear()
+            for dev in mididevs:
+                dev.all_notes_off()
+                if skip_unregistered and getattr(dev, "forever", False):
+                    continue
+                dev.close()
+
+        thread = threading.Thread(
+            target=stop_devices, args=[vdevs, mididevs, skip_unregistered]
+        )
+        thread.start()
+
+        return thread
 
     def associate_parameters(
         self,

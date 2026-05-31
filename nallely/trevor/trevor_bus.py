@@ -452,10 +452,12 @@ class TrevorBus(VirtualDevice):
         return self.full_state()
 
     def reset_all(self):
-        self.trevor.reset_all()
+        cleaner = self.trevor.reset_all()
+        self.send_message(self.full_state())
+        cleaner.join()
         self.refresh_websocket_bus(WebSocketBus())
         self.refresh_osc_bus(OSCBus())
-        return self.full_state()
+        # return self.full_state()
 
     def associate_parameters(
         self, from_parameter, to_parameter, unbind, with_scaler=True

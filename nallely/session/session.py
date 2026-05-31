@@ -98,8 +98,8 @@ class Session:
             content = json.load(f)
         if not content:
             return self.snapshot()
-        self.trevor.reset_all()
-
+        cleaner = self.trevor.reset_all()
+        cleaner.join()
         self.code = content.get("playground_code")
 
         # loads the midi and virtual devices

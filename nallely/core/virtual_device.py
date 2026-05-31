@@ -645,6 +645,8 @@ class VirtualDevice(threading.Thread):
 
     def stop(self, clear_queues=True):
         """Stop the device thread."""
+        self.running = False
+        self.pause_event.set()
         for link in all_links().values():
             if link.dest.device is self or link.src.device is self:
                 link.uninstall()
@@ -655,8 +657,6 @@ class VirtualDevice(threading.Thread):
             setattr(self, prop, None)
         if self in virtual_devices:
             virtual_devices.remove(self)
-        self.running = False
-        self.pause_event.set()
         if clear_queues:
             # Clear input_queue
             for inqueue in self.input_queues.values():

@@ -27,6 +27,7 @@ class OSCBus(WebSocketBus):
         self.server = server_type(
             server_address=(host, port), dispatcher=self.dispatcher
         )
+        self.server.daemon_threads = True
         self.known_services = {}
         self.connected = defaultdict(list)
         self.to_update = None
@@ -38,6 +39,8 @@ class OSCBus(WebSocketBus):
         self.connected.clear()
         if self.running and self.server:
             print(f"[{self.NAME}] Shutting down osc bus...", end="\t")
+            self.running = False
+            self.pause_event.set()
             self.dispatcher.clear()
             self.server.shutdown()
             self.server.server_close()

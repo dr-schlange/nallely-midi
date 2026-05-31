@@ -4,9 +4,10 @@
 
 ### Features
 
-* Add metadata support for addresses, let the possibility to set color, name and descriptionk for a dedicated address
+* Add metadata support for addresses, let the possibility to set color, name and description for a dedicated address
 * Add wavetable mix-level support for LISA
 * Add new neuron that lets you convert a signal as continuous or ondemand
+* Move session clear to a thread to give a snapier clear of the interface when used with TrevorUI
 
 ### Fixes
 
@@ -14,6 +15,7 @@
 * Fix dropdown reversed symbols
 * Fix right bar when patching a device and for proxy devices
 * Fix issue with patch/link refresh
+* Fix OSC bus taking time to shutdown
 
 ## Nallely v0.5.0 -- Tepezcohuite
 
