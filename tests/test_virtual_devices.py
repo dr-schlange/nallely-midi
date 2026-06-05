@@ -6,6 +6,7 @@ from nallely import LFO
 from nallely.core import VirtualDevice
 from nallely.core.virtual_device import VirtualParameter
 from nallely.core.world import ThreadContext
+from nallely.devices import NTS1
 
 
 @pytest.fixture
@@ -200,3 +201,66 @@ def test__introspection_allparameters_nonstandardoutput():
 def test__introspection_meta_new_syntaxe():
     @VirtualDevice
     class A: ...
+
+
+def test__clone_simple_lfo():
+    lfo1 = LFO(waveform="triangle")
+    new = lfo1.clone()
+
+    assert new.running is True
+    assert new.paused is False
+    assert new.waveform == "triangle"
+    assert new.waveform == lfo1.waveform
+    assert new.speed == lfo1.speed
+
+    lfo2 = LFO(waveform="triangle")
+    lfo2.start()
+    new = lfo2.clone(start_clone=False)
+
+    assert new.running is True
+    assert new.paused is True
+    assert new.waveform == "triangle"
+    assert new.waveform == lfo1.waveform
+    assert new.speed == lfo1.speed
+
+    new = lfo2.clone(pause_device=True)
+
+    assert lfo2.paused is True
+    assert new.paused is False
+
+    assert lfo2.is_alive() is True
+    new = lfo2.clone(suicide=True)
+    assert lfo2.is_alive() is False
+
+
+def test__clone_lfo1_lfo2_connection():
+    lfo1 = LFO(waveform="triangle")
+    lfo2 = LFO(waveform="sine")
+    lfo2.speed_cv = lfo1
+    lfo1.speed_cv = lfo2
+
+    new = lfo1.clone()
+    assert len(new.speed_cv.incoming_links) == 1
+    links = new.speed_cv.incoming_links
+    assert links[0].src.parameter == lfo2.output_cv.parameter
+
+    assert len(new.output_cv.outgoing_links) == 1
+    links = new.outgoing_links
+    assert links[0].dest.parameter == lfo1.speed_cv.parameter
+
+
+def test__clone_lfo1_midi_connection():
+    lfo = LFO(waveform="triangle")
+    nts1 = NTS1(autoconnect=False)
+
+    lfo.speed_cv = nts1.keys.notes
+    nts1.filter.cutoff = lfo
+
+    new = lfo.clone()
+    assert len(new.speed_cv.incoming_links) == 1
+    links = new.speed_cv.incoming_links
+    assert links[0].src.parameter == nts1.keys.notes.parameter
+
+    assert len(new.output_cv.outgoing_links) == 1
+    links = new.output_cv.outgoing_links
+    assert links[0].dest.parameter == nts1.filter.cutoff.parameter

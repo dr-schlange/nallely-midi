@@ -9,7 +9,7 @@ from functools import update_wrapper, wraps
 from pathlib import Path
 from queue import Empty, Full, Queue
 from types import GeneratorType
-from typing import Any, Callable, Literal, Sequence, Type
+from typing import Any, Callable, Literal, Self, Sequence, Type
 
 from ..utils import (
     diff0_cv_property,
@@ -943,6 +943,65 @@ class VirtualDevice(threading.Thread):
             as_int = isinstance(min, int) and isinstance(max, int)
             rand = random.randint if as_int else random.uniform
             self.store_input(parameter.name, rand(min, max))  # type: ignore
+
+    def clone(
+        self: Self,
+        pause_device=False,
+        start_clone=True,
+        with_links=True,
+        suicide=False,
+    ) -> Self:
+        from .midi_device import (
+            ModulePadsOrKeys,
+            ModuleParameter,
+            ModulePitchwheel,
+            PadOrKey,
+        )
+
+        clone_dev = self.__class__()
+        for parameter in clone_dev.all_parameters():
+            setattr(clone_dev, parameter.name, getattr(self, parameter.name))
+
+        if with_links:
+            for link in self.incoming_links:
+                src_dev = link.src.device
+                dst = link.dest.parameter.cv_name
+                if isinstance(link.src.parameter, ModulePadsOrKeys):
+                    src = link.src.parameter
+                    setattr(
+                        clone_dev,
+                        dst,
+                        getattr(getattr(src_dev, src.section_name), src.name),
+                    )
+                else:
+                    src = link.src.parameter.cv_name
+                    setattr(clone_dev, dst, getattr(src_dev, src))
+            for link in self.outgoing_links:
+                dst_device = link.dest.device
+                src = link.src.parameter.cv_name  # type: ignore src parameter is is virtual parameter
+                if isinstance(
+                    link.dest.parameter,
+                    (ModulePadsOrKeys, ModuleParameter, ModulePitchwheel, PadOrKey),
+                ):
+                    dst = link.dest.parameter
+                    setattr(
+                        getattr(dst_device, dst.section_name),
+                        dst.name,
+                        getattr(clone_dev, src),
+                    )
+                else:
+                    dst = link.dest.parameter.cv_name
+                    setattr(dst_device, dst, getattr(clone_dev, src))
+        if start_clone:
+            clone_dev.start()
+        else:
+            clone_dev.start()
+            clone_dev.pause()
+        if pause_device:
+            self.pause()
+        if suicide:
+            self.stop()
+        return clone_dev
 
 
 SUBDIVISIONS = {

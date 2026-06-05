@@ -8,6 +8,7 @@
 * Add wavetable mix-level support for LISA
 * Add new neuron that lets you convert a signal as continuous or ondemand
 * Move session clear to a thread to give a snapier clear of the interface when used with TrevorUI
+* Add flexible clone method on virtual devices
 
 ### Fixes
 
