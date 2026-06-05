@@ -471,6 +471,69 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 							<>
 								<hr />
 								<details>
+									<summary>Clone device</summary>
+									<Button
+										text="Clone and replace"
+										tooltip="Clone the device and kills the original device"
+										onClick={() => {
+											trevorSocket?.clone_device(device.id, {
+												startClone: true,
+												suicide: true,
+											});
+											setCurrentSelected(undefined);
+											setSelectedConnection(undefined);
+											setSelection([]);
+											setInformation(undefined);
+										}}
+										className="menu-button"
+									/>
+									<Button
+										text="Clone and pause"
+										tooltip="Clone the device and pause it"
+										onClick={() => {
+											trevorSocket?.clone_device(device.id, {
+												startClone: false,
+												suicide: false,
+											});
+											setCurrentSelected(undefined);
+											setSelectedConnection(undefined);
+											setSelection([]);
+											setInformation(undefined);
+										}}
+										className="menu-button"
+									/>
+									<Button
+										text="Clone and pause original"
+										tooltip="Clone the device and pause original device"
+										onClick={() => {
+											trevorSocket?.clone_device(device.id, {
+												startClone: true,
+												pauseDevice: true,
+											});
+											setCurrentSelected(undefined);
+											setSelectedConnection(undefined);
+											setSelection([]);
+											setInformation(undefined);
+										}}
+										className="menu-button"
+									/>
+									<Button
+										text="Clone without patch"
+										tooltip="Clone the device without existing patches"
+										onClick={() => {
+											trevorSocket?.clone_device(device.id, {
+												withLinks: false,
+											});
+											setCurrentSelected(undefined);
+											setSelectedConnection(undefined);
+											setSelection([]);
+											setInformation(undefined);
+										}}
+										className="menu-button"
+									/>
+								</details>
+								<hr />
+								<details>
 									<summary>Expose to friends</summary>
 									<div className="details-content">
 										{Object.entries(friends).map(([ip, [name, _]]) => (

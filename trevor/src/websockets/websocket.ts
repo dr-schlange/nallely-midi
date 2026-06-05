@@ -704,6 +704,30 @@ export class TrevorWebSocket {
 			description,
 		});
 	}
+
+	clone_device(
+		device_id: number,
+		{
+			pauseDevice,
+			startClone,
+			withLinks,
+			suicide,
+		}: {
+			pauseDevice?: boolean;
+			startClone?: boolean;
+			withLinks?: boolean;
+			suicide?: boolean;
+		},
+	) {
+		this.sendJsonMessage({
+			command: "clone_device",
+			device_id,
+			pause_device: pauseDevice ?? false,
+			start_clone: startClone ?? true,
+			with_links: withLinks ?? true,
+			suicide: suicide ?? false,
+		});
+	}
 }
 
 let websocket: TrevorWebSocket | null = null;

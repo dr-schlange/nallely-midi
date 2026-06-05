@@ -831,6 +831,23 @@ class TrevorBus(VirtualDevice):
 
         return self.full_state()
 
+    def clone_device(
+        self,
+        device_id,
+        pause_device=False,
+        start_clone=True,
+        with_links=True,
+        suicide=False,
+    ):
+        self.trevor.clone_device(
+            device_id,
+            pause_device=pause_device,
+            start_clone=start_clone,
+            with_links=with_links,
+            suicide=suicide,
+        )
+        return self.full_state()
+
 
 def resource_path(relative_path):
     """Get absolute path to resource, works for dev and PyInstaller"""

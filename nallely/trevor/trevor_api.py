@@ -326,3 +326,20 @@ class TrevorAPI:
     def force_note_off(self, device_id):
         dev = cast(MidiDevice, self.get_device_instance(device_id))
         dev.force_all_notes_off()
+
+    def clone_device(
+        self,
+        device_id,
+        pause_device=False,
+        start_clone=True,
+        with_links=True,
+        suicide=False,
+    ):
+        dev = cast(VirtualDevice, self.get_device_instance(device_id))
+        cloned_dev = dev.clone(
+            pause_device=pause_device,
+            start_clone=start_clone,
+            with_links=with_links,
+            suicide=suicide,
+        )
+        return cloned_dev
