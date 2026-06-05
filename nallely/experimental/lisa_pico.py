@@ -82,17 +82,17 @@ class WavetableSection(nallely.Module):
         description="Freeze all the current wavetables",
         accepted_values=["OFF", "ON"],
     )
-    freeze_wt4 = nallely.ModuleParameter(
-        122, description="Freezes wavetable 4", accepted_values=["OFF", "ON"]
-    )
-    freeze_wt3 = nallely.ModuleParameter(
-        121, description="Freezes wavetable 3", accepted_values=["OFF", "ON"]
+    freeze_wt1 = nallely.ModuleParameter(
+        119, description="Freezes wavetable 1", accepted_values=["OFF", "ON"]
     )
     freeze_wt2 = nallely.ModuleParameter(
         120, description="Freezes wavetable 2", accepted_values=["OFF", "ON"]
     )
-    freeze_wt1 = nallely.ModuleParameter(
-        119, description="Freezes wavetable 1", accepted_values=["OFF", "ON"]
+    freeze_wt3 = nallely.ModuleParameter(
+        121, description="Freezes wavetable 3", accepted_values=["OFF", "ON"]
+    )
+    freeze_wt4 = nallely.ModuleParameter(
+        122, description="Freezes wavetable 4", accepted_values=["OFF", "ON"]
     )
     reset_all_write_idx = nallely.ModuleParameter(
         118, description="Reset all write indices", accepted_values=["OFF", "ON"]
@@ -103,10 +103,24 @@ class WavetableSection(nallely.Module):
     double_buffer = nallely.ModuleParameter(
         116, description="Activates double buffering", accepted_values=["OFF", "ON"]
     )
+    mode_wt1 = nallely.ModuleParameter(
+        112, description="Filter Type", accepted_values=["circular", "scroll"]
+    )
+    mode_wt2 = nallely.ModuleParameter(
+        113, description="Filter Type", accepted_values=["circular", "scroll"]
+    )
+    mode_wt3 = nallely.ModuleParameter(
+        114, description="Filter Type", accepted_values=["circular", "scroll"]
+    )
+    mode_wt4 = nallely.ModuleParameter(
+        115, description="Filter Type", accepted_values=["circular", "scroll"]
+    )
 
 
 class FeaturesSection(nallely.Module):
-    peak_envelope = nallely.ModuleParameter(95, description="Computed peak envelope")
+    peak_envelope = nallely.ModuleParameter(
+        95, description="Computed peak envelope (disabled atm)"
+    )
 
 
 class KeysSection(nallely.Module):
