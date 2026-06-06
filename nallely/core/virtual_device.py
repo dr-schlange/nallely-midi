@@ -968,10 +968,14 @@ class VirtualDevice(threading.Thread):
                 dst = link.dest.parameter.cv_name
                 if isinstance(link.src.parameter, ModulePadsOrKeys):
                     src = link.src.parameter
+                    chain = link.chain
                     setattr(
                         clone_dev,
                         dst,
-                        getattr(getattr(src_dev, src.section_name), src.name),
+                        getattr(getattr(src_dev, src.section_name), src.name).scale(
+                            chain.to_min if chain else None,
+                            chain.to_max if chain else None,
+                        ),
                     )
                 else:
                     src = link.src.parameter.cv_name
@@ -984,10 +988,14 @@ class VirtualDevice(threading.Thread):
                     (ModulePadsOrKeys, ModuleParameter, ModulePitchwheel, PadOrKey),
                 ):
                     dst = link.dest.parameter
+                    chain = link.chain
                     setattr(
                         getattr(dst_device, dst.section_name),
                         dst.name,
-                        getattr(clone_dev, src),
+                        getattr(clone_dev, src).scale(
+                            chain.to_min if chain else None,
+                            chain.to_max if chain else None,
+                        ),
                     )
                 else:
                     dst = link.dest.parameter.cv_name

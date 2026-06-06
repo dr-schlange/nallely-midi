@@ -253,14 +253,30 @@ def test__clone_lfo1_midi_connection():
     lfo = LFO(waveform="triangle")
     nts1 = NTS1(autoconnect=False)
 
-    lfo.speed_cv = nts1.keys.notes
-    nts1.filter.cutoff = lfo
+    lfo.speed_cv = nts1.keys.notes.scale()
+    nts1.filter.cutoff = lfo.output_cv.scale()
 
     new = lfo.clone()
     assert len(new.speed_cv.incoming_links) == 1
     links = new.speed_cv.incoming_links
     assert links[0].src.parameter == nts1.keys.notes.parameter
 
+    assert len(lfo.speed_cv.incoming_links) == 1
+    assert lfo.speed_cv.incoming_links[0].chain.to_min == 0
+    assert lfo.speed_cv.incoming_links[0].chain.to_max == 10
+
+    assert links[0].chain is not None
+    assert links[0].chain.to_min == lfo.speed_cv.incoming_links[0].chain.to_min
+    assert links[0].chain.to_max == lfo.speed_cv.incoming_links[0].chain.to_max
+
     assert len(new.output_cv.outgoing_links) == 1
     links = new.output_cv.outgoing_links
     assert links[0].dest.parameter == nts1.filter.cutoff.parameter
+
+    assert len(new.output_cv.outgoing_links) == 1
+    assert new.output_cv.outgoing_links[0].chain.to_min == 0
+    assert new.output_cv.outgoing_links[0].chain.to_max == 127
+
+    assert links[0].chain is not None
+    assert links[0].chain.to_min == new.output_cv.outgoing_links[0].chain.to_min
+    assert links[0].chain.to_max == new.output_cv.outgoing_links[0].chain.to_max

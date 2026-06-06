@@ -532,7 +532,6 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 										className="menu-button"
 									/>
 								</details>
-								<hr />
 								<details>
 									<summary>Expose to friends</summary>
 									<div className="details-content">
@@ -556,6 +555,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 											/>
 										))}
 									</div>
+									<hr />
 								</details>
 							</>
 						)}
