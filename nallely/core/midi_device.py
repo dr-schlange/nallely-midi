@@ -835,6 +835,18 @@ class MidiDevice:
                     links.append(link)
         return links
 
+    def disconnect_incoming_links(self):
+        for link in self.incoming_links:
+            link.uninstall()
+
+    def disconnect_outgoing_links(self):
+        for link in self.outgoing_links:
+            link.uninstall()
+
+    def disconnect_all_links(self):
+        self.disconnect_incoming_links()
+        self.disconnect_outgoing_links()
+
     def __isub__(self, other):
         # The only way to be here is from a callback removal on the key/pad section
         other.device.unbind_link(other, self)

@@ -817,6 +817,18 @@ class VirtualDevice(threading.Thread):
                     links.append(link)
         return links
 
+    def disconnect_incoming_links(self):
+        for link in self.incoming_links:
+            link.uninstall()
+
+    def disconnect_outgoing_links(self):
+        for link in self.outgoing_links:
+            link.uninstall()
+
+    def disconnect_all_links(self):
+        self.disconnect_incoming_links()
+        self.disconnect_outgoing_links()
+
     def scale(self, min=None, max=None, method="lin", as_int=False):
         return Scaler(
             self,

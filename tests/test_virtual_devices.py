@@ -280,3 +280,31 @@ def test__clone_lfo1_midi_connection():
     assert links[0].chain is not None
     assert links[0].chain.to_min == new.output_cv.outgoing_links[0].chain.to_min
     assert links[0].chain.to_max == new.output_cv.outgoing_links[0].chain.to_max
+
+
+def test__disconnect_links():
+    lfo = LFO(waveform="triangle")
+    nts1 = NTS1(autoconnect=False)
+
+    lfo.speed_cv = nts1.keys.notes.scale()
+    nts1.filter.cutoff = lfo.output_cv.scale()
+
+    assert len(lfo.speed_cv.incoming_links) == 1
+    assert len(nts1.keys.notes.outgoing_links) == 1
+    lfo.speed_cv.disconnect_outgoing_links()
+    assert len(lfo.speed_cv.incoming_links) == 1
+    assert len(nts1.keys.notes.outgoing_links) == 1
+
+    lfo.speed_cv.disconnect_incoming_links()
+    assert len(lfo.speed_cv.incoming_links) == 0
+    assert len(nts1.keys.notes.outgoing_links) == 0
+
+    assert len(nts1.filter.cutoff.incoming_links) == 1
+    assert len(lfo.output_cv.outgoing_links) == 1
+    lfo.output_cv.disconnect_incoming_links()
+    assert len(nts1.filter.cutoff.incoming_links) == 1
+    assert len(lfo.output_cv.outgoing_links) == 1
+
+    lfo.output_cv.disconnect_outgoing_links()
+    assert len(nts1.filter.cutoff.incoming_links) == 0
+    assert len(lfo.output_cv.outgoing_links) == 0

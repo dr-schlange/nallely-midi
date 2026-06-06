@@ -9,6 +9,7 @@
 * Add new neuron that lets you convert a signal as continuous or ondemand
 * Move session clear to a thread to give a snapier clear of the interface when used with TrevorUI
 * Add flexible clone method on virtual devices
+* Add possibility to disconnect all incoming/outgoing patches from a part or from the devices directly
 
 ### Fixes
 
