@@ -152,7 +152,11 @@ export const MemoryModal = ({ onClose, onLoad }: MemoryModalProps) => {
 		if (!q) return new Set<string>();
 		return new Set(
 			usedAddresses
-				.filter((a) => a.metadata?.name?.toLowerCase().includes(q))
+				.filter(
+					(a) =>
+						a.metadata?.name?.toLowerCase().includes(q) ||
+						a.metadata?.description?.toLowerCase().includes(q),
+				)
 				.map((a) => a.hex),
 		);
 	}, [searchQuery, usedAddresses]);
