@@ -189,24 +189,44 @@ drschlange:
         accepted_values:
           - circular
           - scroll
+          - manual
       mode_wt2:
         cc: 113
         description: "Filter Type"
         accepted_values:
           - circular
           - scroll
+          - manual
       mode_wt3:
         cc: 114
         description: "Filter Type"
         accepted_values:
           - circular
           - scroll
+          - manual
       mode_wt4:
         cc: 115
         description: "Filter Type"
         accepted_values:
           - circular
           - scroll
+          - manual
+      index_wt1:
+        cc: 108
+        description: "Wavetable 1 write index"
+        init: 0
+      index_wt2:
+        cc: 109
+        description: "Wavetable 2 write index"
+        init: 0
+      index_wt3:
+        cc: 110
+        description: "Wavetable 3 write index"
+        init: 0
+      index_wt4:
+        cc: 111
+        description: "Wavetable 4 write index"
+        init: 0
     features:
       peak_envelope:
         cc: 95
