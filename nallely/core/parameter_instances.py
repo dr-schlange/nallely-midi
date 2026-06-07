@@ -214,6 +214,18 @@ class Int(int):
                     links.append(link)
         return links
 
+    def disconnect_incoming_links(self):
+        for link in self.incoming_links:
+            link.uninstall()
+
+    def disconnect_outgoing_links(self):
+        for link in self.outgoing_links:
+            link.uninstall()
+
+    def disconnect_all_links(self):
+        self.disconnect_incoming_links()
+        self.disconnect_outgoing_links()
+
 
 class PadsOrKeysInstance:
     def __init__(self, parameter: "ModulePadsOrKeys", device: "MidiDevice"):
