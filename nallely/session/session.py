@@ -154,7 +154,7 @@ class Session:
                 uuid = device.get("id", 0)
                 vrefs = {
                     k: device_refs[device_map[v]]
-                    for k, v in device.get("vrefs").items()
+                    for k, v in device.get("vrefs", {}).items()
                 }
                 vdev: VirtualDevice = cls(__vrefs__=vrefs)
                 if uuid:
