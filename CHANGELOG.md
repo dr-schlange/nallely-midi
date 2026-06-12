@@ -10,6 +10,7 @@
 * Move session clear to a thread to give a snapier clear of the interface when used with TrevorUI
 * Add flexible clone method on virtual devices
 * Add possibility to disconnect all incoming/outgoing patches from a part or from the devices directly
+* Add possibility to easily remove decimals for the drag input (eaiser to deal with precision dragging)
 
 ### Fixes
 

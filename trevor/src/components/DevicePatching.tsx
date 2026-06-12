@@ -397,6 +397,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 						}));
 					}}
 					range={parameter.range}
+					clearDecimal={false}
 				/>
 			);
 		},

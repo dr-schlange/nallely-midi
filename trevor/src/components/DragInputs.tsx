@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Button } from "./widgets/BaseComponents";
 
 interface DragNumberInputProps {
 	onChange?: (newValue: string) => void;
@@ -8,6 +9,7 @@ interface DragNumberInputProps {
 	disabled?: boolean;
 	style?: React.CSSProperties;
 	nullable?: boolean;
+	clearDecimal?: boolean;
 }
 
 export default function DragNumberInput({
@@ -18,17 +20,13 @@ export default function DragNumberInput({
 	disabled,
 	style = {},
 	nullable = false,
+	clearDecimal = true,
 }: DragNumberInputProps) {
 	const [isDragging, setIsDragging] = useState(false);
 	const inputRef = useRef<HTMLInputElement>(null);
 	const startY = useRef(0);
 	const startValue = useRef(0);
 	const [precision, setPrecision] = useState(0);
-
-	// Update precision dynamically based on input
-	useEffect(() => {
-		computeDecimalPrecision(value);
-	}, [value]);
 
 	const computeDecimalPrecision = (inputValue: string) => {
 		const normalized = inputValue.replace(",", ".").trim();
@@ -40,6 +38,11 @@ export default function DragNumberInput({
 			}
 		}
 	};
+
+	// Update precision dynamically based on input
+	useEffect(() => {
+		computeDecimalPrecision(value);
+	}, [value]);
 
 	const parseInput = (val: string) => {
 		const parsed = Number.parseFloat(val.replace(",", "."));
@@ -126,6 +129,50 @@ export default function DragNumberInput({
 
 		onBlur?.(finalValue);
 	};
+
+	if (clearDecimal) {
+		return (
+			<div style={{ display: "flex", alignItems: "center", gap: "2px" }}>
+				<input
+					ref={inputRef}
+					type="text"
+					inputMode="decimal"
+					value={value}
+					onChange={handleInputChange}
+					onBlur={handleBlur}
+					onMouseDown={handleMouseDown}
+					onTouchStart={handleTouchStart}
+					onTouchMove={handleTouchMove}
+					onTouchEnd={handleTouchEnd}
+					disabled={disabled}
+					style={{
+						touchAction: "none",
+						userSelect: "none",
+						pointerEvents: "auto",
+						...style,
+					}}
+				/>
+				<Button
+					text="."
+					tooltip="Removes all decimals"
+					style={{
+						height: "20px",
+						width: "30px",
+					}}
+					onClick={() => {
+						const txt = inputRef.current?.value;
+						const idx = txt.indexOf(".");
+						if (idx < 0) {
+							return;
+						}
+						inputRef.current.value = txt.slice(0, idx + 1);
+						setPrecision(0);
+						onChange?.(inputRef.current.value);
+					}}
+				/>
+			</div>
+		);
+	}
 
 	return (
 		<input
