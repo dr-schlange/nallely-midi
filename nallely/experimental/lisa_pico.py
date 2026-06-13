@@ -104,16 +104,24 @@ class WavetableSection(nallely.Module):
         116, description="Activates double buffering", accepted_values=["OFF", "ON"]
     )
     mode_wt1 = nallely.ModuleParameter(
-        112, description="Filter Type", accepted_values=["circular", "scroll", "manual"]
+        112,
+        description="Filter Type",
+        accepted_values=["circular", "scroll", "manual", "manual_interpolated"],
     )
     mode_wt2 = nallely.ModuleParameter(
-        113, description="Filter Type", accepted_values=["circular", "scroll", "manual"]
+        113,
+        description="Filter Type",
+        accepted_values=["circular", "scroll", "manual", "manual_interpolated"],
     )
     mode_wt3 = nallely.ModuleParameter(
-        114, description="Filter Type", accepted_values=["circular", "scroll", "manual"]
+        114,
+        description="Filter Type",
+        accepted_values=["circular", "scroll", "manual", "manual_interpolated"],
     )
     mode_wt4 = nallely.ModuleParameter(
-        115, description="Filter Type", accepted_values=["circular", "scroll", "manual"]
+        115,
+        description="Filter Type",
+        accepted_values=["circular", "scroll", "manual", "manual_interpolated"],
     )
     index_wt1 = nallely.ModuleParameter(108, description="Wavetable 1 write index")
     index_wt2 = nallely.ModuleParameter(109, description="Wavetable 2 write index")

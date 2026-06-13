@@ -190,6 +190,7 @@ drschlange:
           - circular
           - scroll
           - manual
+          - manual_interpolated
       mode_wt2:
         cc: 113
         description: "Filter Type"
@@ -197,6 +198,7 @@ drschlange:
           - circular
           - scroll
           - manual
+          - manual_interpolated
       mode_wt3:
         cc: 114
         description: "Filter Type"
@@ -204,6 +206,7 @@ drschlange:
           - circular
           - scroll
           - manual
+          - manual_interpolated
       mode_wt4:
         cc: 115
         description: "Filter Type"
@@ -211,6 +214,7 @@ drschlange:
           - circular
           - scroll
           - manual
+          - manual_interpolated
       index_wt1:
         cc: 108
         description: "Wavetable 1 write index"
