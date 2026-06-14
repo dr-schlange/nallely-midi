@@ -128,6 +128,7 @@ export const ScalerForm = ({ connection }: ScalerFormProps) => {
 					}}
 				>
 					<DragNumberInput
+						clearDecimalButton
 						style={{
 							width: "100%",
 						}}
@@ -154,6 +155,7 @@ export const ScalerForm = ({ connection }: ScalerFormProps) => {
 						onClick={switchMinMax}
 					/>
 					<DragNumberInput
+						clearDecimalButton
 						style={{
 							width: "100%",
 						}}

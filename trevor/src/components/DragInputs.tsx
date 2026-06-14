@@ -9,7 +9,7 @@ interface DragNumberInputProps {
 	disabled?: boolean;
 	style?: React.CSSProperties;
 	nullable?: boolean;
-	clearDecimal?: boolean;
+	clearDecimalButton?: boolean;
 }
 
 export default function DragNumberInput({
@@ -20,7 +20,7 @@ export default function DragNumberInput({
 	disabled,
 	style = {},
 	nullable = false,
-	clearDecimal = true,
+	clearDecimalButton = false,
 }: DragNumberInputProps) {
 	const [isDragging, setIsDragging] = useState(false);
 	const inputRef = useRef<HTMLInputElement>(null);
@@ -130,7 +130,7 @@ export default function DragNumberInput({
 		onBlur?.(finalValue);
 	};
 
-	if (clearDecimal) {
+	if (clearDecimalButton) {
 		return (
 			<div style={{ display: "flex", alignItems: "center", gap: "2px" }}>
 				<input

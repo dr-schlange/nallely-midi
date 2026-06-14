@@ -233,6 +233,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 			if (typeof value === "number") {
 				return (
 					<DragNumberInput
+						clearDecimalButton
 						style={{
 							width: "100%",
 							fontSize: "12px",
@@ -397,7 +398,6 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 						}));
 					}}
 					range={parameter.range}
-					clearDecimal={false}
 				/>
 			);
 		},
