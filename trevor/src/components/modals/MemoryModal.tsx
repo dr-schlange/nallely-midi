@@ -8,6 +8,7 @@ import {
 import {
 	resetPatchDetails,
 	setCurrentAddress,
+	setPatchDetails,
 	setSaveDefaultValue as setSaveDefaultValueAction,
 } from "../../store/runtimeSlice";
 // import { extractCurrentIP } from "../../utils/utils";
@@ -148,14 +149,22 @@ export const MemoryModal = ({ onClose, onLoad }: MemoryModalProps) => {
 	}, [usedAddresses]);
 
 	const matchingHexes = useMemo(() => {
-		const q = searchQuery.trim().toLowerCase();
+		const q: string = searchQuery.trim().toLowerCase();
+		const terms = q.split(/\s+/);
 		if (!q) return new Set<string>();
 		return new Set(
 			usedAddresses
-				.filter(
-					(a) =>
-						a.metadata?.name?.toLowerCase().includes(q) ||
-						a.metadata?.description?.toLowerCase().includes(q),
+				.filter((a) =>
+					terms.every(
+						(t) =>
+							a.metadata?.name?.toLowerCase().includes(t) ||
+							a.metadata?.description?.toLowerCase().includes(t) ||
+							Object.keys(a.content?.virtual)
+								.join(" ")
+								.toLowerCase()
+								.includes(t) ||
+							Object.keys(a.content?.midi).join(" ").toLowerCase().includes(t),
+					),
 				)
 				.map((a) => a.hex),
 		);
@@ -214,12 +223,12 @@ export const MemoryModal = ({ onClose, onLoad }: MemoryModalProps) => {
 			setShowMeta(false);
 			return;
 		}
-		const addrMeta = usedAddresses.find((a) => a.hex === address.hex)?.metadata;
+		const addr = usedAddresses.find((a) => a.hex === address.hex);
+		const addrMeta = addr?.metadata;
 		setMetaName(addrMeta?.name ?? "");
 		setMetaColor(addrMeta?.color ?? "#75a759");
 		setMetaDescr(addrMeta?.description ?? "");
-		trevorWebSocket?.fetchPathInfos(address.path);
-		setDetails(<p className="details">fetching details...</p>);
+		dispatch(setPatchDetails(addr?.content));
 	};
 
 	useEffect(() => {
@@ -235,11 +244,10 @@ export const MemoryModal = ({ onClose, onLoad }: MemoryModalProps) => {
 				setMetaName(found.metadata?.name ?? "");
 				setMetaColor(found.metadata?.color ?? "#75a759");
 				setMetaDescr(found.metadata?.description ?? "");
-				trevorWebSocket?.fetchPathInfos(found.path);
-				setDetails(<p className="details">fetching details...</p>);
+				dispatch(setPatchDetails(found?.content));
 			}
 		}
-	}, [usedAddresses, currentAddress, trevorWebSocket]);
+	}, [usedAddresses, currentAddress, trevorWebSocket, dispatch]);
 
 	const checkLoad = () => {
 		return !selection || selection.status === "empty";
@@ -365,7 +373,7 @@ export const MemoryModal = ({ onClose, onLoad }: MemoryModalProps) => {
 					)}
 					<input
 						type="text"
-						placeholder="Search by name…"
+						placeholder="Search..."
 						value={searchQuery}
 						onChange={(e) => setSearchQuery(e.target.value)}
 						style={{ marginTop: "12px" }}

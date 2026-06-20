@@ -429,10 +429,12 @@ playground_code={infos["playground_code"]}
             address_hex = (
                 str(a.relative_to(location).with_suffix("")).replace(os.sep, "").upper()
             )
+            content = self.extract_infos(a)
             addr = {
                 "path": str(a.relative_to(cwd)),
                 "hex": address_hex,
                 "metadata": self.read_metadata(address_hex),
+                "content": content,
             }
             addresses.append(addr)
         return addresses
