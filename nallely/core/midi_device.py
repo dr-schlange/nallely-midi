@@ -447,7 +447,8 @@ class MidiDevice:
         if self.modules_descr is None:
             self.modules_descr = {
                 k: v
-                for k, v in self.__class__.__annotations__.items()
+                for cls in reversed(type(self).__mro__)
+                for k, v in getattr(cls, "__annotations__", {}).items()
                 if isinstance(v, type) and issubclass(v, Module)
             }
         self.modules = DeviceState(self, self.modules_descr)
