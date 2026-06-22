@@ -238,3 +238,39 @@ class Amsynth(nallely.MidiDevice):
     @property
     def keys(self) -> KeysSection:
         return self.modules.keys
+
+
+class AmsynthAuto(Amsynth):
+    general: GeneralSection  # type: ignore
+    oscillators: OscillatorsSection  # type: ignore
+    amp: AmpSection  # type: ignore
+    filter: FilterSection  # type: ignore
+    lfo: LfoSection  # type: ignore
+    reverb: ReverbSection  # type: ignore
+    keys: KeysSection  # type: ignore
+
+    def __init__(self, device_name=None, *args, **kwargs):
+        import nallely.utils
+
+        self.process = nallely.utils.run_process(
+            ["amsynth", "-a", "auto", "-x"],
+            on_finish=self.log_termination,
+        )
+        import time
+
+        time.sleep(0.5)
+        super().__init__(
+            *args,
+            device_name=device_name or "amsynth",
+            **kwargs,
+        )
+
+    def close(self, delete=True):
+        self.process.terminate()
+        self.process.wait()
+        return super().close(delete)
+
+    def log_termination(self, retcode, stdout, stderr):
+        print(f"[AMSYNTH] Process finished {retcode}")
+        print(f"[AMSYNTH]-STDOUT {stdout.decode()}")
+        print(f"[AMSYNTH]-STDERR {stderr.decode()}")
