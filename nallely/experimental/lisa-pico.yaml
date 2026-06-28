@@ -9,6 +9,10 @@ drschlange:
         cc: 7
         description: "General Volume"
         init: 0
+      panning:
+        cc: 14
+        description: "Panning"
+        init: 64
       engine_select:
         cc: 8
         description: "Engine Selection"
