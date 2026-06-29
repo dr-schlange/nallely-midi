@@ -152,18 +152,18 @@ Dual crossfader
 Dual crossfader, proposes 2 inputs and 2 outputs.
 
 inputs:
-* in0_cv [0, 127] <any>: Input signal.
-* in1_cv [0, 127] <any>: Input signal.
-* in2_cv [0, 127] <any>: Input signal.
-* in3_cv [0, 127] <any>: Input signal.
-* level_cv [0, 100] <any>: Crossfader level.
+* in0_cv [-1, 1] <any>: Input signal.
+* in1_cv [-1, 1] <any>: Input signal.
+* in2_cv [-1, 1] <any>: Input signal.
+* in3_cv [-1, 1] <any>: Input signal.
+* level_cv [0, 100] init=50 <any>: Crossfader level.
 * type_cv [ondemand, continuous]: Choose between a ondemand or continuous value production.
                                   ondemand = value produced when reacting to an input only.
                                   continuous = value produced at the cycle speed of the module.
 
 outputs:
-* out0_cv [0, 127]: The crossfaded signal for in0 and in1.
-* out1_cv [0, 127]: The filtered signal for in2 and in3.
+* out0_cv [-1, 1]: The crossfaded signal for in0 and in1.
+* out1_cv [-1, 1]: The filtered signal for in2 and in3.
 
 type: ondemand, continuous
 category: filter
@@ -271,7 +271,7 @@ The Envelope Follower tracks the amplitude of an input signal, producing a smoot
 The Slew Limiter restricts how quickly the signal can change, smoothing rapid variations.
 
 inputs:
-* input_cv [0, 127] <any>: Input signal.
+* input_cv [-1, 1] <any>: Input signal.
 * attack_cv [0, 99.99] init=50.0: Attack control in %.
 * release_cv [0, 99.99] init=50.0: Release control in %.
 * type_cv [envelope, slew]: Choose between Envelope Follower and Slew Limiter
@@ -280,7 +280,7 @@ inputs:
                                   continuous = value produced at the cycle speed of the module.
 
 outputs:
-* output_cv [0, 127]: The filtered signal.
+* output_cv [-1, 1]: The filtered signal.
 
 type: ondemand, continuous
 category: filter
@@ -428,21 +428,21 @@ Mixer
 Simple 4-in mixer.
 
 inputs:
-* in0_cv [0, 127] <any>: Input signal.
-* in1_cv [0, 127] <any>: Input signal.
-* in2_cv [0, 127] <any>: Input signal.
-* in3_cv [0, 127] <any>: Input signal.
-* level0_cv [0, 100] <any>: Input signal level.
-* level1_cv [0, 100] <any>: Input signal level.
-* level2_cv [0, 100] <any>: Input signal level.
-* level3_cv [0, 100] <any>: Input signal level.
-* nums_cv [2, 4] init=4 round <any>: The number of input to consider.
+* in0_cv [-1, 1] <any>: Input signal.
+* in1_cv [-1, 1] <any>: Input signal.
+* in2_cv [-1, 1] <any>: Input signal.
+* in3_cv [-1, 1] <any>: Input signal.
+* level0_cv [0, 100] init=50 <any>: Input signal level.
+* level1_cv [0, 100] init=50 <any>: Input signal level.
+* level2_cv [0, 100] init=50 <any>: Input signal level.
+* level3_cv [0, 100] init=50 <any>: Input signal level.
+* nums_cv [2, 4] init=2 round <any>: The number of input to consider.
 * type_cv [ondemand, continuous]: Choose between a ondemand or continuous value production.
                                   ondemand = value produced when reacting to an input only.
                                   continuous = value produced at the cycle speed of the module.
 
 outputs:
-* output_cv [0, 127]: The filtered signal.
+* output_cv [-1, 1]: The filtered signal.
 
 type: ondemand, continuous
 category: mixing
@@ -467,7 +467,7 @@ Multiple filters depending on a selected type of filter (lowpass, highpass, band
 
 
 inputs:
-* input_cv [0, 127] <any>: Input signal.
+* input_cv [-1, 1] <any>: Input signal.
 * filter_cv [lowpass, highpass, bandpass]: The filter type (default=lowpass).
 * mode_cv [cutoff, smoothing]: Choose between cutoff control or smoothing control.
 * cutoff_cv [0.0, 3000.0] init=1.0: Control cutoff frequency.
@@ -479,7 +479,7 @@ inputs:
                                   continuous = value produced at the cycle speed of the module.
 
 outputs:
-* output_cv [0, 127]: The filtered signal.
+* output_cv [-1, 1]: The filtered signal.
 
 type: ondemand, continuous
 category: filter
@@ -522,7 +522,29 @@ meta: disable default output
 </details>
 
 <details>
-    <summary>Operator: No description/documentation</summary>
+    <summary>Operator: Basic operator for point by point operations over 2 signals.</summary>
+
+
+```
+Operator
+
+Basic operator for point by point operations over 2 signals.
+Supported operations are: +, -, /, *, mod, min, max, clamp, pow
+
+
+inputs:
+* a_cv [-8192, 8192] init=0: left-hand operand
+* b_cv [-8192, 8192] init=0: righ-hand operand
+* operator_cv [+, -, /, *, mod, min, max, clamp, pow] <any>: Shapes the curve response of the attack in curve-mode
+* type_cv [ondemand, continuous]: type of computation
+
+outputs:
+* output_cv [-8192, 8192]: result of the computation
+
+type: hybrid
+category: operator
+
+```
 
 </details>
 
@@ -662,7 +684,6 @@ inputs:
 * step5_cv [0, 127]: Set the output value of step 6.
 * step6_cv [0, 127]: Set the output value of step 7.
 * step7_cv [0, 127]: Set the output value of step 8.
-
 * active0_cv [0, 1] init=1 >0: Set the output as active if >1.
 * active1_cv [0, 1] init=1 >0: Set the output as active if >1.
 * active2_cv [0, 1] init=1 >0: Set the output as active if >1.
@@ -687,6 +708,33 @@ category: sequencer
 
 <details>
     <summary>ShiftRegister: No description/documentation</summary>
+
+</details>
+
+<details>
+    <summary>SignalConverter: Converts a signal to a continuous or ondemand signal</summary>
+
+
+```
+
+Converts a signal to a continuous or ondemand signal
+
+inputs:
+# * %inname [%range] %options: %doc
+* input_cv [-1, 1] init=0 <both>: input signal
+* mode_cv [continuous, ondemand] init='continuous': conversion mode
+* max_cv [-1, 1] init=1: Max value
+* min_cv [-1, 1] init=-1: Min value
+
+outputs:
+# * %outname [%range]: %doc
+* output_cv [-1, 1]: converted output
+
+type: hybrid
+category: converter
+# meta: disable default output
+
+```
 
 </details>
 
@@ -779,12 +827,12 @@ Voltage Controled Amplifier
 Simple VCA implementation with gain
 
 inputs:
-* input_cv [0, 127] <any>: Input signal
+* input_cv [-1, 1] <any>: Input signal
 * amplitude_cv [0.0, 1.0] init=0.0 <any>: Signal amplitude (0.0 -> 0%, 1.0 -> 100%)
 * gain_cv [1.0, 2.0] init=1.0: Signal gain (default is 1.0)
 
 outputs:
-* output_cv [0, 127]: The amplified signal
+* output_cv [-1, 1]: The amplified signal
 
 type: ondemand
 category: amplitude-modulation
@@ -1025,7 +1073,7 @@ inputs:
 * gain_cv [0.0, 100.0] init=1.0: Integrator gain
 * reset_cv [0, 1.0] round: Reset integrator
 * limits_cv [-1..1, unbound, leakage]: behavior when approaching limits
-* leakage_factor_cv [0.0, 0.1] init=0.00001: leakage factor
+* leakage_factor_cv [0.0, 0.1] init=0.01: leakage factor
 
 outputs:
 * output_cv [-1, 1]: main output
@@ -1091,6 +1139,31 @@ outputs:
 
 type: hybrid
 category: math
+
+```
+
+</details>
+
+<details>
+    <summary>LISA: Interface with LISA, expose only few entries, spawns 4 LFOs and connects hardware. Manage lifecycles of each modules.</summary>
+
+
+```
+
+Interface with LISA, expose only few entries, spawns 4 LFOs and connects hardware. Manage lifecycles of each modules.
+
+inputs:
+* wt1_amplitude_cv [0, 1] init=1 <any>: amplitude for waveform of wavetable 1
+* wt2_amplitude_cv [0, 1] init=1 <any>: amplitude for waveform of wavetable 2
+* wt3_amplitude_cv [0, 1] init=1 <any>: amplitude for waveform of wavetable 3
+* wt4_amplitude_cv [0, 1] init=1 <any>: amplitude for waveform of wavetable 4
+* reconnect_cv [0, 1] init=0 <rising>: force a reconnection to MIDI devices
+* shift_cv [0, 1] init=0 <rising, falling>: access to second layer of buttons/sliders
+* perf_impact_cv [LOW, MEDIUM, HIGH] init="HIGH" <any>: low or high impact on CPU (low = slower buffers fill)
+
+type: ondemand
+category: hardware-integration
+meta: disable default output
 
 ```
 
@@ -1238,6 +1311,33 @@ outputs:
 
 type: hybrid
 category: nonlinear
+
+```
+
+</details>
+
+<details>
+    <summary>TriggerSchmitt: Simple trigger Schmitt device</summary>
+
+
+```
+
+Simple trigger Schmitt device
+
+inputs:
+# * %inname [%range] %options: %doc
+* input_cv [-1.0, 1.0] <any>: input signal
+* h_thres_cv [-1.0, 1.0] init=0.2: high threshold
+* l_thres_cv [-1.0, 1.0] init=-0.2: low threshold
+* type_cv [continuous, ondemand]: type
+
+outputs:
+# * %outname [%range]: %doc
+* output_cv [0, 1]: output
+
+type: hybrid
+category: math
+# meta: disable default output
 
 ```
 
