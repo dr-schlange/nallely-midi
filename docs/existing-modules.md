@@ -1255,6 +1255,35 @@ meta: disable default output
 </details>
 
 <details>
+    <summary>Sminmax: Smooth min or smooth max equation</summary>
+
+
+```
+
+Smooth min or smooth max equation
+
+inputs:
+# * %inname [%range] %options: %doc
+* a_cv [-1, 1] init=0: first input
+* b_cv [-1, 1] init=0: second input
+# * mode_cv [algebraic, weighted]: mode
+* dist_k_cv [-2, 2] init=0.5: smoothing value for algebraic mode
+* weighted_k_cv [-20, 20] init=10: smoothing value for weighted mode
+
+outputs:
+# * %outname [%range]: %doc
+* weighted_out_cv [-1, 1]: weighted output
+* algebraic_out_cv [-1.5, 1.5]: algebraic output
+
+type: continuous
+category: <category>
+meta: disable default output
+
+```
+
+</details>
+
+<details>
     <summary>SmoothSteppedGenerator: Serge SSG (Smooth & Stepped Generator)</summary>
 
 

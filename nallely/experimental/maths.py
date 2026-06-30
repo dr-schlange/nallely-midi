@@ -1232,3 +1232,65 @@ class TriggerSchmitt(VirtualDevice):
     def main(self, ctx):
         if self.type == "continuous":
             return self.process(self.input)
+
+
+class Sminmax(VirtualDevice):
+    """
+    Smooth min or smooth max equation
+
+    inputs:
+    # * %inname [%range] %options: %doc
+    * a_cv [-1, 1] init=0: first input
+    * b_cv [-1, 1] init=0: second input
+    # * mode_cv [algebraic, weighted]: mode
+    * dist_k_cv [-2, 2] init=0.5: smoothing value for algebraic mode
+    * weighted_k_cv [-20, 20] init=10: smoothing value for weighted mode
+
+    outputs:
+    # * %outname [%range]: %doc
+    * weighted_out_cv [-1, 1]: weighted output
+    * algebraic_out_cv [-1.5, 1.5]: algebraic output
+
+    type: continuous
+    category: <category>
+    meta: disable default output
+    """
+
+    a_cv = VirtualParameter(name="a", range=(-1.0, 1.0), default=0.0)
+    b_cv = VirtualParameter(name="b", range=(-1.0, 1.0), default=0.0)
+    dist_k_cv = VirtualParameter(name="dist_k", range=(-2.0, 2.0), default=0.5)
+    weighted_k_cv = VirtualParameter(
+        name="weighted_k", range=(-20.0, 20.0), default=10.0
+    )
+    algebraic_out_cv = VirtualParameter(name="algebraic_out", range=(-1.5, 1.5))
+    weighted_out_cv = VirtualParameter(name="weighted_out", range=(-1.0, 1.0))
+
+    def __post_init__(self, **kwargs):
+        return {"disable_output": True}
+
+    def main(self, ctx):
+        import math
+
+        a = self.a
+        b = self.b
+        weighted_k = self.weighted_k if self.weighted_k != 0 else 0.001
+        max_exponent = max(weighted_k * a, weighted_k * b)
+        exp_a = math.exp(weighted_k * a - max_exponent)
+        exp_b = math.exp(weighted_k * b - max_exponent)
+        weighted_out = (a * exp_a + b * exp_b) / (exp_a + exp_b)
+        yield (weighted_out, [self.weighted_out_cv])
+        dist_k = self.dist_k if self.dist_k != 0 else 0.001
+        abs_k = abs(dist_k)
+        diff = abs(a - b)
+        if dist_k > 0:
+            if diff < abs_k:
+                h = max(abs_k - diff, 0.0) / abs_k
+                algebraic_out = max(a, b) + h * h * abs_k * 0.25
+            else:
+                algebraic_out = max(a, b)
+        elif diff < abs_k:
+            h = max(abs_k - diff, 0.0) / abs_k
+            algebraic_out = min(a, b) - h * h * abs_k * 0.25
+        else:
+            algebraic_out = min(a, b)
+        yield (algebraic_out, [self.algebraic_out_cv])
