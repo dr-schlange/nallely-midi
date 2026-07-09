@@ -1,9 +1,8 @@
 import math
+
 from nallely import VirtualDevice, VirtualParameter, on
-from nallely.codegen import gencode
 
 
-@gencode()
 class ScannedString(VirtualDevice):
     """Scanned String
 
@@ -19,6 +18,7 @@ class ScannedString(VirtualDevice):
     * excite_amp_cv [-1.0, 1.0] init=0.8 <any>: amplitude of the pluck
     * excite_width_cv [1, 64] init=22 round <any>: Gaussian width (std dev in samples) of the pluck
     * retrigger_cv [OFF, ON]: Hard retrigger on excitation
+    * write_rate_cv [64, 4096] init=256 round <any>: Write rate in the table
     * reset_cv [0, 1] init=0 round <rising>: resets
 
     outputs:
@@ -28,6 +28,12 @@ class ScannedString(VirtualDevice):
     category: synthesis
     """
 
+    write_rate_cv = VirtualParameter(
+        name="write_rate",
+        range=(64.0, 4096.0),
+        conversion_policy="round",
+        default=256.0,
+    )
     retrigger_cv = VirtualParameter(name="retrigger", accepted_values=["OFF", "ON"])
     reset_cv = VirtualParameter(
         name="reset", range=(0.0, 1.0), conversion_policy="round", default=0.0
@@ -48,11 +54,11 @@ class ScannedString(VirtualDevice):
     N = 256
 
     def __post_init__(self, **kwargs):
-            self.x_curr = [0.0] * self.N
-            self.x_prev = [0.0] * self.N
-            self.pos = 0
-            self.target_cycle_time = 0.00000000001
-            self.recompute = False
+        self.x_curr = [0.0] * self.N
+        self.x_prev = [0.0] * self.N
+        self.pos = 0
+        self.target_cycle_time = 1 / 256
+        self.recompute = False
 
     def _physics_step(self):
         k = self.stiffness
@@ -114,3 +120,7 @@ class ScannedString(VirtualDevice):
     @on(excite_pos_cv, edge="any")
     def on_excite_pos_any(self, value, ctx):
         self.recompute = True
+
+    @on(write_rate_cv, edge="any")
+    def on_write_rate_any(self, value, ctx):
+        self.target_cycle_time = 1 / (value if value != 0 else 1)
