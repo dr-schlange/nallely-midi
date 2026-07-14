@@ -52,7 +52,7 @@ class ScannedString(VirtualDevice):
     inputs:
     * stiffness_cv [0.0, 1.0] init=0.1 <any>: spring coupling constant k
     * damping_cv [0.0, 1.0] init=0.01 <any>: energy loss d
-    * mass_cv [0.0, 2.0] init=0.5 <any>: element's mass
+    * mass_cv [0.0, 2.0] init=1 <any>: element's mass
     * restoring_cv [0, 1] init=0.01 <any>: spring constant to earth
     * model_mode_cv [FILL, STREAM, FREEZE]: freeze model parameters
     * hammer_cv [gauss, cos, triangle, square, free] <any>: hammer shape
@@ -80,9 +80,9 @@ class ScannedString(VirtualDevice):
     damping_cv = VirtualParameter(
         name="damping", range=(0.0, 1.0), default=0.01, stream=True
     )
-    mass_cv = VirtualParameter(name="mass", range=(0.0, 2.0), default=0.5, stream=True)
+    mass_cv = VirtualParameter(name="mass", range=(0.0, 2.0), default=1, stream=True)
     restoring_cv = VirtualParameter(
-        name="restoring", range=(0.0, 1.0), default=0.5, stream=True
+        name="restoring", range=(0.0, 1.0), default=0.01, stream=True
     )
     model_mode_cv = VirtualParameter(
         name="model_mode", accepted_values=["FILL", "STREAM", "FREEZE"]
@@ -164,11 +164,42 @@ class ScannedString(VirtualDevice):
         amp = self.excite_amp
         width = max(1, int(self.excite_width))
         N = self.N
-        inv_2w2 = 1.0 / (2.0 * width * width)
-        for i in range(N):
-            dist = min(abs(i - pos), N - abs(i - pos))
-            self.x_curr[i] += amp * math.exp(-dist * dist * inv_2w2)
-            self.x_curr[i] = max(-1.0, min(1.0, self.x_curr[i]))
+        hammer = self.hammer
+
+        if hammer == "gauss":
+            inv_2w2 = 1.0 / (2.0 * width * width)
+            for i in range(N):
+                dist = min(abs(i - pos), N - abs(i - pos))
+                self.x_curr[i] += amp * math.exp(-dist * dist * inv_2w2)
+                self.x_curr[i] = max(-1.0, min(1.0, self.x_curr[i]))
+        elif hammer == "cos":
+            for i in range(N):
+                dist = min(abs(i - pos), N - abs(i - pos))
+                if dist <= width:
+                    self.x_curr[i] += (
+                        amp * 0.5 * (1.0 + math.cos(math.pi * dist / width))
+                    )
+                    self.x_curr[i] = max(-1.0, min(1.0, self.x_curr[i]))
+        elif hammer == "triangle":
+            for i in range(N):
+                dist = min(abs(i - pos), N - abs(i - pos))
+                if dist <= width:
+                    self.x_curr[i] += amp * (1.0 - dist / width)
+                    self.x_curr[i] = max(-1.0, min(1.0, self.x_curr[i]))
+        elif hammer == "square":
+            half = width / 2.0
+            for i in range(N):
+                dist = min(abs(i - pos), N - abs(i - pos))
+                if dist <= half:
+                    self.x_curr[i] += amp
+                    self.x_curr[i] = max(-1.0, min(1.0, self.x_curr[i]))
+        elif hammer == "free":
+            for i in range(N):
+                dist = min(abs(i - pos), N - abs(i - pos))
+                if dist <= width:
+                    self.x_curr[i] += amp * self.ham_arr[(pos + dist) % N]
+                    self.x_curr[i] = max(-1.0, min(1.0, self.x_curr[i]))
+
         self.x_prev = list(self.x_curr)
 
     @on(excite_cv, edge="rising")
