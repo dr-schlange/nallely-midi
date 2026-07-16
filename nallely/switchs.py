@@ -463,7 +463,6 @@ class DownScaler(VirtualDevice):
     """
 
     input_cv = VirtualParameter(name="input", range=(0.0, 127.0), default=0.0)
-    in_cv = VirtualParameter(name="in", range=(0.0, 256.0), default=0.0)
     out1_cv = VirtualParameter(name="out1", range=(0.0, 127.0))
     out0_cv = VirtualParameter(name="out0", range=(0.0, 127.0))
 
