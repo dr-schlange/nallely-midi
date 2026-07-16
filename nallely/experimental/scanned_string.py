@@ -131,7 +131,7 @@ class ScannedString(VirtualDevice):
         self.m_arr = CircularBuffer(self.N, fill=0.5)
         self.ham_arr = CircularBuffer(self.N)
         self.pos = 0
-        self.target_cycle_time = 1 / 256
+        self.target_cycle_time = 1 / self.write_rate if self.write_rate else 256
         self.recompute = False
 
     def _physics_step(self):
