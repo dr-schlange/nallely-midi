@@ -4,6 +4,7 @@ from .maths import BarnsleyProjector, HenonProjector, LorenzProjector, Morton
 from .random_patchers import InstanceCreator, RandomPatcher
 from .routers import BroadcastRAM8
 from .scanned_string import ScannedString
+from .expneuron import CyberneticNeuron
 
 __all__ = [
     "InstanceCreator",
@@ -17,4 +18,5 @@ __all__ = [
     "BroadcastRAM8",
     "LISA",
     "ScannedString",
+    "CyberneticNeuron",
 ]
