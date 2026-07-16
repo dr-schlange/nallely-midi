@@ -68,14 +68,13 @@ class CyberneticNeuron(VirtualDevice):
         I_feedback = self.feedback_in * 20.0
         I_fatigue = self.fatigue_in * -25.0
         I_injected = I_base + I_feedback + I_fatigue
-        drift = (random.random() - 0.5) * self.noise * 5.0
 
+        drift = (random.random() - 0.5) * self.noise * 5.0
         I_total = I_injected + drift
 
         v_next = self.v + dt_ms * (
-            0.04 * (self.v**2) + 5.0 * self.v + 140.0 - self.u + I_total
+            0.04 * self.v**2 + 5.0 * self.v + 140.0 - self.u + I_total
         )
-
         self.u += dt_ms * self.a * (self.b * self.v - self.u)
         self.v = v_next
 
@@ -83,11 +82,12 @@ class CyberneticNeuron(VirtualDevice):
             self.v = self.c
             self.u += self.d
 
-        self.v = max(self.V_MIN - 5.0, min(self.V_MAX + 5.0, self.v))
+        self.v = max(-90.0, min(35.0, self.v))
 
         normalized_output = -1.0 + 2.0 * (self.v - self.V_MIN) / (
             self.V_MAX - self.V_MIN
         )
+
         return max(-1.0, min(1.0, normalized_output))
 
     @on(freq_cv, edge="any")
