@@ -78,7 +78,7 @@
         }
 
         const params = new URLSearchParams(window.location.search);
-        const nallelyOrigin = params.get("nallelyOrigin") || `${window.location.hostname}:6789`;
+        const nallelyOrigin = params.get("nallelyOrigin") || `ws://${window.location.hostname}:6789`;
 
         addressInput.value = nallelyOrigin;
         connectToAddress(addressInput.value);
