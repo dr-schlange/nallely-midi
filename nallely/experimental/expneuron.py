@@ -1,6 +1,6 @@
 """
 Experiment of modeling a neuron
-code 100% LLM generated for this PoC, will change in the future
+code 99% LLM generated for this PoC, will change in the future
 """
 
 import random
@@ -57,6 +57,7 @@ class CyberneticNeuron(VirtualDevice):
         self.target_cycle_time = (
             1 / self.freq if self.freq else self.freq_cv.parameter.default
         )
+        self.has_spiked = False
 
     def main(self, ctx):
         now = time.time()
@@ -86,10 +87,9 @@ class CyberneticNeuron(VirtualDevice):
             self.v = v_next
 
             if self.v >= self.V_MAX:
-                yield 1, [self.spike_out_cv]
+                self.has_spiked = True
                 self.v = self.c
                 self.u += self.d
-                yield 0, [self.spike_out_cv]
 
             acc_time -= step
 
@@ -98,6 +98,11 @@ class CyberneticNeuron(VirtualDevice):
         normalized_output = -1.0 + 2.0 * (self.v - self.V_MIN) / (
             self.V_MAX - self.V_MIN
         )
+        if self.has_spiked:
+            yield 1, [self.spike_out_cv]
+            self.has_spiked = False
+        else:
+            yield 0, [self.spike_out_cv]
         yield max(-1.0, min(1.0, normalized_output))
 
     @on(freq_cv, edge="any")
