@@ -78,17 +78,11 @@ class CyberneticNeuron(VirtualDevice):
         while acc_time > 0:
             step = min(sub_step, acc_time)
 
-            if self.feedback_in > 0.0:  # Reçoit la valeur de votre scaler
-                v_normalisee_positive = (self.v - self.V_MIN) / (
-                    self.V_MAX - self.V_MIN
-                )
-                self.I_feedback_decay += (
-                    step * self.feedback_in * max(0.0, v_normalisee_positive) * 15.0
-                )
+            self.I_feedback_decay *= 0.98  # Un peu plus lent pour résister à la latence
 
-            self.I_feedback_decay *= 0.95
-
-            I_total = I_base + I_fatigue + self.I_feedback_decay + drift
+            I_total = (
+                I_base + I_fatigue + (self.I_feedback_decay * self.feedback_in) + drift
+            )
 
             v_next = self.v + step * (
                 0.04 * self.v**2 + 5.0 * self.v + 140.0 - self.u + I_total
@@ -100,6 +94,7 @@ class CyberneticNeuron(VirtualDevice):
                 self.has_spiked = True
                 self.v = self.c
                 self.u += self.d
+                self.I_feedback_decay += 25.0
 
             acc_time -= step
 
