@@ -24,11 +24,12 @@ class CyberneticNeuron(VirtualDevice):
     * b_cv [0.05, 0.3] init=0.2: Recovery variable sensitivity to v
     * c_cv [-75.0, -50.0] init=-65.0: After-spike reset voltage
     * d_cv [0.05, 10.0] init=8.0: After-spike reset recovery value
-    * noise_cv [0.0, 1.0] init=0.05: Tiny continuous background drift
+    * noise_cv [0.0, 1.0] init=0.01: Tiny continuous background drift
     * freq_cv [512, 10000] init=1024 <any>: Refresh frequency
 
     outputs:
     * output_cv [-1.0, 1.0]: Continuous integrated voltage potential
+    * spike_out_cv [0.0, 1.0]: Sends a value when a spike occured
 
     type: hybrid
     category: cybernetic
@@ -43,9 +44,10 @@ class CyberneticNeuron(VirtualDevice):
     b_cv = VirtualParameter(name="b", range=(0.05, 0.3), default=0.2)
     c_cv = VirtualParameter(name="c", range=(-75.0, -50.0), default=-65.0)
     d_cv = VirtualParameter(name="d", range=(0.05, 10.0), default=8.0)
-    noise_cv = VirtualParameter(name="noise", range=(0.0, 1.0), default=0.05)
+    noise_cv = VirtualParameter(name="noise", range=(0.0, 1.0), default=0.01)
     freq_cv = VirtualParameter(name="freq", range=(512, 10000.0), default=1024.0)
     output_cv = VirtualParameter(name="output", range=(-1.0, 1.0))
+    spike_out_cv = VirtualParameter(name="spike_out", range=(0.0, 1.0))
 
     def __post_init__(self, **kwargs):
         self.V_MIN, self.V_MAX = (-70.0, 30.0)
@@ -84,8 +86,10 @@ class CyberneticNeuron(VirtualDevice):
             self.v = v_next
 
             if self.v >= self.V_MAX:
+                yield 1, [self.spike_out_cv]
                 self.v = self.c
                 self.u += self.d
+                yield 0, [self.spike_out_cv]
 
             acc_time -= step
 
@@ -94,7 +98,7 @@ class CyberneticNeuron(VirtualDevice):
         normalized_output = -1.0 + 2.0 * (self.v - self.V_MIN) / (
             self.V_MAX - self.V_MIN
         )
-        return max(-1.0, min(1.0, normalized_output))
+        yield max(-1.0, min(1.0, normalized_output))
 
     @on(freq_cv, edge="any")
     def on_freq_any(self, value, ctx):
