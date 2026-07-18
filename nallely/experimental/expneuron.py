@@ -1,8 +1,9 @@
 """
 Experiment of modeling a neuron
-code 99% LLM generated for this PoC, will change in the future
+code 100% LLM generated for this PoC, will change in the future
 """
 
+import math
 import random
 import time
 
@@ -59,36 +60,35 @@ class CyberneticNeuron(VirtualDevice):
         )
         self.has_spiked = False
         self.I_feedback_decay = 0.0
+        self.tau_feedback = 25.0
+        self._time_acc = 0.0
 
     def main(self, ctx):
         now = time.time()
         dt = now - self.last_time
         self.last_time = now
-
-        dt_ms = dt * 1000.0
-        dt_ms = min(dt_ms, 30.0)
+        dt_ms = min(dt * 1000.0, 30.0)
 
         I_base = self.input * 15.0
         I_fatigue = self.fatigue_in * -25.0
         drift = (random.random() - 0.5) * self.noise * 5.0
 
-        sub_step = 0.5
-        acc_time = dt_ms
+        self._time_acc += dt_ms
+        MS_STEP = 1.0
 
-        while acc_time > 0:
-            step = min(sub_step, acc_time)
-
-            self.I_feedback_decay *= 0.98  # Un peu plus lent pour résister à la latence
+        while self._time_acc >= MS_STEP:
+            self.I_feedback_decay *= math.exp(-MS_STEP / self.tau_feedback)
 
             I_total = (
                 I_base + I_fatigue + (self.I_feedback_decay * self.feedback_in) + drift
             )
 
-            v_next = self.v + step * (
-                0.04 * self.v**2 + 5.0 * self.v + 140.0 - self.u + I_total
-            )
-            self.u += step * self.a * (self.b * self.v - self.u)
-            self.v = v_next
+            self.v += 0.5 * (0.04 * self.v**2 + 5.0 * self.v + 140.0 - self.u + I_total)
+            self.v = max(-90.0, min(35.0, self.v))
+            self.v += 0.5 * (0.04 * self.v**2 + 5.0 * self.v + 140.0 - self.u + I_total)
+            self.v = max(-90.0, min(35.0, self.v))
+
+            self.u += self.a * (self.b * self.v - self.u)
 
             if self.v >= self.V_MAX:
                 self.has_spiked = True
@@ -96,7 +96,7 @@ class CyberneticNeuron(VirtualDevice):
                 self.u += self.d
                 self.I_feedback_decay += 25.0
 
-            acc_time -= step
+            self._time_acc -= MS_STEP
 
         self.v = max(-90.0, min(35.0, self.v))
 
