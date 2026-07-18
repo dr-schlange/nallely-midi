@@ -21,7 +21,7 @@ class CyberneticNeuron(VirtualDevice):
 
     inputs:
     * preset_cv [RS, IB, CH, FS, LTS, RZ] <any>: Neuron common profiles
-    * input_cv [-1.0, 1.0] init=0.0: Raw incoming signal (sensors, webcam, or other nodes)
+    * input_cv [0.0, 1.0] init=0.0: Raw incoming signal (sensors, webcam, or other nodes)
     * input_gain_cv [0.0, 30.0] init=15.0: Input gain
     * feedback_gain_cv [0.0, 50.0] init=25.0: Feedback gain
     * fatigue_gain_cv [-50.0, 0.0] init=-25.0: Fatigue gain
@@ -45,7 +45,7 @@ class CyberneticNeuron(VirtualDevice):
     preset_cv = VirtualParameter(
         name="preset", accepted_values=["RS", "IB", "CH", "FS", "LTS", "RZ"]
     )
-    input_cv = VirtualParameter(name="input", range=(-1.0, 1.0), default=0.0)
+    input_cv = VirtualParameter(name="input", range=(0.0, 1.0), default=0.0)
     input_gain_cv = VirtualParameter(name="input_gain", range=(0.0, 30.0), default=15.0)
     feedback_gain_cv = VirtualParameter(
         name="feedback_gain", range=(0.0, 50.0), default=25.0
