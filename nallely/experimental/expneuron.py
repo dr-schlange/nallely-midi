@@ -31,7 +31,7 @@ class CyberneticNeuron(VirtualDevice):
     * b_cv [0.05, 0.3] init=0.2: Recovery variable sensitivity to v
     * c_cv [-75.0, -50.0] init=-65.0: After-spike reset voltage
     * d_cv [0.05, 10.0] init=8.0: After-spike reset recovery value
-    * noise_cv [0.0, 1.0] init=0.01: Tiny continuous background drift
+    * noise_cv [0.0, 1.0] init=0.0: Tiny continuous background drift
     * freq_cv [512, 10000] init=1024 <any>: Refresh frequency
 
     outputs:
@@ -61,7 +61,7 @@ class CyberneticNeuron(VirtualDevice):
     b_cv = VirtualParameter(name="b", range=(0.05, 0.3), default=0.2)
     c_cv = VirtualParameter(name="c", range=(-75.0, -50.0), default=-65.0)
     d_cv = VirtualParameter(name="d", range=(0.05, 10.0), default=8.0)
-    noise_cv = VirtualParameter(name="noise", range=(0.0, 1.0), default=0.01)
+    noise_cv = VirtualParameter(name="noise", range=(0.0, 1.0), default=0.0)
     freq_cv = VirtualParameter(name="freq", range=(512.0, 10000.0), default=1024.0)
     output_cv = VirtualParameter(name="output", range=(-1.0, 1.0))
     spike_out_cv = VirtualParameter(name="spike_out", range=(0.0, 1.0))
