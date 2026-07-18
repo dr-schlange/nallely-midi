@@ -1,6 +1,6 @@
 """
 Experiment of modeling a neuron
-code 100% LLM generated for this PoC, will change in the future
+code 99% LLM generated for this PoC, will change in the future
 """
 
 import math
@@ -11,7 +11,7 @@ from nallely import VirtualDevice, VirtualParameter, on
 from nallely.codegen import gencode
 
 
-@gencode(keep_decorator=True)
+# @gencode(keep_decorator=True)
 class CyberneticNeuron(VirtualDevice):
     """Cybernetic Non-Linear Integrator with Patchable Avalanche and Fatigue
 
@@ -20,6 +20,7 @@ class CyberneticNeuron(VirtualDevice):
     internally (self-patch) or externally (from other neurons/sensors).
 
     inputs:
+    * preset_cv [RS, IB, CH, FS, LTS, RZ] <any>: Neuron common profiles
     * input_cv [-1.0, 1.0] init=0.0: Raw incoming signal (sensors, webcam, or other nodes)
     * input_gain_cv [0.0, 30.0] init=15.0: Input gain
     * feedback_gain_cv [0.0, 50.0] init=25.0: Feedback gain
@@ -41,6 +42,9 @@ class CyberneticNeuron(VirtualDevice):
     category: cybernetic
     """
 
+    preset_cv = VirtualParameter(
+        name="preset", accepted_values=["RS", "IB", "CH", "FS", "LTS", "RZ"]
+    )
     input_cv = VirtualParameter(name="input", range=(-1.0, 1.0), default=0.0)
     input_gain_cv = VirtualParameter(name="input_gain", range=(0.0, 30.0), default=15.0)
     feedback_gain_cv = VirtualParameter(
@@ -61,6 +65,15 @@ class CyberneticNeuron(VirtualDevice):
     freq_cv = VirtualParameter(name="freq", range=(512.0, 10000.0), default=1024.0)
     output_cv = VirtualParameter(name="output", range=(-1.0, 1.0))
     spike_out_cv = VirtualParameter(name="spike_out", range=(0.0, 1.0))
+
+    PRESET = {
+        "RS": (0.02, 0.2, -65, 8, 5.68),
+        "IB": (0.02, 0.20, -55, 4, 5.68),
+        "CH": (0.02, 0.20, -50, 2, 5.21),
+        "FS": (0.10, 0.20, -65, 2, 5.86),
+        "LTS": (0.02, 0.25, -65, 2, 1),
+        "RZ": (0.10, 0.26, -65, 2, 0.29),
+    }
 
     def __post_init__(self, **kwargs):
         self.V_MIN, self.V_MAX = (-70.0, 30.0)
@@ -115,3 +128,7 @@ class CyberneticNeuron(VirtualDevice):
     @on(freq_cv, edge="any")
     def on_freq_any(self, value, ctx):
         self.target_cycle_time = 1 / value if value != 0 else 0.5
+
+    @on(preset_cv, edge="any")
+    def on_preset_any(self, value, ctx):
+        self.a, self.b, self.c, self.d, self.input_gain = self.PRESET[value]
