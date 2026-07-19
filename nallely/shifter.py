@@ -78,7 +78,7 @@ class Modulo(VirtualDevice):
 
 
 class Arpegiator(VirtualDevice):
-    input_cv = VirtualParameter("input", range=(24, 108))
+    input_cv = VirtualParameter("input", range=(0, 127))
     bpm_cv = VirtualParameter("bpm", range=(20, 600))
     direction_cv = VirtualParameter(
         "direction", accepted_values=("free", "up", "down", "up-down", "random")
@@ -87,7 +87,7 @@ class Arpegiator(VirtualDevice):
 
     @property
     def range(self):
-        return 24, 108
+        return 0, 127
 
     def __init__(self, **kwargs):
         self.input = None
