@@ -373,8 +373,8 @@ class Crossfade(VirtualDevice):
     in3_cv = VirtualParameter(name="in3", range=(-1.0, 1.0))
     level_cv = VirtualParameter(name="level", range=(0.0, 100.0), default=50.0)
     type_cv = VirtualParameter(name="type", accepted_values=["ondemand", "continuous"])
-    out0_cv = VirtualParameter(name="out0", range=(-1.0, 1.0))
     out1_cv = VirtualParameter(name="out1", range=(-1.0, 1.0))
+    out0_cv = VirtualParameter(name="out0", range=(-1.0, 1.0))
 
     def __post_init__(self, **kwargs):
         return {"disable_output": True}
