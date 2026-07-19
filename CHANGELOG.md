@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## Nallely v0.6.1 -- Tepezcohuite
+
+### Fixes
+
+* Modules/neurons which are suspended (call to `self.sleep()`) now ignore input while in this state: the values are not put in the queue, instead they are dropped. This makes kind of sense as otherwise, it means that the modules has to deal with "past" especially if it slepts a lot.
+* When queue pressure is > 80% drops temporarily 100 messages
+
+
 ## Nallely v0.6.0 -- Tepezcohuite
 
 ### Features

@@ -261,6 +261,7 @@ class VirtualDevice(threading.Thread):
         self._param_last_values = {}
         self._internal_conversion_setup()
         self.observers = []
+        self._suspended = False
         if autoconnect:
             self.start()
 
@@ -380,7 +381,12 @@ class VirtualDevice(threading.Thread):
             self.to_update.send_update()  # type: ignore -> to_update is set by the trevor bus dynamically
 
     def set_parameter(self, param: str, value: Any, ctx: ThreadContext | None = None):
-        if self.paused or not self.running or param in self.closed_ports:
+        if (
+            self.paused
+            or self._suspended
+            or not self.running
+            or param in self.closed_ports
+        ):
             return
         try:
             try:
@@ -395,7 +401,6 @@ class VirtualDevice(threading.Thread):
             print(
                 f"Warning: input_queue full for {self.uid()}[{param}] — dropping message {value}"
             )
-            # self.target_cycle_time = 0.001
 
     def store_input(self, param: str, value):
         setattr(self, param, value)
@@ -416,8 +421,10 @@ class VirtualDevice(threading.Thread):
                 time.sleep(remaining / 2)
             else:
                 time.sleep(0)
+            self._suspended = True
             yield "__suspend__"
 
+        self._suspended = False
         yield
 
     def run(self):
@@ -501,11 +508,14 @@ class VirtualDevice(threading.Thread):
                 changed = set()
                 inner_ctx = {}
                 for param, input_queue in list(self.input_queues.items()):
+                    queue_warning_limit = input_queue.maxsize * 0.8
                     # Process a batch of inputs per cycle (to avoid backlog)
-                    max_batch_size = 10  # Maximum number of items to process per cycle
+                    max_batch_size = 20  # Maximum number of items to process per cycle
                     queue_level = input_queue.qsize()
                     # We adjust the batch size dynamically based on queue pressure
                     batch_size = min(max_batch_size, max(1, int(queue_level / 100)))
+                    if queue_level > queue_warning_limit:
+                        batch_size = 100
                     for _ in range(batch_size):
                         try:
                             value, previous, inner_ctx = input_queue.get_nowait()
@@ -518,9 +528,9 @@ class VirtualDevice(threading.Thread):
 
                     # Log queue pressure
                     queue_level = input_queue.qsize()
-                    if queue_level > input_queue.maxsize * 0.8:
+                    if queue_level > queue_warning_limit:
                         print(
-                            f"[{self.uid()}] Queue usage: {queue_level}/{input_queue.maxsize}"
+                            f"[{self.uid()}] Queue {param} usage: {queue_level}/{input_queue.maxsize}"
                         )
 
                 # Run main processing and output
