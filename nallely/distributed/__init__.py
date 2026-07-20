@@ -27,7 +27,7 @@ NAMES = [
 @lru_cache()
 def name_me(ip: str | None = None):
     ip = get_my_ip() if ip is None else ip
-    last = int(ip.split(".")[-1])  # type: ignore we know ip cannot be None here
+    last = int(ip.split(".")[-1])
     mixed = (last * 7) % 256  # Add multiplier to help spread
     return NAMES[mixed % len(NAMES)]
 

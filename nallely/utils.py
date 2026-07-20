@@ -303,14 +303,14 @@ PORTS = [6788]
 
 
 @lru_cache()
-def get_my_ip():
+def get_my_ip() -> str:
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
         s.connect(("8.8.8.8", 80))
         ip = s.getsockname()[0]
         return ip
     except Exception:
-        return None
+        return "1.1.1.1"
     finally:
         s.close()
 
