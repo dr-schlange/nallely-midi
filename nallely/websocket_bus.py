@@ -313,6 +313,17 @@ class WebSocketBus(VirtualDevice):
                 delattr(self.__class__, key)
         super().stop(clear_queues)
 
+    def store_input(self, param: str, value):
+        cv_name = f"{param}_cv"
+        vparam = self.__class__.__dict__.get(cv_name)
+        if vparam and isinstance(vparam, VirtualParameter) and vparam.consumer:
+            try:
+                self.receiving(float(value), param, ThreadContext())
+            except Exception as e:
+                print(f"[{self.NAME}] store_input receiving error for {param}: {e}")
+            return
+        super().store_input(param, value)
+
     def receiving(self, value, on, ctx: ThreadContext):
         if math.isnan(value):
             import sys
@@ -394,6 +405,8 @@ class WebSocketBus(VirtualDevice):
             if waiting_room and isinstance(waiting_room, WaitingRoom):
                 del self.__dict__[cv_name]
                 waiting_room.rebind(self)
+            if param_name not in self.__dict__:
+                object.__setattr__(self, param_name, None)
         return virtual_parameters
 
     def add_ports_to_remote_device(self, name, parameters: list[str | dict[str, Any]]):
