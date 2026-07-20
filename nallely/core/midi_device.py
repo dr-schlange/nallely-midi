@@ -1,4 +1,5 @@
 import json
+import threading
 import traceback
 from collections import defaultdict
 from dataclasses import InitVar, asdict, dataclass, field
@@ -411,8 +412,8 @@ class DeviceState:
         return l
 
 
-@dataclass
-class MidiDevice:
+@dataclass(eq=False)
+class MidiDevice(threading.Thread):
     device_name: str
     uuid: int = 0
     modules_descr: dict[str, Type[Module]] | None = None
@@ -461,6 +462,18 @@ class MidiDevice:
             connected = self.try_connection(read_input_only)
             if not connected:
                 raise DeviceNotFound(self.device_name)
+        self.start()
+
+    def start(self):
+        self._running = True
+        super().__init__()
+        super().start()
+
+    def run(self):
+        import time
+
+        while self._running:
+            time.sleep(1 / 20)
 
     def try_connection(self, read_input_only=False):
         try:
@@ -568,6 +581,7 @@ class MidiDevice:
         )
 
     def close(self, delete=True):
+        self._running = False
         self.all_notes_off()
         self.close_in()
         self.close_out()

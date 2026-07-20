@@ -1,6 +1,10 @@
 # CHANGELOG
 
-## Nallely v0.6.1 -- Tepezcohuite
+## Nallely v0.7.0 -- Tepezcohuite
+
+### Features
+
+* Midi devices have now their own parent thread
 
 ### Fixes
 
