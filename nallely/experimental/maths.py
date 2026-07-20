@@ -757,7 +757,7 @@ class Integrator(VirtualDevice):
 
     @property
     def range(self):
-        if self.limits == "-1..1":
+        if self.limits == "-1..1" or self.limits == "leakage":
             self.input_cv.parameter.range = (-1.0, 1.0)
             return (-1.0, 1.0)
         self.input_cv.parameter.range = (None, None)
@@ -775,7 +775,7 @@ class Integrator(VirtualDevice):
             decay_factor = math.exp(-self.leakage_factor * dt)
             self.value *= decay_factor
         self.value += self.input * self.gain * dt
-        if self.limits == "-1..1":
+        if self.limits == "-1..1" or self.limits == "leakage":
             self.value = max(-1.0, min(1.0, self.value))
         yield self.value
 
