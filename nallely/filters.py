@@ -337,7 +337,7 @@ class Mixer(VirtualDevice):
             return self.process()
 
     def process(self):
-        nums = self.nums  # type: ignore
+        nums = int(self.nums)  # type: ignore
         inputs = (getattr(self, f"in{i}") for i in range(nums))
         levels = (getattr(self, f"level{i}") / 100.0 for i in range(nums))
         return (1 / nums) * sum(w * x for w, x in zip(levels, inputs))
