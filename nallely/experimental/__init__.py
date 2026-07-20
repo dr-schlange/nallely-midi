@@ -1,5 +1,5 @@
 from .delays import ConveyorLine, Delay
-from .expneuron import CyberneticNeuron
+from .expneuron import CyberneticNeuron, CyberneticSynapse
 from .hardware_integration import LISA
 from .maths import BarnsleyProjector, HenonProjector, LorenzProjector, Morton
 from .random_patchers import InstanceCreator, RandomPatcher
@@ -19,4 +19,5 @@ __all__ = [
     "LISA",
     "ScannedString",
     "CyberneticNeuron",
+    "CyberneticSynapse",
 ]

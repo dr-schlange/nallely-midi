@@ -1,6 +1,6 @@
 """
 Experiment of modeling a neuron
-code 99% LLM generated for this PoC, will change in the future
+code 99% LLM generated for this PoC (except synapse, 100% hand coded), will change in the future
 """
 
 import math
@@ -11,7 +11,6 @@ from nallely import VirtualDevice, VirtualParameter, on
 from nallely.codegen import gencode
 
 
-# @gencode(keep_decorator=True)
 class CyberneticNeuron(VirtualDevice):
     """Cybernetic Non-Linear Integrator with Patchable Avalanche and Fatigue
 
@@ -65,14 +64,13 @@ class CyberneticNeuron(VirtualDevice):
     freq_cv = VirtualParameter(name="freq", range=(512.0, 10000.0), default=1024.0)
     output_cv = VirtualParameter(name="output", range=(-1.0, 1.0))
     spike_out_cv = VirtualParameter(name="spike_out", range=(0.0, 1.0))
-
     PRESET = {
         "RS": (0.02, 0.2, -65, 8, 5.68),
-        "IB": (0.02, 0.20, -55, 4, 5.68),
-        "CH": (0.02, 0.20, -50, 2, 5.21),
-        "FS": (0.10, 0.20, -65, 2, 5.86),
+        "IB": (0.02, 0.2, -55, 4, 5.68),
+        "CH": (0.02, 0.2, -50, 2, 5.21),
+        "FS": (0.1, 0.2, -65, 2, 5.86),
         "LTS": (0.02, 0.25, -65, 2, 1),
-        "RZ": (0.10, 0.26, -65, 2, 0.29),
+        "RZ": (0.1, 0.26, -65, 2, 0.29),
     }
 
     def __post_init__(self, **kwargs):
@@ -132,3 +130,41 @@ class CyberneticNeuron(VirtualDevice):
     @on(preset_cv, edge="any")
     def on_preset_any(self, value, ctx):
         self.a, self.b, self.c, self.d, self.input_gain = self.PRESET[value]
+
+
+# @gencode(keep_decorator=True)
+class CyberneticSynapse(VirtualDevice):
+    """Cybernetic Synapse, the best module to connect a cybernetic neuron to another
+
+    A generalized cybernetic actor synapse. It integrates on spike inputs
+
+    inputs:
+    * spike_in_cv [0.0, 1.0]: Incoming spike
+    * weight_cv [-1.0, 1.0] init=0.0: Synaptic weight
+    * tau_cv [1.0, 5000.0] init=10.0: Leak time (in ms)
+
+    outputs:
+    * output_cv [-1.0, 1.0]: Continuous integrated voltage potential
+
+    type: hybrid
+    category: cybernetic
+    """
+
+    spike_in_cv = VirtualParameter(name="spike_in", range=(0.0, 1.0))
+    weight_cv = VirtualParameter(name="weight", range=(-1.0, 1.0), default=0.0)
+    tau_cv = VirtualParameter(name="tau", range=(1.0, 5000.0), default=10.0)
+    output_cv = VirtualParameter(name="output", range=(-1.0, 1.0))
+
+    def __post_init__(self, **kwargs):
+        self.s = 0.0
+        self.last_time = time.time()
+
+    def main(self, ctx):
+        now = time.time()
+        dt_ms = (now - self.last_time) * 1000.0
+        self.last_time = now
+
+        self.s += (-self.s / self.tau + self.weight * self.spike_in) * dt_ms
+        self.s = max(-1.0, min(1.0, self.s))
+
+        return self.s

@@ -6,6 +6,7 @@
 
 * Midi devices have now their own parent thread
 * Add stronger log conversion and new asinh conversion
+* Add cybernetic neurone and synapse as new modules
 
 ### Fixes
 
