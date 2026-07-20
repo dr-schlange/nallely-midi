@@ -1,6 +1,7 @@
 import math
 from dataclasses import dataclass
 from decimal import Decimal
+from math import asinh, sinh
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -42,7 +43,7 @@ class Scaler:
         return Link.create(self, target)
 
     @staticmethod
-    def lin_conversion(value, from_min, from_max, to_min, to_max):
+    def lin_conversion(value, from_min, from_max, to_min, to_max, **_):
         if from_min is not None and value < from_min:
             value = from_min
         elif from_max is not None and value > from_max:
@@ -83,29 +84,32 @@ class Scaler:
                 print(f"No match: {from_min}, {from_max}, {to_min}, {to_max}")
                 return float(value)
 
-    def convert_lin(self, value, from_min, from_max):
+    def convert_lin(self, value, from_min, from_max, **_):
         return self.lin_conversion(value, from_min, from_max, self.to_min, self.to_max)
 
     @staticmethod
-    def log_conversion(value, from_max, to_min, to_max) -> int | float:
-        if to_min is None or to_max is None:
-            print("Logarithmic scaling requires both min and max to be defined.")
-            return value
+    def log_conversion(value, from_min, from_max, to_min, to_max, k) -> int | float:
+        if to_min is None:
+            to_min = from_min
+        if to_max is None:
+            to_max = from_max
+        if from_min == from_max:
+            return to_min
+        xmin = math.asinh(from_min * k)
+        xmax = math.asinh(from_max * k)
+        ymin = math.asinh(to_min * k)
+        ymax = math.asinh(to_max * k)
 
-        if value < 0:
-            print(f"Logarithmic scaling is undefined for non-positive values {value}.")
-            return value
+        x = math.asinh(value * k)
+        t = (x - xmin) / (xmax - xmin)
+        y = ymin + t * (ymax - ymin)
 
-        if to_min == 0:
-            to_min = 0.001
+        return math.sinh(y) / k
 
-        log_min = math.log(to_min)
-        log_max = math.log(to_max)
-
-        return math.exp(log_min + (value / from_max) * (log_max - log_min))
-
-    def convert_log(self, value, from_max) -> int | float:
-        return self.log_conversion(value, from_max, self.to_min, self.to_max)
+    def convert_log(self, value, from_min, from_max, k) -> int | float:
+        return self.log_conversion(
+            value, from_min, from_max, self.to_min, self.to_max, k
+        )
 
     def convert(self, value):
         from .parameter_instances import Int
@@ -118,17 +122,24 @@ class Scaler:
         )
         if isinstance(value, Decimal):
             value = float(value)
-        if self.method == "lin":
-            res = self.convert_lin(value, from_min=from_min, from_max=from_max)
-        elif self.method == "log":
-            res = self.convert_log(value, from_max=from_max)
-        else:
-            raise Exception("Unknown conversion method")
+
+        try:
+            conv, k = self._CONV[self.method]
+        except KeyError:
+            raise Exception(f"Unknown conversion method {self.method}")
+
+        res = conv(self, value, from_min=from_min, from_max=from_max, k=k)
         res = int(res) if self.as_int else res
         if isinstance(value, Int):
             value.update(res)
             return value
         return res
+
+    _CONV = {
+        "lin": (convert_lin, None),
+        "log": (convert_log, 100),
+        "asinh": (convert_log, 10),
+    }
 
     def __call__(self, value, *args, **kwargs):
         return self.convert(value)

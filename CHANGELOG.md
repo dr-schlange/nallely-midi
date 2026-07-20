@@ -5,6 +5,7 @@
 ### Features
 
 * Midi devices have now their own parent thread
+* Add stronger log conversion and new asinh conversion
 
 ### Fixes
 
