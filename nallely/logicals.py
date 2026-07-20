@@ -136,30 +136,17 @@ class Operator(VirtualDevice):
     type_cv = VirtualParameter(name="type", accepted_values=["ondemand", "continuous"])
     output_cv = VirtualParameter(name="output", range=(-8192.0, 8192.0))
 
-    @property
-    def min_range(self):
-        return None
-
-    @property
-    def max_range(self):
-        return None
-
     operator_map = {
         "+": lambda a, b: a + b,
         "-": lambda a, b: a - b,
         "*": lambda a, b: a * b,
-        "/": lambda a, b: a / b,
+        "/": lambda a, b: a / b if b != 0 else 0.0001,
         "mod": lambda a, b: a % b,
         "min": lambda a, b: a if a < b else b,
         "max": lambda a, b: a if a > b else b,
         "clamp": lambda a, b: max(min(a, b), 0),
         "pow": lambda a, b: a**b,
     }
-
-    def store_input(self, param, value):
-        if param == "b" and self.operator == "/" and (value == 0):
-            value = 0.0001
-        super().store_input(param, value)
 
     def __init__(self, a=0, b=0, operator="+", type="ondemand", **kwargs):
         self.a = a
