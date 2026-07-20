@@ -132,7 +132,7 @@ class ModuleParameter:
         self,
         min: int | float | None = None,
         max: int | float | None = None,
-        method: Literal["lin", "log"] = "lin",
+        method: Literal["lin", "log", "asinh"] = "lin",
         as_int: bool = False,
     ): ...
 
