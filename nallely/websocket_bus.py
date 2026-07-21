@@ -94,7 +94,7 @@ class WaitingRoom:
         self,
         min: int | float | None = None,
         max: int | float | None = None,
-        method: Literal["lin", "log", "asinh"] = "lin",
+        method: Literal["lin", "log", "asinh", "pow"] = "lin",
         as_int: bool = False,
     ):
         out_entry = NetOutputEntry([min, max, method, as_int], None)

@@ -40,7 +40,7 @@ class ParameterInstance:
         self,
         min: int | float | None = None,
         max: int | float | None = None,
-        method: Literal["lin", "log", "asinh"] = "lin",
+        method: Literal["lin", "log", "asinh", "pow"] = "lin",
         as_int: bool = False,
     ):
         return Scaler(
@@ -122,7 +122,7 @@ class Int(int):
         self,
         min: int | float | None = None,
         max: int | float | None = None,
-        method: Literal["lin", "log", "asinh"] = "lin",
+        method: Literal["lin", "log", "asinh", "pow"] = "lin",
         as_int: bool = False,
     ):
         return Scaler(
@@ -255,7 +255,7 @@ class PadsOrKeysInstance:
         self,
         min: int | float | None = None,
         max: int | float | None = None,
-        method: Literal["lin", "log", "asinh"] = "lin",
+        method: Literal["lin", "log", "asinh", "pow"] = "lin",
         as_int: bool = False,
     ):
         return Scaler(
@@ -308,7 +308,7 @@ class PitchwheelInstance:
         self,
         min: int | float | None = None,
         max: int | float | None = None,
-        method: Literal["lin", "log", "asinh"] = "lin",
+        method: Literal["lin", "log", "asinh", "pow"] = "lin",
         as_int: bool = False,
     ):
         return Scaler(
@@ -447,7 +447,7 @@ class PadOrKey:
         self,
         min: int | float | None = None,
         max: int | float | None = None,
-        method: Literal["lin", "log", "asinh"] = "lin",
+        method: Literal["lin", "log", "asinh", "pow"] = "lin",
         as_int: bool = False,
     ):
         return Scaler(

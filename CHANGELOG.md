@@ -5,7 +5,7 @@
 ### Features
 
 * Midi devices have now their own parent thread
-* Add stronger log conversion and new asinh conversion
+* Add stronger log conversion, and new asinh and exp conversion
 * Add cybernetic neurone and synapse as new modules
 
 ### Fixes

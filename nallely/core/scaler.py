@@ -95,19 +95,31 @@ class Scaler:
             to_max = from_max
         if from_min == from_max:
             return to_min
-        xmin = math.asinh(from_min * k)
-        xmax = math.asinh(from_max * k)
-        ymin = math.asinh(to_min * k)
-        ymax = math.asinh(to_max * k)
-
-        x = math.asinh(value * k)
-        t = (x - xmin) / (xmax - xmin)
-        y = ymin + t * (ymax - ymin)
-
-        return math.sinh(y) / k
+        span = from_max - from_min
+        t = max(0.0, min(1.0, (value - from_min) / span))
+        t_log = math.asinh(t * k) / math.asinh(k)
+        return to_min + t_log * (to_max - to_min)
 
     def convert_log(self, value, from_min, from_max, k) -> int | float:
         return self.log_conversion(
+            value, from_min, from_max, self.to_min, self.to_max, k
+        )
+
+    @staticmethod
+    def pow_conversion(value, from_min, from_max, to_min, to_max, k) -> int | float:
+        if to_min is None:
+            to_min = from_min
+        if to_max is None:
+            to_max = from_max
+        if from_min == from_max:
+            return to_min
+        span = from_max - from_min
+        t = max(0.0, min(1.0, (value - from_min) / span))
+        t_pow = t**k
+        return to_min + t_pow * (to_max - to_min)
+
+    def convert_pow(self, value, from_min, from_max, k) -> int | float:
+        return self.pow_conversion(
             value, from_min, from_max, self.to_min, self.to_max, k
         )
 
@@ -139,6 +151,7 @@ class Scaler:
         "lin": (convert_lin, None),
         "log": (convert_log, 100),
         "asinh": (convert_log, 10),
+        "pow": (convert_pow, 2.0),
     }
 
     def __call__(self, value, *args, **kwargs):
