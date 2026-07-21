@@ -40,13 +40,21 @@ const Modal = ({ onClose, onCancel, children, header }: ModalProps) => {
 					gap: "5px",
 				}}
 			>
-				<button type="button" className="close-button" onClick={onClose}>
-					Close
-				</button>
+				<Button
+					text="close"
+					tooltip="Close"
+					variant="big"
+					style={{ width: "auto", padding: "0 6px" }}
+					onClick={onClose}
+				/>
 				{header}
-				<button type="button" className="close-button" onClick={onCancel}>
-					Cancel
-				</button>
+				<Button
+					text="cancel"
+					tooltip="Cancel"
+					variant="big"
+					style={{ width: "auto", padding: "0 6px" }}
+					onClick={onCancel}
+				/>
 			</div>
 			<div
 				style={{

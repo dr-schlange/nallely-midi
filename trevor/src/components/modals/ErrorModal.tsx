@@ -1,5 +1,6 @@
 import { useTrevorDispatch } from "../../store";
 import { clearErrors } from "../../store/generalSlice";
+import { Button } from "../widgets/BaseComponents";
 
 interface ErrorModalProps {
 	errors: string[];
@@ -15,9 +16,13 @@ export const ErrorModal = ({ errors }: ErrorModalProps) => {
 	return (
 		<div className="error-modal">
 			<div className="modal-header">
-				<button type="button" className="close-button" onClick={onClose}>
-					Close
-				</button>
+				<Button
+					text="close"
+					tooltip="Close"
+					variant="big"
+					style={{ width: "auto", padding: "0 6px" }}
+					onClick={onClose}
+				/>
 			</div>
 			<div className="error-modal-body">
 				<h3>There was issue while loading your patch</h3>

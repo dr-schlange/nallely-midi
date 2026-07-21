@@ -2,6 +2,7 @@ import { useCallback, useEffect } from "react";
 import { useTrevorDispatch, useTrevorSelector } from "../../store";
 import { setWebsocketURL } from "../../store/generalSlice";
 import { useTrevorWebSocket } from "../../websockets/websocket";
+import { Button } from "../widgets/BaseComponents";
 
 interface FriendModalProps {
 	onClose: () => void;
@@ -67,13 +68,20 @@ export const FriendModal = ({ onClose }: FriendModalProps) => {
 	return (
 		<div className="about-modal">
 			<div className="modal-header">
-				<button type="button" className="close-button" onClick={onClose}>
-					Close
-				</button>
-
-				<button type="button" className="close-button" onClick={refresh}>
-					Refresh
-				</button>
+				<Button
+					text="close"
+					tooltip="Close"
+					variant="big"
+					style={{ width: "auto", padding: "0 6px" }}
+					onClick={onClose}
+				/>
+				<Button
+					text="refresh"
+					tooltip="Refresh"
+					variant="big"
+					style={{ width: "auto", padding: "0 6px" }}
+					onClick={refresh}
+				/>
 			</div>
 			<div
 				className="about-modal-body"

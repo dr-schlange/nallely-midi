@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Button } from "../widgets/BaseComponents";
 
 interface AboutModalProps {
 	onClose: () => void;
@@ -14,9 +15,13 @@ export const AboutModal = ({ onClose }: AboutModalProps) => {
 	return (
 		<div className="about-modal">
 			<div className="modal-header">
-				<button type="button" className="close-button" onClick={onClose}>
-					Close
-				</button>
+				<Button
+					text="close"
+					tooltip="Close"
+					variant="big"
+					style={{ width: "auto", padding: "0 6px" }}
+					onClick={onClose}
+				/>
 			</div>
 			<div className="about-modal-body">
 				{/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}

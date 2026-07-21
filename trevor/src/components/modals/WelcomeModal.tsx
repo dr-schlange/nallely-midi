@@ -1,5 +1,6 @@
 import { useTrevorDispatch, useTrevorSelector } from "../../store";
 import { disableFirstLaunch } from "../../store/generalSlice";
+import { Button } from "../widgets/BaseComponents";
 
 export const WelcomeModal = () => {
 	const dispatch = useTrevorDispatch();
@@ -14,9 +15,13 @@ export const WelcomeModal = () => {
 	return (
 		<div className="welcome-modal">
 			<div className="modal-header">
-				<button type="button" className="close-button" onClick={handleClose}>
-					OK
-				</button>
+				<Button
+					text="ok"
+					tooltip="Close"
+					variant="big"
+					style={{ width: "auto", padding: "0 6px" }}
+					onClick={handleClose}
+				/>
 			</div>
 			<div className="welcome-modal-body">
 				<h2>Welcome to Nallely and Trevor-UI</h2>

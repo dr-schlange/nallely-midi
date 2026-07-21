@@ -849,13 +849,12 @@ button.active {
 
 .modal-header,
 .modal-footer {
-	height: 40px; /* Fixed height for the header */
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
 	background-color: var(--rack-bg-color);
 	border-bottom: 2px solid #808080;
-	padding: 0 10px;
+	padding: 2px 10px;
 }
 
 .modal-footer {
@@ -1133,7 +1132,7 @@ button.active {
 	flex-direction: row;
 	align-items: center;
 	width: 100%;
-	gap: 10px;
+	/*gap: 10px;*/
 	justify-content: space-around;
 	overflow-x: clip;
 	box-sizing: border-box;
@@ -1146,7 +1145,7 @@ button.active {
 	flex-direction: row;
 	align-items: center;
 	width: 100%;
-	gap: 10px;
+	/*gap: 10px;*/
 	justify-content: space-around;
 	overflow-x: clip;
 	box-sizing: border-box;

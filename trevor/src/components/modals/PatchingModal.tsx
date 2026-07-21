@@ -35,6 +35,7 @@ import { MidiGrid } from "../MidiGrid";
 import { ScalerForm } from "../ScalerForm";
 import {
 	AcceptedValuesKnob,
+	Button,
 	CircularSlider,
 } from "../widgets/BaseComponents";
 
@@ -169,7 +170,10 @@ const PatcheableParameter = ({
 					onManualSliderChange={handleValueChange}
 					minValue={param.range[0]}
 					maxValue={param.range[1]}
-					rounded={false}
+					rounded={
+						!isVirtualDevice(section.device) ||
+						(param as VirtualParameter).conversion_policy !== null
+					}
 				/>
 			)}
 			<div
@@ -781,9 +785,20 @@ const PatchingModal = ({
 	return (
 		<div className="patching-modal" ref={modalRef}>
 			<div className="modal-header">
-				<button type="button" className="close-button" onClick={onClose}>
-					Close
-				</button>
+				<Button
+					text="close"
+					tooltip="Close"
+					variant="big"
+					style={{ width: "auto", padding: "0 6px" }}
+					onClick={onClose}
+				/>
+				<Button
+					text="refresh"
+					style={{ width: "auto", padding: "0 6px" }}
+					tooltip="Refresh current state"
+					variant="big"
+					onClick={() => websocket?.pullFullState()}
+				/>
 			</div>
 			<div className="modal-body patching">
 				<div

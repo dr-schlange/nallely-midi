@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTrevorDispatch, useTrevorSelector } from "../../store";
 import { setWebsocketURL } from "../../store/generalSlice";
+import { Button } from "../widgets/BaseComponents";
 
 interface SettingsModalProps {
 	onClose: () => void;
@@ -19,12 +20,20 @@ export const SettingsModal = ({ onClose }: SettingsModalProps) => {
 	return (
 		<div className="settings-modal">
 			<div className="modal-header">
-				<button type="button" className="close-button" onClick={onClose}>
-					Close
-				</button>
-				<button type="button" className="close-button" onClick={saveConfig}>
-					Apply
-				</button>
+				<Button
+					text="close"
+					tooltip="Close"
+					variant="big"
+					style={{ width: "auto", padding: "0 6px" }}
+					onClick={onClose}
+				/>
+				<Button
+					text="apply"
+					tooltip="Apply"
+					variant="big"
+					style={{ width: "auto", padding: "0 6px" }}
+					onClick={saveConfig}
+				/>
 			</div>
 			<div className="settings-modal-body">
 				<label
