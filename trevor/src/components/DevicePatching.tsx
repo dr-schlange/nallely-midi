@@ -31,13 +31,13 @@ import {
 	devUID,
 	isVirtualDevice,
 	rejectedClasses,
+	resolveAcceptedValueIndex,
 } from "../utils/utils";
 import { useTrevorWebSocket } from "../websockets/websocket";
 import DragNumberInput from "./DragInputs";
 import { AboutModal } from "./modals/AboutModal";
 import { MemoryModal } from "./modals/MemoryModal";
 import PatchingModal from "./modals/PatchingModal";
-// import { Playground } from "./modals/Playground";
 import { Portal } from "./Portal";
 import { RackRow } from "./RackRow";
 import { type RackRowCCRef, RackRowCCs } from "./RackRowCC";
@@ -338,15 +338,11 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 				"0";
 			if (parameter.accepted_values?.length > 0) {
 				const acceptedValues = parameter.accepted_values;
-				const nbAcceptedValues = acceptedValues.length;
 				const [, upper] = parameter.range;
-
-				const parsedValue = Number.parseInt(currentValue, 10);
-				const safeValue = Number.isNaN(parsedValue) ? 0 : parsedValue;
-				const bucketSize = Math.floor((upper + 1) / nbAcceptedValues);
-				const index = Math.min(
-					nbAcceptedValues - 1,
-					Math.floor((safeValue % (upper + 1)) / bucketSize),
+				const index = resolveAcceptedValueIndex(
+					currentValue,
+					acceptedValues,
+					upper,
 				);
 				const value = acceptedValues[index];
 				return (

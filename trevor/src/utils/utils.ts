@@ -358,3 +358,22 @@ export const extractCurrentIP = (fromURL = undefined) => {
 };
 
 export const rejectedClasses = ["TrevorBus", "WebSocketBus", "OSCBus"];
+
+export const resolveAcceptedValueIndex = (
+	value: number | string | undefined | null,
+	acceptedValues: (string | number | boolean)[],
+	upper: number,
+): number => {
+	const count = acceptedValues.length;
+	if (count === 0) return 0;
+	if (value === undefined || value === null) return 0;
+	const str = value.toString().trim();
+	const byLabel = acceptedValues.findIndex(
+		(av) => av.toString().trim() === str,
+	);
+	if (byLabel >= 0) return byLabel;
+	const parsed = Number.parseInt(str, 10);
+	const safe = Number.isNaN(parsed) ? 0 : parsed;
+	const bucketSize = Math.floor((upper + 1) / count);
+	return Math.min(count - 1, Math.floor((safe % (upper + 1)) / bucketSize));
+};

@@ -1,4 +1,5 @@
 /** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
+/** biome-ignore-all lint/a11y/useKeyWithClickEvents: <explanation> */
 import { createSelector } from "@reduxjs/toolkit";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
@@ -15,12 +16,10 @@ import type {
 } from "../../model";
 import { useTrevorSelector } from "../../store";
 import {
-	drawConnection,
 	drawCurvedConnection,
 	findConnectorElement,
 } from "../../utils/svgUtils";
 import {
-	buildConnectionName,
 	buildParameterId,
 	connectionId,
 	connectionsOfInterest,
@@ -34,7 +33,10 @@ import { MidiSectionDevice, VDevice } from "../VDevComponent";
 import { useTrevorWebSocket } from "../../websockets/websocket";
 import { MidiGrid } from "../MidiGrid";
 import { ScalerForm } from "../ScalerForm";
-import { Button, CircularSlider } from "../widgets/BaseComponents";
+import {
+	AcceptedValuesKnob,
+	CircularSlider,
+} from "../widgets/BaseComponents";
 
 const collectAllVirtualParameters = (device: VirtualDevice) => {
 	return device.meta.parameters.map((p) => parameterUUID(device.id, p));
@@ -62,7 +64,7 @@ const collectAllParameters = (device: MidiDevice | VirtualDevice) => {
 	return collectAllMidiParameters(device);
 };
 
-const getSectionParameters = (sectionWrapper, reverseOrder = false) => {
+const getSectionParameters = (sectionWrapper) => {
 	if (!sectionWrapper) {
 		return [];
 	}
@@ -76,9 +78,6 @@ const getSectionParameters = (sectionWrapper, reverseOrder = false) => {
 	if (mainOutputIndex !== -1) {
 		const output = params.splice(mainOutputIndex, 1);
 		params.push(...output);
-	}
-	if (reverseOrder) {
-		return [...params.reverse(), ...pitchwheels];
 	}
 	return [...params, ...pitchwheels];
 };
@@ -116,7 +115,7 @@ const PatcheableParameter = ({
 	reverse = false,
 	onClick,
 }: {
-	currentValue: number;
+	currentValue: string | number | undefined;
 	section: MidiDeviceWithSection | VirtualDeviceWithSection;
 	param: MidiParameter | VirtualParameter;
 	reverse?: boolean;
@@ -132,36 +131,47 @@ const PatcheableParameter = ({
 		(section.section as { pitchwheels?: { name: string }[] }).pitchwheels?.some(
 			(pw) => pw.name === param.name,
 		) ?? false;
+	const handleValueChange = (value: string | number) => {
+		if (param.section_name === "__virtual__") {
+			trevor?.setVirtualValue(
+				section.device as VirtualDevice,
+				param as VirtualParameter,
+				value,
+			);
+		} else {
+			trevor?.setParameterValue(
+				section.device.id,
+				param.section_name,
+				param.name,
+				value,
+			);
+		}
+	};
+
 	return (
 		<div className="patcheable-parameter">
-			{
-				<CircularSlider
+			{param.accepted_values?.length > 0 ? (
+				<AcceptedValuesKnob
 					param={param}
 					value={currentValue}
 					acronymeLimit={10}
 					labelPosition={reverse ? "bottom" : "top"}
 					disabled={isPitchwheel}
-					onManualSliderChange={(value) => {
-						if (param.section_name === "__virtual__") {
-							trevor?.setVirtualValue(
-								section.device as VirtualDevice,
-								param as VirtualParameter,
-								value,
-							);
-						} else {
-							trevor?.setParameterValue(
-								section.device.id,
-								param.section_name,
-								param.name,
-								value,
-							);
-						}
-					}}
+					onManualSliderChange={handleValueChange}
+				/>
+			) : (
+				<CircularSlider
+					param={param}
+					value={currentValue as number}
+					acronymeLimit={10}
+					labelPosition={reverse ? "bottom" : "top"}
+					disabled={isPitchwheel}
+					onManualSliderChange={handleValueChange}
 					minValue={param.range[0]}
 					maxValue={param.range[1]}
 					rounded={false}
 				/>
-			}
+			)}
 			<div
 				key={param.name}
 				className={`parameter-box ${selected ? "selected" : ""} ${occupied ? "occupied" : ""}`}
@@ -656,7 +666,7 @@ const PatchingModal = ({
 	);
 
 	const firstSectionParameters = useMemo(
-		() => getSectionParameters(currentFirstSection, true),
+		() => getSectionParameters(currentFirstSection),
 		[currentFirstSection],
 	);
 
