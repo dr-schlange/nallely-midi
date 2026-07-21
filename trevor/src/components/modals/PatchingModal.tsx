@@ -693,29 +693,74 @@ const PatchingModal = ({
 					}}
 				>
 					{allVirtualDeviceSection.map((vs) => (
-						<VDevice
+						<div
 							key={`${vs.device.id}`}
-							device={vs.device}
-							selected={currentSection.device.id === vs.device.id}
-							onClick={(_dev) => handleSelect(vs)}
-							onDoubleClick={(_dev) => {}}
-							debounceClick={false}
-							noPortIds={true}
-						/>
+							style={{
+								display: "flex",
+								flexDirection: "column",
+								alignItems: "center",
+								gap: "2px",
+							}}
+						>
+							<VDevice
+								device={vs.device}
+								selected={currentSection.device.id === vs.device.id}
+								onClick={(_dev) => handleSelect(vs)}
+								onDoubleClick={(_dev) => {}}
+								debounceClick={false}
+								noPortIds={true}
+							/>
+							<span
+								style={{
+									fontSize: "9px",
+									color: "gray",
+									maxWidth: "80px",
+									textAlign: "center",
+									overflow: "hidden",
+									textOverflow: "ellipsis",
+									whiteSpace: "nowrap",
+								}}
+							>
+								{vs.device.repr}
+							</span>
+						</div>
 					))}
 					{allMidiDeviceSection.map((ms) => (
-						<MidiSectionDevice
+						<div
 							key={`${ms.device.id}::${ms.section.name}`}
-							device={ms.device}
-							section={ms.section}
-							selected={
-								currentSection.device.id === ms.device.id &&
-								internalSectionName(currentSection.section) === ms.section.name
-							}
-							onClick={(_dev, _sec) => handleSelect(ms)}
-							debounceClick={false}
-							noPortIds={true}
-						/>
+							style={{
+								display: "flex",
+								flexDirection: "column",
+								alignItems: "center",
+								gap: "2px",
+							}}
+						>
+							<MidiSectionDevice
+								device={ms.device}
+								section={ms.section}
+								selected={
+									currentSection.device.id === ms.device.id &&
+									internalSectionName(currentSection.section) ===
+										ms.section.name
+								}
+								onClick={(_dev, _sec) => handleSelect(ms)}
+								debounceClick={false}
+								noPortIds={true}
+							/>
+							<span
+								style={{
+									fontSize: "9px",
+									color: "gray",
+									maxWidth: "80px",
+									textAlign: "center",
+									overflow: "hidden",
+									textOverflow: "ellipsis",
+									whiteSpace: "nowrap",
+								}}
+							>
+								{ms.device.repr}
+							</span>
+						</div>
 					))}
 				</div>
 			</details>
@@ -745,7 +790,20 @@ const PatchingModal = ({
 						<title>Connection diagram</title>
 					</svg>
 					<div className="left-panel">
-						<div className="top-left-panel" onScroll={updateConnections}>
+						<div
+							className="top-left-panel"
+							onScroll={updateConnections}
+							onClick={(e) => {
+								if (
+									!(e.target as Element).closest(".patcheable-parameter") &&
+									selectedParameters[0]?.device.id ===
+										currentFirstSection.device.id &&
+									selectedParameters[0]?.parameter.section_name ===
+										internalSectionName(currentFirstSection.section)
+								)
+									setSelectedParameters([]);
+							}}
+						>
 							<div ref={dropdownRef} style={{ width: "100%" }}>
 								{buildDropDown(currentFirstSection, setCurrentFirstSection)}
 							</div>
@@ -795,7 +853,20 @@ const PatchingModal = ({
 								})}
 							</div>
 						</div>
-						<div className="bottom-left-panel" onScroll={updateConnections}>
+						<div
+							className="bottom-left-panel"
+							onScroll={updateConnections}
+							onClick={(e) => {
+								if (
+									!(e.target as Element).closest(".patcheable-parameter") &&
+									selectedParameters[0]?.device.id ===
+										currentSecondSection.device.id &&
+									selectedParameters[0]?.parameter.section_name ===
+										internalSectionName(currentSecondSection.section)
+								)
+									setSelectedParameters([]);
+							}}
+						>
 							{buildDropDown(currentSecondSection, setCurrentSecondSection)}
 							<div
 								className="parameters-grid right"
@@ -851,15 +922,108 @@ const PatchingModal = ({
 							<ScalerForm connection={selectedConnectionInstance} />
 						) : (
 							<div className="parameter-info">
-								<h3>Parameter Info</h3>
-								{selectedParameters.length === 1 && (
-									<p>
-										{(selectedParameters[0].parameter as MidiParameter)?.name ||
-											(isPadsOrdKeys(selectedParameters[0].parameter) &&
-												`Section ${(selectedParameters[0].parameter as PadsOrKeys).section_name}`) ||
-											`Key/Pad ${(selectedParameters[0].parameter as PadOrKey).note}`}
-									</p>
-								)}
+								<h3>Existing connections</h3>
+								{selectedParameters.length === 1 &&
+									(() => {
+										const sel = selectedParameters[0];
+										const selUUID = parameterUUID(sel.device, sel.parameter);
+										const paramName =
+											(sel.parameter as MidiParameter)?.name ||
+											(isPadsOrdKeys(sel.parameter) &&
+												`Section ${(sel.parameter as PadsOrKeys).section_name}`) ||
+											`Key/Pad ${(sel.parameter as PadOrKey).note}`;
+										const sectionName =
+											sel.parameter.section_name !== "__virtual__"
+												? sel.parameter.section_name
+												: null;
+										const outgoing = allConnections.filter(
+											(c) =>
+												parameterUUID(c.src.device, c.src.parameter) ===
+												selUUID,
+										);
+										const incoming = allConnections.filter(
+											(c) =>
+												parameterUUID(c.dest.device, c.dest.parameter) ===
+												selUUID,
+										);
+										return (
+											<>
+												<p
+													style={{
+														margin: "4px 0",
+														fontWeight: "bold",
+														fontSize: "12px",
+													}}
+												>
+													{sel.device.repr}
+													{sectionName ? ` - ${sectionName}` : ""}
+													{" - "}
+													{paramName}
+												</p>
+												{outgoing.length > 0 && (
+													<>
+														<p
+															style={{
+																margin: "4px 0 2px",
+																fontSize: "11px",
+																color: "gray",
+															}}
+														>
+															→ output to:
+														</p>
+														<ul style={{ margin: 0, paddingLeft: "12px" }}>
+															{outgoing.map((c) => {
+																const p = c.dest.parameter;
+																const sec =
+																	p.section_name !== "__virtual__"
+																		? ` - ${p.section_name}`
+																		: "";
+																return (
+																	<li key={c.id} style={{ fontSize: "11px" }}>
+																		{c.dest.repr}
+																		{sec} - {p.name}
+																	</li>
+																);
+															})}
+														</ul>
+													</>
+												)}
+												{incoming.length > 0 && (
+													<>
+														<p
+															style={{
+																margin: "4px 0 2px",
+																fontSize: "11px",
+																color: "gray",
+															}}
+														>
+															← input from:
+														</p>
+														<ul style={{ margin: 0, paddingLeft: "12px" }}>
+															{incoming.map((c) => {
+																const p = c.src.parameter;
+																const sec =
+																	p.section_name !== "__virtual__"
+																		? ` - ${p.section_name}`
+																		: "";
+																return (
+																	<li key={c.id} style={{ fontSize: "11px" }}>
+																		{c.src.repr}
+																		{sec} - {p.name}
+																	</li>
+																);
+															})}
+														</ul>
+													</>
+												)}
+												{outgoing.length === 0 && incoming.length === 0 && (
+													<p style={{ fontSize: "11px", color: "gray" }}>
+														No connections
+													</p>
+												)}
+											</>
+										);
+									})()}
 							</div>
 						)}
 					</div>

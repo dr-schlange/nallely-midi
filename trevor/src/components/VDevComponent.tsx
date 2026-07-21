@@ -589,7 +589,7 @@ export const MidiSectionDevice = React.memo(
 		return (
 			<DeviceCard
 				deviceId={device.id}
-				deviceName={section.name}
+				deviceName={section.name.replace(/Section$/, "")}
 				parameters={section.parameters}
 				selected={selected}
 				borderColor={selected ? "gold" : "gray"}
