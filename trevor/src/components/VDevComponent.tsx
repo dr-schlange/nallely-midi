@@ -9,9 +9,15 @@ import React, {
 	useRef,
 	useState,
 } from "react";
-import type { MidiDevice, VirtualDevice, VirtualParameter } from "../model";
+import type {
+	MidiDevice,
+	MidiDeviceSection,
+	MidiParameter,
+	VirtualDevice,
+	VirtualParameter,
+} from "../model";
 import {
-	buildSectionId,
+	buildParameterId,
 	clamp,
 	devUID,
 	generateAcronym,
@@ -158,26 +164,21 @@ export const MiniRack = ({
 	);
 };
 
-interface VDeviceProps {
-	device: VirtualDevice;
-	onClick?: (device: VirtualDevice) => void;
-	onDoubleClick?: (device: VirtualDevice) => void;
-	onLongPress?: (device: VirtualDevice) => void;
-	onTouchStart?: (device: VirtualDevice) => void;
-	selected?: boolean;
-}
-
 const Port = React.memo(
 	({
-		device,
+		deviceId,
 		parameter,
+		isProxy = false,
 		reverse = false,
+		noId = false,
 	}: {
-		device: VirtualDevice | MidiDevice;
-		parameter: VirtualParameter;
+		deviceId: number;
+		parameter: VirtualParameter | MidiParameter;
+		isProxy?: boolean;
 		reverse?: boolean;
+		noId?: boolean;
 	}) => {
-		const paramName = device.proxy
+		const paramName = isProxy
 			? parameter.name.slice(parameter.name.indexOf("_") + 1)
 			: parameter.name;
 		return (
@@ -207,7 +208,7 @@ const Port = React.memo(
 						backgroundColor: "orange",
 						borderRadius: "50%",
 					}}
-					id={buildSectionId(device.id, parameter.cv_name)}
+					id={noId ? undefined : buildParameterId(deviceId, parameter)}
 				/>
 			</div>
 		);
@@ -240,112 +241,62 @@ const generateNameWithAcronym = (
 
 const HIDE = new Set<string>(["set_pause"]);
 const MAX_ROWS = 2;
-export const VDevice = React.memo(
+
+interface DeviceCardProps {
+	deviceId: number;
+	deviceName: string;
+	parameters: (VirtualParameter | MidiParameter)[];
+	selected?: boolean;
+	borderColor: string;
+	borderStyle: "solid" | "dashed";
+	backgroundColor: string;
+	isProxy?: boolean;
+	noPortIds?: boolean;
+	onClick?: (e: React.MouseEvent | React.TouchEvent) => void;
+	longPressEvents?: object;
+	children?: React.ReactNode;
+}
+
+export const DeviceCard = React.memo(
 	({
-		device,
+		deviceId,
+		deviceName,
+		parameters,
+		borderColor,
+		borderStyle,
+		backgroundColor,
+		isProxy = false,
+		noPortIds = false,
 		onClick,
-		onDoubleClick,
-		selected,
-		onLongPress,
-		onTouchStart,
-	}: VDeviceProps) => {
-		const height = "120px";
+		longPressEvents = {},
+		children,
+	}: DeviceCardProps) => {
 		const leftLabelLimit = 8;
-		const clipping = device.repr.length >= leftLabelLimit;
-		const parameters = useMemo(
-			() => device.meta.parameters.filter((e) => !HIDE.has(e.name)),
-			[device.meta.parameters],
-		);
+		const clipping = deviceName.length >= leftLabelLimit;
 
-		const nbParameters = clamp(parameters.length, 0, FULLSIZE);
-		const lastTap = useRef<number | null>(null);
-		const trevorSocket = useTrevorWebSocket();
-		const dispatch = useTrevorDispatch();
-		const [isCodeOpen, setIsCodeOpen] = useState(false);
-		const exposedDevices = useTrevorSelector(
-			(state) => state.nallely.exposed_services,
-		);
-		const exposed = Object.keys(exposedDevices).includes(device.id.toString());
-
-		const width =
-			nbParameters <= SMALL_PORTS_LIMIT ? 25 : nbParameters > 19 ? 81 : 58;
-
-		const longPressEvents = useLongPress(
-			() => {
-				onLongPress?.(device);
-			},
-			500,
-			() => onTouchStart?.(device),
-		);
-
-		const params = useMemo(
-			() => ({
-				head: parameters.slice(0, SMALL_PORTS_LIMIT),
-				rest: chunkArray(parameters.slice(SMALL_PORTS_LIMIT), PORTS_LIMIT),
-			}),
+		const filtered = useMemo(
+			() => parameters.filter((e) => !HIDE.has(e.name)),
 			[parameters],
 		);
 
-		const handleDoubleClick = useCallback(
-			(device) => {
-				if (onDoubleClick) {
-					onDoubleClick?.(device);
-					return;
-				}
-				trevorSocket.toggle_device(device, /* start= */ !device.running);
-			},
-			[onDoubleClick, trevorSocket],
+		const nbParameters = clamp(filtered.length, 0, FULLSIZE);
+		const width =
+			nbParameters <= SMALL_PORTS_LIMIT ? 25 : nbParameters > 19 ? 81 : 58;
+
+		const params = useMemo(
+			() => ({
+				head: filtered.slice(0, SMALL_PORTS_LIMIT),
+				rest: chunkArray(filtered.slice(SMALL_PORTS_LIMIT), PORTS_LIMIT),
+			}),
+			[filtered],
 		);
 
-		const handleClick = useCallback(
-			(event: React.MouseEvent | React.TouchEvent) => {
-				event.preventDefault();
-				event.stopPropagation();
-
-				if (longPressEvents.didlongpress.current) {
-					return;
-				}
-
-				const now = Date.now();
-				const DOUBLE_CLICK_DELAY = 200;
-				if (lastTap.current && now - lastTap.current < DOUBLE_CLICK_DELAY) {
-					handleDoubleClick(device);
-					lastTap.current = null;
-				} else {
-					lastTap.current = now;
-					setTimeout(() => {
-						if (
-							lastTap.current &&
-							Date.now() - lastTap.current >= DOUBLE_CLICK_DELAY
-						) {
-							if (isClassCodeMode()) {
-								setIsCodeOpen(true);
-								dispatch(setClassCodeMode(false));
-								return;
-							}
-							onClick?.(device);
-							lastTap.current = null;
-						}
-					}, DOUBLE_CLICK_DELAY);
-				}
-			},
-			[onClick, handleDoubleClick, device, dispatch, longPressEvents],
-		);
-
-		const color = selected
-			? "gold"
-			: exposed
-				? "rgba(187, 153, 90, 0.8)"
-				: "gray";
-		const backgroundColor = device.proxy
-			? "rgba(187, 153, 90, 0.01)"
-			: "#e0e0e0";
 		return (
 			<div
 				style={{
 					paddingTop: "1px",
-					border: `3px ${device.paused ? "dashed" : "solid"} ${selected ? "gold" : color}`,
-					height: height,
+					border: `3px ${borderStyle} ${borderColor}`,
+					height: "120px",
 					width: `${width}px`,
 					minWidth: `${width}px`,
 					display: "flex",
@@ -353,10 +304,10 @@ export const VDevice = React.memo(
 					flexDirection: "row",
 					gap: "0px",
 					justifyContent: "space-evenly",
-					backgroundColor: backgroundColor,
+					backgroundColor,
 					userSelect: "none",
 				}}
-				onClick={handleClick}
+				onClick={onClick}
 				{...longPressEvents}
 			>
 				<div
@@ -391,7 +342,7 @@ export const VDevice = React.memo(
 								transform: "rotate(180deg)",
 							}}
 						>
-							{generateNameWithAcronym(device.repr, leftLabelLimit)}
+							{generateNameWithAcronym(deviceName, leftLabelLimit)}
 						</p>
 					</div>
 					<div
@@ -407,13 +358,20 @@ export const VDevice = React.memo(
 						}}
 					>
 						{params.head.map((p) => (
-							<Port device={device} key={p.cv_name} parameter={p} reverse />
+							<Port
+								deviceId={deviceId}
+								key={p.name}
+								parameter={p}
+								isProxy={isProxy}
+								noId={noPortIds}
+								reverse
+							/>
 						))}
 					</div>
 				</div>
 				{params.rest.slice(0, MAX_ROWS).map((row, i) => (
 					<div
-						key={`${device.id}-${i}`}
+						key={`${deviceId}-${i}`}
 						style={{
 							height: "117px",
 							width: "25px",
@@ -425,10 +383,132 @@ export const VDevice = React.memo(
 						}}
 					>
 						{row.map((p) => (
-							<Port device={device} key={p.cv_name} parameter={p} />
+							<Port
+								deviceId={deviceId}
+								key={p.name}
+								parameter={p}
+								isProxy={isProxy}
+								noId={noPortIds}
+							/>
 						))}
 					</div>
 				))}
+				{children}
+			</div>
+		);
+	},
+);
+
+interface VDeviceProps {
+	device: VirtualDevice;
+	onClick?: (device: VirtualDevice) => void;
+	onDoubleClick?: (device: VirtualDevice) => void;
+	onLongPress?: (device: VirtualDevice) => void;
+	onTouchStart?: (device: VirtualDevice) => void;
+	selected?: boolean;
+	debounceClick?: boolean;
+	noPortIds?: boolean;
+}
+
+export const VDevice = React.memo(
+	({
+		device,
+		onClick,
+		onDoubleClick,
+		selected,
+		onLongPress,
+		onTouchStart,
+		debounceClick = true,
+		noPortIds = false,
+	}: VDeviceProps) => {
+		const lastTap = useRef<number | null>(null);
+		const trevorSocket = useTrevorWebSocket();
+		const dispatch = useTrevorDispatch();
+		const [isCodeOpen, setIsCodeOpen] = useState(false);
+		const exposedDevices = useTrevorSelector(
+			(state) => state.nallely.exposed_services,
+		);
+		const exposed = Object.keys(exposedDevices).includes(device.id.toString());
+
+		const longPressEvents = useLongPress(
+			() => onLongPress?.(device),
+			500,
+			() => onTouchStart?.(device),
+		);
+
+		const handleDoubleClick = useCallback(
+			(dev) => {
+				if (onDoubleClick) {
+					onDoubleClick(dev);
+					return;
+				}
+				trevorSocket.toggle_device(dev, !dev.running);
+			},
+			[onDoubleClick, trevorSocket],
+		);
+
+		const handleClick = useCallback(
+			(event: React.MouseEvent | React.TouchEvent) => {
+				event.preventDefault();
+				event.stopPropagation();
+				if (longPressEvents.didlongpress.current) return;
+				if (!debounceClick) {
+					onClick?.(device);
+					return;
+				}
+				const now = Date.now();
+				const DOUBLE_CLICK_DELAY = 200;
+				if (lastTap.current && now - lastTap.current < DOUBLE_CLICK_DELAY) {
+					handleDoubleClick(device);
+					lastTap.current = null;
+				} else {
+					lastTap.current = now;
+					setTimeout(() => {
+						if (
+							lastTap.current &&
+							Date.now() - lastTap.current >= DOUBLE_CLICK_DELAY
+						) {
+							if (isClassCodeMode()) {
+								setIsCodeOpen(true);
+								dispatch(setClassCodeMode(false));
+								return;
+							}
+							onClick?.(device);
+							lastTap.current = null;
+						}
+					}, DOUBLE_CLICK_DELAY);
+				}
+			},
+			[
+				onClick,
+				handleDoubleClick,
+				device,
+				dispatch,
+				longPressEvents,
+				debounceClick,
+			],
+		);
+
+		const borderColor = selected
+			? "gold"
+			: exposed
+				? "rgba(187, 153, 90, 0.8)"
+				: "gray";
+
+		return (
+			<DeviceCard
+				deviceId={device.id}
+				deviceName={device.repr}
+				parameters={device.meta.parameters}
+				selected={selected}
+				borderColor={borderColor}
+				borderStyle={device.paused ? "dashed" : "solid"}
+				backgroundColor={device.proxy ? "rgba(187, 153, 90, 0.01)" : "#e0e0e0"}
+				isProxy={device.proxy}
+				noPortIds={noPortIds}
+				onClick={handleClick}
+				longPressEvents={longPressEvents}
+			>
 				{isCodeOpen && (
 					<Portal>
 						<Suspense fallback={null}>
@@ -439,7 +519,87 @@ export const VDevice = React.memo(
 						</Suspense>
 					</Portal>
 				)}
-			</div>
+			</DeviceCard>
+		);
+	},
+);
+
+interface MidiSectionDeviceProps {
+	device: MidiDevice;
+	section: MidiDeviceSection;
+	selected?: boolean;
+	onClick?: (device: MidiDevice, section: MidiDeviceSection) => void;
+	onDoubleClick?: (device: MidiDevice, section: MidiDeviceSection) => void;
+	onLongPress?: (device: MidiDevice, section: MidiDeviceSection) => void;
+	onTouchStart?: (device: MidiDevice, section: MidiDeviceSection) => void;
+	debounceClick?: boolean;
+	noPortIds?: boolean;
+}
+
+export const MidiSectionDevice = React.memo(
+	({
+		device,
+		section,
+		selected,
+		onClick,
+		onDoubleClick,
+		onLongPress,
+		onTouchStart,
+		debounceClick = true,
+		noPortIds = false,
+	}: MidiSectionDeviceProps) => {
+		const lastTap = useRef<number | null>(null);
+
+		const longPressEvents = useLongPress(
+			() => onLongPress?.(device, section),
+			500,
+			() => onTouchStart?.(device, section),
+		);
+
+		const handleClick = useCallback(
+			(event: React.MouseEvent | React.TouchEvent) => {
+				event.preventDefault();
+				event.stopPropagation();
+				if (longPressEvents.didlongpress.current) return;
+				if (!debounceClick) {
+					onClick?.(device, section);
+					return;
+				}
+				const now = Date.now();
+				const DOUBLE_CLICK_DELAY = 200;
+				if (lastTap.current && now - lastTap.current < DOUBLE_CLICK_DELAY) {
+					onDoubleClick?.(device, section);
+					lastTap.current = null;
+				} else {
+					lastTap.current = now;
+					setTimeout(() => {
+						if (
+							lastTap.current &&
+							Date.now() - lastTap.current >= DOUBLE_CLICK_DELAY
+						) {
+							onClick?.(device, section);
+							lastTap.current = null;
+						}
+					}, DOUBLE_CLICK_DELAY);
+				}
+			},
+			[onClick, onDoubleClick, device, section, longPressEvents, debounceClick],
+		);
+
+		return (
+			<DeviceCard
+				deviceId={device.id}
+				deviceName={section.name}
+				parameters={section.parameters}
+				selected={selected}
+				borderColor={selected ? "gold" : "gray"}
+				borderStyle="solid"
+				backgroundColor="#e0e0e0"
+				isProxy={false}
+				noPortIds={noPortIds}
+				onClick={handleClick}
+				longPressEvents={longPressEvents}
+			/>
 		);
 	},
 );

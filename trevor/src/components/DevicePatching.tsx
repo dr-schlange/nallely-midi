@@ -25,6 +25,7 @@ import { setCurrentAddress } from "../store/runtimeSlice";
 import { drawConnection, drawCurvedConnection } from "../utils/svgUtils";
 import {
 	buildConnectionName,
+	buildParameterId,
 	buildSectionId,
 	connectionId,
 	devUID,
@@ -1004,19 +1005,18 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 			};
 			for (const connection of sortedConnections) {
 				const srcSection = connection.src.parameter.section_name;
-				const srcId = buildSectionId(
-					connection.src.device,
+				const srcId =
 					srcSection === "__virtual__"
-						? (connection.src.parameter as VirtualParameter).cv_name
-						: srcSection,
-				);
+						? buildParameterId(connection.src.device, connection.src.parameter)
+						: buildSectionId(connection.src.device, srcSection);
 				const dstSection = connection.dest.parameter.section_name;
-				const destId = buildSectionId(
-					connection.dest.device,
+				const destId =
 					dstSection === "__virtual__"
-						? (connection.dest.parameter as VirtualParameter).cv_name
-						: dstSection,
-				);
+						? buildParameterId(
+								connection.dest.device,
+								connection.dest.parameter,
+							)
+						: buildSectionId(connection.dest.device, dstSection);
 				const fromElement = getElement(srcId);
 				const toElement = getElement(destId);
 				const highlightConnected = selection.length === 1;

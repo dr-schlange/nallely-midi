@@ -24,13 +24,13 @@ import {
 	buildParameterId,
 	connectionId,
 	connectionsOfInterest,
-	devUID,
 	internalSectionName,
 	isPadsOrdKeys,
 	isVirtualDevice,
 	parameterUUID,
 	rejectedClasses,
 } from "../../utils/utils";
+import { MidiSectionDevice, VDevice } from "../VDevComponent";
 import { useTrevorWebSocket } from "../../websockets/websocket";
 import { MidiGrid } from "../MidiGrid";
 import { ScalerForm } from "../ScalerForm";
@@ -165,7 +165,7 @@ const PatcheableParameter = ({
 			<div
 				key={param.name}
 				className={`parameter-box ${selected ? "selected" : ""} ${occupied ? "occupied" : ""}`}
-				id={`${buildParameterId(section.device.id, param)}`}
+				id={`pb-${buildParameterId(section.device.id, param)}`}
 				onClick={() => onClick(section.device, param)}
 				onKeyDown={(e) => {
 					if (e.key === "Enter" || e.key === " ") {
@@ -232,18 +232,18 @@ const PatchingModal = ({
 	const [currentSecondSection, setCurrentSecondSection] =
 		useState(secondSection);
 
+	const firstDeviceId = currentFirstSection?.device.id;
+	const secondDeviceId = currentSecondSection?.device.id;
 	const liveFirstDevice = useTrevorSelector((state) => {
-		const id = currentFirstSection?.device.id;
 		return (
-			state.nallely.midi_devices.find((d) => d.id === id) ??
-			state.nallely.virtual_devices.find((d) => d.id === id)
+			state.nallely.midi_devices.find((d) => d.id === firstDeviceId) ??
+			state.nallely.virtual_devices.find((d) => d.id === firstDeviceId)
 		);
 	});
 	const liveSecondDevice = useTrevorSelector((state) => {
-		const id = currentSecondSection?.device.id;
 		return (
-			state.nallely.midi_devices.find((d) => d.id === id) ??
-			state.nallely.virtual_devices.find((d) => d.id === id)
+			state.nallely.midi_devices.find((d) => d.id === secondDeviceId) ??
+			state.nallely.virtual_devices.find((d) => d.id === secondDeviceId)
 		);
 	});
 
@@ -446,6 +446,7 @@ const PatchingModal = ({
 			const [fromElement, toElement] = findConnectorElement(
 				connection,
 				modalRef.current ?? document,
+				"pb-",
 			);
 			drawCurvedConnection(
 				svg,
@@ -483,7 +484,12 @@ const PatchingModal = ({
 	useEffect(() => {
 		const raf = requestAnimationFrame(() => updateConnections());
 		return () => cancelAnimationFrame(raf);
-	}, [updateConnections, dropdownHeight]);
+	}, [
+		updateConnections,
+		dropdownHeight,
+		currentFirstSection,
+		currentSecondSection,
+	]);
 
 	useEffect(() => {
 		const handleResize = () => {
@@ -502,12 +508,20 @@ const PatchingModal = ({
 
 	useEffect(() => {
 		if (!dropdownRef.current) return;
-		const observer = new ResizeObserver(() => {
-			setDropdownHeight(dropdownRef.current?.offsetHeight ?? 0);
-		});
+		const remeasure = () => {
+			requestAnimationFrame(() => {
+				setDropdownHeight(dropdownRef.current?.offsetHeight ?? 0);
+			});
+		};
+		const observer = new ResizeObserver(remeasure);
 		observer.observe(dropdownRef.current);
 		setDropdownHeight(dropdownRef.current.offsetHeight);
-		return () => observer.disconnect();
+		const details = dropdownRef.current.querySelector("details");
+		details?.addEventListener("toggle", remeasure);
+		return () => {
+			observer.disconnect();
+			details?.removeEventListener("toggle", remeasure);
+		};
 	}, []);
 
 	const handleGridOpen = useCallback(() => {
@@ -653,116 +667,58 @@ const PatchingModal = ({
 	const buildDropDown = (
 		currentSection: MidiDeviceWithSection | VirtualDeviceWithSection,
 		setSection,
-		otherSection: MidiDeviceWithSection | VirtualDeviceWithSection,
 	) => {
+		const handleSelect = (
+			section: MidiDeviceWithSection | VirtualDeviceWithSection,
+		) => {
+			setSection(section);
+			onSectionChange?.(section);
+		};
+		const sectionName = internalSectionName(currentSection.section);
+		const label =
+			sectionName !== "__virtual__"
+				? `${currentSection.device.repr} - ${sectionName}`
+				: currentSection.device.repr;
 		return (
-			<div
-				style={{
-					textAlign: "center",
-					cursor: "pointer",
-					display: "flex",
-					justifyContent: "flex-end",
-					flexDirection: "row",
-					gap: "4px",
-				}}
-				className="panel-dropdown"
-			>
-				{/*<Button
-					text="⚙"
-					activated={
-						selectedSettings?.device.id === currentSection?.device.id &&
-						selectedSettings.section.name === currentSection?.section.name
-					}
-					onClick={() => onSettingsClick?.(currentSection)}
-					tooltip="Toggle cyclic mode"
-					variant="big"
-        />*/}
-				<details className="details-block">
-          <summary>{`${currentSection.device.repr}${currentSection.section.name !== "__virtual__" ? ` - ${currentSection.section.name}`: ""}`}</summary>
-					<div className="details-content">
-						<Button
-							text="Kill device"
-							tooltip="Kills the device"
-							className="menu-button"
-							style={{ width: "80%" }}
-						/>
-					</div>
-				</details>
-				{/*<select
-					value={`${devUID(currentSection.device)}::${currentSection.section.name ?? currentSection.device.repr}`}
-					title="Change tab section"
-					onChange={(e) => {
-						const change = e.target.value;
-						const selected = allSections
-							.filter(
-								(s) =>
-									!s.device.repr.includes("WebSocketBus") &&
-									!s.device.repr.includes("OSCBus"),
-							)
-							.find(
-								(s) =>
-									`${devUID(s.device)}::${s.section.name ?? s.device.repr}` ===
-									change,
-							);
-						setSection(selected);
-						onSectionChange?.(selected);
+			<details className="details-block panel-dropdown">
+				<summary>{label}</summary>
+				<div
+					style={{
+						display: "flex",
+						flexDirection: "row",
+						overflowX: "auto",
+						gap: "4px",
+						padding: "4px",
+						alignItems: "flex-start",
 					}}
 				>
-					{allSections.map((s) => {
-						const allIncoming = allConnections.filter(
-							(c) =>
-								c.dest.parameter.section_name ===
-									internalSectionName(s.section) &&
-								c.dest.device === s.device.id,
-						);
-						const allOutgoing = allConnections.filter(
-							(c) =>
-								c.src.parameter.section_name ===
-									internalSectionName(s.section) &&
-								c.src.device === s.device.id,
-						);
-						const incomingLinks = allConnections.filter(
-							(c) =>
-								c.src.device === otherSection.device.id &&
-								c.src.parameter.section_name ===
-									internalSectionName(otherSection.section) &&
-								c.dest.parameter.section_name ===
-									internalSectionName(s.section) &&
-								c.dest.device === s.device.id,
-						);
-						const outgoingLinks = allConnections.filter(
-							(c) =>
-								c.dest.device === otherSection.device.id &&
-								c.dest.parameter.section_name ===
-									internalSectionName(otherSection.section) &&
-								c.src.parameter.section_name ===
-									internalSectionName(s.section) &&
-								c.src.device === s.device.id,
-						);
-						let linkageStatus = `⬊${allIncoming.length}`;
-						if (incomingLinks.length > 0) {
-							linkageStatus += `(${incomingLinks.length})`;
-						}
-						linkageStatus += `-⬈${allOutgoing.length}`;
-						if (outgoingLinks.length > 0) {
-							linkageStatus += `(${outgoingLinks.length})`;
-						}
-
-						const sectionName = s.section.name ?? s.device.repr;
-						return (
-							<option
-								key={`${devUID(s.device)}::${sectionName}`}
-								value={`${devUID(s.device)}::${sectionName}`}
-								dir="ltr"
-							>
-								{s.section.name
-									? `${s.device.repr} - ${s.section.name} [${linkageStatus}]`
-									: `${s.device.repr} [${linkageStatus}]`}
-							</option>
-						);
-					})}
-				</select>*/}
-			</div>
+					{allVirtualDeviceSection.map((vs) => (
+						<VDevice
+							key={`${vs.device.id}`}
+							device={vs.device}
+							selected={currentSection.device.id === vs.device.id}
+							onClick={(_dev) => handleSelect(vs)}
+							onDoubleClick={(_dev) => {}}
+							debounceClick={false}
+							noPortIds={true}
+						/>
+					))}
+					{allMidiDeviceSection.map((ms) => (
+						<MidiSectionDevice
+							key={`${ms.device.id}::${ms.section.name}`}
+							device={ms.device}
+							section={ms.section}
+							selected={
+								currentSection.device.id === ms.device.id &&
+								internalSectionName(currentSection.section) === ms.section.name
+							}
+							onClick={(_dev, _sec) => handleSelect(ms)}
+							debounceClick={false}
+							noPortIds={true}
+						/>
+					))}
+				</div>
+			</details>
 		);
 	};
 
@@ -791,11 +747,7 @@ const PatchingModal = ({
 					<div className="left-panel">
 						<div className="top-left-panel" onScroll={updateConnections}>
 							<div ref={dropdownRef} style={{ width: "100%" }}>
-								{buildDropDown(
-									currentFirstSection,
-									setCurrentFirstSection,
-									currentSecondSection,
-								)}
+								{buildDropDown(currentFirstSection, setCurrentFirstSection)}
 							</div>
 
 							<div
@@ -824,7 +776,7 @@ const PatchingModal = ({
 									const hasSectionName = param.section_name !== "__virtual__";
 									return (
 										<PatcheableParameter
-                      section={currentFirstSection}
+											section={currentFirstSection}
 											reverse
 											param={param}
 											currentValue={
@@ -844,11 +796,7 @@ const PatchingModal = ({
 							</div>
 						</div>
 						<div className="bottom-left-panel" onScroll={updateConnections}>
-							{buildDropDown(
-								currentSecondSection,
-								setCurrentSecondSection,
-								currentFirstSection,
-							)}
+							{buildDropDown(currentSecondSection, setCurrentSecondSection)}
 							<div
 								className="parameters-grid right"
 								onScroll={updateConnections}

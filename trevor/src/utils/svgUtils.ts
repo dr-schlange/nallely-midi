@@ -35,29 +35,35 @@ const isClippedByContainer = (element: Element): boolean => {
 export const findConnectorElement = (
 	connection: Connection,
 	root: Element | Document = document,
+	idPrefix = "",
 ) => {
-	let srcId = buildParameterId(connection.src.device, connection.src.parameter);
-	let destId = buildParameterId(
-		connection.dest.device,
-		connection.dest.parameter,
-	);
+	let srcId =
+		idPrefix +
+		buildParameterId(connection.src.device, connection.src.parameter);
+	let destId =
+		idPrefix +
+		buildParameterId(connection.dest.device, connection.dest.parameter);
 	let fromElement = root.querySelector(`[id="${srcId}"]`);
 	const all = root.querySelectorAll(`[id="${destId}"]`);
 	let toElement = all.length > 0 ? all[all.length - 1] : null;
 	if (!fromElement) {
-		srcId = buildParameterId(
-			connection.src.device,
-			connection.src.parameter,
-			"closed",
-		);
+		srcId =
+			idPrefix +
+			buildParameterId(
+				connection.src.device,
+				connection.src.parameter,
+				"closed",
+			);
 		fromElement = root.querySelector(`[id="${srcId}"]`);
 	}
 	if (!toElement) {
-		destId = buildParameterId(
-			connection.dest.device,
-			connection.dest.parameter,
-			"closed",
-		);
+		destId =
+			idPrefix +
+			buildParameterId(
+				connection.dest.device,
+				connection.dest.parameter,
+				"closed",
+			);
 		toElement = root.querySelector(`[id="${destId}"]`);
 	}
 	return [fromElement, toElement];
