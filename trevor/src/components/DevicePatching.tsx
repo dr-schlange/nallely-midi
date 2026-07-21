@@ -864,9 +864,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 				updateInfoRef.current?.(device);
 				setCurrentSelectedDevice(device);
 				const virtualSection = {
-					parameters: device.meta.parameters.map((e) => {
-						return { ...e, name: e.cv_name };
-					}),
+					parameters: device.meta.parameters,
 				} as VirtualDeviceSection;
 				setSelection([{ device, section: virtualSection }]);
 				setIsExpanded(true);
@@ -874,9 +872,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 			}
 			if (selection.length < 2) {
 				const virtualSection = {
-					parameters: device.meta.parameters.map((e) => {
-						return { ...e, name: e.cv_name };
-					}),
+					parameters: device.meta.parameters,
 				} as VirtualDeviceSection;
 				const newElement = { device, section: virtualSection };
 				setDisplayedSection((_) => undefined);
@@ -1236,6 +1232,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 			<div
 				className={`device-patching-main-section ${orientation}`}
 				ref={mainSectionRef}
+				onScroll={updateConnectionsThrottled}
 			>
 				<RackRowCCs ref={ccsRack} orientation={orientation} />
 				<RackRow
@@ -1339,10 +1336,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 										setCurrentSelectedDevice(device);
 										setIsExpanded(true);
 										const virtualSection = {
-											parameters: device.meta.parameters.map((e) => ({
-												...e,
-												name: e.cv_name,
-											})),
+											parameters: device.meta.parameters,
 										} as VirtualDeviceSection;
 										setSelection([{ device, section: virtualSection }]);
 										updateInfoRef.current?.(device);

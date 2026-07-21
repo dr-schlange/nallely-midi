@@ -1,14 +1,48 @@
 import type { Connection } from "../model";
 import { buildParameterId, setDebugMode } from "./utils";
 
-export const findConnectorElement = (connection: Connection) => {
+const isClippedByContainer = (element: Element): boolean => {
+	const rect = element.getBoundingClientRect();
+	let parent = element.parentElement;
+	while (parent) {
+		const style = getComputedStyle(parent);
+		const oy = style.overflowY;
+		const ox = style.overflowX;
+		if (
+			oy === "auto" ||
+			oy === "scroll" ||
+			oy === "hidden" ||
+			ox === "auto" ||
+			ox === "scroll" ||
+			ox === "hidden"
+		) {
+			const containerRect = parent.getBoundingClientRect();
+			if (
+				rect.bottom < containerRect.top ||
+				rect.top > containerRect.bottom ||
+				rect.right < containerRect.left ||
+				rect.left > containerRect.right
+			) {
+				return true;
+			}
+			break;
+		}
+		parent = parent.parentElement;
+	}
+	return false;
+};
+
+export const findConnectorElement = (
+	connection: Connection,
+	root: Element | Document = document,
+) => {
 	let srcId = buildParameterId(connection.src.device, connection.src.parameter);
 	let destId = buildParameterId(
 		connection.dest.device,
 		connection.dest.parameter,
 	);
-	let fromElement = document.querySelector(`[id="${srcId}"]`);
-	const all = document.querySelectorAll(`[id="${destId}"]`);
+	let fromElement = root.querySelector(`[id="${srcId}"]`);
+	const all = root.querySelectorAll(`[id="${destId}"]`);
 	let toElement = all.length > 0 ? all[all.length - 1] : null;
 	if (!fromElement) {
 		srcId = buildParameterId(
@@ -16,7 +50,7 @@ export const findConnectorElement = (connection: Connection) => {
 			connection.src.parameter,
 			"closed",
 		);
-		fromElement = document.querySelector(`[id="${srcId}"]`);
+		fromElement = root.querySelector(`[id="${srcId}"]`);
 	}
 	if (!toElement) {
 		destId = buildParameterId(
@@ -24,7 +58,7 @@ export const findConnectorElement = (connection: Connection) => {
 			connection.dest.parameter,
 			"closed",
 		);
-		toElement = document.querySelector(`[id="${destId}"]`);
+		toElement = root.querySelector(`[id="${destId}"]`);
 	}
 	return [fromElement, toElement];
 };
@@ -276,6 +310,9 @@ export const drawCurvedConnection = (
 	const toX = toCenterX - svgRect.left;
 	const toY = toCenterY - svgRect.top;
 
+	const ghosted =
+		isClippedByContainer(fromElement) || isClippedByContainer(toElement);
+
 	const drawCurve = (
 		id: string,
 		options: {
@@ -335,7 +372,7 @@ export const drawCurvedConnection = (
 		strokeWidth: selected ? 3 : 2.5,
 		strokeOpacity: "0.7",
 		markerEnd: marker,
-		dashed: opts.muted,
+		dashed: ghosted || opts.muted,
 	});
 
 	// Append visible line first, then hit line on top for click handling

@@ -1,5 +1,8 @@
 /** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
-import { useEffect, useRef, useState } from "react";
+/** biome-ignore-all lint/a11y/noSvgWithoutTitle: <explanation> */
+import { useRef, useState } from "react";
+import { generateAcronym } from "../../utils/utils";
+import { MidiParameter, VirtualParameter } from "../../model";
 
 export const Button = ({
 	activated = false,
@@ -196,6 +199,186 @@ export const PlaceholderWidget = ({
 						width: "100%",
 					}}
 				/>
+			</div>
+		</div>
+	);
+};
+
+export const CircularSlider = ({
+	value,
+	param,
+	onManualSliderChange,
+	acronymeLimit = 5,
+	labelPosition = "top",
+	maxValue = 127,
+	minValue = 0,
+	rounded = true,
+	disabled = false,
+}: {
+	value: number | undefined;
+	param: MidiParameter | VirtualParameter;
+	acronymeLimit?: number;
+	labelPosition?: "top" | "bottom";
+	onManualSliderChange: (value: number) => void;
+	maxValue?: number;
+	minValue?: number;
+	rounded?: boolean;
+	disabled?: boolean;
+}) => {
+	const radius = 16;
+	const strokeWidth = 2;
+	const size = radius * 2 + strokeWidth;
+	const center = radius + strokeWidth / 2;
+
+	const startAngle = (5 * Math.PI) / 4;
+	const totalAngle = (3 * Math.PI) / 2;
+
+	const [ghostValue, setGhostValue] = useState<number | null>(null);
+	const ghostValueRef = useRef<number | null>(null);
+	const startY = useRef<number | null>(null);
+	const startValue = useRef<number>(value ?? minValue);
+	const dragging = useRef(false);
+
+	const span = maxValue - minValue;
+	const angle =
+		value !== undefined
+			? startAngle - ((value - minValue) / span) * totalAngle
+			: startAngle;
+	const cx = center + radius * Math.cos(angle);
+	const cy = center - radius * Math.sin(angle);
+
+	const ghostAngle =
+		ghostValue !== null
+			? startAngle - ((ghostValue - minValue) / span) * totalAngle
+			: null;
+	const ghostCx =
+		ghostAngle !== null ? center + radius * Math.cos(ghostAngle) : null;
+	const ghostCy =
+		ghostAngle !== null ? center - radius * Math.sin(ghostAngle) : null;
+
+	const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+		e.preventDefault();
+		e.currentTarget.setPointerCapture(e.pointerId);
+		startY.current = e.clientY;
+		startValue.current = value || minValue;
+		ghostValueRef.current = null;
+		dragging.current = true;
+	};
+
+	const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+		if (!dragging.current || startY.current === null) return;
+		const delta = startY.current - e.clientY;
+		const deltaValue = (delta / 2) * ((maxValue - minValue) / 127);
+		const raw = startValue.current + deltaValue;
+		const newValue = Math.min(
+			maxValue,
+			Math.max(minValue, rounded ? Math.round(raw) : raw),
+		);
+		ghostValueRef.current = newValue;
+		setGhostValue(newValue);
+	};
+
+	const endDrag = (e: React.PointerEvent<HTMLDivElement>) => {
+		if (!dragging.current) return;
+		dragging.current = false;
+		if (e.currentTarget.hasPointerCapture?.(e.pointerId)) {
+			e.currentTarget.releasePointerCapture(e.pointerId);
+		}
+		const committed = ghostValueRef.current;
+		startY.current = null;
+		ghostValueRef.current = null;
+		setGhostValue(null);
+		if (committed !== null && committed !== value) {
+			onManualSliderChange?.(committed);
+		}
+	};
+
+	const formatValue = (v: number | undefined): string => {
+		if (v === undefined || v === null) return "...";
+		if (rounded) return String(Math.round(v));
+		const str = String(v);
+		const dotIdx = str.indexOf(".");
+		if (dotIdx === -1) return str;
+		const decimals = str.length - dotIdx - 1;
+		if (decimals <= 4) return v.toFixed(decimals);
+		return `${v.toFixed(4)}...`;
+	};
+
+	return (
+		<div
+			style={{
+				flexDirection: labelPosition === "top" ? "column" : "column-reverse",
+				display: "flex",
+				alignItems: "center",
+				userSelect: "none",
+				touchAction: "none",
+				marginTop: "4px",
+				position: "relative",
+			}}
+			onPointerDown={disabled ? undefined : handlePointerDown}
+			onPointerMove={disabled ? undefined : handlePointerMove}
+			onPointerUp={disabled ? undefined : endDrag}
+			onPointerCancel={disabled ? undefined : endDrag}
+		>
+			<span style={{ fontSize: "12px" }}>
+				{generateAcronym(param.name.replace(/_cv$/, ""), acronymeLimit)}
+			</span>
+			<div style={{ position: "relative" }}>
+				<svg width={size} height={size}>
+					<circle
+						cx={center}
+						cy={center}
+						r={radius}
+						stroke={disabled ? "none" : "gray"}
+						strokeWidth={strokeWidth}
+						fill="none"
+					/>
+					{!disabled && <circle cx={cx} cy={cy} r={4} fill="orange" />}
+
+					{!disabled && ghostValue !== null && (
+						<circle
+							cx={ghostCx}
+							cy={ghostCy}
+							r={4}
+							fill="orange"
+							opacity={0.4}
+						/>
+					)}
+				</svg>
+				<span
+					style={{
+						position: "absolute",
+						top: "50%",
+						left: "50%",
+						transform: "translate(-50%, -50%)",
+						fontSize: "11px",
+						pointerEvents: "none",
+						zIndex: 10,
+						color: "#333",
+						whiteSpace: "nowrap",
+					}}
+				>
+					{disabled ? "..." : formatValue(value)}
+				</span>
+
+				{ghostValue !== null && (
+					<span
+						style={{
+							position: "absolute",
+							top: "calc(50% + 2px)",
+							left: "50%",
+							transform: "translateX(-50%)",
+							fontSize: "11px",
+							pointerEvents: "none",
+							zIndex: 100,
+							color: "rgba(0,0,0,0.55)",
+							borderRadius: "3px",
+							padding: "1px 4px",
+						}}
+					>
+						{String(ghostValue)}
+					</span>
+				)}
 			</div>
 		</div>
 	);

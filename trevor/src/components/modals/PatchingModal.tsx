@@ -14,7 +14,11 @@ import type {
 	VirtualParameter,
 } from "../../model";
 import { useTrevorSelector } from "../../store";
-import { drawConnection, findConnectorElement } from "../../utils/svgUtils";
+import {
+	drawConnection,
+	drawCurvedConnection,
+	findConnectorElement,
+} from "../../utils/svgUtils";
 import {
 	buildConnectionName,
 	buildParameterId,
@@ -30,7 +34,7 @@ import {
 import { useTrevorWebSocket } from "../../websockets/websocket";
 import { MidiGrid } from "../MidiGrid";
 import { ScalerForm } from "../ScalerForm";
-import { Button } from "../widgets/BaseComponents";
+import { Button, CircularSlider } from "../widgets/BaseComponents";
 
 const collectAllVirtualParameters = (device: VirtualDevice) => {
 	return device.meta.parameters.map((p) => parameterUUID(device.id, p));
@@ -103,6 +107,76 @@ const selectAllMidiDeviceSection = createSelector(
 		),
 );
 
+const PatcheableParameter = ({
+	currentValue,
+	section,
+	param,
+	selected,
+	occupied,
+	reverse = false,
+	onClick,
+}: {
+	currentValue: number;
+	section: MidiDeviceWithSection | VirtualDeviceWithSection;
+	param: MidiParameter | VirtualParameter;
+	reverse?: boolean;
+	selected?: boolean;
+	occupied?: boolean;
+	onClick?: (
+		section: MidiDevice | VirtualDevice,
+		param: MidiParameter | VirtualParameter,
+	) => void;
+}) => {
+	const trevor = useTrevorWebSocket();
+	const isPitchwheel =
+		(section.section as { pitchwheels?: { name: string }[] }).pitchwheels?.some(
+			(pw) => pw.name === param.name,
+		) ?? false;
+	return (
+		<div className="patcheable-parameter">
+			{
+				<CircularSlider
+					param={param}
+					value={currentValue}
+					acronymeLimit={10}
+					labelPosition={reverse ? "bottom" : "top"}
+					disabled={isPitchwheel}
+					onManualSliderChange={(value) => {
+						if (param.section_name === "__virtual__") {
+							trevor?.setVirtualValue(
+								section.device as VirtualDevice,
+								param as VirtualParameter,
+								value,
+							);
+						} else {
+							trevor?.setParameterValue(
+								section.device.id,
+								param.section_name,
+								param.name,
+								value,
+							);
+						}
+					}}
+					minValue={param.range[0]}
+					maxValue={param.range[1]}
+					rounded={false}
+				/>
+			}
+			<div
+				key={param.name}
+				className={`parameter-box ${selected ? "selected" : ""} ${occupied ? "occupied" : ""}`}
+				id={`${buildParameterId(section.device.id, param)}`}
+				onClick={() => onClick(section.device, param)}
+				onKeyDown={(e) => {
+					if (e.key === "Enter" || e.key === " ") {
+						onClick(section.device, param);
+					}
+				}}
+			/>
+		</div>
+	);
+};
+
 interface PatchingModalProps {
 	onClose: () => void;
 	firstSection: MidiDeviceWithSection | VirtualDeviceWithSection | null;
@@ -158,6 +232,21 @@ const PatchingModal = ({
 	const [currentSecondSection, setCurrentSecondSection] =
 		useState(secondSection);
 
+	const liveFirstDevice = useTrevorSelector((state) => {
+		const id = currentFirstSection?.device.id;
+		return (
+			state.nallely.midi_devices.find((d) => d.id === id) ??
+			state.nallely.virtual_devices.find((d) => d.id === id)
+		);
+	});
+	const liveSecondDevice = useTrevorSelector((state) => {
+		const id = currentSecondSection?.device.id;
+		return (
+			state.nallely.midi_devices.find((d) => d.id === id) ??
+			state.nallely.virtual_devices.find((d) => d.id === id)
+		);
+	});
+
 	const firstSectionName = internalSectionName(currentFirstSection?.section);
 	const secondSectionName = internalSectionName(currentSecondSection?.section);
 
@@ -195,6 +284,9 @@ const PatchingModal = ({
 	);
 	const allSections = [...allMidiDeviceSection, ...allVirtualDeviceSection];
 	const svgRef = useRef<SVGSVGElement>(null);
+	const modalRef = useRef<HTMLDivElement>(null);
+	const dropdownRef = useRef<HTMLDivElement>(null);
+	const [dropdownHeight, setDropdownHeight] = useState(0);
 
 	useEffect(() => {
 		const handleKeyDown = (event: KeyboardEvent) => {
@@ -351,8 +443,11 @@ const PatchingModal = ({
 			return 0;
 		});
 		for (const connection of sortedConnections) {
-			const [fromElement, toElement] = findConnectorElement(connection);
-			drawConnection(
+			const [fromElement, toElement] = findConnectorElement(
+				connection,
+				modalRef.current ?? document,
+			);
+			drawCurvedConnection(
 				svg,
 				fromElement,
 				toElement,
@@ -375,7 +470,7 @@ const PatchingModal = ({
 					handleConnectionClick(connection);
 				},
 				setIsMouseInteracting,
-				portraitMode.current ? "vertical" : "horizontal",
+				// portraitMode.current ? "vertical" : "horizontal",
 			);
 		}
 	}, [
@@ -386,8 +481,9 @@ const PatchingModal = ({
 	]);
 
 	useEffect(() => {
-		updateConnections();
-	}, [updateConnections]);
+		const raf = requestAnimationFrame(() => updateConnections());
+		return () => cancelAnimationFrame(raf);
+	}, [updateConnections, dropdownHeight]);
 
 	useEffect(() => {
 		const handleResize = () => {
@@ -403,6 +499,16 @@ const PatchingModal = ({
 			observer.disconnect();
 		};
 	}, [updateConnections]);
+
+	useEffect(() => {
+		if (!dropdownRef.current) return;
+		const observer = new ResizeObserver(() => {
+			setDropdownHeight(dropdownRef.current?.offsetHeight ?? 0);
+		});
+		observer.observe(dropdownRef.current);
+		setDropdownHeight(dropdownRef.current.offsetHeight);
+		return () => observer.disconnect();
+	}, []);
 
 	const handleGridOpen = useCallback(() => {
 		setTimeout(() => updateConnections(), 0);
@@ -513,7 +619,7 @@ const PatchingModal = ({
 				}}
 				className="panel-dropdown"
 			>
-				<Button
+				{/*<Button
 					text="⚙"
 					activated={
 						selectedSettings?.device.id === currentSection?.device.id &&
@@ -522,8 +628,19 @@ const PatchingModal = ({
 					onClick={() => onSettingsClick?.(currentSection)}
 					tooltip="Toggle cyclic mode"
 					variant="big"
-				/>
-				<select
+        />*/}
+				<details className="details-block">
+					<summary>Danger zone</summary>
+					<div className="details-content">
+						<Button
+							text="Kill device"
+							tooltip="Kills the device"
+							className="menu-button"
+							style={{ width: "80%" }}
+						/>
+					</div>
+				</details>
+				{/*<select
 					value={`${devUID(currentSection.device)}::${currentSection.section.name ?? currentSection.device.repr}`}
 					title="Change tab section"
 					onChange={(e) => {
@@ -596,149 +713,135 @@ const PatchingModal = ({
 							</option>
 						);
 					})}
-				</select>
+				</select>*/}
 			</div>
 		);
 	};
 
 	return (
-		<div className="patching-modal">
+		<div className="patching-modal" ref={modalRef}>
 			<div className="modal-header">
 				<button type="button" className="close-button" onClick={onClose}>
 					Close
 				</button>
 			</div>
 			<div className="modal-body patching">
-				<svg className="connection-svg modal" ref={svgRef}>
-					<title>Connection diagram</title>
-				</svg>
-				<div className="left-panel">
-					<div className="top-left-panel" onScroll={updateConnections}>
-						{buildDropDown(
-							currentFirstSection,
-							setCurrentFirstSection,
-							currentSecondSection,
-						)}
+				<div style={{ position: "relative", flex: 1, overflow: "hidden" }}>
+					<svg
+						className="connection-svg modal"
+						ref={svgRef}
+						style={{
+							top: dropdownHeight,
+							height: `calc(100% - ${dropdownHeight}px)`,
+						}}
+					>
+						<title>Connection diagram</title>
+					</svg>
+					<div className="left-panel">
+						<div className="top-left-panel" onScroll={updateConnections}>
+							<div ref={dropdownRef} style={{ width: "100%" }}>
+								{buildDropDown(
+									currentFirstSection,
+									setCurrentFirstSection,
+									currentSecondSection,
+								)}
+							</div>
 
-						<div className="parameters-grid left" onScroll={updateConnections}>
-							{currentFirstSection?.section.pads_or_keys && (
-								<div className="left-midi">
-									<MidiGrid
-										device={currentFirstSection.device}
-										section={currentFirstSection.section}
-										onKeysClick={handleKeySectionClick}
-										onNoteClick={handleKeyClick}
-										onGridOpen={handleGridOpen}
-										highlight={shouldHighlight(currentFirstSection.device)}
-									/>
-								</div>
-							)}
-							{firstSectionParameters.map((param) => {
-								const incoming = srcAllIncoming.includes(
-									parameterUUID(currentFirstSection.device.id, param),
-								);
-								const outgoing = srcAllOutgoing.includes(
-									parameterUUID(currentFirstSection.device.id, param),
-								);
-								return (
-									<div
-										key={param.name}
-										className={`parameter ${
-											selectedParameters[0]?.parameter === param
-												? "selected"
-												: ""
-										}`}
-										id={`container-${buildParameterId(currentFirstSection.device.id, param)}`}
-										onClick={() =>
-											handleParameterClick(currentFirstSection.device, param)
-										}
-										onKeyDown={(e) => {
-											if (e.key === "Enter" || e.key === " ") {
-												handleParameterClick(currentFirstSection.device, param);
-											}
-										}}
-									>
-										<div
-											className={`parameter-box ${incoming || outgoing ? "occupied" : ""}`}
-											id={`${buildParameterId(currentFirstSection.device.id, param)}`}
+							<div
+								className="parameters-grid left"
+								onScroll={updateConnections}
+							>
+								{currentFirstSection?.section.pads_or_keys && (
+									<div className="left-midi">
+										<MidiGrid
+											device={currentFirstSection.device}
+											section={currentFirstSection.section}
+											onKeysClick={handleKeySectionClick}
+											onNoteClick={handleKeyClick}
+											onGridOpen={handleGridOpen}
+											highlight={shouldHighlight(currentFirstSection.device)}
 										/>
-										<div className="text-wrapper">
-											<span className="parameter-name left">
-												{currentFirstSection.device.proxy
-													? param.name.slice(param.name.indexOf("_") + 1)
-													: param.name}
-											</span>
-										</div>
 									</div>
-								);
-							})}
+								)}
+								{firstSectionParameters.map((param) => {
+									const incoming = srcAllIncoming.includes(
+										parameterUUID(currentFirstSection.device.id, param),
+									);
+									const outgoing = srcAllOutgoing.includes(
+										parameterUUID(currentFirstSection.device.id, param),
+									);
+									const hasSectionName = param.section_name !== "__virtual__";
+									return (
+										<PatcheableParameter
+											section={currentFirstSection}
+											param={param}
+											currentValue={
+												hasSectionName
+													? liveFirstDevice?.config[param.section_name]?.[
+															param?.name
+														]
+													: liveFirstDevice?.config[param?.name]
+											}
+											key={param.name}
+											selected={selectedParameters[0]?.parameter === param}
+											onClick={handleParameterClick}
+											occupied={incoming || outgoing}
+										/>
+									);
+								})}
+							</div>
 						</div>
-					</div>
-					<div className="bottom-left-panel" onScroll={updateConnections}>
-						{buildDropDown(
-							currentSecondSection,
-							setCurrentSecondSection,
-							currentFirstSection,
-						)}
-						<div className="parameters-grid right" onScroll={updateConnections}>
-							{currentSecondSection?.section.pads_or_keys && (
-								<div className="right-midi">
-									<MidiGrid
-										device={currentSecondSection.device}
-										section={currentSecondSection.section}
-										onKeysClick={handleKeySectionClick}
-										onNoteClick={handleKeyClick}
-										onGridOpen={handleGridOpen}
-										highlight={shouldHighlight(currentSecondSection.device)}
-									/>
-								</div>
+						<div className="bottom-left-panel" onScroll={updateConnections}>
+							{buildDropDown(
+								currentSecondSection,
+								setCurrentSecondSection,
+								currentFirstSection,
 							)}
-
-							{secondSectionParameters.map((param) => {
-								const incoming = dstAllIncoming.includes(
-									parameterUUID(currentSecondSection.device.id, param),
-								);
-								const outgoing = dstAllOutgoing.includes(
-									parameterUUID(currentSecondSection.device.id, param),
-								);
-								return (
-									<div
-										key={param.name}
-										className={`parameter ${
-											selectedParameters[0]?.parameter === param
-												? "selected"
-												: ""
-										}`}
-										id={`container-${buildParameterId(currentSecondSection.device.id, param)}`}
-										onClick={() =>
-											handleParameterClick(currentSecondSection.device, param)
-										}
-										onKeyDown={(e) => {
-											if (e.key === "Enter" || e.key === " ") {
-												handleParameterClick(
-													currentSecondSection.device,
-													param,
-												);
-											}
-										}}
-										onKeyUp={(e) => {
-											if (e.key === "Enter" || e.key === " ") {
-												e.preventDefault();
-											}
-										}}
-									>
-										<div
-											className={`parameter-box ${incoming || outgoing ? "occupied" : ""}`}
-											id={`${buildParameterId(currentSecondSection.device.id, param)}`}
+							<div
+								className="parameters-grid right"
+								onScroll={updateConnections}
+							>
+								{currentSecondSection?.section.pads_or_keys && (
+									<div className="right-midi">
+										<MidiGrid
+											device={currentSecondSection.device}
+											section={currentSecondSection.section}
+											onKeysClick={handleKeySectionClick}
+											onNoteClick={handleKeyClick}
+											onGridOpen={handleGridOpen}
+											highlight={shouldHighlight(currentSecondSection.device)}
 										/>
-										<span className="parameter-name right">
-											{currentSecondSection.device.proxy
-												? param.name.slice(param.name.indexOf("_") + 1)
-												: param.name}
-										</span>
 									</div>
-								);
-							})}
+								)}
+
+								{secondSectionParameters.map((param) => {
+									const incoming = dstAllIncoming.includes(
+										parameterUUID(currentSecondSection.device.id, param),
+									);
+									const outgoing = dstAllOutgoing.includes(
+										parameterUUID(currentSecondSection.device.id, param),
+									);
+									const hasSectionName = param.section_name !== "__virtual__";
+									return (
+										<PatcheableParameter
+											section={currentSecondSection}
+											param={param}
+											reverse
+											currentValue={
+												hasSectionName
+													? liveSecondDevice?.config[param.section_name]?.[
+															param?.name
+														]
+													: liveSecondDevice?.config[param?.name]
+											}
+											key={param.name}
+											selected={selectedParameters[0]?.parameter === param}
+											onClick={handleParameterClick}
+											occupied={incoming || outgoing}
+										/>
+									);
+								})}
+							</div>
 						</div>
 					</div>
 				</div>

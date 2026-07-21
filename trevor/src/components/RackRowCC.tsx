@@ -1,12 +1,10 @@
 /** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
 /** biome-ignore-all lint/a11y/useKeyWithClickEvents: <explanation> */
-/** biome-ignore-all lint/a11y/noSvgWithoutTitle: <explanation> */
 import {
 	forwardRef,
 	useCallback,
 	useImperativeHandle,
 	useMemo,
-	useRef,
 	useState,
 } from "react";
 import type { CCValues, MidiDevice, MidiParameter } from "../model";
@@ -14,7 +12,7 @@ import { useTrevorDispatch, useTrevorSelector } from "../store";
 import { resetCCState } from "../store/runtimeSlice";
 import { generateAcronym } from "../utils/utils";
 import { useTrevorWebSocket } from "../websockets/websocket";
-import { Button } from "./widgets/BaseComponents";
+import { Button, CircularSlider } from "./widgets/BaseComponents";
 
 interface CCsRackProps {
 	onRackScroll?: () => void;
@@ -24,135 +22,6 @@ interface CCsRackProps {
 export interface RackRowCCRef {
 	resetAll: () => void;
 }
-
-const CircularSlider = ({
-	value,
-	param,
-	onManualSliderChange,
-}: {
-	value: number;
-	param: MidiParameter;
-	onManualSliderChange: (value: number) => void;
-}) => {
-	const radius = 16;
-	const strokeWidth = 2;
-	const size = radius * 2 + strokeWidth;
-	const center = radius + strokeWidth / 2;
-
-	const startAngle = (5 * Math.PI) / 4;
-	const totalAngle = (3 * Math.PI) / 2;
-
-	const [ghostValue, setGhostValue] = useState<number | null>(null);
-	const ghostValueRef = useRef<number | null>(null);
-	const startY = useRef<number | null>(null);
-	const startValue = useRef<number>(value);
-	const dragging = useRef(false);
-
-	const angle = startAngle - (value / 127) * totalAngle;
-	const cx = center + radius * Math.cos(angle);
-	const cy = center - radius * Math.sin(angle);
-
-	const ghostAngle =
-		ghostValue !== null ? startAngle - (ghostValue / 127) * totalAngle : null;
-	const ghostCx =
-		ghostAngle !== null ? center + radius * Math.cos(ghostAngle) : null;
-	const ghostCy =
-		ghostAngle !== null ? center - radius * Math.sin(ghostAngle) : null;
-
-	const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-		e.preventDefault();
-		e.currentTarget.setPointerCapture(e.pointerId);
-		startY.current = e.clientY;
-		startValue.current = value;
-		ghostValueRef.current = null;
-		dragging.current = true;
-	};
-
-	const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-		if (!dragging.current || startY.current === null) return;
-		const delta = startY.current - e.clientY;
-		const deltaValue = Math.round(delta / 2);
-		const newValue = Math.min(
-			127,
-			Math.max(0, startValue.current + deltaValue),
-		);
-		ghostValueRef.current = newValue;
-		setGhostValue(newValue);
-	};
-
-	const endDrag = (e: React.PointerEvent<HTMLDivElement>) => {
-		if (!dragging.current) return;
-		dragging.current = false;
-		if (e.currentTarget.hasPointerCapture?.(e.pointerId)) {
-			e.currentTarget.releasePointerCapture(e.pointerId);
-		}
-		const committed = ghostValueRef.current;
-		startY.current = null;
-		ghostValueRef.current = null;
-		setGhostValue(null);
-		if (committed !== null && committed !== value) {
-			onManualSliderChange?.(committed);
-		}
-	};
-
-	return (
-		<div
-			style={{
-				flexDirection: "column",
-				display: "flex",
-				alignItems: "center",
-				userSelect: "none",
-				touchAction: "none",
-				marginTop: "4px",
-			}}
-			onPointerDown={handlePointerDown}
-			onPointerMove={handlePointerMove}
-			onPointerUp={endDrag}
-			onPointerCancel={endDrag}
-		>
-			<span style={{ fontSize: "12px" }}>{generateAcronym(param.name, 5)}</span>
-			<svg width={size} height={size}>
-				<circle
-					cx={center}
-					cy={center}
-					r={radius}
-					stroke="gray"
-					strokeWidth={strokeWidth}
-					fill="none"
-				/>
-				<circle cx={cx} cy={cy} r={4} fill="orange" />
-
-				{ghostValue !== null && (
-					<circle cx={ghostCx} cy={ghostCy} r={4} fill="orange" opacity={0.4} />
-				)}
-
-				<text
-					x="50%"
-					y="50%"
-					textAnchor="middle"
-					dy="4px"
-					fontSize="12px"
-					fill="#333"
-				>
-					{value}
-				</text>
-
-				{ghostValue !== null && (
-					<text
-						x="50%"
-						y="50%"
-						textAnchor="middle"
-						dy="18px"
-						fontSize="10px"
-						fill="#666"
-					>
-						{ghostValue}
-					</text>
-				)}
-			</svg>
-		</div>
-	);
-};
 
 export type CCValuesExtended = Record<
 	number, // deviceId
@@ -214,11 +83,14 @@ const buildFullParameters = (
 			let sectionName = undefined;
 			for (const parameter of section.parameters) {
 				sectionName = parameter.section_name;
+				const liveValue = device.config?.[sectionName]?.[parameter.name];
 				sectionConfig[parameter.name] = {
 					value:
+						liveValue ??
 						ccValues?.[device.id]?.[device.repr]?.[parameter.section_name]?.[
 							parameter.name
-						] || parameter.init_value,
+						] ??
+						parameter.init_value,
 					meta: parameter,
 				};
 			}
@@ -270,6 +142,7 @@ const DeviceSectionCC = ({
 					onManualSliderChange={(value) =>
 						handleParameterChange(deviceId, sectionName, paramName, value)
 					}
+					acronymeLimit={7}
 				/>
 			);
 		},

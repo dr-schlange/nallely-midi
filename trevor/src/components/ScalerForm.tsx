@@ -217,6 +217,9 @@ export const ScalerForm = ({ connection }: ScalerFormProps) => {
 						<option value="asinh" dir="ltr">
 							asinh
 						</option>
+						<option value="pow" dir="ltr">
+							pow
+						</option>
 					</select>
 				</label>
 
