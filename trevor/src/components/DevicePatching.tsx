@@ -1381,7 +1381,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 											style={{
 												height: "150px",
 												position: "relative",
-												overflowY: "scroll",
+												overflowX: "auto",
 											}}
 										>
 											<ul className="connections-list">

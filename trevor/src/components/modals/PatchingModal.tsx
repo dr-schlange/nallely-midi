@@ -563,6 +563,7 @@ const PatchingModal = ({
 						const [from, to] = findConnectorElement(
 							c,
 							modalRef.current ?? document,
+							"pb-",
 						);
 						return from && to && `${from.id}::${to.id}` === path.id;
 					});
@@ -794,8 +795,10 @@ const PatchingModal = ({
 							className="top-left-panel"
 							onScroll={updateConnections}
 							onClick={(e) => {
+								const t = e.target as Element;
 								if (
-									!(e.target as Element).closest(".patcheable-parameter") &&
+									!t.closest(".patcheable-parameter") &&
+									!t.closest("svg") &&
 									selectedParameters[0]?.device.id ===
 										currentFirstSection.device.id &&
 									selectedParameters[0]?.parameter.section_name ===
@@ -857,8 +860,10 @@ const PatchingModal = ({
 							className="bottom-left-panel"
 							onScroll={updateConnections}
 							onClick={(e) => {
+								const t = e.target as Element;
 								if (
-									!(e.target as Element).closest(".patcheable-parameter") &&
+									!t.closest(".patcheable-parameter") &&
+									!t.closest("svg") &&
 									selectedParameters[0]?.device.id ===
 										currentSecondSection.device.id &&
 									selectedParameters[0]?.parameter.section_name ===
@@ -1027,7 +1032,7 @@ const PatchingModal = ({
 							</div>
 						)}
 					</div>
-					<div className="bottom-right-panel">
+					{/*<div className="bottom-right-panel">
 						<h3>Connections</h3>
 						<ul className="connections-list">
 							{connections.map((connection) => {
@@ -1056,7 +1061,7 @@ const PatchingModal = ({
 								);
 							})}
 						</ul>
-					</div>
+					</div>*/}
 				</div>
 			</div>
 		</div>

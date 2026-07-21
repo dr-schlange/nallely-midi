@@ -37,8 +37,7 @@ export const ScalerForm = ({ connection }: ScalerFormProps) => {
 
 	return (
 		<div className="connection-setup">
-			{/*<h3>Patch Setup</h3>*/}
-			<div style={{ display: "flex", width: "100%" }}>
+			<div style={{ display: "flex" }}>
 				<div
 					style={{ display: "flex", flexDirection: "column", width: "100%" }}
 				>
@@ -189,17 +188,9 @@ export const ScalerForm = ({ connection }: ScalerFormProps) => {
 						justifyContent: "space-between",
 					}}
 				>
-					<span
-						style={{
-							width: "100%",
-						}}
-					>
-						Method
-					</span>
+					<span style={{ width: "100%" }}>Method</span>
 					<select
-						style={{
-							width: "100%",
-						}}
+						style={{ width: "100%" }}
 						value={method}
 						disabled={!scalerEnabled}
 						onChange={(e) => {
@@ -227,9 +218,7 @@ export const ScalerForm = ({ connection }: ScalerFormProps) => {
 				<label style={{ display: "flex", alignItems: "center" }}>
 					<span style={{ width: "100%" }}>Velocity</span>
 					<DragNumberInput
-						style={{
-							width: "100%",
-						}}
+						style={{ width: "100%" }}
 						disabled={!scalerEnabled}
 						value={velocity?.toString() || ""}
 						range={[0, 127]}
