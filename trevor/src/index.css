@@ -1334,6 +1334,11 @@ button.active {
 	padding: 0;
 }
 
+.connection-svg.modal path,
+.connection-svg.modal line {
+	pointer-events: none;
+}
+
 .device-patching-svg {
 	position: absolute;
 	top: 0;

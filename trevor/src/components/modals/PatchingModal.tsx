@@ -514,6 +514,54 @@ const PatchingModal = ({
 		setTimeout(() => updateConnections(), 0);
 	}, [updateConnections]);
 
+	const handleContainerClick = useCallback(
+		(e: React.MouseEvent<HTMLDivElement>) => {
+			const target = e.target as Element;
+			if (
+				target.closest(".parameter-box") ||
+				target.closest(".patcheable-parameter")
+			)
+				return;
+			if (!svgRef.current) return;
+			const svg = svgRef.current;
+			const svgRect = svg.getBoundingClientRect();
+			const px = e.clientX - svgRect.left;
+			const py = e.clientY - svgRect.top;
+			const HIT2 = 15 * 15;
+			const paths = svg.querySelectorAll<SVGGeometryElement>(
+				"path:not([id$='-hit'])",
+			);
+			for (const path of paths) {
+				const len = path.getTotalLength();
+				const steps = Math.min(Math.ceil(len / 4), 400);
+				let hit = false;
+				for (let i = 0; i <= steps; i++) {
+					const sp = path.getPointAtLength((i / steps) * len);
+					const dx = sp.x - px;
+					const dy = sp.y - py;
+					if (dx * dx + dy * dy <= HIT2) {
+						hit = true;
+						break;
+					}
+				}
+				if (hit) {
+					const conn = connections.find((c) => {
+						const [from, to] = findConnectorElement(
+							c,
+							modalRef.current ?? document,
+						);
+						return from && to && `${from.id}::${to.id}` === path.id;
+					});
+					if (conn) {
+						handleConnectionClick(conn);
+						return;
+					}
+				}
+			}
+		},
+		[connections, handleConnectionClick],
+	);
+
 	const selectedConnectionInstance = useMemo(
 		() => allConnections.find((c) => connectionId(c) === selectedConnection),
 		[allConnections, selectedConnection],
@@ -630,7 +678,7 @@ const PatchingModal = ({
 					variant="big"
         />*/}
 				<details className="details-block">
-					<summary>Danger zone</summary>
+          <summary>{`${currentSection.device.repr}${currentSection.section.name !== "__virtual__" ? ` - ${currentSection.section.name}`: ""}`}</summary>
 					<div className="details-content">
 						<Button
 							text="Kill device"
@@ -726,7 +774,10 @@ const PatchingModal = ({
 				</button>
 			</div>
 			<div className="modal-body patching">
-				<div style={{ position: "relative", flex: 1, overflow: "hidden" }}>
+				<div
+					style={{ position: "relative", flex: 1, overflow: "hidden" }}
+					onClick={handleContainerClick}
+				>
 					<svg
 						className="connection-svg modal"
 						ref={svgRef}
@@ -773,7 +824,8 @@ const PatchingModal = ({
 									const hasSectionName = param.section_name !== "__virtual__";
 									return (
 										<PatcheableParameter
-											section={currentFirstSection}
+                      section={currentFirstSection}
+											reverse
 											param={param}
 											currentValue={
 												hasSectionName
