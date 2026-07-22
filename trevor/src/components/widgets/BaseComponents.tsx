@@ -211,6 +211,7 @@ export const AcceptedValuesKnob = ({
 	acronymeLimit = 5,
 	labelPosition = "top",
 	disabled = false,
+	stripPrefix = false,
 }: {
 	value: number | string | undefined;
 	param: MidiParameter | VirtualParameter;
@@ -218,6 +219,7 @@ export const AcceptedValuesKnob = ({
 	labelPosition?: "top" | "bottom";
 	onManualSliderChange: (value: string) => void;
 	disabled?: boolean;
+	stripPrefix?: boolean;
 }) => {
 	const acceptedValues = param.accepted_values;
 	const count = acceptedValues.length;
@@ -328,7 +330,12 @@ export const AcceptedValuesKnob = ({
 			onPointerCancel={disabled ? undefined : endDrag}
 		>
 			<span style={{ fontSize: "12px" }}>
-				{generateAcronym(param.name.replace(/_cv$/, ""), acronymeLimit)}
+				{generateAcronym(
+					param.name
+						.replace(/_cv$/, "")
+						.replace(stripPrefix ? /^[^_]+_/ : "", ""),
+					acronymeLimit,
+				)}
 			</span>
 			<div style={{ position: "relative" }}>
 				<svg width={size} height={size}>
@@ -387,6 +394,7 @@ export const CircularSlider = ({
 	minValue = 0,
 	rounded = true,
 	disabled = false,
+	stripPrefix = false,
 }: {
 	value: number | undefined;
 	param: MidiParameter | VirtualParameter;
@@ -397,6 +405,7 @@ export const CircularSlider = ({
 	minValue?: number;
 	rounded?: boolean;
 	disabled?: boolean;
+	stripPrefix?: boolean;
 }) => {
 	const radius = 16;
 	const strokeWidth = 2;
@@ -495,7 +504,12 @@ export const CircularSlider = ({
 			onPointerCancel={disabled ? undefined : endDrag}
 		>
 			<span style={{ fontSize: "12px" }}>
-				{generateAcronym(param.name.replace(/_cv$/, ""), acronymeLimit)}
+				{generateAcronym(
+					param.name
+						.replace(/_cv$/, "")
+						.replace(stripPrefix ? /^[^_]+_/ : "", ""),
+					acronymeLimit,
+				)}
 			</span>
 			<div style={{ position: "relative" }}>
 				<svg width={size} height={size}>

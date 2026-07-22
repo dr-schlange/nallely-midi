@@ -29,7 +29,13 @@ import {
 	parameterUUID,
 	rejectedClasses,
 } from "../../utils/utils";
-import { MidiSectionDevice, VDevice } from "../VDevComponent";
+import {
+	MidiSectionDevice,
+	VDevice,
+	VDevicePlaceholder,
+} from "../VDevComponent";
+import { Portal } from "../Portal";
+import VDeviceSelectionModal from "./VirtualDeviceSelectionModal";
 import { useTrevorWebSocket } from "../../websockets/websocket";
 import { MidiGrid } from "../MidiGrid";
 import { ScalerForm } from "../ScalerForm";
@@ -159,6 +165,7 @@ const PatcheableParameter = ({
 					labelPosition={reverse ? "bottom" : "top"}
 					disabled={isPitchwheel}
 					onManualSliderChange={handleValueChange}
+					stripPrefix={(section.device as VirtualDevice).proxy}
 				/>
 			) : (
 				<CircularSlider
@@ -174,6 +181,7 @@ const PatcheableParameter = ({
 						!isVirtualDevice(section.device) ||
 						(param as VirtualParameter).conversion_policy !== null
 					}
+					stripPrefix={(section.device as VirtualDevice).proxy}
 				/>
 			)}
 			<div
@@ -238,6 +246,7 @@ const PatchingModal = ({
 			parameter: MidiParameter | VirtualParameter | PadsOrKeys | PadOrKey;
 		}[]
 	>([]);
+	const [addModuleOpen, setAddModuleOpen] = useState(false);
 	const websocket = useTrevorWebSocket();
 	const allConnections = useTrevorSelector(
 		(state) => state.nallely.connections,
@@ -695,90 +704,101 @@ const PatchingModal = ({
 				? `${currentSection.device.repr} - ${sectionName}`
 				: currentSection.device.repr;
 		return (
-			<details className="details-block panel-dropdown">
-				<summary>{label}</summary>
-				<div
-					style={{
-						display: "flex",
-						flexDirection: "row",
-						overflowX: "auto",
-						gap: "4px",
-						padding: "4px",
-						alignItems: "flex-start",
-					}}
-				>
-					{allVirtualDeviceSection.map((vs) => (
-						<div
-							key={`${vs.device.id}`}
-							style={{
-								display: "flex",
-								flexDirection: "column",
-								alignItems: "center",
-								gap: "2px",
-							}}
-						>
-							<VDevice
-								device={vs.device}
-								selected={currentSection.device.id === vs.device.id}
-								onClick={(_dev) => handleSelect(vs)}
-								onDoubleClick={(_dev) => {}}
-								debounceClick={false}
-								noPortIds={true}
-							/>
-							<span
+			<>
+				<details className="details-block panel-dropdown">
+					<summary>{label}</summary>
+					<div
+						style={{
+							display: "flex",
+							flexDirection: "row",
+							overflowX: "auto",
+							gap: "4px",
+							padding: "4px",
+							alignItems: "flex-start",
+						}}
+					>
+						{allVirtualDeviceSection.map((vs) => (
+							<div
+								key={`${vs.device.id}`}
 								style={{
-									fontSize: "9px",
-									color: "gray",
-									maxWidth: "80px",
-									textAlign: "center",
-									overflow: "hidden",
-									textOverflow: "ellipsis",
-									whiteSpace: "nowrap",
+									display: "flex",
+									flexDirection: "column",
+									alignItems: "center",
+									gap: "2px",
 								}}
 							>
-								{vs.device.repr}
-							</span>
-						</div>
-					))}
-					{allMidiDeviceSection.map((ms) => (
-						<div
-							key={`${ms.device.id}::${ms.section.name}`}
-							style={{
-								display: "flex",
-								flexDirection: "column",
-								alignItems: "center",
-								gap: "2px",
-							}}
-						>
-							<MidiSectionDevice
-								device={ms.device}
-								section={ms.section}
-								selected={
-									currentSection.device.id === ms.device.id &&
-									internalSectionName(currentSection.section) ===
-										ms.section.name
-								}
-								onClick={(_dev, _sec) => handleSelect(ms)}
-								debounceClick={false}
-								noPortIds={true}
-							/>
-							<span
+								<VDevice
+									device={vs.device}
+									selected={currentSection.device.id === vs.device.id}
+									onClick={(_dev) => handleSelect(vs)}
+									onDoubleClick={(_dev) => {}}
+									debounceClick={false}
+									noPortIds={true}
+								/>
+								<span
+									style={{
+										fontSize: "9px",
+										color: "gray",
+										maxWidth: "80px",
+										textAlign: "center",
+										overflow: "hidden",
+										textOverflow: "ellipsis",
+										whiteSpace: "nowrap",
+									}}
+								>
+									{vs.device.repr}
+								</span>
+							</div>
+						))}
+						{allMidiDeviceSection.map((ms) => (
+							<div
+								key={`${ms.device.id}::${ms.section.name}`}
 								style={{
-									fontSize: "9px",
-									color: "gray",
-									maxWidth: "80px",
-									textAlign: "center",
-									overflow: "hidden",
-									textOverflow: "ellipsis",
-									whiteSpace: "nowrap",
+									display: "flex",
+									flexDirection: "column",
+									alignItems: "center",
+									gap: "2px",
 								}}
 							>
-								{ms.device.repr}
-							</span>
-						</div>
-					))}
-				</div>
-			</details>
+								<MidiSectionDevice
+									device={ms.device}
+									section={ms.section}
+									selected={
+										currentSection.device.id === ms.device.id &&
+										internalSectionName(currentSection.section) ===
+											ms.section.name
+									}
+									onClick={(_dev, _sec) => handleSelect(ms)}
+									debounceClick={false}
+									noPortIds={true}
+								/>
+								<span
+									style={{
+										fontSize: "9px",
+										color: "gray",
+										maxWidth: "80px",
+										textAlign: "center",
+										overflow: "hidden",
+										textOverflow: "ellipsis",
+										whiteSpace: "nowrap",
+									}}
+								>
+									{ms.device.repr}
+								</span>
+							</div>
+						))}
+						<VDevicePlaceholder
+							slots={3}
+							onClick={() => setAddModuleOpen(true)}
+						/>
+					</div>
+				</details>
+				{addModuleOpen && (
+					<Portal>
+						<VDeviceSelectionModal onClose={() => setAddModuleOpen(false)} />
+					</Portal>
+				)}
+			</>
 		);
 	};
 
