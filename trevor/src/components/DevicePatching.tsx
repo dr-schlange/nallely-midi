@@ -1378,6 +1378,8 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 												height: "150px",
 												position: "relative",
 												overflowX: "auto",
+												width: "100%",
+												boxSizing: "border-box",
 											}}
 										>
 											<ul className="connections-list">

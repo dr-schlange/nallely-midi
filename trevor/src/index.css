@@ -169,6 +169,7 @@ details[open]::details-content {
 	display: flex;
 	flex-direction: column;
 	gap: 3px;
+	width: 100%;
 }
 
 .details-content .Button {
@@ -305,15 +306,15 @@ details[open]::details-content {
 	flex-direction: column;
 	align-items: flex-start;
 	justify-content: flex-start;
-	/*padding: 4px;*/
-	/*border-bottom: 2px solid #808080;*/
-	/*overflow-y: auto;*/
 	box-sizing: border-box;
 }
 
 .bottom-right-panel {
 	border-bottom: none;
 	overflow: auto;
+	box-sizing: border-box;
+	/*background-color: var(--rack-bg-color);*/
+	padding-right: 4px;
 }
 
 .top-panel {
@@ -1296,6 +1297,7 @@ button.active {
 	padding: 3px;
 	background-color: var(--rack-bg-color);
 	cursor: pointer;
+	width: 100%;
 }
 
 .connection-item.selected {
@@ -1324,6 +1326,7 @@ button.active {
 	list-style-type: none;
 	padding: 3px;
 	margin: 0;
+	width: 100%;
 }
 
 .bottom-section {
@@ -1986,7 +1989,9 @@ h3.details {
 	}
 
 	.connection-setup > * {
-		width: calc(50% - 3px);
+		/*width: calc(50% - 3px);*/
+		width: 99%;
+		box-sizing: border-box;
 	}
 
 	.parameter-name.left {
