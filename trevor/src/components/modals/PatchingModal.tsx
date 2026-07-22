@@ -26,6 +26,7 @@ import {
 	internalSectionName,
 	isPadsOrdKeys,
 	isVirtualDevice,
+	isVirtualParameter,
 	parameterUUID,
 	rejectedClasses,
 } from "../../utils/utils";
@@ -306,6 +307,50 @@ const PatchingModal = ({
 		selectAllVirtualDeviceSection,
 	);
 	const allSections = [...allMidiDeviceSection, ...allVirtualDeviceSection];
+
+	const navigateToDevice = useCallback(
+		(
+			deviceId: number,
+			sectionName: string,
+			parameter: MidiParameter | VirtualParameter,
+		) => {
+			const cvName = isVirtualParameter(parameter)
+				? (parameter as VirtualParameter).cv_name
+				: null;
+			const target =
+				(cvName
+					? allVirtualDeviceSection.find(
+							(vs) =>
+								vs.device.id === deviceId &&
+								vs.device.meta.parameters.some((p) => p.cv_name === cvName),
+						)
+					: undefined) ??
+				allVirtualDeviceSection.find(
+					(vs) => vs.device.id === deviceId && !vs.device.proxy,
+				) ??
+				allVirtualDeviceSection.find((vs) => vs.device.id === deviceId) ??
+				allMidiDeviceSection.find(
+					(ms) =>
+						ms.device.id === deviceId &&
+						internalSectionName(ms.section) === sectionName,
+				);
+			if (!target) return;
+			const selectedDeviceId = selectedParameters[0]?.device.id;
+			const activeIsFirst = currentFirstSection?.device.id === selectedDeviceId;
+			if (activeIsFirst) {
+				setCurrentSecondSection(target);
+			} else {
+				setCurrentFirstSection(target);
+			}
+		},
+		[
+			allVirtualDeviceSection,
+			allMidiDeviceSection,
+			currentFirstSection,
+			currentSecondSection,
+			selectedParameters,
+		],
+	);
 	const svgRef = useRef<SVGSVGElement>(null);
 	const modalRef = useRef<HTMLDivElement>(null);
 	const dropdownRef = useRef<HTMLDivElement>(null);
@@ -1029,7 +1074,21 @@ const PatchingModal = ({
 																		? ` - ${p.section_name}`
 																		: "";
 																return (
-																	<li key={c.id} style={{ fontSize: "11px" }}>
+																	<li
+																		key={c.id}
+																		style={{
+																			fontSize: "11px",
+																			cursor: "pointer",
+																			textDecoration: "underline dotted",
+																		}}
+																		onClick={() =>
+																			navigateToDevice(
+																				c.dest.device,
+																				p.section_name,
+																				p,
+																			)
+																		}
+																	>
 																		{c.dest.repr}
 																		{sec} - {p.name}
 																	</li>
@@ -1057,7 +1116,21 @@ const PatchingModal = ({
 																		? ` - ${p.section_name}`
 																		: "";
 																return (
-																	<li key={c.id} style={{ fontSize: "11px" }}>
+																	<li
+																		key={c.id}
+																		style={{
+																			fontSize: "11px",
+																			cursor: "pointer",
+																			textDecoration: "underline dotted",
+																		}}
+																		onClick={() =>
+																			navigateToDevice(
+																				c.src.device,
+																				p.section_name,
+																				p,
+																			)
+																		}
+																	>
 																		{c.src.repr}
 																		{sec} - {p.name}
 																	</li>
