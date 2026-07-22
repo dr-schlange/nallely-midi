@@ -252,6 +252,7 @@ interface DeviceCardProps {
 	backgroundColor: string;
 	isProxy?: boolean;
 	noPortIds?: boolean;
+	unhide?: Set<string>;
 	onClick?: (e: React.MouseEvent | React.TouchEvent) => void;
 	longPressEvents?: object;
 	children?: React.ReactNode;
@@ -267,6 +268,7 @@ export const DeviceCard = React.memo(
 		backgroundColor,
 		isProxy = false,
 		noPortIds = false,
+		unhide,
 		onClick,
 		longPressEvents = {},
 		children,
@@ -275,8 +277,8 @@ export const DeviceCard = React.memo(
 		const clipping = deviceName.length >= leftLabelLimit;
 
 		const filtered = useMemo(
-			() => parameters.filter((e) => !HIDE.has(e.name)),
-			[parameters],
+			() => parameters.filter((e) => !HIDE.has(e.name) || unhide?.has(e.name)),
+			[parameters, unhide],
 		);
 
 		const nbParameters = clamp(filtered.length, 0, FULLSIZE);
@@ -293,6 +295,7 @@ export const DeviceCard = React.memo(
 
 		return (
 			<div
+				id={`${deviceId}`}
 				style={{
 					paddingTop: "1px",
 					border: `3px ${borderStyle} ${borderColor}`,
@@ -429,6 +432,17 @@ export const VDevice = React.memo(
 			(state) => state.nallely.exposed_services,
 		);
 		const exposed = Object.keys(exposedDevices).includes(device.id.toString());
+		const connections = useTrevorSelector((state) => state.nallely.connections);
+		const unhide = useMemo(() => {
+			const set = new Set<string>();
+			for (const c of connections) {
+				if (c.src.device === device.id && HIDE.has(c.src.parameter.name))
+					set.add(c.src.parameter.name);
+				if (c.dest.device === device.id && HIDE.has(c.dest.parameter.name))
+					set.add(c.dest.parameter.name);
+			}
+			return set.size > 0 ? set : undefined;
+		}, [connections, device.id]);
 
 		const longPressEvents = useLongPress(
 			() => onLongPress?.(device),
@@ -506,6 +520,7 @@ export const VDevice = React.memo(
 				backgroundColor={device.proxy ? "rgba(187, 153, 90, 0.01)" : "#e0e0e0"}
 				isProxy={device.proxy}
 				noPortIds={noPortIds}
+				unhide={unhide}
 				onClick={handleClick}
 				longPressEvents={longPressEvents}
 			>
