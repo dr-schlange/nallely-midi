@@ -24,14 +24,14 @@ export const SettingsModal = ({ onClose }: SettingsModalProps) => {
 					text="close"
 					tooltip="Close"
 					variant="big"
-					style={{ width: "auto", padding: "0 6px" }}
+					style={{ width: "auto", padding: "0 6px", color: "var(--black)" }}
 					onClick={onClose}
 				/>
 				<Button
 					text="apply"
 					tooltip="Apply"
 					variant="big"
-					style={{ width: "auto", padding: "0 6px" }}
+					style={{ width: "auto", padding: "0 6px", color: "var(--black)" }}
 					onClick={saveConfig}
 				/>
 			</div>

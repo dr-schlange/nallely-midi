@@ -20,7 +20,7 @@ export const ErrorModal = ({ errors }: ErrorModalProps) => {
 					text="close"
 					tooltip="Close"
 					variant="big"
-					style={{ width: "auto", padding: "0 6px" }}
+					style={{ width: "auto", padding: "0 6px", color: "var(--black)" }}
 					onClick={onClose}
 				/>
 			</div>

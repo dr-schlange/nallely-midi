@@ -72,14 +72,14 @@ export const FriendModal = ({ onClose }: FriendModalProps) => {
 					text="close"
 					tooltip="Close"
 					variant="big"
-					style={{ width: "auto", padding: "0 6px" }}
+					style={{ width: "auto", padding: "0 6px", color: "var(--black)" }}
 					onClick={onClose}
 				/>
 				<Button
 					text="refresh"
 					tooltip="Refresh"
 					variant="big"
-					style={{ width: "auto", padding: "0 6px" }}
+					style={{ width: "auto", padding: "0 6px", color: "var(--black)" }}
 					onClick={refresh}
 				/>
 			</div>

@@ -44,7 +44,7 @@ const Modal = ({ onClose, onCancel, children, header }: ModalProps) => {
 					text="close"
 					tooltip="Close"
 					variant="big"
-					style={{ width: "auto", padding: "0 6px" }}
+					style={{ width: "auto", padding: "0 6px", color: "var(--black)" }}
 					onClick={onClose}
 				/>
 				{header}
@@ -52,7 +52,7 @@ const Modal = ({ onClose, onCancel, children, header }: ModalProps) => {
 					text="cancel"
 					tooltip="Cancel"
 					variant="big"
-					style={{ width: "auto", padding: "0 6px" }}
+					style={{ width: "auto", padding: "0 6px", color: "var(--black)" }}
 					onClick={onCancel}
 				/>
 			</div>

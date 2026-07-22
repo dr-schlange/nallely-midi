@@ -19,7 +19,7 @@ export const WelcomeModal = () => {
 					text="ok"
 					tooltip="Close"
 					variant="big"
-					style={{ width: "auto", padding: "0 6px" }}
+					style={{ width: "auto", padding: "0 6px", color: "var(--black)" }}
 					onClick={handleClose}
 				/>
 			</div>
