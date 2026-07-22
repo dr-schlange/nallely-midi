@@ -262,6 +262,7 @@ class VirtualDevice(threading.Thread):
         self._internal_conversion_setup()
         self.observers = []
         self._suspended = False
+        self._suspended_policy = "default"
         if autoconnect:
             self.start()
 
@@ -381,9 +382,10 @@ class VirtualDevice(threading.Thread):
             self.to_update.send_update()  # type: ignore -> to_update is set by the trevor bus dynamically
 
     def set_parameter(self, param: str, value: Any, ctx: ThreadContext | None = None):
+        if self._suspended_policy == "drop" and self._suspended:
+            return
         if (
             self.paused
-            or self._suspended
             or not self.running
             or param in self.closed_ports
         ):
@@ -405,7 +407,8 @@ class VirtualDevice(threading.Thread):
     def store_input(self, param: str, value):
         setattr(self, param, value)
 
-    def sleep(self, t, consider_target_time=False):
+    def sleep(self, t, consider_target_time=False, suspended_policy: Literal["default", "drop"] = "default"):
+        self._suspended_policy = suspended_policy
         if self.target_cycle_time > 0 and consider_target_time:
             t = min(float(t), self.target_cycle_time * 1000)
         else:

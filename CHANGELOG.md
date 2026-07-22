@@ -7,10 +7,12 @@
 * Midi devices have now their own parent thread
 * Add stronger log conversion, and new asinh and exp conversion
 * Add cybernetic neurone and synapse as new modules
+* Add new interface for the patching modal
+* Add new tool to follow links and ports in the patching modal
 
 ### Fixes
 
-* Modules/neurons which are suspended (call to `self.sleep()`) now ignore input while in this state: the values are not put in the queue, instead they are dropped. This makes kind of sense as otherwise, it means that the modules has to deal with "past" especially if it slepts a lot.
+* Modules/neurons which are suspended can precise their policy. With call to `self.sleep(suspended_policy="drop")`, the device ignores input received while suspended: the values are not put in the queue, instead they are dropped. This policy is interesting if the module is suspended for a long period and that inputs needs to be discarded.
 * When queue pressure is > 80% drops temporarily 100 messages
 * Fix name/ip attribution when there is no network
 * Fix issue when a network bus attribute is set first without having been read before
