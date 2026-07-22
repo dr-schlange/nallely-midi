@@ -164,72 +164,75 @@ def force_off_everywhere(times=2, verbose=False):
             print("[OK]")
 
 
-# See if the micro-optimization trick actually is usefull or if it's useless
-def map2values_cv_property(dev, param, getattr=getattr, setattr=setattr):
+def _dynamic_property(dev, param, conversion, getattr=getattr, setattr=setattr):
     attr_name = f"_{param.name}"
-    setattr(dev, attr_name, getattr(dev, param.name, None))
+    attr_value = getattr(
+        dev,
+        param.name,
+        (
+            conversion(param.default)
+            if param.default
+            else conversion(param.range[0]) if param.range[0] is not None else None
+        ),
+    )
+    prop = getattr(dev.__class__, param.name, None)
+    if isinstance(prop, property):
+        if getattr(prop.fget, "__convertion_policy__", False):
+            return
 
-    def getter(self):
-        return getattr(self, attr_name)
+        def getter(self):
+            return prop.fget(self)
 
-    def setter(self, value):
-        if isinstance(value, (int, float, Decimal)):
-            value = param.map2accepted_values(value)
-        setattr(self, attr_name, value)
+        def setter(self, value):
+            prop.fset(self, conversion(value))
+
+    else:
+
+        def getter(self):
+            try:
+                return getattr(self, attr_name)
+            except AttributeError:
+                setattr(self, attr_name, attr_value)
+                return attr_value
+
+        def setter(self, value):
+            setattr(self, attr_name, conversion(value))
+
+    getter.__convertion_policy__ = True
 
     setattr(dev.__class__, param.name, property(getter, setter))
+
+
+# See if the micro-optimization trick actually is usefull or if it's useless
+def map2values_cv_property(dev, param, getattr=getattr, setattr=setattr):
+    def conv(value):
+        if isinstance(value, (int, float, Decimal)):
+            value = param.map2accepted_values(value)
+        return value
+
+    _dynamic_property(dev, param, conv)
 
 
 def round_cv_property(dev, param, getattr=getattr, setattr=setattr):
-    attr_name = f"_{param.name}"
-    setattr(dev, attr_name, getattr(dev, param.name, None))
-
-    def getter(self):
-        return getattr(self, attr_name)
-
-    def setter(self, value):
-        value = round(value)
-        setattr(self, attr_name, value)
-
-    setattr(dev.__class__, param.name, property(getter, setter))
+    _dynamic_property(dev, param, round)
 
 
 def sup0_cv_property(dev, param, getattr=getattr, setattr=setattr):
-    attr_name = f"_{param.name}"
-    setattr(dev, attr_name, getattr(dev, param.name, None))
     lower, upper = param.range
     if lower is None:
         lower = 0
     if upper is None:
         upper = 1
-
-    def getter(self):
-        return getattr(self, attr_name)
-
-    def setter(self, value):
-        value = upper if value > lower else lower
-        setattr(self, attr_name, value)
-
-    setattr(dev.__class__, param.name, property(getter, setter))
+    _dynamic_property(dev, param, lambda value: upper if value > lower else lower)
 
 
 def diff0_cv_property(dev, param, getattr=getattr, setattr=setattr):
-    attr_name = f"_{param.name}"
-    setattr(dev, attr_name, getattr(dev, param.name, None))
     lower, upper = param.range
     if lower is None:
         lower = 0
     if upper is None:
         upper = 1
-
-    def getter(self):
-        return getattr(self, attr_name)
-
-    def setter(self, value):
-        value = upper if value != lower else lower
-        setattr(self, attr_name, value)
-
-    setattr(dev.__class__, param.name, property(getter, setter))
+    _dynamic_property(dev, param, lambda value: upper if value != lower else lower)
 
 
 def get_defining_class(method):

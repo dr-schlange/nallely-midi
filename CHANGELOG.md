@@ -16,6 +16,7 @@
 * When queue pressure is > 80% drops temporarily 100 messages
 * Fix name/ip attribution when there is no network
 * Fix issue when a network bus attribute is set first without having been read before
+* Fix multiple registration of conversion wrapper/property which also masked manually added properties in virtual devices
 
 ## Nallely v0.6.0 -- Tepezcohuite
 

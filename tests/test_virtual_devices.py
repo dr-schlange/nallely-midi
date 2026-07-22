@@ -195,7 +195,7 @@ def test__introspection_allparameters_nonstandardoutput():
 
     assert c.conversion_policy == "round"
     assert a.conversion_policy is None
-    assert b.conversion_policy is None
+    assert b.conversion_policy == "round"
 
 
 def test__introspection_meta_new_syntaxe():
@@ -220,8 +220,8 @@ def test__clone_simple_lfo():
     assert new.running is True
     assert new.paused is True
     assert new.waveform == "triangle"
-    assert new.waveform == lfo1.waveform
-    assert new.speed == lfo1.speed
+    assert new.waveform == lfo2.waveform
+    assert new.speed == lfo2.speed
 
     new = lfo2.clone(pause_device=True)
 

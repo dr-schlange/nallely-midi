@@ -206,7 +206,11 @@ class VirtualDevice(threading.Thread):
 
     # We use a consumer to bypass the input queue
     set_pause_cv = VirtualParameter(
-        name="set_pause", range=(0, 1), consumer=True, no_init=True
+        name="set_pause",
+        range=(0, 1),
+        consumer=True,
+        no_init=True,
+        conversion_policy="round",
     )
 
     def __new__(cls, *args, **kwargs):
@@ -275,6 +279,7 @@ class VirtualDevice(threading.Thread):
         # build a signature and __init__ dynamically
         # if __init__ already exists, so we keep it
         if "__init__" in cls.__dict__:
+            super().__init_subclass__()
             return
 
         params = cls.all_parameters()
@@ -337,6 +342,7 @@ class VirtualDevice(threading.Thread):
             setattr(self, param.name, param.get_default())
 
     def _internal_conversion_setup(self):
+        """This call is done for each instance during init. Small run time penalty, but dynamic VParameter addition is automatically handled and self propagated"""
         for parameter in self.all_parameters():
             if parameter.accepted_values and not parameter.disable_policy:
                 map2values_cv_property(self, parameter)
@@ -384,17 +390,10 @@ class VirtualDevice(threading.Thread):
     def set_parameter(self, param: str, value: Any, ctx: ThreadContext | None = None):
         if self._suspended_policy == "drop" and self._suspended:
             return
-        if (
-            self.paused
-            or not self.running
-            or param in self.closed_ports
-        ):
+        if self.paused or not self.running or param in self.closed_ports:
             return
         try:
-            try:
-                previous = getattr(self, param)
-            except Exception:
-                previous = None
+            previous = getattr(self, param, None)
             self.store_input(param, value)  # We store for immediate feedback
             self.input_queues[param].put_nowait(
                 (value, previous, ctx or ThreadContext())
@@ -407,7 +406,12 @@ class VirtualDevice(threading.Thread):
     def store_input(self, param: str, value):
         setattr(self, param, value)
 
-    def sleep(self, t, consider_target_time=False, suspended_policy: Literal["default", "drop"] = "default"):
+    def sleep(
+        self,
+        t,
+        consider_target_time=False,
+        suspended_policy: Literal["default", "drop"] = "default",
+    ):
         self._suspended_policy = suspended_policy
         if self.target_cycle_time > 0 and consider_target_time:
             t = min(float(t), self.target_cycle_time * 1000)
@@ -1058,7 +1062,9 @@ SUBDIVISIONS = {
 @no_registration
 class TimeBasedDevice(VirtualDevice):
     speed_cv = VirtualParameter("speed", range=(0, 10.0), default=0.01)
-    sync_cv = VirtualParameter("sync")
+    sync_cv = VirtualParameter(
+        "sync", range=(0, 1), default=0, conversion_policy="round"
+    )
     subdiv_cv = VirtualParameter(
         "subdiv", accepted_values=(tuple(SUBDIVISIONS.keys())), default="1/1"
     )
@@ -1074,14 +1080,14 @@ class TimeBasedDevice(VirtualDevice):
         sampling_rate: int | Literal["auto"] = "auto",
         **kwargs,
     ):
-        self._speed = Decimal(speed)
         self.auto_srate = "ON" if sampling_rate == "auto" else "OFF"
+        self._speed = Decimal(speed)
         self._sampling_rate = (
             self.compute_sampling_rate() if sampling_rate == "auto" else sampling_rate
         )
         self.time_step = Decimal(speed) / self._sampling_rate
         self.phase = Decimal(0.0)
-        self.sync = None
+        self.sync = 0
         self.window_size = 4
         self.smoothing = Decimal("0.1")
         self.last_sync_time = time.perf_counter()
