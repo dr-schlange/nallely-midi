@@ -166,6 +166,7 @@ const PatcheableParameter = ({
 					labelPosition={reverse ? "bottom" : "top"}
 					disabled={isPitchwheel}
 					onManualSliderChange={handleValueChange}
+					onTap={() => onClick?.(section.device, param)}
 					stripPrefix={(section.device as VirtualDevice).proxy}
 				/>
 			) : (
@@ -176,6 +177,7 @@ const PatcheableParameter = ({
 					labelPosition={reverse ? "bottom" : "top"}
 					disabled={isPitchwheel}
 					onManualSliderChange={handleValueChange}
+					onTap={() => onClick?.(section.device, param)}
 					minValue={param.range[0]}
 					maxValue={param.range[1]}
 					rounded={

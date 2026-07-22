@@ -208,6 +208,7 @@ export const AcceptedValuesKnob = ({
 	value,
 	param,
 	onManualSliderChange,
+	onTap,
 	acronymeLimit = 5,
 	labelPosition = "top",
 	disabled = false,
@@ -218,6 +219,7 @@ export const AcceptedValuesKnob = ({
 	acronymeLimit?: number;
 	labelPosition?: "top" | "bottom";
 	onManualSliderChange: (value: string) => void;
+	onTap?: () => void;
 	disabled?: boolean;
 	stripPrefix?: boolean;
 }) => {
@@ -303,6 +305,7 @@ export const AcceptedValuesKnob = ({
 			const nextIndex = (effectiveIndex + 1) % count;
 			setLocalIndex(nextIndex);
 			onManualSliderChange(acceptedValues[nextIndex].toString());
+			onTap?.();
 		} else if (committed !== null && committed !== effectiveIndex) {
 			setLocalIndex(committed);
 			onManualSliderChange(acceptedValues[committed].toString());
@@ -388,6 +391,7 @@ export const CircularSlider = ({
 	value,
 	param,
 	onManualSliderChange,
+	onTap,
 	acronymeLimit = 5,
 	labelPosition = "top",
 	maxValue = 127,
@@ -401,6 +405,7 @@ export const CircularSlider = ({
 	acronymeLimit?: number;
 	labelPosition?: "top" | "bottom";
 	onManualSliderChange: (value: number) => void;
+	onTap?: () => void;
 	maxValue?: number;
 	minValue?: number;
 	rounded?: boolean;
@@ -419,6 +424,7 @@ export const CircularSlider = ({
 	const ghostValueRef = useRef<number | null>(null);
 	const startY = useRef<number | null>(null);
 	const startValue = useRef<number>(value ?? minValue);
+	const hasMoved = useRef(false);
 	const dragging = useRef(false);
 
 	const span = maxValue - minValue;
@@ -444,12 +450,15 @@ export const CircularSlider = ({
 		startY.current = e.clientY;
 		startValue.current = value || minValue;
 		ghostValueRef.current = null;
+		hasMoved.current = false;
 		dragging.current = true;
 	};
 
 	const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
 		if (!dragging.current || startY.current === null) return;
 		const delta = startY.current - e.clientY;
+		if (Math.abs(delta) < 4) return;
+		hasMoved.current = true;
 		const deltaValue = (delta / 2) * ((maxValue - minValue) / 127);
 		const raw = startValue.current + deltaValue;
 		const newValue = Math.min(
@@ -467,10 +476,14 @@ export const CircularSlider = ({
 			e.currentTarget.releasePointerCapture(e.pointerId);
 		}
 		const committed = ghostValueRef.current;
+		const moved = hasMoved.current;
 		startY.current = null;
 		ghostValueRef.current = null;
+		hasMoved.current = false;
 		setGhostValue(null);
-		if (committed !== null && committed !== value) {
+		if (!moved) {
+			onTap?.();
+		} else if (committed !== null && committed !== value) {
 			onManualSliderChange?.(committed);
 		}
 	};
