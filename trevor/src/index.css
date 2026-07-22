@@ -1102,7 +1102,7 @@ button.active {
 	flex-direction: column; /* nécessaire pour empiler top et bottom */
 	background-color: #f0f0f0;
 	border: 2px solid #808080;
-	/*max-width: 25%;*/
+	max-width: 25%;
 	box-sizing: border-box;
 }
 
@@ -1120,7 +1120,7 @@ button.active {
 
 .parameters-grid {
 	display: flex;
-	justify-content: space-evenly;
+	justify-content: flex-start;
 	flex-direction: column;
 	align-items: center;
 	width: 100%;
@@ -1136,7 +1136,7 @@ button.active {
 	align-items: center;
 	width: 100%;
 	/*gap: 10px;*/
-	justify-content: space-around;
+	justify-content: flex-start;
 	overflow-x: clip;
 	box-sizing: border-box;
 	padding: 5px;
@@ -1149,7 +1149,7 @@ button.active {
 	align-items: center;
 	width: 100%;
 	/*gap: 10px;*/
-	justify-content: space-around;
+	justify-content: flex-start;
 	overflow-x: clip;
 	box-sizing: border-box;
 	padding: 5px;
@@ -1160,7 +1160,7 @@ button.active {
 	flex-direction: column;
 	align-items: center;
 	gap: 2px;
-	width: 30%;
+	width: 25%;
 }
 
 .parameter {
@@ -1701,6 +1701,7 @@ h3.details {
 @media (max-height: 450px) {
 	.parameters-grid {
 		flex-wrap: nowrap;
+		justify-content: flex-start;
 	}
 
 	.parameters-grid.right {
@@ -2013,7 +2014,7 @@ h3.details {
 	.parameters-grid.left {
 		display: flex;
 		flex-direction: row;
-		justify-content: space-around;
+		justify-content: flex-start;
 		align-items: flex-end;
 		overflow-x: auto;
 	}
@@ -2137,7 +2138,7 @@ h3.details {
 	.parameters-grid.right {
 		display: flex;
 		flex-direction: row;
-		justify-content: space-around;
+		justify-content: flex-start;
 		align-items: flex-start;
 		overflow-x: auto;
 		width: 100%;
