@@ -1026,7 +1026,9 @@ const PatchingModal = ({
 							<ScalerForm connection={selectedConnectionInstance} />
 						) : (
 							<div className="parameter-info">
-								<h3>Existing connections</h3>
+								{selectedParameters.length === 0 && (
+									<p>Select a connection or a port to see details</p>
+								)}
 								{selectedParameters.length === 1 &&
 									(() => {
 										const sel = selectedParameters[0];
@@ -1160,8 +1162,7 @@ const PatchingModal = ({
 																				tooltip="Select destination port"
 																				variant="small"
 																				style={{
-																					padding: "0 4px",
-																					flexShrink: 0,
+																					padding: "2px 4px",
 																				}}
 																				onClick={() =>
 																					selectPort(c.dest.device, p, c)
@@ -1241,8 +1242,7 @@ const PatchingModal = ({
 																				tooltip="Select source port"
 																				variant="small"
 																				style={{
-																					padding: "0 4px",
-																					flexShrink: 0,
+																					padding: "2px 4px",
 																				}}
 																				onClick={() =>
 																					selectPort(c.src.device, p, c)

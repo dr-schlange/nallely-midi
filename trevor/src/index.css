@@ -305,9 +305,10 @@ details[open]::details-content {
 	flex-direction: column;
 	align-items: flex-start;
 	justify-content: flex-start;
-	padding: 4px;
-	border-bottom: 2px solid #808080;
-	overflow-y: auto;
+	/*padding: 4px;*/
+	/*border-bottom: 2px solid #808080;*/
+	/*overflow-y: auto;*/
+	box-sizing: border-box;
 }
 
 .bottom-right-panel {
@@ -1100,7 +1101,8 @@ button.active {
 	flex-direction: column; /* nécessaire pour empiler top et bottom */
 	background-color: #f0f0f0;
 	border: 2px solid #808080;
-	max-width: 25%;
+	/*max-width: 25%;*/
+	box-sizing: border-box;
 }
 
 .modal-content {
@@ -1308,15 +1310,14 @@ button.active {
 
 .parameter-info {
 	height: 100%;
+	width: 100%;
 	display: flex;
 	flex-direction: column;
 	justify-content: flex-start;
-	padding: 10px;
+	padding: 5px;
 	background-color: #e0e0e0;
-	border: 2px solid #808080;
-	box-shadow:
-		inset -1px -1px 0px #ffffff,
-		inset 1px 1px 0px #000000;
+	box-sizing: border-box;
+	overflow: auto;
 }
 
 .connections-list {
