@@ -250,6 +250,8 @@ const PatchingModal = ({
 		}[]
 	>([]);
 	const [addModuleOpen, setAddModuleOpen] = useState(false);
+	const [firstDropdownOpen, setFirstDropdownOpen] = useState(false);
+	const [secondDropdownOpen, setSecondDropdownOpen] = useState(false);
 	const websocket = useTrevorWebSocket();
 	const allConnections = useTrevorSelector(
 		(state) => state.nallely.connections,
@@ -747,11 +749,14 @@ const PatchingModal = ({
 	const buildDropDown = (
 		currentSection: MidiDeviceWithSection | VirtualDeviceWithSection,
 		setSection,
+		isOpen: boolean,
+		setIsOpen: (v: boolean) => void,
 	) => {
 		const handleSelect = (
 			section: MidiDeviceWithSection | VirtualDeviceWithSection,
 		) => {
 			setSection(section);
+			setIsOpen(false);
 			onSectionChange?.(section);
 		};
 		const sectionName = internalSectionName(currentSection.section);
@@ -761,7 +766,13 @@ const PatchingModal = ({
 				: currentSection.device.repr;
 		return (
 			<>
-				<details className="details-block panel-dropdown">
+				<details
+					className="details-block panel-dropdown"
+					open={isOpen}
+					onToggle={(e) =>
+						setIsOpen((e.currentTarget as HTMLDetailsElement).open)
+					}
+				>
 					<summary>{label}</summary>
 					<div
 						style={{
@@ -909,7 +920,12 @@ const PatchingModal = ({
 							}}
 						>
 							<div ref={dropdownRef} style={{ width: "100%" }}>
-								{buildDropDown(currentFirstSection, setCurrentFirstSection)}
+								{buildDropDown(
+									currentFirstSection,
+									setCurrentFirstSection,
+									firstDropdownOpen,
+									setFirstDropdownOpen,
+								)}
 							</div>
 
 							<div
@@ -973,7 +989,12 @@ const PatchingModal = ({
 									setSelectedParameters([]);
 							}}
 						>
-							{buildDropDown(currentSecondSection, setCurrentSecondSection)}
+							{buildDropDown(
+								currentSecondSection,
+								setCurrentSecondSection,
+								secondDropdownOpen,
+								setSecondDropdownOpen,
+							)}
 							<div
 								className="parameters-grid right"
 								onScroll={updateConnections}
