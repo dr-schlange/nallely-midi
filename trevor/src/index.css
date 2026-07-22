@@ -857,11 +857,25 @@ button.active {
 	background-color: var(--rack-bg-color);
 	border-bottom: 2px solid #808080;
 	padding: 2px 10px;
+	flex-shrink: 0;
 }
 
 .modal-footer {
 	height: 20px;
 	align-items: center;
+}
+
+.modal-header label {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	font-size: 12px;
+}
+
+.modal-header label select {
+	height: 20px;
+	font-size: 12px;
+	padding: 0 2px;
 }
 
 .modal-vdevice-selection {

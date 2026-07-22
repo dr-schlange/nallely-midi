@@ -13,6 +13,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTrevorSelector } from "../../store";
 import { useTrevorWebSocket } from "../../websockets/websocket";
 import { Terminal } from "../Terminal";
+import { Button } from "../widgets/BaseComponents";
 
 // const AUTO_SAVE_DELAY = 2000;
 const ERROR_DELAY = 3000;
@@ -249,23 +250,34 @@ mod-?:     displays this entry
 
 	return (
 		<div className="patching-modal">
-			<div className="modal-header playground">
-				<button
-					type="button"
-					className="close-button"
+			<div
+				className="modal-header playground"
+				style={{ height: "27px", overflow: "hidden" }}
+			>
+				<Button
+					text="close"
+					tooltip="Close"
+					variant="big"
+					style={{ width: "auto", padding: "0 6px", color: "var(--black)" }}
 					onClick={() => {
 						trevorSocket?.saveCode(code);
 						onClose();
 					}}
-				>
-					Close
-				</button>
+				/>
 
-				<label>
+				<label
+					style={{
+						display: "flex",
+						alignItems: "center",
+						gap: "4px",
+						fontSize: "12px",
+					}}
+				>
 					MIDI:
 					<select
 						value={""}
 						title="Select midi device"
+						style={{ height: "23px", fontSize: "12px", padding: "0 2px" }}
 						onChange={(e) => {
 							const index = e.target.selectedIndex - 1;
 							const val = e.target.value;
@@ -286,11 +298,19 @@ mod-?:     displays this entry
 						))}
 					</select>
 				</label>
-				<label>
+				<label
+					style={{
+						display: "flex",
+						alignItems: "center",
+						gap: "4px",
+						fontSize: "12px",
+					}}
+				>
 					Virtual:
 					<select
 						value={""}
 						title="Select virtual device"
+						style={{ height: "23px", fontSize: "12px", padding: "0 2px" }}
 						onChange={(e) => {
 							const index = e.target.selectedIndex - 1;
 							const val = e.target.value;
@@ -313,32 +333,30 @@ mod-?:     displays this entry
 							))}
 					</select>
 				</label>
-				<button
-					type="button"
-					title="Execute line or selection (ctrl/cmd-d)"
-					className="close-button"
+				<Button
+					text="run"
+					tooltip="Execute line or selection (ctrl/cmd-d)"
+					variant="big"
+					style={{ width: "auto", padding: "0 6px", color: "var(--black)" }}
 					onClick={() => {
 						trevorSocket?.saveCode(code);
 						if (editorRef.current) {
 							execute(editorRef.current, executeCode, false);
 						}
 					}}
-				>
-					run
-				</button>
-				<button
-					type="button"
-					title="Execute and print line or selection (ctrl/cmd-p)"
-					className="close-button"
+				/>
+				<Button
+					text="print"
+					tooltip="Execute and print line or selection (ctrl/cmd-p)"
+					variant="big"
+					style={{ width: "auto", padding: "0 6px", color: "var(--black)" }}
 					onClick={() => {
 						trevorSocket?.saveCode(code);
 						if (editorRef.current) {
 							execute(editorRef.current, executeCode, true);
 						}
 					}}
-				>
-					print
-				</button>
+				/>
 				{/* <button
 					type="button"
 					title="Captures stdout and stderr"
@@ -413,8 +431,10 @@ mod-?:     displays this entry
 					/>
 				</div>
 			</div>
-			<div className="modal-header">
-				<p>mod-?: displays shortcuts</p>
+			<div className="modal-footer">
+				<span style={{ fontSize: "11px", color: "gray" }}>
+					mod-?: displays shortcuts
+				</span>
 			</div>
 		</div>
 	);

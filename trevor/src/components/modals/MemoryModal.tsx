@@ -261,60 +261,48 @@ export const MemoryModal = ({ onClose, onLoad }: MemoryModalProps) => {
 			}}
 		>
 			<div className="modal-header">
-				<button
-					type="button"
-					className="close-button"
+				<Button
+					text="close"
+					tooltip="Close"
+					variant="big"
+					style={{ width: "auto", padding: "0 6px", color: "var(--black)" }}
 					onClick={() => {
 						setDetails(undefined);
 						onClose?.();
 					}}
-				>
-					Close
-				</button>
-				<button
+				/>
+				<Button
+					text="pin"
+					tooltip="Pin current address"
+					variant="big"
 					disabled={!selection}
-					type="button"
-					className="close-button"
+					style={{ width: "auto", padding: "0 6px", color: "var(--black)" }}
 					onClick={selectAddress}
-					style={{
-						...(!selection ? { color: "gray" } : {}),
-					}}
-				>
-					Pin
-				</button>
-				<button
+				/>
+				<Button
+					text="save"
+					tooltip="Save current config"
+					variant="big"
 					disabled={!selection}
-					type="button"
-					className="close-button"
+					style={{ width: "auto", padding: "0 6px", color: "var(--black)" }}
 					onClick={saveConfig}
-					style={{
-						...(!selection ? { color: "gray" } : {}),
-					}}
-				>
-					Save
-				</button>
-				<button
+				/>
+				<Button
+					text="load"
+					tooltip="Load selected config"
+					variant="big"
 					disabled={checkLoad()}
-					type="button"
-					className="close-button"
+					style={{ width: "auto", padding: "0 6px", color: "var(--black)" }}
 					onClick={loadConfig}
-					style={{
-						...(!selection ? { color: "gray" } : {}),
-					}}
-				>
-					Load
-				</button>
-				<button
+				/>
+				<Button
+					text="clear"
+					tooltip="Clear selected address"
+					variant="big"
 					disabled={!selection}
-					type="button"
-					className="close-button"
+					style={{ width: "auto", padding: "0 6px", color: "var(--black)" }}
 					onClick={clearConfig}
-					style={{
-						...(!selection ? { color: "gray" } : {}),
-					}}
-				>
-					Clear
-				</button>
+				/>
 			</div>
 			<div
 				style={{
