@@ -68,6 +68,23 @@ const InstanceCreation = () => {
 		(state) => state.general.trevorWebsocketURL,
 	);
 	const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+	const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+
+	useEffect(() => {
+		const handler = () => setIsFullscreen(!!document.fullscreenElement);
+		document.addEventListener("fullscreenchange", handler);
+		return () => document.removeEventListener("fullscreenchange", handler);
+	}, []);
+
+	const toggleFullscreen = useCallback(async () => {
+		try {
+			if (!document.fullscreenElement) {
+				await document.documentElement.requestFullscreen();
+			} else {
+				await document.exitFullscreen();
+			}
+		} catch (_) {}
+	}, []);
 	const groupedPorts = useMemo(() => {
 		const groups: Record<string, { input: boolean; output: boolean }> = {};
 		for (const inPort of midiInPorts) {
@@ -392,6 +409,13 @@ const InstanceCreation = () => {
 						onClick={handleLogMode}
 					/>
 
+					<Button
+						activated={isFullscreen}
+						text={"F"}
+						tooltip="Fullscreen"
+						variant="big"
+						onClick={toggleFullscreen}
+					/>
 					<Button
 						text={"⚙"}
 						tooltip="Settings"
