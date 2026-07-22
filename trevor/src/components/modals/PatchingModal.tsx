@@ -301,6 +301,9 @@ const PatchingModal = ({
 	const [selectedConnection, setSelectedConnection] = useState<string | null>(
 		null,
 	);
+	const [highlightedConnection, setHighlightedConnection] = useState<
+		string | null
+	>(null);
 	const [isMouseInteracting, setIsMouseInteracting] = useState(false);
 	const allMidiDeviceSection = useTrevorSelector(selectAllMidiDeviceSection);
 	const allVirtualDeviceSection = useTrevorSelector(
@@ -373,7 +376,8 @@ const PatchingModal = ({
 			device: MidiDevice | VirtualDevice,
 			param: MidiParameter | VirtualParameter,
 		) => {
-			setSelectedConnection(null); // Deselect the connection
+			setSelectedConnection(null);
+			setHighlightedConnection(null);
 			setSelectedParameters((prev) => {
 				if (prev.length === 0) {
 					return [{ device, parameter: param }];
@@ -410,6 +414,7 @@ const PatchingModal = ({
 
 	const handleConnectionClick = useCallback(
 		(connection: Connection) => {
+			setHighlightedConnection(null);
 			if (selectedConnection === connectionId(connection)) {
 				setSelectedConnection(null);
 				return;
@@ -505,7 +510,9 @@ const PatchingModal = ({
 		const svg = svgRef.current;
 		svg.innerHTML = "";
 		const sortedConnections = [...connections].sort((a, b) => {
-			const isSelected = (x) => connectionId(x) === selectedConnection;
+			const isSelected = (x) =>
+				connectionId(x) === selectedConnection ||
+				connectionId(x) === highlightedConnection;
 			if (isSelected(a) && !isSelected(b)) return 1;
 			if (!isSelected(a) && isSelected(b)) return -1;
 			return 0;
@@ -520,7 +527,8 @@ const PatchingModal = ({
 				svg,
 				fromElement,
 				toElement,
-				connectionId(connection) === selectedConnection,
+				connectionId(connection) === selectedConnection ||
+					connectionId(connection) === highlightedConnection,
 				{ bouncy: connection.bouncy, muted: connection.muted },
 				connection.id,
 				(event) => {
@@ -545,6 +553,7 @@ const PatchingModal = ({
 	}, [
 		connections,
 		selectedConnection,
+		highlightedConnection,
 		handleConnectionClick,
 		isMouseInteracting,
 	]);
@@ -1041,6 +1050,67 @@ const PatchingModal = ({
 												parameterUUID(c.dest.device, c.dest.parameter) ===
 												selUUID,
 										);
+										const loadedIds = new Set(
+											[
+												currentFirstSection?.device.id,
+												currentSecondSection?.device.id,
+											].filter((id) => id !== undefined),
+										);
+										const selectPort = (
+											deviceId: number,
+											parameter: MidiParameter | VirtualParameter,
+											connection: Connection,
+										) => {
+											const vSection = allVirtualDeviceSection.find(
+												(vs) =>
+													vs.device.id === deviceId &&
+													(isVirtualParameter(parameter)
+														? vs.device.meta.parameters.some(
+																(p) =>
+																	p.cv_name ===
+																	(parameter as VirtualParameter).cv_name,
+															)
+														: true),
+											);
+											const mSection =
+												vSection == null
+													? allMidiDeviceSection.find(
+															(ms) => ms.device.id === deviceId,
+														)
+													: undefined;
+											const device = vSection?.device ?? mSection?.device;
+											if (!device) return;
+											let actualParam:
+												| MidiParameter
+												| VirtualParameter
+												| undefined;
+											if (isVirtualParameter(parameter) && vSection) {
+												actualParam = vSection.device.meta.parameters.find(
+													(p) =>
+														p.cv_name ===
+														(parameter as VirtualParameter).cv_name,
+												);
+											} else if (mSection) {
+												for (const s of mSection.device.meta.sections) {
+													actualParam = s.parameters.find(
+														(p) =>
+															p.name === parameter.name &&
+															p.section_name === parameter.section_name,
+													);
+													if (actualParam) break;
+												}
+											}
+											const resolved = actualParam ?? parameter;
+											setHighlightedConnection(connectionId(connection));
+											setSelectedParameters([{ device, parameter: resolved }]);
+											const el = document.getElementById(
+												`pb-${buildParameterId(deviceId, resolved)}`,
+											);
+											el?.scrollIntoView({
+												behavior: "smooth",
+												block: "nearest",
+											});
+										};
 										return (
 											<>
 												<p
@@ -1073,24 +1143,47 @@ const PatchingModal = ({
 																	p.section_name !== "__virtual__"
 																		? ` - ${p.section_name}`
 																		: "";
+																const inPair = loadedIds.has(c.dest.device);
 																return (
 																	<li
 																		key={c.id}
 																		style={{
 																			fontSize: "11px",
-																			cursor: "pointer",
-																			textDecoration: "underline dotted",
+																			display: "flex",
+																			alignItems: "center",
+																			gap: "4px",
 																		}}
-																		onClick={() =>
-																			navigateToDevice(
-																				c.dest.device,
-																				p.section_name,
-																				p,
-																			)
-																		}
 																	>
-																		{c.dest.repr}
-																		{sec} - {p.name}
+																		{inPair && (
+																			<Button
+																				text=">>"
+																				tooltip="Select destination port"
+																				variant="small"
+																				style={{
+																					padding: "0 4px",
+																					flexShrink: 0,
+																				}}
+																				onClick={() =>
+																					selectPort(c.dest.device, p, c)
+																				}
+																			/>
+																		)}
+																		<span
+																			style={{
+																				cursor: "pointer",
+																				textDecoration: "underline dotted",
+																			}}
+																			onClick={() =>
+																				navigateToDevice(
+																					c.dest.device,
+																					p.section_name,
+																					p,
+																				)
+																			}
+																		>
+																			{c.dest.repr}
+																			{sec} - {p.name}
+																		</span>
 																	</li>
 																);
 															})}
@@ -1106,7 +1199,7 @@ const PatchingModal = ({
 																color: "gray",
 															}}
 														>
-															← input from:
+															input from → :
 														</p>
 														<ul style={{ margin: 0, paddingLeft: "12px" }}>
 															{incoming.map((c) => {
@@ -1115,24 +1208,47 @@ const PatchingModal = ({
 																	p.section_name !== "__virtual__"
 																		? ` - ${p.section_name}`
 																		: "";
+																const inPair = loadedIds.has(c.src.device);
 																return (
 																	<li
 																		key={c.id}
 																		style={{
 																			fontSize: "11px",
-																			cursor: "pointer",
-																			textDecoration: "underline dotted",
+																			display: "flex",
+																			alignItems: "center",
+																			gap: "4px",
 																		}}
-																		onClick={() =>
-																			navigateToDevice(
-																				c.src.device,
-																				p.section_name,
-																				p,
-																			)
-																		}
 																	>
-																		{c.src.repr}
-																		{sec} - {p.name}
+																		<span
+																			style={{
+																				cursor: "pointer",
+																				textDecoration: "underline dotted",
+																			}}
+																			onClick={() =>
+																				navigateToDevice(
+																					c.src.device,
+																					p.section_name,
+																					p,
+																				)
+																			}
+																		>
+																			{c.src.repr}
+																			{sec} - {p.name}
+																		</span>
+																		{inPair && (
+																			<Button
+																				text=">>"
+																				tooltip="Select source port"
+																				variant="small"
+																				style={{
+																					padding: "0 4px",
+																					flexShrink: 0,
+																				}}
+																				onClick={() =>
+																					selectPort(c.src.device, p, c)
+																				}
+																			/>
+																		)}
 																	</li>
 																);
 															})}
