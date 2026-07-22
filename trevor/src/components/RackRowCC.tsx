@@ -83,13 +83,14 @@ const buildFullParameters = (
 			let sectionName = undefined;
 			for (const parameter of section.parameters) {
 				sectionName = parameter.section_name;
-				const liveValue = device.config?.[sectionName]?.[parameter.name];
+				const ccValue =
+					ccValues?.[device.id]?.[device.repr]?.[parameter.section_name]?.[
+						parameter.name
+					];
 				sectionConfig[parameter.name] = {
 					value:
-						liveValue ??
-						ccValues?.[device.id]?.[device.repr]?.[parameter.section_name]?.[
-							parameter.name
-						] ??
+						ccValue ??
+						device.config?.[sectionName]?.[parameter.name] ??
 						parameter.init_value,
 					meta: parameter,
 				};
