@@ -218,6 +218,138 @@ const selectAllMidiDeviceSection = createSelector(
 		),
 );
 
+const SectionDropdown = ({
+	currentSection,
+	onSelect,
+}: {
+	currentSection: MidiDeviceWithSection | VirtualDeviceWithSection;
+	onSelect: (section: MidiDeviceWithSection | VirtualDeviceWithSection) => void;
+}) => {
+	const [isOpen, setIsOpen] = useState(false);
+	const [addModuleOpen, setAddModuleOpen] = useState(false);
+	const allVirtualDeviceSection = useTrevorSelector(
+		selectAllVirtualDeviceSection,
+	);
+	const allMidiDeviceSection = useTrevorSelector(selectAllMidiDeviceSection);
+
+	const sectionName = internalSectionName(currentSection.section);
+	const label =
+		sectionName !== "__virtual__"
+			? `${currentSection.device.repr} - ${sectionName}`
+			: currentSection.device.repr;
+
+	const handleSelect = (
+		section: MidiDeviceWithSection | VirtualDeviceWithSection,
+	) => {
+		onSelect(section);
+		setIsOpen(false);
+	};
+
+	return (
+		<>
+			<details
+				className="details-block panel-dropdown"
+				open={isOpen}
+				onToggle={(e) =>
+					setIsOpen((e.currentTarget as HTMLDetailsElement).open)
+				}
+			>
+				<summary>{label}</summary>
+				<div
+					style={{
+						display: "flex",
+						flexDirection: "row",
+						overflowX: "auto",
+						gap: "4px",
+						padding: "4px",
+						alignItems: "flex-start",
+					}}
+				>
+					{allVirtualDeviceSection.map((vs) => (
+						<div
+							key={`${vs.device.id}`}
+							style={{
+								display: "flex",
+								flexDirection: "column",
+								alignItems: "center",
+								gap: "2px",
+							}}
+						>
+							<VDevice
+								device={vs.device}
+								selected={currentSection.device.id === vs.device.id}
+								onClick={(_dev) => handleSelect(vs)}
+								onDoubleClick={(_dev) => {}}
+								debounceClick={false}
+								noPortIds={true}
+							/>
+							<span
+								style={{
+									fontSize: "9px",
+									color: "gray",
+									maxWidth: "80px",
+									textAlign: "center",
+									overflow: "hidden",
+									textOverflow: "ellipsis",
+									whiteSpace: "nowrap",
+								}}
+							>
+								{vs.device.repr}
+							</span>
+						</div>
+					))}
+					{allMidiDeviceSection.map((ms) => (
+						<div
+							key={`${ms.device.id}::${ms.section.name}`}
+							style={{
+								display: "flex",
+								flexDirection: "column",
+								alignItems: "center",
+								gap: "2px",
+							}}
+						>
+							<MidiSectionDevice
+								device={ms.device}
+								section={ms.section}
+								selected={
+									currentSection.device.id === ms.device.id &&
+									internalSectionName(currentSection.section) ===
+										ms.section.name
+								}
+								onClick={(_dev, _sec) => handleSelect(ms)}
+								debounceClick={false}
+								noPortIds={true}
+							/>
+							<span
+								style={{
+									fontSize: "9px",
+									color: "gray",
+									maxWidth: "80px",
+									textAlign: "center",
+									overflow: "hidden",
+									textOverflow: "ellipsis",
+									whiteSpace: "nowrap",
+								}}
+							>
+								{ms.device.repr}
+							</span>
+						</div>
+					))}
+					<VDevicePlaceholder
+						slots={3}
+						onClick={() => setAddModuleOpen(true)}
+					/>
+				</div>
+			</details>
+			{addModuleOpen && (
+				<Portal>
+					<VDeviceSelectionModal onClose={() => setAddModuleOpen(false)} />
+				</Portal>
+			)}
+		</>
+	);
+};
+
 const PatcheableParameter = ({
 	currentValue,
 	section,
@@ -394,9 +526,6 @@ const PatchingModal = ({
 			parameter: MidiParameter | VirtualParameter | PadsOrKeys | PadOrKey;
 		}[]
 	>([]);
-	const [addModuleOpen, setAddModuleOpen] = useState(false);
-	const [firstDropdownOpen, setFirstDropdownOpen] = useState(false);
-	const [secondDropdownOpen, setSecondDropdownOpen] = useState(false);
 	const websocket = useTrevorWebSocket();
 	const virtualDevices = useTrevorSelector(
 		(state) => state.nallely.virtual_devices,
@@ -472,8 +601,6 @@ const PatchingModal = ({
 	const allVirtualDeviceSection = useTrevorSelector(
 		selectAllVirtualDeviceSection,
 	);
-	const allSections = [...allMidiDeviceSection, ...allVirtualDeviceSection];
-
 	const navigateToDevice = useCallback(
 		(
 			deviceId: number,
@@ -1012,129 +1139,6 @@ const PatchingModal = ({
 		[currentSecondSection],
 	);
 
-	const buildDropDown = (
-		currentSection: MidiDeviceWithSection | VirtualDeviceWithSection,
-		setSection,
-		isOpen: boolean,
-		setIsOpen: (v: boolean) => void,
-	) => {
-		const handleSelect = (
-			section: MidiDeviceWithSection | VirtualDeviceWithSection,
-		) => {
-			setSection(section);
-			setIsOpen(false);
-			onSectionChange?.(section);
-		};
-		const sectionName = internalSectionName(currentSection.section);
-		const label =
-			sectionName !== "__virtual__"
-				? `${currentSection.device.repr} - ${sectionName}`
-				: currentSection.device.repr;
-		return (
-			<>
-				<details
-					className="details-block panel-dropdown"
-					open={isOpen}
-					onToggle={(e) =>
-						setIsOpen((e.currentTarget as HTMLDetailsElement).open)
-					}
-				>
-					<summary>{label}</summary>
-					<div
-						style={{
-							display: "flex",
-							flexDirection: "row",
-							overflowX: "auto",
-							gap: "4px",
-							padding: "4px",
-							alignItems: "flex-start",
-						}}
-					>
-						{allVirtualDeviceSection.map((vs) => (
-							<div
-								key={`${vs.device.id}`}
-								style={{
-									display: "flex",
-									flexDirection: "column",
-									alignItems: "center",
-									gap: "2px",
-								}}
-							>
-								<VDevice
-									device={vs.device}
-									selected={currentSection.device.id === vs.device.id}
-									onClick={(_dev) => handleSelect(vs)}
-									onDoubleClick={(_dev) => {}}
-									debounceClick={false}
-									noPortIds={true}
-								/>
-								<span
-									style={{
-										fontSize: "9px",
-										color: "gray",
-										maxWidth: "80px",
-										textAlign: "center",
-										overflow: "hidden",
-										textOverflow: "ellipsis",
-										whiteSpace: "nowrap",
-									}}
-								>
-									{vs.device.repr}
-								</span>
-							</div>
-						))}
-						{allMidiDeviceSection.map((ms) => (
-							<div
-								key={`${ms.device.id}::${ms.section.name}`}
-								style={{
-									display: "flex",
-									flexDirection: "column",
-									alignItems: "center",
-									gap: "2px",
-								}}
-							>
-								<MidiSectionDevice
-									device={ms.device}
-									section={ms.section}
-									selected={
-										currentSection.device.id === ms.device.id &&
-										internalSectionName(currentSection.section) ===
-											ms.section.name
-									}
-									onClick={(_dev, _sec) => handleSelect(ms)}
-									debounceClick={false}
-									noPortIds={true}
-								/>
-								<span
-									style={{
-										fontSize: "9px",
-										color: "gray",
-										maxWidth: "80px",
-										textAlign: "center",
-										overflow: "hidden",
-										textOverflow: "ellipsis",
-										whiteSpace: "nowrap",
-									}}
-								>
-									{ms.device.repr}
-								</span>
-							</div>
-						))}
-						<VDevicePlaceholder
-							slots={3}
-							onClick={() => setAddModuleOpen(true)}
-						/>
-					</div>
-				</details>
-				{addModuleOpen && (
-					<Portal>
-						<VDeviceSelectionModal onClose={() => setAddModuleOpen(false)} />
-					</Portal>
-				)}
-			</>
-		);
-	};
-
 	return (
 		<div className="patching-modal" ref={modalRef}>
 			<div className="modal-header">
@@ -1186,12 +1190,13 @@ const PatchingModal = ({
 							}}
 						>
 							<div ref={dropdownRef} style={{ width: "100%" }}>
-								{buildDropDown(
-									currentFirstSection,
-									setCurrentFirstSection,
-									firstDropdownOpen,
-									setFirstDropdownOpen,
-								)}
+								<SectionDropdown
+									currentSection={currentFirstSection}
+									onSelect={(section) => {
+										setCurrentFirstSection(section);
+										onSectionChange?.(section);
+									}}
+								/>
 							</div>
 
 							<div
@@ -1256,12 +1261,13 @@ const PatchingModal = ({
 									setSelectedParameters([]);
 							}}
 						>
-							{buildDropDown(
-								currentSecondSection,
-								setCurrentSecondSection,
-								secondDropdownOpen,
-								setSecondDropdownOpen,
-							)}
+							<SectionDropdown
+								currentSection={currentSecondSection}
+								onSelect={(section) => {
+									setCurrentSecondSection(section);
+									onSectionChange?.(section);
+								}}
+							/>
 							<div
 								className="parameters-grid right"
 								onScroll={updateConnections}
