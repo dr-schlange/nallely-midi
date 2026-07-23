@@ -1,7 +1,6 @@
 /** biome-ignore-all lint/a11y/noLabelWithoutControl: <explanation> */
 import {
 	lazy,
-	type ReactElement,
 	Suspense,
 	useCallback,
 	useEffect,
@@ -14,27 +13,21 @@ import type {
 	MidiDevice,
 	MidiDeviceSection,
 	MidiDeviceWithSection,
-	MidiParameter,
 	VirtualDevice,
 	VirtualDeviceSection,
 	VirtualDeviceWithSection,
-	VirtualParameter,
 } from "../model";
-import { selectChannels, useTrevorDispatch, useTrevorSelector } from "../store";
+import { useTrevorDispatch, useTrevorSelector } from "../store";
 import { setCurrentAddress } from "../store/runtimeSlice";
-import { drawConnection, drawCurvedConnection } from "../utils/svgUtils";
 import {
-	buildConnectionName,
-	buildParameterId,
-	buildSectionId,
 	connectionId,
 	devUID,
 	isVirtualDevice,
 	rejectedClasses,
-	resolveAcceptedValueIndex,
 } from "../utils/utils";
 import { useTrevorWebSocket } from "../websockets/websocket";
-import DragNumberInput from "./DragInputs";
+import { useConnectionDrawing } from "../hooks/useConnectionDrawing";
+import { SidePanel } from "./SidePanel";
 import { AboutModal } from "./modals/AboutModal";
 import { MemoryModal } from "./modals/MemoryModal";
 import PatchingModal from "./modals/PatchingModal";
@@ -43,8 +36,6 @@ import { RackRow } from "./RackRow";
 import { type RackRowCCRef, RackRowCCs } from "./RackRowCC";
 import { RackRowVirtual } from "./RackRowVirtual";
 import { type RackRowWidgetRef, RackRowWidgets } from "./RackRowWidgets";
-import { ScalerForm } from "./ScalerForm";
-import { Button } from "./widgets/BaseComponents";
 
 const Playground = lazy(() =>
 	import("./modals/Playground").then((module) => ({
@@ -52,21 +43,9 @@ const Playground = lazy(() =>
 	})),
 );
 
-const ORIENTATIONS = {
-	horizontal: "⇅",
-	vertical: "⇄",
-};
-
 interface DevicePatchingProps {
 	open3DView?: (open: boolean) => void;
 }
-
-const findDevice = (
-	deviceId: number,
-	allDevices: Array<MidiDevice | VirtualDevice>,
-) => {
-	return allDevices.find((d) => d.id === deviceId);
-};
 
 const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 	const mainSectionRef = useRef(null);
@@ -88,21 +67,12 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 	const allConnections = useTrevorSelector(
 		(state) => state.nallely.connections,
 	);
-	const svgRef = useRef<SVGSVGElement>(null);
 
 	const midi_devices = useTrevorSelector((state) => state.nallely.midi_devices);
 	const virtual_devices = useTrevorSelector(
 		(state) => state.nallely.virtual_devices,
 	);
-	const all_devices = useMemo(
-		() => [...midi_devices, ...virtual_devices],
-		[midi_devices, virtual_devices],
-	);
 	const trevorSocket = useTrevorWebSocket();
-	const exposedServices = useTrevorSelector(
-		(state) => state.nallely.exposed_services,
-	);
-	const [information, setInformation] = useState<ReactElement>();
 	const [currentSelected, setCurrentSelected] = useState<string>();
 	const setCurrentSelectedDevice = useCallback(
 		(device: MidiDevice | VirtualDevice) => {
@@ -112,10 +82,14 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 	);
 
 	const [selectedConnection, setSelectedConnection] = useState<string>();
-	const [tempValues, setTempValues] = useState<
-		Record<number, Record<string, string | undefined>>
-	>({});
-	const channels = useTrevorSelector(selectChannels);
+
+	const { svgRef, updateConnections, updateConnectionsThrottled } =
+		useConnectionDrawing({
+			allConnections,
+			selectedConnection,
+			selection,
+		});
+
 	const widgetRack = useRef<RackRowWidgetRef>(null);
 	const ccsRack = useRef<RackRowCCRef>(null);
 	const [isExpanded, setIsExpanded] = useState<boolean>(false);
@@ -123,28 +97,10 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 		window.innerHeight < 450 ? "horizontal" : "vertical",
 	);
 
-	// Refs for stable updateConnections function
-	const allConnectionsRef = useRef(allConnections);
-	const selectedConnectionRef = useRef(selectedConnection);
-	const selectionRef = useRef(selection);
-	const friends = useTrevorSelector((state) => state.general.friends);
-
 	const [displayedSection, setDisplayedSection] = useState<
 		MidiDeviceWithSection | VirtualDeviceWithSection | undefined
 	>(undefined);
 
-	// Sync refs with current values
-	useEffect(() => {
-		allConnectionsRef.current = allConnections;
-	}, [allConnections]);
-
-	useEffect(() => {
-		selectedConnectionRef.current = selectedConnection;
-	}, [selectedConnection]);
-
-	useEffect(() => {
-		selectionRef.current = selection;
-	}, [selection]);
 	const currentAddress = useTrevorSelector(
 		(state) => state.runTime.currentAddress,
 	);
@@ -195,217 +151,6 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 		setIsPlaygroundOpen(true);
 	};
 
-	const createVirtualInput = useCallback(
-		(
-			device: VirtualDevice,
-			parameter: VirtualParameter,
-			value: string | number | boolean,
-		) => {
-			const tempDevice = tempValues[device.id] || {};
-			const tempValue = tempDevice[parameter.name];
-			if (parameter.accepted_values?.length > 0) {
-				return (
-					<select
-						style={{
-							minWidth: "0",
-							direction: "rtl",
-							textAlign: "left",
-							height: "24px",
-							lineHeight: "24px",
-							paddingTop: "2px",
-							paddingBottom: "4px",
-							width: "100%",
-						}}
-						value={value ? value.toString() : "--"}
-						onChange={(e) =>
-							trevorSocket?.setVirtualValue(device, parameter, e.target.value)
-						}
-					>
-						{parameter.accepted_values.map((v) => (
-							<option key={v.toString()} value={v.toString()} dir="ltr">
-								{v.toString()}
-							</option>
-						))}
-					</select>
-				);
-			}
-			const currentValue =
-				tempValue ?? device.config[parameter.name]?.toString() ?? "";
-			if (typeof value === "number") {
-				return (
-					<DragNumberInput
-						clearDecimalButton
-						style={{
-							width: "100%",
-							fontSize: "12px",
-						}}
-						value={currentValue}
-						onBlur={(value) => {
-							if (!Number.isNaN(Number.parseFloat(value))) {
-								trevorSocket?.setVirtualValue(device, parameter, value);
-							}
-						}}
-						onChange={(value) => {
-							setTempValues({
-								...tempValues,
-								[device.id]: {
-									...tempValues[device.id],
-									[parameter.name]: value,
-								},
-							});
-						}}
-						range={parameter.range}
-					/>
-				);
-			}
-			if (typeof value === "string") {
-				return (
-					<input
-						style={{
-							width: "100%",
-							fontSize: "12px",
-						}}
-						type="text"
-						value={currentValue}
-						onChange={(e) => {
-							const val = e.target.value;
-							setTempValues({
-								...tempValues,
-								[device.id]: {
-									...tempValues[device.id],
-									[parameter.name]: val,
-								},
-							});
-						}}
-						onBlur={(e) => {
-							const newVal = e.target.value;
-							trevorSocket?.setVirtualValue(device, parameter, newVal);
-						}}
-					/>
-				);
-			}
-			if (typeof value === "boolean") {
-				return (
-					<input
-						type="checkbox"
-						checked={Boolean(device.config[parameter.name]) ?? false}
-						onChange={(e) => {
-							const newVal = !e.target.value;
-							trevorSocket?.setVirtualValue(device, parameter, newVal);
-						}}
-					/>
-				);
-			}
-			// If we have a "undefined" as input
-			// return (
-			// 	<DragNumberInput
-			// 		style={{
-			// 			width: "100%",
-			// 			fontSize: "12px",
-			// 		}}
-			// 		value={currentValue}
-			// 		onBlur={(value) => {
-			// 			if (!Number.isNaN(Number.parseFloat(value))) {
-			// 				trevorSocket?.setVirtualValue(device, parameter, value);
-			// 			}
-			// 		}}
-			// 		onChange={(value) => {
-			// 			setTempValues({
-			// 				...tempValues,
-			// 				[device.id]: {
-			// 					...tempValues[device.id],
-			// 					[parameter.name]: value,
-			// 				},
-			// 			});
-			// 		}}
-			// 		range={parameter.range}
-			// 	/>
-			// );
-		},
-		[trevorSocket, tempValues],
-	);
-
-	const createMidiParameterInput = useCallback(
-		(device: MidiDevice, parameter: MidiParameter) => {
-			const tempDevice = tempValues[device.id] || {};
-			const sectionName = parameter.section_name;
-			const parameterName = parameter.name;
-			const key = `${sectionName}::${parameterName}`;
-			const tempValue = tempDevice[key];
-			const currentValue =
-				tempValue ??
-				device.config[sectionName]?.[parameterName]?.toString() ??
-				"0";
-			if (parameter.accepted_values?.length > 0) {
-				const acceptedValues = parameter.accepted_values;
-				const [, upper] = parameter.range;
-				const index = resolveAcceptedValueIndex(
-					currentValue,
-					acceptedValues,
-					upper,
-				);
-				const value = acceptedValues[index];
-				return (
-					<select
-						style={{
-							minWidth: "132px",
-							maxWidth: "132px",
-						}}
-						value={value ?? "--"}
-						onChange={(e) =>
-							trevorSocket?.setParameterValue(
-								device.id,
-								sectionName,
-								parameterName,
-								e.target.value,
-							)
-						}
-					>
-						{parameter.accepted_values.map((v) => (
-							<option key={v.toString()} value={v.toString()} dir="ltr">
-								{v.toString()}
-							</option>
-						))}
-					</select>
-				);
-			}
-			return (
-				<DragNumberInput
-					style={{
-						width: "100%",
-					}}
-					value={currentValue}
-					onBlur={(value) => {
-						if (!Number.isNaN(Number.parseFloat(value))) {
-							trevorSocket?.setParameterValue(
-								device.id,
-								parameter.section_name,
-								parameter.name,
-								Number.parseFloat(value),
-							);
-						}
-					}}
-					onChange={(value) => {
-						setTempValues((prev) => ({
-							...prev,
-							[device.id]: {
-								...prev[device.id],
-								[key]: value,
-							},
-						}));
-					}}
-					range={parameter.range}
-				/>
-			);
-		},
-		[trevorSocket, tempValues],
-	);
-
-	const updateInfoRef =
-		useRef<
-			(device?: VirtualDevice | MidiDevice, section?: MidiDeviceSection) => void
-		>(null);
-
 	const handleMidiDeviceClick = useCallback(
 		(device: MidiDevice) => {
 			setCurrentSelectedDevice(device);
@@ -415,450 +160,49 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 			setSelectedConnection(undefined);
 			setSelection([]);
 			setDisplayedSection(undefined);
-			updateInfoRef.current?.(device);
 		},
 		[associateMode, setCurrentSelectedDevice],
 	);
 
-	const updateInfo = useCallback(
-		(
-			device: VirtualDevice | MidiDevice | undefined,
-			section: MidiDeviceSection | undefined = undefined,
-		) => {
-			if (device === undefined) {
-				setInformation(undefined);
-				return;
-			}
-			if (isVirtualDevice(device)) {
-				if (friends && Object.keys(friends).length === 0) {
-					trevorSocket.scanForFriends();
-				}
-				const exposedTo = exposedServices[device.id]?.map(([, ip]) => ip) ?? [];
-				setInformation(
-					<>
-						{device.meta.parameters.map((param) => (
-							<div
-								key={param.name}
-								style={{
-									paddingLeft: "4px",
-									paddingRight: "4px",
-								}}
-							>
-								<label
-									style={{
-										display: "flex",
-										alignItems: "baseline",
-										width: "100%",
-										fontSize: "14px",
-									}}
-								>
-									<p
-										style={{
-											margin: "0px 0px 3px",
-											overflowInline: "auto",
-											width: "100%",
-										}}
-									>
-										{param.name}
-									</p>
-									{createVirtualInput(device, param, device.config[param.name])}
-								</label>
-							</div>
-						))}
-						{!device.proxy && (
-							<>
-								<hr />
-								<details>
-									<summary>Clone device</summary>
-									<Button
-										text="Clone and replace"
-										tooltip="Clone the device and kills the original device"
-										onClick={() => {
-											trevorSocket?.clone_device(device.id, {
-												startClone: true,
-												suicide: true,
-											});
-											setCurrentSelected(undefined);
-											setSelectedConnection(undefined);
-											setSelection([]);
-											setInformation(undefined);
-										}}
-										className="menu-button"
-									/>
-									<Button
-										text="Clone and pause"
-										tooltip="Clone the device and pause it"
-										onClick={() => {
-											trevorSocket?.clone_device(device.id, {
-												startClone: false,
-												suicide: false,
-											});
-											setCurrentSelected(undefined);
-											setSelectedConnection(undefined);
-											setSelection([]);
-											setInformation(undefined);
-										}}
-										className="menu-button"
-									/>
-									<Button
-										text="Clone and pause original"
-										tooltip="Clone the device and pause original device"
-										onClick={() => {
-											trevorSocket?.clone_device(device.id, {
-												startClone: true,
-												pauseDevice: true,
-											});
-											setCurrentSelected(undefined);
-											setSelectedConnection(undefined);
-											setSelection([]);
-											setInformation(undefined);
-										}}
-										className="menu-button"
-									/>
-									<Button
-										text="Clone without patch"
-										tooltip="Clone the device without existing patches"
-										onClick={() => {
-											trevorSocket?.clone_device(device.id, {
-												withLinks: false,
-											});
-											setCurrentSelected(undefined);
-											setSelectedConnection(undefined);
-											setSelection([]);
-											setInformation(undefined);
-										}}
-										className="menu-button"
-									/>
-								</details>
-								<details>
-									<summary>Expose to friends</summary>
-									<div className="details-content">
-										{Object.entries(friends).map(([ip, [name, _]]) => (
-											<Button
-												key={`${ip}`}
-												text={`${name} - ${ip}`}
-												tooltip={`Expose neuron to ${name} living at ${ip}`}
-												activated={exposedTo.includes(ip)}
-												onClick={() => {
-													if (exposedTo.includes(ip)) {
-														trevorSocket.unexposeNeuron(device.id, ip);
-													} else {
-														trevorSocket.exposeNeuron(device.id, ip);
-													}
-												}}
-												className="menu-button"
-												style={{
-													fontSize: "13px",
-												}}
-											/>
-										))}
-									</div>
-									<hr />
-								</details>
-							</>
-						)}
-						<details>
-							<summary>Danger zone</summary>
-							<div className="details-content">
-								<Button
-									text="Random preset"
-									tooltip="Generates a random preset"
-									onClick={() => trevorSocket?.randomPreset(device.id)}
-									className="menu-button"
-								/>
-								{!device.proxy ? (
-									<Button
-										text="Kill"
-										tooltip="Kill the device and removes it from the session"
-										onClick={() => {
-											trevorSocket?.killDevice(device.id);
-											setCurrentSelected(undefined);
-											setSelectedConnection(undefined);
-											setSelection([]);
-											setInformation(undefined);
-										}}
-										className="menu-button"
-									/>
-								) : (
-									<Button
-										text="Unregister"
-										tooltip="Unregister the service from the network bus"
-										onClick={() => {
-											trevorSocket?.unregisterService(device.id, device.repr);
-											setCurrentSelected(undefined);
-											setSelectedConnection(undefined);
-											setSelection([]);
-											setInformation(undefined);
-										}}
-										className="menu-button"
-									/>
-								)}
-							</div>
-						</details>
-					</>,
-				);
-				return;
-			}
-			if (section) {
-				// MIDI device click
-				if (displayedSection?.section?.name !== section.name) {
-					setDisplayedSection({ device, section });
-				}
-				setInformation(
-					<>
-						<p style={{ marginLeft: "5px", fontSize: "18px" }}>
-							{device.repr} {section?.name}
-						</p>
-						{section?.parameters.map((param) => {
-							return (
-								<label
-									key={param.name}
-									style={{
-										width: "100%",
-										display: "flex",
-										flexDirection: "row",
-										alignItems: "baseline",
-									}}
-								>
-									<p
-										style={{
-											margin: 0,
-											paddingLeft: "4px",
-											paddingRight: "4px",
-											width: "100%",
-											overflowInline: "auto",
-										}}
-									>
-										{param.name}
-									</p>
-									{createMidiParameterInput(device, param)}
-								</label>
-							);
-						})}
-						<hr />
-						<Button
-							text="Back to device view"
-							tooltip="Returns to the main device view"
-							onClick={() => handleMidiDeviceClick(device)}
-							className="menu-button"
-						/>
-					</>,
-				);
-				return;
-			}
-			// Device information on the right panel
-			setInformation(
-				<>
-					<p style={{ marginLeft: "5px", fontSize: "18px" }}>{device.repr}</p>
-					<Button
-						text="Random preset"
-						tooltip="Generates a random preset"
-						onClick={() => trevorSocket?.randomPreset(device.id)}
-						className="menu-button"
-					/>
-					<hr />
-					<label
-						style={{
-							width: "100%",
-							display: "flex",
-							marginLeft: "10px",
-							alignItems: "baseline",
-						}}
-					>
-						<p
-							style={{
-								margin: "0px",
-								width: "50%",
-								overflowInline: "auto",
-							}}
-						>
-							channel
-						</p>
-						<input
-							type="number"
-							inputMode="numeric"
-							onChange={(e) => {
-								trevorSocket?.setDeviceChannel(
-									device,
-									Number.parseInt(e.target.value, 10) || 0,
-								);
-							}}
-							min={0}
-							max={15}
-							value={channels[device.id]}
-						/>
-					</label>
-					<hr />
-					{device.meta.sections?.map((section) => (
-						<Button
-							key={section.name}
-							text={`${section.name}`}
-							tooltip={`Opens section ${section.name}`}
-							onClick={() => updateInfo(device, section)}
-							className="menu-button"
-						/>
-					))}
-					<hr />
-					<Button
-						text="Force not off"
-						tooltip="Send multiple note off to the device"
-						onClick={() => trevorSocket?.forceNoteOff(device.id)}
-						className="menu-button"
-					/>
-					<details>
-						<summary>Danger zone</summary>
-						<div className="details-content">
-							<Button
-								text="Kill device"
-								tooltip="Kills the device"
-								onClick={() => trevorSocket?.killDevice(device.id)}
-								className="menu-button"
-							/>
-						</div>
-					</details>
-					<hr />
-				</>,
-			);
-		},
-		[
-			trevorSocket,
-			displayedSection,
-			handleMidiDeviceClick,
-			createMidiParameterInput,
-			channels,
-			createVirtualInput,
-			exposedServices,
-			friends,
-			currentSelected,
-		],
-	);
-
-	useEffect(() => {
-		updateInfoRef.current = updateInfo;
-	}, [updateInfo]);
+	const handleDeselect = useCallback(() => {
+		setCurrentSelected(undefined);
+		setSelectedConnection(undefined);
+		setSelection([]);
+		setDisplayedSection(undefined);
+	}, []);
 
 	const resetAll = () => {
 		trevorSocket?.resetAll();
 		widgetRack.current?.resetAll();
 		ccsRack.current?.resetAll();
-		setInformation(undefined);
+		setCurrentSelected(undefined);
+		setDisplayedSection(undefined);
 	};
 
-	useEffect(() => {
-		updateConnections();
-	}, [selection]);
+	const openMemory = () => setIsMemoryOpen(true);
 
-	const displayConnectionMenu = useCallback(
-		(connection: Connection) => {
-			setSelectedConnection(connectionId(connection));
-			setCurrentSelected(connection.id.toString());
-			const srcDevice = findDevice(connection.src.device, all_devices);
-			const destDevice = findDevice(connection.dest.device, all_devices);
-			setInformation(
-				<>
-					<h3>Patch setup</h3>
-					<ScalerForm connection={connection} />
-					<div
-						style={{
-							display: "flex",
-							flexDirection: "column",
-							justifyContent: "space-evenly",
-							marginTop: "10px",
-						}}
-					>
-						{srcDevice && destDevice && (
-							<details>
-								<summary>Danger zone</summary>
-								<div className="details-content">
-									<Button
-										text="Delete"
-										tooltip="Delete patch"
-										onClick={() => {
-											setSelectedConnection(undefined);
-											trevorSocket?.associateParameters(
-												srcDevice,
-												connection.src.parameter,
-												destDevice,
-												connection.dest.parameter,
-												true,
-											);
-										}}
-										className="menu-button"
-									/>
-								</div>
-							</details>
-						)}
-					</div>
-				</>,
-			);
+	const handleDeviceSelect = useCallback(
+		(device: MidiDevice | VirtualDevice) => {
+			if (isVirtualDevice(device)) {
+				setSelectedConnection(undefined);
+				setDisplayedSection(undefined);
+				setCurrentSelectedDevice(device);
+				setIsExpanded(true);
+				const virtualSection = {
+					parameters: device.meta.parameters,
+				} as VirtualDeviceSection;
+				setSelection([{ device, section: virtualSection }]);
+			} else {
+				handleMidiDeviceClick(device as MidiDevice);
+			}
 		},
-		[trevorSocket, trevorSocket?.socket, all_devices],
+		[handleMidiDeviceClick, setCurrentSelectedDevice],
 	);
-
-	useEffect(() => {
-		const newTempvalues = { ...tempValues };
-		for (const device of midi_devices) {
-			const config = newTempvalues[device.id] || {};
-			for (const [section, parameter] of Object.entries(device.config)) {
-				for (const [parameterName, parameterValue] of Object.entries(
-					parameter,
-				)) {
-					const key = `${section}::${parameterName}`;
-					config[key] = parameterValue.toString();
-				}
-			}
-			newTempvalues[device.id] = config;
-		}
-		for (const device of virtual_devices) {
-			const config = newTempvalues[device.id] || {};
-			for (const [parameterName, parameterValue] of Object.entries(
-				device.config,
-			)) {
-				config[parameterName] = parameterValue.toString();
-			}
-			newTempvalues[device.id] = config;
-		}
-		setTempValues(newTempvalues);
-	}, [midi_devices, virtual_devices]);
-
-	// Updates depending on the new devices or connections
-	useEffect(() => {
-		const device = [...midi_devices, ...virtual_devices].find(
-			(d) => `${d.id}::${d.repr}` === currentSelected,
-		);
-		if (device) {
-			updateInfo(
-				[...midi_devices, ...virtual_devices].find(
-					(d) => `${d.id}::${d.repr}` === currentSelected,
-				),
-				displayedSection?.section as MidiDeviceSection,
-			);
-			return;
-		}
-		const connection = [...allConnections].find(
-			(d) => d?.id.toString() === currentSelected,
-		);
-		if (connection) {
-			displayConnectionMenu(connection);
-			return;
-		}
-		setInformation(undefined);
-	}, [
-		tempValues,
-		midi_devices,
-		virtual_devices,
-		allConnections,
-		displayedSection,
-		currentSelected,
-		updateInfo,
-		displayConnectionMenu,
-	]);
 
 	const handleParameterClick = useCallback(
 		(device: VirtualDevice) => {
 			setSelectedConnection(undefined);
 			if (!associateMode) {
-				updateInfoRef.current?.(device);
 				setCurrentSelectedDevice(device);
 				const virtualSection = {
 					parameters: device.meta.parameters,
@@ -881,15 +225,10 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 					}));
 					if (isExpanded) {
 						setDisplayedSection((_) => selection[0]);
-						updateInfoRef.current?.(
-							selection[0].device,
-							selection[0].section as MidiDeviceSection,
-						);
 					}
 					setIsModalOpen(true);
 				} else {
 					setSelection((prev) => [...prev, newElement]);
-					updateInfoRef.current?.(device);
 					setCurrentSelectedDevice(device);
 					setDisplayedSection(newElement);
 				}
@@ -902,7 +241,6 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 		(device: MidiDevice, section: MidiDeviceSection) => {
 			setSelectedConnection(undefined);
 			if (!associateMode) {
-				updateInfoRef.current?.(device, section);
 				setCurrentSelectedDevice(device);
 				setDisplayedSection((_) => ({ device, section }));
 				setSelection([{ device, section }]);
@@ -932,14 +270,9 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 					}));
 					if (isExpanded) {
 						setDisplayedSection((_) => selection[0]);
-						updateInfoRef.current?.(
-							selection[0].device,
-							selection[0].section as MidiDeviceSection,
-						);
 					}
 					setIsModalOpen(true);
 				} else {
-					updateInfoRef.current?.(device, section);
 					setCurrentSelectedDevice(device);
 					setSelection((prev) => [...prev, newElement]);
 				}
@@ -956,149 +289,6 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 		setIsMemoryOpen(false);
 	};
 
-	const [linkMouseInteraction, setLinkMouseInteraction] = useState(false);
-	const updateConnectionsRef = useRef<number | null>(null);
-	const throttleTimeoutRef = useRef<number | null>(null);
-
-	const updateConnections = useCallback(() => {
-		if (linkMouseInteraction) {
-			return;
-		}
-
-		// Debounce: cancel previous scheduled update
-		if (updateConnectionsRef.current !== null) {
-			cancelAnimationFrame(updateConnectionsRef.current);
-		}
-
-		updateConnectionsRef.current = requestAnimationFrame(() => {
-			const svg = svgRef.current;
-			if (!svg) return;
-
-			// Clearing the innerHTML looks like it's faster than removing child nodes
-			svg.innerHTML = "";
-
-			updateConnectionsRef.current = null;
-			// Use refs to get current values without triggering dependency changes
-			const allConnections = allConnectionsRef.current;
-			const selectedConnection = selectedConnectionRef.current;
-			const selection = selectionRef.current;
-
-			// Memoize sorted connections and element queries
-			const sortedConnections = [...allConnections].sort((a, b) => {
-				const isSelected = (x) => connectionId(x) === selectedConnection;
-				if (isSelected(a) && !isSelected(b)) return 1;
-				if (!isSelected(a) && isSelected(b)) return -1;
-				return 0;
-			});
-
-			// Cache element queries
-			const elementCache = new Map<string, Element | null>();
-			const getElement = (id: string) => {
-				if (!elementCache.has(id)) {
-					elementCache.set(id, document.querySelector(`[id="${id}"]`));
-				}
-				return elementCache.get(id) || null;
-			};
-			for (const connection of sortedConnections) {
-				const srcSection = connection.src.parameter.section_name;
-				const srcId =
-					srcSection === "__virtual__"
-						? buildParameterId(connection.src.device, connection.src.parameter)
-						: buildSectionId(connection.src.device, srcSection);
-				const dstSection = connection.dest.parameter.section_name;
-				const destId =
-					dstSection === "__virtual__"
-						? buildParameterId(
-								connection.dest.device,
-								connection.dest.parameter,
-							)
-						: buildSectionId(connection.dest.device, dstSection);
-				const fromElement = getElement(srcId);
-				const toElement = getElement(destId);
-				const highlightConnected = selection.length === 1;
-				const firstSelected = selection[0];
-				const firstSelectedSection =
-					firstSelected?.section.parameters[0]?.section_name ||
-					firstSelected?.section.pads_or_keys?.section_name;
-				const connectionRepr = connectionId(connection);
-				const highlighted =
-					connectionRepr === selectedConnection ||
-					(highlightConnected &&
-						(connectionRepr.startsWith(
-							`${firstSelected?.device.id}::${firstSelectedSection}`,
-						) ||
-							connectionRepr.includes(
-								`-${firstSelected?.device.id}::${firstSelectedSection}`,
-							)));
-				drawCurvedConnection(
-					svg,
-					fromElement,
-					toElement,
-					highlighted,
-					{ bouncy: connection.bouncy, muted: connection.muted },
-					connection.id,
-				);
-
-				// specific code to draw connections with the widgets (scopes, etc)
-				if (connection.src.repr.includes("WebSocketBus")) {
-					const port = (connection.src.parameter as VirtualParameter).cv_name;
-					const widgetId = port.split(/_/)[0];
-					const widgetTarget = getElement(widgetId);
-					drawConnection(svg, widgetTarget, fromElement, highlighted, {
-						bouncy: false,
-						muted: true,
-					});
-				}
-				if (connection.dest.repr.includes("WebSocketBus")) {
-					const port = (connection.dest.parameter as VirtualParameter).cv_name;
-					const widgetId = port.split(/_/)[0];
-					const widgetTarget = getElement(widgetId);
-					drawConnection(svg, toElement, widgetTarget, highlighted, {
-						bouncy: false,
-						muted: true,
-					});
-				}
-			}
-		});
-	}, [linkMouseInteraction]);
-
-	// Throttled version for frequent events like scrolling
-	const updateConnectionsThrottled = useCallback(() => {
-		if (throttleTimeoutRef.current !== null) {
-			// We already have a scheduled update
-			return;
-		}
-		throttleTimeoutRef.current = window.setTimeout(() => {
-			updateConnections();
-			throttleTimeoutRef.current = null;
-		}, 16); // throttle at 60Hz more or less
-	}, [updateConnections]);
-
-	useEffect(() => {
-		updateConnections();
-	}, [allConnections, midi_devices, virtual_devices, updateConnections]);
-
-	useEffect(() => {
-		let resizeTimeout: number;
-		const handleResize = () => {
-			// Throttle resize events
-			clearTimeout(resizeTimeout);
-			resizeTimeout = window.setTimeout(() => {
-				updateConnections();
-			}, 100);
-		};
-
-		const observer = new ResizeObserver(handleResize);
-		if (svgRef.current) {
-			observer.observe(svgRef.current.parentElement as HTMLElement);
-		}
-
-		return () => {
-			observer.disconnect();
-			clearTimeout(resizeTimeout);
-		};
-	}, [updateConnections]);
-
 	const handleNonSectionClick = useCallback(() => {
 		setSelection([]); // Deselect sections
 		setSelectedConnection(undefined);
@@ -1108,11 +298,11 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 		const coId = connectionId(connection);
 		if (selectedConnection === coId) {
 			setSelectedConnection(undefined);
-			setInformation(undefined);
 			setCurrentSelected(undefined);
 			return;
 		}
-		displayConnectionMenu(connection);
+		setSelectedConnection(coId);
+		setCurrentSelected(connection.id.toString());
 	};
 
 	const deleteAllConnections = () => {
@@ -1125,12 +315,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 	};
 
 	const handleExpand = () => {
-		setIsExpanded((isExpanded) => {
-			if (isExpanded) {
-				setInformation(undefined);
-			}
-			return !isExpanded;
-		});
+		setIsExpanded((prev) => !prev);
 		setSelection([]);
 	};
 
@@ -1174,7 +359,6 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 				displayedSection?.section.name === deviceSection.section.name
 			) {
 				setIsExpanded(false);
-				setInformation(undefined);
 				setDisplayedSection(undefined);
 				setCurrentSelected(undefined);
 				return;
@@ -1182,12 +366,6 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 			setIsExpanded(true);
 			setDisplayedSection(deviceSection);
 			setCurrentSelectedDevice(deviceSection.device);
-			updateInfoRef.current?.(
-				deviceSection.device,
-				isVirtualDevice(deviceSection.device)
-					? undefined
-					: (deviceSection.section as MidiDeviceSection),
-			);
 		},
 		[displayedSection, isExpanded, setCurrentSelectedDevice],
 	);
@@ -1213,12 +391,6 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 			}
 			setDisplayedSection(deviceSection);
 			setCurrentSelectedDevice(deviceSection.device);
-			updateInfoRef.current?.(
-				deviceSection.device,
-				isVirtualDevice(deviceSection.device)
-					? undefined
-					: (deviceSection.section as MidiDeviceSection),
-			);
 		},
 		[isExpanded, setCurrentSelectedDevice],
 	);
@@ -1265,236 +437,27 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 				<svg className={`device-patching-svg ${orientation}`} ref={svgRef} />
 			</div>
 
-			<div
-				style={{
-					display: "flex",
-					flexDirection: "column",
-					gap: "2px",
-					paddingLeft: "2px",
-					...(isExpanded
-						? {
-								minWidth: "262px",
-								overflowY: "auto",
-								height: "100%",
-								backgroundColor: "rgb(192, 192, 192)",
-								zIndex: 35,
-							}
-						: {
-								minWidth: "40px",
-							}),
-				}}
-			>
-				<Button
-					text={isExpanded ? "»" : "«"}
-					tooltip={isExpanded ? "Open panel" : "Close panel"}
-					onClick={handleExpand}
-					activated={isExpanded}
-					style={{
-						width: "inherit",
-						textAlign: "left",
-						paddingLeft: "4px",
-						height: "20px",
-					}}
-				/>
-				{(isExpanded && (
-					<div className="device-patching-side-section">
-						<div
-							style={{
-								display: "flex",
-								gap: "4px",
-								alignItems: "center",
-								padding: "4px",
-							}}
-						>
-							<Button
-								text={"⟳"}
-								tooltip="Pull full state"
-								variant={"big"}
-								style={{ backgroundColor: "var(--button-bg-color)" }}
-								onClick={() => trevorSocket?.pullFullState()}
-							/>
-							<select
-								style={{ width: "100%" }}
-								value={currentSelected ?? ""}
-								title="Select device to setup"
-								onChange={(e) => {
-									const val = e.target.value;
-									const device = all_devices.filter(
-										(d) => `${d.id}::${d.repr}` === val,
-									)?.[0];
-									if (!device) {
-										return;
-									}
-									if (isVirtualDevice(device)) {
-										// Reset all selection to avoid trigger patching modal
-										setSelectedConnection(undefined);
-										setDisplayedSection(undefined);
-										setCurrentSelectedDevice(device);
-										setIsExpanded(true);
-										const virtualSection = {
-											parameters: device.meta.parameters,
-										} as VirtualDeviceSection;
-										setSelection([{ device, section: virtualSection }]);
-										updateInfoRef.current?.(device);
-									} else {
-										handleMidiDeviceClick(device);
-									}
-								}}
-							>
-								<option value={""} dir="ltr">
-									--
-								</option>
-								{all_devices.map((device) => (
-									<option
-										key={device.repr}
-										value={`${device.id}::${device.repr}`}
-										dir="ltr"
-									>
-										{device.repr}
-									</option>
-								))}
-							</select>
-						</div>
-						<div>
-							<div className="device-patching-middle-panel">
-								<div className="information-panel">
-									{information ? (
-										information
-									) : (
-										<>
-											<h3>Settings panel</h3>
-											<p>Select a neuron to view details</p>
-										</>
-									)}
-								</div>
-							</div>
-							<div className="bottom-right-panel">
-								<details>
-									<summary>Connections</summary>
-									<div className="details-content">
-										<div
-											className="connection-setup"
-											style={{
-												height: "150px",
-												position: "relative",
-												overflowX: "auto",
-												width: "100%",
-												boxSizing: "border-box",
-											}}
-										>
-											<ul className="connections-list">
-												{allConnections.map((connection) => {
-													return (
-														<li
-															key={buildConnectionName(connection)}
-															onClick={() => handleConnectionClick(connection)}
-															onKeyDown={(e) => {
-																if (e.key === "Enter" || e.key === " ") {
-																	handleConnectionClick(connection);
-																}
-															}}
-															onKeyUp={(e) => {
-																if (e.key === "Enter" || e.key === " ") {
-																	e.preventDefault();
-																}
-															}}
-															className={`connection-item ${selectedConnection === connectionId(connection) ? "selected" : ""}`}
-														>
-															{buildConnectionName(connection)}
-														</li>
-													);
-												})}
-											</ul>
-										</div>
-									</div>
-									{allConnections?.length > 0 && (
-										<Button
-											text="Delete all"
-											tooltip="Deletes all patchs from the session"
-											onClick={deleteAllConnections}
-											className="menu-button"
-											style={{
-												width: "100%",
-											}}
-										/>
-									)}
-								</details>
-							</div>
-						</div>
-						<div className="device-patching-top-panel">
-							<Button
-								text="Addresses"
-								tooltip="Opens the memory manager"
-								onClick={() => setIsMemoryOpen?.(true)}
-								activated={isMemoryOpen}
-								className="menu-button"
-							/>
-							<Button
-								text={`Save at 0x${currentAddress?.hex ?? "????"}`}
-								tooltip={`Save the session at address  0x${currentAddress?.hex ?? "????"}`}
-								onClick={savePatch}
-								className="menu-button"
-							/>
-						</div>
-						<div className="device-patching-top-panel">
-							<Button
-								text="Open playground"
-								tooltip="Opens the playground"
-								onClick={openPlayground}
-								className="menu-button"
-							/>
-						</div>
-						<div className="device-patching-top-panel">
-							<Button
-								text="Reset all"
-								tooltip="Reset the session"
-								onClick={resetAll}
-								className="menu-button"
-							/>
-						</div>
-						<div className="device-patching-top-panel">
-							<Button
-								text="About"
-								tooltip="Opens the about menu"
-								onClick={openAboutModal}
-								className="menu-button"
-							/>
-						</div>
-					</div>
-				)) || (
-					<div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-						<Button
-							text={ORIENTATIONS[orientation]}
-							tooltip="Change orientation"
-							onClick={toggleOrientation}
-							style={{
-								width: "inherit",
-								height: "37px",
-							}}
-						/>
-						<Button
-							text="💾"
-							tooltip="Save patch"
-							onClick={savePatch}
-							style={{
-								width: "inherit",
-								height: "37px",
-							}}
-						/>
-						<Button
-							text={`0x${currentAddress?.hex ?? "????"}`}
-							tooltip="Manage memory"
-							onClick={() => setIsMemoryOpen?.(true)}
-							style={{
-								width: "inherit",
-								height: "37px",
-								fontSize: "11px",
-								color: "var(--black)",
-							}}
-						/>
-					</div>
-				)}
-			</div>
+			<SidePanel
+				isExpanded={isExpanded}
+				onToggleExpand={handleExpand}
+				currentSelected={currentSelected}
+				onDeviceSelect={handleDeviceSelect}
+				displayedSection={displayedSection}
+				onSectionChange={setDisplayedSection}
+				selectedConnection={selectedConnection}
+				orientation={orientation}
+				onToggleOrientation={toggleOrientation}
+				isMemoryOpen={isMemoryOpen}
+				onOpenMemory={openMemory}
+				onSavePatch={savePatch}
+				onOpenPlayground={openPlayground}
+				onResetAll={resetAll}
+				onOpenAbout={openAboutModal}
+				onDeleteAllConnections={deleteAllConnections}
+				onConnectionClick={handleConnectionClick}
+				onDeselect={handleDeselect}
+				onMidiDeviceClick={handleMidiDeviceClick}
+			/>
 			{isModalOpen && (
 				<Portal>
 					<PatchingModal
