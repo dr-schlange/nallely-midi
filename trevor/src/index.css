@@ -1237,6 +1237,10 @@ button.active {
 	background-color: orange;
 }
 
+.midi-icon.occupied {
+	background-color: #bb995a;
+}
+
 .parameter:not(.selected) .parameter-box {
 	background-color: var(--rack-bg-color);
 }

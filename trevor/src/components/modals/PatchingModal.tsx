@@ -12,6 +12,7 @@ import {
 import type {
 	Connection,
 	MidiDevice,
+	MidiDeviceSection,
 	MidiDeviceWithSection,
 	MidiParameter,
 	PadOrKey,
@@ -475,6 +476,165 @@ const PatcheableParameter = ({
 					}
 				}}
 			/>
+		</div>
+	);
+};
+
+const SectionPanel = ({
+	section,
+	liveDevice,
+	parameters,
+	selectedParameter,
+	highlight,
+	side,
+	dropdownRef,
+	onSectionSelect,
+	onParameterClick,
+	onScopeLongPress,
+	onKeysClick,
+	onNoteClick,
+	onGridOpen,
+	onScroll,
+	onDeselect,
+}: {
+	section: MidiDeviceWithSection | VirtualDeviceWithSection;
+	liveDevice: MidiDevice | VirtualDevice | undefined;
+	parameters: (MidiParameter | VirtualParameter)[];
+	selectedParameter:
+		| {
+				device: MidiDevice | VirtualDevice;
+				parameter: MidiParameter | VirtualParameter | PadsOrKeys | PadOrKey;
+		  }
+		| undefined;
+	highlight: string | number | false;
+	side: "left" | "right";
+	dropdownRef?: React.RefObject<HTMLDivElement>;
+	onSectionSelect: (
+		section: MidiDeviceWithSection | VirtualDeviceWithSection,
+	) => void;
+	onParameterClick: (
+		device: MidiDevice | VirtualDevice,
+		param: MidiParameter | VirtualParameter,
+	) => void;
+	onScopeLongPress: (
+		srcId: string,
+		portElemId: string,
+		pointerId: number,
+	) => void;
+	onKeysClick: (device: MidiDevice | VirtualDevice, keys: PadsOrKeys) => void;
+	onNoteClick: (device: MidiDevice | VirtualDevice, key: PadOrKey) => void;
+	onGridOpen: () => void;
+	onScroll: () => void;
+	onDeselect: () => void;
+}) => {
+	const allConnections = useTrevorSelector(
+		(state) => state.nallely.connections,
+	);
+	const allParameters = useMemo(
+		() => collectAllParameters(section.device),
+		[section.device],
+	);
+	const allIncoming = useMemo(
+		() =>
+			allConnections
+				.filter((c) =>
+					allParameters.includes(
+						parameterUUID(c.dest.device, c.dest.parameter),
+					),
+				)
+				.map((c) => parameterUUID(c.dest.device, c.dest.parameter)),
+		[allParameters, allConnections],
+	);
+	const allOutgoing = useMemo(
+		() =>
+			allConnections
+				.filter((c) =>
+					allParameters.includes(parameterUUID(c.src.device, c.src.parameter)),
+				)
+				.map((c) => parameterUUID(c.src.device, c.src.parameter)),
+		[allParameters, allConnections],
+	);
+
+	const midiOccupied = (() => {
+		const padsOrKeys = section.section.pads_or_keys;
+		if (!padsOrKeys) return false;
+		const pUUID = parameterUUID(section.device.id, padsOrKeys);
+		return allIncoming.includes(pUUID) || allOutgoing.includes(pUUID);
+	})();
+
+	const outerClass = side === "left" ? "top-left-panel" : "bottom-left-panel";
+	const gridClass = `parameters-grid ${side}`;
+	const midiClass = `${side}-midi`;
+
+	const dropdownNode = (
+		<SectionDropdown currentSection={section} onSelect={onSectionSelect} />
+	);
+
+	return (
+		<div
+			className={outerClass}
+			onScroll={onScroll}
+			onClick={(e) => {
+				const t = e.target as Element;
+				if (
+					!t.closest(".patcheable-parameter") &&
+					!t.closest("svg") &&
+					selectedParameter?.device.id === section.device.id &&
+					selectedParameter?.parameter.section_name ===
+						internalSectionName(section.section)
+				)
+					onDeselect();
+			}}
+		>
+			{dropdownRef ? (
+				<div ref={dropdownRef} style={{ width: "100%" }}>
+					{dropdownNode}
+				</div>
+			) : (
+				dropdownNode
+			)}
+			<div className={gridClass} onScroll={onScroll}>
+				{section.section.pads_or_keys && (
+					<div className={midiClass}>
+						<MidiGrid
+							device={section.device as MidiDevice}
+							section={section.section as MidiDeviceSection}
+							onKeysClick={onKeysClick}
+							onNoteClick={onNoteClick}
+							onGridOpen={onGridOpen}
+							highlight={highlight || undefined}
+							occupied={midiOccupied}
+						/>
+					</div>
+				)}
+				{parameters.map((param) => {
+					const pUUID = parameterUUID(section.device.id, param);
+					const incoming = allIncoming.includes(pUUID);
+					const outgoing = allOutgoing.includes(pUUID);
+					const hasSectionName = param.section_name !== "__virtual__";
+					const config = liveDevice?.config as
+						| Record<string, Record<string, unknown> | unknown>
+						| undefined;
+					const currentValue = hasSectionName
+						? (config?.[param.section_name] as Record<string, unknown>)?.[
+								param.name
+							]
+						: config?.[param.name];
+					return (
+						<PatcheableParameter
+							key={param.name}
+							section={section}
+							reverse
+							param={param}
+							currentValue={currentValue as string | number | undefined}
+							selected={selectedParameter?.parameter === param}
+							onClick={onParameterClick}
+							occupied={incoming || outgoing}
+							onLongPress={onScopeLongPress}
+						/>
+					);
+				})}
+			</div>
 		</div>
 	);
 };
@@ -1074,61 +1234,6 @@ const PatchingModal = ({
 	);
 
 	// const srcPadsOrKey = currentFirstSection?.section.pads_or_keys;
-	const srcAllParameters = useMemo(
-		() => collectAllParameters(currentFirstSection.device),
-		[currentFirstSection.device],
-	);
-	const srcAllIncoming = useMemo(
-		() =>
-			allConnections
-				.filter((c) =>
-					srcAllParameters.includes(
-						parameterUUID(c.dest.device, c.dest.parameter),
-					),
-				)
-				.map((c) => parameterUUID(c.dest.device, c.dest.parameter)),
-		[srcAllParameters, allConnections],
-	);
-	const srcAllOutgoing = useMemo(
-		() =>
-			allConnections
-				.filter((c) =>
-					srcAllParameters.includes(
-						parameterUUID(c.src.device, c.src.parameter),
-					),
-				)
-				.map((c) => parameterUUID(c.src.device, c.src.parameter)),
-		[srcAllParameters, allConnections],
-	);
-
-	// const dstPadsOrKey = currentSecondSection?.section.pads_or_keys;
-	const dstAllParameters = useMemo(
-		() => collectAllParameters(currentSecondSection.device),
-		[currentSecondSection.device],
-	);
-	const dstAllIncoming = useMemo(
-		() =>
-			allConnections
-				.filter((c) =>
-					dstAllParameters.includes(
-						parameterUUID(c.dest.device, c.dest.parameter),
-					),
-				)
-				.map((c) => parameterUUID(c.dest.device, c.dest.parameter)),
-		[dstAllParameters, allConnections],
-	);
-	const dstAllOutgoing = useMemo(
-		() =>
-			allConnections
-				.filter((c) =>
-					dstAllParameters.includes(
-						parameterUUID(c.src.device, c.src.parameter),
-					),
-				)
-				.map((c) => parameterUUID(c.src.device, c.src.parameter)),
-		[dstAllParameters, allConnections],
-	);
-
 	const firstSectionParameters = useMemo(
 		() => getSectionParameters(currentFirstSection),
 		[currentFirstSection],
@@ -1173,148 +1278,45 @@ const PatchingModal = ({
 						<title>Connection diagram</title>
 					</svg>
 					<div className="left-panel">
-						<div
-							className="top-left-panel"
-							onScroll={updateConnections}
-							onClick={(e) => {
-								const t = e.target as Element;
-								if (
-									!t.closest(".patcheable-parameter") &&
-									!t.closest("svg") &&
-									selectedParameters[0]?.device.id ===
-										currentFirstSection.device.id &&
-									selectedParameters[0]?.parameter.section_name ===
-										internalSectionName(currentFirstSection.section)
-								)
-									setSelectedParameters([]);
+						<SectionPanel
+							section={currentFirstSection}
+							liveDevice={liveFirstDevice}
+							parameters={firstSectionParameters}
+							selectedParameter={selectedParameters[0]}
+							highlight={shouldHighlight(currentFirstSection.device)}
+							side="left"
+							dropdownRef={dropdownRef}
+							onSectionSelect={(section) => {
+								setCurrentFirstSection(section);
+								onSectionChange?.(section);
 							}}
-						>
-							<div ref={dropdownRef} style={{ width: "100%" }}>
-								<SectionDropdown
-									currentSection={currentFirstSection}
-									onSelect={(section) => {
-										setCurrentFirstSection(section);
-										onSectionChange?.(section);
-									}}
-								/>
-							</div>
-
-							<div
-								className="parameters-grid left"
-								onScroll={updateConnections}
-							>
-								{currentFirstSection?.section.pads_or_keys && (
-									<div className="left-midi">
-										<MidiGrid
-											device={currentFirstSection.device}
-											section={currentFirstSection.section}
-											onKeysClick={handleKeySectionClick}
-											onNoteClick={handleKeyClick}
-											onGridOpen={handleGridOpen}
-											highlight={shouldHighlight(currentFirstSection.device)}
-										/>
-									</div>
-								)}
-								{firstSectionParameters.map((param) => {
-									const incoming = srcAllIncoming.includes(
-										parameterUUID(currentFirstSection.device.id, param),
-									);
-									const outgoing = srcAllOutgoing.includes(
-										parameterUUID(currentFirstSection.device.id, param),
-									);
-									const hasSectionName = param.section_name !== "__virtual__";
-									return (
-										<PatcheableParameter
-											section={currentFirstSection}
-											reverse
-											param={param}
-											currentValue={
-												hasSectionName
-													? liveFirstDevice?.config[param.section_name]?.[
-															param?.name
-														]
-													: liveFirstDevice?.config[param?.name]
-											}
-											key={param.name}
-											selected={selectedParameters[0]?.parameter === param}
-											onClick={handleParameterClick}
-											occupied={incoming || outgoing}
-											onLongPress={handleScopeLongPress}
-										/>
-									);
-								})}
-							</div>
-						</div>
-						<div
-							className="bottom-left-panel"
+							onParameterClick={handleParameterClick}
+							onScopeLongPress={handleScopeLongPress}
+							onKeysClick={handleKeySectionClick}
+							onNoteClick={handleKeyClick}
+							onGridOpen={handleGridOpen}
 							onScroll={updateConnections}
-							onClick={(e) => {
-								const t = e.target as Element;
-								if (
-									!t.closest(".patcheable-parameter") &&
-									!t.closest("svg") &&
-									selectedParameters[0]?.device.id ===
-										currentSecondSection.device.id &&
-									selectedParameters[0]?.parameter.section_name ===
-										internalSectionName(currentSecondSection.section)
-								)
-									setSelectedParameters([]);
+							onDeselect={() => setSelectedParameters([])}
+						/>
+						<SectionPanel
+							section={currentSecondSection}
+							liveDevice={liveSecondDevice}
+							parameters={secondSectionParameters}
+							selectedParameter={selectedParameters[0]}
+							highlight={shouldHighlight(currentSecondSection.device)}
+							side="right"
+							onSectionSelect={(section) => {
+								setCurrentSecondSection(section);
+								onSectionChange?.(section);
 							}}
-						>
-							<SectionDropdown
-								currentSection={currentSecondSection}
-								onSelect={(section) => {
-									setCurrentSecondSection(section);
-									onSectionChange?.(section);
-								}}
-							/>
-							<div
-								className="parameters-grid right"
-								onScroll={updateConnections}
-							>
-								{currentSecondSection?.section.pads_or_keys && (
-									<div className="right-midi">
-										<MidiGrid
-											device={currentSecondSection.device}
-											section={currentSecondSection.section}
-											onKeysClick={handleKeySectionClick}
-											onNoteClick={handleKeyClick}
-											onGridOpen={handleGridOpen}
-											highlight={shouldHighlight(currentSecondSection.device)}
-										/>
-									</div>
-								)}
-
-								{secondSectionParameters.map((param) => {
-									const incoming = dstAllIncoming.includes(
-										parameterUUID(currentSecondSection.device.id, param),
-									);
-									const outgoing = dstAllOutgoing.includes(
-										parameterUUID(currentSecondSection.device.id, param),
-									);
-									const hasSectionName = param.section_name !== "__virtual__";
-									return (
-										<PatcheableParameter
-											section={currentSecondSection}
-											param={param}
-											reverse
-											currentValue={
-												hasSectionName
-													? liveSecondDevice?.config[param.section_name]?.[
-															param?.name
-														]
-													: liveSecondDevice?.config[param?.name]
-											}
-											key={param.name}
-											selected={selectedParameters[0]?.parameter === param}
-											onClick={handleParameterClick}
-											occupied={incoming || outgoing}
-											onLongPress={handleScopeLongPress}
-										/>
-									);
-								})}
-							</div>
-						</div>
+							onParameterClick={handleParameterClick}
+							onScopeLongPress={handleScopeLongPress}
+							onKeysClick={handleKeySectionClick}
+							onNoteClick={handleKeyClick}
+							onGridOpen={handleGridOpen}
+							onScroll={updateConnections}
+							onDeselect={() => setSelectedParameters([])}
+						/>
 					</div>
 				</div>
 				<div className="right-panel">

@@ -15,6 +15,7 @@ interface MidiGridProps {
 	onNoteClick?: (device: MidiDevice | VirtualDevice, key: PadOrKey) => void;
 	onGridOpen?: (device: MidiDevice | VirtualDevice, keys: PadsOrKeys) => void;
 	highlight?: string | number | undefined;
+	occupied?: boolean;
 }
 
 const NOTE_NAMES = [
@@ -45,6 +46,7 @@ export const MidiGrid = ({
 	onGridOpen,
 	section,
 	highlight,
+	occupied,
 }: MidiGridProps) => {
 	const [isOpen, setIsOpen] = useState(false);
 	const keySection = {
@@ -78,7 +80,7 @@ export const MidiGrid = ({
 					<>
 						{/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
 						<span
-							className="midi-icon"
+							className={`midi-icon${occupied ? " occupied" : ""}`}
 							role="img"
 							aria-label="piano"
 							onClick={handleOpen}
@@ -94,7 +96,7 @@ export const MidiGrid = ({
 					<>
 						{/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
 						<span
-							className={`midi-icon ${!isOpen && highlight === "__pads_or_keys__" ? "selected" : ""}`}
+							className={`midi-icon${highlight === "__pads_or_keys__" ? " selected" : occupied ? " occupied" : ""}`}
 							role="img"
 							aria-label="piano"
 							onClick={() =>
