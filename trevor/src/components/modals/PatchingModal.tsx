@@ -968,6 +968,7 @@ const PatchingModal = ({
 
 	const {
 		numScopeChannels,
+		isScopeOpen,
 		handleScopeLongPress,
 		closeAllScopeChannels,
 		scopePortElemIds,
@@ -1494,7 +1495,7 @@ const PatchingModal = ({
 					/>
 				</div>
 			</div>
-			{numScopeChannels > 0 && (
+			{isScopeOpen && (
 				<Portal>
 					<TmpScopeOverlay
 						onClose={closeAllScopeChannels}
