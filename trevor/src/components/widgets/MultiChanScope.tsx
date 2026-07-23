@@ -1,5 +1,5 @@
 // 99% LLM generated
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type uPlot from "uplot";
 import UplotReact from "uplot-react";
 import "uplot/dist/uPlot.min.css";
@@ -7,7 +7,7 @@ import { useScopeWorker } from "../../hooks/wsHooks";
 import DragNumberInput from "../DragInputs";
 import { Button, type WidgetProps } from "./BaseComponents";
 
-const BUFFER_SIZE = 100;
+const BUFFER_SIZE = 255;
 const BUFFER_UPPER = 2000;
 const BUFFER_LOWER = 2;
 const MAX_CHANNELS = 4;
@@ -73,12 +73,33 @@ const makeBuffer = (size: number, mode: FollowModes) => ({
 	) as number[][],
 });
 
-export const MultiChanScope = ({ id, onClose, num, style }: WidgetProps) => {
+export const MultiChanScope = ({
+	id,
+	onClose,
+	num,
+	style,
+	numChannels: controlledNumChannels,
+}: WidgetProps & { numChannels?: number }) => {
 	const [bufferSize, setBufferSize] = useState<number>(BUFFER_SIZE);
 	const bufferSizeRef = useRef<number>(BUFFER_SIZE);
 
-	const [numChannels, setNumChannels] = useState(1);
-	const numChannelsRef = useRef(1);
+	const [numChannels, setNumChannels] = useState(controlledNumChannels ?? 1);
+	const numChannelsRef = useRef(controlledNumChannels ?? 1);
+
+	useEffect(() => {
+		if (controlledNumChannels === undefined) return;
+		const current = numChannelsRef.current;
+		if (controlledNumChannels === current) return;
+		if (followModeRef.current === "linear" && controlledNumChannels > current) {
+			const xLen = bufferRef.current.x.length;
+			for (let i = current; i < controlledNumChannels; i++) {
+				bufferRef.current.ys[i] = new Array(xLen).fill(Number.NaN);
+			}
+		}
+		numChannelsRef.current = controlledNumChannels;
+		chartRef.current = null;
+		setNumChannels(controlledNumChannels);
+	}, [controlledNumChannels]);
 
 	const [displayMode, setDisplayMode] = useState<DisplayModes>("line");
 	const displayModeRef = useRef<DisplayModes>("line");
