@@ -1600,36 +1600,6 @@ const PatchingModal = ({
 						onHighlightConnection={setHighlightedConnection}
 						onSelectParameter={handleSelectParameter}
 					/>
-					{/*<div className="bottom-right-panel">
-						<h3>Connections</h3>
-						<ul className="connections-list">
-							{connections.map((connection) => {
-								return (
-									<li
-										key={buildConnectionName(connection)}
-										onClick={() => handleConnectionClick(connection)}
-										onKeyDown={(e) => {
-											if (e.key === "Enter" || e.key === " ") {
-												handleConnectionClick(connection);
-											}
-										}}
-										onKeyUp={(e) => {
-											if (e.key === "Enter" || e.key === " ") {
-												e.preventDefault();
-											}
-										}}
-										className={`connection-item ${
-											selectedConnection === connectionId(connection)
-												? "selected"
-												: ""
-										}`}
-									>
-										{buildConnectionName(connection)}
-									</li>
-								);
-							})}
-						</ul>
-					</div>*/}
 				</div>
 			</div>
 			{numScopeChannels > 0 && (

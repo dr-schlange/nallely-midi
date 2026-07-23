@@ -2007,6 +2007,10 @@ h3.details {
 		height: 10px;
 	}
 
+	.connection-setup {
+		width: 50%;
+	}
+
 	.connection-setup > * {
 		/*width: calc(50% - 3px);*/
 		width: 99%;
