@@ -61,10 +61,12 @@ const TmpScopeOverlay = ({
 	onClose,
 	numChannels,
 	portElemIds,
+	refreshKey,
 }: {
 	onClose: () => void;
 	numChannels: number;
 	portElemIds: string[];
+	refreshKey?: string;
 }) => {
 	const scopeRef = useRef<HTMLDivElement>(null);
 	const [paths, setPaths] = useState<string[]>([]);
@@ -105,7 +107,7 @@ const TmpScopeOverlay = ({
 		}
 		setPaths(newPaths);
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [portElemIdsKey]);
+	}, [portElemIdsKey, refreshKey]);
 
 	return (
 		<>
@@ -854,6 +856,10 @@ const PatchingModal = ({
 		setNumScopeChannels(0);
 	}, [websocket]);
 
+	useEffect(() => {
+		return () => closeAllScopeChannels();
+	}, [closeAllScopeChannels]);
+
 	const handleScopeLongPress = useCallback(
 		(srcId: string, portElemId: string, pointerId: number) => {
 			if (scopeChannelsRef.current.length >= 4) return;
@@ -1589,6 +1595,7 @@ const PatchingModal = ({
 						onClose={closeAllScopeChannels}
 						numChannels={numScopeChannels}
 						portElemIds={scopeChannelsRef.current.map((ch) => ch.portElemId)}
+						refreshKey={`${currentFirstSection?.device.id}-${internalSectionName(currentFirstSection?.section)}-${currentSecondSection?.device.id}-${internalSectionName(currentSecondSection?.section)}`}
 					/>
 				</Portal>
 			)}
