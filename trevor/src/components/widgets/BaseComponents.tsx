@@ -429,14 +429,14 @@ export const CircularSlider = ({
 
 	const span = maxValue - minValue;
 	const angle =
-		value !== undefined
+		value !== undefined && span !== 0
 			? startAngle - ((value - minValue) / span) * totalAngle
 			: startAngle;
 	const cx = center + radius * Math.cos(angle);
 	const cy = center - radius * Math.sin(angle);
 
 	const ghostAngle =
-		ghostValue !== null
+		ghostValue !== null && span !== 0
 			? startAngle - ((ghostValue - minValue) / span) * totalAngle
 			: null;
 	const ghostCx =

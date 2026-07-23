@@ -31,6 +31,7 @@ import {
 	buildParameterId,
 	connectionId,
 	connectionsOfInterest,
+	devUID,
 	internalSectionName,
 	isPadsOrdKeys,
 	isVirtualDevice,
@@ -244,6 +245,8 @@ const SectionDropdown = ({
 		setIsOpen(false);
 	};
 
+	const currentUID = devUID(currentSection.device);
+
 	return (
 		<>
 			<details
@@ -266,7 +269,7 @@ const SectionDropdown = ({
 				>
 					{allVirtualDeviceSection.map((vs) => (
 						<div
-							key={`${vs.device.id}`}
+							key={devUID(vs.device)}
 							style={{
 								display: "flex",
 								flexDirection: "column",
@@ -276,7 +279,7 @@ const SectionDropdown = ({
 						>
 							<VDevice
 								device={vs.device}
-								selected={currentSection.device.id === vs.device.id}
+								selected={currentUID === devUID(vs.device)}
 								onClick={(_dev) => handleSelect(vs)}
 								onDoubleClick={(_dev) => {}}
 								debounceClick={false}
@@ -299,7 +302,7 @@ const SectionDropdown = ({
 					))}
 					{allMidiDeviceSection.map((ms) => (
 						<div
-							key={`${ms.device.id}::${ms.section.name}`}
+							key={`${devUID(ms.device)}::${ms.section.name}`}
 							style={{
 								display: "flex",
 								flexDirection: "column",
@@ -311,7 +314,7 @@ const SectionDropdown = ({
 								device={ms.device}
 								section={ms.section}
 								selected={
-									currentSection.device.id === ms.device.id &&
+									currentUID === devUID(ms.device) &&
 									internalSectionName(currentSection.section) ===
 										ms.section.name
 								}
@@ -1150,7 +1153,7 @@ const PatchingModal = ({
 				}
 				const firstParameter = prev[0];
 				if (
-					firstParameter.device === device &&
+					devUID(firstParameter.device) === devUID(device) &&
 					firstParameter.parameter.section_name === keys.section_name
 				) {
 					return [];
@@ -1187,7 +1190,7 @@ const PatchingModal = ({
 				}
 				const firstParameter = prev[0];
 				if (
-					firstParameter.device === device &&
+					devUID(firstParameter.device) === devUID(device) &&
 					firstParameter.parameter.section_name === key.section_name &&
 					(firstParameter.parameter as PadOrKey).note === key.note
 				) {

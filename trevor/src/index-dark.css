@@ -14,9 +14,9 @@
 }
 
 :root {
-  color-scheme: dark;
-  color: #f0f0f0;
-  background-color: #202020;
+	color-scheme: dark;
+	color: #f0f0f0;
+	background-color: #202020;
 	font-family:
 		"TopazPlusA1200", system-ui, Avenir, Helvetica, Arial, sans-serif; /* Use the Amiga font */
 	font-weight: 400;
@@ -1397,9 +1397,9 @@ button.active {
 
 @media (prefers-color-scheme: light) {
 	:root {
-  color-scheme: dark;
-  color: #f0f0f0;
-  background-color: #202020;
+		color-scheme: dark;
+		color: #f0f0f0;
+		background-color: #202020;
 		color: var(--black);
 		background-color: #202020;
 	}
