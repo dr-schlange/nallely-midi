@@ -112,7 +112,12 @@ const TmpScopeOverlay = ({
 	return (
 		<>
 			<div ref={scopeRef} style={outerStyle}>
-				<div style={{ position: "relative" }}>
+				<div
+					style={{ position: "relative", pointerEvents: "auto" }}
+					onClick={(e) => e.stopPropagation()}
+					onPointerDown={(e) => e.stopPropagation()}
+					onPointerUp={(e) => e.stopPropagation()}
+				>
 					<MultiChanScope
 						id={TMP_SCOPE_ID}
 						num={0}
