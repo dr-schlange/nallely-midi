@@ -1,7 +1,14 @@
 /** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
 /** biome-ignore-all lint/a11y/useKeyWithClickEvents: <explanation> */
 import { createSelector } from "@reduxjs/toolkit";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+	useCallback,
+	useEffect,
+	useLayoutEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
 import type {
 	Connection,
 	MidiDevice,
@@ -45,6 +52,101 @@ import {
 	Button,
 	CircularSlider,
 } from "../widgets/BaseComponents";
+import { MultiChanScope } from "../widgets/MultiChanScope";
+
+const TMP_SCOPE_ID = "dbg";
+const SCOPE_CV_NAMES = ["dbg_ch1_cv", "dbg_ch2_cv", "dbg_ch3_cv", "dbg_ch4_cv"];
+
+const TmpScopeOverlay = ({
+	onClose,
+	numChannels,
+	portElemIds,
+}: {
+	onClose: () => void;
+	numChannels: number;
+	portElemIds: string[];
+}) => {
+	const scopeRef = useRef<HTMLDivElement>(null);
+	const [paths, setPaths] = useState<string[]>([]);
+	const portElemIdsKey = portElemIds.join(",");
+
+	const portrait = window.innerWidth <= window.innerHeight;
+	const outerStyle: React.CSSProperties = portrait
+		? {
+				position: "fixed",
+				top: 8,
+				left: "50%",
+				transform: "translateX(-50%)",
+				zIndex: 9999,
+				pointerEvents: "none",
+			}
+		: {
+				position: "fixed",
+				top: "50%",
+				right: 8,
+				transform: "translateY(-50%)",
+				zIndex: 9999,
+				pointerEvents: "none",
+			};
+
+	useLayoutEffect(() => {
+		if (!scopeRef.current) return;
+		const scopeRect = scopeRef.current.getBoundingClientRect();
+		const x1 = scopeRect.left + scopeRect.width / 2;
+		const y1 = scopeRect.bottom;
+		const newPaths: string[] = [];
+		for (const id of portElemIds) {
+			const portEl = document.getElementById(id);
+			if (!portEl) continue;
+			const portRect = portEl.getBoundingClientRect();
+			const x2 = portRect.left + portRect.width / 2;
+			const y2 = portRect.top + portRect.height / 2;
+			newPaths.push(`M ${x1},${y1} L ${x2},${y2}`);
+		}
+		setPaths(newPaths);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [portElemIdsKey]);
+
+	return (
+		<>
+			<div ref={scopeRef} style={outerStyle}>
+				<div style={{ position: "relative" }}>
+					<MultiChanScope
+						id={TMP_SCOPE_ID}
+						num={0}
+						onClose={onClose}
+						numChannels={numChannels}
+					/>
+				</div>
+			</div>
+			{paths.length > 0 && (
+				<svg
+					style={{
+						position: "fixed",
+						top: 0,
+						left: 0,
+						width: "100vw",
+						height: "100vh",
+						pointerEvents: "none",
+						zIndex: 9998,
+					}}
+				>
+					{paths.map((d, i) => (
+						<path
+							key={i}
+							d={d}
+							fill="none"
+							stroke="gray"
+							strokeWidth="2"
+							strokeDasharray="5,5"
+							strokeOpacity="0.8"
+						/>
+					))}
+				</svg>
+			)}
+		</>
+	);
+};
 
 const collectAllVirtualParameters = (device: VirtualDevice) => {
 	return device.meta.parameters.map((p) => parameterUUID(device.id, p));
@@ -122,6 +224,7 @@ const PatcheableParameter = ({
 	occupied,
 	reverse = false,
 	onClick,
+	onLongPress,
 }: {
 	currentValue: string | number | undefined;
 	section: MidiDeviceWithSection | VirtualDeviceWithSection;
@@ -133,6 +236,7 @@ const PatcheableParameter = ({
 		section: MidiDevice | VirtualDevice,
 		param: MidiParameter | VirtualParameter,
 	) => void;
+	onLongPress?: (srcId: string, portElemId: string, pointerId: number) => void;
 }) => {
 	const trevor = useTrevorWebSocket();
 	const isPitchwheel =
@@ -155,6 +259,36 @@ const PatcheableParameter = ({
 			);
 		}
 	};
+
+	const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+	const srcId = isVirtualParameter(param)
+		? `${section.device.id}::__virtual__::${param.cv_name}`
+		: `${section.device.id}::${param.section_name}::${param.name}`;
+
+	const portElemId = `pb-${buildParameterId(section.device.id, param)}`;
+
+	const handlePortPointerDown = useCallback(
+		(e: React.PointerEvent) => {
+			e.stopPropagation();
+			if (!onLongPress) return;
+			const capturedPointerId = e.pointerId;
+			if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+			longPressTimerRef.current = setTimeout(() => {
+				longPressTimerRef.current = null;
+				onLongPress(srcId, portElemId, capturedPointerId);
+			}, 500);
+		},
+		[onLongPress, srcId, portElemId],
+	);
+
+	const handlePortPointerUp = useCallback((e: React.PointerEvent) => {
+		e.stopPropagation();
+		if (longPressTimerRef.current) {
+			clearTimeout(longPressTimerRef.current);
+			longPressTimerRef.current = null;
+		}
+	}, []);
 
 	return (
 		<div className="patcheable-parameter">
@@ -190,11 +324,20 @@ const PatcheableParameter = ({
 			<div
 				key={param.name}
 				className={`parameter-box ${selected ? "selected" : ""} ${occupied ? "occupied" : ""}`}
-				id={`pb-${buildParameterId(section.device.id, param)}`}
+				id={portElemId}
 				onClick={() => onClick(section.device, param)}
 				onKeyDown={(e) => {
 					if (e.key === "Enter" || e.key === " ") {
 						onClick(section.device, param);
+					}
+				}}
+				onPointerDown={handlePortPointerDown}
+				onPointerUp={handlePortPointerUp}
+				onPointerCancel={(e) => {
+					e.stopPropagation();
+					if (longPressTimerRef.current) {
+						clearTimeout(longPressTimerRef.current);
+						longPressTimerRef.current = null;
 					}
 				}}
 			/>
@@ -253,12 +396,26 @@ const PatchingModal = ({
 	const [firstDropdownOpen, setFirstDropdownOpen] = useState(false);
 	const [secondDropdownOpen, setSecondDropdownOpen] = useState(false);
 	const websocket = useTrevorWebSocket();
+	const virtualDevices = useTrevorSelector(
+		(state) => state.nallely.virtual_devices,
+	);
 	const allConnections = useTrevorSelector(
 		(state) => state.nallely.connections,
 	);
 	const [currentFirstSection, setCurrentFirstSection] = useState(firstSection);
 	const [currentSecondSection, setCurrentSecondSection] =
 		useState(secondSection);
+
+	const [numScopeChannels, setNumScopeChannels] = useState(0);
+	const scopeChannelsRef = useRef<
+		{
+			srcId: string;
+			portElemId: string;
+			pointerId: number;
+			connected: boolean;
+		}[]
+	>([]);
+	const dbgDeviceRef = useRef<VirtualDevice | null>(null);
 
 	const firstDeviceId = currentFirstSection?.device.id;
 	const secondDeviceId = currentSecondSection?.device.id;
@@ -608,6 +765,109 @@ const PatchingModal = ({
 	const handleGridOpen = useCallback(() => {
 		setTimeout(() => updateConnections(), 0);
 	}, [updateConnections]);
+
+	useEffect(() => {
+		if (numScopeChannels === 0) return;
+		const bus = virtualDevices.find((d) => d.repr === TMP_SCOPE_ID);
+		if (!bus) return;
+		dbgDeviceRef.current = bus;
+		for (let i = 0; i < scopeChannelsRef.current.length; i++) {
+			const ch = scopeChannelsRef.current[i];
+			if (ch.connected) continue;
+			const cvName = SCOPE_CV_NAMES[i];
+			if (!cvName) continue;
+			const dst = `${bus.id}::__virtual__::${cvName}`;
+			const existing = allConnections.find(
+				(c) =>
+					c.dest.device === bus.id &&
+					(c.dest.parameter as VirtualParameter).cv_name === cvName,
+			);
+			if (existing) {
+				const exSrc = existing.src;
+				websocket?.associate(
+					`${exSrc.device}::${exSrc.parameter.section_name}::${(exSrc.parameter as VirtualParameter).cv_name ?? (exSrc.parameter as MidiParameter).name}`,
+					dst,
+					true,
+				);
+			}
+			websocket?.associate(ch.srcId, dst, false);
+			ch.connected = true;
+		}
+	}, [virtualDevices, allConnections, websocket, numScopeChannels]);
+
+	useEffect(() => {
+		if (numScopeChannels === 0) return;
+		const onWindowPointerUp = (e: PointerEvent) => {
+			const channels = scopeChannelsRef.current;
+			const idx = channels.findIndex((ch) => ch.pointerId === e.pointerId);
+			if (idx === -1) return;
+			const bus = dbgDeviceRef.current;
+			if (bus) {
+				for (let i = idx; i < channels.length; i++) {
+					const cvName = SCOPE_CV_NAMES[i];
+					if (cvName && channels[i].connected) {
+						websocket?.associate(
+							channels[i].srcId,
+							`${bus.id}::__virtual__::${cvName}`,
+							true,
+						);
+					}
+				}
+			}
+			channels.splice(idx, 1);
+			if (bus && channels.length > idx) {
+				for (let i = idx; i < channels.length; i++) {
+					const cvName = SCOPE_CV_NAMES[i];
+					if (cvName) {
+						websocket?.associate(
+							channels[i].srcId,
+							`${bus.id}::__virtual__::${cvName}`,
+							false,
+						);
+						channels[i].connected = true;
+					}
+				}
+			}
+			setNumScopeChannels(channels.length);
+		};
+		window.addEventListener("pointerup", onWindowPointerUp);
+		return () => window.removeEventListener("pointerup", onWindowPointerUp);
+	}, [numScopeChannels, websocket]);
+
+	const closeAllScopeChannels = useCallback(() => {
+		const bus = dbgDeviceRef.current;
+		const channels = scopeChannelsRef.current;
+		if (bus) {
+			for (let i = 0; i < channels.length; i++) {
+				const cvName = SCOPE_CV_NAMES[i];
+				if (cvName && channels[i].connected) {
+					websocket?.associate(
+						channels[i].srcId,
+						`${bus.id}::__virtual__::${cvName}`,
+						true,
+					);
+				}
+			}
+		}
+		scopeChannelsRef.current = [];
+		dbgDeviceRef.current = null;
+		setNumScopeChannels(0);
+	}, [websocket]);
+
+	const handleScopeLongPress = useCallback(
+		(srcId: string, portElemId: string, pointerId: number) => {
+			if (scopeChannelsRef.current.length >= 4) return;
+			if (scopeChannelsRef.current.some((ch) => ch.srcId === srcId)) return;
+			scopeChannelsRef.current.push({
+				srcId,
+				portElemId,
+				pointerId,
+				connected: false,
+			});
+			setNumScopeChannels(scopeChannelsRef.current.length);
+		},
+		[],
+	);
 
 	const handleContainerClick = useCallback(
 		(e: React.MouseEvent<HTMLDivElement>) => {
@@ -968,6 +1228,7 @@ const PatchingModal = ({
 											selected={selectedParameters[0]?.parameter === param}
 											onClick={handleParameterClick}
 											occupied={incoming || outgoing}
+											onLongPress={handleScopeLongPress}
 										/>
 									);
 								})}
@@ -1036,6 +1297,7 @@ const PatchingModal = ({
 											selected={selectedParameters[0]?.parameter === param}
 											onClick={handleParameterClick}
 											occupied={incoming || outgoing}
+											onLongPress={handleScopeLongPress}
 										/>
 									);
 								})}
@@ -1321,6 +1583,15 @@ const PatchingModal = ({
 					</div>*/}
 				</div>
 			</div>
+			{numScopeChannels > 0 && (
+				<Portal>
+					<TmpScopeOverlay
+						onClose={closeAllScopeChannels}
+						numChannels={numScopeChannels}
+						portElemIds={scopeChannelsRef.current.map((ch) => ch.portElemId)}
+					/>
+				</Portal>
+			)}
 		</div>
 	);
 };
