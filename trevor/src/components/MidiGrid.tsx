@@ -76,41 +76,23 @@ export const MidiGrid = ({
 				className="midi-header"
 				id={`pb-${device.id}::${section.pads_or_keys?.section_name}::closed`}
 			>
-				{isOpen ? (
-					<>
-						{/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
-						<span
-							className={`midi-icon${occupied ? " occupied" : ""}`}
-							role="img"
-							aria-label="piano"
-							onClick={handleOpen}
-						>
-							🎹
-						</span>
-						{/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
-						<span className="midi-toggle-icon" onClick={handleOpen}>
-							▲
-						</span>
-					</>
-				) : (
-					<>
-						{/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
-						<span
-							className={`midi-icon${highlight === "__pads_or_keys__" ? " selected" : occupied ? " occupied" : ""}`}
-							role="img"
-							aria-label="piano"
-							onClick={() =>
-								section.pads_or_keys && onKeysClick?.(device, keySection)
-							}
-						>
-							🎹
-						</span>
-						{/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
-						<span className="midi-toggle-icon" onClick={handleOpen}>
-							▼
-						</span>
-					</>
-				)}
+				{/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
+				<span
+					className={`midi-icon${highlight === "__pads_or_keys__" ? " selected" : occupied ? " occupied" : ""}`}
+					role="img"
+					aria-label="piano"
+					onClick={
+						isOpen
+							? handleOpen
+							: () => section.pads_or_keys && onKeysClick?.(device, keySection)
+					}
+				>
+					🎹
+				</span>
+				{/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
+				<span className="midi-toggle-icon" onClick={handleOpen}>
+					{isOpen ? "▲" : "▼"}
+				</span>
 			</div>
 
 			{isOpen && (

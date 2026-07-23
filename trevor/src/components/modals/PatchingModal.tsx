@@ -181,9 +181,7 @@ const getSectionParameters = (sectionWrapper) => {
 	if (!sectionWrapper) {
 		return [];
 	}
-	const pitchwheels = sectionWrapper.section.pitchwheels
-		? sectionWrapper.section.pitchwheels
-		: [];
+	const pitchwheels = sectionWrapper.section.pitchwheels ?? [];
 	const mainOutputIndex = sectionWrapper.section.parameters.findIndex(
 		(e) => e.name === "output_cv",
 	);
@@ -534,33 +532,28 @@ const SectionPanel = ({
 		() => collectAllParameters(section.device),
 		[section.device],
 	);
-	const allIncoming = useMemo(
-		() =>
-			allConnections
-				.filter((c) =>
-					allParameters.includes(
-						parameterUUID(c.dest.device, c.dest.parameter),
-					),
-				)
-				.map((c) => parameterUUID(c.dest.device, c.dest.parameter)),
-		[allParameters, allConnections],
-	);
-	const allOutgoing = useMemo(
-		() =>
-			allConnections
-				.filter((c) =>
-					allParameters.includes(parameterUUID(c.src.device, c.src.parameter)),
-				)
-				.map((c) => parameterUUID(c.src.device, c.src.parameter)),
-		[allParameters, allConnections],
-	);
+	const allIncoming = useMemo(() => {
+		const s = new Set<string>();
+		for (const c of allConnections) {
+			const uuid = parameterUUID(c.dest.device, c.dest.parameter);
+			if (allParameters.includes(uuid)) s.add(uuid);
+		}
+		return s;
+	}, [allParameters, allConnections]);
+	const allOutgoing = useMemo(() => {
+		const s = new Set<string>();
+		for (const c of allConnections) {
+			const uuid = parameterUUID(c.src.device, c.src.parameter);
+			if (allParameters.includes(uuid)) s.add(uuid);
+		}
+		return s;
+	}, [allParameters, allConnections]);
 
-	const midiOccupied = (() => {
-		const padsOrKeys = section.section.pads_or_keys;
-		if (!padsOrKeys) return false;
-		const pUUID = parameterUUID(section.device.id, padsOrKeys);
-		return allIncoming.includes(pUUID) || allOutgoing.includes(pUUID);
-	})();
+	const padsOrKeys = section.section.pads_or_keys;
+	const midiOccupied = padsOrKeys
+		? allIncoming.has(parameterUUID(section.device.id, padsOrKeys)) ||
+			allOutgoing.has(parameterUUID(section.device.id, padsOrKeys))
+		: false;
 
 	const outerClass = side === "left" ? "top-left-panel" : "bottom-left-panel";
 	const gridClass = `parameters-grid ${side}`;
@@ -609,8 +602,8 @@ const SectionPanel = ({
 				)}
 				{parameters.map((param) => {
 					const pUUID = parameterUUID(section.device.id, param);
-					const incoming = allIncoming.includes(pUUID);
-					const outgoing = allOutgoing.includes(pUUID);
+					const incoming = allIncoming.has(pUUID);
+					const outgoing = allOutgoing.has(pUUID);
 					const hasSectionName = param.section_name !== "__virtual__";
 					const config = liveDevice?.config as
 						| Record<string, Record<string, unknown> | unknown>
@@ -635,6 +628,279 @@ const SectionPanel = ({
 					);
 				})}
 			</div>
+		</div>
+	);
+};
+
+const PortInfoPanel = ({
+	selectedConnection,
+	selectedParameters,
+	firstDeviceId,
+	secondDeviceId,
+	navigateToDevice,
+	onHighlightConnection,
+	onSelectParameter,
+}: {
+	selectedConnection: string | null;
+	selectedParameters: {
+		device: MidiDevice | VirtualDevice;
+		parameter: MidiParameter | VirtualParameter | PadsOrKeys | PadOrKey;
+	}[];
+	firstDeviceId: number | undefined;
+	secondDeviceId: number | undefined;
+	navigateToDevice: (
+		deviceId: number,
+		sectionName: string,
+		parameter: MidiParameter | VirtualParameter,
+	) => void;
+	onHighlightConnection: (id: string) => void;
+	onSelectParameter: (
+		device: MidiDevice | VirtualDevice,
+		parameter: MidiParameter | VirtualParameter,
+	) => void;
+}) => {
+	const allConnections = useTrevorSelector(
+		(state) => state.nallely.connections,
+	);
+	const allVirtualDeviceSection = useTrevorSelector(
+		selectAllVirtualDeviceSection,
+	);
+	const allMidiDeviceSection = useTrevorSelector(selectAllMidiDeviceSection);
+
+	const selectedConnectionInstance = useMemo(
+		() => allConnections.find((c) => connectionId(c) === selectedConnection),
+		[allConnections, selectedConnection],
+	);
+
+	const selectPort = useCallback(
+		(
+			deviceId: number,
+			parameter: MidiParameter | VirtualParameter,
+			connection: Connection,
+		) => {
+			const vSection = allVirtualDeviceSection.find(
+				(vs) =>
+					vs.device.id === deviceId &&
+					(isVirtualParameter(parameter)
+						? vs.device.meta.parameters.some(
+								(p) => p.cv_name === (parameter as VirtualParameter).cv_name,
+							)
+						: true),
+			);
+			const mSection =
+				vSection == null
+					? allMidiDeviceSection.find(
+							(ms) =>
+								ms.device.id === deviceId &&
+								internalSectionName(ms.section) === parameter.section_name,
+						)
+					: undefined;
+			const device = vSection?.device ?? mSection?.device;
+			if (!device) return;
+			let actualParam: MidiParameter | VirtualParameter | undefined;
+			if (isVirtualParameter(parameter) && vSection) {
+				actualParam = vSection.device.meta.parameters.find(
+					(p) => p.cv_name === (parameter as VirtualParameter).cv_name,
+				);
+			} else if (mSection) {
+				for (const s of mSection.device.meta.sections) {
+					actualParam = s.parameters.find(
+						(p) =>
+							p.name === parameter.name &&
+							p.section_name === parameter.section_name,
+					);
+					if (actualParam) break;
+				}
+			}
+			const resolved = actualParam ?? parameter;
+			onHighlightConnection(connectionId(connection));
+			onSelectParameter(device, resolved);
+			const el = document.getElementById(
+				`pb-${buildParameterId(deviceId, resolved)}`,
+			);
+			el?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+		},
+		[
+			allVirtualDeviceSection,
+			allMidiDeviceSection,
+			onHighlightConnection,
+			onSelectParameter,
+		],
+	);
+
+	const sel = selectedParameters[0];
+	const selUUID = sel ? parameterUUID(sel.device, sel.parameter) : null;
+	const outgoing = useMemo(
+		() =>
+			selUUID
+				? allConnections.filter(
+						(c) => parameterUUID(c.src.device, c.src.parameter) === selUUID,
+					)
+				: [],
+		[allConnections, selUUID],
+	);
+	const incoming = useMemo(
+		() =>
+			selUUID
+				? allConnections.filter(
+						(c) => parameterUUID(c.dest.device, c.dest.parameter) === selUUID,
+					)
+				: [],
+		[allConnections, selUUID],
+	);
+
+	return (
+		<div className="top-right-panel">
+			{selectedConnectionInstance ? (
+				<ScalerForm connection={selectedConnectionInstance} />
+			) : (
+				<div className="parameter-info">
+					{sel ? (
+						<>
+							<p
+								style={{
+									margin: "4px 0",
+									fontWeight: "bold",
+									fontSize: "12px",
+								}}
+							>
+								{sel.device.repr}
+								{sel.parameter.section_name !== "__virtual__"
+									? ` - ${sel.parameter.section_name}`
+									: ""}
+								{" - "}
+								{(sel.parameter as MidiParameter)?.name ||
+									(isPadsOrdKeys(sel.parameter) &&
+										`Section ${(sel.parameter as PadsOrKeys).section_name}`) ||
+									`Key/Pad ${(sel.parameter as PadOrKey).note}`}
+							</p>
+							{outgoing.length > 0 && (
+								<>
+									<p
+										style={{
+											margin: "4px 0 2px",
+											fontSize: "11px",
+											color: "gray",
+										}}
+									>
+										→ output to:
+									</p>
+									<ul style={{ margin: 0, paddingLeft: "12px" }}>
+										{outgoing.map((c) => {
+											const p = c.dest.parameter;
+											const sec =
+												p.section_name !== "__virtual__"
+													? ` - ${p.section_name}`
+													: "";
+											const inPair =
+												c.dest.device === firstDeviceId ||
+												c.dest.device === secondDeviceId;
+											return (
+												<li
+													key={c.id}
+													style={{
+														fontSize: "11px",
+														display: "flex",
+														alignItems: "center",
+														gap: "4px",
+													}}
+												>
+													{inPair && (
+														<Button
+															text=">>"
+															tooltip="Select destination port"
+															variant="small"
+															style={{ padding: "2px 4px" }}
+															onClick={() => selectPort(c.dest.device, p, c)}
+														/>
+													)}
+													<span
+														style={{
+															cursor: "pointer",
+															textDecoration: "underline dotted",
+														}}
+														onClick={() =>
+															navigateToDevice(c.dest.device, p.section_name, p)
+														}
+													>
+														{c.dest.repr}
+														{sec} - {p.name}
+													</span>
+												</li>
+											);
+										})}
+									</ul>
+								</>
+							)}
+							{incoming.length > 0 && (
+								<>
+									<p
+										style={{
+											margin: "4px 0 2px",
+											fontSize: "11px",
+											color: "gray",
+										}}
+									>
+										input from → :
+									</p>
+									<ul style={{ margin: 0, paddingLeft: "12px" }}>
+										{incoming.map((c) => {
+											const p = c.src.parameter;
+											const sec =
+												p.section_name !== "__virtual__"
+													? ` - ${p.section_name}`
+													: "";
+											const inPair =
+												c.src.device === firstDeviceId ||
+												c.src.device === secondDeviceId;
+											return (
+												<li
+													key={c.id}
+													style={{
+														fontSize: "11px",
+														display: "flex",
+														alignItems: "center",
+														gap: "4px",
+													}}
+												>
+													<span
+														style={{
+															cursor: "pointer",
+															textDecoration: "underline dotted",
+														}}
+														onClick={() =>
+															navigateToDevice(c.src.device, p.section_name, p)
+														}
+													>
+														{c.src.repr}
+														{sec} - {p.name}
+													</span>
+													{inPair && (
+														<Button
+															text=">>"
+															tooltip="Select source port"
+															variant="small"
+															style={{ padding: "2px 4px" }}
+															onClick={() => selectPort(c.src.device, p, c)}
+														/>
+													)}
+												</li>
+											);
+										})}
+									</ul>
+								</>
+							)}
+							{outgoing.length === 0 && incoming.length === 0 && (
+								<p style={{ fontSize: "11px", color: "gray" }}>
+									No connections
+								</p>
+							)}
+						</>
+					) : (
+						<p>Select a connection or a port to see details</p>
+					)}
+				</div>
+			)}
 		</div>
 	);
 };
@@ -1211,11 +1477,6 @@ const PatchingModal = ({
 		[connections, handleConnectionClick],
 	);
 
-	const selectedConnectionInstance = useMemo(
-		() => allConnections.find((c) => connectionId(c) === selectedConnection),
-		[allConnections, selectedConnection],
-	);
-
 	const shouldHighlight = useCallback(
 		(device: MidiDevice | VirtualDevice) => {
 			if (selectedParameters.length === 0) {
@@ -1231,6 +1492,16 @@ const PatchingModal = ({
 			return "";
 		},
 		[selectedParameters],
+	);
+
+	const handleSelectParameter = useCallback(
+		(
+			device: MidiDevice | VirtualDevice,
+			parameter: MidiParameter | VirtualParameter,
+		) => {
+			setSelectedParameters([{ device, parameter }]);
+		},
+		[],
 	);
 
 	// const srcPadsOrKey = currentFirstSection?.section.pads_or_keys;
@@ -1320,251 +1591,15 @@ const PatchingModal = ({
 					</div>
 				</div>
 				<div className="right-panel">
-					<div className="top-right-panel">
-						{selectedConnection && selectedConnectionInstance ? (
-							<ScalerForm connection={selectedConnectionInstance} />
-						) : (
-							<div className="parameter-info">
-								{selectedParameters.length === 0 && (
-									<p>Select a connection or a port to see details</p>
-								)}
-								{selectedParameters.length === 1 &&
-									(() => {
-										const sel = selectedParameters[0];
-										const selUUID = parameterUUID(sel.device, sel.parameter);
-										const paramName =
-											(sel.parameter as MidiParameter)?.name ||
-											(isPadsOrdKeys(sel.parameter) &&
-												`Section ${(sel.parameter as PadsOrKeys).section_name}`) ||
-											`Key/Pad ${(sel.parameter as PadOrKey).note}`;
-										const sectionName =
-											sel.parameter.section_name !== "__virtual__"
-												? sel.parameter.section_name
-												: null;
-										const outgoing = allConnections.filter(
-											(c) =>
-												parameterUUID(c.src.device, c.src.parameter) ===
-												selUUID,
-										);
-										const incoming = allConnections.filter(
-											(c) =>
-												parameterUUID(c.dest.device, c.dest.parameter) ===
-												selUUID,
-										);
-										const loadedIds = new Set(
-											[
-												currentFirstSection?.device.id,
-												currentSecondSection?.device.id,
-											].filter((id) => id !== undefined),
-										);
-										const selectPort = (
-											deviceId: number,
-											parameter: MidiParameter | VirtualParameter,
-											connection: Connection,
-										) => {
-											const vSection = allVirtualDeviceSection.find(
-												(vs) =>
-													vs.device.id === deviceId &&
-													(isVirtualParameter(parameter)
-														? vs.device.meta.parameters.some(
-																(p) =>
-																	p.cv_name ===
-																	(parameter as VirtualParameter).cv_name,
-															)
-														: true),
-											);
-											const mSection =
-												vSection == null
-													? allMidiDeviceSection.find(
-															(ms) => ms.device.id === deviceId,
-														)
-													: undefined;
-											const device = vSection?.device ?? mSection?.device;
-											if (!device) return;
-											let actualParam:
-												| MidiParameter
-												| VirtualParameter
-												| undefined;
-											if (isVirtualParameter(parameter) && vSection) {
-												actualParam = vSection.device.meta.parameters.find(
-													(p) =>
-														p.cv_name ===
-														(parameter as VirtualParameter).cv_name,
-												);
-											} else if (mSection) {
-												for (const s of mSection.device.meta.sections) {
-													actualParam = s.parameters.find(
-														(p) =>
-															p.name === parameter.name &&
-															p.section_name === parameter.section_name,
-													);
-													if (actualParam) break;
-												}
-											}
-											const resolved = actualParam ?? parameter;
-											setHighlightedConnection(connectionId(connection));
-											setSelectedParameters([{ device, parameter: resolved }]);
-											const el = document.getElementById(
-												`pb-${buildParameterId(deviceId, resolved)}`,
-											);
-											el?.scrollIntoView({
-												behavior: "smooth",
-												block: "nearest",
-											});
-										};
-										return (
-											<>
-												<p
-													style={{
-														margin: "4px 0",
-														fontWeight: "bold",
-														fontSize: "12px",
-													}}
-												>
-													{sel.device.repr}
-													{sectionName ? ` - ${sectionName}` : ""}
-													{" - "}
-													{paramName}
-												</p>
-												{outgoing.length > 0 && (
-													<>
-														<p
-															style={{
-																margin: "4px 0 2px",
-																fontSize: "11px",
-																color: "gray",
-															}}
-														>
-															→ output to:
-														</p>
-														<ul style={{ margin: 0, paddingLeft: "12px" }}>
-															{outgoing.map((c) => {
-																const p = c.dest.parameter;
-																const sec =
-																	p.section_name !== "__virtual__"
-																		? ` - ${p.section_name}`
-																		: "";
-																const inPair = loadedIds.has(c.dest.device);
-																return (
-																	<li
-																		key={c.id}
-																		style={{
-																			fontSize: "11px",
-																			display: "flex",
-																			alignItems: "center",
-																			gap: "4px",
-																		}}
-																	>
-																		{inPair && (
-																			<Button
-																				text=">>"
-																				tooltip="Select destination port"
-																				variant="small"
-																				style={{
-																					padding: "2px 4px",
-																				}}
-																				onClick={() =>
-																					selectPort(c.dest.device, p, c)
-																				}
-																			/>
-																		)}
-																		<span
-																			style={{
-																				cursor: "pointer",
-																				textDecoration: "underline dotted",
-																			}}
-																			onClick={() =>
-																				navigateToDevice(
-																					c.dest.device,
-																					p.section_name,
-																					p,
-																				)
-																			}
-																		>
-																			{c.dest.repr}
-																			{sec} - {p.name}
-																		</span>
-																	</li>
-																);
-															})}
-														</ul>
-													</>
-												)}
-												{incoming.length > 0 && (
-													<>
-														<p
-															style={{
-																margin: "4px 0 2px",
-																fontSize: "11px",
-																color: "gray",
-															}}
-														>
-															input from → :
-														</p>
-														<ul style={{ margin: 0, paddingLeft: "12px" }}>
-															{incoming.map((c) => {
-																const p = c.src.parameter;
-																const sec =
-																	p.section_name !== "__virtual__"
-																		? ` - ${p.section_name}`
-																		: "";
-																const inPair = loadedIds.has(c.src.device);
-																return (
-																	<li
-																		key={c.id}
-																		style={{
-																			fontSize: "11px",
-																			display: "flex",
-																			alignItems: "center",
-																			gap: "4px",
-																		}}
-																	>
-																		<span
-																			style={{
-																				cursor: "pointer",
-																				textDecoration: "underline dotted",
-																			}}
-																			onClick={() =>
-																				navigateToDevice(
-																					c.src.device,
-																					p.section_name,
-																					p,
-																				)
-																			}
-																		>
-																			{c.src.repr}
-																			{sec} - {p.name}
-																		</span>
-																		{inPair && (
-																			<Button
-																				text=">>"
-																				tooltip="Select source port"
-																				variant="small"
-																				style={{
-																					padding: "2px 4px",
-																				}}
-																				onClick={() =>
-																					selectPort(c.src.device, p, c)
-																				}
-																			/>
-																		)}
-																	</li>
-																);
-															})}
-														</ul>
-													</>
-												)}
-												{outgoing.length === 0 && incoming.length === 0 && (
-													<p style={{ fontSize: "11px", color: "gray" }}>
-														No connections
-													</p>
-												)}
-											</>
-										);
-									})()}
-							</div>
-						)}
-					</div>
+					<PortInfoPanel
+						selectedConnection={selectedConnection}
+						selectedParameters={selectedParameters}
+						firstDeviceId={currentFirstSection?.device.id}
+						secondDeviceId={currentSecondSection?.device.id}
+						navigateToDevice={navigateToDevice}
+						onHighlightConnection={setHighlightedConnection}
+						onSelectParameter={handleSelectParameter}
+					/>
 					{/*<div className="bottom-right-panel">
 						<h3>Connections</h3>
 						<ul className="connections-list">
