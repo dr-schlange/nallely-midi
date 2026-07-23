@@ -28,7 +28,7 @@ export const AboutModal = ({ onClose }: AboutModalProps) => {
 				<img
 					src={`/trevor${trevor}.svg`}
 					alt="Trevor 0.0.1"
-					style={{ width: "194px", height: "183px", margin: "10px" }}
+					style={{ height: "70%", margin: "10px" }}
 					onClick={changeTrevor}
 				/>
 				<p style={{ textAlign: "center" }}>Trevor 0.2.0</p>

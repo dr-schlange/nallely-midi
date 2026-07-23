@@ -28,7 +28,7 @@ const TrevorFriend = ({ ip, port, selected, name }) => {
 			<img
 				src={`/trevor${selected ? 1 : 2}.svg`}
 				alt={`Nallely session running on ${ip}: ${port}`}
-				style={{ width: "45px", height: "45px", margin: "10px" }}
+				style={{ width: "70px", height: "70px", margin: "10px" }}
 				onClick={changeTrevor}
 			/>
 			<p style={{ textAlign: "center", fontSize: "12px" }}>

@@ -9,6 +9,7 @@
 * Add cybernetic neurone and synapse as new modules
 * Add new interface for the patching modal
 * Add new tool to follow links and ports in the patching modal
+* Add new tool to quickly debug/monitor ports on the fly from the patching modal
 
 ### Fixes
 
@@ -17,6 +18,7 @@
 * Fix name/ip attribution when there is no network
 * Fix issue when a network bus attribute is set first without having been read before
 * Fix multiple registration of conversion wrapper/property which also masked manually added properties in virtual devices
+* Refactor/split some UI components
 
 ## Nallely v0.6.0 -- Tepezcohuite
 
