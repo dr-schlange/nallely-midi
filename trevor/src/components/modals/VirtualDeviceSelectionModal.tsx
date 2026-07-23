@@ -24,7 +24,13 @@ interface ModalProps {
 
 const Modal = ({ onClose, onCancel, children, header }: ModalProps) => {
 	return (
-		<div className="modal-vdevice-selection">
+		<div
+			className="modal-vdevice-selection"
+			onClick={(e) => e.stopPropagation()}
+			onMouseDown={(e) => e.stopPropagation()}
+			onTouchStart={(e) => e.stopPropagation()}
+			onTouchEnd={(e) => e.stopPropagation()}
+		>
 			<div
 				style={{
 					width: "100%",

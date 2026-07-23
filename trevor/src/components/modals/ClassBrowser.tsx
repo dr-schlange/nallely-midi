@@ -21,7 +21,7 @@ import type { MidiDevice, VirtualDevice } from "../../model";
 import { useTrevorSelector } from "../../store";
 import { useTrevorWebSocket } from "../../websockets/websocket";
 import { Terminal } from "../Terminal";
-import { Button, HeaderButton } from "../widgets/BaseComponents";
+import { Button } from "../widgets/BaseComponents";
 import { Scope } from "../widgets/Oscilloscope";
 
 const ERROR_DELAY = 3000;
@@ -641,12 +641,10 @@ const duplicateAsSnippet = (view) => {
 
 export function ClassBrowser({ device, onClose }: ClassBrowserProps) {
 	const editorRef = useRef<EditorView | undefined>(undefined);
-	const [code, setCode] = useState("");
 	const [stdout, setStdout] = useState("");
 	const [errors, setErrors] = useState<Diagnostic[]>([]);
 	const trevorSocket = useTrevorWebSocket();
 	const classCode = useTrevorSelector((state) => state.runTime.classCode);
-	// const method = useRef<string>(undefined);
 	const [mode, setMode] = useState<"scope" | "terminal">("terminal");
 	const [value, setValue] = useState(undefined);
 	const devices = useTrevorSelector((state) => state.nallely.virtual_devices);
@@ -679,16 +677,18 @@ export function ClassBrowser({ device, onClose }: ClassBrowserProps) {
 	}, [vimActive]);
 
 	useEffect(() => {
-		if (!classCode?.classCode) {
-			setCode(`# Fetching code for ${device.meta.name}`);
-			return;
+		if (!editorRef.current) return;
+		const newCode =
+			classCode?.classCode ?? `# Fetching code for ${device.meta.name}`;
+		const view = editorRef.current;
+		if (view.state.doc.toString() !== newCode) {
+			view.dispatch({
+				changes: { from: 0, to: view.state.doc.length, insert: newCode },
+			});
 		}
-		setCode(classCode.classCode);
-	}, [classCode?.classCode]);
+	}, [classCode?.classCode, device.meta.name]);
 
-	const customLinter = () => {
-		return errors;
-	};
+	const customLinter = useCallback(() => errors, [errors]);
 
 	function displayError(
 		view: EditorView | undefined,
@@ -749,58 +749,71 @@ export function ClassBrowser({ device, onClose }: ClassBrowserProps) {
 		};
 	}, [trevorSocket?.socket]);
 
-	const myCustomKeymap = Prec.highest(
-		keymap.of([
-			{
-				key: "Mod-s",
-				preventDefault: true,
-				run: () => {
-					if (code) {
-						trevorSocket?.compileInject(device.id, code);
-					}
-					return true;
-				},
-			},
-			{
-				key: "Mod-l",
-				preventDefault: true,
-				run: () => {
-					setStdout("");
-					return true;
-				},
-			},
-			{
-				key: "Mod-?",
-				preventDefault: true,
-				run: () => {
-					setStdout(`${stdout}
+	const myCustomKeymap = useMemo(
+		() =>
+			Prec.highest(
+				keymap.of([
+					{
+						key: "Mod-s",
+						preventDefault: true,
+						run: (view) => {
+							const currentCode = view.state.doc.toString();
+							if (currentCode) {
+								trevorSocket?.compileInject(device.id, currentCode);
+							}
+							return true;
+						},
+					},
+					{
+						key: "Mod-l",
+						preventDefault: true,
+						run: () => {
+							setStdout("");
+							return true;
+						},
+					},
+					{
+						key: "Mod-?",
+						preventDefault: true,
+						run: () => {
+							setStdout(
+								(prev) => `${prev}
 Shortcuts:
 mod-l:     clear the terminal
 alt-space: close/open the code browser
 mod-?:     displays this entry
-						`);
-					return true;
-				},
-			},
-		]),
+							`,
+							);
+							return true;
+						},
+					},
+				]),
+			),
+		[trevorSocket, device.id],
 	);
 
-	const disableMobileAutocomplete = EditorView.contentAttributes.of({
-		autocomplete: "off",
-		autocorrect: "off",
-		autocapitalize: "off",
-		spellcheck: "false",
-	});
+	const disableMobileAutocomplete = useMemo(
+		() =>
+			EditorView.contentAttributes.of({
+				autocomplete: "off",
+				autocorrect: "off",
+				autocapitalize: "off",
+				spellcheck: "false",
+			}),
+		[],
+	);
 
 	const [focusedPanel, setFocusedPanel] = useState<
 		"code-editor" | "terminal" | undefined
 	>(undefined);
-	const focusExtension = EditorView.focusChangeEffect.of((state, focusing) => {
-		if (focusing && focusedPanel !== "code-editor") {
-			setFocusedPanel("code-editor");
-		}
-		return null;
-	});
+	const focusExtension = useMemo(
+		() =>
+			EditorView.focusChangeEffect.of((_state, focusing) => {
+				if (focusing) setFocusedPanel("code-editor");
+				return null;
+			}),
+		[],
+	);
 	const cbStdinRequest = useCallback(() => {
 		if (focusedPanel !== "terminal") {
 			setFocusedPanel("terminal");
@@ -817,64 +830,88 @@ mod-?:     displays this entry
 		(id, text) => trevorSocket.sendStdin(id, text),
 		[trevorSocket],
 	);
+	const getEditorCode = () => editorRef.current?.state.doc.toString() ?? "";
 
 	const modalContent = (
-		<div className="patching-modal">
-			<div className="modal-header playground">
-				<HeaderButton
-					text="Close"
-					onClick={() => {
-						onClose();
-					}}
+		<div
+			className="patching-modal"
+			onClick={(e) => e.stopPropagation()}
+			onMouseDown={(e) => e.stopPropagation()}
+			onTouchStart={(e) => e.stopPropagation()}
+			onTouchEnd={(e) => e.stopPropagation()}
+		>
+			<div
+				className="modal-header playground"
+				style={{ height: "27px", overflow: "hidden" }}
+			>
+				<Button
+					text="close"
+					tooltip="Close"
+					variant="big"
+					style={{ width: "auto", padding: "0 6px", color: "var(--black)" }}
+					onClick={() => onClose()}
 				/>
 
-				<HeaderButton
-					text="Dup"
+				<Button
+					text="dup"
+					tooltip="Duplicate as snippet"
+					variant="big"
+					style={{ width: "auto", padding: "0 6px", color: "var(--black)" }}
+					onClick={() => duplicateAsSnippet(editorRef.current)}
+				/>
+
+				<Button
+					text="patch"
+					tooltip="Compile and inject"
+					variant="big"
+					style={{ width: "auto", padding: "0 6px", color: "var(--black)" }}
 					onClick={() => {
-						if (code) {
-							duplicateAsSnippet(editorRef.current);
+						const currentCode = getEditorCode();
+						if (currentCode) {
+							trevorSocket?.compileInject(device.id, currentCode);
 						}
 					}}
 				/>
 
-				<HeaderButton
-					text="Patch"
+				<Button
+					text="save"
+					tooltip="Compile, inject and save"
+					variant="big"
+					style={{ width: "auto", padding: "0 6px", color: "var(--black)" }}
 					onClick={() => {
-						if (code) {
-							trevorSocket?.compileInject(device.id, code);
-						}
-					}}
-				/>
-
-				<HeaderButton
-					text="Save"
-					onClick={() => {
-						if (code) {
+						const currentCode = getEditorCode();
+						if (currentCode) {
 							const regex = /class (?<name>[^(]+)/;
-							const match = code.match(regex);
+							const match = currentCode.match(regex);
 							if (match?.groups) {
 								const name = match.groups.name;
-								trevorSocket?.compileInjectSave(device.id, code, name);
+								trevorSocket?.compileInjectSave(device.id, currentCode, name);
 							}
 						}
 					}}
 				/>
 
-				<HeaderButton
-					text="Vim"
-					style={{ backgroundColor: vimActive ? "orange" : "unset" }}
+				<Button
+					text="vim"
+					tooltip="Toggle Vim mode"
+					variant="big"
+					activated={vimActive}
+					style={{ width: "auto", padding: "0 6px", color: "var(--black)" }}
 					onClick={() => setVimActive(!vimActive)}
 				/>
-				<HeaderButton
-					text={cmdMode ? "CMD" : "INS"}
+
+				<Button
+					text={cmdMode ? "cmd" : "ins"}
+					tooltip="Toggle Vim insert/command mode"
+					variant="big"
 					disabled={!vimActive}
 					style={{
-						backgroundColor: vimActive ? "orange" : "unset",
-						color: vimActive ? "black" : "gray",
+						width: "auto",
+						padding: "0 6px",
+						color: vimActive ? "var(--black)" : undefined,
 					}}
 					onClick={() => {
 						if (!vimActive || !editorRef.current) return;
-
 						const cm = getCM(editorRef.current);
 						if (cm) {
 							if (cmdMode) {
@@ -907,10 +944,6 @@ mod-?:     displays this entry
 							if (view) {
 								editorRef.current = view.view;
 							}
-						}}
-						value={code}
-						onChange={(value) => {
-							setCode(value);
 						}}
 						maxHeight="100%"
 						height="100%"
