@@ -207,12 +207,8 @@ const VDeviceSelectionModal = ({ onClose }: VDeviceSelectionModalProps) => {
 					{/* left div */}
 					<div className="modal-vdevice-selection-list">
 						{Object.entries(selections).map(([name, { schema, count }]) => (
-							<>
-								<VDeviceSchema
-									key={name}
-									schema={schema}
-									onClick={removeDevice}
-								/>
+							<div key={name} style={{ display: "contents" }}>
+								<VDeviceSchema schema={schema} onClick={removeDevice} />
 								<p
 									style={{
 										fontSize: "16px",
@@ -222,7 +218,7 @@ const VDeviceSelectionModal = ({ onClose }: VDeviceSelectionModalProps) => {
 								>
 									x{count.toString()}
 								</p>
-							</>
+							</div>
 						))}
 					</div>
 					{/* right div */}

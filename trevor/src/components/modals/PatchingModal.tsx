@@ -70,7 +70,14 @@ const TmpScopeOverlay = ({
 }) => {
 	const scopeRef = useRef<HTMLDivElement>(null);
 	const [paths, setPaths] = useState<string[]>([]);
+	const [sizeKey, setSizeKey] = useState(0);
 	const portElemIdsKey = portElemIds.join(",");
+
+	useEffect(() => {
+		const onResize = () => setSizeKey((k) => k + 1);
+		window.addEventListener("resize", onResize);
+		return () => window.removeEventListener("resize", onResize);
+	}, []);
 
 	const portrait = window.innerWidth <= window.innerHeight;
 	const outerStyle: React.CSSProperties = portrait
@@ -107,7 +114,7 @@ const TmpScopeOverlay = ({
 		}
 		setPaths(newPaths);
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [portElemIdsKey, refreshKey]);
+	}, [portElemIdsKey, refreshKey, sizeKey]);
 
 	return (
 		<>
@@ -943,14 +950,12 @@ const PatchingModal = ({
 			portraitMode.current = window.matchMedia(
 				"(orientation: portrait)",
 			).matches;
-			updateConnections();
 		};
-
 		window.addEventListener("orientationchange", handleOrientationChange);
 		return () => {
 			window.removeEventListener("orientationchange", handleOrientationChange);
 		};
-	});
+	}, []);
 
 	const [selectedParameters, setSelectedParameters] = useState<
 		{
@@ -1273,6 +1278,16 @@ const PatchingModal = ({
 		handleConnectionClick,
 		isMouseInteracting,
 	]);
+
+	useEffect(() => {
+		const onResize = () => {
+			requestAnimationFrame(() =>
+				requestAnimationFrame(() => updateConnections()),
+			);
+		};
+		window.addEventListener("resize", onResize);
+		return () => window.removeEventListener("resize", onResize);
+	}, [updateConnections]);
 
 	useEffect(() => {
 		const raf = requestAnimationFrame(() => updateConnections());
