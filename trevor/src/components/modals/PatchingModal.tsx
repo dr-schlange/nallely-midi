@@ -72,6 +72,15 @@ const TmpScopeOverlay = ({
 	const [paths, setPaths] = useState<string[]>([]);
 	const [sizeKey, setSizeKey] = useState(0);
 	const portElemIdsKey = portElemIds.join(",");
+	const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
+	const dragStateRef = useRef<{
+		px: number;
+		py: number;
+		ex: number;
+		ey: number;
+		pointerId: number;
+		dragging: boolean;
+	} | null>(null);
 
 	useEffect(() => {
 		const onResize = () => setSizeKey((k) => k + 1);
@@ -80,14 +89,13 @@ const TmpScopeOverlay = ({
 	}, []);
 
 	const portrait = window.innerWidth <= window.innerHeight;
-	const outerStyle: React.CSSProperties = portrait
+	const defaultStyle: React.CSSProperties = portrait
 		? {
 				position: "fixed",
 				top: 8,
 				left: "50%",
 				transform: "translateX(-50%)",
 				zIndex: 9999,
-				pointerEvents: "none",
 			}
 		: {
 				position: "fixed",
@@ -95,8 +103,45 @@ const TmpScopeOverlay = ({
 				right: 8,
 				transform: "translateY(-50%)",
 				zIndex: 9999,
-				pointerEvents: "none",
 			};
+
+	const positionStyle: React.CSSProperties = pos
+		? { position: "fixed", left: pos.x, top: pos.y, zIndex: 9999 }
+		: defaultStyle;
+
+	const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+		e.stopPropagation();
+		const rect = scopeRef.current!.getBoundingClientRect();
+		dragStateRef.current = {
+			px: e.clientX,
+			py: e.clientY,
+			ex: rect.left,
+			ey: rect.top,
+			pointerId: e.pointerId,
+			dragging: false,
+		};
+	};
+
+	const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+		if (!dragStateRef.current) return;
+		e.stopPropagation();
+		const dx = e.clientX - dragStateRef.current.px;
+		const dy = e.clientY - dragStateRef.current.py;
+		if (!dragStateRef.current.dragging) {
+			if (dx * dx + dy * dy < 64) return;
+			dragStateRef.current.dragging = true;
+			e.currentTarget.setPointerCapture(dragStateRef.current.pointerId);
+		}
+		setPos({
+			x: dragStateRef.current.ex + dx,
+			y: dragStateRef.current.ey + dy,
+		});
+	};
+
+	const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+		e.stopPropagation();
+		dragStateRef.current = null;
+	};
 
 	useLayoutEffect(() => {
 		if (!scopeRef.current) return;
@@ -114,16 +159,22 @@ const TmpScopeOverlay = ({
 		}
 		setPaths(newPaths);
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [portElemIdsKey, refreshKey, sizeKey]);
+	}, [portElemIdsKey, refreshKey, sizeKey, pos]);
 
 	return (
 		<>
-			<div ref={scopeRef} style={outerStyle}>
+			<div ref={scopeRef} style={positionStyle}>
 				<div
-					style={{ position: "relative", pointerEvents: "auto" }}
+					style={{
+						position: "relative",
+						touchAction: "none",
+						cursor: dragStateRef.current?.dragging ? "grabbing" : "grab",
+					}}
 					onClick={(e) => e.stopPropagation()}
-					onPointerDown={(e) => e.stopPropagation()}
-					onPointerUp={(e) => e.stopPropagation()}
+					onPointerDown={handlePointerDown}
+					onPointerMove={handlePointerMove}
+					onPointerUp={handlePointerUp}
+					onPointerCancel={handlePointerUp}
 				>
 					<MultiChanScope
 						id={TMP_SCOPE_ID}
