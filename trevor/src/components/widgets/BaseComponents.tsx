@@ -503,13 +503,16 @@ export const CircularSlider = ({
 				xDelta < 0 ? magnitude : -magnitude,
 			);
 			if (extra !== extraDecimalsRef.current) {
+				startValue.current = ghostValueRef.current ?? startValue.current;
+				startY.current = e.clientY;
 				extraDecimalsRef.current = extra;
 				setExtraDecimals(extra);
 			}
 			const scale = Math.pow(10, -extra);
+			const currentYDelta = startY.current - e.clientY;
 			const raw =
 				startValue.current +
-				(yDelta / 2) * ((maxValue - minValue) / 127) * scale;
+				(currentYDelta / 2) * ((maxValue - minValue) / 127) * scale;
 			newValue = Math.min(maxValue, Math.max(minValue, raw));
 		} else {
 			const raw =
