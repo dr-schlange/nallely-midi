@@ -1,6 +1,7 @@
 /** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
 /** biome-ignore-all lint/a11y/noSvgWithoutTitle: <explanation> */
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { generateAcronym, resolveAcceptedValueIndex } from "../../utils/utils";
 import { MidiParameter, VirtualParameter } from "../../model";
 
@@ -422,10 +423,22 @@ export const CircularSlider = ({
 
 	const [ghostValue, setGhostValue] = useState<number | null>(null);
 	const ghostValueRef = useRef<number | null>(null);
+	const svgInnerRef = useRef<SVGSVGElement>(null);
+	const svgRectRef = useRef<{ left: number; top: number } | null>(null);
 	const startY = useRef<number | null>(null);
+	const startX = useRef<number | null>(null);
 	const startValue = useRef<number>(value ?? minValue);
 	const hasMoved = useRef(false);
 	const dragging = useRef(false);
+	const basePrecision = useRef<number>(0);
+	const extraDecimalsRef = useRef<number>(0);
+	const [extraDecimals, setExtraDecimals] = useState<number>(0);
+	const [dragOverlay, setDragOverlay] = useState<{
+		sx: number;
+		sy: number;
+		cx: number;
+		cy: number;
+	} | null>(null);
 
 	const span = maxValue - minValue;
 	const angle =
@@ -444,29 +457,81 @@ export const CircularSlider = ({
 	const ghostCy =
 		ghostAngle !== null ? center - radius * Math.sin(ghostAngle) : null;
 
+	const countDecimals = (v: number): number => {
+		const s = v.toString();
+		const d = s.indexOf(".");
+		return d === -1 ? 0 : s.length - d - 1;
+	};
+
 	const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
 		e.preventDefault();
 		e.currentTarget.setPointerCapture(e.pointerId);
 		startY.current = e.clientY;
-		startValue.current = value || minValue;
+		startX.current = e.clientX;
+		startValue.current = value ?? minValue;
 		ghostValueRef.current = null;
 		hasMoved.current = false;
 		dragging.current = true;
+		if (!rounded) {
+			basePrecision.current = countDecimals(value ?? minValue);
+			extraDecimalsRef.current = 0;
+			setExtraDecimals(0);
+		}
+		const svgEl = svgInnerRef.current;
+		svgRectRef.current = svgEl
+			? {
+					left: svgEl.getBoundingClientRect().left,
+					top: svgEl.getBoundingClientRect().top,
+				}
+			: null;
 	};
 
 	const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
 		if (!dragging.current || startY.current === null) return;
-		const delta = startY.current - e.clientY;
-		if (Math.abs(delta) < 4) return;
+		const yDelta = startY.current - e.clientY;
+		if (!hasMoved.current && Math.abs(yDelta) < 4) return;
 		hasMoved.current = true;
-		const deltaValue = (delta / 2) * ((maxValue - minValue) / 127);
-		const raw = startValue.current + deltaValue;
-		const newValue = Math.min(
-			maxValue,
-			Math.max(minValue, rounded ? Math.round(raw) : raw),
-		);
+
+		let newValue: number;
+		if (!rounded && startX.current !== null) {
+			const xDelta = e.clientX - startX.current;
+			const absDist = Math.abs(xDelta);
+			const magnitude =
+				absDist < 45 ? 0 : Math.min(6, 1 + Math.floor((absDist - 45) / 25));
+			const extra = Math.max(
+				-basePrecision.current,
+				xDelta < 0 ? magnitude : -magnitude,
+			);
+			if (extra !== extraDecimalsRef.current) {
+				extraDecimalsRef.current = extra;
+				setExtraDecimals(extra);
+			}
+			const scale = Math.pow(10, -extra);
+			const raw =
+				startValue.current +
+				(yDelta / 2) * ((maxValue - minValue) / 127) * scale;
+			newValue = Math.min(maxValue, Math.max(minValue, raw));
+		} else {
+			const raw =
+				startValue.current + (yDelta / 2) * ((maxValue - minValue) / 127);
+			newValue = Math.min(
+				maxValue,
+				Math.max(minValue, rounded ? Math.round(raw) : raw),
+			);
+		}
 		ghostValueRef.current = newValue;
 		setGhostValue(newValue);
+
+		const svgRect = svgRectRef.current;
+		if (svgRect && span !== 0) {
+			const ghostAng = startAngle - ((newValue - minValue) / span) * totalAngle;
+			setDragOverlay({
+				sx: svgRect.left + center + radius * Math.cos(ghostAng),
+				sy: svgRect.top + center - radius * Math.sin(ghostAng),
+				cx: e.clientX,
+				cy: e.clientY,
+			});
+		}
 	};
 
 	const endDrag = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -475,11 +540,23 @@ export const CircularSlider = ({
 		if (e.currentTarget.hasPointerCapture?.(e.pointerId)) {
 			e.currentTarget.releasePointerCapture(e.pointerId);
 		}
-		const committed = ghostValueRef.current;
+		let committed = ghostValueRef.current;
+		if (!rounded && committed !== null) {
+			const precision = Math.max(
+				0,
+				basePrecision.current + extraDecimalsRef.current,
+			);
+			const factor = Math.pow(10, precision);
+			committed = Math.round(committed * factor) / factor;
+		}
 		const moved = hasMoved.current;
 		startY.current = null;
+		startX.current = null;
 		ghostValueRef.current = null;
 		hasMoved.current = false;
+		extraDecimalsRef.current = 0;
+		setExtraDecimals(0);
+		setDragOverlay(null);
 		setGhostValue(null);
 		if (!moved) {
 			onTap?.();
@@ -499,88 +576,134 @@ export const CircularSlider = ({
 		return `${v.toFixed(4)}...`;
 	};
 
+	const dragLine = dragOverlay
+		? (() => {
+				const dx = dragOverlay.cx - dragOverlay.sx;
+				const dy = dragOverlay.cy - dragOverlay.sy;
+				const dist = Math.sqrt(dx * dx + dy * dy);
+				if (dist < 6) return null;
+				return {
+					x1: dragOverlay.sx,
+					y1: dragOverlay.sy,
+					x2: dragOverlay.cx,
+					y2: dragOverlay.cy,
+				};
+			})()
+		: null;
+
 	return (
-		<div
-			style={{
-				flexDirection: labelPosition === "top" ? "column" : "column-reverse",
-				display: "flex",
-				alignItems: "center",
-				userSelect: "none",
-				touchAction: "none",
-				marginTop: "4px",
-				position: "relative",
-				gap: "2px",
-			}}
-			onPointerDown={disabled ? undefined : handlePointerDown}
-			onPointerMove={disabled ? undefined : handlePointerMove}
-			onPointerUp={disabled ? undefined : endDrag}
-			onPointerCancel={disabled ? undefined : endDrag}
-		>
-			<span style={{ fontSize: "12px" }}>
-				{generateAcronym(
-					param.name
-						.replace(/_cv$/, "")
-						.replace(stripPrefix ? /^[^_]+_/ : "", ""),
-					acronymeLimit,
-				)}
-			</span>
-			<div style={{ position: "relative" }}>
-				<svg width={size} height={size}>
-					<circle
-						cx={center}
-						cy={center}
-						r={radius}
-						stroke={disabled ? "none" : "gray"}
-						strokeWidth={strokeWidth}
-						fill="none"
-					/>
-					{!disabled && <circle cx={cx} cy={cy} r={4} fill="orange" />}
-
-					{!disabled && ghostValue !== null && (
-						<circle
-							cx={ghostCx}
-							cy={ghostCy}
-							r={4}
-							fill="orange"
-							opacity={0.4}
-						/>
+		<>
+			<div
+				style={{
+					flexDirection: labelPosition === "top" ? "column" : "column-reverse",
+					display: "flex",
+					alignItems: "center",
+					userSelect: "none",
+					touchAction: "none",
+					marginTop: "4px",
+					position: "relative",
+					gap: "2px",
+				}}
+				onPointerDown={disabled ? undefined : handlePointerDown}
+				onPointerMove={disabled ? undefined : handlePointerMove}
+				onPointerUp={disabled ? undefined : endDrag}
+				onPointerCancel={disabled ? undefined : endDrag}
+			>
+				<span style={{ fontSize: "12px" }}>
+					{generateAcronym(
+						param.name
+							.replace(/_cv$/, "")
+							.replace(stripPrefix ? /^[^_]+_/ : "", ""),
+						acronymeLimit,
 					)}
-				</svg>
-				<span
-					style={{
-						position: "absolute",
-						top: "50%",
-						left: "50%",
-						transform: "translate(-50%, -50%)",
-						fontSize: "11px",
-						pointerEvents: "none",
-						zIndex: 10,
-						color: "#333",
-						whiteSpace: "nowrap",
-					}}
-				>
-					{disabled ? "..." : formatValue(value)}
 				</span>
+				<div style={{ position: "relative" }}>
+					<svg width={size} height={size} ref={svgInnerRef}>
+						<circle
+							cx={center}
+							cy={center}
+							r={radius}
+							stroke={disabled ? "none" : "gray"}
+							strokeWidth={strokeWidth}
+							fill="none"
+						/>
+						{!disabled && <circle cx={cx} cy={cy} r={4} fill="orange" />}
 
-				{ghostValue !== null && (
+						{!disabled && ghostValue !== null && (
+							<circle
+								cx={ghostCx}
+								cy={ghostCy}
+								r={4}
+								fill="orange"
+								opacity={0.4}
+							/>
+						)}
+					</svg>
 					<span
 						style={{
 							position: "absolute",
-							top: "calc(50% + 2px)",
+							top: "50%",
 							left: "50%",
-							transform: "translateX(-50%)",
+							transform: "translate(-50%, -50%)",
 							fontSize: "11px",
 							pointerEvents: "none",
-							zIndex: 100,
-							color: "rgba(0,0,0,0.55)",
-							borderRadius: "3px",
-							padding: "1px 4px",
+							zIndex: 10,
+							color: "#333",
+							whiteSpace: "nowrap",
 						}}
 					>
-						{String(ghostValue)}
+						{disabled ? "..." : formatValue(value)}
 					</span>
-				)}
+
+					{ghostValue !== null && (
+						<span
+							style={{
+								position: "absolute",
+								top: "calc(50% + 2px)",
+								left: "50%",
+								transform: "translateX(-50%)",
+								fontSize: "11px",
+								pointerEvents: "none",
+								zIndex: 100,
+								color: "rgba(0,0,0,0.55)",
+								borderRadius: "3px",
+								padding: "1px 4px",
+							}}
+						>
+							{!rounded
+								? ghostValue.toFixed(
+										Math.max(0, basePrecision.current + extraDecimals),
+									)
+								: String(ghostValue)}
+						</span>
+					)}
+				</div>
 			</div>
-		</div>
+			{dragLine &&
+				createPortal(
+					<svg
+						style={{
+							position: "fixed",
+							top: 0,
+							left: 0,
+							width: "100%",
+							height: "100%",
+							pointerEvents: "none",
+							zIndex: 9999,
+						}}
+					>
+						<line
+							x1={dragLine.x1}
+							y1={dragLine.y1}
+							x2={dragLine.x2}
+							y2={dragLine.y2}
+							stroke="rgba(0,0,0,0.45)"
+							strokeWidth={1.5}
+							strokeDasharray="5 4"
+						/>
+					</svg>,
+					document.body,
+				)}
+		</>
 	);
 };

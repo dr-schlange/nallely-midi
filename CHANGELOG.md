@@ -10,6 +10,7 @@
 * Add new interface for the patching modal
 * Add new tool to follow links and ports in the patching modal
 * Add new tool to quickly debug/monitor ports on the fly from the patching modal
+* Add new circular slider behavior for fine tuning (sliding on the left and right of the slider to add/remove decimals + slide up/down for incrementing/decrementing values). This feature was vibe-coded
 
 ### Fixes
 
