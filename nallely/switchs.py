@@ -397,6 +397,7 @@ class Demultiplexer(VirtualDevice):
     # * %name [%range] %options: %doc
     * input_cv [0, 127] <any>: input
     * selector_cv [0, 7] round <both>: selector
+    * insert0_cv [OFF, ON]: send 0 on non triggering ports (exclusive output)
 
     outputs:
     # * %name [%range]: %doc
@@ -409,7 +410,7 @@ class Demultiplexer(VirtualDevice):
     * out6_cv [0, 127]: out6
     * out7_cv [0, 127]: out7
 
-    type: <ondemand | continuous>
+    type: ondemand
     category: <category>
     meta: disable default output
     """
@@ -418,6 +419,7 @@ class Demultiplexer(VirtualDevice):
     selector_cv = VirtualParameter(
         name="selector", range=(0.0, 7.0), conversion_policy="round"
     )
+    insert0_cv = VirtualParameter(name="insert0", accepted_values=["OFF", "ON"])
     out7_cv = VirtualParameter(name="out7", range=(0.0, 127.0))
     out6_cv = VirtualParameter(name="out6", range=(0.0, 127.0))
     out5_cv = VirtualParameter(name="out5", range=(0.0, 127.0))
@@ -434,13 +436,15 @@ class Demultiplexer(VirtualDevice):
     @on(selector_cv, edge="both")
     def on_selector_both(self, value, ctx):
         idx = int(self.selector)
-        yield (0, self.outs[:idx] + self.outs[idx + 1 :])
-        yield (value, [self.outs[idx]])
+        if self.insert0 == "ON":
+            yield (0, self.outs[:idx] + self.outs[idx + 1 :])
+        yield (self.input, [self.outs[idx]])
 
     @on(input_cv, edge="any")
     def on_input_any(self, value, ctx):
         idx = int(self.selector)
-        yield (0, self.outs[:idx] + self.outs[idx + 1 :])
+        if self.insert0 == "ON":
+            yield (0, self.outs[:idx] + self.outs[idx + 1 :])
         yield (value, [self.outs[idx]])
 
 

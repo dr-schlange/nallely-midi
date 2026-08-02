@@ -20,6 +20,7 @@
 * Fix issue when a network bus attribute is set first without having been read before
 * Fix multiple registration of conversion wrapper/property which also masked manually added properties in virtual devices
 * Refactor/split some UI components
+* Fix issue on Demultiplexer (bad value sent on port change)
 
 ## Nallely v0.6.0 -- Tepezcohuite
 
