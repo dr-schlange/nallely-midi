@@ -102,7 +102,15 @@ class WavetableSection(nallely.Module):
         117, description="Reset all wavetables", accepted_values=["OFF", "ON"]
     )
     double_buffer = nallely.ModuleParameter(
-        116, description="Activates double buffering", accepted_values=["OFF", "ON"]
+        116,
+        description="Activates double buffering (deprecated)",
+        accepted_values=["OFF", "ON"],
+    )
+    snapshots_mode = nallely.ModuleParameter(
+        94, description="Activates the snapshot mode", accepted_values=["OFF", "ON"]
+    )
+    snapshots_depth = nallely.ModuleParameter(
+        93, init_value=18, description="Controls the depth of the snapshots"
     )
     mode_wt1 = nallely.ModuleParameter(
         112,
@@ -128,6 +136,17 @@ class WavetableSection(nallely.Module):
     index_wt2 = nallely.ModuleParameter(109, description="Wavetable 2 write index")
     index_wt3 = nallely.ModuleParameter(110, description="Wavetable 3 write index")
     index_wt4 = nallely.ModuleParameter(111, description="Wavetable 4 write index")
+    blend_level = nallely.ModuleParameter(
+        107, description="All wavetables snapshot blend level"
+    )
+    auto_blend = nallely.ModuleParameter(
+        105,
+        description="Activates the auto-blend in snapshot mode",
+        accepted_values=["ON", "OFF"],
+    )
+    auto_blend_k = nallely.ModuleParameter(
+        106, init_value=33, description="Transition speed between blends"
+    )
 
 
 class FeaturesSection(nallely.Module):

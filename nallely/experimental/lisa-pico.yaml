@@ -183,10 +183,20 @@ drschlange:
           - ON
       double_buffer:
         cc: 116
-        description: "Activates double buffering"
+        description: "Activates double buffering (deprecated)"
         accepted_values:
           - OFF
           - ON
+      snapshots_mode:
+        cc: 94
+        description: "Activates the snapshot mode"
+        accepted_values:
+          - OFF
+          - ON
+      snapshots_depth:
+        cc: 93
+        description: "Controls the depth of the snapshots"
+        init: 18
       mode_wt1:
         cc: 112
         description: "Filter Type"
@@ -235,6 +245,20 @@ drschlange:
         cc: 111
         description: "Wavetable 4 write index"
         init: 0
+      blend_level:
+        cc: 107
+        description: "All wavetables snapshot blend level"
+        init: 0
+      auto_blend:
+        cc: 105
+        description: "Activates the auto-blend in snapshot mode"
+        accepted_values:
+          - ON
+          - OFF
+      auto_blend_k:
+        cc: 106
+        description: "Transition speed between blends"
+        init: 33
     features:
       peak_envelope:
         cc: 95
