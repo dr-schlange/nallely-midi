@@ -591,7 +591,7 @@ class ChordGenerator(VirtualDevice):
 
     def custom_interval_computation(self):
         self.custom = []
-        for i in range(4):
+        for i in range(5):
             inter = NOTES_INTERVALS[getattr(self, f"custom{i}")]
             if inter != -1:
                 self.custom.append(inter)
