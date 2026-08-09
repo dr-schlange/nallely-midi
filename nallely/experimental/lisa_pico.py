@@ -110,7 +110,7 @@ class WavetableSection(nallely.Module):
         94, description="Activates the snapshot mode", accepted_values=["OFF", "ON"]
     )
     snapshots_depth = nallely.ModuleParameter(
-        93, init_value=18, description="Controls the depth of the snapshots"
+        93, init_value=64, description="Controls the depth of the snapshots"
     )
     mode_wt1 = nallely.ModuleParameter(
         112,
@@ -145,7 +145,7 @@ class WavetableSection(nallely.Module):
         accepted_values=["ON", "OFF"],
     )
     auto_blend_k = nallely.ModuleParameter(
-        106, init_value=19, description="Transition speed between blends"
+        106, init_value=25, description="Transition speed between blends"
     )
 
 

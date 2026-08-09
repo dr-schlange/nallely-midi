@@ -196,7 +196,7 @@ drschlange:
       snapshots_depth:
         cc: 93
         description: "Controls the depth of the snapshots"
-        init: 18
+        init: 64
       mode_wt1:
         cc: 112
         description: "Filter Type"
@@ -258,7 +258,7 @@ drschlange:
       auto_blend_k:
         cc: 106
         description: "Transition speed between blends"
-        init: 19
+        init: 25
     features:
       peak_envelope:
         cc: 95
