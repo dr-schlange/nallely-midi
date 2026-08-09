@@ -258,7 +258,7 @@ drschlange:
       auto_blend_k:
         cc: 106
         description: "Transition speed between blends"
-        init: 33
+        init: 19
     features:
       peak_envelope:
         cc: 95

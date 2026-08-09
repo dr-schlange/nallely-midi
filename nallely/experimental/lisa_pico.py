@@ -145,7 +145,7 @@ class WavetableSection(nallely.Module):
         accepted_values=["ON", "OFF"],
     )
     auto_blend_k = nallely.ModuleParameter(
-        106, init_value=33, description="Transition speed between blends"
+        106, init_value=19, description="Transition speed between blends"
     )
 
 
