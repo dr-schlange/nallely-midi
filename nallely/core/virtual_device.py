@@ -226,7 +226,7 @@ class VirtualDevice(threading.Thread):
     def __init__(
         self,
         uuid: int = 0,
-        target_cycle_time: float = 0.002,
+        target_cycle_time: float = 1 / 256,
         autoconnect: bool = False,
         disable_output: bool = False,
         **kwargs,
