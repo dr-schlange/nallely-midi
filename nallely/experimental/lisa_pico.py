@@ -147,6 +147,11 @@ class WavetableSection(nallely.Module):
     auto_blend_k = nallely.ModuleParameter(
         106, init_value=25, description="Transition speed between blends"
     )
+    auto_blend_direction = nallely.ModuleParameter(
+        92,
+        description="Do we blend with the near past or distant past (default near past)",
+        accepted_values=["forward", "backward"],
+    )
 
 
 class FeaturesSection(nallely.Module):

@@ -259,6 +259,12 @@ drschlange:
         cc: 106
         description: "Transition speed between blends"
         init: 25
+      auto_blend_direction:
+        cc: 92
+        description: "Do we blend with the near past or distant past (default near past)"
+        accepted_values:
+          - forward
+          - backward
     features:
       peak_envelope:
         cc: 95
