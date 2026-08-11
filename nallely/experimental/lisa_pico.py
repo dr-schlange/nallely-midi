@@ -107,7 +107,7 @@ class WavetableSection(nallely.Module):
         accepted_values=["OFF", "ON"],
     )
     snapshots_mode = nallely.ModuleParameter(
-        94, description="Activates the snapshot mode", accepted_values=["OFF", "ON"]
+        94, description="Activates the snapshot mode", accepted_values=["ON", "OFF"]
     )
     snapshots_depth = nallely.ModuleParameter(
         93, init_value=64, description="Controls the depth of the snapshots"

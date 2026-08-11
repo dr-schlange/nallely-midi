@@ -191,8 +191,8 @@ drschlange:
         cc: 94
         description: "Activates the snapshot mode"
         accepted_values:
-          - OFF
           - ON
+          - OFF
       snapshots_depth:
         cc: 93
         description: "Controls the depth of the snapshots"
