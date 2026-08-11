@@ -187,16 +187,7 @@ drschlange:
         accepted_values:
           - OFF
           - ON
-      snapshots_mode:
-        cc: 94
-        description: "Activates the snapshot mode"
-        accepted_values:
-          - ON
-          - OFF
-      snapshots_depth:
-        cc: 93
-        description: "Controls the depth of the snapshots"
-        init: 64
+
       mode_wt1:
         cc: 112
         description: "Filter Type"
@@ -245,21 +236,31 @@ drschlange:
         cc: 111
         description: "Wavetable 4 write index"
         init: 0
-      blend_level:
-        cc: 107
-        description: "All wavetables snapshot blend level"
-        init: 0
-      auto_blend:
-        cc: 105
-        description: "Activates the auto-blend in snapshot mode"
+      sluggish_mode:
+        cc: 94
+        description: "Activates the sluggish-memory mode"
         accepted_values:
           - ON
           - OFF
-      auto_blend_k:
+      slug_depth:
+        cc: 93
+        description: "Slug mode depth (buffer size)"
+        init: 64
+      manual_slug_level:
+        cc: 107
+        description: "All wavetables slug blend level controled from external CC"
+        init: 0
+      auto_slug_factor:
+        cc: 105
+        description: "Activates the auto-slug factor for the sluggish mode"
+        accepted_values:
+          - ON
+          - OFF
+      sluggish_factor:
         cc: 106
-        description: "Transition speed between blends"
+        description: "How sluggish is speed between blends"
         init: 25
-      auto_blend_direction:
+      auto_slug_direction:
         cc: 92
         description: "Do we blend with the near past or distant past (default near past)"
         accepted_values:

@@ -106,12 +106,6 @@ class WavetableSection(nallely.Module):
         description="Activates double buffering (deprecated)",
         accepted_values=["OFF", "ON"],
     )
-    snapshots_mode = nallely.ModuleParameter(
-        94, description="Activates the snapshot mode", accepted_values=["ON", "OFF"]
-    )
-    snapshots_depth = nallely.ModuleParameter(
-        93, init_value=64, description="Controls the depth of the snapshots"
-    )
     mode_wt1 = nallely.ModuleParameter(
         112,
         description="Filter Type",
@@ -136,18 +130,26 @@ class WavetableSection(nallely.Module):
     index_wt2 = nallely.ModuleParameter(109, description="Wavetable 2 write index")
     index_wt3 = nallely.ModuleParameter(110, description="Wavetable 3 write index")
     index_wt4 = nallely.ModuleParameter(111, description="Wavetable 4 write index")
-    blend_level = nallely.ModuleParameter(
-        107, description="All wavetables snapshot blend level"
-    )
-    auto_blend = nallely.ModuleParameter(
-        105,
-        description="Activates the auto-blend in snapshot mode",
+    sluggish_mode = nallely.ModuleParameter(
+        94,
+        description="Activates the sluggish-memory mode",
         accepted_values=["ON", "OFF"],
     )
-    auto_blend_k = nallely.ModuleParameter(
-        106, init_value=25, description="Transition speed between blends"
+    slug_depth = nallely.ModuleParameter(
+        93, init_value=64, description="Slug mode depth (buffer size)"
     )
-    auto_blend_direction = nallely.ModuleParameter(
+    manual_slug_level = nallely.ModuleParameter(
+        107, description="All wavetables slug blend level controled from external CC"
+    )
+    auto_slug_factor = nallely.ModuleParameter(
+        105,
+        description="Activates the auto-slug factor for the sluggish mode",
+        accepted_values=["ON", "OFF"],
+    )
+    sluggish_factor = nallely.ModuleParameter(
+        106, init_value=25, description="How sluggish is speed between blends"
+    )
+    auto_slug_direction = nallely.ModuleParameter(
         92,
         description="Do we blend with the near past or distant past (default near past)",
         accepted_values=["forward", "backward"],
