@@ -1148,6 +1148,7 @@ const PatchingModal = ({
 			device: MidiDevice | VirtualDevice,
 			param: MidiParameter | VirtualParameter,
 		) => {
+			if (longPressJustFiredRef.current) return;
 			setSelectedConnection(null);
 			setHighlightedConnection(null);
 			setSelectedParameters((prev) => {
@@ -1387,19 +1388,13 @@ const PatchingModal = ({
 		setTimeout(() => updateConnections(), 0);
 	}, [updateConnections]);
 
-	const handleContainerClick = useCallback(
-		(e: React.MouseEvent<HTMLDivElement>) => {
-			const target = e.target as Element;
-			if (
-				target.closest(".parameter-box") ||
-				target.closest(".patcheable-parameter")
-			)
-				return;
-			if (!svgRef.current) return;
+	const findConnectionAtPoint = useCallback(
+		(clientX: number, clientY: number): Connection | undefined => {
+			if (!svgRef.current) return undefined;
 			const svg = svgRef.current;
 			const svgRect = svg.getBoundingClientRect();
-			const px = e.clientX - svgRect.left;
-			const py = e.clientY - svgRect.top;
+			const px = clientX - svgRect.left;
+			const py = clientY - svgRect.top;
 			const HIT2 = 15 * 15;
 			const paths = svg.querySelectorAll<SVGGeometryElement>(
 				"path:not([id$='-hit'])",
@@ -1407,33 +1402,143 @@ const PatchingModal = ({
 			for (const path of paths) {
 				const len = path.getTotalLength();
 				const steps = Math.min(Math.ceil(len / 4), 400);
-				let hit = false;
 				for (let i = 0; i <= steps; i++) {
 					const sp = path.getPointAtLength((i / steps) * len);
 					const dx = sp.x - px;
 					const dy = sp.y - py;
 					if (dx * dx + dy * dy <= HIT2) {
-						hit = true;
+						const conn = connections.find((c) => {
+							const [from, to] = findConnectorElement(
+								c,
+								modalRef.current ?? document,
+								"pb-",
+							);
+							return from && to && `${from.id}::${to.id}` === path.id;
+						});
+						if (conn) return conn;
 						break;
 					}
 				}
-				if (hit) {
-					const conn = connections.find((c) => {
-						const [from, to] = findConnectorElement(
-							c,
-							modalRef.current ?? document,
-							"pb-",
-						);
-						return from && to && `${from.id}::${to.id}` === path.id;
-					});
-					if (conn) {
-						handleConnectionClick(conn);
-						return;
-					}
-				}
 			}
+			return undefined;
 		},
-		[connections, handleConnectionClick],
+		[connections],
+	);
+
+	const connectionsRef = useRef(connections);
+	useEffect(() => {
+		connectionsRef.current = connections;
+	}, [connections]);
+	const handleConnectionClickRef = useRef(handleConnectionClick);
+	useEffect(() => {
+		handleConnectionClickRef.current = handleConnectionClick;
+	}, [handleConnectionClick]);
+
+	const longPressTouchStateRef = useRef<{
+		x: number;
+		y: number;
+		timer: ReturnType<typeof setTimeout>;
+	} | null>(null);
+	const longPressJustFiredRef = useRef(false);
+
+	const handleTouchStart = useCallback(
+		(e: React.TouchEvent<HTMLDivElement>) => {
+			const touch = e.touches[0];
+			if (!touch) return;
+			const target = e.target as Element;
+			if (target.closest(".parameter-box")) return;
+			const { clientX, clientY } = touch;
+			const svg = svgRef.current;
+			const modal = modalRef.current;
+			const timer = setTimeout(() => {
+				longPressTouchStateRef.current = null;
+				if (!svg) return;
+				const svgRect = svg.getBoundingClientRect();
+				const px = clientX - svgRect.left;
+				const py = clientY - svgRect.top;
+				const HIT2 = 15 * 15;
+				const paths = svg.querySelectorAll<SVGGeometryElement>(
+					"path:not([id$='-hit'])",
+				);
+				let found: Connection | undefined;
+				for (const path of paths) {
+					const len = path.getTotalLength();
+					const steps = Math.min(Math.ceil(len / 4), 400);
+					for (let i = 0; i <= steps; i++) {
+						const sp = path.getPointAtLength((i / steps) * len);
+						const dx = sp.x - px;
+						const dy = sp.y - py;
+						if (dx * dx + dy * dy <= HIT2) {
+							found = connectionsRef.current.find((c) => {
+								const [from, to] = findConnectorElement(
+									c,
+									modal ?? document,
+									"pb-",
+								);
+								return from && to && `${from.id}::${to.id}` === path.id;
+							});
+							break;
+						}
+					}
+					if (found) break;
+				}
+				if (found) {
+					longPressJustFiredRef.current = true;
+					handleConnectionClickRef.current(found);
+				}
+			}, 400);
+			longPressTouchStateRef.current = { x: clientX, y: clientY, timer };
+		},
+		[],
+	);
+
+	const handleTouchMove = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
+		if (!longPressTouchStateRef.current) return;
+		const touch = e.touches[0];
+		if (!touch) return;
+		const dx = touch.clientX - longPressTouchStateRef.current.x;
+		const dy = touch.clientY - longPressTouchStateRef.current.y;
+		if (dx * dx + dy * dy > 64) {
+			clearTimeout(longPressTouchStateRef.current.timer);
+			longPressTouchStateRef.current = null;
+		}
+	}, []);
+
+	const handleTouchEnd = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
+		if (longPressTouchStateRef.current) {
+			clearTimeout(longPressTouchStateRef.current.timer);
+			longPressTouchStateRef.current = null;
+		}
+		if (longPressJustFiredRef.current) {
+			e.preventDefault();
+			// Reset after pointerup/click have had time to fire and be blocked
+			setTimeout(() => {
+				longPressJustFiredRef.current = false;
+			}, 300);
+		}
+	}, []);
+
+	const handleTouchCancel = useCallback(() => {
+		if (longPressTouchStateRef.current) {
+			clearTimeout(longPressTouchStateRef.current.timer);
+			longPressTouchStateRef.current = null;
+		}
+		longPressJustFiredRef.current = false;
+	}, []);
+
+	const handleContainerClick = useCallback(
+		(e: React.MouseEvent<HTMLDivElement>) => {
+			if (longPressJustFiredRef.current) return;
+			const target = e.target as Element;
+			if (
+				target.closest(".parameter-box") ||
+				target.closest(".patcheable-parameter")
+			)
+				return;
+			const conn = findConnectionAtPoint(e.clientX, e.clientY);
+			if (conn) handleConnectionClick(conn);
+		},
+		[findConnectionAtPoint, handleConnectionClick],
 	);
 
 	const shouldHighlight = useCallback(
@@ -1496,6 +1601,10 @@ const PatchingModal = ({
 				<div
 					style={{ position: "relative", flex: 1, overflow: "hidden" }}
 					onClick={handleContainerClick}
+					onTouchStart={handleTouchStart}
+					onTouchMove={handleTouchMove}
+					onTouchEnd={handleTouchEnd}
+					onTouchCancel={handleTouchCancel}
 				>
 					<svg
 						className="connection-svg modal"
