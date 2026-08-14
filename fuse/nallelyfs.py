@@ -6,10 +6,18 @@ import sys
 import pyfuse3
 import trio
 from nallely import *
-from nallely import LFO, VirtualDevice, all_devices, stop_all_connected_devices
+from nallely import (
+    LFO,
+    VirtualDevice,
+    all_devices,
+    stop_all_connected_devices,
+)
+from nallely.core.world import get_all_device_classes
 from nallely.session import Session
 
 DEV_DIR_INODE = 2
+CLASS_DIR_INODE = 3
+BASE_INODES = [pyfuse3.ROOT_INODE, DEV_DIR_INODE, CLASS_DIR_INODE]
 
 
 def hashparam(dev, param):
@@ -18,17 +26,30 @@ def hashparam(dev, param):
     return (hash_mix & 0xFFFFFFFFFFFFFFFF) | 0x1000000000000000, pinst
 
 
+def find_class_by_id(cls_id, cls_registry):
+    for cls in cls_registry:
+        if id(cls) == cls_id:
+            return cls
+    raise StopIteration()
+
+
 class NallelyFS(pyfuse3.Operations):
-    def __init__(self, session, all_devices=all_devices):
+    def __init__(
+        self,
+        session,
+        all_devices=all_devices,
+        get_all_device_classes=get_all_device_classes,
+    ):
         super().__init__()
         self.nallely_session = session
         self.nallely_trevor = session.trevor
         self.nallely_metatrevor = session.meta_trevor
         self.all_devices = all_devices
-        self._lookup = {}
+        self.get_all_device_classes = get_all_device_classes
+        self._param_lookup = {}
         self._open_files = {}
 
-    async def getattr(self, inode, ctx=None, param=None):
+    async def getattr(self, inode, ctx=None):
         entry = pyfuse3.EntryAttributes()
 
         # Base config
@@ -40,25 +61,31 @@ class NallelyFS(pyfuse3.Operations):
         entry.st_ino = inode
 
         # / case
-        if inode == pyfuse3.ROOT_INODE or inode == DEV_DIR_INODE:
+        if inode in BASE_INODES:
             entry.st_mode = stat.S_IFDIR | 0o755
             entry.st_size = 0
             entry.attr_timeout = 0
             entry.entry_timeout = 0
-        elif inode in self._lookup:
-            param = self._lookup[inode]
+        elif inode in self._param_lookup:
+            param = self._param_lookup[inode]
             val = getattr(param.device, param.parameter.name)
             entry.st_mode = stat.S_IFREG | 0o644
             entry.st_size = len(f"{val}\n".encode("utf-8"))
         else:
             try:
-                # An inode/thread/module
+                # An inode/thread/module we confirm it's here
                 dev = self.nallely_trevor.get_device_instance(inode)
-                if param is None:
+            except StopIteration:
+                try:
+                    # We look if that's a class instead
+                    cls = find_class_by_id(inode, self.get_all_device_classes())
                     entry.st_mode = stat.S_IFDIR | 0o755
                     entry.st_size = 0
-            except StopIteration:
-                raise pyfuse3.FUSEError(errno.ENOENT)
+                    entry.attr_timeout = 0
+                    entry.entry_timeout = 0
+                except StopIteration:
+                    print("Cannot ding", inode)
+                    raise pyfuse3.FUSEError(errno.ENOENT)
 
         return entry
 
@@ -66,48 +93,63 @@ class NallelyFS(pyfuse3.Operations):
         if parent_inode == pyfuse3.ROOT_INODE:
             if name == b"dev":
                 return await self.getattr(DEV_DIR_INODE)
+            if name == b"class":
+                return await self.getattr(CLASS_DIR_INODE)
 
-        # If we are in a virtual /dev folder
         elif parent_inode == DEV_DIR_INODE:
             for dev_id, dev in [(dev.uuid, dev) for dev in self.all_devices()]:
                 if name == dev.uid().encode("utf-8"):
                     return await self.getattr(dev_id)
+        elif parent_inode == CLASS_DIR_INODE:
+            for cls_id, cls in [
+                (id(cls), cls) for cls in self.get_all_device_classes()
+            ]:
+                if name == cls.__name__.encode("utf-8"):
+                    return await self.getattr(cls_id)
         else:
             try:
                 dev = self.nallely_trevor.get_device_instance(parent_inode)
+                if name == b".meta":
+                    return await self.getattr(parent_inode)
                 for param in dev.all_parameters():
                     if name == param.name.encode("utf-8"):
                         h, p = hashparam(dev, param)
-                        self._lookup[h] = p
+                        self._param_lookup[h] = p
                         return await self.getattr(h)
             except StopIteration:
                 ...
-
         raise pyfuse3.FUSEError(errno.ENOENT)
 
     async def readdir(self, fh, start_id, token):
         entries = []
 
-        # List /
         if fh == pyfuse3.ROOT_INODE:
+            # /
             entries = [
                 (b".", pyfuse3.ROOT_INODE),
                 (b"..", pyfuse3.ROOT_INODE),
                 (b"dev", DEV_DIR_INODE),
+                (b"class", CLASS_DIR_INODE),
             ]
-
-        # List /dev
         elif fh == DEV_DIR_INODE:
+            # /dev
             entries = [
                 (b".", DEV_DIR_INODE),
                 (b"..", pyfuse3.ROOT_INODE),
             ]
             for dev_id, dev in [(dev.uuid, dev) for dev in self.all_devices()]:
                 entries.append((dev.uid().encode("utf-8"), dev_id))
-
-        # List a device folder
+        elif fh == CLASS_DIR_INODE:
+            # /class
+            entries = [
+                (b".", CLASS_DIR_INODE),
+                (b"..", pyfuse3.ROOT_INODE),
+            ]
+            for cls in self.get_all_device_classes():
+                entries.append((cls.__name__.encode("utf-8"), id(cls)))
         else:
             try:
+                # List a device folder
                 dev = self.nallely_trevor.get_device_instance(fh)
                 entries = [
                     (b".", fh),
@@ -117,7 +159,7 @@ class NallelyFS(pyfuse3.Operations):
                 if isinstance(dev, VirtualDevice):
                     for param in dev.all_parameters():
                         h, p = hashparam(dev, param)
-                        self._lookup[h] = p
+                        self._param_lookup[h] = p
                         entries.append((param.name.encode("utf-8"), h))  # type: ignore
                 else:
                     ...
@@ -131,19 +173,21 @@ class NallelyFS(pyfuse3.Operations):
                 break
 
     async def opendir(self, inode, ctx=None):
-        if inode == pyfuse3.ROOT_INODE or inode == DEV_DIR_INODE:
+        if inode in BASE_INODES:
             return inode
 
         try:
             self.nallely_trevor.get_device_instance(inode)
             return inode
         except StopIteration:
-            raise pyfuse3.FUSEError(errno.ENOENT)
+            try:
+                print("Look for", inode)
+                find_class_by_id(inode, self.get_all_device_classes())
+                return inode
+            except StopIteration:
+                raise pyfuse3.FUSEError(errno.ENOENT)
 
     async def open(self, inode, flags, ctx=None):
-        # if flags & os.O_WRONLY:
-        #     raise pyfuse3.FUSEError(errno.EACCES)
-
         found = (None, None)
         for dev in self.all_devices():
             if isinstance(dev, VirtualDevice):
