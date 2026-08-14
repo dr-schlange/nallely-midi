@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nallely"
-version = "0.5.0"
+version = "0.7.0"
 description = "MIDI companion, tools and abstraction to easily scripts for your MIDI devices"
 readme = "README.md"
 license-files = ["LICENSE"]
@@ -52,6 +52,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest", "build", "pytest-asyncio", "behave"]
 keyboard = ["pynput"]
+fs = ["pyfuse3"]
 
 [tool.setuptools]
 packages = [
@@ -63,6 +64,7 @@ packages = [
     "nallely.codegen",
     "nallely.distributed",
     "nallely.session",
+    "nallely.fs",
 ]
 include-package-data = true
 

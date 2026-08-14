@@ -156,6 +156,7 @@ class TrevorBus(VirtualDevice):
         self.current_scan = None
         self.external_bus_register = {}
         self.external_services_register = {}
+        self.fs = None
 
     def refresh_websocket_bus(self, ws=None):
         self.ws: WebSocketBus = self._refresh_bus(WebSocketBus, bus=ws)  # type: ignore
@@ -230,6 +231,8 @@ class TrevorBus(VirtualDevice):
     def stop(self, clear_queues=False):
         if self.running and self.server:
             self.server.shutdown()
+        if self.running and self.fs:
+            self.fs.stop()
         super().stop(clear_queues)
 
     def handleMessage(self, client, message):
@@ -847,6 +850,27 @@ class TrevorBus(VirtualDevice):
             suicide=suicide,
         )
         return self.full_state()
+
+    def mount_nallelyfs(self, mountpoint):
+        if mountpoint is None:
+            print("[NALLELYFS] Mountpoint cannot be None")
+            return "MISSING MOUNTPOINT"
+
+        from ..fs.nallelyfs import init_nallelyfs
+
+        if self.fs is None:
+            self.fs = init_nallelyfs(mountpoint, self.session)
+            self.fs.start()
+            return "OK"
+        return f"ALREADY MOUNTED ON {self.fs.mountpoint}"
+
+    def umount_nallelyfs(self):
+        if self.fs is None:
+            print("[NALLELYFS] Not mounted...")
+            return "NOT MOUNTED"
+        self.fs.stop()
+        self.fs = None
+        return "OK"
 
 
 def resource_path(relative_path):
