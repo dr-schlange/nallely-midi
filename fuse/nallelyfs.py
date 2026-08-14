@@ -2,6 +2,7 @@ import errno
 import os
 import stat
 import sys
+from pathlib import Path
 
 import pyfuse3
 import trio
@@ -18,12 +19,17 @@ from nallely.session import Session
 DEV_DIR_INODE = 2
 CLASS_DIR_INODE = 3
 BASE_INODES = [pyfuse3.ROOT_INODE, DEV_DIR_INODE, CLASS_DIR_INODE]
+DATE_NS = -842690400000000000
 
 
 def hashparam(dev, param):
     pinst = getattr(dev, param.cv_name)
     hash_mix = hash(pinst.repr().encode("utf-8"))
     return (hash_mix & 0xFFFFFFFFFFFFFFFF) | 0x1000000000000000, pinst
+
+
+def hashpath(path):
+    return (hash(path.encode("utf-8")) & 0xFFFFFFFFFFFFFFFF) | 0x1000000000000000
 
 
 def find_class_by_id(cls_id, cls_registry):
@@ -36,6 +42,7 @@ def find_class_by_id(cls_id, cls_registry):
 class NallelyFS(pyfuse3.Operations):
     def __init__(
         self,
+        mountpoint,
         session,
         all_devices=all_devices,
         get_all_device_classes=get_all_device_classes,
@@ -47,15 +54,17 @@ class NallelyFS(pyfuse3.Operations):
         self.all_devices = all_devices
         self.get_all_device_classes = get_all_device_classes
         self._param_lookup = {}
+        self._meta_lookup = {}
         self._open_files = {}
+        self.mountpoint = mountpoint.rstrip("/").encode("utf-8")
 
     async def getattr(self, inode, ctx=None):
         entry = pyfuse3.EntryAttributes()
 
         # Base config
-        entry.st_atime_ns = 0
-        entry.st_mtime_ns = 0
-        entry.st_ctime_ns = 0
+        entry.st_atime_ns = DATE_NS
+        entry.st_mtime_ns = DATE_NS
+        entry.st_ctime_ns = DATE_NS
         entry.st_gid = os.getgid()
         entry.st_uid = os.getuid()
         entry.st_ino = inode
@@ -71,7 +80,20 @@ class NallelyFS(pyfuse3.Operations):
             val = getattr(param.device, param.parameter.name)
             entry.st_mode = stat.S_IFREG | 0o644
             entry.st_size = len(f"{val}\n".encode("utf-8"))
+        elif inode in self._meta_lookup:
+            entry.st_mode = stat.S_IFLNK | 0o777
+            entry.st_size = len(
+                self.mountpoint
+                + f"/class/{self._meta_lookup[inode].__name__}".encode("utf-8")
+            )
+            entry.st_nlink = 1
+            entry.attr_timeout = 0
+            entry.entry_timeout = 0
         else:
+            entry.st_mode = stat.S_IFDIR | 0o755
+            entry.st_size = 0
+            entry.attr_timeout = 0
+            entry.entry_timeout = 0
             try:
                 # An inode/thread/module we confirm it's here
                 dev = self.nallely_trevor.get_device_instance(inode)
@@ -79,15 +101,21 @@ class NallelyFS(pyfuse3.Operations):
                 try:
                     # We look if that's a class instead
                     cls = find_class_by_id(inode, self.get_all_device_classes())
-                    entry.st_mode = stat.S_IFDIR | 0o755
-                    entry.st_size = 0
-                    entry.attr_timeout = 0
-                    entry.entry_timeout = 0
                 except StopIteration:
                     print("Cannot ding", inode)
                     raise pyfuse3.FUSEError(errno.ENOENT)
 
         return entry
+
+    async def readlink(self, inode, ctx=None):
+        if inode in self._meta_lookup:
+            return (
+                self.mountpoint
+                + f"/class/{self._meta_lookup[inode].__name__}".encode("utf-8")
+            )
+
+        # If a non-symlink inode winds up here, return Invalid Argument
+        raise pyfuse3.FUSEError(errno.EINVAL)
 
     async def lookup(self, parent_inode, name, ctx=None):
         if parent_inode == pyfuse3.ROOT_INODE:
@@ -110,7 +138,9 @@ class NallelyFS(pyfuse3.Operations):
             try:
                 dev = self.nallely_trevor.get_device_instance(parent_inode)
                 if name == b".meta":
-                    return await self.getattr(parent_inode)
+                    h = hashpath(f"/class/{dev.__class__.__name__}")
+                    self._meta_lookup[h] = dev.__class__
+                    return await self.getattr(h)
                 for param in dev.all_parameters():
                     if name == param.name.encode("utf-8"):
                         h, p = hashparam(dev, param)
@@ -155,12 +185,14 @@ class NallelyFS(pyfuse3.Operations):
                     (b".", fh),
                     (b"..", DEV_DIR_INODE),
                 ]
-                entries.append((b".meta", fh))
+                h = hashpath(f"/class/{dev.__class__.__name__}")
+                self._meta_lookup[h] = dev.__class__
+                entries.append((b".meta", h))
                 if isinstance(dev, VirtualDevice):
                     for param in dev.all_parameters():
                         h, p = hashparam(dev, param)
                         self._param_lookup[h] = p
-                        entries.append((param.name.encode("utf-8"), h))  # type: ignore
+                        entries.append((param.name.encode("utf-8"), h))
                 else:
                     ...
             except StopIteration:
@@ -181,7 +213,6 @@ class NallelyFS(pyfuse3.Operations):
             return inode
         except StopIteration:
             try:
-                print("Look for", inode)
                 find_class_by_id(inode, self.get_all_device_classes())
                 return inode
             except StopIteration:
@@ -259,13 +290,13 @@ if __name__ == "__main__":
         print(f"Usage: {sys.argv[0]} <mountpoint>")
         sys.exit(1)
 
-    mountpoint = sys.argv[1]
+    mountpoint = Path(sys.argv[1]).resolve().as_posix()
     session = Session()
     lfo = LFO(speed=5, auto_srate="OFF", sampling_rate=256)
     lfo.start()
     lfo2 = LFO()
     lfo2.start()
-    fs = NallelyFS(session)
+    fs = NallelyFS(mountpoint, session)
 
     fuse_options = set(pyfuse3.default_options)
     fuse_options.add("fsname=nallelyfs")
