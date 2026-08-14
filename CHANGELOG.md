@@ -12,6 +12,7 @@
 * Add new tool to quickly debug/monitor ports on the fly from the patching modal
 * Add new circular slider behavior for fine tuning (sliding on the left and right of the slider to add/remove decimals + slide up/down for incrementing/decrementing values). This feature was vibe-coded
 * Selection of a link in the patching modal is not on a longpress instead of a click (less error prone)
+* Add first experiment to expose a running Nallely session as a POSIX filesystem
 
 ### Fixes
 
