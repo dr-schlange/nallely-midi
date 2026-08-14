@@ -12,7 +12,7 @@ def parse_args(argv):
         epilog="Current phase: Tepezcohuite",
     )
     parser.add_argument(
-        "--version", action="version", version="Nallely v0.2.0 -- Tepezcohuite"
+        "--version", action="version", version="Nallely v0.7.0 -- Tepezcohuite"
     )
     subparsers = parser.add_subparsers(dest="command", required=False)
     run_parser = subparsers.add_parser(
