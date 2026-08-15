@@ -39,6 +39,26 @@ def find_class_by_id(cls_id, cls_registry):
     raise StopIteration()
 
 
+def gen_sh(dev):
+    localdir = (
+        'SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)'
+    )
+    pentries = ""
+    params = dev.all_parameters()
+    for p in params:
+        if p.hidden:
+            continue
+        pentries += f'echo "{p.name} = $(cat $SCRIPT_DIR/{p.name})"\n'
+    return f"""#!/usr/bin/env sh
+{localdir}
+
+echo -e "# {dev.uid()} Summary\n"
+echo -e "Stable identity = {dev.uuid}\n"
+{pentries}
+
+"""
+
+
 class NallelyFS(pyfuse3.Operations):
     def __init__(
         self,
@@ -55,6 +75,7 @@ class NallelyFS(pyfuse3.Operations):
         self.get_all_device_classes = get_all_device_classes
         self._param_lookup = {}
         self._meta_lookup = {}
+        self._view_lookup = {}
         self._open_files = {}
         self.mountpoint = mountpoint.rstrip("/").encode("utf-8")
 
@@ -86,13 +107,18 @@ class NallelyFS(pyfuse3.Operations):
                 + f"/class/{self._meta_lookup[inode].__name__}".encode("utf-8")
             )
             entry.st_nlink = 1
-            entry.attr_timeout = 0
-            entry.entry_timeout = 0
+            entry.attr_timeout = 1
+            entry.entry_timeout = 1
+        elif inode in self._view_lookup:
+            entry.st_mode = stat.S_IFREG | 0o744
+            entry.st_size = len(gen_sh(self._view_lookup[inode]))
+            entry.attr_timeout = 5
+            entry.entry_timeout = 5
         else:
             entry.st_mode = stat.S_IFDIR | 0o755
             entry.st_size = 0
-            entry.attr_timeout = 5
-            entry.entry_timeout = 5
+            entry.attr_timeout = 1
+            entry.entry_timeout = 1
             try:
                 # An inode/thread/module we confirm it's here
                 dev = self.nallely_trevor.get_device_instance(inode)
@@ -140,6 +166,10 @@ class NallelyFS(pyfuse3.Operations):
                     h = hashpath(f"/class/{dev.__class__.__name__}")
                     self._meta_lookup[h] = dev.__class__
                     return await self.getattr(h)
+                if name == b".view":
+                    h = hashpath(f"/dev/{dev.uid()}/view")
+                    self._view_lookup[h] = dev
+                    return await self.getattr(h)
                 for param in dev.all_parameters():
                     if param.hidden:
                         continue
@@ -186,9 +216,14 @@ class NallelyFS(pyfuse3.Operations):
                     (b".", fh),
                     (b"..", DEV_DIR_INODE),
                 ]
+                # .meta
                 h = hashpath(f"/class/{dev.__class__.__name__}")
                 self._meta_lookup[h] = dev.__class__
                 entries.append((b".meta", h))
+                # .view
+                h = hashpath(f"/dev/{dev.uid()}/view")
+                self._view_lookup[h] = dev
+                entries.append((b".view", h))
                 if isinstance(dev, VirtualDevice):
                     for param in dev.all_parameters():
                         if param.hidden:
@@ -223,21 +258,24 @@ class NallelyFS(pyfuse3.Operations):
                 raise pyfuse3.FUSEError(errno.ENOENT)
 
     async def open(self, inode, flags, ctx=None):
-        found = (None, None)
-        for dev in self.all_devices():
-            if isinstance(dev, VirtualDevice):
-                for param in dev.all_parameters():
-                    if param.hidden:
-                        continue
-                    h, pinst = hashparam(dev, param)
-                    if h == inode:
-                        found = (dev, pinst)
-                        break
-            if found != (None, None):
-                break
+        if inode in self._view_lookup:
+            found = self._view_lookup[inode]
+        else:
+            found = (None, None)
+            for dev in self.all_devices():
+                if isinstance(dev, VirtualDevice):
+                    for param in dev.all_parameters():
+                        if param.hidden:
+                            continue
+                        h, pinst = hashparam(dev, param)
+                        if h == inode:
+                            found = (dev, pinst)
+                            break
+                if found != (None, None):
+                    break
 
-        if found == (None, None):
-            raise pyfuse3.FUSEError(errno.ENOENT)
+            if found == (None, None):
+                raise pyfuse3.FUSEError(errno.ENOENT)
 
         self._open_files[inode] = found
         fi = pyfuse3.FileInfo(fh=inode)
@@ -248,9 +286,11 @@ class NallelyFS(pyfuse3.Operations):
         if fh not in self._open_files:
             raise pyfuse3.FUSEError(errno.EBADF)
 
-        dev, pinst = self._open_files[fh]
-
-        bval = f"{getattr(dev, pinst.parameter.name)}\n".encode("utf-8")
+        if fh in self._view_lookup:
+            bval = gen_sh(self._open_files[fh]).encode("utf-8")
+        else:
+            dev, pinst = self._open_files[fh]
+            bval = f"{getattr(dev, pinst.parameter.name)}\n".encode("utf-8")
 
         if off >= len(bval):
             return b""  # EOF
@@ -355,7 +395,7 @@ class NallelyFSThread(threading.Thread):
 
     def stop(self):
         if self.is_alive() and self._trio_token:
-            print("[NALLELYFS] Triggering thread-safe unmount...")
+            print("[NALLELYFS] Triggering unmount...")
             try:
                 trio.from_thread.run_sync(pyfuse3.close, trio_token=self._trio_token)
             except trio.RunFinishedError:
