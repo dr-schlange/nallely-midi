@@ -55,6 +55,9 @@ echo -e "Stable identity = {dev.uuid}\n"
 """
 
 
+# Needs refactoring
+# perhaps considering various types of "Entries" which keep the lookup tables updated
+# and which could be use to dispatch the various actions: lookup/open, etc
 class NallelyFS(pyfuse3.Operations):
     def __init__(
         self,
@@ -75,6 +78,11 @@ class NallelyFS(pyfuse3.Operations):
         self._view_lookup = {}
         self._note_lookup = {}
         self._open_files = {}
+        self._links_lookup = {}
+        self._link_param_lookup = {}
+        self._dev_lookup = {}
+        self._scaler_lookup = {}
+
         self.mountpoint = mountpoint.rstrip("/").encode("utf-8")
 
     async def getattr(self, inode, ctx=None):
@@ -126,6 +134,11 @@ class NallelyFS(pyfuse3.Operations):
             entry.st_size = 0
             entry.attr_timeout = 5
             entry.entry_timeout = 5
+        elif inode in self._links_lookup:
+            entry.st_mode = stat.S_IFDIR | 0o755
+            entry.st_size = 0
+            entry.attr_timeout = 1
+            entry.entry_timeout = 1
         else:
             entry.st_mode = stat.S_IFDIR | 0o755
             entry.st_size = 0
@@ -173,12 +186,27 @@ class NallelyFS(pyfuse3.Operations):
         elif parent_inode in self._section_lookup:
             dev, section = self._section_lookup[parent_inode]
             for param in section.all_parameters():
-                if name == param.name.encode("utf-8"):
+                pname = param.name.encode("utf-8")
+                if name == pname:
                     h = hashpath(f"/dev/{dev.uid()}/{param.section_name}/{param.name}")
                     self._param_lookup[h] = getattr(
                         getattr(dev, param.section_name), param.name
                     )
                     return await self.getattr(h)
+                link = name.split(b".")
+                if len(link) != 2:
+                    continue
+                linkname, pos = link
+                if linkname == pname:
+                    links = getattr(section, param.name).outgoing_links
+                    pos = int(pos)
+                    if pos < len(links):
+                        link = links[pos]
+                        h = hashpath(link.repr())
+                        self._links_lookup[h] = link
+                        return await self.getattr(h)
+        elif parent_inode in self._links_lookup:
+            ...
         else:
             try:
                 dev = self.nallely_trevor.get_device_instance(parent_inode)
@@ -194,19 +222,35 @@ class NallelyFS(pyfuse3.Operations):
                     h = hashpath(f"/dev/{dev.uid()}/notes")
                     self._note_lookup[h] = dev
                     return await self.getattr(h)
+                self._dev_lookup[dev.uid()] = parent_inode
                 if isinstance(dev, VirtualDevice):
                     for param in dev.all_parameters():
                         if getattr(param, "hidden", False):
                             continue
-                        if name == param.name.encode("utf-8"):
+                        pname = param.name.encode("utf-8")
+                        if name == pname:
                             h, p = hashparam(dev, param)
                             self._param_lookup[h] = p
                             return await self.getattr(h)
+                        link = name.split(b".")
+                        if len(link) != 2:
+                            continue
+                        linkname, pos = link
+                        if linkname == pname:
+                            links = getattr(dev, param.cv_name).outgoing_links
+                            pos = int(pos)
+                            if pos < len(links):
+                                link = links[pos]
+                                h = hashpath(link.repr())
+                                self._links_lookup[h] = link
+                                return await self.getattr(h)
+
                 else:
                     for section in dev.all_sections():
                         if name == section.state_name.encode("utf-8"):
                             h = hashpath(f"/dev/{dev.uid()}/{section.state_name}")
                             self._section_lookup[h] = (dev, section)
+                            self._dev_lookup[f"{dev.uid()}::{section.state_name}"] = h
                             return await self.getattr(h)
             except StopIteration:
                 ...
@@ -240,13 +284,28 @@ class NallelyFS(pyfuse3.Operations):
             for cls in self.get_all_device_classes():
                 entries.append((cls.__name__.encode("utf-8"), id(cls)))
         elif fh in self._section_lookup:
+            entries = [(b".", fh)]
             dev, section = self._section_lookup[fh]
+            entries.append((b"..", self._dev_lookup[dev.uid()]))
             for param in section.all_parameters():
                 h = hashpath(f"/dev/{dev.uid()}/{param.section_name}/{param.name}")
-                self._param_lookup[h] = getattr(
-                    getattr(dev, param.section_name), param.name
-                )
+                p = getattr(getattr(dev, param.section_name), param.name)
+                self._param_lookup[h] = p
                 entries.append((param.name.encode("utf-8"), h))
+                for i, link in enumerate(p.outgoing_links):
+                    h = hashpath(link.repr())
+                    linkname = f"{param.name}.{i}".encode("utf-8")
+                    self._links_lookup[h] = link
+                    entries.append((linkname, h))
+        elif fh in self._links_lookup:
+            entries = [(b".", fh)]
+            link = self._links_lookup[fh]
+            dev = link.src.device
+            if isinstance(dev, VirtualDevice):
+                entries.append((b"..", self._dev_lookup[f"{dev.uid()}"]))
+            else:
+                sec = link.src.parameter.section_name
+                entries.append((b"..", self._dev_lookup[f"{dev.uid()}::{sec}"]))
         else:
             try:
                 # List a device folder
@@ -255,6 +314,7 @@ class NallelyFS(pyfuse3.Operations):
                     (b".", fh),
                     (b"..", DEV_DIR_INODE),
                 ]
+                self._dev_lookup[dev.uid()] = fh
                 # .meta
                 h = hashpath(f"/class/{dev.__class__.__name__}")
                 self._meta_lookup[h] = dev.__class__
@@ -270,6 +330,11 @@ class NallelyFS(pyfuse3.Operations):
                         h, p = hashparam(dev, param)
                         self._param_lookup[h] = p
                         entries.append((param.name.encode("utf-8"), h))
+                        for i, link in enumerate(p.outgoing_links):
+                            h = hashpath(link.repr())
+                            linkname = f"{param.name}.{i}".encode("utf-8")
+                            self._links_lookup[h] = link
+                            entries.append((linkname, h))
                 else:
                     # note-on note-off
                     h = hashpath(f"/dev/{dev.uid()}/notes")
@@ -279,6 +344,7 @@ class NallelyFS(pyfuse3.Operations):
                         h = hashpath(f"/dev/{dev.uid()}/{section.state_name}")
                         self._section_lookup[h] = (dev, section)
                         entries.append((section.state_name.encode("utf-8"), h))
+                        self._dev_lookup[f"{dev.uid()}::{section.state_name}"] = h
             except StopIteration:
                 raise pyfuse3.FUSEError(errno.ENOENT)
 
@@ -293,10 +359,15 @@ class NallelyFS(pyfuse3.Operations):
             return inode
 
         if inode in self._section_lookup:
+            dev, section = self._section_lookup[inode]
+            self._dev_lookup[f"{dev.uid()}::{section.state_name}"] = inode
+            return inode
+        if inode in self._links_lookup:
             return inode
 
         try:
             dev = self.nallely_trevor.get_device_instance(inode)
+            self._dev_lookup[dev.uid()] = inode
             return inode
         except StopIteration:
             try:
