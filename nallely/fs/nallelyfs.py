@@ -112,7 +112,7 @@ class NallelyFS(pyfuse3.Operations):
             entry.attr_timeout = 1
             entry.entry_timeout = 1
         elif inode in self._view_lookup:
-            entry.st_mode = stat.S_IFREG | 0o744
+            entry.st_mode = stat.S_IFREG | 0o544
             entry.st_size = len(gen_sh(self._view_lookup[inode]))
             entry.attr_timeout = 5
             entry.entry_timeout = 5
