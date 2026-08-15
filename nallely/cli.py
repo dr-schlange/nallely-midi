@@ -127,47 +127,14 @@ def main():
 
         generate_api(args.input, args.output)
     elif args.command == "fs":
-        import json
-
-        from websockets.sync.client import connect
-
         if args.fs_action == "mount":
-            try:
-                with connect("ws://localhost:6788/trevor") as ws:
-                    response = ws.recv()  # First we receive the full state
-                    ws.send(
-                        json.dumps(
-                            {
-                                "command": "mount_nallelyfs",
-                                "mountpoint": f"{args.mount_path.resolve()}",
-                            }
-                        )
-                    )
-                    response = ws.recv()
-                    if response != '"OK"':
-                        print(
-                            f"[NALLELYFS] Couldn't mount {args.mount_path}... {response}"
-                        )
-            except Exception as e:
-                print("[NALLELYFS]", e)
-                print(
-                    "[NALLELYFS] Couldn't mount the NallelyFS, check if a Nallely session is running localhost and try again"
-                )
+            from nallely.fs.nallelyfs import local_mount
+
+            local_mount(args.mount_path.resolve())
         else:
-            try:
-                with connect("ws://localhost:6788/trevor") as ws:
-                    response = ws.recv()  # First we receive the full state
-                    ws.send(json.dumps({"command": "umount_nallelyfs"}))
-                    response = ws.recv()
-                    if response != '"OK"':
-                        print(
-                            f"[NALLELYFS] Couldn't umount the filesystem... {response}"
-                        )
-            except Exception as e:
-                print("[NALLELYFS]", e)
-                print(
-                    "[NALLELYFS] Couldn't umount the NallelyFS, check if a Nallely session is running localhost and try again"
-                )
+            from nallely.fs.nallelyfs import local_umount
+
+            local_umount()
 
     else:
         from nallely.trevor.trevor_bus import _print_with_trevor
@@ -188,7 +155,8 @@ To generate the Python code API for one of your MIDI device configuration use th
     $ nallely generate -i MYDEVICE.yaml -o MYDEVICE.py
 """
         if _LINUX:
-            welcome += """Once you started a Nallely session, you can mount it as file system using
+            welcome += """
+Once you started a Nallely session, you can mount it as file system using
     $ nallely fs mount MY_MOUNTING_POINT
             """
         _print_with_trevor(welcome)

@@ -231,8 +231,7 @@ class TrevorBus(VirtualDevice):
     def stop(self, clear_queues=False):
         if self.running and self.server:
             self.server.shutdown()
-        if self.running and self.fs:
-            self.fs.stop()
+        self.umount_nallelyfs()
         super().stop(clear_queues)
 
     def handleMessage(self, client, message):
@@ -1018,6 +1017,7 @@ def start_trevor(
             device.all_notes_off()
             device.force_all_notes_off(10)
         stop_all_connected_devices()
+        trevor.stop()
 
 
 def launch_standalone_script(
