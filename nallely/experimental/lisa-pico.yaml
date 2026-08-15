@@ -5,18 +5,26 @@ drschlange:
         cc: 3
         description: "General Gain"
         init: 32
+        min: 0
+        max: 100
       master_volume:
         cc: 7
         description: "General Volume"
         init: 0
+        min: 0
+        max: 100
       panning:
         cc: 14
         description: "Panning"
-        init: 64
+        init: 0
+        min: -64
+        max: 64
       engine_select:
         cc: 8
         description: "Engine Selection"
         init: 0
+        min: 0
+        max: 49
       voice_mode:
         cc: 2
         description: "Mode for the voices"
@@ -27,11 +35,15 @@ drschlange:
       detune:
         cc: 4
         description: "Detune applied to secondary voice in unison mode"
-        init: 70
+        init: 6
+        min: -24
+        max: 24
       sustain:
         cc: 64
         description: "Sustain (Hold notes)"
-        init: 0
+        accepted_values:
+          - OFF
+          - ON
       midi_dev:
         cc: 127
         description: "Dev functions"
@@ -114,19 +126,27 @@ drschlange:
       level_table1:
         cc: 96
         description: "Wavetable 1 mix level"
-        init: 127
+        init: 100
+        min: 0
+        max: 100
       level_table2:
         cc: 97
         description: "Wavetable 2 mix level"
-        init: 127
+        init: 100
+        min: 0
+        max: 100
       level_table3:
         cc: 98
         description: "Wavetable 3 mix level"
-        init: 127
+        init: 100
+        min: 0
+        max: 100
       level_table4:
         cc: 99
         description: "Wavetable 4 mix level"
-        init: 127
+        init: 100
+        min: 0
+        max: 100
       phase_reset:
         cc: 126
         description: "Reset the phase"
@@ -245,7 +265,9 @@ drschlange:
       slug_depth:
         cc: 93
         description: "Slug mode depth (buffer size)"
-        init: 64
+        init: 8
+        min: 2
+        max: 16
       manual_slug_level:
         cc: 107
         description: "All wavetables slug blend level controled from external CC"
@@ -259,7 +281,9 @@ drschlange:
       sluggish_factor:
         cc: 106
         description: "How sluggish is speed between blends"
-        init: 25
+        init: 300
+        min: 10
+        max: 1500
       auto_slug_direction:
         cc: 92
         description: "Do we blend with the near past or distant past (default near past)"

@@ -6,17 +6,28 @@ import nallely
 
 
 class GeneralSection(nallely.Module):
-    gain = nallely.ModuleParameter(3, init_value=32, description="General Gain")
-    master_volume = nallely.ModuleParameter(7, description="General Volume")
-    panning = nallely.ModuleParameter(14, init_value=64, description="Panning")
-    engine_select = nallely.ModuleParameter(8, description="Engine Selection")
+    gain = nallely.ModuleParameter(
+        3, range=(0, 100), init_value=32, description="General Gain"
+    )
+    master_volume = nallely.ModuleParameter(
+        7, range=(0, 100), description="General Volume"
+    )
+    panning = nallely.ModuleParameter(14, range=(-64, 64), description="Panning")
+    engine_select = nallely.ModuleParameter(
+        8, range=(0, 49), description="Engine Selection"
+    )
     voice_mode = nallely.ModuleParameter(
         2, description="Mode for the voices", accepted_values=["poly", "unison", "mono"]
     )
     detune = nallely.ModuleParameter(
-        4, init_value=70, description="Detune applied to secondary voice in unison mode"
+        4,
+        range=(-24, 24),
+        init_value=6,
+        description="Detune applied to secondary voice in unison mode",
     )
-    sustain = nallely.ModuleParameter(64, description="Sustain (Hold notes)")
+    sustain = nallely.ModuleParameter(
+        64, description="Sustain (Hold notes)", accepted_values=["OFF", "ON"]
+    )
     midi_dev = nallely.ModuleParameter(127, description="Dev functions")
 
 
@@ -60,16 +71,16 @@ class WavetableSection(nallely.Module):
     stream_table3 = nallely.ModulePitchwheel(stream=True, channel=2)
     stream_table4 = nallely.ModulePitchwheel(stream=True, channel=3)
     level_table1 = nallely.ModuleParameter(
-        96, init_value=127, description="Wavetable 1 mix level"
+        96, range=(0, 100), init_value=100, description="Wavetable 1 mix level"
     )
     level_table2 = nallely.ModuleParameter(
-        97, init_value=127, description="Wavetable 2 mix level"
+        97, range=(0, 100), init_value=100, description="Wavetable 2 mix level"
     )
     level_table3 = nallely.ModuleParameter(
-        98, init_value=127, description="Wavetable 3 mix level"
+        98, range=(0, 100), init_value=100, description="Wavetable 3 mix level"
     )
     level_table4 = nallely.ModuleParameter(
-        99, init_value=127, description="Wavetable 4 mix level"
+        99, range=(0, 100), init_value=100, description="Wavetable 4 mix level"
     )
     phase_reset = nallely.ModuleParameter(126, description="Reset the phase")
     phase_offset = nallely.ModuleParameter(
@@ -136,7 +147,7 @@ class WavetableSection(nallely.Module):
         accepted_values=["ON", "OFF"],
     )
     slug_depth = nallely.ModuleParameter(
-        93, init_value=64, description="Slug mode depth (buffer size)"
+        93, range=(2, 16), init_value=8, description="Slug mode depth (buffer size)"
     )
     manual_slug_level = nallely.ModuleParameter(
         107, description="All wavetables slug blend level controled from external CC"
@@ -147,7 +158,10 @@ class WavetableSection(nallely.Module):
         accepted_values=["ON", "OFF"],
     )
     sluggish_factor = nallely.ModuleParameter(
-        106, init_value=25, description="How sluggish is speed between blends"
+        106,
+        range=(10, 1500),
+        init_value=300,
+        description="How sluggish is speed between blends",
     )
     auto_slug_direction = nallely.ModuleParameter(
         92,
