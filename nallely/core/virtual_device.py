@@ -356,7 +356,7 @@ class VirtualDevice(threading.Thread):
     def _internal_default_output_setup(self, disable_output):
         if disable_output:
             self.__class__.output_cv = VirtualParameter(
-                name="output", range=(0, 127), hidden=True
+                name="output", range=(0, 127), hidden=True, cv_name="output_cv"
             )
 
     def setup(self) -> ThreadContext:

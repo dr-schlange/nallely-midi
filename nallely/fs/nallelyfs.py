@@ -6,7 +6,6 @@ import traceback
 from pathlib import Path
 
 import pyfuse3
-import pyfuse3.asyncio
 import trio
 
 from nallely import (
@@ -92,8 +91,8 @@ class NallelyFS(pyfuse3.Operations):
         else:
             entry.st_mode = stat.S_IFDIR | 0o755
             entry.st_size = 0
-            entry.attr_timeout = 0
-            entry.entry_timeout = 0
+            entry.attr_timeout = 5
+            entry.entry_timeout = 5
             try:
                 # An inode/thread/module we confirm it's here
                 dev = self.nallely_trevor.get_device_instance(inode)
@@ -142,6 +141,8 @@ class NallelyFS(pyfuse3.Operations):
                     self._meta_lookup[h] = dev.__class__
                     return await self.getattr(h)
                 for param in dev.all_parameters():
+                    if param.hidden:
+                        continue
                     if name == param.name.encode("utf-8"):
                         h, p = hashparam(dev, param)
                         self._param_lookup[h] = p
@@ -190,6 +191,8 @@ class NallelyFS(pyfuse3.Operations):
                 entries.append((b".meta", h))
                 if isinstance(dev, VirtualDevice):
                     for param in dev.all_parameters():
+                        if param.hidden:
+                            continue
                         h, p = hashparam(dev, param)
                         self._param_lookup[h] = p
                         entries.append((param.name.encode("utf-8"), h))
@@ -210,7 +213,7 @@ class NallelyFS(pyfuse3.Operations):
             return inode
 
         try:
-            self.nallely_trevor.get_device_instance(inode)
+            dev = self.nallely_trevor.get_device_instance(inode)
             return inode
         except StopIteration:
             try:
@@ -224,6 +227,8 @@ class NallelyFS(pyfuse3.Operations):
         for dev in self.all_devices():
             if isinstance(dev, VirtualDevice):
                 for param in dev.all_parameters():
+                    if param.hidden:
+                        continue
                     h, pinst = hashparam(dev, param)
                     if h == inode:
                         found = (dev, pinst)
@@ -320,29 +325,41 @@ class NallelyFSThread(threading.Thread):
         self.fs = NallelyFS(mountpoint, session)
         self.fuse_options = set(pyfuse3.default_options)
         self.fuse_options.add("fsname=nallelyfs")
+        self._trio_token = None
         super().__init__()
 
     def run(self) -> None:
-        import asyncio
-
         print("[NALLELYFS] Init FUSE...")
-        pyfuse3.asyncio.enable()
         pyfuse3.init(self.fs, self.mountpoint, self.fuse_options)
-        print("[NALLELYFS] Start main loop...")
+
+        async def main_async_loop():
+            self._trio_token = trio.lowlevel.current_trio_token()
+            print("[NALLELYFS] Start main loop...")
+            try:
+                await pyfuse3.main()
+            except Exception:
+                traceback.print_exc()
+                print("[NALLELYFS] An issue occurred in FUSE main loop...")
+
         try:
-            asyncio.run(pyfuse3.main())
+            trio.run(main_async_loop)
         except Exception:
             traceback.print_exc()
-            print("[NALLELYFS] An issue occured...")
         finally:
-            print(f"[NALLELYFS] Unmounting {self.mountpoint}...")
-            pyfuse3.close()
-            print("[NALLELYFS] FUSE finished...")
+            print(f"[NALLELYFS] Unmounting cleanup for {self.mountpoint}...")
+            try:
+                pyfuse3.close()
+            except Exception as e:
+                print("[NALLELYFS] Error occured while closing", e)
+            print("[NALLELYFS] FUSE thread finished...")
 
     def stop(self):
-        if self.is_alive():
-            print("[NALLELYFS] Unmounting NallelyFS...")
-            pyfuse3.close()
+        if self.is_alive() and self._trio_token:
+            print("[NALLELYFS] Triggering thread-safe unmount...")
+            try:
+                trio.from_thread.run_sync(pyfuse3.close, trio_token=self._trio_token)
+            except trio.RunFinishedError:
+                pass
 
 
 def init_nallelyfs(mountpoint, session):
