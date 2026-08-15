@@ -415,6 +415,77 @@ finally:
 This is one way of creating a harmonizer, there is a better way that is already embedded in Nallely as a pre-existing neuron.
 </details>
 
+<details>
+    <summary>Install Nallely and Trevor on a Raspberry Pi</summary>
+
+Nallely and Trevor works perfectly fine on raspberry pi, meaning that you can bring them with you, connect all your synth to the RPI and enjoy your organic meta-synth system everywhere with you.
+The configuration is currently still very manual (systemd service creation, etc), but will be made automatic later.
+
+TO WRITE
+</details>
+
+<details>
+    <summary>Mounting a Nallely Session Onto Your File System (Linux only)</summary>
+
+Nallely embeds a small file system named NallelyFS which is a projectsion of what's in memory in the running session.
+This means that a running Nallely session can be mounted on your local file system using FUSE. 
+This lets you then inspect the running session with basic tools as `cat`, `ls` or change parameters using `echo` and redirection.
+You can basically drive/inspect a session from the command line.
+
+*NOTE:* To be able to mount NallelyFS, you need to have `libfuse3` the dev dependencies installed on your system.
+
+To mount the file system, you need first to have a running session with the `--with-trevor` option enabled.
+You can pass as many extra parameter you need.
+
+```bash
+nallely run --with-trevor
+```
+
+Once it's running, from another terminal just run:
+
+```bash
+nallely fs mount path_to_yout_mountpoint  # mounts NallelyFS to the path 
+nallely fs umount  # unmount the mounted NallelyFS
+```
+
+This will mount the running session and expose a basic hierarchie with `/dev` and `/class`.
+The `/dev` folder is where all your running neuron/module instances live, while `/class` is the class definition of the running neurons/modules.
+
+Navigating inside your `/dev` folder, you can either read or change parameter values. 
+For example, considering a session with only one LFO running:
+
+```bash
+cd mountpoint/dev/LFO1
+ls -l  # lists all the accessible sections or parameters
+cat speed  # gets the current speed
+watch -n 0.1 "cat output"  # poll LFO output
+echo "1.456" > speed  # changes the speed of the LFO
+```
+
+Each device folder also gives access to special files:
+
+- `.meta` is a link towards the class definition of the running instance
+- `.view` is only readable/executable, and gives an auto-generated view. You can inspect what's going to be executed reading the file, and executing it, you trigger the view display. 
+
+### Micro Language for MIDI Devices Notes
+
+MIDI devices, while listed under `/dev` have a special extra file: `notes` which can only be written in with a micro language which lets you trigger notes.
+At the moment, the language is quite minimal:
+
+- `ON note [velocity*]`: triggers a `note` on with optional velocity (default 127). E.g: `ON 43 64`
+- `OFF note [velocity*]`: silence the `note` (with optinoal velocity). E.g: `OFF 43`
+- `ALL-OFF`: silences all previously tracked triggered notes
+- `FORCE-OFF`: sends a force note off on all the notes from the device without exception
+
+```bash
+echo "ON 34" > mountpoint/dev/NTS1/notes 
+echo "ON 32 23" > mountpoint/dev/NTS1/notes 
+echo "OFF 34" > mountpoint/dev/NTS1/notes 
+echo "ALL-OFF" > mountpoint/dev/NTS1/notes 
+```
+
+</details>
+
 
 ## How to install from sources
 
@@ -501,76 +572,9 @@ The `xxx: 'keys_or_pads'` entry doesn't have to be in an isolated section, it ca
 
 </details>
 
-<details>
-    <summary>Install Nallely and Trevor on a Raspberry Pi</summary>
 
-Nallely and Trevor works perfectly fine on raspberry pi, meaning that you can bring them with you, connect all your synth to the RPI and enjoy your organic meta-synth system everywhere with you.
-The configuration is currently still very manual (systemd service creation, etc), but will be made automatic later.
 
-TO WRITE
-</details>
 
-<details>
-    <summary>Mounting a Nallely Session Onto Your File System (Linux only)</summary>
-
-Nallely embeds a small file system named NallelyFS which is a projectsion of what's in memory in the running session.
-This means that a running Nallely session can be mounted on your local file system using FUSE. 
-This lets you then inspect the running session with basic tools as `cat`, `ls` or change parameters using `echo` and redirection.
-You can basically drive/inspect a session from the command line.
-
-*NOTE:* To be able to mount NallelyFS, you need to have `libfuse3` the dev dependencies installed on your system.
-
-To mount the file system, you need first to have a running session with the `--with-trevor` option enabled.
-You can pass as many extra parameter you need.
-
-```bash
-nallely run --with-trevor
-```
-
-Once it's running, from another terminal just run:
-
-```bash
-nallely fs mount path_to_yout_mountpoint  # mounts NallelyFS to the path 
-nallely fs umount  # unmount the mounted NallelyFS
-```
-
-This will mount the running session and expose a basic hierarchie with `/dev` and `/class`.
-The `/dev` folder is where all your running neuron/module instances live, while `/class` is the class definition of the running neurons/modules.
-
-Navigating inside your `/dev` folder, you can either read or change parameter values. 
-For example, considering a session with only one LFO running:
-
-```bash
-cd mountpoint/dev/LFO1
-ls -l  # lists all the accessible sections or parameters
-cat speed  # gets the current speed
-watch -n 0.1 "cat output"  # poll LFO output
-echo "1.456" > speed  # changes the speed of the LFO
-```
-
-Each device folder also gives access to special files:
-
-- `.meta` is a link towards the class definition of the running instance
-- `.view` is only readable/executable, and gives an auto-generated view. You can inspect what's going to be executed reading the file, and executing it, you trigger the view display. 
-
-### Micro Language for MIDI Devices Notes
-
-MIDI devices, while listed under `/dev` have a special extra file: `notes` which can only be written in with a micro language which lets you trigger notes.
-At the moment, the language is quite minimal:
-
-- `ON note [velocity*]`: triggers a `note` on with optional velocity (default 127). E.g: `ON 43 64`
-- `OFF note [velocity*]`: silence the `note` (with optinoal velocity). E.g: `OFF 43`
-- `ALL-OFF`: silences all previously tracked triggered notes
-- `FORCE-OFF`: sends a force note off on all the notes from the device without exception
-
-```bash
-echo "ON 34" > mountpoint/dev/NTS1/notes 
-echo "ON 32 23" > mountpoint/dev/NTS1/notes 
-echo "OFF 34" > mountpoint/dev/NTS1/notes 
-echo "ALL-OFF" > mountpoint/dev/NTS1/notes 
-```
-
-</details>
 
 ## Fonts used
 
