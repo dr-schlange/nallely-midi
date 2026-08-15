@@ -194,7 +194,8 @@ class NallelyFS(pyfuse3.Operations):
                         self._param_lookup[h] = p
                         entries.append((param.name.encode("utf-8"), h))
                 else:
-                    ...
+                    print("[DEBUG] MIDI devices not yet implemented!")
+                    raise pyfuse3.FUSEError(errno.ENOENT)
             except StopIteration:
                 raise pyfuse3.FUSEError(errno.ENOENT)
 
@@ -270,12 +271,14 @@ class NallelyFS(pyfuse3.Operations):
 
         try:
             data_str = buf.decode("utf-8").strip()
+            try:
+                data = float(data_str)
+            except ValueError:
+                data = data_str
             if isinstance(dev, VirtualDevice):
-                try:
-                    data = float(data_str)
-                except ValueError:
-                    data = data_str
                 dev.set_parameter(pinst.parameter.name, data)
+            else:
+                setattr(dev, pinst.parameter.name, data)
 
         except ValueError:
             raise pyfuse3.FUSEError(errno.EINVAL)
