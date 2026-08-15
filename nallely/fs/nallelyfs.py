@@ -1,7 +1,7 @@
 import errno
 import os
 import stat
-import sys
+import threading
 import traceback
 from pathlib import Path
 
@@ -11,10 +11,8 @@ import trio
 from nallely import (
     VirtualDevice,
     all_devices,
-    stop_all_connected_devices,
 )
 from nallely.core.world import get_all_device_classes
-from nallely.session import Session
 
 DEV_DIR_INODE = 2
 CLASS_DIR_INODE = 3
@@ -46,7 +44,7 @@ def gen_sh(dev):
     pentries = ""
     params = dev.all_parameters()
     for p in params:
-        if p.hidden:
+        if getattr(p, "hidden", False):
             continue
         pentries += f'echo "{p.name} = $(cat $SCRIPT_DIR/{p.name})"\n'
     return f"""#!/usr/bin/env sh
@@ -74,8 +72,10 @@ class NallelyFS(pyfuse3.Operations):
         self.all_devices = all_devices
         self.get_all_device_classes = get_all_device_classes
         self._param_lookup = {}
+        self._section_lookup = {}
         self._meta_lookup = {}
         self._view_lookup = {}
+        self._note_lookup = {}
         self._open_files = {}
         self.mountpoint = mountpoint.rstrip("/").encode("utf-8")
 
@@ -112,6 +112,16 @@ class NallelyFS(pyfuse3.Operations):
         elif inode in self._view_lookup:
             entry.st_mode = stat.S_IFREG | 0o744
             entry.st_size = len(gen_sh(self._view_lookup[inode]))
+            entry.attr_timeout = 5
+            entry.entry_timeout = 5
+        elif inode in self._note_lookup:
+            entry.st_mode = stat.S_IFREG | 0o644
+            entry.st_size = 12  # format max "OFF XXX YYY\n"
+            entry.attr_timeout = 5
+            entry.entry_timeout = 5
+        elif inode in self._section_lookup:
+            entry.st_mode = stat.S_IFDIR | 0o755
+            entry.st_size = 0
             entry.attr_timeout = 5
             entry.entry_timeout = 5
         else:
@@ -170,12 +180,22 @@ class NallelyFS(pyfuse3.Operations):
                     h = hashpath(f"/dev/{dev.uid()}/view")
                     self._view_lookup[h] = dev
                     return await self.getattr(h)
-                for param in dev.all_parameters():
-                    if param.hidden:
-                        continue
-                    if name == param.name.encode("utf-8"):
-                        h, p = hashparam(dev, param)
-                        self._param_lookup[h] = p
+                if name == b"notes":
+                    h = hashpath(f"/dev/{dev.uid()}/notes")
+                    self._note_lookup[h] = dev
+                    return await self.getattr(h)
+                if isinstance(dev, VirtualDevice):
+                    for param in dev.all_parameters():
+                        if getattr(param, "hidden", False):
+                            continue
+                        if name == param.name.encode("utf-8"):
+                            h, p = hashparam(dev, param)
+                            self._param_lookup[h] = p
+                            return await self.getattr(h)
+                else:
+                    for section in dev.all_sections():
+                        h = id(section)  # sections are stable
+                        self._section_lookup[h] = section
                         return await self.getattr(h)
             except StopIteration:
                 ...
@@ -232,8 +252,14 @@ class NallelyFS(pyfuse3.Operations):
                         self._param_lookup[h] = p
                         entries.append((param.name.encode("utf-8"), h))
                 else:
-                    print("[DEBUG] MIDI devices not yet implemented!")
-                    raise pyfuse3.FUSEError(errno.ENOENT)
+                    # note-on note-off
+                    h = hashpath(f"/dev/{dev.uid()}/notes")
+                    self._note_lookup[h] = dev
+                    entries.append((b"notes", h))
+                    for section in dev.all_sections():
+                        h = id(section)  # sections are stable
+                        self._section_lookup[h] = section
+                        entries.append((section.state_name.encode("utf-8"), h))
             except StopIteration:
                 raise pyfuse3.FUSEError(errno.ENOENT)
 
@@ -333,31 +359,6 @@ class NallelyFS(pyfuse3.Operations):
         return len(buf)
 
 
-if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print(f"Usage: {sys.argv[0]} <mountpoint>")
-        sys.exit(1)
-
-    mountpoint = Path(sys.argv[1]).resolve().as_posix()
-    session = Session()
-    fs = NallelyFS(mountpoint, session)
-
-    fuse_options = set(pyfuse3.default_options)
-    fuse_options.add("fsname=nallelyfs")
-
-    pyfuse3.init(fs, mountpoint, fuse_options)
-    try:
-        trio.run(pyfuse3.main)
-    except KeyboardInterrupt:
-        pass
-    finally:
-        pyfuse3.close()
-        stop_all_connected_devices()
-
-
-import threading
-
-
 class NallelyFSThread(threading.Thread):
     def __init__(self, mountpoint, session):
         self.session = session
@@ -404,3 +405,48 @@ class NallelyFSThread(threading.Thread):
 
 def init_nallelyfs(mountpoint, session):
     return NallelyFSThread(mountpoint, session)
+
+
+def local_mount(mountpoint):
+    import json
+
+    from websockets.sync.client import connect
+
+    try:
+        with connect("ws://localhost:6788/trevor") as ws:
+            response = ws.recv()  # First we receive the full state
+            ws.send(
+                json.dumps(
+                    {
+                        "command": "mount_nallelyfs",
+                        "mountpoint": f"{mountpoint}",
+                    }
+                )
+            )
+            response = ws.recv()
+            if response != '"OK"':
+                print(f"[NALLELYFS] Couldn't mount {mountpoint}... {response}")
+    except Exception as e:
+        print("[NALLELYFS]", e)
+        print(
+            "[NALLELYFS] Couldn't mount the NallelyFS, check if a Nallely session is running localhost and try again"
+        )
+
+
+def local_umount():
+    import json
+
+    from websockets.sync.client import connect
+
+    try:
+        with connect("ws://localhost:6788/trevor") as ws:
+            response = ws.recv()  # First we receive the full state
+            ws.send(json.dumps({"command": "umount_nallelyfs"}))
+            response = ws.recv()
+            if response != '"OK"':
+                print(f"[NALLELYFS] Couldn't umount the filesystem... {response}")
+    except Exception as e:
+        print("[NALLELYFS]", e)
+        print(
+            "[NALLELYFS] Couldn't umount the NallelyFS, check if a Nallely session is running localhost and try again"
+        )

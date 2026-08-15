@@ -1150,7 +1150,7 @@ def _trevor_menu(loaded_paths, init_script, trevor_bus=None, trevor_ui=None):
                             trevor_bus.send_update()
                     except IndexError:
                         print(f"There is no device {num}")
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, EOFError):
         ...
 
 

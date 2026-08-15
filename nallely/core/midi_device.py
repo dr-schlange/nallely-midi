@@ -332,6 +332,7 @@ class DeviceState:
         for state_name, ModuleCls in modules.items():
             ModuleCls.state_name = state_name
             moduleInstance = ModuleCls(device)
+            moduleInstance.state_name = state_name
             init_modules[state_name] = moduleInstance
             for param in moduleInstance.meta.parameters:
                 device.reverse_map[(param.type, param.cc_note, param.channel)] = param
