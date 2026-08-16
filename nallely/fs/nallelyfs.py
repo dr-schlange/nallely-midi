@@ -529,8 +529,7 @@ class NallelyFS(pyfuse3.Operations):
     async def write(self, fh, off, buf):
         d = self._registry.get(fh)
         if d is not None:
-            buf = d.write(fh, off, buf)
-            return len(buf)
+            return d.write(fh, off, buf)
         raise pyfuse3.FUSEError(errno.EBADF)
 
         # if fh not in self._open_files:

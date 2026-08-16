@@ -467,7 +467,7 @@ class VParam(VFile):
     def stable_ref(cls, component: ParameterInstance) -> int:
         return hashpath(component.repr())
 
-    def get_content(self):
+    def content(self):
         param = self.component
         return f"{getattr(param.device, param.parameter.name)}\n".encode("utf-8")
 
@@ -476,12 +476,28 @@ class VParam(VFile):
         self: Self, inode: InodeT, ctx: RequestContext | None = None
     ) -> EntryAttributes:
         entry = super().getattr(inode, ctx)
-        entry.st_size = len(self.get_content())
+        entry.st_size = len(self.content())
         return entry
 
     @override
     def read(self: Self, fh: FileHandleT, off: int, size: int) -> bytes:
-        return self.get_content()
+        return self.content()
+
+    @override
+    def write(self: Self, fh: FileHandleT, off: int, buf: bytes) -> int:
+        try:
+            data_str = buf.decode("utf-8").strip()
+            try:
+                data = float(data_str)
+            except ValueError:
+                data = data_str
+            dev = self.component.device
+            dev.set_parameter(self.component.parameter.name, data)
+        except ValueError:
+            raise FUSEError(errno.EINVAL)
+        except Exception:
+            raise FUSEError(errno.EIO)
+        return len(buf)
 
 
 class VMeta(VFile):
