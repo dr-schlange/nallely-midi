@@ -4,6 +4,7 @@ import stat
 import threading
 import traceback
 from pathlib import Path
+from typing import override
 
 import pyfuse3
 import trio
@@ -16,6 +17,8 @@ DEV_DIR_INODE = 2
 CLASS_DIR_INODE = 3
 BASE_INODES = [pyfuse3.ROOT_INODE, DEV_DIR_INODE, CLASS_DIR_INODE]
 DATE_NS = -842690400000000000
+
+from .vfs import VNode
 
 
 def hashparam(dev, param):
@@ -82,440 +85,506 @@ class NallelyFS(pyfuse3.Operations):
         self._link_param_lookup = {}
         self._dev_lookup = {}
         self._scaler_lookup = {}
+        VNode.mountpoint = mountpoint
+        self._registry = VNode
 
         self.mountpoint = mountpoint.rstrip("/").encode("utf-8")
 
     async def getattr(self, inode, ctx=None):
-        entry = pyfuse3.EntryAttributes()
-
-        # Base config
-        entry.st_atime_ns = DATE_NS
-        entry.st_mtime_ns = DATE_NS
-        entry.st_ctime_ns = DATE_NS
-        entry.st_gid = os.getgid()
-        entry.st_uid = os.getuid()
-        entry.st_ino = inode
-
-        if inode in BASE_INODES:
-            entry.st_mode = stat.S_IFDIR | 0o755
-            entry.st_size = 0
-            entry.attr_timeout = 0
-            entry.entry_timeout = 0
-        elif inode in self._param_lookup:
-            param = self._param_lookup[inode]
-            if isinstance(param, ParameterInstance):
-                val = getattr(param.device, param.parameter.name)
-            else:
-                p = param.parameter
-                val = getattr(getattr(param.device, p.section_name), p.name)
-            entry.st_mode = stat.S_IFREG | 0o644
-            entry.st_size = len(f"{val}\n".encode("utf-8"))
-        elif inode in self._meta_lookup:
-            entry.st_mode = stat.S_IFLNK | 0o777
-            entry.st_size = len(
-                self.mountpoint
-                + f"/class/{self._meta_lookup[inode].__name__}".encode("utf-8")
-            )
-            entry.st_nlink = 1
-            entry.attr_timeout = 1
-            entry.entry_timeout = 1
-        elif inode in self._view_lookup:
-            entry.st_mode = stat.S_IFREG | 0o544
-            entry.st_size = len(gen_sh(self._view_lookup[inode]))
-            entry.attr_timeout = 5
-            entry.entry_timeout = 5
-        elif inode in self._note_lookup:
-            entry.st_mode = stat.S_IFREG | 0o200
-            entry.st_size = 0  # only for writing and we don't know what yet
-            entry.attr_timeout = 5
-            entry.entry_timeout = 5
-        elif inode in self._section_lookup:
-            entry.st_mode = stat.S_IFDIR | 0o755
-            entry.st_size = 0
-            entry.attr_timeout = 5
-            entry.entry_timeout = 5
-        elif inode in self._links_lookup:
-            entry.st_mode = stat.S_IFDIR | 0o755
-            entry.st_size = 0
-            entry.attr_timeout = 1
-            entry.entry_timeout = 1
-        elif inode in self._link_param_lookup:
-            link, p = self._link_param_lookup[inode]
-            entry.st_mode = stat.S_IFREG | 0o644
-            data = getattr(link, p)
-            if isinstance(data, bool):
-                data = str(int(data))
-            entry.st_size = len(f"{data}\n")
-            entry.attr_timeout = 5
-            entry.entry_timeout = 5
-        else:
-            entry.st_mode = stat.S_IFDIR | 0o755
-            entry.st_size = 0
-            entry.attr_timeout = 1
-            entry.entry_timeout = 1
-            try:
-                # An inode/thread/module we confirm it's here
-                dev = self.nallely_trevor.get_device_instance(inode)
-            except StopIteration:
-                try:
-                    # We look if that's a class instead
-                    cls = find_class_by_id(inode, self.get_all_device_classes())
-                except StopIteration:
-                    raise pyfuse3.FUSEError(errno.ENOENT)
-
-        return entry
-
-    async def readlink(self, inode, ctx=None):
-        if inode in self._meta_lookup:
-            return (
-                self.mountpoint
-                + f"/class/{self._meta_lookup[inode].__name__}".encode("utf-8")
-            )
-
-        # If a non-symlink inode winds up here, return Invalid Argument
-        raise pyfuse3.FUSEError(errno.EINVAL)
-
-    async def lookup(self, parent_inode, name, ctx=None):
-        if parent_inode == pyfuse3.ROOT_INODE:
-            if name == b"dev":
-                return await self.getattr(DEV_DIR_INODE)
-            if name == b"class":
-                return await self.getattr(CLASS_DIR_INODE)
-
-        elif parent_inode == DEV_DIR_INODE:
-            for dev_id, dev in [(dev.uuid, dev) for dev in self.all_devices()]:
-                if name == dev.uid().encode("utf-8"):
-                    return await self.getattr(dev_id)
-        elif parent_inode == CLASS_DIR_INODE:
-            for cls_id, cls in [
-                (id(cls), cls) for cls in self.get_all_device_classes()
-            ]:
-                if name == cls.__name__.encode("utf-8"):
-                    return await self.getattr(cls_id)
-        elif parent_inode in self._section_lookup:
-            dev, section = self._section_lookup[parent_inode]
-            for param in section.all_parameters():
-                pname = param.name.encode("utf-8")
-                if name == pname:
-                    h = hashpath(f"/dev/{dev.uid()}/{param.section_name}/{param.name}")
-                    self._param_lookup[h] = getattr(
-                        getattr(dev, param.section_name), param.name
-                    )
-                    return await self.getattr(h)
-                link = name.split(b".")
-                if len(link) != 2:
-                    continue
-                linkname, pos = link
-                if linkname == pname:
-                    links = getattr(section, param.name).outgoing_links
-                    pos = int(pos)
-                    if pos < len(links):
-                        link = links[pos]
-                        h = hashpath(link.repr())
-                        self._links_lookup[h] = link
-                        return await self.getattr(h)
-        elif parent_inode in self._links_lookup:
-            link = self._links_lookup[parent_inode]
-            for param in ["bouncy", "muted", "velocity", "extra_zero"]:
-                if param.encode("utf-8") == name:
-                    h = hashpath(f"/{link.repr()}/{param}")
-                    self._link_param_lookup[h] = (link, param)
-                    return await self.getattr(h)
-        else:
-            try:
-                dev = self.nallely_trevor.get_device_instance(parent_inode)
-                if name == b".meta":
-                    h = hashpath(f"/class/{dev.__class__.__name__}")
-                    self._meta_lookup[h] = dev.__class__
-                    return await self.getattr(h)
-                if name == b".view":
-                    h = hashpath(f"/dev/{dev.uid()}/view")
-                    self._view_lookup[h] = dev
-                    return await self.getattr(h)
-                if name == b"notes":
-                    h = hashpath(f"/dev/{dev.uid()}/notes")
-                    self._note_lookup[h] = dev
-                    return await self.getattr(h)
-                self._dev_lookup[dev.uid()] = parent_inode
-                if isinstance(dev, VirtualDevice):
-                    for param in dev.all_parameters():
-                        if getattr(param, "hidden", False):
-                            continue
-                        pname = param.name.encode("utf-8")
-                        if name == pname:
-                            h, p = hashparam(dev, param)
-                            self._param_lookup[h] = p
-                            return await self.getattr(h)
-                        link = name.split(b".")
-                        if len(link) != 2:
-                            continue
-                        linkname, pos = link
-                        if linkname == pname:
-                            links = getattr(dev, param.cv_name).outgoing_links
-                            pos = int(pos)
-                            if pos < len(links):
-                                link = links[pos]
-                                h = hashpath(link.repr())
-                                self._links_lookup[h] = link
-                                return await self.getattr(h)
-
-                else:
-                    for section in dev.all_sections():
-                        if name == section.state_name.encode("utf-8"):
-                            h = hashpath(f"/dev/{dev.uid()}/{section.state_name}")
-                            self._section_lookup[h] = (dev, section)
-                            self._dev_lookup[f"{dev.uid()}::{section.state_name}"] = h
-                            return await self.getattr(h)
-            except StopIteration:
-                ...
+        d = self._registry.get(inode)
+        if d is not None:
+            return d.getattr(inode, ctx)
         raise pyfuse3.FUSEError(errno.ENOENT)
 
+        # entry = pyfuse3.EntryAttributes()
+
+        # # Base config
+        # entry.st_atime_ns = DATE_NS
+        # entry.st_mtime_ns = DATE_NS
+        # entry.st_ctime_ns = DATE_NS
+        # entry.st_gid = os.getgid()
+        # entry.st_uid = os.getuid()
+        # entry.st_ino = inode
+
+        # if inode in BASE_INODES:
+        #     entry.st_mode = stat.S_IFDIR | 0o755
+        #     entry.st_size = 0
+        #     entry.attr_timeout = 0
+        #     entry.entry_timeout = 0
+        # elif inode in self._param_lookup:
+        #     param = self._param_lookup[inode]
+        #     if isinstance(param, ParameterInstance):
+        #         val = getattr(param.device, param.parameter.name)
+        #     else:
+        #         p = param.parameter
+        #         val = getattr(getattr(param.device, p.section_name), p.name)
+        #     entry.st_mode = stat.S_IFREG | 0o644
+        #     entry.st_size = len(f"{val}\n".encode("utf-8"))
+        # elif inode in self._meta_lookup:
+        #     entry.st_mode = stat.S_IFLNK | 0o777
+        #     entry.st_size = len(
+        #         self.mountpoint
+        #         + f"/class/{self._meta_lookup[inode].__name__}".encode("utf-8")
+        #     )
+        #     entry.st_nlink = 1
+        #     entry.attr_timeout = 1
+        #     entry.entry_timeout = 1
+        # elif inode in self._view_lookup:
+        #     entry.st_mode = stat.S_IFREG | 0o544
+        #     entry.st_size = len(gen_sh(self._view_lookup[inode]))
+        #     entry.attr_timeout = 5
+        #     entry.entry_timeout = 5
+        # elif inode in self._note_lookup:
+        #     entry.st_mode = stat.S_IFREG | 0o200
+        #     entry.st_size = 0  # only for writing and we don't know what yet
+        #     entry.attr_timeout = 5
+        #     entry.entry_timeout = 5
+        # elif inode in self._section_lookup:
+        #     entry.st_mode = stat.S_IFDIR | 0o755
+        #     entry.st_size = 0
+        #     entry.attr_timeout = 5
+        #     entry.entry_timeout = 5
+        # elif inode in self._links_lookup:
+        #     entry.st_mode = stat.S_IFDIR | 0o755
+        #     entry.st_size = 0
+        #     entry.attr_timeout = 1
+        #     entry.entry_timeout = 1
+        # elif inode in self._link_param_lookup:
+        #     link, p = self._link_param_lookup[inode]
+        #     entry.st_mode = stat.S_IFREG | 0o644
+        #     data = getattr(link, p)
+        #     if isinstance(data, bool):
+        #         data = str(int(data))
+        #     entry.st_size = len(f"{data}\n")
+        #     entry.attr_timeout = 5
+        #     entry.entry_timeout = 5
+        # else:
+        #     entry.st_mode = stat.S_IFDIR | 0o755
+        #     entry.st_size = 0
+        #     entry.attr_timeout = 1
+        #     entry.entry_timeout = 1
+        #     try:
+        #         # An inode/thread/module we confirm it's here
+        #         dev = self.nallely_trevor.get_device_instance(inode)
+        #     except StopIteration:
+        #         try:
+        #             # We look if that's a class instead
+        #             cls = find_class_by_id(inode, self.get_all_device_classes())
+        #         except StopIteration:
+        #             raise pyfuse3.FUSEError(errno.ENOENT)
+
+        # return entry
+
+    async def readlink(self, inode, ctx=None):
+        d = self._registry.get(inode)
+        if d is not None:
+            return d.readlink(inode, ctx)
+        raise pyfuse3.FUSEError(errno.EINVAL)
+        # if inode in self._meta_lookup:
+        #     return (
+        #         self.mountpoint
+        #         + f"/class/{self._meta_lookup[inode].__name__}".encode("utf-8")
+        #     )
+
+        # # If a non-symlink inode winds up here, return Invalid Argument
+        # raise pyfuse3.FUSEError(errno.EINVAL)
+
+    async def lookup(self, parent_inode, name, ctx=None):
+        d = self._registry.get(parent_inode)
+        if d is not None:
+            return d.lookup(parent_inode, name, ctx)
+        raise pyfuse3.FUSEError(errno.ENOENT)
+
+        # if parent_inode == pyfuse3.ROOT_INODE:
+        #     if name == b"dev":
+        #         return await self.getattr(DEV_DIR_INODE)
+        #     if name == b"class":
+        #         return await self.getattr(CLASS_DIR_INODE)
+
+        # elif parent_inode == DEV_DIR_INODE:
+        #     for dev_id, dev in [(dev.uuid, dev) for dev in self.all_devices()]:
+        #         if name == dev.uid().encode("utf-8"):
+        #             return await self.getattr(dev_id)
+        # elif parent_inode == CLASS_DIR_INODE:
+        #     for cls_id, cls in [
+        #         (id(cls), cls) for cls in self.get_all_device_classes()
+        #     ]:
+        #         if name == cls.__name__.encode("utf-8"):
+        #             return await self.getattr(cls_id)
+        # elif parent_inode in self._section_lookup:
+        #     dev, section = self._section_lookup[parent_inode]
+        #     for param in section.all_parameters():
+        #         pname = param.name.encode("utf-8")
+        #         if name == pname:
+        #             h = hashpath(f"/dev/{dev.uid()}/{param.section_name}/{param.name}")
+        #             self._param_lookup[h] = getattr(
+        #                 getattr(dev, param.section_name), param.name
+        #             )
+        #             return await self.getattr(h)
+        #         link = name.split(b".")
+        #         if len(link) != 2:
+        #             continue
+        #         linkname, pos = link
+        #         if linkname == pname:
+        #             links = getattr(section, param.name).outgoing_links
+        #             pos = int(pos)
+        #             if pos < len(links):
+        #                 link = links[pos]
+        #                 h = hashpath(link.repr())
+        #                 self._links_lookup[h] = link
+        #                 return await self.getattr(h)
+        # elif parent_inode in self._links_lookup:
+        #     link = self._links_lookup[parent_inode]
+        #     for param in ["bouncy", "muted", "velocity", "extra_zero"]:
+        #         if param.encode("utf-8") == name:
+        #             h = hashpath(f"/{link.repr()}/{param}")
+        #             self._link_param_lookup[h] = (link, param)
+        #             return await self.getattr(h)
+        # else:
+        #     try:
+        #         dev = self.nallely_trevor.get_device_instance(parent_inode)
+        #         if name == b".meta":
+        #             h = hashpath(f"/class/{dev.__class__.__name__}")
+        #             self._meta_lookup[h] = dev.__class__
+        #             return await self.getattr(h)
+        #         if name == b".view":
+        #             h = hashpath(f"/dev/{dev.uid()}/view")
+        #             self._view_lookup[h] = dev
+        #             return await self.getattr(h)
+        #         if name == b"notes":
+        #             h = hashpath(f"/dev/{dev.uid()}/notes")
+        #             self._note_lookup[h] = dev
+        #             return await self.getattr(h)
+        #         self._dev_lookup[dev.uid()] = parent_inode
+        #         if isinstance(dev, VirtualDevice):
+        #             for param in dev.all_parameters():
+        #                 if getattr(param, "hidden", False):
+        #                     continue
+        #                 pname = param.name.encode("utf-8")
+        #                 if name == pname:
+        #                     h, p = hashparam(dev, param)
+        #                     self._param_lookup[h] = p
+        #                     return await self.getattr(h)
+        #                 link = name.split(b".")
+        #                 if len(link) != 2:
+        #                     continue
+        #                 linkname, pos = link
+        #                 if linkname == pname:
+        #                     links = getattr(dev, param.cv_name).outgoing_links
+        #                     pos = int(pos)
+        #                     if pos < len(links):
+        #                         link = links[pos]
+        #                         h = hashpath(link.repr())
+        #                         self._links_lookup[h] = link
+        #                         return await self.getattr(h)
+
+        #         else:
+        #             for section in dev.all_sections():
+        #                 if name == section.state_name.encode("utf-8"):
+        #                     h = hashpath(f"/dev/{dev.uid()}/{section.state_name}")
+        #                     self._section_lookup[h] = (dev, section)
+        #                     self._dev_lookup[f"{dev.uid()}::{section.state_name}"] = h
+        #                     return await self.getattr(h)
+        #     except StopIteration:
+        #         ...
+        # raise pyfuse3.FUSEError(errno.ENOENT)
+
     async def readdir(self, fh, start_id, token):
-        entries = []
+        d = self._registry.get(fh)
+        if d is not None:
+            entries = d.readdir(fh, start_id, token)
+            # Send list to FUSE
+            for i, (name, ino) in enumerate(entries[start_id:], start=start_id):
+                attr = await self.getattr(ino)
+                if not pyfuse3.readdir_reply(token, name, attr, i + 1):
+                    break
+            return
+        raise pyfuse3.FUSEError(errno.ENOENT)
 
-        if fh == pyfuse3.ROOT_INODE:
-            # /
-            entries = [
-                (b".", pyfuse3.ROOT_INODE),
-                (b"..", pyfuse3.ROOT_INODE),
-                (b"dev", DEV_DIR_INODE),
-                (b"class", CLASS_DIR_INODE),
-            ]
-        elif fh == DEV_DIR_INODE:
-            # /dev
-            entries = [
-                (b".", DEV_DIR_INODE),
-                (b"..", pyfuse3.ROOT_INODE),
-            ]
-            for dev_id, dev in [(dev.uuid, dev) for dev in self.all_devices()]:
-                entries.append((dev.uid().encode("utf-8"), dev_id))
-        elif fh == CLASS_DIR_INODE:
-            # /class
-            entries = [
-                (b".", CLASS_DIR_INODE),
-                (b"..", pyfuse3.ROOT_INODE),
-            ]
-            for cls in self.get_all_device_classes():
-                entries.append((cls.__name__.encode("utf-8"), id(cls)))
-        elif fh in self._section_lookup:
-            entries = [(b".", fh)]
-            dev, section = self._section_lookup[fh]
-            entries.append((b"..", self._dev_lookup[dev.uid()]))
-            for param in section.all_parameters():
-                h = hashpath(f"/dev/{dev.uid()}/{param.section_name}/{param.name}")
-                p = getattr(getattr(dev, param.section_name), param.name)
-                self._param_lookup[h] = p
-                entries.append((param.name.encode("utf-8"), h))
-                for i, link in enumerate(p.outgoing_links):
-                    h = hashpath(link.repr())
-                    linkname = f"{param.name}.{i}".encode("utf-8")
-                    self._links_lookup[h] = link
-                    entries.append((linkname, h))
-        elif fh in self._links_lookup:
-            entries = [(b".", fh)]
-            link = self._links_lookup[fh]
-            dev = link.src.device
-            if isinstance(dev, VirtualDevice):
-                entries.append((b"..", self._dev_lookup[f"{dev.uid()}"]))
-            else:
-                sec = link.src.parameter.section_name
-                entries.append((b"..", self._dev_lookup[f"{dev.uid()}::{sec}"]))
-            for param in ["bouncy", "muted", "velocity", "extra_zero"]:
-                h = hashpath(f"/{link.repr()}/{param}")
-                self._link_param_lookup[h] = (link, param)
-                entries.append((param.encode("utf-8"), h))
-        else:
-            try:
-                # List a device folder
-                dev = self.nallely_trevor.get_device_instance(fh)
-                entries = [
-                    (b".", fh),
-                    (b"..", DEV_DIR_INODE),
-                ]
-                self._dev_lookup[dev.uid()] = fh
-                # .meta
-                h = hashpath(f"/class/{dev.__class__.__name__}")
-                self._meta_lookup[h] = dev.__class__
-                entries.append((b".meta", h))
-                # .view
-                h = hashpath(f"/dev/{dev.uid()}/view")
-                self._view_lookup[h] = dev
-                entries.append((b".view", h))
-                if isinstance(dev, VirtualDevice):
-                    for param in dev.all_parameters():
-                        if param.hidden:
-                            continue
-                        h, p = hashparam(dev, param)
-                        self._param_lookup[h] = p
-                        entries.append((param.name.encode("utf-8"), h))
-                        for i, link in enumerate(p.outgoing_links):
-                            h = hashpath(link.repr())
-                            linkname = f"{param.name}.{i}".encode("utf-8")
-                            self._links_lookup[h] = link
-                            entries.append((linkname, h))
-                else:
-                    # note-on note-off
-                    h = hashpath(f"/dev/{dev.uid()}/notes")
-                    self._note_lookup[h] = dev
-                    entries.append((b"notes", h))
-                    for section in dev.all_sections():
-                        h = hashpath(f"/dev/{dev.uid()}/{section.state_name}")
-                        self._section_lookup[h] = (dev, section)
-                        entries.append((section.state_name.encode("utf-8"), h))
-                        self._dev_lookup[f"{dev.uid()}::{section.state_name}"] = h
-            except StopIteration:
-                raise pyfuse3.FUSEError(errno.ENOENT)
+        # entries = []
 
-        # Send list to FUSE
-        for i, (name, ino) in enumerate(entries[start_id:], start=start_id):
-            attr = await self.getattr(ino)
-            if not pyfuse3.readdir_reply(token, name, attr, i + 1):
-                break
+        # if fh == pyfuse3.ROOT_INODE:
+        #     # /
+        #     entries = [
+        #         (b".", pyfuse3.ROOT_INODE),
+        #         (b"..", pyfuse3.ROOT_INODE),
+        #         (b"dev", DEV_DIR_INODE),
+        #         (b"class", CLASS_DIR_INODE),
+        #     ]
+        # elif fh == DEV_DIR_INODE:
+        #     # /dev
+        #     entries = [
+        #         (b".", DEV_DIR_INODE),
+        #         (b"..", pyfuse3.ROOT_INODE),
+        #     ]
+        #     for dev_id, dev in [(dev.uuid, dev) for dev in self.all_devices()]:
+        #         entries.append((dev.uid().encode("utf-8"), dev_id))
+        # elif fh == CLASS_DIR_INODE:
+        #     # /class
+        #     entries = [
+        #         (b".", CLASS_DIR_INODE),
+        #         (b"..", pyfuse3.ROOT_INODE),
+        #     ]
+        #     for cls in self.get_all_device_classes():
+        #         entries.append((cls.__name__.encode("utf-8"), id(cls)))
+        # elif fh in self._section_lookup:
+        #     entries = [(b".", fh)]
+        #     dev, section = self._section_lookup[fh]
+        #     entries.append((b"..", self._dev_lookup[dev.uid()]))
+        #     for param in section.all_parameters():
+        #         h = hashpath(f"/dev/{dev.uid()}/{param.section_name}/{param.name}")
+        #         p = getattr(getattr(dev, param.section_name), param.name)
+        #         self._param_lookup[h] = p
+        #         entries.append((param.name.encode("utf-8"), h))
+        #         for i, link in enumerate(p.outgoing_links):
+        #             h = hashpath(link.repr())
+        #             linkname = f"{param.name}.{i}".encode("utf-8")
+        #             self._links_lookup[h] = link
+        #             entries.append((linkname, h))
+        # elif fh in self._links_lookup:
+        #     entries = [(b".", fh)]
+        #     link = self._links_lookup[fh]
+        #     dev = link.src.device
+        #     if isinstance(dev, VirtualDevice):
+        #         entries.append((b"..", self._dev_lookup[f"{dev.uid()}"]))
+        #     else:
+        #         sec = link.src.parameter.section_name
+        #         entries.append((b"..", self._dev_lookup[f"{dev.uid()}::{sec}"]))
+        #     for param in ["bouncy", "muted", "velocity", "extra_zero"]:
+        #         h = hashpath(f"/{link.repr()}/{param}")
+        #         self._link_param_lookup[h] = (link, param)
+        #         entries.append((param.encode("utf-8"), h))
+        # else:
+        #     try:
+        #         # List a device folder
+        #         dev = self.nallely_trevor.get_device_instance(fh)
+        #         entries = [
+        #             (b".", fh),
+        #             (b"..", DEV_DIR_INODE),
+        #         ]
+        #         self._dev_lookup[dev.uid()] = fh
+        #         # .meta
+        #         h = hashpath(f"/class/{dev.__class__.__name__}")
+        #         self._meta_lookup[h] = dev.__class__
+        #         entries.append((b".meta", h))
+        #         # .view
+        #         h = hashpath(f"/dev/{dev.uid()}/view")
+        #         self._view_lookup[h] = dev
+        #         entries.append((b".view", h))
+        #         if isinstance(dev, VirtualDevice):
+        #             for param in dev.all_parameters():
+        #                 if param.hidden:
+        #                     continue
+        #                 h, p = hashparam(dev, param)
+        #                 self._param_lookup[h] = p
+        #                 entries.append((param.name.encode("utf-8"), h))
+        #                 for i, link in enumerate(p.outgoing_links):
+        #                     h = hashpath(link.repr())
+        #                     linkname = f"{param.name}.{i}".encode("utf-8")
+        #                     self._links_lookup[h] = link
+        #                     entries.append((linkname, h))
+        #         else:
+        #             # note-on note-off
+        #             h = hashpath(f"/dev/{dev.uid()}/notes")
+        #             self._note_lookup[h] = dev
+        #             entries.append((b"notes", h))
+        #             for section in dev.all_sections():
+        #                 h = hashpath(f"/dev/{dev.uid()}/{section.state_name}")
+        #                 self._section_lookup[h] = (dev, section)
+        #                 entries.append((section.state_name.encode("utf-8"), h))
+        #                 self._dev_lookup[f"{dev.uid()}::{section.state_name}"] = h
+        #     except StopIteration:
+        #         raise pyfuse3.FUSEError(errno.ENOENT)
+
+        # # Send list to FUSE
+        # for i, (name, ino) in enumerate(entries[start_id:], start=start_id):
+        #     attr = await self.getattr(ino)
+        #     if not pyfuse3.readdir_reply(token, name, attr, i + 1):
+        #         break
 
     async def opendir(self, inode, ctx=None):
-        if inode in BASE_INODES:
-            return inode
+        d = self._registry.get(inode)
+        if d is not None:
+            return d.opendir(inode, ctx)
+        raise pyfuse3.FUSEError(errno.ENOENT)
 
-        if inode in self._section_lookup:
-            dev, section = self._section_lookup[inode]
-            self._dev_lookup[f"{dev.uid()}::{section.state_name}"] = inode
-            return inode
-        if inode in self._links_lookup:
-            return inode
+        # if inode in BASE_INODES:
+        #     return inode
 
-        try:
-            dev = self.nallely_trevor.get_device_instance(inode)
-            self._dev_lookup[dev.uid()] = inode
-            return inode
-        except StopIteration:
-            try:
-                find_class_by_id(inode, self.get_all_device_classes())
-                return inode
-            except StopIteration:
-                raise pyfuse3.FUSEError(errno.ENOENT)
+        # if inode in self._section_lookup:
+        #     dev, section = self._section_lookup[inode]
+        #     self._dev_lookup[f"{dev.uid()}::{section.state_name}"] = inode
+        #     return inode
+        # if inode in self._links_lookup:
+        #     return inode
+
+        # try:
+        #     dev = self.nallely_trevor.get_device_instance(inode)
+        #     self._dev_lookup[dev.uid()] = inode
+        #     return inode
+        # except StopIteration:
+        #     try:
+        #         find_class_by_id(inode, self.get_all_device_classes())
+        #         return inode
+        #     except StopIteration:
+        # raise pyfuse3.FUSEError(errno.ENOENT)
+
+    @override
+    async def releasedir(self, fh: pyfuse3.FileHandleT) -> None:
+        d = self._registry.get(fh)
+        if d is not None:
+            return d.releasedir(fh)
+        return await super().releasedir(fh)
 
     async def open(self, inode, flags, ctx=None):
-        if inode in self._view_lookup:
-            found = self._view_lookup[inode]
-        elif inode in self._note_lookup:
-            found = self._note_lookup[inode]
-        else:
-            found = (None, None)
-            for dev in self.all_devices():
-                if isinstance(dev, VirtualDevice):
-                    for param in dev.all_parameters():
-                        if param.hidden:
-                            continue
-                        h, pinst = hashparam(dev, param)
-                        if h == inode:
-                            found = (dev, pinst)
-                            break
-                else:
-                    for param in dev.all_parameters():
-                        h = hashpath(
-                            f"/dev/{dev.uid()}/{param.section_name}/{param.name}"
-                        )
-                        if h == inode:
-                            found = (
-                                dev,
-                                getattr(getattr(dev, param.section_name), param.name),
-                            )
-                            break
-                if found != (None, None):
-                    break
+        d = self._registry.get(inode)
+        if d is not None:
+            return d.open(inode, flags, ctx)
+        raise pyfuse3.FUSEError(errno.ENOENT)
+        # if inode in self._view_lookup:
+        #     found = self._view_lookup[inode]
+        # elif inode in self._note_lookup:
+        #     found = self._note_lookup[inode]
+        # else:
+        #     found = (None, None)
+        #     for dev in self.all_devices():
+        #         if isinstance(dev, VirtualDevice):
+        #             for param in dev.all_parameters():
+        #                 if param.hidden:
+        #                     continue
+        #                 h, pinst = hashparam(dev, param)
+        #                 if h == inode:
+        #                     found = (dev, pinst)
+        #                     break
+        #         else:
+        #             for param in dev.all_parameters():
+        #                 h = hashpath(
+        #                     f"/dev/{dev.uid()}/{param.section_name}/{param.name}"
+        #                 )
+        #                 if h == inode:
+        #                     found = (
+        #                         dev,
+        #                         getattr(getattr(dev, param.section_name), param.name),
+        #                     )
+        #                     break
+        #         if found != (None, None):
+        #             break
 
-            if found == (None, None):
-                raise pyfuse3.FUSEError(errno.ENOENT)
+        #     if found == (None, None):
+        #         raise pyfuse3.FUSEError(errno.ENOENT)
 
-        self._open_files[inode] = found
-        fi = pyfuse3.FileInfo(fh=inode)
-        fi.direct_io = True
-        return fi
+        # self._open_files[inode] = found
+        # fi = pyfuse3.FileInfo(fh=inode)
+        # fi.direct_io = True
+        # return fi
 
     async def read(self, fh, off, size):
-        if fh not in self._open_files:
-            raise pyfuse3.FUSEError(errno.EBADF)
+        d = self._registry.get(fh)
+        if d is not None:
+            bval = d.read(fh, off, size)
+            if off >= len(bval):
+                return b""  # EOF
+            return bval[off : off + size]
 
-        if fh in self._view_lookup:
-            bval = gen_sh(self._open_files[fh]).encode("utf-8")
-        else:
-            dev, pinst = self._open_files[fh]
-            if isinstance(dev, VirtualDevice):
-                bval = f"{getattr(dev, pinst.parameter.name)}\n".encode("utf-8")
-            else:
-                bval = f"{getattr(getattr(dev, pinst.parameter.section_name), pinst.parameter.name)}\n".encode(
-                    "utf-8"
-                )
+        # if fh not in self._open_files:
+        #     raise pyfuse3.FUSEError(errno.EBADF)
 
-        if off >= len(bval):
-            return b""  # EOF
+        # if fh in self._view_lookup:
+        #     bval = gen_sh(self._open_files[fh]).encode("utf-8")
+        # else:
+        #     dev, pinst = self._open_files[fh]
+        #     if isinstance(dev, VirtualDevice):
+        #         bval = f"{getattr(dev, pinst.parameter.name)}\n".encode("utf-8")
+        #     else:
+        #         bval = f"{getattr(getattr(dev, pinst.parameter.section_name), pinst.parameter.name)}\n".encode(
+        #             "utf-8"
+        #         )
 
-        return bval[off : off + size]
+        # if off >= len(bval):
+        #     return b""  # EOF
+
+        # return bval[off : off + size]
 
     async def release(self, fh):
-        if fh in self._open_files:
-            del self._open_files[fh]
+        d = self._registry.get(fh)
+        if d is not None:
+            d.release(fh)
+        # if fh in self._open_files:
+        #     del self._open_files[fh]
 
     async def setattr(self, inode, attr, fields, fh, ctx=None):
-        entry = await self.getattr(inode, ctx)
-        if fields.update_size:
-            entry.st_size = attr.st_size
+        d = self._registry.get(inode)
+        if d is not None:
+            entry = d.getattr(inode, ctx)
+            if fields.update_size:
+                entry.st_size = attr.st_size
+            return entry
 
-        return entry
+        # entry = await self.getattr(inode, ctx)
+        # if fields.update_size:
+        #     entry.st_size = attr.st_size
+
+        # return entry
 
     async def write(self, fh, off, buf):
-        if fh not in self._open_files:
-            raise pyfuse3.FUSEError(errno.EBADF)
-
-        if fh in self._note_lookup:
-            try:
-                data_str = buf.decode("utf-8").strip()
-                cmd, *rest = data_str.split()
-                dev = self._open_files[fh]
-                if cmd == "ON":
-                    note, *velocity = rest
-                    dev.note_on(
-                        int(note), velocity=int(velocity[0]) if velocity else 127
-                    )
-                elif cmd == "OFF":
-                    note, *velocity = rest
-                    dev.note_off(
-                        int(note), velocity=int(velocity[0]) if velocity else 127
-                    )
-                elif cmd == "ALL-OFF":
-                    dev.all_notes_off()
-                elif cmd == "FORCE-OFF":
-                    dev.force_all_notes_off()
-                else:
-                    print(f"[NALLELYFS] Unknown command {cmd} for {dev.uid()}")
-            except ValueError as e:
-                raise pyfuse3.FUSEError(errno.EINVAL)
-            except Exception as e:
-                raise pyfuse3.FUSEError(errno.EIO)
+        d = self._registry.get(fh)
+        if d is not None:
+            buf = d.write(fh, off, buf)
             return len(buf)
+        raise pyfuse3.FUSEError(errno.EBADF)
 
-        dev, pinst = self._open_files[fh]
+        # if fh not in self._open_files:
+        #     raise pyfuse3.FUSEError(errno.EBADF)
 
-        try:
-            data_str = buf.decode("utf-8").strip()
-            try:
-                data = float(data_str)
-            except ValueError:
-                data = data_str
-            if isinstance(dev, VirtualDevice):
-                dev.set_parameter(pinst.parameter.name, data)
-            else:
-                setattr(
-                    getattr(dev, pinst.parameter.section_name),
-                    pinst.parameter.name,
-                    data,
-                )
-        except ValueError:
-            raise pyfuse3.FUSEError(errno.EINVAL)
-        except Exception:
-            raise pyfuse3.FUSEError(errno.EIO)
+        # if fh in self._note_lookup:
+        #     try:
+        #         data_str = buf.decode("utf-8").strip()
+        #         cmd, *rest = data_str.split()
+        #         dev = self._open_files[fh]
+        #         if cmd == "ON":
+        #             note, *velocity = rest
+        #             dev.note_on(
+        #                 int(note), velocity=int(velocity[0]) if velocity else 127
+        #             )
+        #         elif cmd == "OFF":
+        #             note, *velocity = rest
+        #             dev.note_off(
+        #                 int(note), velocity=int(velocity[0]) if velocity else 127
+        #             )
+        #         elif cmd == "ALL-OFF":
+        #             dev.all_notes_off()
+        #         elif cmd == "FORCE-OFF":
+        #             dev.force_all_notes_off()
+        #         else:
+        #             print(f"[NALLELYFS] Unknown command {cmd} for {dev.uid()}")
+        #     except ValueError as e:
+        #         raise pyfuse3.FUSEError(errno.EINVAL)
+        #     except Exception as e:
+        #         raise pyfuse3.FUSEError(errno.EIO)
+        #     return len(buf)
 
-        return len(buf)
+        # dev, pinst = self._open_files[fh]
+
+        # try:
+        #     data_str = buf.decode("utf-8").strip()
+        #     try:
+        #         data = float(data_str)
+        #     except ValueError:
+        #         data = data_str
+        #     if isinstance(dev, VirtualDevice):
+        #         dev.set_parameter(pinst.parameter.name, data)
+        #     else:
+        #         setattr(
+        #             getattr(dev, pinst.parameter.section_name),
+        #             pinst.parameter.name,
+        #             data,
+        #         )
+        # except ValueError:
+        #     raise pyfuse3.FUSEError(errno.EINVAL)
+        # except Exception:
+        #     raise pyfuse3.FUSEError(errno.EIO)
+
+        # return len(buf)
 
 
 class NallelyFSThread(threading.Thread):
