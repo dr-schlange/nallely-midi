@@ -139,6 +139,15 @@ class NallelyFS(pyfuse3.Operations):
             entry.st_size = 0
             entry.attr_timeout = 1
             entry.entry_timeout = 1
+        elif inode in self._link_param_lookup:
+            link, p = self._link_param_lookup[inode]
+            entry.st_mode = stat.S_IFREG | 0o644
+            data = getattr(link, p)
+            if isinstance(data, bool):
+                data = str(int(data))
+            entry.st_size = len(f"{data}\n")
+            entry.attr_timeout = 5
+            entry.entry_timeout = 5
         else:
             entry.st_mode = stat.S_IFDIR | 0o755
             entry.st_size = 0
@@ -206,7 +215,12 @@ class NallelyFS(pyfuse3.Operations):
                         self._links_lookup[h] = link
                         return await self.getattr(h)
         elif parent_inode in self._links_lookup:
-            ...
+            link = self._links_lookup[parent_inode]
+            for param in ["bouncy", "muted", "velocity", "extra_zero"]:
+                if param.encode("utf-8") == name:
+                    h = hashpath(f"/{link.repr()}/{param}")
+                    self._link_param_lookup[h] = (link, param)
+                    return await self.getattr(h)
         else:
             try:
                 dev = self.nallely_trevor.get_device_instance(parent_inode)
@@ -306,6 +320,10 @@ class NallelyFS(pyfuse3.Operations):
             else:
                 sec = link.src.parameter.section_name
                 entries.append((b"..", self._dev_lookup[f"{dev.uid()}::{sec}"]))
+            for param in ["bouncy", "muted", "velocity", "extra_zero"]:
+                h = hashpath(f"/{link.repr()}/{param}")
+                self._link_param_lookup[h] = (link, param)
+                entries.append((param.encode("utf-8"), h))
         else:
             try:
                 # List a device folder
@@ -471,10 +489,8 @@ class NallelyFS(pyfuse3.Operations):
                 else:
                     print(f"[NALLELYFS] Unknown command {cmd} for {dev.uid()}")
             except ValueError as e:
-                # print("[NALLELYFS] Error while decoding notes to play", e)
                 raise pyfuse3.FUSEError(errno.EINVAL)
             except Exception as e:
-                # print("[NALLELYFS] Error while decoding notes to play", e)
                 raise pyfuse3.FUSEError(errno.EIO)
             return len(buf)
 
