@@ -681,6 +681,85 @@ class VMidiSection(VDir):
     def stable_ref(cls, component: Module) -> int:
         return hashpath(f"/dev/{component.device.uuid}/{component.state_name}")
 
+    @override
+    def readdir(
+        self: Self, fh: FileHandleT, start_id: int, token: ReaddirToken
+    ) -> list[tuple[bytes, InodeT]]:
+        assert fh == self.inode_num
+        entries = super().readdir(fh, start_id, token)
+        for param in self.component.all_parameters():
+            p = self._get(getattr(self.component, param.name), VMidiParam)
+            assert p
+            entries.append((p.name, p.inode_num))
+        return entries
+
+    @override
+    def lookup(
+        self: Self,
+        parent_inode: InodeT,
+        name: FileNameT,
+        ctx: RequestContext | None = None,
+    ) -> EntryAttributes:
+        assert parent_inode == self.inode_num
+        for param in self.component.all_parameters():
+            pname = param.name.encode("utf-8")
+            if name == pname:
+                p = self._get(getattr(self.component, param.name), VMidiParam)
+                assert p
+                return p.getattr(p.inode_num, ctx)
+        raise FUSEError(errno.ENOENT)
+
+
+class VMidiParam(VFile):
+    @classmethod
+    @override
+    def _get_name(cls, component: Int) -> str:
+        return component.parameter.name
+
+    @classmethod
+    @override
+    def stable_ref(cls, component: Int) -> int:
+        return hashpath(
+            f"/dev/{component.device.uuid}/{component.parameter.section_name}/{component.parameter.name}"
+        )
+
+    @override
+    def write(self: Self, fh: FileHandleT, off: int, buf: bytes) -> int:
+        try:
+            data_str = buf.decode("utf-8").strip()
+            try:
+                data = float(data_str)
+            except ValueError:
+                data = data_str
+            setattr(
+                getattr(self.component.device, self.component.parameter.section_name),
+                self.component.parameter.name,
+                data,
+            )
+        except ValueError:
+            raise FUSEError(errno.EINVAL)
+        except Exception:
+            raise FUSEError(errno.EIO)
+        return len(buf)
+
+    @override
+    def getattr(
+        self: Self, inode: InodeT, ctx: RequestContext | None = None
+    ) -> EntryAttributes:
+        entry = super().getattr(inode, ctx)
+        entry.st_mode = stat.S_IFREG | 0o600
+        entry.st_size = len(self.content())
+        return entry
+
+    def content(self):
+        return f"{getattr(getattr(self.component.device, self.component.parameter.section_name), self.component.parameter.name)}".encode(
+            "utf-8"
+        )
+
+    @override
+    def read(self: Self, fh: FileHandleT, off: int, size: int) -> bytes:
+        return self.content()
+
 
 class VNote(VFile):
     @property
@@ -738,13 +817,6 @@ class VNote(VFile):
             print(e)
             raise FUSEError(errno.EIO)
         return len(buf)
-
-    @override
-    def read(self: Self, fh: FileHandleT, off: int, size: int) -> bytes:
-        return self.content()
-
-    def content(self):
-        return self.display
 
 
 class VParam(VFile):
