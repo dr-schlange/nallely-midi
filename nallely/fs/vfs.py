@@ -18,7 +18,7 @@ from pyfuse3 import (
 )
 
 from nallely import MidiDevice, Module, VirtualDevice, all_devices
-from nallely.core.parameter_instances import ParameterInstance
+from nallely.core.parameter_instances import Int, ParameterInstance
 from nallely.core.world import (
     get_all_device_classes,
     get_connected_devices,
@@ -92,7 +92,7 @@ class VNode:
 
     @property
     def mode(self) -> int:
-        return 0
+        return 0o000
 
     @classmethod
     def get(
@@ -185,7 +185,7 @@ class VDir(VNode):
     @property
     @override
     def mode(self) -> int:
-        return 0o755
+        return 0o700
 
     @override
     def readdir(
@@ -234,6 +234,10 @@ class VDir(VNode):
 
 
 class VFile(VNode):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fh2pid = {}
+
     @override
     def getattr(
         self: Self, inode: InodeT, ctx: RequestContext | None = None
@@ -251,6 +255,7 @@ class VFile(VNode):
     ) -> FileInfo:
         fi = FileInfo(fh=inode)
         fi.direct_io = True
+        self.fh2pid[inode] = ctx.pid
         return fi
 
 
@@ -627,12 +632,126 @@ class VMidiDev(VDir):
         entry.entry_timeout = 1
         return entry
 
+    @override
+    def readdir(
+        self: Self, fh: FileHandleT, start_id: int, token: ReaddirToken
+    ) -> list[tuple[bytes, InodeT]]:
+        assert fh == self.inode_num
+        entries = super().readdir(fh, start_id, token)
+        for v in [VMeta, VNote]:
+            m = self._get(self.component, v)
+            assert m
+            entries.append((m.name, m.inode_num))
+        for section in self.component.all_sections():
+            p = self._get(getattr(self.component, section.state_name), VMidiSection)
+            assert p
+            entries.append((p.name, p.inode_num))
+        return entries
+
+    @override
+    def lookup(
+        self: Self,
+        parent_inode: InodeT,
+        name: FileNameT,
+        ctx: RequestContext | None = None,
+    ) -> EntryAttributes:
+        assert parent_inode == self.inode_num
+        for v in [VMeta, VNote]:
+            if name == v._get_name(self.component).encode("utf-8"):
+                m = self._get(self.component, v)
+                assert m
+                return m.getattr(m.inode_num, ctx)
+        for section in self.component.all_sections():
+            pname = section.state_name.encode("utf-8")
+            if name == pname:
+                p = self._get(getattr(self.component, section.state_name), VMidiSection)
+                assert p
+                return p.getattr(p.inode_num, ctx)
+        raise FUSEError(errno.ENOENT)
+
+
+class VMidiSection(VDir):
+    @classmethod
+    @override
+    def _get_name(cls, component: Module) -> str:
+        return component.state_name
+
+    @classmethod
+    @override
+    def stable_ref(cls, component: Module) -> int:
+        return hashpath(f"/dev/{component.device.uuid}/{component.state_name}")
+
+
+class VNote(VFile):
+    @property
+    @override
+    def mode(self) -> int:
+        return 0o600
+
+    @classmethod
+    @override
+    def _get_name(cls, component: MidiDevice) -> str:
+        return "notes"
+
+    @classmethod
+    @override
+    def stable_ref(cls, component: MidiDevice) -> int:
+        return hashpath(f"/dev/{component.uid()}/notes")
+
+    def display(self, msg, fh):
+        pid = self.fh2pid[fh]
+        print(f"[NALLELYFS] {msg}")
+        try:
+            if pid > 0:
+                tty_path = os.readlink(f"/proc/{pid}/fd/1")
+
+                if tty_path.startswith(("/dev/pts/", "/dev/tty")):
+                    with open(tty_path, "w") as tty:
+                        tty.write(f"\r\n{msg}\r\n")
+
+        except Exception as e:
+            print(e)
+
+    @override
+    def write(self: Self, fh: FileHandleT, off: int, buf: bytes) -> int:
+        try:
+            data_str = buf.decode("utf-8").strip()
+            cmd, *rest = data_str.split()
+            dev = self.component
+            if cmd == "ON":
+                note, *velocity = rest
+                dev.note_on(int(note), velocity=int(velocity[0]) if velocity else 127)
+            elif cmd == "OFF":
+                note, *velocity = rest
+                dev.note_off(int(note), velocity=int(velocity[0]) if velocity else 127)
+            elif cmd == "ALL-OFF":
+                dev.all_notes_off()
+            elif cmd == "FORCE-OFF":
+                dev.force_all_notes_off()
+            else:
+                msg = f"[NALLELYFS] Unknown command {cmd} for {dev.uid()}"
+                print(msg)
+                self.display(msg, fh)
+        except ValueError as e:
+            raise FUSEError(errno.EINVAL)
+        except Exception as e:
+            print(e)
+            raise FUSEError(errno.EIO)
+        return len(buf)
+
+    @override
+    def read(self: Self, fh: FileHandleT, off: int, size: int) -> bytes:
+        return self.content()
+
+    def content(self):
+        return self.display
+
 
 class VParam(VFile):
     @property
     @override
     def mode(self) -> int:
-        return 0o644
+        return 0o600
 
     @classmethod
     @override
