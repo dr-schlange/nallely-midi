@@ -317,6 +317,44 @@ class VClas(VDir):
     def releasedir(self, fh: FileHandleT) -> None:
         pass
 
+    @override
+    def readdir(
+        self: Self, fh: FileHandleT, start_id: int, token: ReaddirToken
+    ) -> list[tuple[bytes, InodeT]]:
+        entries = super().readdir(fh, start_id, token)
+        for cls in get_all_device_classes():
+            d = self._get(cls, VClasDef)
+            assert d
+            entries.append((d.name, d.inode_num))
+        return entries
+
+    @override
+    def lookup(
+        self: Self,
+        parent_inode: InodeT,
+        name: FileNameT,
+        ctx: RequestContext | None = None,
+    ) -> EntryAttributes:
+        for cls in get_all_device_classes():
+            cname = cls.__name__.encode("utf-8")
+            if cname == name:
+                d = self._get(cls, VClasDef)
+                assert d
+                return d.getattr(d.inode_num, ctx)
+        raise FUSEError(errno.ENOENT)
+
+
+class VClasDef(VDir):
+    @classmethod
+    @override
+    def stable_ref(cls, component) -> int:
+        return id(component)
+
+    @classmethod
+    @override
+    def _get_name(cls, component) -> str:
+        return component.__name__
+
 
 class VDev(VDir):
     def __init__(self, parent: VDir):
