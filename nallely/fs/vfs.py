@@ -17,7 +17,7 @@ from pyfuse3 import (
     SetattrFields,
 )
 
-from nallely import MidiDevice, VirtualDevice, all_devices
+from nallely import MidiDevice, Module, VirtualDevice, all_devices
 from nallely.core.parameter_instances import ParameterInstance
 from nallely.core.world import (
     get_all_device_classes,
@@ -323,7 +323,8 @@ class VClas(VDir):
     ) -> list[tuple[bytes, InodeT]]:
         entries = super().readdir(fh, start_id, token)
         for cls in get_all_device_classes():
-            d = self._get(cls, VClasDef)
+            t = VMidiClasDef if issubclass(cls, MidiDevice) else VClasDef
+            d = self._get(cls, t)
             assert d
             entries.append((d.name, d.inode_num))
         return entries
@@ -336,9 +337,10 @@ class VClas(VDir):
         ctx: RequestContext | None = None,
     ) -> EntryAttributes:
         for cls in get_all_device_classes():
-            cname = cls.__name__.encode("utf-8")
+            t = VMidiClasDef if issubclass(cls, MidiDevice) else VClasDef
+            cname = t._get_name(cls).encode("utf-8")
             if cname == name:
-                d = self._get(cls, VClasDef)
+                d = self._get(cls, t)
                 assert d
                 return d.getattr(d.inode_num, ctx)
         raise FUSEError(errno.ENOENT)
@@ -354,6 +356,143 @@ class VClasDef(VDir):
     @override
     def _get_name(cls, component) -> str:
         return component.__name__
+
+    @override
+    def readdir(
+        self: Self, fh: FileHandleT, start_id: int, token: ReaddirToken
+    ) -> list[tuple[bytes, InodeT]]:
+        entries = super().readdir(fh, start_id, token)
+        for section in self.component.all_parameters():
+            d = self._get(section, VParamDef)
+            assert d
+            entries.append((d.name, d.inode_num))
+
+        return entries
+
+    @override
+    def lookup(
+        self: Self,
+        parent_inode: InodeT,
+        name: FileNameT,
+        ctx: RequestContext | None = None,
+    ) -> EntryAttributes:
+        for section in self.component.all_parameters():
+            cname = VParamDef._get_name(section).encode("utf-8")
+            if cname == name:
+                d = self._get(section, VParamDef)
+                assert d
+                return d.getattr(d.inode_num, ctx)
+        raise FUSEError(errno.ENOENT)
+
+
+class VParamDef(VDir):
+    @classmethod
+    @override
+    def stable_ref(cls, component) -> int:
+        return id(component)
+
+    @classmethod
+    @override
+    def _get_name(cls, component) -> str:
+        return component.name
+
+
+class VMidiClasDef(VDir):
+    @classmethod
+    @override
+    def stable_ref(cls, component) -> int:
+        return id(component)
+
+    @classmethod
+    @override
+    def _get_name(cls, component) -> str:
+        return component.__name__
+
+    def get_all_sections(self):
+        return (
+            v
+            for cls in reversed(self.component.__mro__)
+            for k, v in getattr(cls, "__annotations__", {}).items()
+            if isinstance(v, type) and issubclass(v, Module)
+        )
+
+    @override
+    def readdir(
+        self: Self, fh: FileHandleT, start_id: int, token: ReaddirToken
+    ) -> list[tuple[bytes, InodeT]]:
+        entries = super().readdir(fh, start_id, token)
+        for section in self.get_all_sections():
+            d = self._get(section, VSectionDef)
+            assert d
+            entries.append((d.name, d.inode_num))
+
+        return entries
+
+    @override
+    def lookup(
+        self: Self,
+        parent_inode: InodeT,
+        name: FileNameT,
+        ctx: RequestContext | None = None,
+    ) -> EntryAttributes:
+        for section in self.get_all_sections():
+            cname = VSectionDef._get_name(section).encode("utf-8")
+            if cname == name:
+                d = self._get(section, VSectionDef)
+                assert d
+                return d.getattr(d.inode_num, ctx)
+        raise FUSEError(errno.ENOENT)
+
+
+class VSectionDef(VDir):
+    @classmethod
+    @override
+    def stable_ref(cls, component) -> int:
+        return id(component)
+
+    @classmethod
+    @override
+    def _get_name(cls, component) -> str:
+        return component.state_name
+
+    @override
+    def readdir(
+        self: Self, fh: FileHandleT, start_id: int, token: ReaddirToken
+    ) -> list[tuple[bytes, InodeT]]:
+        entries = super().readdir(fh, start_id, token)
+        for section in self.component.meta.parameters:
+            d = self._get(section, VMidiParamDef)
+            assert d
+            entries.append((d.name, d.inode_num))
+
+        return entries
+
+    @override
+    def lookup(
+        self: Self,
+        parent_inode: InodeT,
+        name: FileNameT,
+        ctx: RequestContext | None = None,
+    ) -> EntryAttributes:
+        for section in self.component.meta.parameters:
+            cname = VMidiParamDef._get_name(section).encode("utf-8")
+            if cname == name:
+                d = self._get(section, VMidiParamDef)
+                assert d
+                return d.getattr(d.inode_num, ctx)
+        raise FUSEError(errno.ENOENT)
+
+
+class VMidiParamDef(VDir):
+    @classmethod
+    @override
+    def stable_ref(cls, component) -> int:
+        return id(component)
+
+    @classmethod
+    @override
+    def _get_name(cls, component) -> str:
+        return component.name
 
 
 class VDev(VDir):
