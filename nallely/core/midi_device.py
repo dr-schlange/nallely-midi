@@ -417,7 +417,9 @@ class DeviceState:
 class MidiDevice(threading.Thread):
     device_name: str
     uuid: int = 0
-    modules_descr: dict[str, Type[Module]] | None = None
+    modules_descr: dict[str, Type[Module]] | None = (
+        None  # modules_descr should be removed, but don't want to deal with a breaking change right now
+    )
     autoconnect: InitVar[bool] = True
     read_input_only: InitVar[bool] = False
     played_notes: Counter = field(default_factory=Counter)
@@ -431,6 +433,18 @@ class MidiDevice(threading.Thread):
 
     def __init_subclass__(cls) -> None:
         midi_device_classes.append(cls)
+        sections = {
+            k: v
+            for c in reversed(cls.__mro__)
+            for k, v in getattr(c, "__annotations__", {}).items()
+            if isinstance(v, type) and issubclass(v, Module)
+        }
+
+        for state_name, ModuleCls in sections.items():
+            ModuleCls.state_name = state_name
+
+        cls.sections = sections
+
         return super().__init_subclass__()
 
     def __post_init__(self, autoconnect, read_input_only):
@@ -447,12 +461,7 @@ class MidiDevice(threading.Thread):
         )  # if the channel is None, we consider the device channel
         self.links_registry: dict[tuple[str, str], Link] = {}
         if self.modules_descr is None:
-            self.modules_descr = {
-                k: v
-                for cls in reversed(type(self).__mro__)
-                for k, v in getattr(cls, "__annotations__", {}).items()
-                if isinstance(v, type) and issubclass(v, Module)
-            }
+            self.modules_descr = self.sections
         self.modules = DeviceState(self, self.modules_descr)
         self.listening = False
         self.outport_name = self.device_name
@@ -825,7 +834,7 @@ class MidiDevice(threading.Thread):
         key = (from_.repr(), target.repr())
         link = self.links_registry.get(key)
         if not link:
-            # print(f"Cannot unbind {from_} and {target}, they are not bound in {self}")
+            # cannot unbind from and target, they are not bound in this neuron
             return
 
         del self.links_registry[key]

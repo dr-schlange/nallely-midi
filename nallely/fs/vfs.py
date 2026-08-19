@@ -19,8 +19,9 @@ from pyfuse3 import (
 
 from nallely import MidiDevice, Module, VirtualDevice, all_devices
 from nallely.core.links import Link
+from nallely.core.midi_device import ModulePadsOrKeys, ModuleParameter, ModulePitchwheel
 from nallely.core.parameter_instances import Int, ParameterInstance
-from nallely.core.scaler import Scaler
+from nallely.core.virtual_device import VirtualParameter
 from nallely.core.world import (
     get_all_device_classes,
     get_connected_devices,
@@ -413,13 +414,72 @@ class VClasDef(VDir):
 class VParamDef(VDir):
     @classmethod
     @override
-    def stable_ref(cls, component) -> int:
+    def stable_ref(cls, component: VirtualParameter) -> int:
         return id(component)
 
     @classmethod
     @override
-    def _get_name(cls, component) -> str:
+    def _get_name(cls, component: VirtualParameter) -> str:
         return component.name
+
+    @override
+    def readdir(
+        self: Self, fh: FileHandleT, start_id: int, token: ReaddirToken
+    ) -> list[tuple[bytes, InodeT]]:
+        entries = super().readdir(fh, start_id, token)
+        for p in [
+            "name",
+            "stream",
+            "consumer",
+            "description",
+            "range",
+            "accepted_values",
+            "conversion_policy",
+            "disable_policy",
+            "cv_name",
+            "section_name",
+            "cc_note",
+            "hidden",
+            "default",
+            "no_init",
+        ]:
+            if hasattr(self.component, p):
+                d = self._get((p, self.component), VParamPropDef)
+                assert d
+                entries.append((d.name, d.inode_num))
+
+        return entries
+
+    @override
+    def lookup(
+        self: Self,
+        parent_inode: InodeT,
+        name: FileNameT,
+        ctx: RequestContext | None = None,
+    ) -> EntryAttributes:
+        for p in [
+            "name",
+            "stream",
+            "consumer",
+            "description",
+            "range",
+            "accepted_values",
+            "conversion_policy",
+            "disable_policy",
+            "cv_name",
+            "section_name",
+            "cc_note",
+            "hidden",
+            "default",
+            "no_init",
+        ]:
+            if hasattr(self.component, p):
+                cname = VParamPropDef._get_name((p, self.component)).encode("utf-8")
+                if cname == name:
+                    d = self._get((p, self.component), VParamPropDef)
+                    assert d
+                    return d.getattr(d.inode_num, ctx)
+        raise FUSEError(errno.ENOENT)
 
 
 class VMidiClasDef(VDir):
@@ -433,20 +493,12 @@ class VMidiClasDef(VDir):
     def _get_name(cls, component) -> str:
         return component.__name__
 
-    def get_all_sections(self):
-        return (
-            v
-            for cls in reversed(self.component.__mro__)
-            for k, v in getattr(cls, "__annotations__", {}).items()
-            if isinstance(v, type) and issubclass(v, Module)
-        )
-
     @override
     def readdir(
         self: Self, fh: FileHandleT, start_id: int, token: ReaddirToken
     ) -> list[tuple[bytes, InodeT]]:
         entries = super().readdir(fh, start_id, token)
-        for section in self.get_all_sections():
+        for section in self.component.sections.values():
             d = self._get(section, VSectionDef)
             assert d
             entries.append((d.name, d.inode_num))
@@ -460,7 +512,7 @@ class VMidiClasDef(VDir):
         name: FileNameT,
         ctx: RequestContext | None = None,
     ) -> EntryAttributes:
-        for section in self.get_all_sections():
+        for section in self.component.sections.values():
             cname = VSectionDef._get_name(section).encode("utf-8")
             if cname == name:
                 d = self._get(section, VSectionDef)
@@ -511,13 +563,136 @@ class VSectionDef(VDir):
 class VMidiParamDef(VDir):
     @classmethod
     @override
-    def stable_ref(cls, component) -> int:
+    def stable_ref(
+        cls, component: ModuleParameter | ModulePadsOrKeys | ModulePitchwheel
+    ) -> int:
         return id(component)
 
     @classmethod
     @override
-    def _get_name(cls, component) -> str:
+    def _get_name(
+        cls, component: ModuleParameter | ModulePadsOrKeys | ModulePitchwheel
+    ) -> str:
         return component.name
+
+    @override
+    def readdir(
+        self: Self, fh: FileHandleT, start_id: int, token: ReaddirToken
+    ) -> list[tuple[bytes, InodeT]]:
+        entries = super().readdir(fh, start_id, token)
+        for p in [
+            "type",
+            "cc_note",
+            "channel",
+            "name",
+            "section_name",
+            "init_value",
+            "description",
+            "range",
+            "accepted_values",
+            "stream",
+        ]:
+            if hasattr(self.component, p):
+                d = self._get((p, self.component), VParamPropDef)
+                assert d
+                entries.append((d.name, d.inode_num))
+
+        return entries
+
+    @override
+    def lookup(
+        self: Self,
+        parent_inode: InodeT,
+        name: FileNameT,
+        ctx: RequestContext | None = None,
+    ) -> EntryAttributes:
+        for p in [
+            "type",
+            "cc_note",
+            "channel",
+            "name",
+            "section_name",
+            "init_value",
+            "description",
+            "range",
+            "accepted_values",
+            "stream",
+        ]:
+            if hasattr(self.component, p):
+                cname = VParamPropDef._get_name((p, self.component)).encode("utf-8")
+                if cname == name:
+                    d = self._get((p, self.component), VParamPropDef)
+                    assert d
+                    return d.getattr(d.inode_num, ctx)
+        raise FUSEError(errno.ENOENT)
+
+
+class VParamPropDef(VFile):
+    @classmethod
+    @override
+    def stable_ref(
+        cls,
+        component: tuple[
+            str,
+            ModuleParameter | ModulePadsOrKeys | ModulePitchwheel | VirtualParameter,
+        ],
+    ) -> int:
+        return hashpath(f"{id(component[1])}/{component[0]}")
+
+    @classmethod
+    @override
+    def _get_name(
+        cls,
+        component: tuple[
+            str,
+            ModuleParameter | ModulePadsOrKeys | ModulePitchwheel | VirtualParameter,
+        ],
+    ) -> str:
+        return component[0]
+
+    def content(self):
+        return str(getattr(self.component[1], self.component[0])).encode("utf-8")
+
+    @override
+    def getattr(
+        self: Self, inode: InodeT, ctx: RequestContext | None = None
+    ) -> EntryAttributes:
+        entry = super().getattr(inode, ctx)
+        entry.attr_timeout = 1
+        entry.entry_timeout = 1
+        entry.st_size = len(self.content())
+        return entry
+
+    @override
+    def read(self: Self, fh: FileHandleT, off: int, size: int) -> bytes:
+        return self.content()
+
+    @override
+    def write(self: Self, fh: FileHandleT, off: int, buf: bytes) -> int:
+        try:
+            data_str = buf.decode("utf-8").strip()
+            try:
+                data = int(data_str)
+            except ValueError:
+                try:
+                    data = float(data_str)
+                except ValueError:
+                    if data_str in [b"True", b"False", b"true", b"false"]:
+                        data = data_str in [b"True", b"true"]
+                    elif data.startswith("("):
+                        fields = data.spli(",")
+                        try:
+                            data = tuple(int(f) for f in fields)
+                        except ValueError:
+                            data = tuple(float(f) for f in fields)
+                    else:
+                        data = data_str
+            setattr(self.component[1], self.component[0], data)
+        except ValueError:
+            raise FUSEError(errno.EINVAL)
+        except Exception:
+            raise FUSEError(errno.EIO)
+        return len(buf)
 
 
 class VDevRoot(VDir):
@@ -627,6 +802,7 @@ class VDev(VDir):
                 m = self._get(self.component, v)
                 assert m
                 return m.getattr(m.inode_num, ctx)
+        base, _, idx = name.partition(b".")
         for param in self.component.all_parameters():
             if param.hidden:
                 continue
@@ -636,14 +812,13 @@ class VDev(VDir):
                 assert p
                 return p.getattr(p.inode_num, ctx)
             # using list idx is not the best
-            name, *idx = name.split(b".")
             if not idx:
                 continue
             for i, link in enumerate(
                 getattr(self.component, param.cv_name).outgoing_links
             ):
                 pname = link.src.parameter.name.encode("utf-8")
-                if pname == name:
+                if pname == base:
                     p = self._get((i, link), VLink)
                     assert p
                     return p.getattr(p.inode_num, ctx)
@@ -866,7 +1041,7 @@ class VLinkDst(VFile):
         self: Self, inode: InodeT, ctx: RequestContext | None = None
     ) -> EntryAttributes:
         entry = super().getattr(inode, ctx)
-        entry.st_mode = stat.S_IFLNK | 0o777
+        entry.st_mode = stat.S_IFLNK | 0o700
         entry.st_nlink = 1
         entry.attr_timeout = 1
         entry.entry_timeout = 1
@@ -893,15 +1068,15 @@ class VLinkDstDev(VFile):
         dst = self.component.dest
         dev = dst.device
         if isinstance(dev, VirtualDevice):
-            return f"{self.mountpoint}/dev/{VDev._get_name(dev)}/"
-        return f"{self.mountpoint}/dev/{VMidiDev._get_name(dev)}/{dst.parameter.section_name}/"
+            return f"{self.mountpoint}/dev/{VDev._get_name(dev)}"
+        return f"{self.mountpoint}/dev/{VMidiDev._get_name(dev)}/{dst.parameter.section_name}"
 
     @override
     def getattr(
         self: Self, inode: InodeT, ctx: RequestContext | None = None
     ) -> EntryAttributes:
         entry = super().getattr(inode, ctx)
-        entry.st_mode = stat.S_IFLNK | 0o777
+        entry.st_mode = stat.S_IFLNK | 0o700
         entry.st_nlink = 1
         entry.attr_timeout = 1
         entry.entry_timeout = 1
@@ -989,9 +1164,15 @@ class VMidiSection(VDir):
         assert fh == self.inode_num
         entries = super().readdir(fh, start_id, token)
         for param in self.component.all_parameters():
-            p = self._get(getattr(self.component, param.name), VMidiParam)
+            pinst = getattr(self.component, param.name)
+            p = self._get(pinst, VMidiParam)
             assert p
             entries.append((p.name, p.inode_num))
+            # using list idx is not the best
+            for i, link in enumerate(pinst.outgoing_links):
+                p = self._get((i, link), VLink)
+                assert p
+                entries.append((p.name, p.inode_num))
         return entries
 
     @override
@@ -1002,12 +1183,23 @@ class VMidiSection(VDir):
         ctx: RequestContext | None = None,
     ) -> EntryAttributes:
         assert parent_inode == self.inode_num
+        base, _, idx = name.partition(b".")
         for param in self.component.all_parameters():
             pname = param.name.encode("utf-8")
+            pinst = getattr(self.component, param.name)
             if name == pname:
-                p = self._get(getattr(self.component, param.name), VMidiParam)
+                p = self._get(pinst, VMidiParam)
                 assert p
                 return p.getattr(p.inode_num, ctx)
+            # using list idx is not the best
+            if not idx:
+                continue
+            for i, link in enumerate(pinst.outgoing_links):
+                pname = link.src.parameter.name.encode("utf-8")
+                if pname == base:
+                    p = self._get((i, link), VLink)
+                    assert p
+                    return p.getattr(p.inode_num, ctx)
         raise FUSEError(errno.ENOENT)
 
 
@@ -1173,7 +1365,7 @@ class VMeta(VFile):
         self: Self, inode: InodeT, ctx: RequestContext | None = None
     ) -> EntryAttributes:
         entry = super().getattr(inode, ctx)
-        entry.st_mode = stat.S_IFLNK | 0o777
+        entry.st_mode = stat.S_IFLNK | 0o700
         entry.st_nlink = 1
         entry.attr_timeout = 1
         entry.entry_timeout = 1
@@ -1218,7 +1410,7 @@ class VViewVirtual(VFile):
         self: Self, inode: InodeT, ctx: RequestContext | None = None
     ) -> EntryAttributes:
         entry = super().getattr(inode, ctx)
-        entry.st_mode = stat.S_IFREG | 0o544
+        entry.st_mode = stat.S_IFREG | 0o500
         entry.st_nlink = 1
         entry.attr_timeout = 1
         entry.entry_timeout = 1
