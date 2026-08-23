@@ -67,6 +67,25 @@ class NForth:
 
     def __post_init__(self):
         self._reset_machine()
+        self.__oldprint = None
+        self.__newprint = None
+
+    def print(self, *msg, **kwargs):
+        print(*msg, **kwargs)
+
+    def swap_print(self, foo):
+        if self.__oldprint is not None or self.__newprint is foo:
+            return
+        self.__oldprint = self.print
+        self.__newprint = foo
+        self.print = foo.__get__(self)
+
+    def restore_print(self):
+        if self.__oldprint is None:
+            return
+        self.print = self.__oldprint
+        self.__oldprint = None
+        self.__newprint = None
 
     def _reset_machine(self):
         self.memory[self.toin] = 0
@@ -141,34 +160,34 @@ class NForth:
         self.decode_addr(cfa - 3)
 
     def debug(self):
-        print("= VARS")
+        self.print("= VARS")
         for var in ["rp", "sp", "latest", "here", "toin", "state"]:
             varval = getattr(self, var)
-            print(f"  {var} = {self.memory[varval]}[{varval}]")
-        print(f"  tib = {self.tib}")
-        print(f"  {self.memory[self.tib : self.tib + self.memory[self.toin]]}")
+            self.print(f"  {var} = {self.memory[varval]}[{varval}]")
+        self.print(f"  tib = {self.tib}")
+        self.print(f"  {self.memory[self.tib : self.tib + self.memory[self.toin]]}")
 
     def decode_addr(self, addr):
-        print(f"[{addr}] {self.memory[addr : addr + 4]}")
-        print(f"  LFA = {self.memory[addr]}")
-        print(f"  NFA = {self.memory[addr + 1]}")
-        print(f"  FFA = {self.memory[addr + 2]}")
-        print(f"  CFA = {self.memory[addr + 3]}")
+        self.print(f"[{addr}] {self.memory[addr : addr + 4]}")
+        self.print(f"  LFA = {self.memory[addr]}")
+        self.print(f"  NFA = {self.memory[addr + 1]}")
+        self.print(f"  FFA = {self.memory[addr + 2]}")
+        self.print(f"  CFA = {self.memory[addr + 3]}")
 
     def decode_def(self, addr):
-        print(f"DEF [{addr}] {self.memory[addr : addr + 4]}")
-        print(f"  LFA = {self.memory[addr]}")
-        print(f"  NFA = {self.memory[addr + 1]}")
-        print(f"  FFA = {self.memory[addr + 2]}")
-        print(f"  CFA = {self.memory[addr + 3]}")
+        self.print(f"DEF [{addr}] {self.memory[addr : addr + 4]}")
+        self.print(f"  LFA = {self.memory[addr]}")
+        self.print(f"  NFA = {self.memory[addr + 1]}")
+        self.print(f"  FFA = {self.memory[addr + 2]}")
+        self.print(f"  CFA = {self.memory[addr + 3]}")
         addr += 3
         while self.memory[addr] != self._exit:
-            print(f"{self.memory[self.memory[addr] - 2]}", end=" ")
+            self.print(f"{self.memory[self.memory[addr] - 2]}", end=" ")
             addr += 1
-        print(f"{self.memory[self.memory[addr] - 2]}")
+        self.print(f"{self.memory[self.memory[addr] - 2]}")
 
     def printd(self):
-        print(self.memory[self.sp0 : self.sp - 1 : -1])
+        self.print(self.memory[self.sp0 : self.sp - 1 : -1])
 
     def next(self):
         if self._in_next:
@@ -302,7 +321,7 @@ class NForth:
         self.memory[self.toin] = 0
 
     def _writechar(self, char):
-        print(chr(char), end="")
+        self.print(chr(char), end="")
 
     def _readline(self):
         self._writechar(13)
@@ -313,6 +332,7 @@ class NForth:
 
     def find(self, word):
         lfa = self.memory[self.latest]
+        word = word.upper()
         while self.memory[lfa + 1] != word and lfa != 0:
             lfa = self.memory[lfa]
         if lfa != 0:
@@ -338,7 +358,7 @@ class NForth:
             else:
                 self.compile(cfa)
             return
-        print(f"Unknown {word}")
+        self.print(f"{Colors.ERROR}Unknown {word}{Colors.END}")
         self._soft_reset()
 
     def interpret(self):
@@ -349,9 +369,17 @@ class NForth:
                     return True
                 self.interpret_word(word)
         except EmptyStack as e:
-            print(f"{Colors.ERROR}\nError! {e.args[0]} stack is empty{Colors.END}")
+            self.print(
+                f"{Colors.ERROR}\nError! {e.args[0]} stack is empty{Colors.END}",
+            )
             self._soft_reset()
             return False
+
+    def get_stacks(self):
+        return (
+            self.memory[self.sp : self.sp0][::-1],
+            self.memory[self.rp : self.rp0][::-1],
+        )
 
     def boot(self):
         self._write("""
@@ -577,8 +605,11 @@ class NForth:
         return self.interpret()
 
     def display_stacks(self):
-        print(
-            "S", self.memory[self.sp : self.sp0], "R", self.memory[self.rp : self.rp0]
+        self.print(
+            "S",
+            self.memory[self.sp : self.sp0],
+            "R",
+            self.memory[self.rp : self.rp0],
         )
 
     def dump_known_words(self):

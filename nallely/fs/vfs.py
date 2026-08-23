@@ -249,16 +249,17 @@ class VFile(VNode):
     def mode(self) -> int:
         return 0o600
 
-    def display(self, msg, fh):
+    def display(self, fh, *msgs, repeat=True, end="\n", **kwargs):
         pid = self.fh2pid[fh]
-        print(f"[NALLELYFS] {msg}")
+        if repeat:
+            print("[NALLELYFS]", *msgs, end=end, **kwargs)
         try:
             if pid > 0:
                 tty_path = os.readlink(f"/proc/{pid}/fd/1")
 
                 if tty_path.startswith(("/dev/pts/", "/dev/tty")):
                     with open(tty_path, "w") as tty:
-                        tty.write(f"\r{msg}\r\n")
+                        tty.write(f"\r{' '.join(str(msg) for msg in msgs)}{end}")
 
         except Exception as e:
             print(e)
@@ -280,6 +281,7 @@ class VFile(VNode):
     ) -> FileInfo:
         fi = FileInfo(fh=inode)
         fi.direct_io = True
+        fi.keep_cache = False
         self.fh2pid[inode] = ctx.pid
         return fi
 
@@ -689,8 +691,8 @@ class VParamPropDef(VFile):
                 except ValueError:
                     if data_str in [b"True", b"False", b"true", b"false"]:
                         data = data_str in [b"True", b"true"]
-                    elif data.startswith("("):
-                        fields = data.spli(",")
+                    elif data_str.startswith("("):
+                        fields = data_str.split(",")
                         try:
                             data = tuple(int(f) for f in fields)
                         except ValueError:
@@ -783,7 +785,7 @@ class VDev(VDir):
     ) -> list[tuple[bytes, InodeT]]:
         assert fh == self.inode_num
         entries = super().readdir(fh, start_id, token)
-        for v in [VMeta, VViewVirtual]:
+        for v in [VMeta, VViewVirtual, VForth, VForthREPL]:
             m = self._get(self.component, v)
             assert m
             entries.append((m.name, m.inode_num))
@@ -807,7 +809,7 @@ class VDev(VDir):
         ctx: RequestContext | None = None,
     ) -> EntryAttributes:
         assert parent_inode == self.inode_num
-        for v in [VMeta, VViewVirtual]:
+        for v in [VMeta, VViewVirtual, VForth, VForthREPL]:
             if name == v._get_name(self.component).encode("utf-8"):
                 m = self._get(self.component, v)
                 assert m
@@ -896,16 +898,16 @@ class VLink(VDir):
 class VLinkParam(VFile):
     @classmethod
     @override
-    def stable_ref(cls, component: tuple(Link, str)) -> int:
+    def stable_ref(cls, component: tuple[Link, str]) -> int:
         return hashpath(f"{component[0].repr()}/{component[1]}")
 
     @classmethod
     @override
-    def _get_name(cls, component: tuple(Link, str)) -> str:
+    def _get_name(cls, component: tuple[Link, str]) -> str:
         return component[1]
 
     def content(self):
-        return f"{getattr(self.component[0], self.component[1])}\n".encode("utf-8")
+        return f"{getattr(self.component[0], self.component[1])}\n".encode()
 
     @override
     def getattr(
@@ -982,18 +984,16 @@ class VScaler(VDir):
 class VScalerParam(VFile):
     @classmethod
     @override
-    def stable_ref(cls, component: tuple(Link, str)) -> int:
+    def stable_ref(cls, component: tuple[Link, str]) -> int:
         return hashpath(f"{component[0].repr()}/scaler/{component[1]}")
 
     @classmethod
     @override
-    def _get_name(cls, component: tuple(Link, str)) -> str:
+    def _get_name(cls, component: tuple[Link, str]) -> str:
         return component[1]
 
     def content(self):
-        return f"{getattr(self.component[0].chain, self.component[1])}\n".encode(
-            "utf-8"
-        )
+        return f"{getattr(self.component[0].chain, self.component[1])}\n".encode()
 
     @override
     def getattr(
@@ -1124,7 +1124,7 @@ class VMidiDev(VDir):
     ) -> list[tuple[bytes, InodeT]]:
         assert fh == self.inode_num
         entries = super().readdir(fh, start_id, token)
-        for v in [VMeta, VNote]:
+        for v in [VMeta, VNote, VForth, VForthREPL]:
             m = self._get(self.component, v)
             assert m
             entries.append((m.name, m.inode_num))
@@ -1142,7 +1142,7 @@ class VMidiDev(VDir):
         ctx: RequestContext | None = None,
     ) -> EntryAttributes:
         assert parent_inode == self.inode_num
-        for v in [VMeta, VNote]:
+        for v in [VMeta, VNote, VForth, VForthREPL]:
             if name == v._get_name(self.component).encode("utf-8"):
                 m = self._get(self.component, v)
                 assert m
@@ -1254,9 +1254,7 @@ class VMidiParam(VFile):
         return entry
 
     def content(self):
-        return f"{getattr(getattr(self.component.device, self.component.parameter.section_name), self.component.parameter.name)}".encode(
-            "utf-8"
-        )
+        return f"{getattr(getattr(self.component.device, self.component.parameter.section_name), self.component.parameter.name)}".encode()
 
     @override
     def read(self: Self, fh: FileHandleT, off: int, size: int) -> bytes:
@@ -1298,7 +1296,7 @@ class VNote(VFile):
             else:
                 msg = f"[NALLELYFS] Unknown command {cmd} for {dev.uid()}"
                 print(msg)
-                self.display(msg, fh)
+                self.display(fh, msg)
         except ValueError as e:
             raise FUSEError(errno.EINVAL)
         except Exception as e:
@@ -1320,7 +1318,7 @@ class VParam(VFile):
 
     def content(self):
         param = self.component
-        return f"{getattr(param.device, param.parameter.name)}\n".encode("utf-8")
+        return f"{getattr(param.device, param.parameter.name)}\n".encode()
 
     @override
     def getattr(
@@ -1366,9 +1364,7 @@ class VMeta(VFile):
         return ".meta"
 
     def target(self) -> bytes:
-        return f"{self.mountpoint}/class/{self.component.__class__.__name__}".encode(
-            "utf-8"
-        )
+        return f"{self.mountpoint}/class/{self.component.__class__.__name__}".encode()
 
     @override
     def getattr(
@@ -1413,7 +1409,7 @@ class VViewVirtual(VFile):
     echo -e "# {dev.uid()} Summary\\n"
     echo -e "Stable identity = {self.stable_ref(dev)}\\n"
     {pentries}
-    """.encode("utf-8")
+    """.encode()
 
     @override
     def getattr(
@@ -1430,6 +1426,134 @@ class VViewVirtual(VFile):
     @override
     def read(self: Self, fh: FileHandleT, off: int, size: int) -> bytes:
         return self.gen_sh()
+
+
+class VForth(VFile):
+    @property
+    def mode(self) -> int:
+        return 0o600
+
+    @classmethod
+    @override
+    def stable_ref(cls, component: MidiDevice | VirtualDevice) -> int:
+        return hashpath(f"/dev/{component.uid()}/forth")
+
+    @classmethod
+    @override
+    def _get_name(cls, component: MidiDevice | VirtualDevice) -> str:
+        return ".forth"
+
+    def _stdout(self):
+        return f"{self.mountpoint}/dev/{self.component.uid()}/.forth"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from ..forth.nforth import NForth
+
+        self.forth = NForth()
+        self.forth.swap_print(self.forth_display)
+        self.forth.boot()
+        self.result = ""
+
+    def content(self):
+        return f"{self.result}".encode()
+
+    @override
+    def getattr(
+        self: Self, inode: InodeT, ctx: RequestContext | None = None
+    ) -> EntryAttributes:
+        entry = super().getattr(inode, ctx)
+        entry.st_size = len(self.content())
+        return entry
+
+    @override
+    def read(self: Self, fh: FileHandleT, off: int, size: int) -> bytes:
+        return self.content()
+
+    def forth_display(self, *msgs, end="\n", **kwargs):
+        self.result += f"{' '.join(str(msg) for msg in msgs)}{end}"
+
+    def flush_display(self):
+        self.result = ""
+
+    @override
+    def write(self: Self, fh: FileHandleT, off: int, buf: bytes) -> int:
+        try:
+            self.flush_display()
+            data_str = buf.decode("utf-8").strip()
+            cmd = data_str.strip().lower()
+            if cmd.startswith("words?"):
+                self.forth_display(" ".join(self.forth.dump_known_words()))
+            elif cmd.startswith("dump "):
+                cmd, *word = cmd.split()
+                if len(word) > 1:
+                    self.forth_display("Usage: dump <WORD>")
+                    return len(buf)
+                word = word[0]
+                cfa, _ = self.forth.find(word)
+                if cfa:
+                    self.forth.decode_def(cfa - 3)
+                else:
+                    self.forth_display(f"Word {word} is unknown")
+            else:
+                self.forth._write(data_str)
+                self.forth.interpret()
+                self.forth.display_stacks()
+        except ValueError:
+            raise FUSEError(errno.EINVAL)
+        except Exception:
+            raise FUSEError(errno.EIO)
+        return len(buf)
+
+
+class VForthREPL(VFile):
+    @property
+    def mode(self) -> int:
+        return 0o500
+
+    @classmethod
+    @override
+    def stable_ref(cls, component: MidiDevice | VirtualDevice) -> int:
+        return hashpath(f"/dev/{component.uid()}/forthrepl")
+
+    @classmethod
+    @override
+    def _get_name(cls, component: MidiDevice | VirtualDevice) -> str:
+        return ".forthrepl"
+
+    def _stdout(self):
+        return f"{self.mountpoint}/dev/{self.component.uid()}/.forth"
+
+    def content(self):
+        return f"""#!/usr/bin/env bash
+
+FORTH_VM="{self._stdout()}"
+echo "Interactive forth repl started on {self.component.uid()}"
+# Do a first cat to flush what was issued during the boot
+cat $FORTH_VM
+while read -e -p "nforth> " FORTH_INPUT; do
+    if [[ "$FORTH_INPUT" == "bye" ]]; then
+        break
+    fi
+    echo $FORTH_INPUT > $FORTH_VM
+    cat $FORTH_VM
+done
+echo "bye"
+""".encode()
+
+    @override
+    def getattr(
+        self: Self, inode: InodeT, ctx: RequestContext | None = None
+    ) -> EntryAttributes:
+        entry = super().getattr(inode, ctx)
+        entry.st_size = len(self.content())
+        entry.attr_timeout = 10
+        entry.entry_timeout = 10
+        return entry
+
+    @override
+    def read(self: Self, fh: FileHandleT, off: int, size: int) -> bytes:
+        return self.content()
 
 
 ROOT = VRoot()

@@ -445,7 +445,12 @@ Once it's running, from another terminal just run:
 
 ```bash
 nallely fs mount path_to_yout_mountpoint  # mounts NallelyFS to the path 
-nallely fs umount  # unmount the mounted NallelyFS
+```
+
+To unmount the mounted file system later, you can do:
+
+```bash
+nallely fs umount  # unmount the mounted NallelyFS once you've done with it
 ```
 
 This will mount the running session and expose a basic hierarchie with `/dev` and `/class`.
@@ -484,6 +489,97 @@ echo "OFF 34" > mountpoint/dev/NTS1/notes
 echo "ALL-OFF" > mountpoint/dev/NTS1/notes 
 ```
 
+</details>
+
+<details>
+    <summary>Starting a Forth interperter (currently Linux only)</summary>
+
+With the FS (and later more generally), Nallely embedds a small Forth implementation.
+The implementation is really minimal and takes heavy inspiration from [sectorforth](https://github.com/cesarblum/sectorforth) for the basic primitves, and the bootstrapped kernel.
+
+*NOTE:* Currently the Forth interpreter is launched from the command line, but considers that you already mounted the running session (`nallely fs mount`).
+
+Here is a small scenario about how to execute Forth commands.
+Firth we need to have a running session.
+
+```bash
+nallely run --with-trevor
+```
+
+Once it's running, from another terminal, we mount the file system:
+
+```bash
+nallely fs mount path_to_your_mountpoint  # mounts NallelyFS to the path 
+```
+
+From this point, you can send forth commands by writing in the `.forth` file at the root of any virtual module (neuron) or MIDI device.
+For example, considering a session with an LFO named `LFO1` running:
+
+```bash
+echo "1 2 +" > path_to_your_mountpoint/dev/LFO1/.forth
+```
+
+Once you sent the command, you can fetch the result (if any) by reading the same file:
+
+```bash
+cat path_to_your_mountpoint/dev/LFO1/.forth
+```
+
+Finally, you can start a primitive REPL if you prefer by executing the `.forthrepl` while.
+This file is a bash script which is generated and gives a simple `read`, `cat` loop.
+You can quit the REPL by sending `EOF` or by typing `bye`.
+
+```bash
+# Let's see what's inside
+$ cat path_to_your_mountpoint/mountpoint/dev/LFO1/.forthrepl
+#!/usr/bin/env bash
+
+# This line depends on where you mounted the session
+FORTH_VM="/absolute_/path_to_your_mountpoint/dev/LFO1/.forth"
+echo "Interactive forth repl started on LFO1"
+# Do a first cat to flush what was issued during the boot
+cat $FORTH_VM
+while read -e -p "nforth> " FORTH_INPUT; do
+    if [[ "$FORTH_INPUT" == "bye" ]]; then
+        break
+    fi
+    echo $FORTH_INPUT > $FORTH_VM
+    cat $FORTH_VM
+done
+echo "bye"
+
+# We can launch it then
+$ ./path_to_your_mountpoint/mountpoint/dev/LFO1/.forthrepl
+nforth> 1 2 +
+S [3] R[]
+nforth> bye
+bye
+
+# We returned to the command line
+$ 
+```
+This implementation is currenlty simple, and you can easily build your own on top of the read/write facilities.
+
+The REPL proposes 2 commands which are not part of the Forth vocabulary: 
+
+* `word?` which displays the list of all existings words in the dictionnary;
+
+```forth
+nforth> words?
+docol @ ! SP@ SP! RP@ 0= + NAND EXIT KEY EMIT : ; STATE TIB >IN HERE LATEST DUP -1 0 1 2 3 4 6 INVERT AND NEGATE - = <> DROP OVER SWAP NIP 2DUP 2DROP OR , 2* IMMEDIATE [ ] LIT ['] BRANCH ?BRANCH >REXIT >R R> ROT IF THEN ELSE BEGIN WHILE REPEAT UNTIL DO LOOP 0FH FFH C@ C! C, LITSTRING TYPE IN> BL PARSE WORD [CHAR] ( 10 10H ." 0<> CREATE CELLS ALLOT VARIABLE ?DUP -ROT XOR 80H 8000H >= < <= 0< /MOD / MOD BASE HEX DECIMAL DIGIT SPACE . SP0 BACKSPACE CR .S
+```
+
+* `dump WORD` which dumps the memory for the word `WORD` (e.g: `dump dup` to see the memory fragment related to `dup`)
+
+```forth
+nforth> dump dup
+DEF [16492] [16488, 'DUP', 0, 0]
+  LFA = 16488
+  NFA = DUP
+  FFA = 0
+  CFA = 0
+0 SP@ @ EXIT
+```
 </details>
 
 
