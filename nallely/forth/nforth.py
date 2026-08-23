@@ -2,6 +2,7 @@
 Minimal forth.
 
 Host interpreter is inspired by sectorforth https://github.com/cesarblum/sectorforth/tree/master
+Added primitive: SP! (for DROP, otherwise DROP cannot work on 1 element stack and provokes an underflow)
 Bootstrapped kernel is a port of socrotforth's minimal examples
 """
 
@@ -14,6 +15,7 @@ if os.name == "nt":
 
     def readchar():  # type: ignore
         return msvcrt.getch().decode("utf-8", errors="ignore")
+
 else:
     import sys
     import termios
@@ -28,6 +30,15 @@ else:
         finally:
             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
         return ch
+
+
+class EmptyStack(Exception): ...
+
+
+class Colors:
+    ERROR = "\033[35m"
+    WARNING = "\033[33m"
+    END = "\033[0m"
 
 
 SPACE = ord(" ")
@@ -56,10 +67,6 @@ class NForth:
 
     def __post_init__(self):
         self._reset_machine()
-        self.primitive_id: int = 0
-        self.primitives = {}
-        self._in_next = False
-        self._setup_primitives()
 
     def _reset_machine(self):
         self.memory[self.toin] = 0
@@ -68,6 +75,10 @@ class NForth:
         self.memory[self.latest] = 0
         self.sp = self.sp0
         self.rp = self.rp0
+        self._in_next = False
+        self.primitive_id: int = 0
+        self.primitives = {}
+        self._setup_primitives()
 
     def _soft_reset(self):
         self.sp = self.sp0
@@ -78,6 +89,7 @@ class NForth:
         self._register_primitive("@", self.fetch)
         self._register_primitive("!", self.store)
         self._register_primitive("SP@", self.spfetch)
+        self._register_primitive("SP!", self.spstore)
         self._register_primitive("RP@", self.rpfetch)
         self._register_primitive("0=", self.zeroeq)
         self._register_primitive("+", self.add)
@@ -94,11 +106,6 @@ class NForth:
         self._register_primitive(
             "LATEST", lambda: (self.pushd(self.latest), self.next())
         )
-        # self._register_primitive(".", self.dot)
-
-    # def dot(self):
-    #     print(self.memory[self.sp])
-    #     self.next()
 
     def _register_primitive(self, name, func, immediate=False):
         _id = self.primitive_id
@@ -180,19 +187,23 @@ class NForth:
         self.sp -= 1
         self.memory[self.sp] = value
 
-    def popd(self, count=1):
-        value = self.memory[self.sp : self.sp + count]
-        self.sp += count
-        return value[0] if count == 1 else value
+    def popd(self) -> Any:
+        if self.sp == self.sp0:
+            raise EmptyStack("data")
+        value = self.memory[self.sp]
+        self.sp += 1
+        return value
 
     def pushr(self, value):
         self.rp -= 1
         self.memory[self.rp] = value
 
-    def popr(self, count=1):
-        value = self.memory[self.rp : self.rp + count]
-        self.rp += count
-        return value[0] if count == 1 else value
+    def popr(self) -> int:
+        if self.rp == self.rp0:
+            raise EmptyStack("return")
+        value = self.memory[self.rp]
+        self.rp += 1
+        return value
 
     def fetch(self):
         addr = self.popd()
@@ -200,13 +211,21 @@ class NForth:
         self.next()
 
     def store(self):
-        addr, value = self.popd(2)
+        addr = self.popd()
+        value = self.popd()
         self.memory[addr] = value
         self.next()
 
     def spfetch(self):
         sp = self.sp
         self.pushd(sp)
+        self.next()
+
+    def spstore(self):
+        value = self.popd()
+        if value > self.sp0:
+            raise EmptyStack("data")
+        self.sp = value
         self.next()
 
     def rpfetch(self):
@@ -219,12 +238,14 @@ class NForth:
         self.next()
 
     def add(self):
-        b, a = self.popd(2)
+        b = self.popd()
+        a = self.popd()
         self.pushd(a + b)
         self.next()
 
     def nand(self):
-        b, a = self.popd(2)
+        b = self.popd()
+        a = self.popd()
         self.pushd(~(a & b))
         self.next()
 
@@ -321,11 +342,16 @@ class NForth:
         self._soft_reset()
 
     def interpret(self):
-        while True:
-            word = self._token()
-            if not word:
-                return
-            self.interpret_word(word)
+        try:
+            while True:
+                word = self._token()
+                if not word:
+                    return True
+                self.interpret_word(word)
+        except EmptyStack as e:
+            print(f"{Colors.ERROR}\nError! {e.args[0]} stack is empty{Colors.END}")
+            self._soft_reset()
+            return False
 
     def boot(self):
         self._write("""
@@ -343,7 +369,7 @@ class NForth:
         : - negate + ;
         : = - 0= ;
         : <> = invert ;
-        : drop dup - + ;
+        : drop sp@ 1 + sp! ;
         : over sp@ 1 + @ ;
         : swap over over sp@ 3 + ! sp@ 1 + ! ;
         : nip swap drop ;
@@ -539,18 +565,29 @@ class NForth:
             then drop ;
 
         """)
-        self.interpret()
+        return self.interpret()
 
-    def boot2(self):
+    fullboot = boot
+
+    def minimalboot(self):
         self._write("""
-
-
+            : dup sp@ @ ;
+            : -1 dup dup nand dup dup nand nand ;
         """)
-        self.interpret()
+        return self.interpret()
 
     def display_stacks(self):
-        print("S", self.memory[self.sp : self.sp0])
-        print("R", self.memory[self.rp : self.rp0])
+        print(
+            "S", self.memory[self.sp : self.sp0], "R", self.memory[self.rp : self.rp0]
+        )
+
+    def dump_known_words(self):
+        latest = self.memory[self.latest]
+        words = []
+        while latest != 0:
+            words.insert(0, self.memory[latest + 1])
+            latest = self.memory[latest]
+        return words
 
 
 import cmd
@@ -564,13 +601,38 @@ class ForthShell(cmd.Cmd):
         super().__init__(*args, **kwargs)
         self.forth = NForth()
         print("Booting Forth kernel...", end="")
-        self.forth.boot()
-        print("[OK]")
+        self._boot()
+
+    def dump_words(self):
+        print("Known words are (oldest to newest)")
+        print(" ".join(self.forth.dump_known_words()))
+
+    def _boot(self, mode="full"):
+        self.forth._reset_machine()
+        res = getattr(self.forth, f"{mode}boot")()
+        if res:
+            print("[OK]")
+        else:
+            print("[KO] An error occurred during kernel boot!")
 
     @override
     def default(self, line):
         self.forth._write(line)
         self.forth.interpret()
+
+    def do_boot(self, args):
+        if args not in ["full", "minimal"]:
+            print("arg must be either full or minimal")
+            return
+        print(f"Reset the machine and start with a {args} boot...", end="")
+        self._boot(args)
+        self.dump_words()
+
+    def do_help(self, arg: str):
+        self.dump_words()
+
+    def emptyline(self):
+        return False
 
     @override
     def postcmd(self, stop: bool, line: str) -> bool:
@@ -586,5 +648,6 @@ class ForthShell(cmd.Cmd):
     do_EOF = do_bye
 
 
-shell = ForthShell()
-shell.cmdloop()
+if __name__ == "__main__":
+    shell = ForthShell()
+    shell.cmdloop()
