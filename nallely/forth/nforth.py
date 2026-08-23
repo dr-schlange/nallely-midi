@@ -607,6 +607,13 @@ class ForthShell(cmd.Cmd):
         print("Known words are (oldest to newest)")
         print(" ".join(self.forth.dump_known_words()))
 
+    def do_dump(self, args):
+        cfa, _ = self.forth.find(args)
+        if cfa:
+            self.forth.decode_def(cfa - 3)
+        else:
+            print(f"Word {args} is unknown")
+
     def _boot(self, mode="full"):
         self.forth._reset_machine()
         res = getattr(self.forth, f"{mode}boot")()
