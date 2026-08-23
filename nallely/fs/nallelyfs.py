@@ -102,6 +102,18 @@ class NallelyFS(pyfuse3.Operations):
             return d.write(fh, off, buf)
         raise pyfuse3.FUSEError(errno.EBADF)
 
+    async def symlink(self, parent_inode: int, name: bytes, target: bytes, ctx):
+        d = self._registry.get(parent_inode)
+        if d is not None:
+            return d.symlink(parent_inode, name, target, ctx)
+        raise pyfuse3.FUSEError(errno.ENOENT)
+
+    async def unlink(self, parent_inode: int, name: bytes, ctx=None):
+        d = self._registry.get(parent_inode)
+        if d is not None:
+            return d.unlink(parent_inode, name, ctx)
+        raise pyfuse3.FUSEError(errno.ENOENT)
+
 
 class NallelyFSThread(threading.Thread):
     def __init__(self, mountpoint, session):

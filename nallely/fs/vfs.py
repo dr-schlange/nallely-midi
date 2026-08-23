@@ -175,6 +175,16 @@ class VNode:
         ctx: RequestContext | None = None,
     ) -> EntryAttributes: ...
     def write(self: Self, fh: FileHandleT, off: int, buf: bytes) -> int: ...
+    def symlink(
+        self,
+        parent_inode: int,
+        name: bytes,
+        target: bytes,
+        ctx: RequestContext | None = None,
+    ) -> EntryAttributes: ...
+    def unlink(
+        self, parent_inode: int, name: bytes, ctx: RequestContext | None = None
+    ): ...
 
 
 class VDir(VNode):
