@@ -539,16 +539,16 @@ class NForth:
             then drop ;
 
         """)
+        self.interpret()
 
     def boot2(self):
         self._write("""
 
 
         """)
+        self.interpret()
 
     def display_stacks(self):
-        print("SP", self.sp)
-        print("RP", self.rp)
         print("S", self.memory[self.sp : self.sp0])
         print("R", self.memory[self.rp : self.rp0])
 
@@ -582,8 +582,6 @@ class ForthShell(cmd.Cmd):
 
     def do_bye(self, _):
         return True
-
-    def help_words(self, args): ...
 
     do_EOF = do_bye
 
