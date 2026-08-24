@@ -57,10 +57,11 @@ class NForth:
     # constants to know
     sp0: int = 0x3FFF8
     rp0: int = 0x1DBF8
-    origin: int = 0x4048  # Not a system var, but need to be tweaked if other changes!
+    origin: int = 0x4050  # Not a system var, but need to be tweaked if other changes!
     # system vars
-    here: int = 0x4040
-    latest: int = 0x4038
+    here: int = 0x4048
+    latest: int = 0x4040
+    base: int = 0x4038
     rp: int = 0x4030
     sp: int = 0x4028
     in_next: int = 0x4020
@@ -93,6 +94,7 @@ class NForth:
         self.__newprint = None
 
     def _reset_machine(self):
+        self.memory[self.base] = 10
         self.memory[self.ip] = 0
         self.memory[self.w] = 0
         self.memory[self.toin] = 0
@@ -114,6 +116,7 @@ class NForth:
 
     def _setup_primitives(self):
         self.docol_id, _ = self._register_primitive("docol", self.docol)
+        _, self.lit_cfa = self._register_primitive("LIT", self.lit)
         self._register_primitive("@", self.fetch)
         self._register_primitive("!", self.store)
         self._register_primitive("SP@", self.spfetch)
@@ -134,10 +137,13 @@ class NForth:
         self._register_primitive(
             "LATEST", lambda: (self.pushd(self.latest), self.next())
         )
+        self._register_primitive("SP0", lambda: (self.pushd(self.sp0), self.next()))
+        self._register_primitive("RP0", lambda: (self.pushd(self.rp0), self.next()))
         self._register_primitive("SP", lambda: (self.pushd(self.sp), self.next()))
         self._register_primitive("RP", lambda: (self.pushd(self.rp), self.next()))
         self._register_primitive("W", lambda: (self.pushd(self.w), self.next()))
         self._register_primitive("IP", lambda: (self.pushd(self.ip), self.next()))
+        self._register_primitive("BASE", lambda: (self.pushd(self.base), self.next()))
 
     def _register_primitive(self, name, func, immediate=False):
         _id = self.primitive_id
@@ -306,6 +312,13 @@ class NForth:
         self.memory[ipaddr] = self.memory[self.w] + 1
         self.next()
 
+    def lit(self):
+        ipaddr = self.ip
+        value = self.memory[self.memory[ipaddr]]
+        self.memory[ipaddr] += 1
+        self.pushd(value)
+        self.next()
+
     def colon(self):
         token = self._token()
         cfa = self._register_word(token, cfa=self.docol_id)
@@ -360,6 +373,18 @@ class NForth:
             return cfa, self.memory[lfa + 2]
         return None, None
 
+    def _find(self):
+        word = self._token()
+        lfa = self.memory[self.latest]
+        word = word.upper()
+        while self.memory[lfa + 1] != word and lfa != 0:
+            lfa = self.memory[lfa]
+        if lfa != 0:
+            cfa = lfa + 3
+
+            return cfa, self.memory[lfa + 2]
+        return None, None
+
     def execute(self, cfa):
         self.memory[self.ip] = 0  # top-level call
         self.memory[self.w] = cfa
@@ -378,8 +403,22 @@ class NForth:
             else:
                 self.compile(cfa)
             return
-        self.print(f"{Colors.ERROR}Unknown {word}{Colors.END}")
-        self._soft_reset()
+        else:
+            base = self.memory[self.base]
+            try:
+                val = int(word, base=base)
+            except ValueError:
+                try:
+                    val = float(word)
+                except ValueError:
+                    self.print(f"{Colors.ERROR}Unknown {word}{Colors.END}")
+                    return
+            if immediate or self.memory[self.state] == 0:
+                self.pushd(val)
+            else:
+                self.compile(self.lit_cfa)
+                self.compile(val)
+        # self._soft_reset()
 
     def interpret(self):
         try:
@@ -401,222 +440,234 @@ class NForth:
             self.memory[self.memory[self.rp] : self.rp0][::-1],
         )
 
-    def boot(self):
+    # def historicalboot(self):
+    #     self._write("""
+    #     : dup sp@ @ ;
+    #     : -1 dup dup nand dup dup nand nand ;
+    #     : 0 -1 dup nand ;
+    #     : 1 -1 dup + dup nand ;
+    #     : 2 1 1 + ;
+    #     : 3 1 2 + ;
+    #     : 4 2 2 + ;
+    #     : 6 2 4 + ;
+    #     : invert dup nand ;
+    #     : and nand invert ;
+    #     : negate invert 1 + ;
+    #     : - negate + ;
+    #     : = - 0= ;
+    #     : <> = invert ;
+    #     : drop sp@ 1 + sp! ;
+    #     : over sp@ 1 + @ ;
+    #     : swap over over sp@ 3 + ! sp@ 1 + ! ;
+    #     : nip swap drop ;
+    #     : 2dup over over ;
+    #     : 2drop drop drop ;
+    #     : or invert swap invert and invert ;
+    #     : , here @ ! here @ 1 + here ! ;
+    #     : 2* dup + ;
+    #     : immediate latest @ 2 + 1 swap ! ;
+    #     : [ 0 state ! ; immediate
+    #     : ] 1 state ! ;
+    #     : lit rp@ @ dup 1 + rp@ ! @ ;
+    #     : ['] rp@ @ dup 1 + rp@ ! @ ;
+    #     : branch rp@ @ dup @ + rp@ ! ;
+    #     : ?branch 0= rp@ @ @ 1 - and rp@ @ + 1 + rp@ ! ;
+    #     : >rexit rp@ ! ;
+    #     : >r
+    #         rp@ @
+    #         swap rp@ !
+    #         >rexit
+    #     ;
+    #     : r>
+    #         rp@ 1 + @
+    #         rp@ @ rp@ 1 + !
+    #         lit [ here @ 3 + , ]
+    #         rp@ !
+    #     ;
+    #     : rot >r swap r> swap ;
+    #     : if
+    #         ['] ?branch ,
+    #         here @
+    #         0 ,
+    #         ; immediate
+    #     : then
+    #         dup
+    #         here @ swap -
+    #         swap !
+    #         ; immediate
+    #     : else
+    #         ['] branch ,
+    #         here @
+    #         0 ,
+    #         swap
+    #         dup here @ swap -
+    #         swap !
+    #         ; immediate
+    #     : begin
+    #         here @
+    #         ; immediate
+    #     : while
+    #         ['] ?branch ,
+    #         here @
+    #         0 ,
+    #         ; immediate
+    #     : repeat
+    #         swap
+    #         ['] branch , here @ - ,
+    #         dup here @ swap - swap !
+    #         ; immediate
+    #     : until
+    #         ['] ?branch , here @ - ,
+    #         ; immediate
+    #     : do
+    #         here @
+    #         ['] >r , ['] >r ,
+    #         ; immediate
+    #     : loop
+    #         ['] r> , ['] r> ,
+    #         ['] lit , 1 , ['] + ,
+    #         ['] 2dup , ['] = ,
+    #         ['] ?branch , here @ - ,
+    #         ['] 2drop ,
+    #     ; immediate
+    #     : 0fh lit [ 4 4 4 4 + + + 1 - , ] ;
+    #     : ffh lit [ 0fh 2* 2* 2* 2* 0fh or , ] ;
+    #     : c@ @ ffh and ;
+    #     : c!
+    #         dup @
+    #         ffh invert and
+    #         rot ffh and
+    #         or swap !
+    #     ;
+    #     : c, here @ c! here @ 1 + here ! ;
+    #     : litstring
+    #         rp@ @ dup 1 + rp@ ! @
+    #         rp@ @
+    #         swap
+    #         2dup + rp@ !
+    #     ;
+    #     : type 0 do dup c@ emit 1 + loop drop ;
+    #     : in> tib >in @ + c@ >in dup @ 1 + swap ! ;
+    #     : bl lit [ 1 2* 2* 2* 2* 2* , ] ;
+    #     : parse
+    #         in> drop
+    #         tib >in @ +
+    #         swap 0 begin
+    #             over in>
+    #         <> while
+    #             1 +
+    #         repeat swap
+    #         bl = if
+    #             >in dup @ 1 - swap !
+    #         then
+    #     ;
+    #     : word
+    #         in> drop
+    #         begin dup in> <> until
+    #         >in @ 2 - >in !
+    #         parse
+    #     ;
+    #     : [char] ['] lit , bl word drop c@ , ; immediate
+    #     : ( [char] ) parse 2drop ; immediate
+    #     ( finally can have comments from here! )
+    #     : 10 ( -- 10 ) lit [ 4 4 2 + + , ] ;
+    #     : 10h ( -- 10h ) lit [ 4 4 4 4 + + + , ] ;
+    #     : ."
+    #         [char] " parse
+    #         state @ if
+    #             ['] litstring ,
+    #             dup ,
+    #             0 do dup c@ c, 1 + loop drop
+    #             ['] type ,
+    #         else
+    #             type
+    #         then ; immediate
+    #     : 0<> 0= invert ;
+    #     : create
+    #         :
+    #         ['] lit ,
+    #         here @ 2 + ,
+    #         ['] exit ,
+    #         0 state !
+    #     ;
+    #     : cells lit [ 1 , ] ;
+    #     : allot here @ + here ! ;
+    #     : variable create cells allot ;
+    #     : ?dup dup ?branch [ 2 , ] dup ;
+    #     : -rot rot rot ;
+    #     : xor 2dup and invert -rot or and ;
+    #     : 80h 1 2* 2* 2* 2* 2* 2* 2* ;
+    #     : 8000h lit [ 80h 2* 2* 2* 2* 2* 2* 2* 2* , ] ;
+    #     : >= - 8000h and 0= ;
+    #     : < >= invert ;
+    #     : <= 2dup < -rot = or ;
+    #     : 0< 0 < ;
+    #     : /mod
+    #         over 0< -rot
+    #         2dup xor 0< -rot
+    #         dup 0< if negate then
+    #         swap dup 0< if negate then
+    #         0 >r begin
+    #                 over 2dup >=
+    #             while
+    #                 -
+    #                 r> 1 + >r
+    #             repeat
+    #             drop nip
+    #             rot if negate then
+    #             r> rot
+    #             if negate then ;
+    #     : / /mod nip ;
+    #     : mod /mod drop ;
+
+    #     ( variable base )
+    #     10 base !
+    #     : hex 10h base ! ;
+    #     : decimal 10 base ! ;
+    #     : digit
+    #         dup 10 < if [char] 0 + else 10 - [char] A + then ;
+    #     : space bl emit ;
+    #     : .
+    #         -1 swap
+    #         dup 0< if negate -1 else 0 then
+    #         >r
+    #         begin base @ /mod ?dup 0= until
+    #         r> if [char] - emit then
+    #         begin digit emit dup -1 = until drop
+    #         space ;
+
+    #     : sp0 lit [ sp@ , ] ;
+
+    #     : backspace lit [ 4 4 + , ] emit ;
+    #     : cr lit [ 4 1 + 2* , ] emit ;
+    #     : .s
+    #         sp@ 0 swap begin
+    #             dup sp0 <
+    #         while
+    #             1 +
+    #             swap 1 + swap
+    #         repeat swap
+    #         [char] < emit dup . backspace [char] > emit space
+    #         ?dup if
+    #             0 do 1 - dup @ . loop
+    #         then drop ;
+
+    #     """)
+    #     return self.interpret()
+
+    def fullboot(self):
         self._write("""
-        : dup sp@ @ ;
-        : -1 dup dup nand dup dup nand nand ;
-        : 0 -1 dup nand ;
-        : 1 -1 dup + dup nand ;
-        : 2 1 1 + ;
-        : 3 1 2 + ;
-        : 4 2 2 + ;
-        : 6 2 4 + ;
-        : invert dup nand ;
-        : and nand invert ;
-        : negate invert 1 + ;
-        : - negate + ;
-        : = - 0= ;
-        : <> = invert ;
-        : drop sp@ 1 + sp! ;
-        : over sp@ 1 + @ ;
-        : swap over over sp@ 3 + ! sp@ 1 + ! ;
-        : nip swap drop ;
-        : 2dup over over ;
-        : 2drop drop drop ;
-        : or invert swap invert and invert ;
-        : , here @ ! here @ 1 + here ! ;
-        : 2* dup + ;
-        : immediate latest @ 2 + 1 swap ! ;
-        : [ 0 state ! ; immediate
-        : ] 1 state ! ;
-        : lit rp@ @ dup 1 + rp@ ! @ ;
-        : ['] rp@ @ dup 1 + rp@ ! @ ;
-        : branch rp@ @ dup @ + rp@ ! ;
-        : ?branch 0= rp@ @ @ 1 - and rp@ @ + 1 + rp@ ! ;
-        : >rexit rp@ ! ;
-        : >r
-            rp@ @
-            swap rp@ !
-            >rexit
-        ;
-        : r>
-            rp@ 1 + @
-            rp@ @ rp@ 1 + !
-            lit [ here @ 3 + , ]
-            rp@ !
-        ;
-        : rot >r swap r> swap ;
-        : if
-            ['] ?branch ,
-            here @
-            0 ,
-            ; immediate
-        : then
-            dup
-            here @ swap -
-            swap !
-            ; immediate
-        : else
-            ['] branch ,
-            here @
-            0 ,
-            swap
-            dup here @ swap -
-            swap !
-            ; immediate
-        : begin
-            here @
-            ; immediate
-        : while
-            ['] ?branch ,
-            here @
-            0 ,
-            ; immediate
-        : repeat
-            swap
-            ['] branch , here @ - ,
-            dup here @ swap - swap !
-            ; immediate
-        : until
-            ['] ?branch , here @ - ,
-            ; immediate
-        : do
-            here @
-            ['] >r , ['] >r ,
-            ; immediate
-        : loop
-            ['] r> , ['] r> ,
-            ['] lit , 1 , ['] + ,
-            ['] 2dup , ['] = ,
-            ['] ?branch , here @ - ,
-            ['] 2drop ,
-        ; immediate
-        : 0fh lit [ 4 4 4 4 + + + 1 - , ] ;
-        : ffh lit [ 0fh 2* 2* 2* 2* 0fh or , ] ;
-        : c@ @ ffh and ;
-        : c!
-            dup @
-            ffh invert and
-            rot ffh and
-            or swap !
-        ;
-        : c, here @ c! here @ 1 + here ! ;
-        : litstring
-            rp@ @ dup 1 + rp@ ! @
-            rp@ @
-            swap
-            2dup + rp@ !
-        ;
-        : type 0 do dup c@ emit 1 + loop drop ;
-        : in> tib >in @ + c@ >in dup @ 1 + swap ! ;
-        : bl lit [ 1 2* 2* 2* 2* 2* , ] ;
-        : parse
-            in> drop
-            tib >in @ +
-            swap 0 begin
-                over in>
-            <> while
-                1 +
-            repeat swap
-            bl = if
-                >in dup @ 1 - swap !
-            then
-        ;
-        : word
-            in> drop
-            begin dup in> <> until
-            >in @ 2 - >in !
-            parse
-        ;
-        : [char] ['] lit , bl word drop c@ , ; immediate
-        : ( [char] ) parse 2drop ; immediate
-        ( finally can have comments from here! )
-        : 10 ( -- 10 ) lit [ 4 4 2 + + , ] ;
-        : 10h ( -- 10h ) lit [ 4 4 4 4 + + + , ] ;
-        : ."
-            [char] " parse
-            state @ if
-                ['] litstring ,
-                dup ,
-                0 do dup c@ c, 1 + loop drop
-                ['] type ,
-            else
-                type
-            then ; immediate
-        : 0<> 0= invert ;
-        : create
-            :
-            ['] lit ,
-            here @ 2 + ,
-            ['] exit ,
-            0 state !
-        ;
-        : cells lit [ 1 , ] ;
-        : allot here @ + here ! ;
-        : variable create cells allot ;
-        : ?dup dup ?branch [ 2 , ] dup ;
-        : -rot rot rot ;
-        : xor 2dup and invert -rot or and ;
-        : 80h 1 2* 2* 2* 2* 2* 2* 2* ;
-        : 8000h lit [ 80h 2* 2* 2* 2* 2* 2* 2* 2* , ] ;
-        : >= - 8000h and 0= ;
-        : < >= invert ;
-        : <= 2dup < -rot = or ;
-        : 0< 0 < ;
-        : /mod
-            over 0< -rot
-            2dup xor 0< -rot
-            dup 0< if negate then
-            swap dup 0< if negate then
-            0 >r begin
-                    over 2dup >=
-                while
-                    -
-                    r> 1 + >r
-                repeat
-                drop nip
-                rot if negate then
-                r> rot
-                if negate then ;
-        : / /mod nip ;
-        : mod /mod drop ;
+: 0xA 10 ;
+: decimal 0xA base ! ;
+: hex 16 base ! ;
+: dup sp@ @ ;
+: sflush sp0 sp! ;
+: drop sp@ 1 + sp! ;
 
-        variable base
-        10 base !
-        : hex 10h base ! ;
-        : decimal 10 base ! ;
-        : digit
-            dup 10 < if [char] 0 + else 10 - [char] A + then ;
-        : space bl emit ;
-        : .
-            -1 swap
-            dup 0< if negate -1 else 0 then
-            >r
-            begin base @ /mod ?dup 0= until
-            r> if [char] - emit then
-            begin digit emit dup -1 = until drop
-            space ;
-
-        : sp0 lit [ sp@ , ] ;
-
-        : backspace lit [ 4 4 + , ] emit ;
-        : cr lit [ 4 1 + 2* , ] emit ;
-        : .s
-            sp@ 0 swap begin
-                dup sp0 <
-            while
-                1 +
-                swap 1 + swap
-            repeat swap
-            [char] < emit dup . backspace [char] > emit space
-            ?dup if
-                0 do 1 - dup @ . loop
-            then drop ;
-
-        """)
+""")
         return self.interpret()
 
-    fullboot = boot
+    boot = fullboot
 
     def minimalboot(self):
         self._write("""
