@@ -52,15 +52,15 @@ RETURN = 13
 
 @dataclass
 class NForth:
-    w: int = 0
     cell_size: int = 1
     ip: int = 0
     memory: list[Any] = field(default_factory=lambda: [0] * 0x3FFFC)
     sp0: int = 0x3FFF8
     rp0: int = 0x1DBF8
-    origin: int = 0x4020
-    here: int = 0x4018
-    latest: int = 0x4010
+    origin: int = 0x4028
+    here: int = 0x4020
+    latest: int = 0x4018
+    w: int = 0x4010
     toin: int = 0x4008
     state: int = 0x4000
     tib: int = 0x0000
@@ -88,6 +88,7 @@ class NForth:
         self.__newprint = None
 
     def _reset_machine(self):
+        self.memory[self.w] = 0
         self.memory[self.toin] = 0
         self.memory[self.tib : self.tib + self.state] = [0] * (self.state - self.tib)
         self.memory[self.here] = self.origin
@@ -195,9 +196,9 @@ class NForth:
         self._in_next = True
         try:
             while self.ip != 0:
-                self.w = self.memory[self.ip]
+                self.memory[self.w] = self.memory[self.ip]
                 self.ip += 1
-                exec_id = self.memory[self.w]
+                exec_id = self.memory[self.memory[self.w]]
                 self.primitives[exec_id]()
         finally:
             self._in_next = False
@@ -283,7 +284,7 @@ class NForth:
 
     def docol(self):
         self.pushr(self.ip)
-        self.ip = self.w + 1
+        self.ip = self.memory[self.w] + 1
         self.next()
 
     def colon(self):
@@ -342,7 +343,7 @@ class NForth:
 
     def execute(self, cfa):
         self.ip = 0  # top-level call
-        self.w = cfa
+        self.memory[self.w] = cfa
         self.primitives[self.memory[cfa]]()
 
     def compile(self, cfa):
