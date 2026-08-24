@@ -133,6 +133,10 @@ class NForth:
         self._register_primitive(
             "LATEST", lambda: (self.pushd(self.latest), self.next())
         )
+        self._register_primitive("SP", lambda: (self.pushd(self.sp), self.next()))
+        self._register_primitive("RP", lambda: (self.pushd(self.rp), self.next()))
+        self._register_primitive("W", lambda: (self.pushd(self.w), self.next()))
+        self._register_primitive("IP", lambda: (self.pushd(self.ip), self.next()))
 
     def _register_primitive(self, name, func, immediate=False):
         _id = self.primitive_id
