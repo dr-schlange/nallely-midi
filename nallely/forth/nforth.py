@@ -57,12 +57,13 @@ class NForth:
     # constants to know
     sp0: int = 0x3FFF8
     rp0: int = 0x1DBF8
-    origin: int = 0x4040  # Not a system var, but need to be tweaked if other changes!
+    origin: int = 0x4048  # Not a system var, but need to be tweaked if other changes!
     # system vars
-    here: int = 0x4038
-    latest: int = 0x4030
-    rp: int = 0x4028
-    sp: int = 0x4020
+    here: int = 0x4040
+    latest: int = 0x4038
+    rp: int = 0x4030
+    sp: int = 0x4028
+    in_next: int = 0x4020
     ip: int = 0x4018
     w: int = 0x4010
     toin: int = 0x4008
@@ -100,7 +101,7 @@ class NForth:
         self.memory[self.latest] = 0
         self.memory[self.sp] = self.sp0
         self.memory[self.rp] = self.rp0
-        self._in_next = False
+        self.memory[self.in_next] = 0
         self.primitive_id: int = 0
         self.primitives = {}
         self._setup_primitives()
@@ -202,38 +203,44 @@ class NForth:
         self.print(self.memory[self.sp0 : self.memory[self.sp] - 1 : -1])
 
     def next(self):
-        if self._in_next:
+        if self.memory[self.in_next]:
             return
-        self._in_next = True
+        self.memory[self.in_next] = 1
         try:
-            while self.memory[self.ip] != 0:
-                self.memory[self.w] = self.memory[self.memory[self.ip]]
-                self.memory[self.ip] += 1
-                exec_id = self.memory[self.memory[self.w]]
+            ipaddr = self.ip
+            waddr = self.w
+            while self.memory[ipaddr] != 0:
+                self.memory[waddr] = self.memory[self.memory[ipaddr]]
+                self.memory[ipaddr] += 1
+                exec_id = self.memory[self.memory[waddr]]
                 self.primitives[exec_id]()
         finally:
-            self._in_next = False
+            self.memory[self.in_next] = 0
 
     def pushd(self, value):
-        self.memory[self.sp] -= 1
-        self.memory[self.memory[self.sp]] = value
+        spaddr = self.sp
+        self.memory[spaddr] -= 1
+        self.memory[self.memory[spaddr]] = value
 
     def popd(self) -> Any:
-        if self.memory[self.sp] == self.sp0:
+        spaddr = self.sp
+        if self.memory[spaddr] == self.sp0:
             raise EmptyStack("data")
-        value = self.memory[self.memory[self.sp]]
-        self.memory[self.sp] += 1
+        value = self.memory[self.memory[spaddr]]
+        self.memory[spaddr] += 1
         return value
 
     def pushr(self, value):
-        self.memory[self.rp] -= 1
-        self.memory[self.memory[self.rp]] = value
+        rpaddr = self.rp
+        self.memory[rpaddr] -= 1
+        self.memory[self.memory[rpaddr]] = value
 
     def popr(self) -> int:
-        if self.memory[self.rp] == self.rp0:
+        rpaddr = self.rp
+        if self.memory[rpaddr] == self.rp0:
             raise EmptyStack("return")
-        value = self.memory[self.memory[self.rp]]
-        self.memory[self.rp] += 1
+        value = self.memory[self.memory[rpaddr]]
+        self.memory[rpaddr] += 1
         return value
 
     def fetch(self):
@@ -294,8 +301,9 @@ class NForth:
         self.next()
 
     def docol(self):
-        self.pushr(self.memory[self.ip])
-        self.memory[self.ip] = self.memory[self.w] + 1
+        ipaddr = self.ip
+        self.pushr(self.memory[ipaddr])
+        self.memory[ipaddr] = self.memory[self.w] + 1
         self.next()
 
     def colon(self):
@@ -550,7 +558,7 @@ class NForth:
         : -rot rot rot ;
         : xor 2dup and invert -rot or and ;
         : 80h 1 2* 2* 2* 2* 2* 2* 2* ;
-        : 8000h lit [ 0 c, 80h c, ] ;
+        : 8000h lit [ 80h 2* 2* 2* 2* 2* 2* 2* 2* , ] ;
         : >= - 8000h and 0= ;
         : < >= invert ;
         : <= 2dup < -rot = or ;
@@ -559,6 +567,7 @@ class NForth:
             over 0< -rot
             2dup xor 0< -rot
             dup 0< if negate then
+            swap dup 0< if negate then
             0 >r begin
                     over 2dup >=
                 while
@@ -596,12 +605,12 @@ class NForth:
             sp@ 0 swap begin
                 dup sp0 <
             while
-                2 +
+                1 +
                 swap 1 + swap
             repeat swap
             [char] < emit dup . backspace [char] > emit space
             ?dup if
-                0 do 2 - dup @ . loop
+                0 do 1 - dup @ . loop
             then drop ;
 
         """)
