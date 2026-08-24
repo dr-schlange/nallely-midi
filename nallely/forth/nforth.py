@@ -55,11 +55,16 @@ class NForth:
     cell_size: int = 1
     ip: int = 0
     memory: list[Any] = field(default_factory=lambda: [0] * 0x3FFFC)
+    # constants to know
     sp0: int = 0x3FFF8
     rp0: int = 0x1DBF8
-    origin: int = 0x4028
-    here: int = 0x4020
-    latest: int = 0x4018
+    # system vars
+    origin: int = 0x4040  # Not a system var, but need to be tweaked if other change
+    here: int = 0x4038
+    latest: int = 0x4030
+    rp: int = 0x4028
+    sp: int = 0x4020
+    _ip: int = 0x4018
     w: int = 0x4010
     toin: int = 0x4008
     state: int = 0x4000
@@ -93,16 +98,17 @@ class NForth:
         self.memory[self.tib : self.tib + self.state] = [0] * (self.state - self.tib)
         self.memory[self.here] = self.origin
         self.memory[self.latest] = 0
-        self.sp = self.sp0
-        self.rp = self.rp0
+        self.memory[self.sp] = self.sp0
+        self.memory[self.rp] = self.rp0
         self._in_next = False
         self.primitive_id: int = 0
         self.primitives = {}
         self._setup_primitives()
 
     def _soft_reset(self):
-        self.sp = self.sp0
-        self.rp = self.rp0
+        self.memory[self.w] = 0
+        self.memory[self.sp] = self.sp0
+        self.memory[self.rp] = self.rp0
 
     def _setup_primitives(self):
         self.docol_id, _ = self._register_primitive("docol", self.docol)
@@ -188,7 +194,7 @@ class NForth:
         self.print(f"{self.memory[self.memory[addr] - 2]}")
 
     def printd(self):
-        self.print(self.memory[self.sp0 : self.sp - 1 : -1])
+        self.print(self.memory[self.sp0 : self.memory[self.sp] - 1 : -1])
 
     def next(self):
         if self._in_next:
@@ -204,25 +210,25 @@ class NForth:
             self._in_next = False
 
     def pushd(self, value):
-        self.sp -= 1
-        self.memory[self.sp] = value
+        self.memory[self.sp] -= 1
+        self.memory[self.memory[self.sp]] = value
 
     def popd(self) -> Any:
-        if self.sp == self.sp0:
+        if self.memory[self.sp] == self.sp0:
             raise EmptyStack("data")
-        value = self.memory[self.sp]
-        self.sp += 1
+        value = self.memory[self.memory[self.sp]]
+        self.memory[self.sp] += 1
         return value
 
     def pushr(self, value):
-        self.rp -= 1
-        self.memory[self.rp] = value
+        self.memory[self.rp] -= 1
+        self.memory[self.memory[self.rp]] = value
 
     def popr(self) -> int:
-        if self.rp == self.rp0:
+        if self.memory[self.rp] == self.rp0:
             raise EmptyStack("return")
-        value = self.memory[self.rp]
-        self.rp += 1
+        value = self.memory[self.memory[self.rp]]
+        self.memory[self.rp] += 1
         return value
 
     def fetch(self):
@@ -237,7 +243,7 @@ class NForth:
         self.next()
 
     def spfetch(self):
-        sp = self.sp
+        sp = self.memory[self.sp]
         self.pushd(sp)
         self.next()
 
@@ -245,11 +251,11 @@ class NForth:
         value = self.popd()
         if value > self.sp0:
             raise EmptyStack("data")
-        self.sp = value
+        self.memory[self.sp] = value
         self.next()
 
     def rpfetch(self):
-        self.pushd(self.rp)
+        self.pushd(self.memory[self.rp])
         self.next()
 
     def zeroeq(self):
@@ -378,8 +384,8 @@ class NForth:
 
     def get_stacks(self):
         return (
-            self.memory[self.sp : self.sp0][::-1],
-            self.memory[self.rp : self.rp0][::-1],
+            self.memory[self.memory[self.sp] : self.sp0][::-1],
+            self.memory[self.memory[self.rp] : self.rp0][::-1],
         )
 
     def boot(self):
@@ -608,9 +614,9 @@ class NForth:
     def display_stacks(self):
         self.print(
             "S",
-            self.memory[self.sp : self.sp0],
+            self.memory[self.memory[self.sp] : self.sp0],
             "R",
-            self.memory[self.rp : self.rp0],
+            self.memory[self.memory[self.rp] : self.rp0],
         )
 
     def dump_known_words(self):
