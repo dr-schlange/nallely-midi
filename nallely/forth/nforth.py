@@ -663,6 +663,9 @@ class NForth:
 : dup sp@ @ ;
 : sflush sp0 sp! ;
 : drop sp@ 1 + sp! ;
+: over sp@ 1 + @ ;
+: swap over over sp@ 3 + ! sp@ 1 + ! ;
+: nip swap drop ;
 
 """)
         return self.interpret()
