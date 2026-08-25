@@ -1499,9 +1499,11 @@ class VForth(VFile):
                 self.forth._write(data_str)
                 self.forth.interpret()
                 self.forth.display_stacks()
-        except ValueError:
+        except ValueError as e:
+            self.display(fh, e)
             raise FUSEError(errno.EINVAL)
-        except Exception:
+        except Exception as e:
+            self.display(fh, e)
             raise FUSEError(errno.EIO)
         return len(buf)
 
