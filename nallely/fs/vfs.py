@@ -1496,7 +1496,8 @@ class VForth(VFile):
                     forthvm.decode_def(cfa - 3)
                 else:
                     try:
-                        forthvm.decode_def(word)  # in case it's an addr
+                        # in case it's an addr
+                        forthvm.decode_def(int(word, base=forthvm.memory[forthvm.base]))
                     except Exception:
                         self.forth_display(f"Word {word} is unknown")
             elif cmd.startswith("reset!"):
@@ -1509,7 +1510,7 @@ class VForth(VFile):
                     boot_param = "full"
                 else:
                     boot_param = word[0]
-                if boot_param not in  ("minimal", "full"):
+                if boot_param not in ("minimal", "full"):
                     self.forth_display("Usage: reset! [minimal, full]")
                     return len(buf)
                 forthvm._reset_machine()

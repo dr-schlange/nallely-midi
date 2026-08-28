@@ -49,10 +49,17 @@ DQUOTE = ord('"')
 DOT = ord(".")
 RETURN = 13
 
+# dict entry structure
+LFA_OFFSET = 0
+NFA_OFFSET = 1
+FFA_OFFSET = 2
+CFA_OFFSET = 3
+PFA_OFFSET = 4
+
 
 @dataclass
 class NForth:
-    cell_size: int = 1
+    cell_size: int = 1  # currently cell_size is eq to 1 python object
     memory: list[Any] = field(default_factory=lambda: [0] * 0x3FFFC)
     # constants to know
     sp0: int = 0x3FFF8
@@ -78,6 +85,10 @@ class NForth:
 
     def print(self, *msg, **kwargs):
         print(*msg, **kwargs)
+
+    def dot(self):
+        value = self.popd()
+        self.print(value)
 
     def swap_print(self, foo):
         if self.__oldprint is not None or self.__newprint is foo:
@@ -124,12 +135,14 @@ class NForth:
         self._register_primitive("RP@", self.rpfetch)
         self._register_primitive("0=", self.zeroeq)
         self._register_primitive("+", self.add)
+        self._register_primitive("-", self.sub)
         self._register_primitive("NAND", self.nand)
         _, self._exit = self._register_primitive("EXIT", self.exit)
         self._register_primitive("KEY", self.key)
         self._register_primitive("EMIT", self.emit)
         self._register_primitive(":", self.colon)
         self._register_primitive(";", self.semicolon, immediate=True)
+        self._register_primitive(".", self.dot)
         self._register_primitive("STATE", lambda: (self.pushd(self.state), self.next()))
         self._register_primitive("TIB", lambda: (self.pushd(self.tib), self.next()))
         self._register_primitive(">IN", lambda: (self.pushd(self.toin), self.next()))
@@ -188,18 +201,18 @@ class NForth:
 
     def decode_addr(self, addr):
         self.print(f"[{addr}] {self.memory[addr : addr + 4]}")
-        self.print(f"  LFA = {self.memory[addr]}")
-        self.print(f"  NFA = {self.memory[addr + 1]}")
-        self.print(f"  FFA = {self.memory[addr + 2]}")
-        self.print(f"  CFA = {self.memory[addr + 3]}")
+        self.print(f"  LFA = {self.memory[addr + LFA_OFFSET]}")
+        self.print(f"  NFA = {self.memory[addr + NFA_OFFSET]}")
+        self.print(f"  FFA = {self.memory[addr + FFA_OFFSET]}")
+        self.print(f"  CFA = {self.memory[addr + CFA_OFFSET]}")
 
     def decode_def(self, addr):
-        self.print(f"DEF [{addr}] {self.memory[addr : addr + 4]}")
-        self.print(f"  LFA = {self.memory[addr]}")
-        self.print(f"  NFA = {self.memory[addr + 1]}")
-        self.print(f"  FFA = {self.memory[addr + 2]}")
-        self.print(f"  CFA = {self.memory[addr + 3]}")
-        addr += 3
+        self.print(f"DEF [{addr}] {self.memory[addr : addr + PFA_OFFSET]}")
+        self.print(f"  LFA = {self.memory[addr + LFA_OFFSET]}")
+        self.print(f"  NFA = {self.memory[addr + NFA_OFFSET]}")
+        self.print(f"  FFA = {self.memory[addr + FFA_OFFSET]}")
+        self.print(f"  CFA = {self.memory[addr + CFA_OFFSET]}")
+        addr += CFA_OFFSET + self.cell_size
         while self.memory[addr] != self._exit:
             self.print(f"{self.memory[self.memory[addr] - 2]}", end=" ")
             addr += 1
@@ -287,6 +300,12 @@ class NForth:
         self.pushd(a + b)
         self.next()
 
+    def sub(self):
+        b = self.popd()
+        a = self.popd()
+        self.pushd(a - b)
+        self.next()
+
     def nand(self):
         b = self.popd()
         a = self.popd()
@@ -366,23 +385,23 @@ class NForth:
     def find(self, word):
         lfa = self.memory[self.latest]
         word = word.upper()
-        while self.memory[lfa + 1] != word and lfa != 0:
+        while self.memory[lfa + NFA_OFFSET] != word and lfa != 0:
             lfa = self.memory[lfa]
         if lfa != 0:
-            cfa = lfa + 3
-            return cfa, self.memory[lfa + 2]
+            cfa = lfa + CFA_OFFSET
+            return cfa, self.memory[lfa + FFA_OFFSET]
         return None, None
 
     def _find(self):
         word = self._token()
         lfa = self.memory[self.latest]
         word = word.upper()
-        while self.memory[lfa + 1] != word and lfa != 0:
+        while self.memory[lfa + NFA_OFFSET] != word and lfa != 0:
             lfa = self.memory[lfa]
         if lfa != 0:
-            cfa = lfa + 3
+            cfa = lfa + CFA_OFFSET
 
-            return cfa, self.memory[lfa + 2]
+            return cfa, self.memory[lfa + FFA_OFFSET]
         return None, None
 
     def execute(self, cfa):
@@ -656,17 +675,37 @@ class NForth:
     #     return self.interpret()
 
     def fullboot(self):
-        self._write("""
+        cell_size = self.cell_size
+        # cells def tmp, please change
+        self._write(f"""
+: lfa {LFA_OFFSET} + ;
+: nfa {NFA_OFFSET} + ;
+: cfa {CFA_OFFSET} + ;
+: pfa {PFA_OFFSET} + ;
+: cell {cell_size} ;
+: cells ;
 : 0xA 10 ;
 : decimal 0xA base ! ;
 : hex 16 base ! ;
 : dup sp@ @ ;
 : sflush sp0 sp! ;
-: drop sp@ 1 + sp! ;
-: over sp@ 1 + @ ;
-: swap over over sp@ 3 + ! sp@ 1 + ! ;
+: drop sp@ {cell_size} + sp! ;
+: over sp@ {cell_size} + @ ;
+: swap over over sp@ {3 * cell_size} + ! sp@ {cell_size} + ! ;
 : nip swap drop ;
-
+: , here @ ! here @ 1 + here ! ;
+: immediate latest @ {CFA_OFFSET} + {cell_size} swap ! ;
+: [ 0 state ! ; immediate
+: ] 1 state ! ;
+: create
+    :
+    lit lit ,
+    here @ 2 + ,
+    lit exit ,
+    0 state !
+;
+: allot here @ + here ! ;
+: variable create 1 cells allot ;
 """)
         return self.interpret()
 
@@ -682,9 +721,9 @@ class NForth:
     def display_stacks(self):
         self.print(
             "S",
-            self.memory[self.memory[self.sp] : self.sp0],
+            self.memory[self.memory[self.sp] : self.sp0][::-1],
             "R",
-            self.memory[self.memory[self.rp] : self.rp0],
+            self.memory[self.memory[self.rp] : self.rp0][::-1],
         )
 
     def dump_known_words(self):
@@ -718,7 +757,7 @@ class ForthShell(cmd.Cmd):
         if cfa:
             self.forth.decode_def(cfa - 3)
         else:
-            print(f"Word {args} is unknown")
+            self.forth.decode_def(int(args, base=self.forth.memory[self.forth.base]))
 
     def _boot(self, mode="full"):
         self.forth._reset_machine()
