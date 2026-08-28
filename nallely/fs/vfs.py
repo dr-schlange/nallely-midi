@@ -1482,28 +1482,49 @@ class VForth(VFile):
             self.flush_display()
             data_str = buf.decode("utf-8").strip()
             cmd = data_str.strip().lower()
+            forthvm = self.forth
             if cmd.startswith("words?"):
-                self.forth_display(" ".join(self.forth.dump_known_words()))
+                self.forth_display(" ".join(forthvm.dump_known_words()))
             elif cmd.startswith("dump "):
                 cmd, *word = cmd.split()
                 if len(word) > 1:
                     self.forth_display("Usage: dump <WORD>")
                     return len(buf)
                 word = word[0]
-                cfa, _ = self.forth.find(word)
+                cfa, _ = forthvm.find(word)
                 if cfa:
-                    self.forth.decode_def(cfa - 3)
+                    forthvm.decode_def(cfa - 3)
                 else:
-                    self.forth_display(f"Word {word} is unknown")
+                    try:
+                        forthvm.decode_def(word)  # in case it's an addr
+                    except Exception:
+                        self.forth_display(f"Word {word} is unknown")
+            elif cmd.startswith("reset!"):
+                cmd, *word = cmd.split()
+                nb_params = len(word)
+                if nb_params > 1:
+                    self.forth_display("Usage: reset! [minimal, full]")
+                    return len(buf)
+                elif nb_params == 0:
+                    boot_param = "full"
+                else:
+                    boot_param = word[0]
+                if boot_param not in  ("minimal", "full"):
+                    self.forth_display("Usage: reset! [minimal, full]")
+                    return len(buf)
+                forthvm._reset_machine()
+                getattr(self.forth, f"{boot_param}boot")()
             else:
-                self.forth._write(data_str)
-                self.forth.interpret()
-                self.forth.display_stacks()
+                forthvm._write(data_str)
+                forthvm.interpret()
+                forthvm.display_stacks()
         except ValueError as e:
             self.display(fh, e)
+            self.forth_display("Outer interpreter error", e)
             raise FUSEError(errno.EINVAL)
         except Exception as e:
             self.display(fh, e)
+            self.forth_display("Outer interpreter error", e)
             raise FUSEError(errno.EIO)
         return len(buf)
 
@@ -1539,6 +1560,7 @@ while read -e -p "nforth> " FORTH_INPUT; do
     fi
     echo $FORTH_INPUT > $FORTH_VM
     cat $FORTH_VM
+    history -s "$FORTH_INPUT"
 done
 echo "bye"
 """.encode()
