@@ -684,6 +684,7 @@ class NForth:
 : pfa {PFA_OFFSET} + ;
 : cell {cell_size} ;
 : cells ;
+: ['] rp@ @ dup 1 + rp@ ! @ ;
 : 0xA 10 ;
 : decimal 0xA base ! ;
 : hex 16 base ! ;
@@ -699,9 +700,9 @@ class NForth:
 : ] 1 state ! ;
 : create
     :
-    lit lit ,
+    ['] lit ,
     here @ 2 + ,
-    lit exit ,
+    ['] exit ,
     0 state !
 ;
 : allot here @ + here ! ;
