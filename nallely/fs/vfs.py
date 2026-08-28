@@ -129,6 +129,16 @@ class VNode:
     def isroot(self):
         return self.parent is self
 
+    @property
+    def root(self):
+        if self.parent is self:
+            return self
+        return self.parent.root
+
+    @property
+    def mountpoint(self):
+        return self.root.mountpoint
+
     def base_entry(self, inode: InodeT) -> EntryAttributes:
         entry = EntryAttributes()
         entry.st_atime_ns = DATE_NS
@@ -293,8 +303,19 @@ class VFile(VNode):
 
 
 class VRoot(VDir):
-    def __init__(self):
+    def __init__(self, mountpoint):
         super().__init__(b"/", parent=self, component=None)
+        self._mountpoint = mountpoint
+        self._dev = VDevRoot(self)
+        self._clas = VClasRoot(self)
+
+    @property
+    def root(self):
+        return self
+
+    @property
+    def mountpoint(self):
+        return self._mountpoint.decode("utf-8")
 
     @classmethod
     @override
@@ -1450,10 +1471,10 @@ class VForth(VFile):
         super().__init__(*args, **kwargs)
         from ..forth.nforth import NForth
 
+        self.result = ""
         self.forth = NForth()
         self.forth.swap_print(self.forth_display)
         self.forth.boot()
-        self.result = ""
 
     def content(self):
         return f"{self.result}".encode()
@@ -1579,8 +1600,3 @@ echo "bye"
     @override
     def read(self: Self, fh: FileHandleT, off: int, size: int) -> bytes:
         return self.content()
-
-
-ROOT = VRoot()
-_dev = VDevRoot(ROOT)
-_clas = VClasRoot(ROOT)

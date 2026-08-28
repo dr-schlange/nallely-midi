@@ -12,7 +12,7 @@ CLASS_DIR_INODE = 3
 BASE_INODES = [pyfuse3.ROOT_INODE, DEV_DIR_INODE, CLASS_DIR_INODE]
 DATE_NS = -842690400000000000
 
-from .vfs import VNode
+from .vfs import VNode, VRoot
 
 
 class NallelyFS(pyfuse3.Operations):
@@ -21,10 +21,11 @@ class NallelyFS(pyfuse3.Operations):
         self.nallely_session = session
         self.nallely_trevor = session.trevor
         self.nallely_metatrevor = session.meta_trevor
-        VNode.mountpoint = mountpoint
         self._registry = VNode
 
         self.mountpoint = mountpoint.rstrip("/").encode("utf-8")
+        self.root = VRoot(self.mountpoint)
+
 
     async def getattr(self, inode, ctx=None):
         d = self._registry.get(inode)

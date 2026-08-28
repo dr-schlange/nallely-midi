@@ -684,13 +684,12 @@ class NForth:
 : pfa {PFA_OFFSET} + ;
 : cell {cell_size} ;
 : cells ;
-: ['] rp@ @ dup 1 + rp@ ! @ ;
 : 0xA 10 ;
 : decimal 0xA base ! ;
 : hex 16 base ! ;
 : dup sp@ @ ;
 : sflush sp0 sp! ;
-: drop sp@ {cell_size} + sp! ;
+: drop sp@ ! ;
 : over sp@ {cell_size} + @ ;
 : swap over over sp@ {3 * cell_size} + ! sp@ {cell_size} + ! ;
 : nip swap drop ;
@@ -698,6 +697,7 @@ class NForth:
 : immediate latest @ {CFA_OFFSET} + {cell_size} swap ! ;
 : [ 0 state ! ; immediate
 : ] 1 state ! ;
+: ['] rp@ @ dup 1 + rp@ ! @ ;
 : create
     :
     ['] lit ,
