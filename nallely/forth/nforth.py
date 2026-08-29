@@ -241,7 +241,16 @@ class NForth:
             return
         try:
             while self.memory[addr] != self._exit:
-                self.print(f"{self.memory[self.memory[addr] - 2]}", end=" ")
+                val = self.memory[addr]
+                word = self.memory[val - 2]
+                try:
+                    cfa, _ = self.find(word)
+                    if cfa:
+                        self.print(f"{word}", end=" ")
+                    else:
+                        self.print(f"{val}", end=" ")
+                except Exception:
+                    self.print(f"{val}", end=" ")
                 addr += 1
             self.print(f"{self.memory[self.memory[addr] - 2]}\n")
         except Exception:
@@ -438,15 +447,7 @@ class NForth:
 
     def _find(self):
         word = self._token()
-        lfa = self.memory[self.latest]
-        word = word.upper()
-        while self.memory[lfa + NFA_OFFSET] != word and lfa != 0:
-            lfa = self.memory[lfa]
-        if lfa != 0:
-            cfa = lfa + CFA_OFFSET
-
-            return cfa, self.memory[lfa + FFA_OFFSET]
-        return None, None
+        return self.find(word)
 
     def execute(self, cfa):
         self.memory[self.ip] = 0  # top-level call
@@ -732,7 +733,10 @@ class NForth:
 : decimal 0xA base ! ;
 : hex 16 base ! ;
 : dup sp@ @ ;
+: invert dup nand ;
+: and nand invert ;
 : sflush sp0 sp! ;
+: ? @ . ;
 : drop sp@ ! ;
 : over sp@ {cell_size} + @ ;
 : swap over over sp@ {3 * cell_size} + ! sp@ {cell_size} + ! ;
