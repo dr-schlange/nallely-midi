@@ -6,6 +6,7 @@ Added primitive: SP! (for DROP, otherwise DROP cannot work on 1 element stack an
 Bootstrapped kernel is a port of socrotforth's minimal examples
 """
 
+import inspect
 import os
 from dataclasses import dataclass, field
 from typing import Any, override
@@ -118,6 +119,7 @@ class NForth:
         self.memory[self.in_next] = 0
         self.primitive_id: int = 0
         self.primitives = {}
+        self.primitive_names = {}
         self._setup_primitives()
 
     def _soft_reset(self):
@@ -127,7 +129,7 @@ class NForth:
         self.memory[self.rp] = self.rp0
 
     def _setup_primitives(self):
-        self.docol_id, _ = self._register_primitive("docol", self.docol)
+        self.docol_id, _ = self._register_primitive("DOCOL", self.docol)
         _, self.lit_cfa = self._register_primitive("LIT", self.lit)
         self._register_primitive("@", self.fetch)
         self._register_primitive("!", self.store)
@@ -164,6 +166,7 @@ class NForth:
     def _register_primitive(self, name, func, immediate=False):
         _id = self.primitive_id
         self.primitives[_id] = func
+        self.primitive_names[_id] = name
         cfa = self._header(name, self.primitive_id, immediate)
         self.primitive_id += 1
         return _id, cfa
@@ -210,16 +213,39 @@ class NForth:
         self.print(f"  CFA = {self.memory[addr + CFA_OFFSET]}")
 
     def decode_def(self, addr):
-        self.print(f"DEF [{addr}] {self.memory[addr : addr + PFA_OFFSET]}")
-        self.print(f"  LFA = {self.memory[addr + LFA_OFFSET]}")
-        self.print(f"  NFA = {self.memory[addr + NFA_OFFSET]}")
-        self.print(f"  FFA = {self.memory[addr + FFA_OFFSET]}")
-        self.print(f"  CFA = {self.memory[addr + CFA_OFFSET]}")
+        from textwrap import dedent, indent
+
+        header = "|"
+        fields = "|"
+        addrs = "|"
+        for i, (field, fname) in enumerate(
+            zip(self.memory[addr : addr + PFA_OFFSET], ("LFA", "NFA", "FFA", "CFA"))
+        ):
+            fsize = max(len(str(field)) + 2, len(str(addr + i)) + 2)
+            addrs += f"{addr + i:^{fsize}}"
+            fields += f"{fname:^{fsize}}"
+            header += f"{field:^{fsize}}"
+
+        self.print(f"+{'-' * (len(fields) - 1)}+")
+        self.print(f"{fields}|\tfields")
+        self.print(f"{addrs}|\taddresses")
+        self.print(f"{header}|\tvalues")
+        self.print(f"+{'-' * (len(fields) - 1)}+")
+        code = self.memory[addr + CFA_OFFSET]
+        latest = self.memory[addr]
         addr += CFA_OFFSET + self.cell_size
-        while self.memory[addr] != self._exit:
-            self.print(f"{self.memory[self.memory[addr] - 2]}", end=" ")
-            addr += 1
-        self.print(f"{self.memory[self.memory[addr] - 2]}")
+        if (code in self.primitives and code != self.docol_id) or latest == 0:
+            self.print(f"[primitive {code} {self.primitive_names[code]}]")
+            body = f"{''.join(inspect.getsourcelines(self.primitives[code])[0][1:])}"
+            self.print(indent(dedent(body), "  "))
+            return
+        try:
+            while self.memory[addr] != self._exit:
+                self.print(f"{self.memory[self.memory[addr] - 2]}", end=" ")
+                addr += 1
+            self.print(f"{self.memory[self.memory[addr] - 2]}\n")
+        except Exception:
+            ...
 
     def printd(self):
         self.print(self.memory[self.sp0 : self.memory[self.sp] - 1 : -1])
@@ -725,6 +751,7 @@ class NForth:
 ;
 : allot here @ + here ! ;
 : variable create 1 cells allot ;
+
 """)
         return self.interpret()
 
@@ -819,6 +846,39 @@ class ForthShell(cmd.Cmd):
     do_EOF = do_bye
 
 
+class NForthTUI:
+    def __init__(self):
+        size = os.get_terminal_size()
+        print(f"Lines: {size.lines}, Columns: {size.columns}")
+        self.lines = size.lines - 10
+        self.columns = size.columns - 10
+        self.screen = [[" "] * self.columns for _ in range(self.lines)]
+        os.system("")  # forces ansi on windows
+
+    def compute_screen(self):
+        self.main_panel()
+
+    def main_panel(self):
+        self.screen[0] = ["-"] * self.columns
+        self.screen[-1] = ["-"] * self.columns
+        for line in self.screen[1:-1]:
+            line[0] = line[-1] = "|"
+
+    def display(self):
+        print("\x1b[H")
+        disp = ""
+        for line in self.screen:
+            disp += "".join(line) + "\n"
+        print(disp)
+
+
 if __name__ == "__main__":
     shell = ForthShell()
     shell.cmdloop()
+    # tui = NForthTUI()
+    # tui.compute_screen()
+    # tui.display()
+    # import time
+    # tui.screen[0][0] = "*"
+    # time.sleep(1)
+    # tui.display()

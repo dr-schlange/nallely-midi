@@ -65,6 +65,9 @@ class NVirtDev(NProxy):
             yield f"nallely_port_read {self.obj.uid()}/{port.name}@ ; "
             yield f"nallely_port_write {self.obj.uid()}/{port.name}! ; "
 
+    def generate_vocab_hints(self):
+        return (port.name for port in self.obj.all_parameters())
+
     def nread(self, port):
         if "/" in port:
             _, port = port.split("/")
