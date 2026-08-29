@@ -77,6 +77,7 @@ class NForth:
     toin: int = 0x4008
     state: int = 0x4000
     tib: int = 0x0000
+    bridge: None | Any = None
 
     def __post_init__(self):
         self._reset_machine()
@@ -143,6 +144,8 @@ class NForth:
         self._register_primitive(":", self.colon)
         self._register_primitive(";", self.semicolon, immediate=True)
         self._register_primitive(".", self.dot)
+        self._register_primitive("NREAD", self.nread)
+        self._register_primitive("NWRITE", self.nwrite)
         self._register_primitive("STATE", lambda: (self.pushd(self.state), self.next()))
         self._register_primitive("TIB", lambda: (self.pushd(self.tib), self.next()))
         self._register_primitive(">IN", lambda: (self.pushd(self.toin), self.next()))
@@ -235,6 +238,21 @@ class NForth:
                 self.primitives[exec_id]()
         finally:
             self.memory[self.in_next] = 0
+
+    def nread(self):
+        if self.bridge is None:
+            return
+        parent_addr = self.popd()
+        subaddr = self.popd()
+        self.bridge.nread(parent_addr, subaddr)
+
+    def nwrite(self):
+        if self.bridge is None:
+            return
+        addr = self.popd()
+        subaddr = self.popd()
+        value = self.popd()
+        self.bridge.nwrite(addr, subaddr, value)
 
     def pushd(self, value):
         spaddr = self.sp

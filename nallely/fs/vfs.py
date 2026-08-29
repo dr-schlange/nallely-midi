@@ -27,6 +27,7 @@ from nallely.core.world import (
     get_connected_devices,
     get_virtual_devices,
 )
+from nallely.forth.nproxy import NProxy
 
 # getattr: Callable[[Self, InodeT, RequestContext | None], EntryAttributes] | None
 # readlink: Callable[[Self, InodeT, RequestContext | None], str] | None
@@ -1467,14 +1468,25 @@ class VForth(VFile):
     def _stdout(self):
         return f"{self.mountpoint}/dev/{self.component.uid()}/.forth"
 
+    def nread(self, parent_addr, subaddr):
+        port = self.proxy.nread(subaddr.lower())
+        self.forth.pushd(port)
+
+    def nwrite(self, addr, subaddr, value):
+        self.proxy.nwrite(subaddr.lower(), value)
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         from ..forth.nforth import NForth
 
         self.result = ""
-        self.forth = NForth()
+        self.forth = NForth(bridge=self)
         self.forth.swap_print(self.forth_display)
         self.forth.boot()
+        self.proxy = NProxy.of(self.component, self.stable_ref(self.component))
+        if self.proxy:
+            self.forth._write(self.proxy.generate_vocab())
+            self.forth.interpret()
 
     def content(self):
         return f"{self.result}".encode()
@@ -1543,10 +1555,16 @@ class VForth(VFile):
         except ValueError as e:
             self.display(fh, e)
             self.forth_display("Outer interpreter error", e)
+            import traceback
+
+            traceback.print_exc()
             raise FUSEError(errno.EINVAL)
         except Exception as e:
             self.display(fh, e)
             self.forth_display("Outer interpreter error", e)
+            import traceback
+
+            traceback.print_exc()
             raise FUSEError(errno.EIO)
         return len(buf)
 
