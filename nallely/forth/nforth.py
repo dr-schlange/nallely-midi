@@ -1,7 +1,10 @@
 """
 Minimal forth.
 
-Host interpreter is inspired by sectorforth https://github.com/cesarblum/sectorforth/tree/master
+Host interpreter is inspired by
+* sectorforth https://github.com/cesarblum/sectorforth
+* jonesforth https://github.com/nornagon/jonesforth
+
 Added primitive: SP! (for DROP, otherwise DROP cannot work on 1 element stack and provokes an underflow)
 Bootstrapped kernel is a port of socrotforth's minimal examples
 """
@@ -221,7 +224,7 @@ class NForth:
         for i, (field, fname) in enumerate(
             zip(self.memory[addr : addr + PFA_OFFSET], ("LFA", "NFA", "FFA", "CFA"))
         ):
-            fsize = max(len(str(field)) + 2, len(str(addr + i)) + 2)
+            fsize = max(len(str(field)), len(str(addr + i))) + 2
             addrs += f"{addr + i:^{fsize}}"
             fields += f"{fname:^{fsize}}"
             header += f"{field:^{fsize}}"
@@ -230,7 +233,7 @@ class NForth:
         self.print(f"{fields}|\tfields")
         self.print(f"{addrs}|\taddresses")
         self.print(f"{header}|\tvalues")
-        self.print(f"+{'-' * (len(fields) - 1)}+")
+        self.print(f"+{'-' * (len(fields) - 1)}+", end="")
         code = self.memory[addr + CFA_OFFSET]
         latest = self.memory[addr]
         addr += CFA_OFFSET + self.cell_size
@@ -240,19 +243,37 @@ class NForth:
             self.print(indent(dedent(body), "  "))
             return
         try:
+            addrs = "|"
+            pto = "|"
+            words = "|"
             while self.memory[addr] != self._exit:
-                val = self.memory[addr]
-                word = self.memory[val - 2]
+                ptr = self.memory[addr]
+                word = self.memory[ptr - 2]
+                fsize = max(len(str(addr)), len(str(ptr)), len(str(word))) + 2
+                addrs += f"{addr:^{fsize}} "
                 try:
                     cfa, _ = self.find(word)
                     if cfa:
-                        self.print(f"{word}", end=" ")
+                        pto += f"{ptr:^{fsize}} "
+                        words += f"{word:^{fsize}} "
                     else:
-                        self.print(f"{val}", end=" ")
+                        pto += f"{' ' * fsize} "
+                        words += f"{ptr:^{fsize}} "
                 except Exception:
-                    self.print(f"{val}", end=" ")
+                    pto += f"{' ' * fsize} "
+                    words += f"{ptr:^{fsize}} "
                 addr += 1
-            self.print(f"{self.memory[self.memory[addr] - 2]}\n")
+            ptr = self.memory[addr]
+            word = self.memory[ptr - 2]
+            fsize = max(len(str(addr)), len(str(ptr)), len(str(word))) + 2
+            addrs += f"{addr:^{fsize}}|"
+            pto += f"{ptr:^{fsize}}|"
+            words += f"{word:^{fsize}}|"
+            self.print(f"{'-' * (abs(len(fields) - len(addrs)) - 2)}+")
+            self.print(f"{addrs}  addresses")
+            self.print(f"{pto}  point to")
+            self.print(f"{words}  words")
+            self.print(f"+{'-' * (len(addrs) - 2)}+")
         except Exception:
             ...
 
@@ -723,10 +744,15 @@ class NForth:
         cell_size = self.cell_size
         # cells def tmp, please change
         self._write(f"""
-: lfa {LFA_OFFSET} + ;
-: nfa {NFA_OFFSET} + ;
-: cfa {CFA_OFFSET} + ;
-: pfa {PFA_OFFSET} + ;
+: bl   32 ;
+: '\n' 10 ;
+: CR '\n' emit ;
+: SPACE bl emit ;
+: >lfa {LFA_OFFSET} + ;
+: >nfa {NFA_OFFSET} + ;
+: >ffa {FFA_OFFSET} + ;
+: >cfa {CFA_OFFSET} + ;
+: >pfa {PFA_OFFSET} + ;
 : cell {cell_size} ;
 : cells ;
 : 0xA 10 ;
@@ -742,7 +768,7 @@ class NForth:
 : swap over over sp@ {3 * cell_size} + ! sp@ {cell_size} + ! ;
 : nip swap drop ;
 : , here @ ! here @ 1 + here ! ;
-: immediate latest @ {CFA_OFFSET} + {cell_size} swap ! ;
+: immediate {cell_size} latest @ >ffa ! ;
 : [ 0 state ! ; immediate
 : ] 1 state ! ;
 : ['] rp@ @ dup 1 + rp@ ! @ ;
