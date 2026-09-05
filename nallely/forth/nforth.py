@@ -60,6 +60,8 @@ FFA_OFFSET = 2
 CFA_OFFSET = 3
 PFA_OFFSET = 4
 
+IMMEDIATE_MASK = 0b01
+
 
 @dataclass
 class NForth:
@@ -94,6 +96,15 @@ class NForth:
     def dot(self):
         value = self.popd()
         self.print(value)
+
+    def dots(self):
+        self.print(self.memory[self.memory[self.sp] : self.sp0][::-1])
+
+    def genericeq(self):
+        """Cheater eq at the moment, practical"""
+        b = self.popd()
+        a = self.popd()
+        self.pushd(-1 if a == b else 0)
 
     def swap_print(self, foo):
         if self.__oldprint is not None or self.__newprint is foo:
@@ -142,6 +153,7 @@ class NForth:
         self._register_primitive("0=", self.zeroeq)
         self._register_primitive("+", self.add)
         self._register_primitive("-", self.sub)
+        self._register_primitive("*", self.mul)
         self._register_primitive("NAND", self.nand)
         _, self._exit = self._register_primitive("EXIT", self.exit)
         self._register_primitive("KEY", self.key)
@@ -149,6 +161,8 @@ class NForth:
         self._register_primitive(":", self.colon)
         self._register_primitive(";", self.semicolon, immediate=True)
         self._register_primitive(".", self.dot)
+        self._register_primitive("=", self.genericeq)
+        self._register_primitive(".S", self.dots)
         self._register_primitive("NREAD", self.nread)
         self._register_primitive("NWRITE", self.nwrite)
         self._register_primitive("STATE", lambda: (self.pushd(self.state), self.next()))
@@ -170,7 +184,7 @@ class NForth:
         _id = self.primitive_id
         self.primitives[_id] = func
         self.primitive_names[_id] = name
-        cfa = self._header(name, self.primitive_id, immediate)
+        _, cfa = self._header(name, self.primitive_id, immediate)
         self.primitive_id += 1
         return _id, cfa
 
@@ -188,14 +202,14 @@ class NForth:
         self.memory[self.here] += 1
 
         ffa = self.memory[self.here]
-        self.memory[ffa] = 1 if immediate else 0
+        self.memory[ffa] = IMMEDIATE_MASK if immediate else 0b00
         self.memory[self.here] += 1
 
         cfa = self.memory[self.here]
         self.memory[cfa] = cfa_value
         self.memory[self.here] += 1
 
-        return cfa
+        return lfa, cfa
 
     def decode_cfa(self, cfa):
         self.decode_addr(cfa - 3)
@@ -238,7 +252,7 @@ class NForth:
         latest = self.memory[addr]
         addr += CFA_OFFSET + self.cell_size
         if (code in self.primitives and code != self.docol_id) or latest == 0:
-            self.print(f"[primitive {code} {self.primitive_names[code]}]")
+            self.print(f"\n[primitive {code} {self.primitive_names[code]}]")
             body = f"{''.join(inspect.getsourcelines(self.primitives[code])[0][1:])}"
             self.print(indent(dedent(body), "  "))
             return
@@ -380,6 +394,12 @@ class NForth:
         self.pushd(a - b)
         self.next()
 
+    def mul(self):
+        b = self.popd()
+        a = self.popd()
+        self.pushd(a * b)
+        self.next()
+
     def nand(self):
         b = self.popd()
         a = self.popd()
@@ -414,7 +434,7 @@ class NForth:
 
     def colon(self):
         token = self._token()
-        cfa = self._register_word(token, cfa=self.docol_id)
+        self._register_word(token, cfa=self.docol_id)
         self.memory[self.state] = 1  # compilation state
         self.next()
 
@@ -459,12 +479,12 @@ class NForth:
     def find(self, word):
         lfa = self.memory[self.latest]
         word = word.upper()
-        while self.memory[lfa + NFA_OFFSET] != word and lfa != 0:
+        while (self.memory[lfa + NFA_OFFSET] != word) and lfa != 0:
             lfa = self.memory[lfa]
         if lfa != 0:
             cfa = lfa + CFA_OFFSET
             return cfa, self.memory[lfa + FFA_OFFSET]
-        return None, None
+        return None, 0
 
     def _find(self):
         word = self._token()
@@ -481,7 +501,8 @@ class NForth:
         self.memory[self.here] += 1
 
     def interpret_word(self, word):
-        cfa, immediate = self.find(word)
+        cfa, ffa = self.find(word)
+        immediate = ffa & IMMEDIATE_MASK
         if cfa is not None:
             if immediate or self.memory[self.state] == 0:
                 self.execute(cfa)
@@ -503,7 +524,6 @@ class NForth:
             else:
                 self.compile(self.lit_cfa)
                 self.compile(val)
-        # self._soft_reset()
 
     def interpret(self):
         try:
@@ -754,9 +774,10 @@ class NForth:
 : >cfa {CFA_OFFSET} + ;
 : >pfa {PFA_OFFSET} + ;
 : cell {cell_size} ;
-: cells ;
-: 0xA 10 ;
-: decimal 0xA base ! ;
+: cells {cell_size} * ;
+: 1+ 1 + ;
+: binary 2 base ! ;
+: decimal 10 base ! ;
 : hex 16 base ! ;
 : dup sp@ @ ;
 : invert dup nand ;
@@ -766,12 +787,13 @@ class NForth:
 : drop sp@ ! ;
 : over sp@ {cell_size} + @ ;
 : swap over over sp@ {3 * cell_size} + ! sp@ {cell_size} + ! ;
+: or invert swap invert and invert ;
 : nip swap drop ;
-: , here @ ! here @ 1 + here ! ;
-: immediate {cell_size} latest @ >ffa ! ;
+: , here @ ! here @ 1+ here ! ;
+: immediate {IMMEDIATE_MASK} latest @ >ffa @ or latest @ >ffa ! ;
 : [ 0 state ! ; immediate
 : ] 1 state ! ;
-: ['] rp@ @ dup 1 + rp@ ! @ ;
+: ['] rp@ @ dup 1+ rp@ ! @ ;
 : create
     :
     ['] lit ,
@@ -781,7 +803,7 @@ class NForth:
 ;
 : allot here @ + here ! ;
 : variable create 1 cells allot ;
-
+: array variable cells allot ;
 """)
         return self.interpret()
 
@@ -806,7 +828,9 @@ class NForth:
         latest = self.memory[self.latest]
         words = []
         while latest != 0:
-            words.insert(0, self.memory[latest + 1])
+            if self.memory[latest + FFA_OFFSET] & HIDDEN_MASK > 0:
+                continue
+            words.insert(0, self.memory[latest + NFA_OFFSET])
             latest = self.memory[latest]
         return words
 
@@ -867,7 +891,7 @@ class ForthShell(cmd.Cmd):
         if stop:
             print("see you soon!")
             return stop
-        self.forth.display_stacks()
+        self.forth.print("ok")
         return False
 
     def do_bye(self, _):

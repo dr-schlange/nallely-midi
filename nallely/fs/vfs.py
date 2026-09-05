@@ -1551,7 +1551,7 @@ class VForth(VFile):
             else:
                 forthvm._write(data_str)
                 forthvm.interpret()
-                forthvm.display_stacks()
+                forthvm.print("ok")
         except ValueError as e:
             self.display(fh, e)
             self.forth_display("Outer interpreter error", e)

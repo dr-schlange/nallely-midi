@@ -26,7 +26,6 @@ class NallelyFS(pyfuse3.Operations):
         self.mountpoint = mountpoint.rstrip("/").encode("utf-8")
         self.root = VRoot(self.mountpoint)
 
-
     async def getattr(self, inode, ctx=None):
         d = self._registry.get(inode)
         if d is not None:
