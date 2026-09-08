@@ -10,7 +10,7 @@ console.log(`** Building for base: ${base}`);
 export default defineConfig(({ mode }) => {
   const analyzeMode = mode === "analyze";
   const plugins = [
-    react(),
+    react({ compiler: true }),
     compression({
       algorithms: ["gzip"],
       threshold: 1024,
