@@ -93,6 +93,7 @@ export const Scope = ({
 
 	const upperBound = useRef(undefined);
 	const lowerBound = useRef(undefined);
+	const boundsDirty = useRef(true);
 	const statsRef = useRef<HTMLParagraphElement | null>(null);
 	const [label, setLabel] = useState("");
 	const labelRef = useRef("");
@@ -145,6 +146,7 @@ export const Scope = ({
 	const resetBounds = (mode) => {
 		upperBound.current = undefined;
 		lowerBound.current = undefined;
+		boundsDirty.current = true;
 		if (mode === "cyclic") {
 			bufferRef.current.x = Array.from(
 				{ length: bufferSizeRef.current },
@@ -152,8 +154,8 @@ export const Scope = ({
 			);
 			bufferRef.current.y = new Array(bufferSizeRef.current).fill(0);
 		} else {
-			bufferRef.current.x = [];
-			bufferRef.current.y = [];
+			bufferRef.current.x = new Array(bufferSizeRef.current);
+			bufferRef.current.y = new Array(bufferSizeRef.current);
 		}
 		elapsed.current = 0;
 		setOptions(
@@ -185,6 +187,23 @@ export const Scope = ({
 	const scopeParameters = useRef({
 		data: { min: null, max: null, stream: true },
 	}).current;
+
+	const updateBounds = (oldValue: number | undefined, newValue: number) => {
+		if (
+			oldValue !== undefined &&
+			(oldValue === upperBound.current || oldValue === lowerBound.current)
+		) {
+			boundsDirty.current = true;
+		}
+		if (!boundsDirty.current) {
+			if (upperBound.current === undefined || newValue > upperBound.current) {
+				upperBound.current = newValue;
+			}
+			if (lowerBound.current === undefined || newValue < lowerBound.current) {
+				lowerBound.current = newValue;
+			}
+		}
+	};
 
 	useScopeWorker(
 		id,
@@ -218,15 +237,16 @@ export const Scope = ({
 
 				if (mode === "cyclic") {
 					elapsed.current = (elapsed.current + 1) % size;
+					const oldValue = buf.y[elapsed.current];
 					buf.y[elapsed.current] = newValue;
+					updateBounds(oldValue, newValue);
 				} else {
+					const idx = elapsed.current % size;
+					const oldValue = elapsed.current >= size ? buf.y[idx] : undefined;
+					buf.x[idx] = elapsed.current + 1;
+					buf.y[idx] = newValue;
 					elapsed.current = elapsed.current + 1;
-					buf.x.push(elapsed.current);
-					buf.y.push(newValue);
-					if (buf.x.length > size) {
-						buf.x.shift();
-						buf.y.shift();
-					}
+					updateBounds(oldValue, newValue);
 				}
 				lastValue = newValue;
 			}
@@ -237,21 +257,42 @@ export const Scope = ({
 				updateScheduled.current = true;
 				const capturedLastValue = lastValue;
 				requestAnimationFrame(() => {
-					let min = Infinity,
-						max = -Infinity;
-					for (const v of buf.y) {
-						if (v < min) min = v;
-						if (v > max) max = v;
+					if (boundsDirty.current) {
+						let min = Infinity,
+							max = -Infinity;
+						const filled =
+							mode === "cyclic" ? size : Math.min(elapsed.current, size);
+						for (let i = 0; i < filled; i++) {
+							const v = buf.y[i];
+							if (v < min) min = v;
+							if (v > max) max = v;
+						}
+						upperBound.current = max === -Infinity ? undefined : max;
+						lowerBound.current = min === Infinity ? undefined : min;
+						boundsDirty.current = false;
 					}
-					upperBound.current = max;
-					lowerBound.current = min;
+					const min = lowerBound.current ?? Infinity;
+					const max = upperBound.current ?? -Infinity;
+					let dataX = buf.x;
+					let dataY = buf.y;
+					if (mode === "linear") {
+						const filled = Math.min(elapsed.current, size);
+						if (filled < size) {
+							dataX = buf.x.slice(0, filled);
+							dataY = buf.y.slice(0, filled);
+						} else {
+							const writeIdx = elapsed.current % size;
+							dataX = [...buf.x.slice(writeIdx), ...buf.x.slice(0, writeIdx)];
+							dataY = [...buf.y.slice(writeIdx), ...buf.y.slice(0, writeIdx)];
+						}
+					}
 					if (chartRef.current) {
 						chartRef.current.batch(() => {
-							chartRef.current.setData([buf.x, buf.y], false);
-							if (buf.x.length > 0) {
+							chartRef.current.setData([dataX, dataY], false);
+							if (dataX.length > 0) {
 								chartRef.current.setScale("x", {
-									min: buf.x[0],
-									max: buf.x[buf.x.length - 1],
+									min: dataX[0],
+									max: dataX[dataX.length - 1],
 								});
 							}
 							if (min !== Infinity) {

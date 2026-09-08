@@ -23,7 +23,10 @@ export const XYZScope = ({ id, onClose, num }: WidgetProps) => {
 	const latestX = useRef<number | null>(null);
 	const latestY = useRef<number | null>(null);
 	const latestZ = useRef<number | null>(null);
-	const points = useRef<{ x: number; y: number; z: number }[]>([]);
+	const points = useRef<{ x: number; y: number; z: number }[]>(
+		new Array(BUFFER_SIZE),
+	);
+	const pointCount = useRef(0);
 
 	const updateScheduled = useRef(false);
 
@@ -137,8 +140,9 @@ export const XYZScope = ({ id, onClose, num }: WidgetProps) => {
 		ctx.lineTo(zPos.x, zPos.y);
 		ctx.stroke();
 
-		// Draw points with depth cue (size + opacity modulated by perspective scale)
-		for (const p of points.current) {
+		const filled = Math.min(pointCount.current, bufferSizeRef.current);
+		for (let i = 0; i < filled; i++) {
+			const p = points.current[i];
 			const pt = project3Dto2D(p.x, p.y, p.z, w, h);
 			const pointSize = Math.max(0.5, Math.min(3, pt.ps * 1.5));
 			ctx.globalAlpha = Math.max(0.2, Math.min(1.0, pt.ps * 0.8));
@@ -151,8 +155,16 @@ export const XYZScope = ({ id, onClose, num }: WidgetProps) => {
 		ctx.globalAlpha = 1.0;
 	};
 
+	const getOrderedPoints = () => {
+		const size = bufferSizeRef.current;
+		const filled = Math.min(pointCount.current, size);
+		if (filled < size) return points.current.slice(0, filled);
+		const writeIdx = pointCount.current % size;
+		return [...points.current.slice(writeIdx), ...points.current.slice(0, writeIdx)];
+	};
+
 	const reset = () => {
-		points.current = [];
+		pointCount.current = 0;
 		scaleX.current = 1;
 		scaleY.current = 1;
 		offsetX.current = 0;
@@ -165,7 +177,7 @@ export const XYZScope = ({ id, onClose, num }: WidgetProps) => {
 
 	const zoomToFit = () => {
 		const canvas = canvasRef.current;
-		if (!canvas || points.current.length === 0) return;
+		if (!canvas || pointCount.current === 0) return;
 
 		const w = canvas.width;
 		const h = canvas.height;
@@ -175,9 +187,9 @@ export const XYZScope = ({ id, onClose, num }: WidgetProps) => {
 		const cosXr = Math.cos(rotationX.current);
 		const sinXr = Math.sin(rotationX.current);
 
-		// Compute rotated coordinates for all points (around rotation center)
 		const rc = rotationCenter.current;
-		const rotated = points.current.map((p) => {
+		const filled = Math.min(pointCount.current, bufferSizeRef.current);
+		const rotated = points.current.slice(0, filled).map((p) => {
 			const dx = p.x - rc.x;
 			const dy = p.y - rc.y;
 			const dz = p.z - rc.z;
@@ -266,17 +278,17 @@ export const XYZScope = ({ id, onClose, num }: WidgetProps) => {
 			canvas.setPointerCapture(e.pointerId);
 
 			// Barycenter of points as rotation pivot
-			const pts = points.current;
-			if (pts.length > 0) {
+			const n = Math.min(pointCount.current, bufferSizeRef.current);
+			if (n > 0) {
 				let sx = 0,
 					sy = 0,
 					sz = 0;
-				for (const p of pts) {
+				for (let i = 0; i < n; i++) {
+					const p = points.current[i];
 					sx += p.x;
 					sy += p.y;
 					sz += p.z;
 				}
-				const n = pts.length;
 				rotationCenter.current = { x: sx / n, y: sy / n, z: sz / n };
 			}
 		};
@@ -381,11 +393,13 @@ export const XYZScope = ({ id, onClose, num }: WidgetProps) => {
 	}, []);
 
 	useEffect(() => {
+		if (bufferSizeRef.current === bufferSize) return;
+		const kept = getOrderedPoints().slice(-bufferSize);
 		bufferSizeRef.current = bufferSize;
-		if (points.current.length > bufferSize) {
-			points.current = points.current.slice(-bufferSize);
-			drawPoints();
-		}
+		points.current = new Array(bufferSize);
+		for (let i = 0; i < kept.length; i++) points.current[i] = kept[i];
+		pointCount.current = kept.length;
+		drawPoints();
 	}, [bufferSize]);
 
 	const scopeParameters = useRef({
@@ -416,19 +430,18 @@ export const XYZScope = ({ id, onClose, num }: WidgetProps) => {
 					latestY.current != null &&
 					latestZ.current != null
 				) {
-					points.current.push({
+					const size = bufferSizeRef.current;
+					const idx = pointCount.current % size;
+					points.current[idx] = {
 						x: latestX.current,
 						y: latestY.current,
 						z: latestZ.current,
-					});
+					};
+					pointCount.current += 1;
 					latestX.current = null;
 					latestY.current = null;
 					latestZ.current = null;
 				}
-			}
-
-			if (points.current.length > bufferSizeRef.current) {
-				points.current = points.current.slice(-bufferSizeRef.current);
 			}
 
 			if (!updateScheduled.current) {
@@ -443,7 +456,7 @@ export const XYZScope = ({ id, onClose, num }: WidgetProps) => {
 			latestX.current = null;
 			latestY.current = null;
 			latestZ.current = null;
-			points.current = [];
+			pointCount.current = 0;
 			scaleX.current = 1;
 			scaleY.current = 1;
 			offsetX.current = 0;
@@ -465,7 +478,7 @@ export const XYZScope = ({ id, onClose, num }: WidgetProps) => {
 			return;
 		}
 		if (!timer) {
-			autorefreshTimerRef.current = setInterval(() => zoomToFit(), 1 / 60);
+			autorefreshTimerRef.current = setInterval(() => zoomToFit(), 1000 / 60);
 		}
 	}, [autorefresh]);
 

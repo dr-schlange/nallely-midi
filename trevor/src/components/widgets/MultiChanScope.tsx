@@ -67,9 +67,9 @@ const makeBuffer = (size: number, mode: FollowModes) => ({
 	x:
 		mode === "cyclic"
 			? Array.from({ length: size }, (_, i) => i)
-			: ([] as number[]),
+			: (new Array(size) as number[]),
 	ys: Array.from({ length: MAX_CHANNELS }, () =>
-		mode === "cyclic" ? new Array(size).fill(0) : ([] as number[]),
+		mode === "cyclic" ? new Array(size).fill(0) : (new Array(size) as number[]),
 	) as number[][],
 });
 
@@ -109,9 +109,6 @@ export const MultiChanScope = ({
 
 	const [minMaxDisplay, setMinMaxDisplay] = useState(true);
 
-	// resetCounter is incremented on explicit resets; combined with numChannels and
-	// displayMode it forms a stable string key that forces UplotReact to remount only
-	// when options actually change — so options, data, and key are always in sync.
 	const [resetCounter, setResetCounter] = useState(0);
 	const chartKey = `${numChannels}-${displayMode}-${resetCounter}`;
 
@@ -133,13 +130,17 @@ export const MultiChanScope = ({
 	const upperBound = useRef<number | undefined>(undefined);
 	const lowerBound = useRef<number | undefined>(undefined);
 	const firstValue = useRef(false);
+	const currentSlotIdx = useRef(0);
+	const boundsDirty = useRef(true);
 
 	const resetBuffer = (mode: FollowModes, size: number) => {
 		bufferRef.current = makeBuffer(size, mode);
 		elapsed.current = 0;
 		elapsedPerCh.current = new Array(MAX_CHANNELS).fill(0);
+		currentSlotIdx.current = 0;
 		upperBound.current = undefined;
 		lowerBound.current = undefined;
+		boundsDirty.current = true;
 	};
 
 	const doReset = (mode: FollowModes) => {
@@ -196,6 +197,23 @@ export const MultiChanScope = ({
 		ch4: { min: null, max: null, stream: true },
 	}).current;
 
+	const updateBounds = (oldValue: number | undefined, newValue: number) => {
+		if (
+			oldValue !== undefined &&
+			(oldValue === upperBound.current || oldValue === lowerBound.current)
+		) {
+			boundsDirty.current = true;
+		}
+		if (!boundsDirty.current) {
+			if (upperBound.current === undefined || newValue > upperBound.current) {
+				upperBound.current = newValue;
+			}
+			if (lowerBound.current === undefined || newValue < lowerBound.current) {
+				lowerBound.current = newValue;
+			}
+		}
+	};
+
 	useScopeWorker(
 		id,
 		scopeParameters,
@@ -221,23 +239,27 @@ export const MultiChanScope = ({
 				if (mode === "cyclic") {
 					const e = (elapsedPerCh.current[chIdx] + 1) % size;
 					elapsedPerCh.current[chIdx] = e;
+					const oldValue = buf.ys[chIdx][e];
 					buf.ys[chIdx][e] = val;
+					updateBounds(oldValue, val);
 				} else {
 					if (chIdx === 0) {
-						// ch1 advances the shared timeline; all other channels get NaN for
-						// this slot and will overwrite it if a value arrives this batch.
-						elapsed.current += 1;
-						buf.x.push(elapsed.current);
-						for (let i = 0; i < MAX_CHANNELS; i++) buf.ys[i].push(Number.NaN);
-						if (buf.x.length > size) {
-							buf.x.shift();
-							for (const ys of buf.ys) ys.shift();
+						const idx = elapsed.current % size;
+						currentSlotIdx.current = idx;
+						buf.x[idx] = elapsed.current + 1;
+						for (let i = 0; i < MAX_CHANNELS; i++) {
+							const oldValue =
+								elapsed.current >= size ? buf.ys[i][idx] : undefined;
+							buf.ys[i][idx] = Number.NaN;
+							updateBounds(oldValue, Number.NaN);
 						}
+						elapsed.current += 1;
 					}
 					// Overwrite the most recent slot for this channel
-					if (buf.ys[chIdx].length > 0) {
-						buf.ys[chIdx][buf.ys[chIdx].length - 1] = val;
-					}
+					const idx = currentSlotIdx.current;
+					const oldValue = buf.ys[chIdx][idx];
+					buf.ys[chIdx][idx] = val;
+					updateBounds(oldValue, val);
 				}
 				lastValues[chIdx] = val;
 			}
@@ -248,27 +270,52 @@ export const MultiChanScope = ({
 				updateScheduled.current = true;
 				requestAnimationFrame(() => {
 					const nChSnap = numChannelsRef.current;
-					let min = Infinity;
-					let max = -Infinity;
-					for (let i = 0; i < nChSnap; i++) {
-						for (const v of buf.ys[i]) {
-							if (v < min) min = v;
-							if (v > max) max = v;
+					if (boundsDirty.current) {
+						let min = Infinity;
+						let max = -Infinity;
+						const filled =
+							mode === "cyclic" ? size : Math.min(elapsed.current, size);
+						for (let i = 0; i < nChSnap; i++) {
+							for (let s = 0; s < filled; s++) {
+								const v = buf.ys[i][s];
+								if (v < min) min = v;
+								if (v > max) max = v;
+							}
+						}
+						upperBound.current = max === -Infinity ? undefined : max;
+						lowerBound.current = min === Infinity ? undefined : min;
+						boundsDirty.current = false;
+					}
+					const min = lowerBound.current ?? Infinity;
+					const max = upperBound.current ?? -Infinity;
+
+					let dataX = buf.x;
+					let dataYs = buf.ys;
+					if (mode === "linear") {
+						const filled = Math.min(elapsed.current, size);
+						if (filled < size) {
+							dataX = buf.x.slice(0, filled);
+							dataYs = buf.ys.map((ys) => ys.slice(0, filled));
+						} else {
+							const writeIdx = elapsed.current % size;
+							dataX = [...buf.x.slice(writeIdx), ...buf.x.slice(0, writeIdx)];
+							dataYs = buf.ys.map((ys) => [
+								...ys.slice(writeIdx),
+								...ys.slice(0, writeIdx),
+							]);
 						}
 					}
-					upperBound.current = max;
-					lowerBound.current = min;
 
 					if (chartRef.current) {
 						chartRef.current.batch(() => {
 							chartRef.current.setData(
-								[buf.x, ...buf.ys.slice(0, nChSnap)],
+								[dataX, ...dataYs.slice(0, nChSnap)],
 								false,
 							);
-							if (buf.x.length > 0) {
+							if (dataX.length > 0) {
 								chartRef.current.setScale("x", {
-									min: buf.x[0],
-									max: buf.x[buf.x.length - 1],
+									min: dataX[0],
+									max: dataX[dataX.length - 1],
 								});
 							}
 							if (min !== Infinity) {
@@ -372,10 +419,14 @@ export const MultiChanScope = ({
 			<UplotReact
 				key={chartKey}
 				options={options}
-				data={[
-					bufferRef.current.x,
-					...bufferRef.current.ys.slice(0, numChannels),
-				]}
+				data={
+					followMode === "linear"
+						? [[], ...Array.from({ length: numChannels }, () => [])]
+						: [
+								bufferRef.current.x,
+								...bufferRef.current.ys.slice(0, numChannels),
+							]
+				}
 				onCreate={(chart) => {
 					chartRef.current = chart;
 				}}

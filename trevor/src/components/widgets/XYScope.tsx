@@ -21,7 +21,16 @@ export const XYScope = ({ id, onClose, num }: WidgetProps) => {
 
 	const latestX = useRef<number | null>(null);
 	const latestY = useRef<number | null>(null);
-	const points = useRef<{ x: number; y: number }[]>([]);
+	const points = useRef<{ x: number; y: number }[]>(
+		new Array(BUFFER_SIZE),
+	);
+	const pointCount = useRef(0);
+
+	const boundsDirty = useRef(true);
+	const minX = useRef<number | undefined>(undefined);
+	const maxX = useRef<number | undefined>(undefined);
+	const minY = useRef<number | undefined>(undefined);
+	const maxY = useRef<number | undefined>(undefined);
 
 	const updateScheduled = useRef(false);
 
@@ -79,10 +88,11 @@ export const XYScope = ({ id, onClose, num }: WidgetProps) => {
 			ctx.stroke();
 		}
 
-		// Draw points
 		ctx.fillStyle = "orange";
 		const pointRadius = 1;
-		for (const p of points.current) {
+		const filled = Math.min(pointCount.current, bufferSizeRef.current);
+		for (let i = 0; i < filled; i++) {
+			const p = points.current[i];
 			const px = dataToCanvasX(p.x, w);
 			const py = dataToCanvasY(p.y, h);
 			ctx.beginPath();
@@ -91,8 +101,21 @@ export const XYScope = ({ id, onClose, num }: WidgetProps) => {
 		}
 	};
 
+	const getOrderedPoints = () => {
+		const size = bufferSizeRef.current;
+		const filled = Math.min(pointCount.current, size);
+		if (filled < size) return points.current.slice(0, filled);
+		const writeIdx = pointCount.current % size;
+		return [...points.current.slice(writeIdx), ...points.current.slice(0, writeIdx)];
+	};
+
 	const reset = () => {
-		points.current = [];
+		pointCount.current = 0;
+		boundsDirty.current = true;
+		minX.current = undefined;
+		maxX.current = undefined;
+		minY.current = undefined;
+		maxY.current = undefined;
 		scaleX.current = 1;
 		scaleY.current = 1;
 		offsetX.current = 0;
@@ -103,25 +126,33 @@ export const XYScope = ({ id, onClose, num }: WidgetProps) => {
 	// Zoom to fit all current points with margin
 	const zoomToFit = () => {
 		const canvas = canvasRef.current;
-		if (!canvas || points.current.length === 0) return;
+		if (!canvas || pointCount.current === 0) return;
 
 		const w = canvas.width;
 		const h = canvas.height;
 
-		// Compute extrema from current buffer
-		let minX = Infinity,
-			maxX = -Infinity,
-			minY = Infinity,
-			maxY = -Infinity;
-		for (const p of points.current) {
-			if (p.x < minX) minX = p.x;
-			if (p.x > maxX) maxX = p.x;
-			if (p.y < minY) minY = p.y;
-			if (p.y > maxY) maxY = p.y;
+		if (boundsDirty.current) {
+			let mnX = Infinity,
+				mxX = -Infinity,
+				mnY = Infinity,
+				mxY = -Infinity;
+			const filled = Math.min(pointCount.current, bufferSizeRef.current);
+			for (let i = 0; i < filled; i++) {
+				const p = points.current[i];
+				if (p.x < mnX) mnX = p.x;
+				if (p.x > mxX) mxX = p.x;
+				if (p.y < mnY) mnY = p.y;
+				if (p.y > mxY) mxY = p.y;
+			}
+			minX.current = mnX === Infinity ? undefined : mnX;
+			maxX.current = mxX === -Infinity ? undefined : mxX;
+			minY.current = mnY === Infinity ? undefined : mnY;
+			maxY.current = mxY === -Infinity ? undefined : mxY;
+			boundsDirty.current = false;
 		}
 
-		const dataWidth = maxX - minX || 1;
-		const dataHeight = maxY - minY || 1;
+		const dataWidth = (maxX.current ?? 0) - (minX.current ?? 0) || 1;
+		const dataHeight = (maxY.current ?? 0) - (minY.current ?? 0) || 1;
 
 		const scaleXNew = (w - 2 * MARGIN_PX) / dataWidth;
 		const scaleYNew = (h - 2 * MARGIN_PX) / dataHeight;
@@ -131,8 +162,8 @@ export const XYScope = ({ id, onClose, num }: WidgetProps) => {
 		scaleY.current = scale;
 
 		// Center offset to middle of data bounding box
-		offsetX.current = (minX + maxX) / 2;
-		offsetY.current = (minY + maxY) / 2;
+		offsetX.current = ((minX.current ?? 0) + (maxX.current ?? 0)) / 2;
+		offsetY.current = ((minY.current ?? 0) + (maxY.current ?? 0)) / 2;
 
 		drawPoints();
 	};
@@ -168,13 +199,15 @@ export const XYScope = ({ id, onClose, num }: WidgetProps) => {
 		return () => ro.disconnect();
 	}, []);
 
-	// Keep bufferSizeRef updated and trim points immediately on bufferSize change
 	useEffect(() => {
+		if (bufferSizeRef.current === bufferSize) return;
+		const kept = getOrderedPoints().slice(-bufferSize);
 		bufferSizeRef.current = bufferSize;
-		if (points.current.length > bufferSize) {
-			points.current = points.current.slice(-bufferSize);
-			drawPoints();
-		}
+		points.current = new Array(bufferSize);
+		for (let i = 0; i < kept.length; i++) points.current[i] = kept[i];
+		pointCount.current = kept.length;
+		boundsDirty.current = true;
+		drawPoints();
 	}, [bufferSize]);
 
 	const scopeParameters = useRef({
@@ -198,14 +231,30 @@ export const XYScope = ({ id, onClose, num }: WidgetProps) => {
 				}
 
 				if (latestX.current != null && latestY.current != null) {
-					points.current.push({ x: latestX.current, y: latestY.current });
+					const size = bufferSizeRef.current;
+					const idx = pointCount.current % size;
+					const old = pointCount.current >= size ? points.current[idx] : undefined;
+					points.current[idx] = { x: latestX.current, y: latestY.current };
+					pointCount.current += 1;
+					if (
+						old !== undefined &&
+						(old.x === minX.current ||
+							old.x === maxX.current ||
+							old.y === minY.current ||
+							old.y === maxY.current)
+					) {
+						boundsDirty.current = true;
+					}
+					if (!boundsDirty.current) {
+						const { x, y } = points.current[idx];
+						if (minX.current === undefined || x < minX.current) minX.current = x;
+						if (maxX.current === undefined || x > maxX.current) maxX.current = x;
+						if (minY.current === undefined || y < minY.current) minY.current = y;
+						if (maxY.current === undefined || y > maxY.current) maxY.current = y;
+					}
 					latestX.current = null;
 					latestY.current = null;
 				}
-			}
-
-			if (points.current.length > bufferSizeRef.current) {
-				points.current = points.current.slice(-bufferSizeRef.current);
 			}
 
 			if (!updateScheduled.current) {
@@ -219,7 +268,12 @@ export const XYScope = ({ id, onClose, num }: WidgetProps) => {
 		() => {
 			latestX.current = null;
 			latestY.current = null;
-			points.current = [];
+			pointCount.current = 0;
+			boundsDirty.current = true;
+			minX.current = undefined;
+			maxX.current = undefined;
+			minY.current = undefined;
+			maxY.current = undefined;
 			scaleX.current = 1;
 			scaleY.current = 1;
 			offsetX.current = 0;
@@ -238,7 +292,7 @@ export const XYScope = ({ id, onClose, num }: WidgetProps) => {
 			return;
 		}
 		if (!timer) {
-			autorefreshTimerRef.current = setInterval(() => zoomToFit(), 1 / 60);
+			autorefreshTimerRef.current = setInterval(() => zoomToFit(), 1000 / 60);
 		}
 	}, [autorefresh]);
 
