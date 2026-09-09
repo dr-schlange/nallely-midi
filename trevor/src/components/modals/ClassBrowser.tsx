@@ -641,6 +641,7 @@ const duplicateAsSnippet = (view) => {
 
 export function ClassBrowser({ device, onClose }: ClassBrowserProps) {
 	const editorRef = useRef<EditorView | undefined>(undefined);
+	const [editorReady, setEditorReady] = useState(false);
 	const [stdout, setStdout] = useState("");
 	const [errors, setErrors] = useState<Diagnostic[]>([]);
 	const trevorSocket = useTrevorWebSocket();
@@ -686,7 +687,7 @@ export function ClassBrowser({ device, onClose }: ClassBrowserProps) {
 				changes: { from: 0, to: view.state.doc.length, insert: newCode },
 			});
 		}
-	}, [classCode?.classCode, device.meta.name]);
+	}, [classCode?.classCode, device.meta.name, editorReady]);
 
 	const customLinter = useCallback(() => errors, [errors]);
 
@@ -941,8 +942,9 @@ mod-?:     displays this entry
 				>
 					<CodeMirror
 						ref={(view) => {
-							if (view) {
+							if (view?.view) {
 								editorRef.current = view.view;
+								setEditorReady(true);
 							}
 						}}
 						maxHeight="100%"
