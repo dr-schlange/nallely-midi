@@ -132,7 +132,10 @@ export default function DragNumberInput({
 
 	if (clearDecimalButton) {
 		return (
-			<div style={{ display: "flex", alignItems: "center", gap: "2px" }}>
+			<div
+				data-no-dnd
+				style={{ display: "flex", alignItems: "center", gap: "2px" }}
+			>
 				<input
 					ref={inputRef}
 					type="text"
@@ -177,6 +180,7 @@ export default function DragNumberInput({
 	return (
 		<input
 			ref={inputRef}
+			data-no-dnd
 			type="text"
 			inputMode="decimal"
 			value={value}

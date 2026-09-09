@@ -129,7 +129,7 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 		const [displayWaitingServices, setDisplayWaitingServices] = useState(false);
 
 		const sensors = useSensors(
-			useSensor(PointerSensor, {
+			useSensor(CustomPointerSensor, {
 				activationConstraint: {
 					distance: 8,
 				},
@@ -309,10 +309,10 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 import {
 	closestCenter,
 	DndContext,
-	PointerSensor,
 	useSensor,
 	useSensors,
 } from "@dnd-kit/core";
+import { CustomPointerSensor } from "./RackRowVirtual";
 import {
 	restrictToHorizontalAxis,
 	restrictToParentElement,
