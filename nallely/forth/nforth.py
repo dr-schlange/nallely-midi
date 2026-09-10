@@ -828,8 +828,6 @@ class NForth:
         latest = self.memory[self.latest]
         words = []
         while latest != 0:
-            if self.memory[latest + FFA_OFFSET] & HIDDEN_MASK > 0:
-                continue
             words.insert(0, self.memory[latest + NFA_OFFSET])
             latest = self.memory[latest]
         return words

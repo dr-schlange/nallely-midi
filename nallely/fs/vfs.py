@@ -806,6 +806,8 @@ class VDev(VDir):
         self: Self, fh: FileHandleT, start_id: int, token: ReaddirToken
     ) -> list[tuple[bytes, InodeT]]:
         assert fh == self.inode_num
+        from ..forth.forthvfs import VForth, VForthREPL
+
         entries = super().readdir(fh, start_id, token)
         for v in [VMeta, VViewVirtual, VForth, VForthREPL]:
             m = self._get(self.component, v)
@@ -831,6 +833,8 @@ class VDev(VDir):
         ctx: RequestContext | None = None,
     ) -> EntryAttributes:
         assert parent_inode == self.inode_num
+        from ..forth.forthvfs import VForth, VForthREPL
+
         for v in [VMeta, VViewVirtual, VForth, VForthREPL]:
             if name == v._get_name(self.component).encode("utf-8"):
                 m = self._get(self.component, v)
@@ -1145,6 +1149,8 @@ class VMidiDev(VDir):
         self: Self, fh: FileHandleT, start_id: int, token: ReaddirToken
     ) -> list[tuple[bytes, InodeT]]:
         assert fh == self.inode_num
+        from ..forth.forthvfs import VForth, VForthREPL
+
         entries = super().readdir(fh, start_id, token)
         for v in [VMeta, VNote, VForth, VForthREPL]:
             m = self._get(self.component, v)
@@ -1164,6 +1170,8 @@ class VMidiDev(VDir):
         ctx: RequestContext | None = None,
     ) -> EntryAttributes:
         assert parent_inode == self.inode_num
+        from ..forth.forthvfs import VForth, VForthREPL
+
         for v in [VMeta, VNote, VForth, VForthREPL]:
             if name == v._get_name(self.component).encode("utf-8"):
                 m = self._get(self.component, v)
@@ -1448,173 +1456,3 @@ class VViewVirtual(VFile):
     @override
     def read(self: Self, fh: FileHandleT, off: int, size: int) -> bytes:
         return self.gen_sh()
-
-
-class VForth(VFile):
-    @property
-    def mode(self) -> int:
-        return 0o600
-
-    @classmethod
-    @override
-    def stable_ref(cls, component: MidiDevice | VirtualDevice) -> int:
-        return hashpath(f"/dev/{component.uid()}/forth")
-
-    @classmethod
-    @override
-    def _get_name(cls, component: MidiDevice | VirtualDevice) -> str:
-        return ".forth"
-
-    def _stdout(self):
-        return f"{self.mountpoint}/dev/{self.component.uid()}/.forth"
-
-    def nread(self, parent_addr, subaddr):
-        port = self.proxy.nread(subaddr.lower())
-        self.forth.pushd(port)
-
-    def nwrite(self, addr, subaddr, value):
-        self.proxy.nwrite(subaddr.lower(), value)
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        from ..forth.nforth import NForth
-
-        self.result = ""
-        self.forth = NForth(bridge=self)
-        self.forth.swap_print(self.forth_display)
-        self.forth.boot()
-        self.proxy = NProxy.of(self.component, self.stable_ref(self.component))
-        if self.proxy:
-            self.forth._write(self.proxy.generate_vocab())
-            self.forth.interpret()
-
-    def content(self):
-        return f"{self.result}".encode()
-
-    @override
-    def getattr(
-        self: Self, inode: InodeT, ctx: RequestContext | None = None
-    ) -> EntryAttributes:
-        entry = super().getattr(inode, ctx)
-        entry.st_size = len(self.content())
-        return entry
-
-    @override
-    def read(self: Self, fh: FileHandleT, off: int, size: int) -> bytes:
-        return self.content()
-
-    def forth_display(self, *msgs, end="\n", **kwargs):
-        self.result += f"{' '.join(str(msg) for msg in msgs)}{end}"
-
-    def flush_display(self):
-        self.result = ""
-
-    @override
-    def write(self: Self, fh: FileHandleT, off: int, buf: bytes) -> int:
-        try:
-            self.flush_display()
-            data_str = buf.decode("utf-8").strip()
-            cmd = data_str.strip().lower()
-            forthvm = self.forth
-            if cmd.startswith("words?"):
-                self.forth_display(" ".join(forthvm.dump_known_words()))
-            elif cmd.startswith("dump "):
-                cmd, *word = cmd.split()
-                if len(word) > 1:
-                    self.forth_display("Usage: dump <WORD>")
-                    return len(buf)
-                word = word[0]
-                cfa, _ = forthvm.find(word)
-                if cfa:
-                    forthvm.decode_def(cfa - 3)
-                else:
-                    try:
-                        # in case it's an addr
-                        forthvm.decode_def(int(word, base=forthvm.memory[forthvm.base]))
-                    except Exception:
-                        self.forth_display(f"Word {word} is unknown")
-            elif cmd.startswith("reset!"):
-                cmd, *word = cmd.split()
-                nb_params = len(word)
-                if nb_params > 1:
-                    self.forth_display("Usage: reset! [minimal, full]")
-                    return len(buf)
-                elif nb_params == 0:
-                    boot_param = "full"
-                else:
-                    boot_param = word[0]
-                if boot_param not in ("minimal", "full"):
-                    self.forth_display("Usage: reset! [minimal, full]")
-                    return len(buf)
-                forthvm._reset_machine()
-                getattr(self.forth, f"{boot_param}boot")()
-            else:
-                forthvm._write(data_str)
-                forthvm.interpret()
-                forthvm.print("ok")
-        except ValueError as e:
-            self.display(fh, e)
-            self.forth_display("Outer interpreter error", e)
-            import traceback
-
-            traceback.print_exc()
-            raise FUSEError(errno.EINVAL)
-        except Exception as e:
-            self.display(fh, e)
-            self.forth_display("Outer interpreter error", e)
-            import traceback
-
-            traceback.print_exc()
-            raise FUSEError(errno.EIO)
-        return len(buf)
-
-
-class VForthREPL(VFile):
-    @property
-    def mode(self) -> int:
-        return 0o500
-
-    @classmethod
-    @override
-    def stable_ref(cls, component: MidiDevice | VirtualDevice) -> int:
-        return hashpath(f"/dev/{component.uid()}/forthrepl")
-
-    @classmethod
-    @override
-    def _get_name(cls, component: MidiDevice | VirtualDevice) -> str:
-        return ".forthrepl"
-
-    def _stdout(self):
-        return f"{self.mountpoint}/dev/{self.component.uid()}/.forth"
-
-    def content(self):
-        return f"""#!/usr/bin/env bash
-
-FORTH_VM="{self._stdout()}"
-echo "Interactive forth repl started on {self.component.uid()}"
-# Do a first cat to flush what was issued during the boot
-cat $FORTH_VM
-while read -e -p "nforth> " FORTH_INPUT; do
-    if [[ "$FORTH_INPUT" == "bye" ]]; then
-        break
-    fi
-    echo $FORTH_INPUT > $FORTH_VM
-    cat $FORTH_VM
-    history -s "$FORTH_INPUT"
-done
-echo "bye"
-""".encode()
-
-    @override
-    def getattr(
-        self: Self, inode: InodeT, ctx: RequestContext | None = None
-    ) -> EntryAttributes:
-        entry = super().getattr(inode, ctx)
-        entry.st_size = len(self.content())
-        entry.attr_timeout = 10
-        entry.entry_timeout = 10
-        return entry
-
-    @override
-    def read(self: Self, fh: FileHandleT, off: int, size: int) -> bytes:
-        return self.content()

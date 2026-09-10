@@ -1,4 +1,16 @@
-from nallely.core import VirtualDevice
+from nallely.core import (
+    MidiDevice,
+)
+from nallely.core import Module as MidiSection
+from nallely.core import (
+    ModulePadsOrKeys,
+    ModuleParameter,
+    ModulePitchwheel,
+    VirtualDevice,
+    VirtualParameter,
+)
+from nallely.core.links import Link
+from nallely.core.scaler import Scaler
 
 
 class NProxy:
@@ -11,6 +23,35 @@ class NProxy:
         match component:
             case VirtualDevice():
                 return NVirtDev(uid, component)
+            case MidiDevice():
+                return NMidiDev(uid, component)
+            case VirtualParameter():
+                return NVirtParameter(uid, component)
+            case MidiSection():
+                return NMidiSection(uid, component)
+            case Link():
+                return NLink(uid, component)
+            case Scaler():
+                return NScaler(uid, component)
+            case ModuleParameter():
+                return NMidiParameter(uid, component)
+            case ModulePadsOrKeys():
+                return NKeys(uid, component)
+            case ModulePitchwheel():
+                return NMidiPitchwheel(uid, component)
+
+    @classmethod
+    def generate_prelude(cls):
+        return """
+: nport
+    :
+    ['] lit ,
+    latest @ >nfa ,
+    ['] @ ,
+    ['] exit ,
+    0 state !
+;
+"""
 
     def generate_vocab(self):
         raise NotImplementedError(f"No vocab for {self.obj}")
@@ -22,62 +63,27 @@ class NMidiDev(NProxy): ...
 class NVirtDev(NProxy):
     def generate_vocab(self):
         NL = "\n"
-        # _wrap is temporary, until I implement strings
+        # nport is temporary, until I implement strings
         return f"""
 : {self.obj.uid()}@ {self.obj.uuid} nread ;
 : {self.obj.uid()}! {self.obj.uuid} nwrite ;
-: nallely_port
-    :
-    ['] lit ,
-    latest @ NFA ,
-    ['] @ ,
-    ['] exit ,
-    0 state !
-;
-: nallely_port_read
-    :
-    ['] lit ,
-    latest @ NFA ,
-    ['] @ ,
-    ['] lit ,
-    {self.obj.uuid} ,
-    ['] nread ,
-    ['] exit ,
-    0 state !
-;
-: nallely_port_write
-    :
-    ['] lit ,
-    latest @ NFA ,
-    ['] @ ,
-    ['] lit ,
-    {self.obj.uuid} ,
-    ['] nwrite ,
-    ['] exit ,
-    0 state !
-;
 {NL.join(self.generate_port_vocab())}
 """
 
     def generate_port_vocab(self):
         for port in self.obj.all_parameters():
-            yield f"nallely_port {port.name} ; "
-            yield f"nallely_port_read {self.obj.uid()}/{port.name}@ ; "
-            yield f"nallely_port_write {self.obj.uid()}/{port.name}! ; "
+            yield f"nport {port.name} ; "
+            if port.accepted_values:
+                for accepted_value in port.accepted_values:
+                    yield f"nport {port.name}/{accepted_value}"
 
     def generate_vocab_hints(self):
         return (port.name for port in self.obj.all_parameters())
 
     def nread(self, port):
-        if "/" in port:
-            _, port = port.split("/")
-            port = port[:-1]
         return float(getattr(self.obj, port.lower()))
 
     def nwrite(self, port, value):
-        if "/" in port:
-            _, port = port.split("/")
-            port = port[:-1]
         self.obj.set_parameter(port.lower(), value)
 
 
