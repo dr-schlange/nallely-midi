@@ -21,9 +21,7 @@ export const XYScope = ({ id, onClose, num }: WidgetProps) => {
 
 	const latestX = useRef<number | null>(null);
 	const latestY = useRef<number | null>(null);
-	const points = useRef<{ x: number; y: number }[]>(
-		new Array(BUFFER_SIZE),
-	);
+	const points = useRef<{ x: number; y: number }[]>(new Array(BUFFER_SIZE));
 	const pointCount = useRef(0);
 
 	const boundsDirty = useRef(true);
@@ -106,7 +104,10 @@ export const XYScope = ({ id, onClose, num }: WidgetProps) => {
 		const filled = Math.min(pointCount.current, size);
 		if (filled < size) return points.current.slice(0, filled);
 		const writeIdx = pointCount.current % size;
-		return [...points.current.slice(writeIdx), ...points.current.slice(0, writeIdx)];
+		return [
+			...points.current.slice(writeIdx),
+			...points.current.slice(0, writeIdx),
+		];
 	};
 
 	const reset = () => {
@@ -233,7 +234,8 @@ export const XYScope = ({ id, onClose, num }: WidgetProps) => {
 				if (latestX.current != null && latestY.current != null) {
 					const size = bufferSizeRef.current;
 					const idx = pointCount.current % size;
-					const old = pointCount.current >= size ? points.current[idx] : undefined;
+					const old =
+						pointCount.current >= size ? points.current[idx] : undefined;
 					points.current[idx] = { x: latestX.current, y: latestY.current };
 					pointCount.current += 1;
 					if (
@@ -247,10 +249,14 @@ export const XYScope = ({ id, onClose, num }: WidgetProps) => {
 					}
 					if (!boundsDirty.current) {
 						const { x, y } = points.current[idx];
-						if (minX.current === undefined || x < minX.current) minX.current = x;
-						if (maxX.current === undefined || x > maxX.current) maxX.current = x;
-						if (minY.current === undefined || y < minY.current) minY.current = y;
-						if (maxY.current === undefined || y > maxY.current) maxY.current = y;
+						if (minX.current === undefined || x < minX.current)
+							minX.current = x;
+						if (maxX.current === undefined || x > maxX.current)
+							maxX.current = x;
+						if (minY.current === undefined || y < minY.current)
+							minY.current = y;
+						if (maxY.current === undefined || y > maxY.current)
+							maxY.current = y;
 					}
 					latestX.current = null;
 					latestY.current = null;

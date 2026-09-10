@@ -160,7 +160,10 @@ export const XYZScope = ({ id, onClose, num }: WidgetProps) => {
 		const filled = Math.min(pointCount.current, size);
 		if (filled < size) return points.current.slice(0, filled);
 		const writeIdx = pointCount.current % size;
-		return [...points.current.slice(writeIdx), ...points.current.slice(0, writeIdx)];
+		return [
+			...points.current.slice(writeIdx),
+			...points.current.slice(0, writeIdx),
+		];
 	};
 
 	const reset = () => {
