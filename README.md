@@ -526,7 +526,7 @@ cat path_to_your_mountpoint/dev/LFO1/.forth
 ```
 
 Finally, you can start a primitive REPL if you prefer by executing the `.forthrepl` while.
-This file is a bash script which is generated and gives a simple `read`, `cat` loop.
+This file is a bash script which is generated and gives a simple `read`, `cat` loop with `tab` autocompletion and cycling.
 You can quit the REPL by sending `EOF` or by typing `bye`.
 
 ```bash
@@ -534,18 +534,97 @@ You can quit the REPL by sending `EOF` or by typing `bye`.
 $ cat path_to_your_mountpoint/mountpoint/dev/LFO1/.forthrepl
 #!/usr/bin/env bash
 
-# This line depends on where you mounted the session
-FORTH_VM="/absolute_/path_to_your_mountpoint/dev/LFO1/.forth"
-echo "Interactive forth repl started on LFO1"
-# Do a first cat to flush what was issued during the boot
-cat $FORTH_VM
+if [[ $- != *i* ]]; then
+    exec bash -i "$0" "$@"
+fi
+set -o emacs
+bind 'set menu-complete-display-prefix on'
+bind '"\t": menu-complete'
+bind 'set completion-ignore-case on'
+
+
+FORTH_VM_IO="/home/vince/git-repository/nallely/nts1/mountpoint/dev/AmsynthAuto/.forth"
+echo -e "Interactive forth repl started on AmsynthAuto"
+
+# Do a first cat to get the vocab for completion
+VOCAB=$(cat $FORTH_VM_IO)
+echo "${VOCAB%--vocab-start--*}"
+
+VOCAB="${VOCAB#*--vocab-start--}"
+VOCAB="${VOCAB%--vocab-end--*}"
+read -r -a VOCAB <<< "$VOCAB"
+
+LAST_WORD=""
+MATCH_INDEX=0
+CURRENT_MATCHES=()
+
+nforth_complete() {
+    local line="$READLINE_LINE"
+    local point="$READLINE_POINT"
+
+    local before="${line:0:point}"
+    local after="${line:point}"
+
+    local current_word="${before##*[[:space:]]}"
+    local prefix="${before%"$current_word"}"
+
+    if [[ -n "$LAST_WORD" && "$current_word" == "$LAST_WORD" && ${#CURRENT_MATCHES[@]} -gt 1 ]]; then
+        MATCH_INDEX=$(( (MATCH_INDEX + 1) % ${#CURRENT_MATCHES[@]} ))
+        local next_match="${CURRENT_MATCHES[$MATCH_INDEX]}"
+
+        READLINE_LINE="${prefix}${next_match}${after}"
+        READLINE_POINT=$((${#prefix} + ${#next_match}))
+        LAST_WORD="$next_match"
+        return
+    fi
+
+    local matches=()
+    local old_nocasematch=$(shopt -p nocasematch)
+    shopt -s nocasematch
+    for item in "${VOCAB[@]}"; do
+        if [[ "$item" == "$current_word"* ]]; then
+            matches+=("$item")
+        fi
+    done
+    $old_nocasematch
+
+    if (( ${#matches[@]} == 1 )); then
+        READLINE_LINE="${prefix}${matches[0]}${after}"
+        READLINE_POINT=$((${#prefix} + ${#matches[0]}))
+        LAST_WORD=""
+    elif (( ${#matches[@]} > 1 )); then
+        CURRENT_MATCHES=("${matches[@]}")
+        MATCH_INDEX=0
+        LAST_WORD="${matches[0]}"
+
+        READLINE_LINE="${prefix}${matches[0]}${after}"
+        READLINE_POINT=$((${#prefix} + ${#matches[0]}))
+    fi
+}
+
+bind -x '"\t": nforth_complete'
 while read -e -p "nforth> " FORTH_INPUT; do
     if [[ "$FORTH_INPUT" == "bye" ]]; then
         break
     fi
-    echo $FORTH_INPUT > $FORTH_VM
-    cat $FORTH_VM
+
+    if [[ -n "$FORTH_INPUT" ]]; then
+        history -s "$FORTH_INPUT"
+
+        echo "$FORTH_INPUT" > "$FORTH_VM_IO"
+
+        # Update vocab for next completion
+        VOCAB=$(cat "$FORTH_VM_IO")
+        echo "${VOCAB%--vocab-start--*}"
+
+        VOCAB="${VOCAB#*--vocab-start--}"
+        VOCAB="${VOCAB%--vocab-end--*}"
+        read -r -a VOCAB <<< "$VOCAB"
+    fi
+
+    LAST_WORD=""
 done
+
 echo "bye"
 
 # We can launch it then
@@ -560,26 +639,75 @@ $
 ```
 This implementation is currenlty simple, and you can easily build your own on top of the read/write facilities.
 
-The REPL proposes 2 commands which are not part of the Forth vocabulary: 
+The REPL proposes 2 commands which are not part of the Forth vocabulary (yet): 
 
 * `word?` which displays the list of all existings words in the dictionnary;
 
 ```forth
 nforth> words?
-docol @ ! SP@ SP! RP@ 0= + NAND EXIT KEY EMIT : ; STATE TIB >IN HERE LATEST DUP -1 0 1 2 3 4 6 INVERT AND NEGATE - = <> DROP OVER SWAP NIP 2DUP 2DROP OR , 2* IMMEDIATE [ ] LIT ['] BRANCH ?BRANCH >REXIT >R R> ROT IF THEN ELSE BEGIN WHILE REPEAT UNTIL DO LOOP 0FH FFH C@ C! C, LITSTRING TYPE IN> BL PARSE WORD [CHAR] ( 10 10H ." 0<> CREATE CELLS ALLOT VARIABLE ?DUP -ROT XOR 80H 8000H >= < <= 0< /MOD / MOD BASE HEX DECIMAL DIGIT SPACE . SP0 BACKSPACE CR .S
+DOCOL LIT @ ! SP@ SP! RP@ 0= + - * NAND EXIT KEY EMIT : ; . = .S LSHIFT RSHIFT NREAD NWRITE NOTEON NOTEOFF STATE TIB >IN HERE LATEST SP0 RP0 SP RP W IP BASE BL ' CR SPACE >LFA >NFA >FFA >CFA >PFA CELL CELLS 1+ BINARY DECIMAL HEX DUP INVERT AND SFLUSH ? DROP OVER SWAP OR NIP , IMMEDIATE [ ] ['] CREATE ALLOT VARIABLE ARRAY NPORT VELOCITY AMSYNTHAUTO@ AMSYNTHAUTO! AMSYNTHAUTO/NOTEON AMSYNTHAUTO/NOTEOFF GENERAL BANK_SELECT PRESET_SELECT FILTER_VELOCITY_SENS AMP_VELOCITY_SENS OSCILLATORS OSC1_WAVEFORM OSC1_SHAPE OSC2_WAVEFORM OSC2_SHAPE OSC2_OCT OSC2_SEMITONE OSC2_DETUNE SYNC_OSCILLATORS MIX RING_MOD AMP VOLUME PANNING DRIVE ATTACK DECAY SUSTAIN RELEASE FILTER TYPE SLOPE CUTOFF RESONANCE KEY_TRACK ENV_AMOUNT ATTACK DECAY SUSTAIN RELEASE LFO WAVEFORM SPEED TARGET FREQ_MOD_AMOUNT FILTER_MOD_AMOUNT AMP_MOD_AMOUNT REVERB AMOUNT SIZE STEREO DAMPING KEYS PORTAMENTO PORTAMENTO_MODE KEYBOARD_MODE PITCHWHEEL NOTES
 ```
 
 * `dump WORD` which dumps the memory for the word `WORD` (e.g: `dump dup` to see the memory fragment related to `dup`)
 
 ```forth
 nforth> dump dup
-DEF [16492] [16488, 'DUP', 0, 0]
-  LFA = 16488
-  NFA = DUP
-  FFA = 0
-  CFA = 0
-0 SP@ @ EXIT
++----------------------------+
+|  LFA    NFA    FFA    CFA  |	fields
+| 16736  16737  16738  16739 |	addresses
+| 16727   DUP     0      0   |	values
++----------------------------+--+
+| 16740   16741   16742 |  addresses
+| 16483   16475   16515 |  point to
+|  SP@      @     EXIT  |  words
++-----------------------+
 ```
+
+Most of the vocabulary is auto-generated from the instance of the module/neuron you're using. 
+In the previous example, the vocabulary is generated for the `AMSYNTHAUTO` instance and let's you manipulate then the instance of `AMSYNTH` of the running session.
+The vocabulary contains 3 dedicated words which lets you fetch data from the module/neuron, write data to the module/neuron, and in the case of MIDI devices, to trigger note on and off.
+
+```forth
+nforth> cutoff filter amsynthauto@ .S  ( fetches the current cutoff )
+[64]
+ok
+
+nforth> drop 32 cutoff filter amsynthauto!  ( set the cutoff to 32 )
+ok
+
+nforth> : maj7 4 + dup 3 + dup 3 + ;  ( maj7 word to push maj7 chords from a base note on the stack )
+ok
+
+nforth> dump maj7
++----------------------------+
+|  LFA    NFA    FFA    CFA  |	fields
+| 17419  17420  17421  17422 |	addresses
+| 17411  MAJ7     0      0   |	values
++----------------------------+--------------------------------------------------------------------------+
+| 17423   17424   17425   17426   17427   17428   17429   17430   17431   17432   17433   17434   17435 |  addresses
+| 16739   16471           16499   16739   16471           16499   16739   16471           16499   16515 |  point to
+|  DUP     LIT      4       +      DUP     LIT      3       +      DUP     LIT      3       +     EXIT  |  words
++-------------------------------------------------------------------------------------------------------+
+
+nforth> : play amsynthauto/noteon   amsynthauto/noteon   amsynthauto/noteon   amsynthauto/noteon ;  ( how to play it on amsynth )
+ok
+
+nforth> : stop amsynthauto/noteoff   amsynthauto/noteoff   amsynthauto/noteoff   amsynthauto/noteoff ;  ( how to stop it on amsynth )
+ok
+
+nforth> 38 maj7 play 54 cutoff filter amsynthauto!
+ok
+
+nforth> 32 cutoff filter amsynthauto!
+ok
+
+nforth> 45 maj7 play
+ok
+
+nforth> 38 maj7 stop 45 maj7 stop
+ok
+```
+
 </details>
 
 
