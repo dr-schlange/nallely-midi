@@ -4,9 +4,6 @@ from decimal import Decimal
 from nallely.core import (
     Int,
     MidiDevice,
-)
-from nallely.core import Module as MidiSection
-from nallely.core import (
     ModulePadsOrKeys,
     ModuleParameter,
     ModulePitchwheel,
@@ -16,6 +13,7 @@ from nallely.core import (
     VirtualDevice,
     VirtualParameter,
 )
+from nallely.core import Module as MidiSection
 from nallely.core.links import Link
 from nallely.core.scaler import Scaler
 

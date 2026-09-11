@@ -1,6 +1,7 @@
 import errno
 import os
 import stat
+import weakref
 from typing import Any, Callable, Self, override
 
 from pyfuse3 import (
@@ -57,8 +58,17 @@ class VNode:
         if self.parent is not self:
             parent.children.append(self)
         self.name = name
-        self.component = component
+        self.component = (
+            weakref.proxy(component, self._clean_ref)
+            if component and not isinstance(component, weakref.ProxyType)
+            else component
+        )
         self._registry[self.inode_num] = self
+
+    def _clean_ref(self, component):
+        for inode, entry in list(self._registry.items()):
+            if entry.component is component:
+                del self._registry[inode]
 
     @property
     def mode(self) -> int:
