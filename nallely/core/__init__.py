@@ -11,7 +11,13 @@ from .midi_device import (
     ModuleParameter,
     ModulePitchwheel,
 )
-from .parameter_instances import Int, PadOrKey, PadsOrKeysInstance, ParameterInstance
+from .parameter_instances import (
+    Int,
+    PadOrKey,
+    PadsOrKeysInstance,
+    ParameterInstance,
+    PitchwheelInstance,
+)
 from .scaler import Scaler
 from .virtual_device import TimeBasedDevice, VirtualDevice, VirtualParameter, VRef, on
 from .world import (
@@ -69,4 +75,5 @@ __all__ = [
     "MIDIBridge",
     "Keyboard",
     "VRef",
+    "PitchwheelInstance",
 ]

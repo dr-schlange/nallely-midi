@@ -1,4 +1,5 @@
 import errno
+import weakref
 from typing import Self, override
 
 from pyfuse3 import EntryAttributes, FileHandleT, FUSEError, InodeT, RequestContext
@@ -27,12 +28,39 @@ class VForth(VFile):
     def _stdout(self):
         return f"{self.mountpoint}/dev/{self.component.uid()}/.forth"
 
-    def nread(self, parent_addr, subaddr):
-        port = self.proxy.nread(subaddr.lower())
-        self.forth.pushd(port)
+    def nread(self, forthvm):
+        addr = forthvm.popd()
+        try:
+            value = NProxy.get(addr).nread(forthvm)
+            if value is not None:
+                forthvm.pushd(value)
+        except KeyError:
+            self.forth_display(f"Device at address {addr} doesn't exist")
 
-    def nwrite(self, addr, subaddr, value):
-        self.proxy.nwrite(subaddr.lower(), value)
+    def nwrite(self, forthvm):
+        addr = forthvm.popd()
+        try:
+            NProxy.get(addr).nwrite(forthvm)
+        except KeyError:
+            self.forth_display(f"Device at address {addr} doesn't exist")
+
+    def noteon(self, forthvm):
+        addr = forthvm.popd()
+        try:
+            value = NProxy.get(addr).noteon(forthvm)
+            if value is not None:
+                forthvm.pushd(value)
+        except KeyError:
+            self.forth_display(f"Device at address {addr} doesn't exist")
+
+    def noteoff(self, forthvm):
+        addr = forthvm.popd()
+        try:
+            value = NProxy.get(addr).noteoff(forthvm)
+            if value is not None:
+                forthvm.pushd(value)
+        except KeyError:
+            self.forth_display(f"Device at address {addr} doesn't exist")
 
     def collect_vocab(self):
         vocab = " ".join(self.forth.dump_known_words())
@@ -48,10 +76,9 @@ class VForth(VFile):
         self.forth.boot()
         self.forth._write(NProxy.generate_prelude())
         self.forth.interpret()
-        self.proxy = NProxy.of(self.component, self.stable_ref(self.component))
-        if self.proxy:
-            self.forth._write(self.proxy.generate_vocab())
-            self.forth.interpret()
+        initial_proxy = NProxy.of(self.component, self.stable_ref(self.component))
+        self.forth._write(initial_proxy.generate_vocab(self.forth.dump_known_words()))
+        self.forth.interpret()
         self.collect_vocab()
 
     def content(self):
@@ -164,7 +191,7 @@ if [[ $- != *i* ]]; then
 fi
 set -o emacs
 bind 'set menu-complete-display-prefix on'
-bind '"\t": menu-complete'
+bind '"\\t": menu-complete'
 bind 'set completion-ignore-case on'
 
 
@@ -227,7 +254,7 @@ nforth_complete() {{
     fi
 }}
 
-bind -x '"\t": nforth_complete'
+bind -x '"\\t": nforth_complete'
 while read -e -p "nforth> " FORTH_INPUT; do
     if [[ "$FORTH_INPUT" == "bye" ]]; then
         break

@@ -29,33 +29,6 @@ from nallely.core.world import (
 )
 from nallely.forth.nproxy import NProxy
 
-# getattr: Callable[[Self, InodeT, RequestContext | None], EntryAttributes] | None
-# readlink: Callable[[Self, InodeT, RequestContext | None], str] | None
-# lookup: (
-#     Callable[[Self, InodeT, FileNameT, RequestContext | None], EntryAttributes]
-#     | None
-# )
-# readdir: Callable[[Self, FileHandleT, int, ReaddirToken], None] | None
-# opendir: Callable[[Self, InodeT, RequestContext | None], InodeT] | None
-# open: Callable[[Self, InodeT, FlagT, RequestContext | None], FileInfo] | None
-# read: Callable[[Self, FileHandleT, int, int], bytes] | None
-# release: Callable[[Self, FileHandleT], None] | None
-# setattr: (
-#     Callable[
-#         [
-#             Self,
-#             InodeT,
-#             EntryAttributes,
-#             SetattrFields,
-#             FileHandleT | None,
-#             RequestContext | None,
-#         ],
-#         EntryAttributes,
-#     ]
-#     | None
-# )
-# write: Callable[[Self, FileHandleT, int, bytes], int] | None
-
 DEV_DIR_INODE = 2
 CLASS_DIR_INODE = 3
 BASE_INODES = [ROOT_INODE, DEV_DIR_INODE, CLASS_DIR_INODE]

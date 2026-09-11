@@ -100,6 +100,16 @@ class NForth:
     def dots(self):
         self.print(self.memory[self.memory[self.sp] : self.sp0][::-1])
 
+    def lshift(self):
+        shift = self.popd()
+        val = self.popd()
+        self.pushd(val << shift)
+
+    def rshift(self):
+        shift = self.popd()
+        val = self.popd()
+        self.pushd(val >> shift)
+
     def genericeq(self):
         """Cheater eq at the moment, practical"""
         b = self.popd()
@@ -160,11 +170,17 @@ class NForth:
         self._register_primitive("EMIT", self.emit)
         self._register_primitive(":", self.colon)
         self._register_primitive(";", self.semicolon, immediate=True)
+        # BEGIN those primitives will be moved as forth definition later
         self._register_primitive(".", self.dot)
         self._register_primitive("=", self.genericeq)
         self._register_primitive(".S", self.dots)
+        self._register_primitive("LSHIFT", self.lshift)
+        self._register_primitive("RSHIFT", self.rshift)
+        # END
         self._register_primitive("NREAD", self.nread)
         self._register_primitive("NWRITE", self.nwrite)
+        self._register_primitive("NOTEON", self.noteon)
+        self._register_primitive("NOTEOFF", self.noteoff)
         self._register_primitive("STATE", lambda: (self.pushd(self.state), self.next()))
         self._register_primitive("TIB", lambda: (self.pushd(self.tib), self.next()))
         self._register_primitive(">IN", lambda: (self.pushd(self.toin), self.next()))
@@ -312,17 +328,22 @@ class NForth:
     def nread(self):
         if self.bridge is None:
             return
-        parent_addr = self.popd()
-        subaddr = self.popd()
-        self.bridge.nread(parent_addr, subaddr)
+        self.bridge.nread(self)
 
     def nwrite(self):
         if self.bridge is None:
             return
-        addr = self.popd()
-        subaddr = self.popd()
-        value = self.popd()
-        self.bridge.nwrite(addr, subaddr, value)
+        self.bridge.nwrite(self)
+
+    def noteon(self):
+        if self.bridge is None:
+            return
+        self.bridge.noteon(self)
+
+    def noteoff(self):
+        if self.bridge is None:
+            return
+        self.bridge.noteoff(self)
 
     def pushd(self, value):
         spaddr = self.sp
