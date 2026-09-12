@@ -1051,9 +1051,9 @@ def launch_standalone_script(
 
 def _trevor_menu(loaded_paths, init_script, trevor_bus=None, trevor_ui=None):
     try:
-        from ..forth.nforth import ForthShell
+        from ..forth.shell import ForthShell
 
-        shell = ForthShell()
+        shell = ForthShell(boot=False, populate=True)
 
         elprint = _print_with_trevor if trevor_bus else print
         while (
@@ -1139,6 +1139,8 @@ def _trevor_menu(loaded_paths, init_script, trevor_bus=None, trevor_ui=None):
 
                 print(gen_subgraph_code(all_devices()).unparse())
             elif q == "forth":
+                if not shell.booted:
+                    shell.boot()
                 shell.cmdloop()
             elif q == "i":
                 menu = "[INSPECT DEVICE]\n"

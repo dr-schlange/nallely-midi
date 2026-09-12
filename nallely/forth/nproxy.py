@@ -4,9 +4,6 @@ from decimal import Decimal
 from nallely.core import (
     Int,
     MidiDevice,
-)
-from nallely.core import Module as MidiSection
-from nallely.core import (
     ModulePadsOrKeys,
     ModuleParameter,
     ModulePitchwheel,
@@ -16,6 +13,7 @@ from nallely.core import (
     VirtualDevice,
     VirtualParameter,
 )
+from nallely.core import Module as MidiSection
 from nallely.core.links import Link
 from nallely.core.scaler import Scaler
 
@@ -30,7 +28,10 @@ class NProxy:
         self.addr = addr
 
     def clean_ref(self, obj):
-        del self._registry[obj.uuid]
+        try:
+            del self._registry[obj.uuid]
+        except ReferenceError:
+            pass
 
     @classmethod
     def get(cls, addr):
@@ -40,13 +41,19 @@ class NProxy:
     def of(cls, component, uid=None):
         match component:
             case VirtualDevice():
-                device = NVirtDev(component, uid)
-                cls._registry[component.uuid] = device
-                return device
+                try:
+                    return cls._registry[component.uuid]
+                except KeyError:
+                    device = NVirtDev(component, uid)
+                    cls._registry[component.uuid] = device
+                    return device
             case MidiDevice():
-                device = NMidiDev(component, uid)
-                cls._registry[component.uuid] = device
-                return device
+                try:
+                    return cls._registry[component.uuid]
+                except KeyError:
+                    device = NMidiDev(component, uid)
+                    cls._registry[component.uuid] = device
+                    return device
             case VirtualParameter() | ParameterInstance():
                 return NVirtParameter(component, uid)
             case MidiSection():
@@ -231,3 +238,42 @@ class NLink(NProxy): ...
 
 
 class NScaler(NProxy): ...
+
+
+class NBridge:
+    def __init__(self, forth_display=None):
+        self.forth_display = forth_display or print
+
+    def nread(self, forthvm):
+        addr = forthvm.popd()
+        try:
+            value = NProxy.get(addr).nread(forthvm)
+            if value is not None:
+                forthvm.pushd(value)
+        except KeyError:
+            self.forth_display(f"Device at address {addr} doesn't exist")
+
+    def nwrite(self, forthvm):
+        addr = forthvm.popd()
+        try:
+            NProxy.get(addr).nwrite(forthvm)
+        except KeyError:
+            self.forth_display(f"Device at address {addr} doesn't exist")
+
+    def noteon(self, forthvm):
+        addr = forthvm.popd()
+        try:
+            value = NProxy.get(addr).noteon(forthvm)
+            if value is not None:
+                forthvm.pushd(value)
+        except KeyError:
+            self.forth_display(f"Device at address {addr} doesn't exist")
+
+    def noteoff(self, forthvm):
+        addr = forthvm.popd()
+        try:
+            value = NProxy.get(addr).noteoff(forthvm)
+            if value is not None:
+                forthvm.pushd(value)
+        except KeyError:
+            self.forth_display(f"Device at address {addr} doesn't exist")

@@ -1,11 +1,10 @@
 import errno
-import weakref
 from typing import Self, override
 
 from pyfuse3 import EntryAttributes, FileHandleT, FUSEError, InodeT, RequestContext
 
 from nallely.core import MidiDevice, VirtualDevice
-from nallely.forth.nproxy import NProxy
+from nallely.forth.nproxy import NBridge, NProxy
 
 from ..fs.vfs import VFile, hashpath
 
@@ -28,40 +27,6 @@ class VForth(VFile):
     def _stdout(self):
         return f"{self.mountpoint}/dev/{self.component.uid()}/.forth"
 
-    def nread(self, forthvm):
-        addr = forthvm.popd()
-        try:
-            value = NProxy.get(addr).nread(forthvm)
-            if value is not None:
-                forthvm.pushd(value)
-        except KeyError:
-            self.forth_display(f"Device at address {addr} doesn't exist")
-
-    def nwrite(self, forthvm):
-        addr = forthvm.popd()
-        try:
-            NProxy.get(addr).nwrite(forthvm)
-        except KeyError:
-            self.forth_display(f"Device at address {addr} doesn't exist")
-
-    def noteon(self, forthvm):
-        addr = forthvm.popd()
-        try:
-            value = NProxy.get(addr).noteon(forthvm)
-            if value is not None:
-                forthvm.pushd(value)
-        except KeyError:
-            self.forth_display(f"Device at address {addr} doesn't exist")
-
-    def noteoff(self, forthvm):
-        addr = forthvm.popd()
-        try:
-            value = NProxy.get(addr).noteoff(forthvm)
-            if value is not None:
-                forthvm.pushd(value)
-        except KeyError:
-            self.forth_display(f"Device at address {addr} doesn't exist")
-
     def collect_vocab(self):
         vocab = " ".join(self.forth.dump_known_words())
         self.forth_display(f"--vocab-start--{vocab}--vocab-end--")
@@ -71,7 +36,8 @@ class VForth(VFile):
         from ..forth.nforth import NForth
 
         self.result = ""
-        self.forth = NForth(bridge=self)
+        self.bridge = NBridge(forth_display=self.forth_display)
+        self.forth = NForth(bridge=self.bridge)
         self.forth.swap_print(self.forth_display)
         self.forth.boot()
         self.forth._write(NProxy.generate_prelude())
