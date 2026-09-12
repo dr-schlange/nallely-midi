@@ -110,6 +110,7 @@ class NMidiDev(NProxy):
 : {obj.uid()}! {obj.uuid} nwrite ;
 : {obj.uid()}/noteon {obj.uuid} noteon ;
 : {obj.uid()}/noteoff {obj.uuid} noteoff ;
+: {obj.uid()}/allnotesoff {obj.uuid} allnotesoff ;
 {NL.join(self.generate_section_vocab(existing_vocab))}
 """
 
@@ -274,8 +275,9 @@ class NBridge:
                     forthvm.pushd(value)
             except KeyError:
                 self.forth_display(f"Device at address {addr} doesn't exist")
-            except AttributeError:
-                self.forth_display(f"{obj} does not understands {primitive_name}")
+            except AttributeError as e:
+                self.forth_display(f"{obj} does not understands {primitive_name} or doesn't have the right parameter types")
+                print(e)
 
         for k in _PRIMITIVES:
             forthvm._register_primitive(
