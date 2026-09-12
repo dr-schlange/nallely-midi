@@ -161,9 +161,8 @@ class NMidiDev(NProxy):
         velocity = (notevelocity >> 8) & 0xFF
         obj.note_off(int(note), velocity=int(velocity) if velocity else 127)
 
-    def allnoteoff(self, forthvm):
-        obj = self.obj
-        obj.force_all_notes_off()
+    def allnotesoff(self, forthvm):
+        self.obj.all_notes_off()
 
 
 class NVirtDev(NProxy):
@@ -245,60 +244,25 @@ class NLink(NProxy): ...
 class NScaler(NProxy): ...
 
 
-def primitive(foo):
-    foo.__primitive__ = True
-    return foo
-
-
 class NBridge:
     def __init__(self, forth_display=None):
         self.forth_display = forth_display or print
 
-    def init_bridge(self, forthvm):
-        for k, v in self.__class__.__dict__.items():
-            if hasattr(v, "__primitive__"):
-                forthvm._register_primitive(
-                    k.upper(), lambda k=k: getattr(self, k)(forthvm)
-                )
+    def init(self, forthvm):
+        def dispatch(self, primitive_name, forthvm):
+            addr = forthvm.popd()
+            obj = None
+            try:
+                obj = NProxy.get(addr)
+                value = getattr(obj, primitive_name)(forthvm)
+                if value is not None:
+                    forthvm.pushd(value)
+            except KeyError:
+                self.forth_display(f"Device at address {addr} doesn't exist")
+            except AttributeError:
+                self.forth_display(f"{obj} does not understands {primitive_name}")
 
-    @primitive
-    def nread(self, forthvm):
-        addr = forthvm.popd()
-        try:
-            value = NProxy.get(addr).nread(forthvm)
-            if value is not None:
-                forthvm.pushd(value)
-        except KeyError:
-            self.forth_display(f"Device at address {addr} doesn't exist")
-
-    @primitive
-    def nwrite(self, forthvm):
-        addr = forthvm.popd()
-        try:
-            NProxy.get(addr).nwrite(forthvm)
-        except KeyError:
-            self.forth_display(f"Device at address {addr} doesn't exist")
-
-    @primitive
-    def noteon(self, forthvm):
-        addr = forthvm.popd()
-        try:
-            NProxy.get(addr).noteon(forthvm)
-        except KeyError:
-            self.forth_display(f"Device at address {addr} doesn't exist")
-
-    @primitive
-    def noteoff(self, forthvm):
-        addr = forthvm.popd()
-        try:
-            NProxy.get(addr).noteoff(forthvm)
-        except KeyError:
-            self.forth_display(f"Device at address {addr} doesn't exist")
-
-    @primitive
-    def allnoteoff(self, forthvm):
-        addr = forthvm.popd()
-        try:
-            NProxy.get(addr).allnoteoff(forthvm)
-        except KeyError:
-            self.forth_display(f"Device at address {addr} doesn't exist")
+        for k in ("nread", "nwrite", "noteon", "noteoff", "allnotesoff"):
+            forthvm._register_primitive(
+                k.upper(), lambda k=k: dispatch(self, k, forthvm)
+            )

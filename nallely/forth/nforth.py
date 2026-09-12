@@ -179,7 +179,7 @@ class NForth:
         # END
         # Bootstrap bridge primitives by asking it if it exists
         if self.bridge is not None:
-            self.bridge.init_bridge(self)
+            self.bridge.init(self)
         self._register_primitive("STATE", lambda: (self.pushd(self.state), self.next()))
         self._register_primitive("TIB", lambda: (self.pushd(self.tib), self.next()))
         self._register_primitive(">IN", lambda: (self.pushd(self.toin), self.next()))
