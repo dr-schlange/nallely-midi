@@ -4,6 +4,9 @@ from decimal import Decimal
 from nallely.core import (
     Int,
     MidiDevice,
+)
+from nallely.core import Module as MidiSection
+from nallely.core import (
     ModulePadsOrKeys,
     ModuleParameter,
     ModulePitchwheel,
@@ -13,7 +16,6 @@ from nallely.core import (
     VirtualDevice,
     VirtualParameter,
 )
-from nallely.core import Module as MidiSection
 from nallely.core.links import Link
 from nallely.core.scaler import Scaler
 
@@ -240,10 +242,23 @@ class NLink(NProxy): ...
 class NScaler(NProxy): ...
 
 
+def primitive(foo):
+    foo.__primitive__ = True
+    return foo
+
+
 class NBridge:
     def __init__(self, forth_display=None):
         self.forth_display = forth_display or print
 
+    def init_bridge(self, forthvm):
+        for k, v in self.__class__.__dict__.items():
+            if hasattr(v, "__primitive__"):
+                forthvm._register_primitive(
+                    k.upper(), lambda k=k: getattr(self, k)(forthvm)
+                )
+
+    @primitive
     def nread(self, forthvm):
         addr = forthvm.popd()
         try:
@@ -253,6 +268,7 @@ class NBridge:
         except KeyError:
             self.forth_display(f"Device at address {addr} doesn't exist")
 
+    @primitive
     def nwrite(self, forthvm):
         addr = forthvm.popd()
         try:
@@ -260,6 +276,7 @@ class NBridge:
         except KeyError:
             self.forth_display(f"Device at address {addr} doesn't exist")
 
+    @primitive
     def noteon(self, forthvm):
         addr = forthvm.popd()
         try:
@@ -269,6 +286,7 @@ class NBridge:
         except KeyError:
             self.forth_display(f"Device at address {addr} doesn't exist")
 
+    @primitive
     def noteoff(self, forthvm):
         addr = forthvm.popd()
         try:

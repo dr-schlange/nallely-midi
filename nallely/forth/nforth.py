@@ -177,10 +177,9 @@ class NForth:
         self._register_primitive("LSHIFT", self.lshift)
         self._register_primitive("RSHIFT", self.rshift)
         # END
-        self._register_primitive("NREAD", self.nread)
-        self._register_primitive("NWRITE", self.nwrite)
-        self._register_primitive("NOTEON", self.noteon)
-        self._register_primitive("NOTEOFF", self.noteoff)
+        # Bootstrap bridge primitives by asking it if it exists
+        if self.bridge is not None:
+            self.bridge.init_bridge(self)
         self._register_primitive("STATE", lambda: (self.pushd(self.state), self.next()))
         self._register_primitive("TIB", lambda: (self.pushd(self.tib), self.next()))
         self._register_primitive(">IN", lambda: (self.pushd(self.toin), self.next()))
@@ -324,26 +323,6 @@ class NForth:
                 self.primitives[exec_id]()
         finally:
             self.memory[self.in_next] = 0
-
-    def nread(self):
-        if self.bridge is None:
-            return
-        self.bridge.nread(self)
-
-    def nwrite(self):
-        if self.bridge is None:
-            return
-        self.bridge.nwrite(self)
-
-    def noteon(self):
-        if self.bridge is None:
-            return
-        self.bridge.noteon(self)
-
-    def noteoff(self):
-        if self.bridge is None:
-            return
-        self.bridge.noteoff(self)
 
     def pushd(self, value):
         spaddr = self.sp
