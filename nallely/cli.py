@@ -2,6 +2,8 @@ import argparse
 import sys
 from pathlib import Path
 
+from . import __VERSION__, __VERSION_NAME__
+
 _LINUX = sys.platform.startswith("linux")
 
 
@@ -12,7 +14,9 @@ def parse_args(argv):
         epilog="Current phase: Tepezcohuite",
     )
     parser.add_argument(
-        "--version", action="version", version="Nallely v0.7.0 -- Tepezcohuite"
+        "--version",
+        action="version",
+        version=f"Nallely {__VERSION__} -- {__VERSION_NAME__}",
     )
     subparsers = parser.add_subparsers(dest="command", required=False)
     run_parser = subparsers.add_parser(
@@ -80,6 +84,11 @@ def parse_args(argv):
         help="Path to the file that will be generated",
     )
 
+    forth_parser = subparsers.add_parser(
+        "forth",
+        help="Start a Forth REPL outside of a Nallely session. For a Forth REPL inside a session, run Nallely, then use the 'forth' command.",
+    )
+
     if _LINUX:
         fs_parser = subparsers.add_parser("fs", help="Handles NallelyFS")
         fs_subparsers = fs_parser.add_subparsers(dest="fs_action", required=True)
@@ -135,7 +144,11 @@ def main():
             from nallely.fs.nallelyfs import local_umount
 
             local_umount()
+    elif args.command == "forth":
+        from nallely.forth.nforth import ForthShell
 
+        shell = ForthShell()
+        shell.cmdloop()
     else:
         from nallely.trevor.trevor_bus import _print_with_trevor
 

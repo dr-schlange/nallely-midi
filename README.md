@@ -492,7 +492,89 @@ echo "ALL-OFF" > mountpoint/dev/NTS1/notes
 </details>
 
 <details>
-    <summary>Starting a Forth interperter (currently Linux only)</summary>
+    <summary>Starting a Forth interpreter from a running session</summary>
+
+After you start a Nallely session using `nallely run ...` based commands, you're welcomed by a small command line.
+This command line keeps the running session alive and give you few primitive tools that you can use.
+Typing "?" gives you the menu.
+
+```
+Trevor-UI running on http://localhost:3000 or http://127.0.0.1:3000...
+[..] # Other log messages here
+Press 'q' to stop the session/script, press enter to display infos, press ? to display menu...
+> ?  # what are the existing mini tools
+  "Today I barked under the rain at a cat in a tree."
+╱▏┈┈┈┈┈┈▕╲▕╲┈┈┈  [MENU]
+▏▏┈┈┈┈┈┈▕▏▔▔╲┈┈     i: inspect a virtual or MIDI device
+▏╲┈┈┈┈┈┈╱┈▔┈▔╲┈     k: stop (kill) a virtual or MIDI device
+╲▏▔▔▔▔▔▔╯╯╰┳━━▀     q: stop the script
+┈▏╯╯╯╯╯╯╯╯╱┃┈┈┈     f: force all notes off on connected all MIDI devices
+┈┃┏┳┳━━━┫┣┳┃┈┈┈     ff: force all notes off on all MIDI devices of any channel of any MIDI port
+┈┃┃┃┃┈┈┈┃┃┃┃┈┈┈     s: get some stats
+┈┗┛┗┛┈┈┈┗┛┗┛┈┈┈     sc: scan for friends!
+Mem: 140.59Mo       forth: start a Forth REPL populated with the current running session
+
+Press 'q' to stop the session/script, press enter to display infos, press ? to display menu...
+> 
+```
+
+From this point, you can type "forth" to boot the Forth REPL and kernel.
+
+Few things worth knowing:
+
+- The vocabulary for the modules/neurons is auto-generated from the instance of the modules/neurons which are part of the running session.
+- You can use the command "help" (currently not a Forth word) to list the vocabulary understood by Forth.
+- You can use the command "dump" (currently not a Forth word) followed by a word to see how it's implemented in memory.
+- Exiting the Forth shell typing "bye" or ctrl-d doesn't flush the ForthVM memory. 
+- You can use the command "boot" (currently not a Forth word) to reset the full Forth VM and reboot the Forth kernel.
+
+See below an example about how you can control an instance of AmSynth loaded in the session to fetch/write parameters, and make it play maj7 chords.
+
+```forth
+nforth> cutoff filter amsynthauto@ .S  ( fetches the current cutoff )
+[64]
+ok
+
+nforth> drop 32 cutoff filter amsynthauto!  ( set the cutoff to 32 )
+ok
+
+nforth> : maj7 4 + dup 3 + dup 3 + ;  ( maj7 word to push maj7 chords from a base note on the stack )
+ok
+
+nforth> dump maj7
++----------------------------+
+|  LFA    NFA    FFA    CFA  |	fields
+| 17419  17420  17421  17422 |	addresses
+| 17411  MAJ7     0      0   |	values
++----------------------------+--------------------------------------------------------------------------+
+| 17423   17424   17425   17426   17427   17428   17429   17430   17431   17432   17433   17434   17435 |  addresses
+| 16739   16471           16499   16739   16471           16499   16739   16471           16499   16515 |  point to
+|  DUP     LIT      4       +      DUP     LIT      3       +      DUP     LIT      3       +     EXIT  |  words
++-------------------------------------------------------------------------------------------------------+
+
+nforth> : play amsynthauto/noteon   amsynthauto/noteon   amsynthauto/noteon   amsynthauto/noteon ;  ( how to play it on amsynth )
+ok
+
+nforth> : stop amsynthauto/noteoff   amsynthauto/noteoff   amsynthauto/noteoff   amsynthauto/noteoff ;  ( how to stop it on amsynth )
+ok
+
+nforth> 38 maj7 play 54 cutoff filter amsynthauto!
+ok
+
+nforth> 32 cutoff filter amsynthauto!
+ok
+
+nforth> 45 maj7 play
+ok
+
+nforth> 38 maj7 stop 45 maj7 stop
+ok
+```
+
+</details>
+
+<details>
+    <summary>Starting a Forth interpreter from the mounted FS (currently Linux only)</summary>
 
 With the FS (and later more generally), Nallely embedds a small Forth implementation.
 The implementation is really minimal and takes heavy inspiration from [sectorforth](https://github.com/cesarblum/sectorforth) for the basic primitves, and the bootstrapped kernel.
@@ -524,6 +606,8 @@ Once you sent the command, you can fetch the result (if any) by reading the same
 ```bash
 cat path_to_your_mountpoint/dev/LFO1/.forth
 ```
+
+__NOTE__: The output in the IO file will always have a section which list all the existing words after the executions of the words you entered. The words are enclosed in two tags `--vocab-start--` and `--vocab-end--`, so you can parse them, and use this if you want to build your own code completion.
 
 Finally, you can start a primitive REPL if you prefer by executing the `.forthrepl` while.
 This file is a bash script which is generated and gives a simple `read`, `cat` loop with `tab` autocompletion and cycling.
@@ -656,7 +740,7 @@ nforth> dump dup
 |  LFA    NFA    FFA    CFA  |	fields
 | 16736  16737  16738  16739 |	addresses
 | 16727   DUP     0      0   |	values
-+----------------------------+--+
++----------------------------+
 | 16740   16741   16742 |  addresses
 | 16483   16475   16515 |  point to
 |  SP@      @     EXIT  |  words

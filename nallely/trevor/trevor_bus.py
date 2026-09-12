@@ -977,6 +977,7 @@ def start_trevor(
     address=None,
 ):
     httpserver = None
+    trevor = None
     try:
         if serve_ui:
             httpserver = HTTPServerThread(resource_path("trevor-ui"))
@@ -1017,7 +1018,8 @@ def start_trevor(
             device.all_notes_off()
             device.force_all_notes_off(10)
         stop_all_connected_devices()
-        trevor.stop()
+        if trevor:
+            trevor.stop()
 
 
 def launch_standalone_script(
@@ -1049,6 +1051,10 @@ def launch_standalone_script(
 
 def _trevor_menu(loaded_paths, init_script, trevor_bus=None, trevor_ui=None):
     try:
+        from ..forth.nforth import ForthShell
+
+        shell = ForthShell()
+
         elprint = _print_with_trevor if trevor_bus else print
         while (
             q := input(
@@ -1074,6 +1080,7 @@ def _trevor_menu(loaded_paths, init_script, trevor_bus=None, trevor_ui=None):
                     "   ff: force all notes off on all MIDI devices of any channel of any MIDI port\n"
                     "   s: get some stats\n"
                     "   sc: scan for friends!\n"
+                    "   forth: start a Forth REPL populated with the current running session\n"
                 )
                 elprint(menu)
             elif q == "ff":
@@ -1131,6 +1138,8 @@ def _trevor_menu(loaded_paths, init_script, trevor_bus=None, trevor_ui=None):
                 from ..codegen.subgraph_to_code import gen_subgraph_code
 
                 print(gen_subgraph_code(all_devices()).unparse())
+            elif q == "forth":
+                shell.cmdloop()
             elif q == "i":
                 menu = "[INSPECT DEVICE]\n"
                 devices = list(all_devices())

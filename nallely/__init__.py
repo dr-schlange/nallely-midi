@@ -1,3 +1,6 @@
+__VERSION__ = "v0.7.0"
+__VERSION_NAME__ = "Tepezcohuite"
+
 from .clocks import BernoulliTrigger, Clock, ClockDivider
 from .core import (
     Bridge,
@@ -141,4 +144,5 @@ __all__ = [
     "KeySplitter",
     "VScaler",
     "VRef",
+    "OSCBus",
 ]

@@ -859,7 +859,7 @@ import cmd
 
 class ForthShell(cmd.Cmd):
     intro = "Welcome to the Forth shell.\nType help or ? to list commands.\n"
-    prompt = "> "
+    prompt = "nforth> "
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
