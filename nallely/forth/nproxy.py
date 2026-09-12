@@ -20,6 +20,14 @@ from nallely.core.scaler import Scaler
 NL = "\n"
 
 
+_PRIMITIVES = set()
+
+
+def primitive(foo):
+    _PRIMITIVES.add(foo.__name__)
+    return foo
+
+
 class NProxy:
     _registry = {}
 
@@ -115,6 +123,7 @@ class NMidiDev(NProxy):
             section_proxy = NProxy.of(section)
             yield section_proxy.generate_vocab(existing_vocab)
 
+    @primitive
     def nread(self, forthvm):
         obj = self.obj
         section = forthvm.popd().lower()
@@ -131,6 +140,7 @@ class NMidiDev(NProxy):
 
         return getattr(section_obj, port)
 
+    @primitive
     def nwrite(self, forthvm):
         obj = self.obj
         section = forthvm.popd().lower()
@@ -147,6 +157,7 @@ class NMidiDev(NProxy):
             return None
         return setattr(section_obj, port, value)
 
+    @primitive
     def noteon(self, forthvm):
         obj = self.obj
         notevelocity = forthvm.popd()
@@ -154,6 +165,7 @@ class NMidiDev(NProxy):
         velocity = (notevelocity >> 8) & 0xFF
         obj.note_on(int(note), velocity=int(velocity) if velocity else 127)
 
+    @primitive
     def noteoff(self, forthvm):
         obj = self.obj
         notevelocity = forthvm.popd()
@@ -161,6 +173,7 @@ class NMidiDev(NProxy):
         velocity = (notevelocity >> 8) & 0xFF
         obj.note_off(int(note), velocity=int(velocity) if velocity else 127)
 
+    @primitive
     def allnotesoff(self, forthvm):
         self.obj.all_notes_off()
 
@@ -184,6 +197,7 @@ class NVirtDev(NProxy):
                 for accepted_value in port.accepted_values:
                     yield f"nport {port.name}/{accepted_value}"
 
+    @primitive
     def nread(self, forthvm):
         obj = self.obj
         port = forthvm.popd().lower()
@@ -195,8 +209,9 @@ class NVirtDev(NProxy):
             return float(value)
         return value
 
+    @primitive
     def nwrite(self, forthvm):
-        obj = self.obj()
+        obj = self.obj
         port = forthvm.popd().lower()
         value = forthvm.popd()
         if not hasattr(obj, port):
@@ -262,7 +277,7 @@ class NBridge:
             except AttributeError:
                 self.forth_display(f"{obj} does not understands {primitive_name}")
 
-        for k in ("nread", "nwrite", "noteon", "noteoff", "allnotesoff"):
+        for k in _PRIMITIVES:
             forthvm._register_primitive(
                 k.upper(), lambda k=k: dispatch(self, k, forthvm)
             )
