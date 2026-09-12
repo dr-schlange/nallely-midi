@@ -4,9 +4,6 @@ from decimal import Decimal
 from nallely.core import (
     Int,
     MidiDevice,
-)
-from nallely.core import Module as MidiSection
-from nallely.core import (
     ModulePadsOrKeys,
     ModuleParameter,
     ModulePitchwheel,
@@ -16,6 +13,7 @@ from nallely.core import (
     VirtualDevice,
     VirtualParameter,
 )
+from nallely.core import Module as MidiSection
 from nallely.core.links import Link
 from nallely.core.scaler import Scaler
 
@@ -99,6 +97,7 @@ class NMidiDev(NProxy):
     def generate_vocab(self, existing_vocab):
         obj = self.obj
         return f"""
+: {obj.uid()} {obj.uuid} ;
 : {obj.uid()}@ {obj.uuid} nread ;
 : {obj.uid()}! {obj.uuid} nwrite ;
 : {obj.uid()}/noteon {obj.uuid} noteon ;
@@ -161,6 +160,10 @@ class NMidiDev(NProxy):
         note = notevelocity & 0xFF
         velocity = (notevelocity >> 8) & 0xFF
         obj.note_off(int(note), velocity=int(velocity) if velocity else 127)
+
+    def allnoteoff(self, forthvm):
+        obj = self.obj
+        obj.force_all_notes_off()
 
 
 class NVirtDev(NProxy):
@@ -280,9 +283,7 @@ class NBridge:
     def noteon(self, forthvm):
         addr = forthvm.popd()
         try:
-            value = NProxy.get(addr).noteon(forthvm)
-            if value is not None:
-                forthvm.pushd(value)
+            NProxy.get(addr).noteon(forthvm)
         except KeyError:
             self.forth_display(f"Device at address {addr} doesn't exist")
 
@@ -290,8 +291,14 @@ class NBridge:
     def noteoff(self, forthvm):
         addr = forthvm.popd()
         try:
-            value = NProxy.get(addr).noteoff(forthvm)
-            if value is not None:
-                forthvm.pushd(value)
+            NProxy.get(addr).noteoff(forthvm)
+        except KeyError:
+            self.forth_display(f"Device at address {addr} doesn't exist")
+
+    @primitive
+    def allnoteoff(self, forthvm):
+        addr = forthvm.popd()
+        try:
+            NProxy.get(addr).allnoteoff(forthvm)
         except KeyError:
             self.forth_display(f"Device at address {addr} doesn't exist")
