@@ -188,8 +188,7 @@ class Code:
 
     def find_name(self, device):
         for key, dev in self.allocated.items():
-            # if device is dev.device:
-            if device == dev.device:
+            if device is dev.device:
                 return key
         raise KeyError(f"Cannot find key for {device}")
 
