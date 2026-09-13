@@ -78,7 +78,7 @@ class ForthShell(cmd.Cmd):
     def completenames(self, text: str, *ignored: Any) -> list[str]:
         return [
             word
-            for word in self.forth.dump_known_words()
+            for word in self.forth.dump_known_words() + ["dump", "words?", "bye"]
             if word.upper().startswith(text.upper())
         ]
 

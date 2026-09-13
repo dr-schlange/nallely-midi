@@ -1051,6 +1051,24 @@ def launch_standalone_script(
 
 def _trevor_menu(loaded_paths, init_script, trevor_bus=None, trevor_ui=None):
     try:
+        import readline  # type: ignore
+
+        def make_completer(vocabulary):
+            def completer(text, state):
+                options = [
+                    word for word in vocabulary if word.lower().startswith(text.lower())
+                ]
+                if state < len(options):
+                    return options[state]
+                return None
+
+            return completer
+
+        cmds = ("q", "?", "f", "ff", "forth", "s", "sc", "i", "k")
+
+        readline.set_completer(make_completer(cmds))
+        readline.parse_and_bind("tab: complete")
+
         from ..forth.shell import ForthShell
 
         shell = ForthShell(boot=False, populate=True)
