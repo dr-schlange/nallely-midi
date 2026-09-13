@@ -1061,6 +1061,7 @@ def _trevor_menu(loaded_paths, init_script, trevor_bus=None, trevor_ui=None):
                 "Press 'q' to stop the session/script, press enter to display infos, press ? to display menu...\n> "
             )
         ) != "q":
+            q = q.strip()
             if not q:
                 elprint(
                     trevor_infos(

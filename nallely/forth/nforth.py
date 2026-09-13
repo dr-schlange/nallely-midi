@@ -277,10 +277,10 @@ class NForth:
             words = "|"
             while self.memory[addr] != self._exit:
                 ptr = self.memory[addr]
-                word = self.memory[ptr - 2]
-                fsize = max(len(str(addr)), len(str(ptr)), len(str(word))) + 2
-                addrs += f"{addr:^{fsize}} "
+                fsize = max(len(str(addr)), len(str(ptr))) + 2
                 try:
+                    word = self.memory[ptr - 2]
+                    fsize = max(fsize, len(str(word)) + 2)
                     cfa, _ = self.find(word)
                     if cfa:
                         pto += f"{ptr:^{fsize}} "
@@ -289,8 +289,10 @@ class NForth:
                         pto += f"{' ' * fsize} "
                         words += f"{ptr:^{fsize}} "
                 except Exception:
+                    fsize = max(fsize, len(str(ptr)) + 2)
                     pto += f"{' ' * fsize} "
                     words += f"{ptr:^{fsize}} "
+                addrs += f"{addr:^{fsize}} "
                 addr += 1
             ptr = self.memory[addr]
             word = self.memory[ptr - 2]
@@ -303,8 +305,11 @@ class NForth:
             self.print(f"{pto}  point to")
             self.print(f"{words}  words")
             self.print(f"+{'-' * (len(addrs) - 2)}+")
-        except Exception:
-            ...
+        except Exception as e:
+            import traceback
+
+            traceback.print_exc()
+            print("ERRORR", e)
 
     def printd(self):
         self.print(self.memory[self.sp0 : self.memory[self.sp] - 1 : -1])
@@ -459,7 +464,7 @@ class NForth:
                     self.tib + start : self.tib + self.memory[self.toin]
                 ]
             ]
-        ).upper()
+        )
 
     def _write(self, code):
         self.memory[self.tib : len(code)] = [ord(char) for char in code]
@@ -479,7 +484,10 @@ class NForth:
     def find(self, word):
         lfa = self.memory[self.latest]
         word = word.upper()
-        while (self.memory[lfa + NFA_OFFSET] != word) and lfa != 0:
+        while (
+            (wordnfa := self.memory[lfa + NFA_OFFSET])
+            and (isinstance(wordnfa, str) and wordnfa.upper() != word)
+        ) and lfa != 0:
             lfa = self.memory[lfa]
         if lfa != 0:
             cfa = lfa + CFA_OFFSET

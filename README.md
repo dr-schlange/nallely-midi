@@ -527,15 +527,16 @@ Few things worth knowing:
 - You can use the command "dump" (currently not a Forth word) followed by a word to see how it's implemented in memory.
 - Exiting the Forth shell typing "bye" or ctrl-d doesn't flush the ForthVM memory. 
 - You can use the command "boot" (currently not a Forth word) to reset the full Forth VM and reboot the Forth kernel.
+- Tab lets you complete the current word and cycle through completion proposals.
 
 See below an example about how you can control an instance of AmSynth loaded in the session to fetch/write parameters, and make it play maj7 chords.
 
 ```forth
-nforth> cutoff filter amsynthauto@ .S  ( fetches the current cutoff )
+nforth> cutoff/filter amsynthauto@ .S  ( fetches the current cutoff )
 [64]
 ok
 
-nforth> drop 32 cutoff filter amsynthauto!  ( set the cutoff to 32 )
+nforth> drop 32 cutoff/filter amsynthauto!  ( set the cutoff to 32 )
 ok
 
 nforth> : maj7 4 + dup 3 + dup 3 + ;  ( maj7 word to push maj7 chords from a base note on the stack )
@@ -558,10 +559,10 @@ ok
 nforth> : stop amsynthauto/noteoff   amsynthauto/noteoff   amsynthauto/noteoff   amsynthauto/noteoff ;  ( how to stop it on amsynth )
 ok
 
-nforth> 38 maj7 play 54 cutoff filter amsynthauto!
+nforth> 38 maj7 play 54 cutoff/filter amsynthauto!
 ok
 
-nforth> 32 cutoff filter amsynthauto!
+nforth> 32 cutoff/filter amsynthauto!
 ok
 
 nforth> 45 maj7 play
@@ -729,7 +730,7 @@ The REPL proposes 2 commands which are not part of the Forth vocabulary (yet):
 
 ```forth
 nforth> words?
-DOCOL LIT @ ! SP@ SP! RP@ 0= + - * NAND EXIT KEY EMIT : ; . = .S LSHIFT RSHIFT NREAD NWRITE NOTEON NOTEOFF STATE TIB >IN HERE LATEST SP0 RP0 SP RP W IP BASE BL ' CR SPACE >LFA >NFA >FFA >CFA >PFA CELL CELLS 1+ BINARY DECIMAL HEX DUP INVERT AND SFLUSH ? DROP OVER SWAP OR NIP , IMMEDIATE [ ] ['] CREATE ALLOT VARIABLE ARRAY NPORT VELOCITY AMSYNTHAUTO@ AMSYNTHAUTO! AMSYNTHAUTO/NOTEON AMSYNTHAUTO/NOTEOFF GENERAL BANK_SELECT PRESET_SELECT FILTER_VELOCITY_SENS AMP_VELOCITY_SENS OSCILLATORS OSC1_WAVEFORM OSC1_SHAPE OSC2_WAVEFORM OSC2_SHAPE OSC2_OCT OSC2_SEMITONE OSC2_DETUNE SYNC_OSCILLATORS MIX RING_MOD AMP VOLUME PANNING DRIVE ATTACK DECAY SUSTAIN RELEASE FILTER TYPE SLOPE CUTOFF RESONANCE KEY_TRACK ENV_AMOUNT ATTACK DECAY SUSTAIN RELEASE LFO WAVEFORM SPEED TARGET FREQ_MOD_AMOUNT FILTER_MOD_AMOUNT AMP_MOD_AMOUNT REVERB AMOUNT SIZE STEREO DAMPING KEYS PORTAMENTO PORTAMENTO_MODE KEYBOARD_MODE PITCHWHEEL NOTES
+DOCOL LIT @ ! SP@ SP! RP@ 0= + - * NAND EXIT KEY EMIT : ; . = .S LSHIFT RSHIFT NOTEOFF NWRITE NOTEON ALLNOTESOFF NREAD STATE TIB >IN HERE LATEST SP0 RP0 SP RP W IP BASE bl ' CR SPACE >lfa >nfa >ffa >cfa >pfa cell cells 1+ binary decimal hex dup invert and sflush ? drop over swap or nip , immediate [ ] ['] create allot variable array nport velocity AmsynthAuto AmsynthAuto@ AmsynthAuto! AmsynthAuto/noteon AmsynthAuto/noteoff AmsynthAuto/allnotesoff bank_select/general preset_select/general filter_velocity_sens/general amp_velocity_sens/general osc1_waveform/oscillators osc1_shape/oscillators osc2_waveform/oscillators osc2_shape/oscillators osc2_oct/oscillators osc2_semitone/oscillators osc2_detune/oscillators sync_oscillators/oscillators mix/oscillators ring_mod/oscillators volume/amp panning/amp drive/amp attack/amp decay/amp sustain/amp release/amp type/filter slope/filter cutoff/filter resonance/filter key_track/filter env_amount/filter attack/filter decay/filter sustain/filter release/filter waveform/lfo speed/lfo target/lfo freq_mod_amount/lfo filter_mod_amount/lfo amp_mod_amount/lfo amount/reverb size/reverb stereo/reverb damping/reverb portamento/keys portamento_mode/keys keyboard_mode/keys pitchwheel/keys notes/keys TrevorBus1@ TrevorBus1! output set_pause WebSocketBus1@ WebSocketBus1! OSCBus1@ OSCBus1!
 ```
 
 * `dump WORD` which dumps the memory for the word `WORD` (e.g: `dump dup` to see the memory fragment related to `dup`)
@@ -752,11 +753,11 @@ In the previous example, the vocabulary is generated for the `AMSYNTHAUTO` insta
 The vocabulary contains 3 dedicated words which lets you fetch data from the module/neuron, write data to the module/neuron, and in the case of MIDI devices, to trigger note on and off.
 
 ```forth
-nforth> cutoff filter amsynthauto@ .S  ( fetches the current cutoff )
+nforth> cutoff/filter amsynthauto@ .S  ( fetches the current cutoff )
 [64]
 ok
 
-nforth> drop 32 cutoff filter amsynthauto!  ( set the cutoff to 32 )
+nforth> drop 32 cutoff/filter amsynthauto!  ( set the cutoff to 32 )
 ok
 
 nforth> : maj7 4 + dup 3 + dup 3 + ;  ( maj7 word to push maj7 chords from a base note on the stack )
@@ -779,10 +780,10 @@ ok
 nforth> : stop amsynthauto/noteoff   amsynthauto/noteoff   amsynthauto/noteoff   amsynthauto/noteoff ;  ( how to stop it on amsynth )
 ok
 
-nforth> 38 maj7 play 54 cutoff filter amsynthauto!
+nforth> 38 maj7 play 54 cutoff/filter amsynthauto!
 ok
 
-nforth> 32 cutoff filter amsynthauto!
+nforth> 32 cutoff/filter amsynthauto!
 ok
 
 nforth> 45 maj7 play

@@ -117,18 +117,14 @@ class NMidiDev(NProxy):
     def generate_section_vocab(self, existing_vocab):
         obj = self.obj
         for section in obj.all_sections():
-            section_name = section.state_name
-            if section_name in existing_vocab:
-                continue
-            yield f"nport {section_name}"
             section_proxy = NProxy.of(section)
             yield section_proxy.generate_vocab(existing_vocab)
 
     @primitive
     def nread(self, forthvm):
         obj = self.obj
-        section = forthvm.popd().lower()
-        port = forthvm.popd().lower()
+        port_section = forthvm.popd()
+        port, section = port_section.rsplit("/", 1)
         if not hasattr(obj, section):
             forthvm.print(f"Section {section} doesn't exist for {obj.uid()}")
             return None
@@ -144,13 +140,15 @@ class NMidiDev(NProxy):
     @primitive
     def nwrite(self, forthvm):
         obj = self.obj
-        section = forthvm.popd().lower()
-        port = forthvm.popd().lower()
-        value = forthvm.popd()
+        port_section = forthvm.popd()
+        port, section = port_section.rsplit("/", 1)
         if not hasattr(obj, section):
             forthvm.print(f"Section {section} doesn't exist for {obj.uid()}")
             return None
         section_obj = getattr(obj, section)
+        value = forthvm.popd()
+        # if isinstance(value, str) and "/" in value:
+        #     value = value.rsplit("/", 1)
         if not hasattr(section_obj, port):
             forthvm.print(
                 f"Port {port} doesn't exist for section {section} of {obj.uid()}"
@@ -196,12 +194,16 @@ class NVirtDev(NProxy):
             yield f"nport {port.name}"
             if port.accepted_values:
                 for accepted_value in port.accepted_values:
-                    yield f"nport {port.name}/{accepted_value}"
+                    # value_name = f"{accepted_value}/{port.name}"
+                    value_name = accepted_value.replace(" ", "_")
+                    if value_name in existing_vocab:
+                        continue
+                    yield f"nport {value_name}"
 
     @primitive
     def nread(self, forthvm):
         obj = self.obj
-        port = forthvm.popd().lower()
+        port = forthvm.popd()
         if not hasattr(obj, port):
             forthvm.print(f"Port {port} doesn't exist for {obj.uid()}")
             return None
@@ -213,12 +215,12 @@ class NVirtDev(NProxy):
     @primitive
     def nwrite(self, forthvm):
         obj = self.obj
-        port = forthvm.popd().lower()
+        port = forthvm.popd()
         value = forthvm.popd()
         if not hasattr(obj, port):
             forthvm.print(f"Port {port} doesn't exist for {obj.uid()}")
             return
-        obj.set_parameter(port.lower(), value)
+        obj.set_parameter(port, value)
 
 
 class NMidiSection(NProxy):
@@ -229,17 +231,24 @@ class NMidiSection(NProxy):
 
     def generate_port_vocab(self, existing_vocab):
         obj = self.obj
+        section_name = obj.state_name
         for port in obj.all_parameters():
+            for accepted_value in port.accepted_values:
+                # value_name = f"{accepted_value}/{port.name}"
+                value_name = accepted_value.replace(" ", "_")
+                if value_name in existing_vocab:
+                    continue
+                yield f"nport {value_name}"
             if port.name in existing_vocab:
                 continue
-            yield f"nport {port.name}"
+            yield f"nport {port.name}/{section_name}"
         for port in obj.meta.pitchwheels:
             if port.name in existing_vocab:
                 continue
-            yield f"nport {port.name}"
+            yield f"nport {port.name}/{section_name}"
         keys = obj.meta.pads_or_keys
         if keys:
-            yield f"nport {keys.name}"
+            yield f"nport {keys.name}/{section_name}"
 
 
 class NVirtParameter(NProxy): ...
@@ -276,7 +285,9 @@ class NBridge:
             except KeyError:
                 self.forth_display(f"Device at address {addr} doesn't exist")
             except AttributeError as e:
-                self.forth_display(f"{obj} does not understands {primitive_name} or doesn't have the right parameter types")
+                self.forth_display(
+                    f"{obj} does not understands {primitive_name} or doesn't have the right parameter types"
+                )
                 print(e)
 
         for k in _PRIMITIVES:

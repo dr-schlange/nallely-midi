@@ -1,7 +1,7 @@
 import cmd
 import os
 import readline  # type: ignore we need it for Emacs style shortcuts
-from typing import override
+from typing import Any, override
 
 from .nforth import NForth
 from .nproxy import NBridge
@@ -12,7 +12,8 @@ class ForthShell(cmd.Cmd):
     prompt = "nforth> "
 
     def __init__(self, *args, boot=False, populate=False, **kwargs):
-        super().__init__(*args, **kwargs)
+        completekey = kwargs.pop("completekey", None) or "tab: menu-complete "
+        super().__init__(*args, completekey=completekey, **kwargs)
         self.bridge = NBridge()
         self.forth = NForth(bridge=self.bridge)
         self.populate = populate
@@ -66,6 +67,20 @@ class ForthShell(cmd.Cmd):
     @override
     def default(self, line):
         self.interpret(line)
+
+    def completedefault(self, text, line, begidx, endidx) -> list[str]:
+        return [
+            word
+            for word in self.forth.dump_known_words()
+            if word.upper().startswith(text.upper())
+        ]
+
+    def completenames(self, text: str, *ignored: Any) -> list[str]:
+        return [
+            word
+            for word in self.forth.dump_known_words()
+            if word.upper().startswith(text.upper())
+        ]
 
     def do_boot(self, args):
         if args not in ["full", "minimal"]:
