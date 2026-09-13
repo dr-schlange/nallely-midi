@@ -537,6 +537,13 @@ class VirtualDevice(threading.Thread):
                             input_queue.task_done()
                         except Empty:
                             break
+                        except Exception as e:
+                            self.pause()
+                            self.paused_on_exception = True
+                            trace = traceback.format_exc()
+                            for handler in self.exception_handlers:
+                                handler(self, e, trace)
+                            input_queue.task_done()
 
                     # Log queue pressure
                     queue_level = input_queue.qsize()

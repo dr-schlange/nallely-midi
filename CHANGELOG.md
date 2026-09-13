@@ -24,6 +24,8 @@
 * Fix multiple registration of conversion wrapper/property which also masked manually added properties in virtual devices
 * Refactor/split some UI components
 * Fix issue on Demultiplexer (bad value sent on port change)
+* Fix potential memory leak when modules/neurons are killed
+* Fix bad data still being in the queue after an exception is caught
 
 ## Nallely v0.6.0 -- Tepezcohuite
 
