@@ -31,19 +31,23 @@ def primitive(foo):
 class NProxy:
     _registry = {}
 
-    def __init__(self, obj, addr=None):
-        self.obj = weakref.proxy(obj, self.clean_ref)
-        self.addr = addr
+    def __init__(self, obj):
+        if hasattr(obj, "uuid"):
+            self.obj = weakref.proxy(
+                obj, lambda o, uuid=obj.uuid: self.clean_ref(o, uuid)
+            )
+        else:
+            self.obj = weakref.proxy(obj)
 
-    def clean_ref(self, obj):
+    def clean_ref(self, obj, uuid):
         try:
             del self._registry[obj.uuid]
         except ReferenceError:
-            pass
+            del self._registry[uuid]
 
     @classmethod
-    def get(cls, addr):
-        return cls._registry[addr]
+    def get(cls, uuid):
+        return cls._registry[uuid]
 
     @classmethod
     def of(cls, component, uid=None):
@@ -52,30 +56,30 @@ class NProxy:
                 try:
                     return cls._registry[component.uuid]
                 except KeyError:
-                    device = NVirtDev(component, uid)
+                    device = NVirtDev(component)
                     cls._registry[component.uuid] = device
                     return device
             case MidiDevice():
                 try:
                     return cls._registry[component.uuid]
                 except KeyError:
-                    device = NMidiDev(component, uid)
+                    device = NMidiDev(component)
                     cls._registry[component.uuid] = device
                     return device
             case VirtualParameter() | ParameterInstance():
-                return NVirtParameter(component, uid)
+                return NVirtParameter(component)
             case MidiSection():
-                return NMidiSection(component, uid)
+                return NMidiSection(component)
             case Link():
-                return NLink(component, uid)
+                return NLink(component)
             case Scaler():
-                return NScaler(component, uid)
+                return NScaler(component)
             case ModuleParameter() | Int():
-                return NMidiParameter(component, uid)
+                return NMidiParameter(component)
             case ModulePadsOrKeys() | PadsOrKeysInstance():
-                return NKeys(component, uid)
+                return NKeys(component)
             case ModulePitchwheel() | PitchwheelInstance():
-                return NMidiPitchwheel(component, uid)
+                return NMidiPitchwheel(component)
         raise ValueError(
             f"Instance of {component.__class__} cannot be proxied by {cls.__name__}"
         )
@@ -300,7 +304,9 @@ class NBridge:
                 if value is not None:
                     forthvm.pushd(value)
             except KeyError:
-                self.forth_display(f"Device at address {addr} doesn't exist")
+                self.forth_display(
+                    f"Device at address {addr} doesn't exist or have been killed"
+                )
             except AttributeError as e:
                 self.forth_display(
                     f"{obj} does not understands {primitive_name} or doesn't have the right parameter types"

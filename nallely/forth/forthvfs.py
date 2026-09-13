@@ -42,7 +42,7 @@ class VForth(VFile):
         self.forth.boot()
         self.forth._write(NProxy.generate_prelude())
         self.forth.interpret()
-        initial_proxy = NProxy.of(self.component, self.stable_ref(self.component))
+        initial_proxy = NProxy.of(self.component)
         self.forth._write(initial_proxy.generate_vocab(self.forth.dump_known_words()))
         self.forth.interpret()
         self.collect_vocab()
