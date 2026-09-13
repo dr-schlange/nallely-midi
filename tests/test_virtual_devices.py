@@ -84,9 +84,9 @@ def test__access_links_outgoing_nonstream_from_ports():
     assert len(lfo2.output_cv.outgoing_links) == 1
 
     link = lfo2.output_cv.outgoing_nonstream_links[0]
-    assert link.src.device is lfo2
+    assert link.src.device == lfo2
     assert link.src.parameter is lfo2.output_cv.parameter
-    assert link.dest.device is lfo1
+    assert link.dest.device == lfo1
     assert link.dest.parameter is lfo1.speed_cv.parameter
 
     lfo1.speed_cv -= lfo2.output_cv
@@ -105,9 +105,9 @@ def test__access_links_outgoing_stream_from_ports(FakeLFO):
     assert len(lfo2.output_cv.outgoing_links) == 1
 
     link = lfo2.output_cv.outgoing_stream_links[0]
-    assert link.src.device is lfo2
+    assert link.src.device == lfo2
     assert link.src.parameter is lfo2.output_cv.parameter
-    assert link.dest.device is lfo1
+    assert link.dest.device == lfo1
     assert link.dest.parameter is lfo1.FAKE_cv.parameter
 
     lfo1.FAKE_cv -= lfo2.output_cv
@@ -125,9 +125,9 @@ def test__access_links_outgoing_from_device(FakeLFO):
     assert len(lfo2.outgoing_links) == 1
 
     link = lfo2.outgoing_links[0]
-    assert link.src.device is lfo2
+    assert link.src.device == lfo2
     assert link.src.parameter is lfo2.output_cv.parameter
-    assert link.dest.device is lfo1
+    assert link.dest.device == lfo1
     assert link.dest.parameter is lfo1.FAKE_cv.parameter
 
     lfo1.FAKE_cv -= lfo2.output_cv
@@ -144,9 +144,9 @@ def test__access_links_incoming_from_ports():
     assert len(lfo1.speed_cv.incoming_links) == 1
 
     link = lfo1.speed_cv.incoming_links[0]
-    assert link.src.device is lfo2
+    assert link.src.device == lfo2
     assert link.src.parameter is lfo2.output_cv.parameter
-    assert link.dest.device is lfo1
+    assert link.dest.device == lfo1
     assert link.dest.parameter is lfo1.speed_cv.parameter
 
     lfo1.speed_cv -= lfo2.output_cv
@@ -163,9 +163,9 @@ def test__access_links_incoming_from_device():
     assert len(lfo1.incoming_links) == 1
 
     link = lfo1.incoming_links[0]
-    assert link.src.device is lfo2
+    assert link.src.device == lfo2
     assert link.src.parameter is lfo2.output_cv.parameter
-    assert link.dest.device is lfo1
+    assert link.dest.device == lfo1
     assert link.dest.parameter is lfo1.speed_cv.parameter
 
     lfo1.speed_cv -= lfo2.output_cv

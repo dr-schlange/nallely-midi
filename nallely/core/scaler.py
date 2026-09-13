@@ -1,7 +1,7 @@
 import math
+import weakref
 from dataclasses import dataclass
 from decimal import Decimal
-from math import asinh, sinh
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -12,7 +12,6 @@ if TYPE_CHECKING:
         ParameterInstance,
         PitchwheelInstance,
     )
-    from .virtual_device import VirtualDevice
 
 
 @dataclass
@@ -36,6 +35,10 @@ class Scaler:
                 or isinstance(self.to_min, int)
                 and isinstance(self.to_max, int)
             )
+        from .virtual_device import VirtualDevice
+
+        if isinstance(self.data, VirtualDevice):
+            self.data = weakref.proxy(self.data)
 
     def bind(self, target):
         from .links import Link

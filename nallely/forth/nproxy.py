@@ -111,6 +111,7 @@ class NMidiDev(NProxy):
 : {obj.uid()}/noteon {obj.uuid} noteon ;
 : {obj.uid()}/noteoff {obj.uuid} noteoff ;
 : {obj.uid()}/allnotesoff {obj.uuid} allnotesoff ;
+: {obj.uid()}/kill {obj.uuid} nkill ;
 {NL.join(self.generate_section_vocab(existing_vocab))}
 """
 
@@ -176,13 +177,22 @@ class NMidiDev(NProxy):
     def allnotesoff(self, forthvm):
         self.obj.all_notes_off()
 
+    @primitive
+    def nkill(self, forthvm):
+        self.obj.stop()
+
+    @primitive
+    def ncreate(self, forthvm): ...
+
 
 class NVirtDev(NProxy):
     def generate_vocab(self, existing_vocab):
         obj = self.obj
         return f"""
+: {obj.uid()} {obj.uuid} ;
 : {obj.uid()}@ {obj.uuid} nread ;
 : {obj.uid()}! {obj.uuid} nwrite ;
+: {obj.uid()}/kill {obj.uuid} nkill ;
 {NL.join(self.generate_port_vocab(existing_vocab))}
 """
 
@@ -221,6 +231,13 @@ class NVirtDev(NProxy):
             forthvm.print(f"Port {port} doesn't exist for {obj.uid()}")
             return
         obj.set_parameter(port, value)
+
+    @primitive
+    def nkill(self, forthvm):
+        self.obj.stop()
+
+    @primitive
+    def ncreate(self, forthvm): ...
 
 
 class NMidiSection(NProxy):

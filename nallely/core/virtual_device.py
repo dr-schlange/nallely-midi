@@ -2,6 +2,7 @@ import json
 import threading
 import time
 import traceback
+import weakref
 from collections import defaultdict, deque
 from dataclasses import asdict, dataclass
 from decimal import Decimal
@@ -244,8 +245,12 @@ class VirtualDevice(threading.Thread):
         self.debug = False
         self.output = None
         virtual_devices.append(self)
-        object.__setattr__(self, "device", self)  # to be polymorphic with Int
-        object.__setattr__(self, "__virtual__", self)  # to have a fake section
+        object.__setattr__(
+            self, "device", weakref.proxy(self)
+        )  # to be polymorphic with Int
+        object.__setattr__(
+            self, "__virtual__", weakref.proxy(self)
+        )  # to have a fake section
         self._internal_default_output_setup(disable_output)
         self.links: tuple[
             defaultdict[str, list[Link]], defaultdict[str, list[Link]]

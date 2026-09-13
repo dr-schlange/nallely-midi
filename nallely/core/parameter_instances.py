@@ -1,3 +1,4 @@
+import weakref
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
 
@@ -17,7 +18,7 @@ if TYPE_CHECKING:
 class ParameterInstance:
     def __init__(self, parameter: "VirtualParameter", device: "VirtualDevice"):
         self.parameter = parameter
-        self.device = device
+        self.device = weakref.proxy(device)
 
     @property
     def name(self):
@@ -106,7 +107,7 @@ class Int(int):
     ) -> "Int":
         result = cls(val)
         result.__wrapped__ = val
-        result.device = device
+        result.device = weakref.proxy(device)
         result.parameter = parameter
         return result
 
@@ -230,7 +231,7 @@ class Int(int):
 class PadsOrKeysInstance:
     def __init__(self, parameter: "ModulePadsOrKeys", device: "MidiDevice"):
         self.parameter = parameter
-        self.device = device
+        self.device = weakref.proxy(device)
 
     def repr(self):
         return (
@@ -294,7 +295,7 @@ class PadsOrKeysInstance:
 class PitchwheelInstance:
     def __init__(self, parameter: "ModulePitchwheel", device: "MidiDevice"):
         self.parameter = parameter
-        self.device = device
+        self.device = weakref.proxy(device)
 
     def repr(self):
         return (
@@ -399,6 +400,7 @@ class PadOrKey:
         self.parameter = self
         self.name = f"#{self.cc_note}"
         self.stream = False
+        self.device = weakref.proxy(self.device)
 
     def repr(self):
         return (
