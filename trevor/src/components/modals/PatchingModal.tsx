@@ -110,6 +110,7 @@ const TmpScopeOverlay = ({
 		: defaultStyle;
 
 	const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+		if ((e.target as HTMLElement).closest("[data-no-dnd]")) return;
 		e.stopPropagation();
 		const rect = scopeRef.current!.getBoundingClientRect();
 		dragStateRef.current = {
