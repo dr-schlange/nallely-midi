@@ -10,9 +10,12 @@ Bootstrapped kernel is a port of socrotforth's minimal examples
 """
 
 import inspect
+import lzma
 import os
+import pickle
 from dataclasses import dataclass, field
-from typing import Any, override
+from pathlib import Path
+from typing import Any
 
 if os.name == "nt":
     import msvcrt
@@ -89,6 +92,23 @@ class NForth:
         self._reset_machine()
         self.__oldprint = None
         self.__newprint = None
+
+    def reload(self, memory):
+        self.memory = memory
+
+    def save_to_file(self, path: Path):
+        try:
+            with lzma.open(path, "wb") as f:
+                pickle.dump(self.memory, f, protocol=pickle.HIGHEST_PROTOCOL)
+        except Exception as e:
+            self.print(f"Couldn't save the memory to {path.absolute()}", e)
+
+    def reload_from_file(self, path: Path):
+        try:
+            with lzma.open(path, "rb") as f:
+                self.reload(pickle.load(f))
+        except Exception as e:
+            self.print(f"Couldn't load the memory from {path.absolute()}", e)
 
     def print(self, *msg, **kwargs):
         print(*msg, **kwargs)
@@ -839,3 +859,42 @@ class NForth:
             words.insert(0, self.memory[latest + NFA_OFFSET])
             latest = self.memory[latest]
         return words
+
+
+if __name__ == "__main__":
+    vm = NForth()
+    vm.boot()
+    vm._write(": x 42 ;")
+    vm.interpret()
+
+    import bz2
+    import lzma
+    import pickle
+    from pathlib import Path
+
+    img = Path("/tmp/img.forth.nly")
+    with img.open("wb") as f:
+        pickle.dump(vm.memory, f)
+
+    img = Path("/tmp/img2.forth.nly")
+    with bz2.open(img, "wb") as f:
+        pickle.dump(vm.memory, f, protocol=pickle.HIGHEST_PROTOCOL)
+
+    img = Path("/tmp/img3.forth.nly")
+    with lzma.open(img, "wb") as f:
+        pickle.dump(vm.memory, f, protocol=pickle.HIGHEST_PROTOCOL)
+
+    # with img.open("rb") as f:
+    #     memory = pickle.load(f)
+
+    # with bz2.open(img, "rb") as f:
+    #     memory = pickle.load(f)
+
+    with lzma.open(img, "rb") as f:
+        memory = pickle.load(f)
+
+    vm = NForth()
+    vm.reload(memory)
+    vm._write("x")
+    vm.interpret()
+    vm.display_stacks()
