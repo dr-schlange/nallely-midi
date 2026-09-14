@@ -149,17 +149,20 @@ class NMidiDev(NProxy):
         port, section = port_section.rsplit("/", 1)
         if not hasattr(obj, section):
             forthvm.print(f"Section {section} doesn't exist for {obj.uid()}")
-            return None
+            return
         section_obj = getattr(obj, section)
         value = forthvm.popd()
-        # if isinstance(value, str) and "/" in value:
-        #     value = value.rsplit("/", 1)
         if not hasattr(section_obj, port):
             forthvm.print(
                 f"Port {port} doesn't exist for section {section} of {obj.uid()}"
             )
-            return None
-        return setattr(section_obj, port, value)
+            return
+        try:
+            setattr(section_obj, port, value)
+        except (TypeError, ValueError):
+            forthvm.print(
+                f"Value {value} cannot be set to {port} in section {section} for {obj.uid()}"
+            )
 
     @primitive
     def noteon(self, forthvm):
@@ -208,7 +211,6 @@ class NVirtDev(NProxy):
             yield f"nport {port.name}"
             if port.accepted_values:
                 for accepted_value in port.accepted_values:
-                    # value_name = f"{accepted_value}/{port.name}"
                     value_name = accepted_value.replace(" ", "_")
                     if value_name in existing_vocab:
                         continue
@@ -234,7 +236,10 @@ class NVirtDev(NProxy):
         if not hasattr(obj, port):
             forthvm.print(f"Port {port} doesn't exist for {obj.uid()}")
             return
-        obj.set_parameter(port, value)
+        try:
+            obj.set_parameter(port, value)
+        except (TypeError, ValueError):
+            forthvm.print(f"Value {value} cannot be set to {port.name} for {obj.uid()}")
 
     @primitive
     def nkill(self, forthvm):
@@ -255,7 +260,6 @@ class NMidiSection(NProxy):
         section_name = obj.state_name
         for port in obj.all_parameters():
             for accepted_value in port.accepted_values:
-                # value_name = f"{accepted_value}/{port.name}"
                 value_name = accepted_value.replace(" ", "_")
                 if value_name in existing_vocab:
                     continue
