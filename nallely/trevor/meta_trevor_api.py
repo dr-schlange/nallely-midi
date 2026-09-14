@@ -1,7 +1,9 @@
 import inspect
 from collections import ChainMap
 
-from ..utils import get_source
+from ..utils import get_source, getlogger
+
+logger = getlogger("META")
 
 
 class MetaTrevorAPI:
@@ -85,7 +87,7 @@ class MetaTrevorAPI:
             final_code = class_code
 
         env = inspect.getmodule(current_cls)
-        print(f"[META] Compiling first version of {device_name} considering {filename}")
+        logger.info(f"Compiling first version of {device_name} considering {filename}")
         cls = self.session.compile_device(
             device_name, final_code, env=env.__dict__, filename=filename
         )
@@ -94,7 +96,7 @@ class MetaTrevorAPI:
             cls.__source__ = cls.__source__.replace(
                 f"class {device_name}", f"class {replace_name}"
             )
-            print(f"[META] Create and save new version of {cls} in {filename}")
+            logger.info(f"Create and save new version of {cls} in {filename}")
             cls = self.session.compile_device_from_cls(
                 cls, filename=filename, commit=commit
             )

@@ -21,6 +21,9 @@ from ..core.world import (
     get_virtual_devices,
     virtual_device_classes,
 )
+from ..utils import getlogger
+
+logger = getlogger("TrevorAPI")
 
 
 class TrevorAPI:
@@ -275,7 +278,7 @@ class TrevorAPI:
                 parameter, value, ThreadContext({"last_value": last_value})
             )
         except Exception as e:
-            print(f"Couldn't set {parameter} to {value} for {device_id}: {e}")
+            logger.error(f"Couldn't set {parameter} to {value} for {device_id}: {e}")
 
     def delete_all_connections(self):
         unbind_all()

@@ -18,17 +18,20 @@ from pyfuse3 import (
     SetattrFields,
 )
 
-from nallely import MidiDevice, Module, VirtualDevice, all_devices
-from nallely.core.links import Link
-from nallely.core.midi_device import ModulePadsOrKeys, ModuleParameter, ModulePitchwheel
-from nallely.core.parameter_instances import Int, ParameterInstance
-from nallely.core.virtual_device import VirtualParameter
-from nallely.core.world import (
+from .. import MidiDevice, Module, VirtualDevice, all_devices
+from ..core.links import Link
+from ..core.midi_device import ModulePadsOrKeys, ModuleParameter, ModulePitchwheel
+from ..core.parameter_instances import Int, ParameterInstance
+from ..core.virtual_device import VirtualParameter
+from ..core.world import (
     get_all_device_classes,
     get_connected_devices,
     get_virtual_devices,
 )
-from nallely.forth.nproxy import NProxy
+from ..forth.nproxy import NProxy
+from ..utils import getlogger
+
+nallelyfslog = getlogger("NallelyFS")
 
 DEV_DIR_INODE = 2
 CLASS_DIR_INODE = 3
@@ -246,7 +249,7 @@ class VFile(VNode):
     def display(self, fh, *msgs, repeat=True, end="\n", **kwargs):
         pid = self.fh2pid[fh]
         if repeat:
-            print("[NALLELYFS]", *msgs, end=end, **kwargs)
+            print("[NallelyFS]", *msgs, end=end, **kwargs)
         try:
             if pid > 0:
                 tty_path = os.readlink(f"/proc/{pid}/fd/1")
@@ -1307,13 +1310,13 @@ class VNote(VFile):
             elif cmd == "FORCE-OFF":
                 dev.force_all_notes_off()
             else:
-                msg = f"[NALLELYFS] Unknown command {cmd} for {dev.uid()}"
-                print(msg)
+                msg = f"Unknown command {cmd} for {dev.uid()}"
+                nallelyfslog.info(msg)
                 self.display(fh, msg)
         except ValueError as e:
             raise FUSEError(errno.EINVAL)
         except Exception as e:
-            print(e)
+            nallelyfslog.error(e)
             raise FUSEError(errno.EIO)
         return len(buf)
 

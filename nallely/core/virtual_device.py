@@ -14,6 +14,7 @@ from typing import Any, Callable, Literal, Self, Sequence, Type
 
 from ..utils import (
     diff0_cv_property,
+    getlogger,
     map2values_cv_property,
     round_cv_property,
     sup0_cv_property,
@@ -29,6 +30,8 @@ from .world import (
     register_virtual_device_class,
     virtual_devices,
 )
+
+logger = getlogger("VIRTUAL")
 
 
 @dataclass
@@ -238,8 +241,8 @@ class VirtualDevice(threading.Thread):
         super().__init__(daemon=True)
         self.uuid = uuid if uuid else id(self)
         self.exception_handlers = [
-            lambda device, exception, trace: print(
-                f"[ERROR] Exception caught on {device}: {exception}\n[ERROR] pausing device"
+            lambda device, exception, trace: logger.error(
+                f"Exception caught on {device}: {exception}\n[ERROR] pausing device"
             )
         ]
         self.debug = False
@@ -404,7 +407,7 @@ class VirtualDevice(threading.Thread):
                 (value, previous, ctx or ThreadContext())
             )
         except Full:
-            print(
+            logger.warning(
                 f"Warning: input_queue full for {self.uid()}[{param}] — dropping message {value}"
             )
 
@@ -548,7 +551,7 @@ class VirtualDevice(threading.Thread):
                     # Log queue pressure
                     queue_level = input_queue.qsize()
                     if queue_level > queue_warning_limit:
-                        print(
+                        logger.warning(
                             f"[{self.uid()}] Queue {param} usage: {queue_level}/{input_queue.maxsize}"
                         )
 
@@ -1172,7 +1175,6 @@ class TimeBasedDevice(VirtualDevice):
             ctx.sync_bpm = float(self._speed * 60)
 
         # Reset phase
-        # print(f"Set freq={self.speed} for estimated bpm={ctx.sync_bpm}")
         self.last_sync_time = now
 
     def main(self, ctx: ThreadContext):

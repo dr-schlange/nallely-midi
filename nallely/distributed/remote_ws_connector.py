@@ -36,6 +36,10 @@ import time
 
 from websockets.sync.client import connect as ws_connect
 
+from nallely.utils import getlogger
+
+logger = getlogger("REMOTE-BUS")
+
 
 class NallelyService:
     """A single external neuron connection to the Nallely WebSocket Bus.
@@ -181,7 +185,7 @@ class NallelyWebsocketBus:
     def _build_uuid(kind, name):
         return f"{kind}::{name}"
 
-    def register(self, kind, name, parameters, config, block=True, log=print):
+    def register(self, kind, name, parameters, config, block=True, log=logger.info):
         """Create, register, and start a NallelyService."""
         service = NallelyService(kind, name, parameters, config, self.address, log=log)
         self.registered[self._build_uuid(kind, name)] = service
@@ -194,7 +198,7 @@ class NallelyWebsocketBus:
         self.registered[key].send(parameter, value)
 
     def close(self):
-        print("[REMOTE-BUS] Closing remote services")
+        logger.info("[REMOTE-BUS] Closing remote services")
         for name, service in self.registered.items():
-            print(f"* {name}")
+            logger.info(f"* {name}")
             service.dispose()

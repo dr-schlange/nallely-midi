@@ -8,11 +8,14 @@ from pythonosc.udp_client import SimpleUDPClient
 
 from .core.virtual_device import VirtualDevice, VirtualParameter
 from .core.world import ThreadContext, no_registration
+from .utils import getlogger
 from .websocket_bus import WebSocketBus
 
 # We monkey patch to make it polymorphic at the moment
 # that's not the best, but that's ok right now.
 SimpleUDPClient.close = lambda self: ...  # type: ignore
+
+osclog = getlogger("OSC")
 
 
 @no_registration
@@ -38,14 +41,13 @@ class OSCBus(WebSocketBus):
     def stop(self, clear_queues=False):
         self.connected.clear()
         if self.running and self.server:
-            print(f"[{self.NAME}] Shutting down osc bus...", end="\t")
+            osclog.info(f"[{self.NAME}] Shutting down osc bus...")
             self.running = False
             self.pause_event.set()
             self.dispatcher.clear()
             self.server.shutdown()
             self.server.server_close()
             self.server = None
-            print("Done")
         for key, value in list(self.__class__.__dict__.items()):
             if isinstance(value, VirtualParameter):
                 delattr(self.__class__, key)
@@ -87,17 +89,17 @@ class SelfRegisterDispatcher(Dispatcher):
 
     def register_service(self, client_address, address, str_config: str):
         if not isinstance(str_config, str):
-            print(
+            osclog.error(
                 f"[{self.server.NAME}] Autoconfig parameter should be a JSON string, but is {str_config}, type={type(str_config)}"
             )
             return
         service_name, *_ = address[1:].split("/")
-        print(f"[{self.server.NAME}] Autoconfig for {service_name}")
+        osclog.info(f"[{self.server.NAME}] Autoconfig for {service_name}")
 
         config = json.loads(str_config)
         parameters = config.get("parameters")
         if not parameters:
-            print(
+            osclog.info(
                 f"[{self.server.NAME}] Cannot register {service_name} no parameter passed"
             )
             return
@@ -119,18 +121,20 @@ class SelfRegisterDispatcher(Dispatcher):
 
     def add_parameters(self, client_address, address, str_config: str):
         if not isinstance(str_config, str):
-            print(
+            osclog.error(
                 f"[{self.server.NAME}] Autoconfig parameter should be a JSON string, but is {str_config}, type={type(str_config)}"
             )
             return
 
         service_name, *_ = address[1:].split("/")
-        print(f"[{self.server.NAME}] Autoconfig add parameters for {service_name}")
+        osclog.info(
+            f"[{self.server.NAME}] Autoconfig add parameters for {service_name}"
+        )
 
         config = json.loads(str_config)
         parameters = config.get("parameters")
         if not parameters:
-            print(
+            osclog.info(
                 f"[{self.server.NAME}] Cannot register new parameters {service_name} no parameter passed"
             )
             return
@@ -138,16 +142,20 @@ class SelfRegisterDispatcher(Dispatcher):
 
     def remove_parameters(self, client_address, address, str_config: str):
         if not isinstance(str_config, str):
-            print(f"[{self.server.NAME}] Autoconfig parameter should be a JSON string")
+            osclog.error(
+                f"[{self.server.NAME}] Autoconfig parameter should be a JSON string"
+            )
             return
 
         service_name, *_ = address[1:].split("/")
-        print(f"[{self.server.NAME}] Autoconfig add parameters for {service_name}")
+        osclog.info(
+            f"[{self.server.NAME}] Autoconfig add parameters for {service_name}"
+        )
 
         config = json.loads(str_config)
         parameters = config.get("parameters")
         if not parameters:
-            print(
+            osclog.error(
                 f"[{self.server.NAME}] Cannot remove parameters {service_name} no parameter passed"
             )
             return
@@ -166,16 +174,18 @@ class SelfRegisterDispatcher(Dispatcher):
         self._map[f"/{service_name}/*"].clear()
 
     def receive_value(self, client_address, address, value: float | str):
-        if (
-            address.endswith("/unregister")
-            or address.endswith("/autoconfig")
-            or address.endswith("/autoconfig/add_parameters")
-            or address.endswith("/autoconfig/remove_parameters")
+        if address.endswith(
+            (
+                "/unregister",
+                "/autoconfig",
+                "/autoconfig/add_parameters",
+                "/autoconfig/remove_parameters",
+            )
         ):
             return
         service_name, *parameter = address[1:].split("/")
         if len(parameter) != 1:
-            print(
+            osclog.error(
                 f"[{self.server.NAME}] {service_name} received information on an unsupported channel format {parameter}"
             )
             return
@@ -185,7 +195,7 @@ class SelfRegisterDispatcher(Dispatcher):
 
         output = getattr(self.server, cv_name, None)
         if output is None:
-            print(
+            osclog.error(
                 f"[{self.server.NAME}] {service_name} does not understand {parameter}"
             )
             return
@@ -225,7 +235,7 @@ class SelfRegisterDispatcher(Dispatcher):
             )
             self.register_service(client_address, address, args[0])
             return
-        print(f"[{self.server.NAME}] Does not understand {address}: {args}")
+        osclog.info(f"[{self.server.NAME}] Does not understand {address}: {args}")
 
     def handlers_for_address(self, address_pattern: str):
         yield from super().handlers_for_address(address_pattern)

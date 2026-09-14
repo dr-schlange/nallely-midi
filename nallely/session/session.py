@@ -34,12 +34,22 @@ from ..newmodule import create_class
 from ..osc_bus import OSCBus
 from ..trevor import TrevorAPI
 from ..trevor.meta_trevor_api import MetaTrevorAPI
-from ..utils import StateEncoder, find_class, load_modules, longest_common_substring
+from ..utils import (
+    StateEncoder,
+    find_class,
+    getlogger,
+    load_modules,
+    longest_common_substring,
+)
 from ..websocket_bus import WebSocketBus
 from .metadata import SessionMetadata
 from .utils import address2path, universe_path
 
 DEFAULT_UNIVERSE = "memory"
+
+metalog = getlogger("META")
+gitlog = getlogger("GIT-STORE")
+compilelog = getlogger("COMPILE-CODEGEN")
 
 
 class Session:
@@ -63,7 +73,7 @@ class Session:
         self._finalizer = weakref.finalize(self, self._close_repo, self.repo)
 
     def gc_universe(self, universe):
-        print(f"[GIT-STORE] gc universe: {universe}")
+        gitlog.info(f"gc universe: {universe}")
         porcelain.gc(self.repo, auto=True)
 
     def save_code(self, code):
@@ -77,13 +87,13 @@ class Session:
         try:
             return load_modules([device_path])
         except Exception as e:
-            print(f"[META] Couldn't load {device_path}: {e}")
+            metalog.error(f"Couldn't load {device_path}: {e}")
 
     def _load_device_file(self, filepath):
         try:
             return load_modules([filepath])
         except Exception as e:
-            print(f"[META] Couldn't load {filepath}: {e}")
+            metalog.error(f"Couldn't load {filepath}: {e}")
 
     @staticmethod
     def to_json(obj, **kwargs):
@@ -216,7 +226,7 @@ class Session:
             if src_device not in device_map or dest_device not in device_map:
                 msg = f"Dangling reference: Device with id {src_device} couldn't been found, skipping the patch {src_param['section_name']}::{src_param_name} -> {dest_param['section_name']}::{dest_param_name}"
                 errors.append(msg)
-                print(msg)
+                gitlog.error(msg)
                 continue
             src_path = f"{device_map[src_device]}::{src_param['section_name']}::{src_param_name}"
             dest_path = f"{device_map[dest_device]}::{dest_param['section_name']}::{dest_param_name}"
@@ -282,27 +292,20 @@ class Session:
             return self.repo
         location = (Path.cwd() / self._which_universe(universe)).resolve()
         if not location.exists():
-            print(
-                f"[GIT-STORE] Creating {location.name} store at {location.absolute()}"
-            )
+            gitlog.info(f"Creating {location.name} store at {location.absolute()}")
             repo = porcelain.init(location)
         else:
-            print(f"[GIT-STORE] Opening existing store: {location.name}")
+            gitlog.info(f"Opening existing store: {location.name}")
             repo = Repo(location)
         return repo
 
     def save_metadata(self, address: str, name: str, color: str, description: str):
         meta = self.metadata.metadata_for(address)
         meta.write({"name": name, "color": color, "description": description})
-        print(
-            f"[GIT-STORE] Metadata saved for address={address} in {meta.address_frag}"
-        )
+        gitlog.info(f"Metadata saved for address={address} in {meta.address_frag}")
 
     def read_metadata(self, address: str):
         meta = self.metadata.metadata_for(address)
-        # print(
-        #     f"[GIT-STORE] Access metadata for address={address} in {meta.address_frag}"
-        # )
         return meta.read()
 
     def save_address(
@@ -310,7 +313,7 @@ class Session:
     ) -> Path:
         if not address or self.ADDRESS_CHECKER.fullmatch(address) is None:
             # raise Exception(f"{address=} has an unknown format")
-            print(f"[GIT-STORE] Couldn't parse {address=} has an unknown format")
+            gitlog.error(f"Couldn't parse {address=} has an unknown format")
             used_addresses = self.get_used_addresses(
                 universe=self._which_universe(universe)
             )
@@ -320,7 +323,7 @@ class Session:
                 rand_address := hex(randint(0, 0x03FF))[2:].zfill(4).upper()
             ) in used_addresses:
                 ...
-            print(f"[GIT-STORE] Take random free address=0x{rand_address.upper()}")
+            gitlog.info(f"Take random free address=0x{rand_address.upper()}")
             address = rand_address
         address = address.upper()
 
@@ -330,7 +333,7 @@ class Session:
         address_file.parent.mkdir(exist_ok=True, parents=True)
 
         self.save_all(address_file, save_defaultvalues=save_defaultvalues)
-        print(f"[GIT-STORE] saved {address_file.absolute()}")
+        gitlog.info(f"Saved {address_file.absolute()}")
 
         porcelain.add(repo, address_file)
         infos = self.extract_infos(address_file)
@@ -361,12 +364,12 @@ playground_code={infos["playground_code"]}
             message=message,
         )  # type: ignore
         # repo.close()
-        print(f"[GIT-STORE] {address_file.absolute()} commited")
+        gitlog.info(f"{address_file.absolute()} commited")
         return address_file
 
     def load_address(self, address, universe=None):
         address_file = address2path(self._which_universe(universe), address)
-        print(f"[GIT-STORE] Loading {address=} from file {address_file.resolve()}")
+        gitlog.info(f"Loading {address=} from file {address_file.resolve()}")
         return self.load_all(address_file)
 
     @classmethod
@@ -441,13 +444,13 @@ playground_code={infos["playground_code"]}
 
     def clear_address(self, address, universe=None):
         address_file = address2path(universe, address)
-        print(
-            f"[GIT-STORE] Deleting {address=} by deleting address file {address_file.resolve()}"
+        gitlog.info(
+            f"Deleting {address=} by deleting address file {address_file.resolve()}"
         )
         try:
             address_file.unlink()
         except FileNotFoundError:
-            print(f"[GIT-STORE] {address=} is not used, deleting noting")
+            gitlog.error(f"{address=} is not used, deleting noting")
             return
         repo = self._get_repository(universe=universe)
         porcelain.add(repo, address_file)
@@ -479,14 +482,14 @@ playground_code={infos["playground_code"]}
         except Exception as e:
             import traceback
 
-            print(f"[CODEGEN] ERROR: '{e}'", e.__class__)
+            compilelog.error(f"ERROR: '{e}' {e.__class__}")
             traceback.print_exception(type(e), e, e.__traceback__)
 
         module = getmodule(cls)
         if filename:
             from ..core.world import virtual_device_classes
 
-            print("[COMPILE] Force reload generated code module")
+            compilelog.info("Force reload generated code module")
             self._load_device_file(filename)
             # We take the new version of the class
             cls = virtual_device_classes[cls.__name__]
@@ -505,7 +508,7 @@ playground_code={infos["playground_code"]}
         if filename:
             from ..core.world import virtual_device_classes
 
-            print("[COMPILE] Force reload compiled generated module code")
+            compilelog.info("Force reload compiled generated module code")
             self._load_device_file(filename)
 
             # We take the new version of the class
@@ -529,10 +532,7 @@ original_file={read_from}
                     committer=b"dr-schlange <drcoatl@proton.me>",
                     message=message,
                 )  # type: ignore
-                print(
-                    f"[GIT-STORE] Commit {filename=} for device class {new_cls.__name__}"
-                )
-                # repo.close()
+                gitlog.info(f"Commit {filename=} for device class {new_cls.__name__}")
 
         return new_cls
 
@@ -612,24 +612,23 @@ original_file={read_from}
         new_cls._devices_count[new_cls.__name__] += 1
         try:
             if not temporary:
-                print(f"[COMPILE] Unregister {old_cls}")
+                compilelog.info(f"Unregister {old_cls}")
                 unregister_virtual_device_class(old_cls)
-        except Exception:
-            # print(
-            #     f"[DEBUG] {old_cls.__name__} is not registered as a known Virtual Device class, we skip it"
-            # )
-            pass
+        except Exception as e:
+            compilelog.debug(
+                f"[DEBUG] {old_cls.__name__} is not registered as a known Virtual Device class, we skip it {e}"
+            )
         if not temporary:
-            print(f"[COMPILE] Register {new_cls}")
+            compilelog.info(f"Register {new_cls}")
             register_virtual_device_class(new_cls)
 
         if is_vdev:
             instance.internal_setup()
             instance._internal_default_output_setup(instance.__post_init__())
-            print("[META] Instance migrated, resume the instance")
+            metalog.info("Instance migrated, resume the instance")
             instance.resume()
         elif issubclass(new_cls, VirtualDevice):
-            print("[META] Instance migrated, start the instance")
+            metalog.info("Instance migrated, start the instance")
             # We should have a VirtualDevice instance now, but not started
             instance.__init__()
             instance.start()
@@ -684,5 +683,5 @@ original_file={read_from}
 
     @staticmethod
     def _close_repo(repo):
-        print("[GIT-STORE] Closing repository")
+        gitlog.info("Closing repository")
         repo.close()

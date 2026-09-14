@@ -271,6 +271,10 @@ class AmsynthAuto(Amsynth):
         return super().close(delete)
 
     def log_termination(self, retcode, stdout, stderr):
-        print(f"[AMSYNTH] Process finished {retcode}")
-        print(f"[AMSYNTH]-STDOUT {stdout.decode()}")
-        print(f"[AMSYNTH]-STDERR {stderr.decode()}")
+        from nallely.utils import getlogger
+
+        logger = getlogger("AMSYNTH")
+
+        logger.info(f"Process finished {retcode}")
+        logger.info(f"STDOUT {stdout.decode()}")
+        logger.info(f"STDERR {stderr.decode()}")

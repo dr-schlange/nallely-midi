@@ -2,6 +2,8 @@ import collections
 import importlib
 import importlib.util
 import json
+import logging
+import logging.handlers
 import socket
 import subprocess
 import sys
@@ -10,6 +12,7 @@ from dataclasses import asdict
 from decimal import Decimal
 from functools import lru_cache
 from inspect import getmodule, getmro, getsource, isclass, isfunction, ismethod, unwrap
+from operator import attrgetter
 from pathlib import Path
 from textwrap import dedent
 
@@ -172,7 +175,9 @@ def _dynamic_property(dev, param, conversion, getattr=getattr, setattr=setattr):
         (
             conversion(param.default)
             if param.default
-            else conversion(param.range[0]) if param.range[0] is not None else None
+            else conversion(param.range[0])
+            if param.range[0] is not None
+            else None
         ),
     )
     prop = getattr(dev.__class__, param.name, None)
@@ -324,3 +329,47 @@ class MetaDecorator(type):
         bases = (cls,) + decorated_cls.__bases__
         namespace = dict(decorated_cls.__dict__)
         return type(name, bases, namespace)
+
+
+LOGGERS = []
+
+
+class OnDemandMemoryHandler(logging.handlers.BufferingHandler):
+    def __init__(self, capacity=100):
+        super().__init__(capacity)
+        self.formatter = logging.Formatter("%(asctime)s [%(name)s] %(message)s")
+
+    def get_logs(self):
+        return [self.formatter.format(record) for record in self.buffer]
+
+    def get_raw_records(self):
+        return self.buffer
+
+    def clear(self):
+        self.buffer.clear()
+
+
+def getlogger(name=None):
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.INFO)
+    mh = OnDemandMemoryHandler(capacity=100)
+    logger.addHandler(mh)
+    LOGGERS.append((logger, mh))
+    return logger
+
+
+def collect_all_logs():
+    records = []
+    formatter = None
+    for _, handler in LOGGERS:
+        records.extend(handler.get_raw_records())
+        formatter = handler.formatter
+    if not records:
+        return []
+    records.sort(key=attrgetter("created"))
+    return [formatter.format(record) for record in records]
+
+
+def flush_all_logs():
+    for _, handler in LOGGERS:
+        handler.clear()

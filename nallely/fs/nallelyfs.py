@@ -7,6 +7,11 @@ from typing import override
 import pyfuse3
 import trio
 
+from ..utils import getlogger
+
+nallelyfslog = getlogger("NallelyFS")
+
+
 DEV_DIR_INODE = 2
 CLASS_DIR_INODE = 3
 BASE_INODES = [pyfuse3.ROOT_INODE, DEV_DIR_INODE, CLASS_DIR_INODE]
@@ -126,34 +131,34 @@ class NallelyFSThread(threading.Thread):
         super().__init__()
 
     def run(self) -> None:
-        print("[NALLELYFS] Init FUSE...")
+        nallelyfslog.info("Init FUSE...")
         pyfuse3.init(self.fs, self.mountpoint, self.fuse_options)
 
         async def main_async_loop():
             self._trio_token = trio.lowlevel.current_trio_token()
-            print("[NALLELYFS] Start main loop...")
+            nallelyfslog.info("Start main loop...")
             try:
                 await pyfuse3.main()
             except Exception:
                 traceback.print_exc()
-                print("[NALLELYFS] An issue occurred in FUSE main loop...")
+                nallelyfslog.error("An issue occurred in FUSE main loop...")
 
         try:
             trio.run(main_async_loop)
         except Exception:
             traceback.print_exc()
         finally:
-            print(f"[NALLELYFS] Unmounting cleanup for {self.mountpoint}...")
+            nallelyfslog.info(f"Unmounting cleanup for {self.mountpoint}...")
             try:
                 pyfuse3.close()
             except Exception as e:
-                print("[NALLELYFS] Error occured while closing", e)
-            print("[NALLELYFS] FUSE thread finished...")
+                nallelyfslog.error("Error occured while closing", e)
+            nallelyfslog.info("[NALLELYFS] FUSE thread finished...")
 
     def stop(self):
         if not self.is_alive() or not self._trio_token:
             return
-        print("[NALLELYFS] Triggering unmount...")
+        nallelyfslog.info("[NALLELYFS] Triggering unmount...")
         try:
             trio.from_thread.run_sync(pyfuse3.close, trio_token=self._trio_token)
         except trio.RunFinishedError:
@@ -182,11 +187,11 @@ def local_mount(mountpoint):
             )
             response = ws.recv()
             if response != '"OK"':
-                print(f"[NALLELYFS] Couldn't mount {mountpoint}... {response}")
+                nallelyfslog.error(f"Couldn't mount {mountpoint}... {response}")
     except Exception as e:
-        print("[NALLELYFS]", e)
-        print(
-            "[NALLELYFS] Couldn't mount the NallelyFS, check if a Nallely session is running localhost and try again"
+        nallelyfslog.error(f"{e}")
+        nallelyfslog.error(
+            "Couldn't mount the NallelyFS, check if a Nallely session is running localhost and try again"
         )
 
 
@@ -201,9 +206,9 @@ def local_umount():
             ws.send(json.dumps({"command": "umount_nallelyfs"}))
             response = ws.recv()
             if response != '"OK"':
-                print(f"[NALLELYFS] Couldn't umount the filesystem... {response}")
+                nallelyfslog.error(f"Couldn't umount the filesystem... {response}")
     except Exception as e:
-        print("[NALLELYFS]", e)
-        print(
-            "[NALLELYFS] Couldn't umount the NallelyFS, check if a Nallely session is running localhost and try again"
+        nallelyfslog.error(f"{e}")
+        nallelyfslog.error(
+            "Couldn't umount the NallelyFS, check if a Nallely session is running localhost and try again"
         )

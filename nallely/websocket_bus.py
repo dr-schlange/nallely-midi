@@ -20,6 +20,9 @@ from .core import (
 )
 from .core.parameter_instances import PadsOrKeysInstance
 from .core.world import all_links, no_registration
+from .utils import getlogger
+
+wslog = getlogger("WS")
 
 
 @dataclass
@@ -48,7 +51,7 @@ class WaitingRoom:
         return self
 
     def bind(self, parameter):
-        # print(f"[DEBUG] Bind {parameter}")
+        # wslog.debug(f"Bind {parameter}")
         self.append_output(NetOutputEntry([], parameter))
 
     def append_output(self, value):
@@ -62,20 +65,20 @@ class WaitingRoom:
             src_parameter = getattr(source, self.name)
             if isinstance(out_entry.target, WaitingRoom):
                 wr = out_entry.target
-                print(f"[NET-to-NET] Rebinding {self.name} to {wr.name}")
+                wslog.info(f"[NET-to-NET] Rebinding {self.name} to {wr.name}")
                 target_device = wr.device
                 setattr(target_device, wr.name, src_parameter)
                 continue
             target_device = out_entry.target.device
             target_parameter = out_entry.target.parameter
             if out_entry.scaler:
-                # print(f"[DEBUG] Re-creating scaler {out_entry.scaler}")
+                # wslog.debug(f"Re-creating scaler {out_entry.scaler}")
                 src_parameter = src_parameter.scale(*out_entry.scaler)
-                # print(f"[DEBUG] scaler {src_parameter}")
+                # wslog.debug(f"scaler {src_parameter}")
             try:
                 section = getattr(target_device, target_parameter.section_name)
             except AttributeError:
-                print(
+                wslog.info(
                     f"[REBIND] The target device {target_device.__class__.__name__} doesn't have a {target_parameter.section_name} section, skipping this connection"
                 )
                 continue
@@ -124,7 +127,7 @@ class WebSocketBus(VirtualDevice):
         super().__init__(target_cycle_time=10, disable_output=True, **kwargs)
 
     def __getattr__(self, key):
-        # print(f"[DEBUG] Create a waitingRoom for {key}")
+        # wslog.debug(f"Create a waitingRoom for {key}")
         # We build a waiting room
         waiting_room = WaitingRoom(key, self)
         object.__setattr__(self, key, waiting_room)
@@ -195,15 +198,15 @@ class WebSocketBus(VirtualDevice):
     def handler(self, client):
         path = client.request.path
         service_name = path.split("/")[1]
-        print(f"[{self.NAME}] Connection on ", path, service_name)
+        wslog.info(f"[{self.NAME}] Connection on {path} {service_name} ")
         if path.endswith("/autoconfig"):
-            print(f"[{self.NAME}] Autoconfig for {service_name}")
+            wslog.info(f"[{self.NAME}] Autoconfig for {service_name}")
             try:
                 message = json.loads(client.recv())
                 parameters = message["parameters"]
                 action = message.get("type")
                 if service_name not in self.connected:
-                    # print(f"[DEBUG] Parameters: {message['parameters']}")
+                    # wslog.debug(f"Parameters: {message['parameters']}")
                     self.configure_remote_device(service_name, parameters=parameters)  # type: ignore
                 elif action == "add_parameters":
                     self.add_ports_to_remote_device(service_name, parameters=parameters)
@@ -218,21 +221,21 @@ class WebSocketBus(VirtualDevice):
                     if isinstance(e, (ConnectionClosedError, TimeoutError))
                     else "disconnected"
                 )
-                print(
+                wslog.info(
                     f"[{self.NAME}] Client {client} on {service_name} {kind} and wasn't able to auto-config {service_name}"
                 )
         elif path.endswith("/unregister") and service_name in self.known_services:
             self.unregister_service(service_name)
             return
         elif service_name not in self.known_services:
-            print(
+            wslog.info(
                 f"[{self.NAME}] Service {service_name} is not yet configured, you cannot subscribe to it yet"
             )
             return
 
         connected_devices = self.connected[service_name]
         connected_devices.append(client)
-        print(
+        wslog.info(
             f"[{self.NAME}] Connecting on {service_name} [{len(connected_devices)} clients]"
         )
         try:
@@ -244,11 +247,11 @@ class WebSocketBus(VirtualDevice):
                 for device in list(connected_devices):
                     try:
                         # json_message = json.loads(message)
-                        # # print("[DEBUG] Received", json_message)
+                        # # wslog.debug("Received", json_message)
                         # param_name = f"{service_name}_{json_message["on"]}"
                         # output = getattr(self, f"{param_name}_cv")
                         # value = float(json_message["value"])
-                        # # print(f"[DEBUG] INTERNAL ROUTING {param_name} with {value}")
+                        # # wslog.debug(f"INTERNAL ROUTING {param_name} with {value}")
                         param_name, value, output = parser(service_name, message)  # type: ignore
                         setattr(self, param_name, value)
                         self.send_out(
@@ -258,7 +261,7 @@ class WebSocketBus(VirtualDevice):
                         )
                         break
                     except Exception as e:
-                        print(
+                        wslog.error(
                             f"[{self.NAME}] Couldn't parse the message and broadcast {message} to local instances: {e}"
                         )
                     if device == client:
@@ -274,18 +277,18 @@ class WebSocketBus(VirtualDevice):
                     #             if isinstance(e, ConnectionClosedError)
                     #             else "disconnected"
                     #         )
-                    #         print(
+                    #         wslog.info(
                     #             f"Client {device} on {service_name} {kind} [{len(connected_devices)} clients]"
                     #         )
                     #     except Exception:
                     #         pass
         except (ConnectionClosed, TimeoutError):
-            print(
+            wslog.error(
                 f"[{self.NAME}] Client {client} on {service_name} disconnected unexpectedly [{len(connected_devices)} clients]"
             )
         finally:
             try:
-                print(f"[{self.NAME}] Remove", client)
+                wslog.info(f"[{self.NAME}] Remove {client}")
                 connected_devices.remove(client)
             except ValueError:
                 pass
@@ -296,17 +299,19 @@ class WebSocketBus(VirtualDevice):
         return super().setup()
 
     def stop(self, clear_queues=False):
-        # print("[DEBUG] Stopping server")
+        # wslog.debug("Stopping server")
         self.running = False
         self.pause_event.set()
         for service, clients in self.connected.items():
             for client in clients:
-                print(f"[{self.NAME}] Closing connection for {client} on {service}")
+                wslog.info(
+                    f"[{self.NAME}] Closing connection for {client} on {service}"
+                )
                 client.close(code=1000, reason="WebSocket Bus is shutting down")
                 # client.send(json.dumps({"on": "__close_bus__"}))
             clients.clear()
         if self.server:
-            print(f"[{self.NAME}] Shutting down websocket bus...")
+            wslog.info(f"[{self.NAME}] Shutting down websocket bus...")
             self.server.shutdown()
         for key, value in list(self.__class__.__dict__.items()):
             if isinstance(value, VirtualParameter):
@@ -320,7 +325,9 @@ class WebSocketBus(VirtualDevice):
             try:
                 self.receiving(float(value), param, ThreadContext())
             except Exception as e:
-                print(f"[{self.NAME}] store_input receiving error for {param}: {e}")
+                wslog.error(
+                    f"[{self.NAME}] store_input receiving error for {param}: {e}"
+                )
             return
         super().store_input(param, value)
 
@@ -333,11 +340,11 @@ class WebSocketBus(VirtualDevice):
         parameter = "_".join(parameter)
 
         devices = self.connected[device]
-        # print(f"[DEBUG] set {parameter=}, {value=}")
+        # wslog.debug(f"set {parameter=}, {value=}")
         setattr(self, parameter, value)
         for connected in list(devices):
             try:
-                # print(f"[DEBUG] send to {connected}")
+                # wslog.debug(f"send to {connected}")
                 connected.send(self.make_frame(parameter, float(value)))
             except (ConnectionClosed, TimeoutError) as e:
                 try:
@@ -347,16 +354,18 @@ class WebSocketBus(VirtualDevice):
                         if isinstance(e, (ConnectionClosedError, TimeoutError))
                         else "disconnected"
                     )
-                    print(
+                    wslog.info(
                         f"[{self.NAME}] Cannot send information on {parameter} for {connected}, it probably {kind} [{len(devices)} clients]"
                     )
                 except Exception:
                     pass
             except struct.error as e:
-                print(
+                wslog.info(
                     f"[{self.NAME}] An error was caught while creating the frame: {e}"
                 )
-                print(f"[{self.NAME}] Switching to json to encode {parameter}: {value}")
+                wslog.info(
+                    f"[{self.NAME}] Switching to json to encode {parameter}: {value}"
+                )
                 connected.send(
                     json.dumps(
                         {
@@ -374,7 +383,7 @@ class WebSocketBus(VirtualDevice):
             is_stream = False
             range = (None, None)
             pname = parameter
-            print(f"[{self.NAME}] Configuring", parameter)
+            wslog.info(f"[{self.NAME}] Configuring {parameter}")
             if isinstance(parameter, dict):
                 pname = parameter.get("name", None)
                 range = parameter.get("range", range)
@@ -392,13 +401,8 @@ class WebSocketBus(VirtualDevice):
                 cv_name=cv_name,
                 range=range,
             )
-            print(
-                f"[{self.NAME}] Registering",
-                cv_name,
-                "range",
-                range,
-                "stream",
-                is_stream,
+            wslog.info(
+                f"[{self.NAME}] Registering {cv_name} range {range} stream {is_stream}"
             )
             virtual_parameters.append(vparam)
             setattr(self.__class__, cv_name, vparam)
@@ -463,27 +467,31 @@ class WebSocketBus(VirtualDevice):
         return result
 
     def unregister_service(self, service_name):
-        print(f"[{self.NAME}] Unregistering {service_name}")
+        wslog.info(f"[{self.NAME}] Unregistering {service_name}")
 
         params = self.known_services[service_name]
         for param in params:
             for link in all_links().values():
                 if link.dest.parameter is param or link.src.parameter is param:
-                    print(f"[{self.NAME}] unbinding link {link} for {service_name}")
+                    wslog.info(
+                        f"[{self.NAME}] unbinding link {link} for {service_name}"
+                    )
                     link.uninstall()
-            print(f"[{self.NAME}] Removing {param.cv_name} from {self.NAME}")
+            wslog.info(f"[{self.NAME}] Removing {param.cv_name} from {self.NAME}")
             try:
                 delattr(self.__class__, param.cv_name)
             except Exception as e:
-                print(f"[{self.NAME}] {param.cv_name} is not find in the {self.NAME}")
+                wslog.error(
+                    f"[{self.NAME}] {param.cv_name} is not find in the {self.NAME}"
+                )
 
         connected_clients = self.connected[service_name]
         for connected_client in connected_clients:
             try:
-                print(f"[{self.NAME}] Disconnecting {connected_client}")
+                wslog.info(f"[{self.NAME}] Disconnecting {connected_client}")
                 connected_client.close()
             except Exception as e:
-                print(
+                wslog.error(
                     f"[{self.NAME}] Error while closing connection with {connected_client}: {e}"
                 )
         del self.connected[service_name]

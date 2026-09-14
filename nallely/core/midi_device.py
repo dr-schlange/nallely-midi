@@ -9,6 +9,7 @@ from typing import Any, Callable, Counter, Literal, Sequence, Type
 
 import mido
 
+from ..utils import getlogger
 from .parameter_instances import Int, PadOrKey, PadsOrKeysInstance, PitchwheelInstance
 from .scaler import Scaler
 from .virtual_device import VirtualParameter
@@ -22,6 +23,8 @@ from .world import (
 )
 
 NOT_INIT = "uninitialized"
+
+logger = getlogger("MIDI")
 
 
 @dataclass
@@ -94,7 +97,7 @@ class ModuleParameter:
         if accepted_values and isinstance(feeder, str):
             idx = accepted_values.index(feeder)
             if idx == -1:
-                print(
+                logger.error(
                     f"Unknown option {feeder}, accepted values are: {accepted_values}"
                 )
                 return
@@ -542,7 +545,7 @@ class MidiDevice(threading.Thread):
 
     def reconnect_input(self, on=None, exact=True):
         # Refactor with close_out, close_in
-        print(f"[MIDI] Trying to reconnect input for {self.__class__.__name__}...")
+        logger.info(f"Trying to reconnect input for {self.__class__.__name__}...")
         if exact and self.inport:
             inname = self.inport.name
         else:
@@ -553,16 +556,16 @@ class MidiDevice(threading.Thread):
                 newport.callback = self._sync_state  # type: ignore
                 self.inport = newport
             except OSError:
-                print(f"[MIDI] Reconnection on {inname} failed")
+                logger.error(f"Reconnection on {inname} failed")
                 self._retry_input = True
                 return False
-            print(f"[MIDI] Reconnection on MIDI input {str(inname)} successful")
+            logger.info(f"Reconnection on MIDI input {str(inname)} successful")
         self._retry_input = False
         return True
 
     def reconnect_output(self, on=None, exact=True):
         # Refactor with close_out, close_in
-        print(f"[MIDI] Trying to reconnect output for {self.__class__.__name__}...")
+        logger.info(f"Trying to reconnect output for {self.__class__.__name__}...")
         if exact and self.outport:
             outname = self.outport.name
         else:
@@ -573,10 +576,10 @@ class MidiDevice(threading.Thread):
                 self.outport.close()
                 self.outport = newport
             except OSError:
-                print(f"[MIDI] Reconnection on {outname} failed")
+                logger.error(f"Reconnection on {outname} failed")
                 self._retry_output = True
                 return False
-            print(f"[MIDI] Reconnection on MIDI output {str(outname)} successful")
+            logger.info(f"Reconnection on MIDI output {str(outname)} successful")
         self._retry_output = False
         return True
 
@@ -627,7 +630,7 @@ class MidiDevice(threading.Thread):
             # TODO create special clock/sync hook
             return
         if self.debug:
-            print(msg)
+            logger.info(f"DEBUG - {msg}")
         # None marks the device channel
         channel = None if msg.channel == self.channel else msg.channel
         if msg.type == "control_change":

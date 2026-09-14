@@ -42,7 +42,13 @@ from ..core import (
     virtual_devices,
 )
 from ..core.midi_device import MidiDevice, ModuleParameter
-from ..utils import StateEncoder, force_off_everywhere, get_my_ip, load_modules
+from ..utils import (
+    StateEncoder,
+    force_off_everywhere,
+    get_my_ip,
+    getlogger,
+    load_modules,
+)
 from ..websocket_bus import (  # noqa, we keep it so it's loaded in this namespace
     WebSocketBus,
 )
@@ -54,6 +60,9 @@ _SYSTEM_STDIN = sys.stdin
 
 TIMEOUT = 2
 PORTS = [6788]
+
+trevorlog = getlogger("TrevorBus")
+nallelyfslog = getlogger("NallelyFS")
 
 
 class IOCapture(io.StringIO):
@@ -171,7 +180,7 @@ class TrevorBus(VirtualDevice):
                     bus = dev
                     break
         if bus is None:
-            print(f"[TrevorBus] No {cls.NAME} to refresh/reconnect to")
+            trevorlog.info(f"No {cls.NAME} to refresh/reconnect to")
             return
         bus.to_update = self  # type: ignore
         bus.start()
@@ -186,8 +195,8 @@ class TrevorBus(VirtualDevice):
         service_name = path.split("/")[1]
         connected_clients = self.connected[service_name]
         connected_clients.append(client)
-        print(
-            f"[TrevorBus] Connected on {service_name} [{len(connected_clients)} clients]"
+        trevorlog.info(
+            f"Connected on {service_name} [{len(connected_clients)} clients]"
         )
         try:
             # Send first full state with default values
@@ -200,21 +209,21 @@ class TrevorBus(VirtualDevice):
                 if isinstance(e, (ConnectionClosedError, TimeoutError))
                 else "disconnected"
             )
-            print(f"[TrevorBus] Client {client} on trevor {kind}")
+            trevorlog.info(f"Client {client} on trevor {kind}")
         finally:
-            print("[TrevorBus] Disconnecting", client)
+            trevorlog.info(f"Disconnecting {client}")
             try:
                 connected_clients.remove(client)
-                print(
-                    f"[TrevorBus] Connected on {service_name} [{len(connected_clients)} clients]"
+                trevorlog.info(
+                    f"Connected on {service_name} [{len(connected_clients)} clients]"
                 )
             except ValueError:
                 pass
 
     def brodcast_full_state(self):
         for service_name, connected_clients in self.connected.items():
-            print(
-                f"[TrevorBus] Brodcasting full state on /{service_name} for {len(connected_clients)} clients"
+            trevorlog.info(
+                f"Brodcasting full state on /{service_name} for {len(connected_clients)} clients"
             )
             for client in connected_clients:
                 client.send(self.to_json(self.full_state(with_defaultvalues=True)))
@@ -223,9 +232,9 @@ class TrevorBus(VirtualDevice):
         try:
             self.server.serve_forever()
         except InvalidMessage as e:
-            print("[TrevorBus] Invalid message received, someone's scanning?")
+            trevorlog.error("Invalid message received, someone's scanning?")
         except Exception as e:
-            print("[TrevorBus] Error while serving the trevor websocket server", e)
+            trevorlog.error(f"Error while serving the trevor websocket server {e}")
         return super().setup()
 
     def stop(self, clear_queues=False):
@@ -256,8 +265,8 @@ class TrevorBus(VirtualDevice):
                         if isinstance(e, (ConnectionClosedError, TimeoutError))
                         else "disconnected"
                     )
-                    print(
-                        f"[TrevorBus] Client {client} on trevor {kind} [{len(connected_devices)} clients]"
+                    trevorlog.info(
+                        f"Client {client} on trevor {kind} [{len(connected_devices)} clients]"
                     )
                 except Exception:
                     pass
@@ -388,7 +397,7 @@ class TrevorBus(VirtualDevice):
 
     def exception_handler(self, device, exception, trace):
         message = f"Exception caught on {device}: {exception}"
-        print(f"[ERROR] {message}\n[ERROR] pausing device")
+        trevorlog.error(f"{message}\n  -> pausing device")
         self.send_notification(status="error", message=message)
         self.send_message(self.full_state())
 
@@ -423,8 +432,8 @@ class TrevorBus(VirtualDevice):
                         if isinstance(e, (ConnectionClosedError, TimeoutError))
                         else "disconnected"
                     )
-                    print(
-                        f"[TrevorBus] Client {client} on trevor {kind} [{len(connected_devices)} clients]"
+                    trevorlog.info(
+                        f"Client {client} on trevor {kind} [{len(connected_devices)} clients]"
                     )
                 except Exception:
                     pass
@@ -568,7 +577,7 @@ class TrevorBus(VirtualDevice):
                     link = all_links()[device_or_link]
                     link.debug = True
                 except Exception:
-                    print(f"[TrevorBus] Couldn't find {device_or_link}")
+                    trevorlog.error(f"Couldn't find {device_or_link}")
         self.redirector.start_capture()
 
     def stop_capture_io(self, device_or_link=None):
@@ -581,7 +590,7 @@ class TrevorBus(VirtualDevice):
                     link = all_links()[device_or_link]
                     link.debug = False
                 except Exception:
-                    print(f"[TrevorBus] Couldn't find {device_or_link}")
+                    trevorlog.error(f"Couldn't find {device_or_link}")
         self.redirector.stop_capture()
 
     def send_stdin(self, thread_id, text):
@@ -595,7 +604,7 @@ class TrevorBus(VirtualDevice):
                 {"arg": class_code, "command": "RuntimeAPI::setClassCode"}
             )
         except Exception:
-            print(f"[TrevorBus] Couldn't find {device_id}")
+            trevorlog.error(f"Couldn't find {device_id}")
 
     def get_class_code(self, device_id):
         try:
@@ -605,13 +614,13 @@ class TrevorBus(VirtualDevice):
                 {"arg": class_code, "command": "RuntimeAPI::setClassCode"}
             )
         except Exception:
-            print(f"[TrevorBus] Couldn't find {device_id}")
+            trevorlog.error(f"Couldn't find {device_id}")
 
     def compile_inject(self, device_id, class_code, commit=False):
         try:
             device = self.trevor.get_device_instance(device_id)
         except Exception:
-            print(f"[TrevorBus] Couldn't find {device_id}")
+            trevorlog.error(f"Couldn't find {device_id}")
             return
         try:
             self.session.meta_trevor.object_centric_compile_inject(
@@ -633,7 +642,7 @@ class TrevorBus(VirtualDevice):
         try:
             device = self.trevor.get_device_instance(device_id)
         except Exception:
-            print(f"[TrevorBus] Couldn't find {device_id}")
+            trevorlog.error(f"Couldn't find {device_id}")
             return
         try:
             self.session.meta_trevor.compile_save_new_class(
@@ -693,7 +702,7 @@ class TrevorBus(VirtualDevice):
             if unregister_service:
                 unregister_service(service_name)
         except Exception:
-            print(f"[TrevorBus] Couldn't find bus {bus_id}")
+            trevorlog.error(f"Couldn't find bus {bus_id}")
         return self.full_state()
 
     def scan_for_friends(self, force=False):
@@ -730,12 +739,12 @@ class TrevorBus(VirtualDevice):
                             s.recv(128)
                         except Exception:
                             pass
-                        print(f"[TrevorBus] Friend found: {ip}:{port}")
+                        trevorlog.info(f"Friend found: {ip}:{port}")
                         assert self.current_scan is not None
                         self.current_scan[ip] = (name_me(ip), port)
                         # self.current_scan[name_me(ip)] = (ip, port)
             except Exception as e:
-                print("[TrevorBus] Error while scanning friends", e)
+                trevorlog.error(f"Error while scanning friends {e}")
 
         my_ip = get_my_ip()
         if my_ip is None:
@@ -750,8 +759,8 @@ class TrevorBus(VirtualDevice):
                         ip = f"{prefix}.{i}"
                         for port in PORTS:
                             if ip == my_ip:
-                                print(
-                                    f"[TrevorBus] Friend found: {ip}:{port}  (This is us!)"
+                                trevorlog.info(
+                                    f"Friend found: {ip}:{port}  (This is us!)"
                                 )
                                 self.current_scan[ip] = (name_me(ip), port)
                                 continue
@@ -771,11 +780,11 @@ class TrevorBus(VirtualDevice):
     def expose_neuron(self, device_id, friend_ip):
         try:
             device = self.trevor.get_device_instance(device_id)
-            print(
-                f"[TrevorBus] Exposing {device.uid()} to {name_me(friend_ip)} ({friend_ip})"
+            trevorlog.info(
+                f"Exposing {device.uid()} to {name_me(friend_ip)} ({friend_ip})"
             )
         except Exception:
-            print(f"[TrevorBus] Couldn't find {device_id}")
+            trevorlog.error(f"Couldn't find {device_id}")
             return self.full_state()
 
         if friend_ip not in self.external_bus_register:
@@ -794,7 +803,7 @@ class TrevorBus(VirtualDevice):
                 "error",
                 msg,
             )
-            print(f"[TrevorBus] {msg}")
+            trevorlog.error(f"{msg}")
             return
 
         service_key = (device.uuid, friend_ip)
@@ -808,7 +817,7 @@ class TrevorBus(VirtualDevice):
                 "warning",
                 msg,
             )
-            print(f"[TrevorBus] {msg}")
+            trevorlog.warning(f"{msg}")
             return
 
         return self.full_state()
@@ -816,11 +825,11 @@ class TrevorBus(VirtualDevice):
     def unexpose_neuron(self, device_id, friend_ip):
         try:
             device = self.trevor.get_device_instance(device_id)
-            print(
-                f"[TrevorBus] Exposing {device.uid()} to {name_me(friend_ip)} ({friend_ip})"
+            trevorlog.info(
+                f"Exposing {device.uid()} to {name_me(friend_ip)} ({friend_ip})"
             )
         except Exception:
-            print(f"[TrevorBus] Couldn't find {device_id}")
+            trevorlog.error(f"Couldn't find {device_id}")
             return self.full_state()
 
         service_key = (device.uuid, friend_ip)
@@ -852,7 +861,7 @@ class TrevorBus(VirtualDevice):
 
     def mount_nallelyfs(self, mountpoint):
         if mountpoint is None:
-            print("[NALLELYFS] Mountpoint cannot be None")
+            nallelyfslog.error("Mountpoint cannot be None")
             return "MISSING MOUNTPOINT"
 
         from ..fs.nallelyfs import init_nallelyfs
@@ -865,7 +874,7 @@ class TrevorBus(VirtualDevice):
 
     def umount_nallelyfs(self):
         if self.fs is None:
-            print("[NALLELYFS] Not mounted...")
+            nallelyfslog.error("Not mounted...")
             return "NOT MOUNTED"
         self.fs.stop()
         self.fs = None
@@ -1064,7 +1073,7 @@ def _trevor_menu(loaded_paths, init_script, trevor_bus=None, trevor_ui=None):
 
             return completer
 
-        cmds = ("q", "?", "f", "ff", "forth", "s", "sc", "i", "k")
+        cmds = ("q", "?", "f", "ff", "forth", "s", "sc", "i", "k", "logs", "logs-flush")
 
         readline.set_completer(make_completer(cmds))
         readline.parse_and_bind("tab: complete")
@@ -1100,6 +1109,8 @@ def _trevor_menu(loaded_paths, init_script, trevor_bus=None, trevor_ui=None):
                     "   s: get some stats\n"
                     "   sc: scan for friends!\n"
                     "   forth: start a Forth REPL populated with the current running session\n"
+                    "   logs: show the logs\n"
+                    "   logs-flush: flushes the logs\n"
                 )
                 elprint(menu)
             elif q == "ff":
@@ -1161,6 +1172,14 @@ def _trevor_menu(loaded_paths, init_script, trevor_bus=None, trevor_ui=None):
                 if not shell.booted:
                     shell.boot()
                 shell.cmdloop()
+            elif q == "logs":
+                from ..utils import collect_all_logs
+
+                print("\n".join(collect_all_logs()))
+            elif q == "logs-flush":
+                from ..utils import flush_all_logs
+
+                flush_all_logs()
             elif q == "i":
                 menu = "[INSPECT DEVICE]\n"
                 devices = list(all_devices())

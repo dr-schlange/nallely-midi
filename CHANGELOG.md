@@ -13,7 +13,8 @@
 * Add new circular slider behavior for fine tuning (sliding on the left and right of the slider to add/remove decimals + slide up/down for incrementing/decrementing values). This feature was vibe-coded
 * Selection of a link in the patching modal is not on a longpress instead of a click (less error prone)
 * Add exposition of a running Nallely session as a POSIX filesystem
-* Add first minimal forth implementation to control a running Nallely session (currently booted from a mounted session on the file system)
+* Add first minimal forth implementation to control a running Nallely session (can be booted from the mounted FS or from the cli after launching a session)
+* Add log/log-flush commands in the cli after launching a session to display or flush the logs
 
 ### Fixes
 
