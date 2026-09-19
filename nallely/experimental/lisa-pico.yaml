@@ -4,11 +4,11 @@ drschlange:
       gain:
         cc: 3
         description: "General Gain"
-        init: 32
+        init: 100
       master_volume:
         cc: 7
         description: "General Volume"
-        init: 0
+        init: 100
       panning:
         cc: 14
         description: "Panning"
@@ -27,7 +27,7 @@ drschlange:
       detune:
         cc: 4
         description: "Detune applied to secondary voice in unison mode"
-        init: 6
+        init: 70
       sustain:
         cc: 64
         description: "Sustain (Hold notes)"
@@ -116,19 +116,19 @@ drschlange:
       level_table1:
         cc: 96
         description: "Wavetable 1 mix level"
-        init: 100
+        init: 127
       level_table2:
         cc: 97
         description: "Wavetable 2 mix level"
-        init: 100
+        init: 127
       level_table3:
         cc: 98
         description: "Wavetable 3 mix level"
-        init: 100
+        init: 127
       level_table4:
         cc: 99
         description: "Wavetable 4 mix level"
-        init: 100
+        init: 127
       phase_reset:
         cc: 126
         description: "Reset the phase"
@@ -247,7 +247,7 @@ drschlange:
       slug_depth:
         cc: 93
         description: "Slug mode depth (buffer size)"
-        init: 8
+        init: 64
       manual_slug_level:
         cc: 107
         description: "All wavetables slug blend level controled from external CC"
@@ -261,7 +261,7 @@ drschlange:
       sluggish_factor:
         cc: 106
         description: "How sluggish is speed between blends"
-        init: 300
+        init: 20
       auto_slug_direction:
         cc: 92
         description: "Do we blend with the near past or distant past (default near past)"
