@@ -14,6 +14,7 @@ from functools import lru_cache
 from inspect import getmodule, getmro, getsource, isclass, isfunction, ismethod, unwrap
 from operator import attrgetter
 from pathlib import Path
+from pty import STDERR_FILENO
 from textwrap import dedent
 
 
@@ -332,44 +333,49 @@ class MetaDecorator(type):
 
 
 LOGGERS = []
+import tempfile
+
+tmp = Path(tempfile.gettempdir())
+logfile = tmp / "nallely.log"
+LOG_FORMAT = "%(asctime)s [%(name)s] %(message)s"
 
 
-class OnDemandMemoryHandler(logging.handlers.BufferingHandler):
-    def __init__(self, capacity=100):
-        super().__init__(capacity)
-        self.formatter = logging.Formatter("%(asctime)s [%(name)s] %(message)s")
+def flush_logs():
+    logfile.write_text("")
 
-    def get_logs(self):
-        return [self.formatter.format(record) for record in self.buffer]
 
-    def get_raw_records(self):
-        return self.buffer
-
-    def clear(self):
-        self.buffer.clear()
+flush_logs()
 
 
 def getlogger(name=None):
     logger = logging.getLogger(name)
     logger.setLevel(logging.INFO)
-    mh = OnDemandMemoryHandler(capacity=100)
-    logger.addHandler(mh)
-    LOGGERS.append((logger, mh))
+    fh = logging.FileHandler(logfile)
+    fh.setFormatter(logging.Formatter(LOG_FORMAT))
+    logger.addHandler(fh)
+    LOGGERS.append(logger)
     return logger
 
 
-def collect_all_logs():
-    records = []
-    formatter = None
-    for _, handler in LOGGERS:
-        records.extend(handler.get_raw_records())
-        formatter = handler.formatter
-    if not records:
-        return []
-    records.sort(key=attrgetter("created"))
-    return [formatter.format(record) for record in records]
+_console_handler = None
 
 
-def flush_all_logs():
-    for _, handler in LOGGERS:
-        handler.clear()
+def activate_logs():
+    global _console_handler
+    if _console_handler is not None:
+        return
+    _console_handler = logging.StreamHandler(sys.stdout)
+    _console_handler.setFormatter(logging.Formatter(LOG_FORMAT))
+    for logger in LOGGERS:
+        logger.addHandler(_console_handler)
+
+    print(logfile.read_text())
+
+
+def deactivate_logs():
+    global _console_handler
+    if _console_handler is None:
+        return
+    for logger in LOGGERS:
+        logger.removeHandler(_console_handler)
+    _console_handler = None

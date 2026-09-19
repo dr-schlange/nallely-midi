@@ -44,6 +44,8 @@ from ..core import (
 from ..core.midi_device import MidiDevice, ModuleParameter
 from ..utils import (
     StateEncoder,
+    activate_logs,
+    deactivate_logs,
     force_off_everywhere,
     get_my_ip,
     getlogger,
@@ -617,6 +619,7 @@ class TrevorBus(VirtualDevice):
             trevorlog.error(f"Couldn't find {device_id}")
 
     def compile_inject(self, device_id, class_code, commit=False):
+        activate_logs()
         try:
             device = self.trevor.get_device_instance(device_id)
         except Exception:
@@ -636,9 +639,11 @@ class TrevorBus(VirtualDevice):
                 f"Error while compiling/injecting {device.__class__.__name__}",
             )
             print(e)
+        deactivate_logs()
         return self.full_state()
 
     def compile_inject_save(self, device_id, class_code, force_name=None, commit=False):
+        activate_logs()
         try:
             device = self.trevor.get_device_instance(device_id)
         except Exception:
@@ -660,6 +665,7 @@ class TrevorBus(VirtualDevice):
                 f"Error while compiling/injecting {device.__class__.__name__}",
             )
             print(e)
+        deactivate_logs()
         return self.full_state()
 
     def create_new_vdev(self, name):
@@ -1073,7 +1079,7 @@ def _trevor_menu(loaded_paths, init_script, trevor_bus=None, trevor_ui=None):
 
             return completer
 
-        cmds = ("q", "?", "f", "ff", "forth", "s", "sc", "i", "k", "logs", "logs-flush")
+        cmds = ("q", "?", "f", "ff", "forth", "s", "sc", "i", "k", "logson", "logsoff")
 
         readline.set_completer(make_completer(cmds))
         readline.parse_and_bind("tab: complete")
@@ -1172,14 +1178,15 @@ def _trevor_menu(loaded_paths, init_script, trevor_bus=None, trevor_ui=None):
                 if not shell.booted:
                     shell.boot()
                 shell.cmdloop()
-            elif q == "logs":
-                from ..utils import collect_all_logs
+            elif q == "logson":
+                from ..utils import activate_logs
 
-                print("\n".join(collect_all_logs()))
-            elif q == "logs-flush":
-                from ..utils import flush_all_logs
+                activate_logs()
 
-                flush_all_logs()
+            elif q == "logsoff":
+                from ..utils import deactivate_logs
+
+                deactivate_logs()
             elif q == "i":
                 menu = "[INSPECT DEVICE]\n"
                 devices = list(all_devices())
