@@ -444,6 +444,19 @@ export const VDevice = React.memo(
 			return set.size > 0 ? set : undefined;
 		}, [connections, device.id]);
 
+		const connectedParameters = useMemo(() => {
+			const connectedNames = new Set<string>();
+			for (const c of connections) {
+				if (c.src.device === device.id) {
+					connectedNames.add(c.src.parameter.name);
+				}
+				if (c.dest.device === device.id) {
+					connectedNames.add(c.dest.parameter.name);
+				}
+			}
+			return device.meta.parameters.filter((p) => connectedNames.has(p.name));
+		}, [connections, device.id, device.meta.parameters]);
+
 		const longPressEvents = useLongPress(
 			() => onLongPress?.(device),
 			500,
@@ -513,7 +526,7 @@ export const VDevice = React.memo(
 			<DeviceCard
 				deviceId={device.id}
 				deviceName={device.repr}
-				parameters={device.meta.parameters}
+				parameters={connectedParameters}
 				selected={selected}
 				borderColor={borderColor}
 				borderStyle={device.paused ? "dashed" : "solid"}
