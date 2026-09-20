@@ -34,15 +34,15 @@ interface ClassBrowserProps {
 }
 
 const completionRegistry = {
-	name: ["a_cv", "b_cv", "in<x>_cv", "out<x>_cv", "io<x>_cv", "<portname>_cv"],
-	inname: ["a_cv", "b_cv", "in<x>_cv", "io<x>_cv", "<portname>_cv"],
-	outname: ["a_cv", "b_cv", "out<x>_cv", "<portname>_cv"],
-	x: ["0", "1", "2", "3", "4", "5", "6", "7", "8"],
-	range: ["0, 1", "0, 127", "%min", "%max", "%entries"],
+	name: ["<portname>_cv", "a_cv", "b_cv", "in<x>_cv", "out<x>_cv", "io<x>_cv"],
+	inname: ["<portname>_cv", "a_cv", "b_cv", "in<x>_cv", "io<x>_cv"],
+	outname: ["<portname>_cv", "a_cv", "b_cv", "out<x>_cv"],
+	x: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"],
+	range: ["-1, 1", "0, 1", "0, 127", "%min", "%max", "%entries"],
 	entries: ["%optname", "%entries, %entries"],
 	options: ["init=%default %conv", "%conv"],
 	default: ["0", "1", "64", "127", "-1"],
-	conv: ["round %edges", ">0 %edges", "!=0 %edges", "%edges"],
+	conv: ["round %edges", ">0 %edges", "!=0 %edges", "%edges", "λ"],
 	edges: ["\\<%edge\\>"],
 	edge: [
 		"any",
@@ -53,10 +53,11 @@ const completionRegistry = {
 		"decrease",
 		"flat",
 		"%edge, %edge",
+		"λ",
 	],
-	min: ["0", "1", "127"],
-	max: ["127", "255", "1", "0"],
-	doc: ["Parameter description"],
+	min: ["-1", "0", "127", "1"],
+	max: ["1", "127", "255", "0", "-1"],
+	doc: ["doc"],
 };
 
 // Parse grammar rules from editor content between $$ markers
