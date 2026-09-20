@@ -15,6 +15,7 @@
 * Add exposition of a running Nallely session as a POSIX filesystem
 * Add first minimal forth implementation to control a running Nallely session (can be booted from the mounted FS or from the cli after launching a session)
 * Add log/log-flush commands in the cli after launching a session to display or flush the logs
+* Add new diode-like behavior neuron
 
 ### Fixes
 
