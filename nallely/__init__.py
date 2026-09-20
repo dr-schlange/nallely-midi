@@ -42,6 +42,7 @@ from .sequencer import EuclidianSequencer, Sequencer, Sequencer8, TuringMachine
 from .shifter import (
     Arpegiator,
     ChordGenerator,
+    Diode,
     FineTuneNote,
     HarmonicGenerator,
     Harmonizer,
@@ -49,6 +50,7 @@ from .shifter import (
     Modulo,
     PitchShifter,
     Quantizer,
+    SignalConverter,
     VoiceAllocator,
     VScaler,
 )
@@ -145,4 +147,6 @@ __all__ = [
     "VScaler",
     "VRef",
     "OSCBus",
+    "SignalConverter",
+    "Diode",
 ]

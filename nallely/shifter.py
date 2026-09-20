@@ -1092,3 +1092,34 @@ class SignalConverter(VirtualDevice):
     def main(self, ctx):
         if self.mode == "continuous":
             return Scaler.lin_conversion(self.input, -1, 1, self.min, self.max)
+
+
+class Diode(VirtualDevice):
+    """
+    Simple diode-like behavior
+
+    inputs:
+    # * %inname [%range] %options: %doc
+    * input_cv [-1, 1] init=0 : normalized input
+    * n_cv [0.5, 2.5] init=2 : ideal factor
+    * I0_cv [0.05, 1] init=0.5 : inv sat current
+    * Vt_cv [0.005, 0.80] init=0.5 : thermical tension
+
+    outputs:
+    # * %outname [%range]: %doc
+    * output_cv [-1, 1]: normalized output
+
+    type: continuous
+    category: <category>
+    # meta: disable default output
+    """
+
+    n_cv = VirtualParameter(name="n", range=(0.5, 2.5), default=2.0)
+    I0_cv = VirtualParameter(name="I0", range=(0.05, 1.0), default=0.5)
+    Vt_cv = VirtualParameter(name="Vt", range=(0.005, 0.8), default=0.5)
+    input_cv = VirtualParameter(name="input", range=(-1.0, 1.0), default=0.0)
+    output_cv = VirtualParameter(name="output", range=(-1.0, 1.0))
+
+    def main(self, ctx):
+        V = self.input
+        return self.I0 * (exp(V / (self.n * self.Vt)) - 1)
