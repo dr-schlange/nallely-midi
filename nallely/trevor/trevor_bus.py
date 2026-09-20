@@ -153,6 +153,7 @@ class TrevorBus(VirtualDevice):
         from ..session import Session
 
         super().__init__(target_cycle_time=10, **kwargs)
+        self.fs = None
         self.connected = defaultdict(list)
         self.server = serve(self.handler, host=host, port=port)
         self.exec_context = ChainMap(globals())
@@ -167,7 +168,6 @@ class TrevorBus(VirtualDevice):
         self.current_scan = None
         self.external_bus_register = {}
         self.external_services_register = {}
-        self.fs = None
 
     def refresh_websocket_bus(self, ws=None):
         self.ws: WebSocketBus = self._refresh_bus(WebSocketBus, bus=ws)  # type: ignore
