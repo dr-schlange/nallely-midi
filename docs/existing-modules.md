@@ -185,6 +185,7 @@ inputs:
 # * %name [%range] %options: %doc
 * input_cv [0, 127] <any>: input
 * selector_cv [0, 7] round <both>: selector
+* insert0_cv [OFF, ON]: send 0 on non triggering ports (exclusive output)
 
 outputs:
 # * %name [%range]: %doc
@@ -197,9 +198,36 @@ outputs:
 * out6_cv [0, 127]: out6
 * out7_cv [0, 127]: out7
 
-type: <ondemand | continuous>
+type: ondemand
 category: <category>
 meta: disable default output
+
+```
+
+</details>
+
+<details>
+    <summary>Diode: Simple diode-like behavior</summary>
+
+
+```
+
+Simple diode-like behavior
+
+inputs:
+# * %inname [%range] %options: %doc
+* input_cv [-1, 1] init=0 : normalized input
+* n_cv [0.5, 2.5] init=2 : ideal factor
+* I0_cv [0.05, 1] init=0.5 : inv sat current
+* Vt_cv [0.005, 0.80] init=0.5 : thermical tension
+
+outputs:
+# * %outname [%range]: %doc
+* output_cv [-1, 1]: normalized output
+
+type: continuous
+category: <category>
+# meta: disable default output
 
 ```
 
@@ -1044,6 +1072,67 @@ meta: disable default output
 </details>
 
 <details>
+    <summary>CyberneticNeuron: A generalized cybernetic actor neuron. It integrates inputs continuously.</summary>
+
+
+```
+Cybernetic Non-Linear Integrator with Patchable Avalanche and Fatigue
+
+A generalized cybernetic actor neuron. It integrates inputs continuously.
+Avalanche (positive feedback) and Fatigue (negative feedback) can be wired
+internally (self-patch) or externally (from other neurons/sensors).
+
+inputs:
+* preset_cv [RS, IB, CH, FS, LTS, RZ] <any>: Neuron common profiles
+* input_cv [0.0, 1.0] init=0.0: Raw incoming signal (sensors, webcam, or other nodes)
+* input_gain_cv [0.0, 30.0] init=15.0: Input gain
+* feedback_gain_cv [0.0, 50.0] init=25.0: Feedback gain
+* fatigue_gain_cv [-50.0, 0.0] init=-25.0: Fatigue gain
+* feedback_in_cv [-1.0, 1.0] init=0: Avalanche loop input (positive feedback)
+* fatigue_in_cv [-1.0, 1.0] init=0: Fatigue/Inhibition input (negative feedback)
+* a_cv [0.01, 0.1] init=0.02: Recovery variable time scale
+* b_cv [0.05, 0.3] init=0.2: Recovery variable sensitivity to v
+* c_cv [-75.0, -50.0] init=-65.0: After-spike reset voltage
+* d_cv [0.05, 10.0] init=8.0: After-spike reset recovery value
+* noise_cv [0.0, 1.0] init=0.0: Tiny continuous background drift
+* freq_cv [512, 10000] init=1024 <any>: Refresh frequency
+
+outputs:
+* output_cv [-1.0, 1.0]: Continuous integrated voltage potential
+* spike_out_cv [0.0, 1.0]: Sends a value when a spike occured
+
+type: hybrid
+category: cybernetic
+
+```
+
+</details>
+
+<details>
+    <summary>CyberneticSynapse: A generalized cybernetic actor synapse. It integrates on spike inputs</summary>
+
+
+```
+Cybernetic Synapse, the best module to connect a cybernetic neuron to another
+
+A generalized cybernetic actor synapse. It integrates on spike inputs
+
+inputs:
+* spike_in_cv [0.0, 1.0]: Incoming spike
+* weight_cv [-1.0, 1.0] init=0.0: Synaptic weight
+* tau_cv [1.0, 5000.0] init=10.0: Leak time (in ms)
+
+outputs:
+* output_cv [-1.0, 1.0]: Continuous integrated voltage potential
+
+type: hybrid
+category: cybernetic
+
+```
+
+</details>
+
+<details>
     <summary>Delay: No description/documentation</summary>
 
 </details>
@@ -1251,6 +1340,45 @@ meta: disable default output
 
 <details>
     <summary>RosslerProjector: No description/documentation</summary>
+
+</details>
+
+<details>
+    <summary>ScannedString: Scanned synthesis one dimentional string model</summary>
+
+
+```
+Scanned String
+
+Scanned synthesis one dimentional string model
+
+Physics update runs once every N (256) samples
+
+inputs:
+* stiffness_cv [0.0, 1.0] init=0.1 <any>: spring coupling constant k
+* damping_cv [0.0, 1.0] init=0.01 <any>: energy loss d
+* mass_cv [0.0, 2.0] init=1 <any>: element's mass
+* restoring_cv [0, 1] init=0.01 <any>: spring constant to earth
+* model_mode_cv [FILL, STREAM, FREEZE]: freeze model parameters
+* hammer_cv [gauss, cos, triangle, square, free] <any>: hammer shape
+* hammer_shape_cv [-1, 1] init=0 <any>: hammer shape streamed
+* freeze_hammer_cv [OFF, ON]: freeze the streamed hammer shape
+* excite_cv [0, 1] >0 <rising>: trigger a pluck at excite_pos
+* excite_pos_cv [0, 255] init=127 round <any>: position on string to pluck (0-255)
+* excite_amp_cv [-1.0, 1.0] init=0.8 <any>: amplitude of the pluck
+* excite_width_cv [1, 64] init=22 round <any>: Gaussian width (std dev in samples) of the pluck
+* retrigger_cv [OFF, ON]: Hard retrigger on excitation
+* excite_on_change_cv [OFF, ON]: excites the model when pos/amp/width changes
+* write_rate_cv [64, 4096] init=256 round <any>: Write rate in the table
+* reset_cv [0, 1] init=0 round <rising>: resets
+
+outputs:
+* output_cv [-1.0, 1.0]: current string displacement sample
+
+type: hybrid
+category: synthesis
+
+```
 
 </details>
 
