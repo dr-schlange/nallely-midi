@@ -10,6 +10,7 @@ import React, {
 	useState,
 } from "react";
 import type {
+	Connection,
 	MidiDevice,
 	MidiDeviceSection,
 	MidiParameter,
@@ -33,8 +34,27 @@ export const MEDIUMSIZE = PORTS_LIMIT + SMALL_PORTS_LIMIT;
 export const LARGESIZE = PORTS_LIMIT * 2 + SMALL_PORTS_LIMIT;
 export const FULLSIZE = PORTS_LIMIT * 3 + SMALL_PORTS_LIMIT;
 
-export const moduleWeight = (device: VirtualDevice): [string, number] => {
-	const nbParams = device.meta.parameters.length;
+export const connectedParameters = (
+	device: VirtualDevice,
+	connections: Connection[],
+): (VirtualParameter | MidiParameter)[] => {
+	const connectedNames = new Set<string>();
+	for (const c of connections) {
+		if (c.src.device === device.id) {
+			connectedNames.add(c.src.parameter.name);
+		}
+		if (c.dest.device === device.id) {
+			connectedNames.add(c.dest.parameter.name);
+		}
+	}
+	return device.meta.parameters.filter((p) => connectedNames.has(p.name));
+};
+
+export const moduleWeight = (
+	device: VirtualDevice,
+	connections: Connection[],
+): [string, number] => {
+	const nbParams = connectedParameters(device, connections).length;
 	if (nbParams <= SMALLSIZE) {
 		return ["small", 1];
 	}
@@ -47,7 +67,10 @@ export const moduleWeight = (device: VirtualDevice): [string, number] => {
 	return ["full", 4];
 };
 
-export const moduleWeights = (devices: VirtualDevice[]) => {
+export const moduleWeights = (
+	devices: VirtualDevice[],
+	connections: Connection[],
+) => {
 	const weights = {
 		small: [], // 1
 		medium: [], // 2
@@ -55,14 +78,17 @@ export const moduleWeights = (devices: VirtualDevice[]) => {
 		full: [], // 4
 	};
 	for (const device of devices) {
-		const [weight] = moduleWeight(device);
+		const [weight] = moduleWeight(device, connections);
 		weights[weight].push(device);
 	}
 	return weights;
 };
 
-export const totalWeightModules = (devices: VirtualDevice[]) => {
-	const weights = moduleWeights(devices);
+export const totalWeightModules = (
+	devices: VirtualDevice[],
+	connections: Connection[],
+) => {
+	const weights = moduleWeights(devices, connections);
 	return (
 		weights.small.length +
 		weights.medium.length * 2 +
@@ -71,8 +97,11 @@ export const totalWeightModules = (devices: VirtualDevice[]) => {
 	);
 };
 
-export const weightList = (devices: VirtualDevice[]) => {
-	return devices.map((d) => moduleWeight(d)[1]);
+export const weightList = (
+	devices: VirtualDevice[],
+	connections: Connection[],
+) => {
+	return devices.map((d) => moduleWeight(d, connections)[1]);
 };
 
 const chunkArray = (arr, size) =>
@@ -113,10 +142,11 @@ export const MiniRack = ({
 	onDrag,
 }: MiniRackProps) => {
 	const totalRackSlots = 6;
+	const connections = useTrevorSelector((state) => state.nallely.connections);
 
 	const nbPlaceHolders = useMemo(
-		() => totalRackSlots - totalWeightModules(devices),
-		[devices],
+		() => totalRackSlots - totalWeightModules(devices, connections),
+		[devices, connections],
 	);
 	const slots = [
 		...devices.map((device) => (
@@ -444,18 +474,10 @@ export const VDevice = React.memo(
 			return set.size > 0 ? set : undefined;
 		}, [connections, device.id]);
 
-		const connectedParameters = useMemo(() => {
-			const connectedNames = new Set<string>();
-			for (const c of connections) {
-				if (c.src.device === device.id) {
-					connectedNames.add(c.src.parameter.name);
-				}
-				if (c.dest.device === device.id) {
-					connectedNames.add(c.dest.parameter.name);
-				}
-			}
-			return device.meta.parameters.filter((p) => connectedNames.has(p.name));
-		}, [connections, device.id, device.meta.parameters]);
+		const connectedParams = useMemo(
+			() => connectedParameters(device, connections),
+			[device, connections],
+		);
 
 		const longPressEvents = useLongPress(
 			() => onLongPress?.(device),
@@ -526,7 +548,7 @@ export const VDevice = React.memo(
 			<DeviceCard
 				deviceId={device.id}
 				deviceName={device.repr}
-				parameters={connectedParameters}
+				parameters={connectedParams}
 				selected={selected}
 				borderColor={borderColor}
 				borderStyle={device.paused ? "dashed" : "solid"}

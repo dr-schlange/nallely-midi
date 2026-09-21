@@ -27,13 +27,13 @@ import { Portal } from "./Portal";
 import { MiniRack, moduleWeight } from "./VDevComponent";
 import { Button } from "./widgets/BaseComponents";
 
-const groupBySumLimit = (arr, limit) => {
+const groupBySumLimit = (arr, limit, connections) => {
 	const result = [];
 	let current = [];
 	let sum = 0;
 
 	for (const item of arr) {
-		const value = moduleWeight(item)[1];
+		const value = moduleWeight(item, connections)[1];
 
 		if (sum + value > limit) {
 			result.push(current);
@@ -92,6 +92,7 @@ export const RackRowVirtual = ({
 	const virtualClasses = useTrevorSelector(
 		(state) => state.nallely.classes.virtual,
 	);
+	const connections = useTrevorSelector((state) => state.nallely.connections);
 	const [localDeviceOrder, setLocalDeviceOrder] =
 		useState<VirtualDevice[]>(devices);
 
@@ -156,8 +157,8 @@ export const RackRowVirtual = ({
 	};
 
 	const groupedDevices = useMemo(
-		() => groupBySumLimit(localDeviceOrder, 6),
-		[localDeviceOrder],
+		() => groupBySumLimit(localDeviceOrder, 6, connections),
+		[localDeviceOrder, connections],
 	);
 
 	const handlePlaceholderClick = useCallback(() => {
