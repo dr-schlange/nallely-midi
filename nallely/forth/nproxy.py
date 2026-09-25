@@ -91,15 +91,15 @@ class NProxy:
         # nport is temporary, until I implement strings
         return """
 : nport
-    :
-    ['] lit ,
-    latest @ >nfa ,
-    ['] @ ,
-    ['] exit ,
-    0 state !
+    :[
+        ['] lit ,
+        latest @ >nfa ,
+        ['] @ ,
+        ['] exit ,
+    ];
 ;
 : velocity
-    8 LSHIFT OR
+    8 lshift or
 ;
 """
 

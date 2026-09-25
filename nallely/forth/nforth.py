@@ -820,15 +820,16 @@ class NForth:
 : , here @ ! here @ 1+ here ! ;
 : immediate {IMMEDIATE_MASK} latest @ ffa @ or latest @ ffa ! ;
 : :[ : ;
-: [ 1 state ! ; immediate
-: ] 0 state ! ;
+: ]; 0 state ! ;
+: [ 0 state ! ; immediate
+: ] 1 state ! ;
 : ['] rp@ @ dup 1+ rp@ ! @ ;
 : create
     :[
         ['] lit ,
         here @ 2 + ,
         ['] exit ,
-    ]
+    ];
 ;
 : allot here @ + here ! ;
 : variable create 1 cells allot ;
@@ -838,9 +839,13 @@ class NForth:
         ['] lit ,
         ,
         ['] exit ,
-    ]
+    ];
 ;
 """)
+        # Read tab as structure
+        # produce link with modifications on the link + scaler
+        # LFO1 output> 23 min 127 max >notes keys LISA!
+        # Minilab3 keys notes> 23 min 127 max >notes keys LISA!
         return self.interpret()
 
     boot = fullboot
