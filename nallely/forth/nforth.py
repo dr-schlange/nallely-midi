@@ -796,11 +796,11 @@ class NForth:
 : '\n' 10 ;
 : CR '\n' emit ;
 : SPACE bl emit ;
-: >lfa {LFA_OFFSET} + ;
-: >nfa {NFA_OFFSET} + ;
-: >ffa {FFA_OFFSET} + ;
-: >cfa {CFA_OFFSET} + ;
-: >pfa {PFA_OFFSET} + ;
+: lfa {LFA_OFFSET} + ;
+: nfa {NFA_OFFSET} + ;
+: ffa {FFA_OFFSET} + ;
+: cfa {CFA_OFFSET} + ;
+: pfa {PFA_OFFSET} + ;
 : cell {cell_size} ;
 : cells {cell_size} * ;
 : 1+ 1 + ;
@@ -818,20 +818,28 @@ class NForth:
 : or invert swap invert and invert ;
 : nip swap drop ;
 : , here @ ! here @ 1+ here ! ;
-: immediate {IMMEDIATE_MASK} latest @ >ffa @ or latest @ >ffa ! ;
-: [ 0 state ! ; immediate
-: ] 1 state ! ;
+: immediate {IMMEDIATE_MASK} latest @ ffa @ or latest @ ffa ! ;
+: :[ : ;
+: [ 1 state ! ; immediate
+: ] 0 state ! ;
 : ['] rp@ @ dup 1+ rp@ ! @ ;
 : create
-    :
-    ['] lit ,
-    here @ 2 + ,
-    ['] exit ,
-    0 state !
+    :[
+        ['] lit ,
+        here @ 2 + ,
+        ['] exit ,
+    ]
 ;
 : allot here @ + here ! ;
 : variable create 1 cells allot ;
 : array variable cells allot ;
+: constant
+    :[
+        ['] lit ,
+        ,
+        ['] exit ,
+    ]
+;
 """)
         return self.interpret()
 
