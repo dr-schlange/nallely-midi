@@ -93,7 +93,7 @@ class NProxy:
 : nport
     :[
         ['] lit ,
-        latest @ >nfa ,
+        latest @ nfa ,
         ['] @ ,
         ['] exit ,
     ];
