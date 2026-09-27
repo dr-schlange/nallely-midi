@@ -1,10 +1,11 @@
 import cmd
 import os
+import pathlib
 import readline  # type: ignore we need it for Emacs style shortcuts
 from typing import Any, override
 
-from .nforth import NForth
-from .nproxy import NBridge
+from nallely.forth.nforth import NForth
+from nallely.forth.nproxy import NBridge
 
 
 class ForthShell(cmd.Cmd):
@@ -66,7 +67,7 @@ class ForthShell(cmd.Cmd):
 
     @override
     def default(self, line):
-        self.interpret(line)
+        self.interpret(f"{line}\n")
 
     def completedefault(self, text, line, begidx, endidx) -> list[str]:
         return [
@@ -96,6 +97,36 @@ class ForthShell(cmd.Cmd):
     def emptyline(self):
         return False
 
+    def do_loadf(self, args):
+        p = pathlib.Path(args)
+        if p.exists():
+            txt = p.read_text()
+            print(txt)
+            self.interpret(txt)
+        else:
+            print(f"Cannot find {p.absolute()}")
+
+    def do_saveimg(self, args):
+        p = pathlib.Path(args)
+        if p.exists():
+            choice = (
+                input(
+                    f"Image is already saved as {p.absolute()}, do you want to replace this image? (Y/n)? "
+                )
+                or "Y"
+            )
+            if choice.upper() == "Y":
+                self.forth.save_to_file(p)
+            return
+        self.forth.save_to_file(p)
+
+    def do_loadimg(self, args):
+        p = pathlib.Path(args)
+        if not p.exists():
+            f"No file image found at {p.absolute()}"
+            return
+        self.forth.reload_from_file(p)
+
     @override
     def postcmd(self, stop: bool, line: str) -> bool:
         if stop:
@@ -110,39 +141,6 @@ class ForthShell(cmd.Cmd):
     do_EOF = do_bye
 
 
-class NForthTUI:
-    def __init__(self):
-        size = os.get_terminal_size()
-        print(f"Lines: {size.lines}, Columns: {size.columns}")
-        self.lines = size.lines - 10
-        self.columns = size.columns - 10
-        self.screen = [[" "] * self.columns for _ in range(self.lines)]
-        os.system("")  # forces ansi on windows
-
-    def compute_screen(self):
-        self.main_panel()
-
-    def main_panel(self):
-        self.screen[0] = ["-"] * self.columns
-        self.screen[-1] = ["-"] * self.columns
-        for line in self.screen[1:-1]:
-            line[0] = line[-1] = "|"
-
-    def display(self):
-        print("\x1b[H")
-        disp = ""
-        for line in self.screen:
-            disp += "".join(line) + "\n"
-        print(disp)
-
-
 if __name__ == "__main__":
-    shell = ForthShell()
+    shell = ForthShell(boot=True)
     shell.cmdloop()
-    # tui = NForthTUI()
-    # tui.compute_screen()
-    # tui.display()
-    # import time
-    # tui.screen[0][0] = "*"
-    # time.sleep(1)
-    # tui.display()

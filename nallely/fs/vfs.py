@@ -61,11 +61,19 @@ class VNode:
         if self.parent is not self:
             parent.children.append(self)
         self.name = name
-        self.component = (
-            weakref.proxy(component, self._clean_ref)
-            if component and not isinstance(component, weakref.ProxyType)
-            else component
-        )
+        if component and not isinstance(component, weakref.ProxyType):
+            try:
+                NProxy.of(component)
+            except ValueError:
+                pass
+            try:
+                # object path
+                self.component = weakref.proxy(component, self._clean_ref)
+            except TypeError:
+                # composite key path
+                self.component = component
+        else:
+            self.component = component
         self._registry[self.inode_num] = self
 
     def _clean_ref(self, component):

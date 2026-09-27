@@ -55,6 +55,8 @@ RPAR = ord(")")
 DQUOTE = ord('"')
 DOT = ord(".")
 RETURN = 13
+COMSTART = ord("\\")
+ENDOL = [ord("\n"), ord("\r"), RETURN]
 
 # dict entry structure
 LFA_OFFSET = 0
@@ -175,6 +177,8 @@ class NForth:
     def _setup_primitives(self):
         self.docol_id, _ = self._register_primitive("DOCOL", self.docol)
         _, self.lit_cfa = self._register_primitive("LIT", self.lit)
+        self._register_primitive("\\", self.line_comment)
+        self._register_primitive("(", self.comment)
         self._register_primitive("@", self.fetch)
         self._register_primitive("!", self.store)
         self._register_primitive("SP@", self.spfetch)
@@ -375,6 +379,14 @@ class NForth:
         self.memory[rpaddr] += 1
         return value
 
+    def line_comment(self):
+        self._skip_until(ENDOL)
+        self.next()
+
+    def comment(self):
+        self._skip_until([RPAR])
+        self.next()
+
     def fetch(self):
         addr = self.popd()
         self.pushd(self.memory[addr])
@@ -470,11 +482,20 @@ class NForth:
         self.memory[self.state] = 0
         self.next()
 
-    def _token(self):
-        self.memory[self.tib + self.toin]
-        while self.memory[self.tib + self.memory[self.toin]] in SPACES:
+    def _skip_while(self, delims):
+        while self.memory[self.tib + self.memory[self.toin]] in delims:
             self.memory[self.toin] += 1
-        start = self.memory[self.toin]
+        return self.memory[self.toin]
+
+    def _skip_until(self, delims):
+        while (b := self.memory[self.tib + self.memory[self.toin]]) and b not in delims:
+            self.memory[self.toin] += 1
+        if b:
+            self.memory[self.toin] += 1
+        return self.memory[self.toin]
+
+    def _token(self):
+        start = self._skip_while(SPACES)
         while (b := self.memory[self.tib + self.memory[self.toin]]) and b not in SPACES:
             self.memory[self.toin] += 1
         return "".join(
@@ -844,8 +865,9 @@ class NForth:
 """)
         # Read tab as structure
         # produce link with modifications on the link + scaler
-        # LFO1 output> 23 min 127 max >notes keys LISA!
-        # Minilab3 keys notes> 23 min 127 max >notes keys LISA!
+        # LFO1 output> 23 min 127 max >notes/keys LISA!
+        # Minilab3 keys/notes> 23 min 127 max >notes/keys LISA!
+        # Minilab3 notes/keys> s >notes/keys
         return self.interpret()
 
     boot = fullboot

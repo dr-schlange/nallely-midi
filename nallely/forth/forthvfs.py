@@ -221,7 +221,7 @@ nforth_complete() {{
 }}
 
 bind -x '"\\t": nforth_complete'
-while read -e -p "nforth> " FORTH_INPUT; do
+while read -r -e -p "nforth> " FORTH_INPUT; do
     if [[ "$FORTH_INPUT" == "bye" ]]; then
         break
     fi
