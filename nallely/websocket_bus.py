@@ -1,6 +1,8 @@
 import json
 import math
+import queue
 import struct
+import threading
 from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Any, Literal
@@ -124,6 +126,7 @@ class WebSocketBus(VirtualDevice):
         self.connected = defaultdict(list)
         self.known_services = {}
         self.to_update = None
+        self.send_queues: dict = {}
         super().__init__(target_cycle_time=10, disable_output=True, **kwargs)
 
     def __getattr__(self, key):
@@ -235,6 +238,12 @@ class WebSocketBus(VirtualDevice):
 
         connected_devices = self.connected[service_name]
         connected_devices.append(client)
+        send_q = queue.Queue(maxsize=256)
+        self.send_queues[client] = send_q
+        sender = threading.Thread(
+            target=self._sender_loop, args=(client, send_q), daemon=True
+        )
+        sender.start()
         wslog.info(
             f"[{self.NAME}] Connecting on {service_name} [{len(connected_devices)} clients]"
         )
@@ -292,6 +301,39 @@ class WebSocketBus(VirtualDevice):
                 connected_devices.remove(client)
             except ValueError:
                 pass
+            q = self.send_queues.pop(client, None)
+            if q is not None:
+                try:
+                    q.put_nowait(None)  # sentinel: stop the sender thread
+                except queue.Full:
+                    pass
+
+    def _sender_loop(self, client, send_q: queue.Queue):
+        # Never block anymore on slow clients
+        while True:
+            item = send_q.get()
+            if item is None:
+                return
+            try:
+                client.send(item)
+            except Exception:
+                return
+
+    def _queue_send(self, client, data):
+        send_q = self.send_queues.get(client)
+        if send_q is None:
+            return
+        try:
+            send_q.put_nowait(data)
+        except queue.Full:
+            try:
+                send_q.get_nowait()
+            except queue.Empty:
+                pass
+            try:
+                send_q.put_nowait(data)
+            except queue.Full:
+                pass
 
     def setup(self):
         if self.running:
@@ -344,21 +386,7 @@ class WebSocketBus(VirtualDevice):
         setattr(self, parameter, value)
         for connected in list(devices):
             try:
-                # wslog.debug(f"send to {connected}")
-                connected.send(self.make_frame(parameter, float(value)))
-            except (ConnectionClosed, TimeoutError) as e:
-                try:
-                    devices.remove(device)
-                    kind = (
-                        "crashed"
-                        if isinstance(e, (ConnectionClosedError, TimeoutError))
-                        else "disconnected"
-                    )
-                    wslog.info(
-                        f"[{self.NAME}] Cannot send information on {parameter} for {connected}, it probably {kind} [{len(devices)} clients]"
-                    )
-                except Exception:
-                    pass
+                self._queue_send(connected, self.make_frame(parameter, float(value)))
             except struct.error as e:
                 wslog.info(
                     f"[{self.NAME}] An error was caught while creating the frame: {e}"
@@ -366,7 +394,8 @@ class WebSocketBus(VirtualDevice):
                 wslog.info(
                     f"[{self.NAME}] Switching to json to encode {parameter}: {value}"
                 )
-                connected.send(
+                self._queue_send(
+                    connected,
                     json.dumps(
                         {
                             "value": float(value),
@@ -374,7 +403,7 @@ class WebSocketBus(VirtualDevice):
                             "on": parameter,
                             "sender": ctx.param,
                         }
-                    )
+                    ),
                 )
 
     def _add_ports(self, name, parameters: list[str | dict[str, Any]]):

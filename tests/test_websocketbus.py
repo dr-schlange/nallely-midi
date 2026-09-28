@@ -1,4 +1,6 @@
 import json
+import queue
+import threading
 import time
 
 import pytest
@@ -210,3 +212,44 @@ def test__websocketbus_remove_unexisting_parameter(wsbus):
     time.sleep(0.1)
     assert "mydev8_input_cv" in wsbus.__class__.__dict__
     assert "mydev8" in wsbus.known_services
+
+
+def test__websocketbus_slow_client_does_not_block_others(wsbus):
+    release = threading.Event()
+
+    class StuckClient:
+        def send(self, item):
+            release.wait()
+
+    class FastClient:
+        def __init__(self):
+            self.received = []
+
+        def send(self, item):
+            self.received.append(item)
+
+    stuck, fast = StuckClient(), FastClient()
+    threads = []
+    for client in (stuck, fast):
+        q = queue.Queue(maxsize=256)
+        wsbus.send_queues[client] = q
+        t = threading.Thread(target=wsbus._sender_loop, args=(client, q), daemon=True)
+        t.start()
+        threads.append(t)
+
+    time.sleep(0.05)  # let all clients enter start
+
+    try:
+        start = time.perf_counter()
+        for i in range(10):
+            wsbus._queue_send(stuck, f"frame-{i}".encode())
+            wsbus._queue_send(fast, f"frame-{i}".encode())
+        elapsed = time.perf_counter() - start
+
+        assert elapsed < 0.5
+        time.sleep(0.05)
+        assert len(fast.received) == 10
+    finally:
+        release.set()
+        wsbus.send_queues.pop(stuck, None)
+        wsbus.send_queues.pop(fast, None)

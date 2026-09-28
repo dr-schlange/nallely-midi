@@ -8,7 +8,7 @@ import DragNumberInput from "../DragInputs";
 import { Button, type WidgetProps } from "./BaseComponents";
 
 const BUFFER_SIZE = 255;
-const BUFFER_UPPER = 2000;
+const BUFFER_UPPER = 5000;
 const BUFFER_LOWER = 2;
 const MAX_CHANNELS = 4;
 const CHANNEL_NAMES = ["ch1", "ch2", "ch3", "ch4"] as const;
