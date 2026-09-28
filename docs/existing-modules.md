@@ -1443,6 +1443,156 @@ meta: disable default output
 </details>
 
 <details>
+    <summary>THATCoefPot: </summary>
+
+
+```
+Coeficient-potentiometer
+
+inputs:
+* X_cv [-1, 1] init=0 <any>: entry 1 gain 1
+* k_cv [0, 1] init=0.5 <any>: coeficient
+* mode_cv [continuous, ondemand]: switch between discrete/continuous computation
+
+outputs:
+* OUT_cv [-1, 1]: the normalized output
+
+type: hybrid
+category: THAT
+meta: disable default output
+
+```
+
+</details>
+
+<details>
+    <summary>THATComparator: </summary>
+
+
+```
+Comparator
+
+inputs:
+* A_cv [-1, 1] init=0 <any>: entry A gain 1
+* B_cv [-1, 1] init=0 <any>: entry B gain 1
+* mode_cv [continuous, ondemand]: switch between discrete/continuous computation
+
+outputs:
+* OUT_cv [-1, 1]: the normalized output
+
+type: hybrid
+category: THAT
+meta: disable default output
+
+```
+
+</details>
+
+<details>
+    <summary>THATIntegrator: </summary>
+
+
+```
+Integrator
+
+inputs:
+* X1_cv [-1, 1] init=0 <any>: entry 1 gain 1
+* X2_cv [-1, 1] init=0 <any>: entry 2 gain 1
+* X3_cv [-1, 1] init=0 <any>: entry 3 gain 10
+* X4_cv [-1, 1] init=0 <any>: entry 4 gain 10
+* IC_cv [-1, 1] init=0 <any>: initial condition
+* state_cv [IC, OP, HALT]: switch between IC forced, normal integration, and temp disconnected integration
+* mode_cv [continuous, ondemand]: switch between discrete/continuous computation
+* reset_cv [0, 1] <rising>: reset the integrator internal value
+
+outputs:
+* OUT_cv [-1, 1]: the normalized output
+* OVERLOAD_cv [0, 1]: overload output
+
+type: hybrid
+category: THAT
+meta: disable default output
+
+```
+
+</details>
+
+<details>
+    <summary>THATInverter: </summary>
+
+
+```
+Inverter
+
+inputs:
+* X_cv [-1, 1] init=0 <any>: entry
+* mode_cv [continuous, ondemand]: switch between discrete/continuous computation
+
+outputs:
+* OUT_cv [-1, 1]: the normalized output
+
+type: hybrid
+category: THAT
+meta: disable default output
+
+```
+
+</details>
+
+<details>
+    <summary>THATMultiplier: </summary>
+
+
+```
+Multiplier
+
+inputs:
+* X_cv [-1, 1] init=0 <any>: entry 1 gain 1
+* Y_cv [-1, 1] init=0 <any>: entry 2 gain 1
+* mode_cv [continuous, ondemand]: switch between discrete/continuous computation
+
+outputs:
+* OUT_cv [-1, 1]: the normalized output
+* OVERLOAD_cv [0, 1]: overload output
+
+type: hybrid
+category: THAT
+meta: disable default output
+
+```
+
+</details>
+
+<details>
+    <summary>THATSummer: </summary>
+
+
+```
+Summer
+
+inputs:
+* X1_cv [-1, 1] init=0 <any>: entry 1 gain 1
+* X2_cv [-1, 1] init=0 <any>: entry 2 gain 1
+* X3_cv [-1, 1] init=0 <any>: entry 3 gain 1
+* X4_cv [-1, 1] init=0 <any>: entry 4 gain 1
+* X5_cv [-1, 1] init=0 <any>: entry 5 gain 10
+* X6_cv [-1, 1] init=0 <any>: entry 6 gain 10
+* X7_cv [-1, 1] init=0 <any>: entry 7 gain 10
+* mode_cv [continuous, ondemand]: switch between discrete/continuous computation
+
+outputs:
+* OUT_cv [-1, 1]: the normalized output
+* OVERLOAD_cv [0, 1]: overload output
+
+type: hybrid
+category: THAT
+meta: disable default output
+
+```
+
+</details>
+
+<details>
     <summary>Transistor: Minimal nonlinear gain element with internal state (Behavioral, Minimal).</summary>
 
 
