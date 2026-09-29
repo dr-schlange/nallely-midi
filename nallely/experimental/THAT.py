@@ -125,6 +125,7 @@ class THATIntegrator(THATConfig):
     * X3_cv [-1, 1] init=0 <any>: entry 3 gain 10
     * X4_cv [-1, 1] init=0 <any>: entry 4 gain 10
     * IC_cv [-1, 1] init=0 <any>: initial condition
+    * gain_cv [0.01, 10] init=1: general gain (dt gain)
     * state_cv [IC, OP, HALT]: switch between IC forced, normal integration, and temp disconnected integration
     * mode_cv [continuous, ondemand]: switch between discrete/continuous computation
     * reset_cv [0, 1] <rising>: reset the integrator internal value
@@ -143,6 +144,7 @@ class THATIntegrator(THATConfig):
     X3_cv = VirtualParameter(name="X3", range=(-1.0, 1.0), default=0.0)
     X4_cv = VirtualParameter(name="X4", range=(-1.0, 1.0), default=0.0)
     IC_cv = VirtualParameter(name="IC", range=(-1.0, 1.0), default=0.0)
+    gain_cv = VirtualParameter(name="gain", range=(0.01, 10.0), default=10.0)
     state_cv = VirtualParameter(name="state", accepted_values=["IC", "OP", "HALT"])
     mode_cv = VirtualParameter(name="mode", accepted_values=["continuous", "ondemand"])
     reset_cv = VirtualParameter(name="reset", range=(0.0, 1.0))
@@ -165,7 +167,7 @@ class THATIntegrator(THATConfig):
         if self.state == "HALT":
             yield (-self.value, [self.OUT_cv])
             return
-        self.value += (X1 + X2 + 10 * X3 + 10 * X4) * dt
+        self.value += (X1 + X2 + 10 * X3 + 10 * X4) * dt * self.gain
         if self.value > 1:
             yield (1, [self.OVERLOAD_cv])
             self.value = 1
@@ -337,12 +339,15 @@ class THATCoefPot(THATConfig):
             return self.process(self.X, self.k)
 
 
-class THATComparator(THATConfig):
+@gencode()
+class THATComparator(VirtualDevice):
     """Comparator
 
     inputs:
     * A_cv [-1, 1] init=0 <any>: entry A gain 1
     * B_cv [-1, 1] init=0 <any>: entry B gain 1
+    * sup_cv [-1, 1] init=0: > 0 entry
+    * inf_cv [-1, 1] init=0: <= 0 entry
     * mode_cv [continuous, ondemand]: switch between discrete/continuous computation
 
     outputs:
@@ -355,25 +360,27 @@ class THATComparator(THATConfig):
 
     A_cv = VirtualParameter(name="A", range=(-1.0, 1.0), default=0.0)
     B_cv = VirtualParameter(name="B", range=(-1.0, 1.0), default=0.0)
+    sup_cv = VirtualParameter(name="sup", range=(-1.0, 1.0), default=0.0)
+    inf_cv = VirtualParameter(name="inf", range=(-1.0, 1.0), default=0.0)
     mode_cv = VirtualParameter(name="mode", accepted_values=["continuous", "ondemand"])
     OUT_cv = VirtualParameter(name="OUT", range=(-1.0, 1.0))
 
     def __post_init__(self, **kwargs):
         return {"disable_output": True}
 
-    def process(self, a, b):
-        return (1.0 if a + b > 0 else -1.0, [self.OUT_cv])
+    def process(self, a, b, sup, inf):
+        return (sup if a + b > 0 else inf, [self.OUT_cv])
 
     @on(B_cv, edge="any")
     def on_B_any(self, value, ctx):
         if self.mode == "ondemand":
-            return self.process(self.A, value)
+            return self.process(self.A, value, self.sup, self.inf)
 
     @on(A_cv, edge="any")
     def on_A_any(self, value, ctx):
         if self.mode == "ondemand":
-            return self.process(self.B, value)
+            return self.process(self.B, value, self.sup, self.inf)
 
     def main(self, ctx):
         if self.mode == "continuous":
-            return self.process(self.A, self.B)
+            return self.process(self.A, self.B, self.sup, self.inf)
