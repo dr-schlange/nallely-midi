@@ -1118,6 +1118,7 @@ const PatchingModal = ({
 			} else {
 				setCurrentFirstSection(target);
 			}
+			setSelectedParameters([]);
 		},
 		[
 			allVirtualDeviceSection,
