@@ -3,7 +3,7 @@ import { useScopeWorker } from "../../hooks/wsHooks";
 import DragNumberInput from "../DragInputs";
 import { Button, type WidgetProps } from "./BaseComponents";
 
-const BUFFER_SIZE_MAX = 5000;
+const BUFFER_SIZE_MAX = 50000;
 const BUFFER_SIZE_MIN = 2;
 const BUFFER_SIZE = 500;
 const MARGIN_PX = 5;
