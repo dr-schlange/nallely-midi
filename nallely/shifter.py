@@ -15,28 +15,44 @@ class PitchShifter(VirtualDevice):
     inputs:
     * input_cv [0, 127] <any>: the input note to shift (0-127)
     * shift_cv [-48, 48] init=0 <both>: the amount of shift to apply (-48 to +48)
+    * mode_cv [continuous, ondemand]: pull or push
+    * dead_zone_cv [0, 127]: pull or push
 
     outputs:
     * output_cv [0, 127]: the shifted note (0-127)
 
-    type: ondemand
+    type: hybrid
     category: pitch
     """
 
-    input_cv = VirtualParameter("input", range=(0, 127))
-    shift_cv = VirtualParameter("shift", range=(-48, +48), default=0)
+    dead_zone_cv = VirtualParameter(name="dead_zone", range=(0.0, 127.0))
+    mode_cv = VirtualParameter(name="mode", accepted_values=["continuous", "ondemand"])
+    input_cv = VirtualParameter(name="input", range=(0.0, 127.0))
+    shift_cv = VirtualParameter(name="shift", range=(-48.0, 48.0), default=0.0)
+    output_cv = VirtualParameter(name="output", range=(0.0, 127.0))
 
     @on(input_cv, edge="any")
     def shift_input(self, value, ctx):
-        if value == 0:
+        if self.mode == "continuous":
+            return
+        if value <= self.dead_zone:
             return 0
         return value + self.shift
 
     @on(shift_cv, edge="both")
     def apply_shift(self, value, ctx):
-        if self.input > 0:
-            return self.input + value
-        return 0
+        if self.mode == "continuous":
+            return
+        if self.input <= self.dead_zone:
+            return 0
+        return self.input + value
+
+    def main(self, ctx):
+        if self.mode == "ondemand":
+            return
+        if self.input <= self.dead_zone:
+            return 0
+        return self.input + self.shift
 
 
 class Modulo(VirtualDevice):
