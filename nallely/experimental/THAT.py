@@ -2,7 +2,7 @@ import time
 
 from nallely import VirtualDevice, VirtualParameter, on
 from nallely.codegen import gencode
-from nallely.core import no_registration
+from nallely.core import get_virtual_devices, no_registration
 
 
 @no_registration
@@ -126,7 +126,7 @@ class THATIntegrator(THATConfig):
     * X4_cv [-1, 1] init=0 <any>: entry 4 gain 10
     * IC_cv [-1, 1] init=0 <any>: initial condition
     * gain_cv [0.01, 10] init=1: general gain (dt gain)
-    * state_cv [IC, OP, HALT]: switch between IC forced, normal integration, and temp disconnected integration
+    * state_cv [OP, IC, HALT]: switch between IC forced, normal integration, and temp disconnected integration
     * mode_cv [continuous, ondemand]: switch between discrete/continuous computation
     * reset_cv [0, 1] <rising>: reset the integrator internal value
 
@@ -145,7 +145,7 @@ class THATIntegrator(THATConfig):
     X4_cv = VirtualParameter(name="X4", range=(-1.0, 1.0), default=0.0)
     IC_cv = VirtualParameter(name="IC", range=(-1.0, 1.0), default=0.0)
     gain_cv = VirtualParameter(name="gain", range=(0.01, 10.0), default=1.0)
-    state_cv = VirtualParameter(name="state", accepted_values=["IC", "OP", "HALT"])
+    state_cv = VirtualParameter(name="state", accepted_values=["OP", "IC", "HALT"])
     mode_cv = VirtualParameter(name="mode", accepted_values=["continuous", "ondemand"])
     reset_cv = VirtualParameter(name="reset", range=(0.0, 1.0))
     OVERLOAD_cv = VirtualParameter(name="OVERLOAD", range=(0.0, 1.0))
@@ -339,7 +339,6 @@ class THATCoefPot(THATConfig):
             return self.process(self.X, self.k)
 
 
-@gencode()
 class THATComparator(VirtualDevice):
     """Comparator
 
@@ -384,3 +383,49 @@ class THATComparator(VirtualDevice):
     def main(self, ctx):
         if self.mode == "continuous":
             return self.process(self.A, self.B, self.sup, self.inf)
+
+
+class THATGeneralPanel(VirtualDevice):
+    """General panel to control all the THAT instances at once
+
+    inputs:
+    * gain_integrators_cv [0.01, 10] init=1 <any>: gain of all integrators in the patch
+    * state_integrators_cv [OP, IC, HALT] <any>: the state of all integrators in the patch
+    * reset_integrators_cv [0, 1] init=0 <rising>: resets all the integrators in the patch
+
+    type: ondemand
+    category: THAT
+    meta: disable default output
+    """
+
+    gain_integrators_cv = VirtualParameter(
+        name="gain_integrators", range=(0.01, 10.0), default=1.0
+    )
+    state_integrators_cv = VirtualParameter(
+        name="state_integrators", accepted_values=["OP", "IC", "HALT"]
+    )
+    reset_integrators_cv = VirtualParameter(
+        name="reset_integrators", range=(0.0, 1.0), default=0.0
+    )
+
+    def __post_init__(self, **kwargs):
+        return {"disable_output": True}
+
+    @on(reset_integrators_cv, edge="rising")
+    def on_reset_integrators_rising(self, value, ctx):
+        for vdev in get_virtual_devices():
+            if isinstance(vdev, THATIntegrator):
+                vdev.set_parameter("reset", 1)
+                vdev.set_parameter("reset", 0)
+
+    @on(state_integrators_cv, edge="any")
+    def on_state_integrators_any(self, value, ctx):
+        for vdev in get_virtual_devices():
+            if isinstance(vdev, THATIntegrator):
+                vdev.set_parameter("state", value)
+
+    @on(gain_integrators_cv, edge="any")
+    def on_gain_integrators_any(self, value, ctx):
+        for vdev in get_virtual_devices():
+            if isinstance(vdev, THATIntegrator):
+                vdev.set_parameter("gain", value)
