@@ -144,7 +144,7 @@ class THATIntegrator(THATConfig):
     X3_cv = VirtualParameter(name="X3", range=(-1.0, 1.0), default=0.0)
     X4_cv = VirtualParameter(name="X4", range=(-1.0, 1.0), default=0.0)
     IC_cv = VirtualParameter(name="IC", range=(-1.0, 1.0), default=0.0)
-    gain_cv = VirtualParameter(name="gain", range=(0.01, 10.0), default=10.0)
+    gain_cv = VirtualParameter(name="gain", range=(0.01, 10.0), default=1.0)
     state_cv = VirtualParameter(name="state", accepted_values=["IC", "OP", "HALT"])
     mode_cv = VirtualParameter(name="mode", accepted_values=["continuous", "ondemand"])
     reset_cv = VirtualParameter(name="reset", range=(0.0, 1.0))
