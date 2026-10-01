@@ -1133,4 +1133,4 @@ class Diode(VirtualDevice):
 
     def main(self, ctx):
         V = self.input
-        return self.I0 * (exp(V / (self.n * self.Vt)) - 1)
+        return self.I0 * (math.exp(V / (self.n * self.Vt)) - 1)
