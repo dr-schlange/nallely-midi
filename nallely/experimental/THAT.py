@@ -385,13 +385,14 @@ class THATComparator(VirtualDevice):
             return self.process(self.A, self.B, self.sup, self.inf)
 
 
-class THATGeneralPanel(VirtualDevice):
-    """General panel to control all the THAT instances at once
+class THATControlPanel(VirtualDevice):
+    """General control panel to control all the THAT instances from the patch at once
 
     inputs:
     * gain_integrators_cv [0.01, 10] init=1 <any>: gain of all integrators in the patch
     * state_integrators_cv [OP, IC, HALT] <any>: the state of all integrators in the patch
     * reset_integrators_cv [0, 1] init=0 <rising>: resets all the integrators in the patch
+    * sample_rate_cv [50, 1024] init=255 <any>: set sampling rate of all THAT instances in the patch
 
     type: ondemand
     category: THAT
@@ -407,6 +408,9 @@ class THATGeneralPanel(VirtualDevice):
     reset_integrators_cv = VirtualParameter(
         name="reset_integrators", range=(0.0, 1.0), default=0.0
     )
+    sample_rate_cv = VirtualParameter(
+        name="sample_rate", range=(50.0, 1024.0), default=255.0
+    )
 
     def __post_init__(self, **kwargs):
         return {"disable_output": True}
@@ -417,6 +421,7 @@ class THATGeneralPanel(VirtualDevice):
             if isinstance(vdev, THATIntegrator):
                 vdev.set_parameter("reset", 1)
                 vdev.set_parameter("reset", 0)
+        self.reset_integrators = 0
 
     @on(state_integrators_cv, edge="any")
     def on_state_integrators_any(self, value, ctx):
@@ -429,3 +434,10 @@ class THATGeneralPanel(VirtualDevice):
         for vdev in get_virtual_devices():
             if isinstance(vdev, THATIntegrator):
                 vdev.set_parameter("gain", value)
+
+    @on(sample_rate_cv, edge="any")
+    def on_sample_rate_any(self, value, ctx):
+        for vdev in get_virtual_devices():
+            if isinstance(vdev, THATIntegrator):
+                vdev.target_cycle_time = 1 / max(self.sample_rate, 1)
+        self.sample_rate = max(self.sample_rate, 1)
