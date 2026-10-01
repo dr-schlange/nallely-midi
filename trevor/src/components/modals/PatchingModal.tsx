@@ -437,10 +437,6 @@ const PatcheableParameter = ({
 	onLongPress?: (srcId: string, portElemId: string, pointerId: number) => void;
 }) => {
 	const trevor = useTrevorWebSocket();
-	const isPitchwheel =
-		(section.section as { pitchwheels?: { name: string }[] }).pitchwheels?.some(
-			(pw) => pw.name === param.name,
-		) ?? false;
 	const handleValueChange = (value: string | number) => {
 		if (param.section_name === "__virtual__") {
 			trevor?.setVirtualValue(
@@ -496,7 +492,6 @@ const PatcheableParameter = ({
 					value={currentValue}
 					acronymeLimit={10}
 					labelPosition={reverse ? "bottom" : "top"}
-					disabled={isPitchwheel}
 					onManualSliderChange={handleValueChange}
 					onTap={() => onClick?.(section.device, param)}
 					stripPrefix={(section.device as VirtualDevice).proxy}
@@ -507,7 +502,6 @@ const PatcheableParameter = ({
 					value={currentValue as number}
 					acronymeLimit={10}
 					labelPosition={reverse ? "bottom" : "top"}
-					disabled={isPitchwheel}
 					onManualSliderChange={handleValueChange}
 					onTap={() => onClick?.(section.device, param)}
 					minValue={param.range[0]}
