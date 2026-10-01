@@ -189,10 +189,13 @@ class ModulePitchwheel:
     range: tuple[int, int] = (-8192, 8192)
     stream: bool = False
 
+    def _instname(self):
+        return f"{self.section_name}_pitch_{self.channel or 'default'}"
+
     def __get__(self, instance, owner=None):
         if instance is None:
             return self
-        return instance.state[f"{self.section_name}_pitch_{self.channel or 'default'}"]
+        return instance.state[self._instname()]
 
     def __set__(self, target, feeder):
         if feeder is None:
@@ -206,15 +209,20 @@ class ModulePitchwheel:
         ):
             feeder.to_min, feeder.to_max = self.range
 
+        if hasattr(feeder, "bind"):
+            feeder.bind(getattr(target, self.name))
+            return
+
         if isinstance(feeder, list):
             for f in feeder:
                 f.bind(getattr(target, self.name))
         else:
-            feeder.bind(getattr(target, self.name))
+            # normal case (int)
+            target.device.pitchwheel(feeder, channel=self.channel)
+            target.state[self._instname()].update(feeder)
 
-    def basic_send(
-        self, type, note, velocity
-    ): ...  # no need to keep state, behavior of pitchwheel is to reset to 0
+    def basic_set(self, device: "MidiDevice", value):
+        getattr(device.modules, self.section_name).state[self._instname()].update(value)
 
 
 @dataclass
@@ -267,8 +275,8 @@ class Module:
         for pitchwheel in self.meta.pitchwheels:
             pitchwheel.section_name = self.__class__.state_name
             state_name = pitchwheel.section_name
-            self.state[f"{state_name}_pitch_{pitchwheel.channel or 'default'}"] = (
-                PitchwheelInstance(pitchwheel, self.device)
+            self.state[pitchwheel._instname()] = PitchwheelInstance.create(
+                0, self.device, pitchwheel
             )
         self._keys_notes = {}
 

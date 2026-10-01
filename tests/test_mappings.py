@@ -673,3 +673,10 @@ def test__access_links_incoming_from_port(sender, receiver):
 
     receiver.modules.main.sink1 -= sender.modules.main.button1
     assert len(receiver.incoming_links) == 0
+
+
+def test__pitchwheel_set_int(sender, receiver):
+    _, receiver = receiver
+
+    receiver.modules.main.pitchw = 1024
+    assert receiver.pitchw == 1024

@@ -30,6 +30,9 @@ class DeviceSimulator:
             mido.Message("note_off", note=note, velocity=velocity, channel=channel)
         )
 
+    def pitchwheel(self, pitch, channel=None):
+        self.port.send(mido.Message("pitchwheel", channel=channel, pitch=pitch))
+
 
 class CTX:
     def __init__(self):
@@ -75,6 +78,7 @@ class ReceiverModule(nallely.Module):
     sink1 = nallely.ModuleParameter(99, channel=0)
     sink2 = nallely.ModuleParameter(110, channel=0)
     keys_sink = nallely.ModulePadsOrKeys(channel=0)
+    pitchw = nallely.ModulePitchwheel(channel=0)
 
 
 class MidiReceiver(nallely.MidiDevice):

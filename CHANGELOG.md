@@ -17,6 +17,7 @@
 * Add log/log-flush commands in the cli after launching a session to display or flush the logs
 * Add new diode-like behavior neuron
 * Add new THAT (The Analog Thing) components simulator (integrator, comparator, multiplier, summer, inverter, coef/pots)
+* Add possibility to set directly int values for pitchwheel
 
 ### Fixes
 
