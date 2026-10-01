@@ -63,6 +63,14 @@ class WavetableSection(nallely.Module):
     stream_table2 = nallely.ModulePitchwheel(stream=True, channel=1)
     stream_table3 = nallely.ModulePitchwheel(stream=True, channel=2)
     stream_table4 = nallely.ModulePitchwheel(stream=True, channel=3)
+    phase_ratio_table1 = nallely.ModulePitchwheel(stream=True, channel=5)
+    phase_ratio_table2 = nallely.ModulePitchwheel(stream=True, channel=6)
+    phase_ratio_table3 = nallely.ModulePitchwheel(stream=True, channel=7)
+    phase_ratio_table4 = nallely.ModulePitchwheel(stream=True, channel=8)
+    phase_offset_table1 = nallely.ModulePitchwheel(stream=True, channel=9)
+    phase_offset_table2 = nallely.ModulePitchwheel(stream=True, channel=10)
+    phase_offset_table3 = nallely.ModulePitchwheel(stream=True, channel=11)
+    phase_offset_table4 = nallely.ModulePitchwheel(stream=True, channel=12)
     level_table1 = nallely.ModuleParameter(
         96, init_value=127, description="Wavetable 1 mix level"
     )
@@ -74,6 +82,9 @@ class WavetableSection(nallely.Module):
     )
     level_table4 = nallely.ModuleParameter(
         99, init_value=127, description="Wavetable 4 mix level"
+    )
+    hard_sync = nallely.ModuleParameter(
+        91, description="Hard sync all wavetable phases", accepted_values=["OFF", "ON"]
     )
     phase_reset = nallely.ModuleParameter(126, description="Reset the phase")
     phase_offset = nallely.ModuleParameter(
@@ -168,7 +179,7 @@ class FeaturesSection(nallely.Module):
 
 class KeysSection(nallely.Module):
     notes = nallely.ModulePadsOrKeys()
-    pitchwheel = nallely.ModulePitchwheel()
+    pitchwheel = nallely.ModulePitchwheel(channel=4)
 
 
 class Lisa(nallely.MidiDevice):

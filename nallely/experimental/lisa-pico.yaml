@@ -113,6 +113,14 @@ drschlange:
       stream_table2: "pitchwheel+stream"
       stream_table3: "pitchwheel+stream"
       stream_table4: "pitchwheel+stream"
+      phase_ratio_table1: "pitchwheel+stream"
+      phase_ratio_table2: "pitchwheel+stream"
+      phase_ratio_table3: "pitchwheel+stream"
+      phase_ratio_table4: "pitchwheel+stream"
+      phase_offset_table1: "pitchwheel+stream"
+      phase_offset_table2: "pitchwheel+stream"
+      phase_offset_table3: "pitchwheel+stream"
+      phase_offset_table4: "pitchwheel+stream"
       level_table1:
         cc: 96
         description: "Wavetable 1 mix level"
@@ -129,6 +137,12 @@ drschlange:
         cc: 99
         description: "Wavetable 4 mix level"
         init: 127
+      hard_sync:
+        cc: 91
+        description: "Hard sync all wavetable phases"
+        accepted_values:
+          - OFF
+          - ON
       phase_reset:
         cc: 126
         description: "Reset the phase"
@@ -189,7 +203,6 @@ drschlange:
         accepted_values:
           - OFF
           - ON
-
       mode_wt1:
         cc: 112
         description: "Filter Type"
