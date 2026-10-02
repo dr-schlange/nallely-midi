@@ -89,14 +89,15 @@ export const XYScope = ({ id, onClose, num }: WidgetProps) => {
 		ctx.fillStyle = "orange";
 		const pointRadius = 1;
 		const filled = Math.min(pointCount.current, bufferSizeRef.current);
+		ctx.beginPath();
 		for (let i = 0; i < filled; i++) {
 			const p = points.current[i];
 			const px = dataToCanvasX(p.x, w);
 			const py = dataToCanvasY(p.y, h);
-			ctx.beginPath();
+			ctx.moveTo(px + pointRadius, py);
 			ctx.arc(px, py, pointRadius, 0, Math.PI * 2);
-			ctx.fill();
 		}
+		ctx.fill();
 	};
 
 	const getOrderedPoints = () => {

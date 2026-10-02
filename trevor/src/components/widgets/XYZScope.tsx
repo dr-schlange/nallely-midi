@@ -141,14 +141,34 @@ export const XYZScope = ({ id, onClose, num }: WidgetProps) => {
 		ctx.stroke();
 
 		const filled = Math.min(pointCount.current, bufferSizeRef.current);
+		const ALPHA_MIN = 0.2;
+		const ALPHA_SPAN = 0.8;
+		const NUM_ALPHA_BINS = 16;
+		const bins: { x: number; y: number; size: number }[][] = Array.from(
+			{ length: NUM_ALPHA_BINS + 1 },
+			() => [],
+		);
 		for (let i = 0; i < filled; i++) {
 			const p = points.current[i];
 			const pt = project3Dto2D(p.x, p.y, p.z, w, h);
-			const pointSize = Math.max(0.5, Math.min(3, pt.ps * 1.5));
-			ctx.globalAlpha = Math.max(0.2, Math.min(1.0, pt.ps * 0.8));
-			ctx.fillStyle = "orange";
+			const size = Math.max(0.5, Math.min(3, pt.ps * 1.5));
+			const alpha = Math.max(ALPHA_MIN, Math.min(1.0, pt.ps * 0.8));
+			const bin = Math.round(
+				((alpha - ALPHA_MIN) / ALPHA_SPAN) * NUM_ALPHA_BINS,
+			);
+			bins[bin].push({ x: pt.x, y: pt.y, size });
+		}
+
+		ctx.fillStyle = "orange";
+		for (let b = 0; b <= NUM_ALPHA_BINS; b++) {
+			const bucket = bins[b];
+			if (bucket.length === 0) continue;
+			ctx.globalAlpha = ALPHA_MIN + (b / NUM_ALPHA_BINS) * ALPHA_SPAN;
 			ctx.beginPath();
-			ctx.arc(pt.x, pt.y, pointSize, 0, Math.PI * 2);
+			for (const { x, y, size } of bucket) {
+				ctx.moveTo(x + size, y);
+				ctx.arc(x, y, size, 0, Math.PI * 2);
+			}
 			ctx.fill();
 		}
 
