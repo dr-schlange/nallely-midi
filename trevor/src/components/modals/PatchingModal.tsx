@@ -33,6 +33,7 @@ import {
 	connectionsOfInterest,
 	devUID,
 	internalSectionName,
+	isFloatRange,
 	isPadsOrdKeys,
 	isVirtualDevice,
 	isVirtualParameter,
@@ -507,8 +508,9 @@ const PatcheableParameter = ({
 					minValue={param.range[0]}
 					maxValue={param.range[1]}
 					rounded={
-						!isVirtualDevice(section.device) ||
-						(param as VirtualParameter).conversion_policy !== null
+						isVirtualDevice(section.device)
+							? (param as VirtualParameter).conversion_policy !== null
+							: !isFloatRange(param.range)
 					}
 					stripPrefix={(section.device as VirtualDevice).proxy}
 				/>

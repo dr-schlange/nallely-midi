@@ -11,7 +11,11 @@ import type {
 	VirtualParameter,
 } from "../model";
 import { selectChannels, useTrevorSelector } from "../store";
-import { isVirtualDevice, resolveAcceptedValueIndex } from "../utils/utils";
+import {
+	isFloatRange,
+	isVirtualDevice,
+	resolveAcceptedValueIndex,
+} from "../utils/utils";
 import { useTrevorWebSocket } from "../websockets/websocket";
 import DragNumberInput from "./DragInputs";
 import { ScalerForm } from "./ScalerForm";
@@ -262,6 +266,8 @@ export const DeviceInfoPanel = ({
 						}));
 					}}
 					range={parameter.range}
+					minPrecision={isFloatRange(parameter.range) ? 2 : 0}
+					clearDecimalButton={isFloatRange(parameter.range)}
 				/>
 			);
 		},

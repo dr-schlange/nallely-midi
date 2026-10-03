@@ -10,7 +10,7 @@ import {
 import type { CCValues, MidiDevice, MidiParameter } from "../model";
 import { useTrevorDispatch, useTrevorSelector } from "../store";
 import { resetCCState } from "../store/runtimeSlice";
-import { generateAcronym } from "../utils/utils";
+import { generateAcronym, isFloatRange } from "../utils/utils";
 import { useTrevorWebSocket } from "../websockets/websocket";
 import { Button, CircularSlider } from "./widgets/BaseComponents";
 
@@ -135,11 +135,15 @@ const DeviceSectionCC = ({
 			if (meta?.accepted_values.length > 0) {
 				// TODO
 			}
+			const range: [number, number] = meta?.range ?? [0, 127];
 			return (
 				<CircularSlider
 					key={`${deviceName}::${sectionName}::${paramName}`}
 					value={value}
 					param={meta ?? ({ name: paramName } as MidiParameter)}
+					minValue={range[0]}
+					maxValue={range[1]}
+					rounded={!isFloatRange(range)}
 					onManualSliderChange={(value) =>
 						handleParameterChange(deviceId, sectionName, paramName, value)
 					}

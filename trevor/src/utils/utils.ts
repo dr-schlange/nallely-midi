@@ -352,6 +352,9 @@ export const AnsiParser = new AnsiUp();
 export const clamp = (value: number, min: number, max: number) =>
 	Math.min(Math.max(value, min), max);
 
+export const isFloatRange = (range: [number, number]) =>
+	(range[0] === 0 && range[1] === 1) || (range[0] === -1 && range[1] === 1);
+
 export const extractCurrentIP = (fromURL = undefined) => {
 	const url = fromURL ?? store.getState().general.trevorWebsocketURL;
 	return url.replace(/ws.?:\/\/([^:]+):.*/, "$1");

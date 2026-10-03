@@ -10,6 +10,7 @@ interface DragNumberInputProps {
 	style?: React.CSSProperties;
 	nullable?: boolean;
 	clearDecimalButton?: boolean;
+	minPrecision?: number;
 }
 
 export default function DragNumberInput({
@@ -21,12 +22,13 @@ export default function DragNumberInput({
 	style = {},
 	nullable = false,
 	clearDecimalButton = false,
+	minPrecision = 0,
 }: DragNumberInputProps) {
 	const [isDragging, setIsDragging] = useState(false);
 	const inputRef = useRef<HTMLInputElement>(null);
 	const startY = useRef(0);
 	const startValue = useRef(0);
-	const [precision, setPrecision] = useState(0);
+	const [precision, setPrecision] = useState(minPrecision);
 
 	const computeDecimalPrecision = (inputValue: string) => {
 		const normalized = inputValue.replace(",", ".").trim();

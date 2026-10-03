@@ -8,6 +8,7 @@ import {
 	useState,
 } from "react";
 import { WindowWidget } from "./widgets/BaseWindowWidget";
+import { BipolarKnobs, UnipolarKnobs } from "./widgets/KnobsWidget";
 import { Scope } from "./widgets/Oscilloscope";
 import { MultiChanScope } from "./widgets/MultiChanScope";
 import { Pads } from "./widgets/PadsWidget";
@@ -39,6 +40,8 @@ const WidgetComponents = {
 	XYZScope,
 	Sliders,
 	Pads,
+	UnipolarKnobs,
+	BipolarKnobs,
 	XYPad,
 	Keyboard,
 	GBEmu: (props) => (

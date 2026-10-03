@@ -473,7 +473,7 @@ export const CircularSlider = ({
 		hasMoved.current = false;
 		dragging.current = true;
 		if (!rounded) {
-			basePrecision.current = countDecimals(value ?? minValue);
+			basePrecision.current = Math.max(2, countDecimals(value ?? minValue));
 			extraDecimalsRef.current = 0;
 			setExtraDecimals(0);
 		}
