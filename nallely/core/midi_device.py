@@ -38,9 +38,14 @@ class ModuleParameter:
     range: tuple[int, int] = (0, 127)
     accepted_values: Sequence[str] = ()
     type: Literal["program_change", "control_change"] = "control_change"
+    high_res: Literal["unipolar", "bipolar", "nope"] = "nope"
 
     def __post_init__(self):
         self.stream = False
+        if self.high_res == "unipolar":
+            self.range = (0, 1)
+        elif self.high_res == "bipolar":
+            self.range = (-1, 1)
 
     @property
     def min_range(self):
@@ -107,10 +112,15 @@ class ModuleParameter:
         if send:
             # Normal case, we set a value through the descriptor, this triggers the send of the message
             if self.type == "control_change":
-                to_module.device.control_change(
-                    self.cc_note, feeder, channel=self.channel
+                cchange = (
+                    to_module.device.control_change_hr
+                    if self.high_res != "nope"
+                    else to_module.device.control_change
                 )
+                cchange(self.cc_note, feeder, channel=self.channel, range=self.range)
             else:
+                # doesn't make sense to have a special pchange for high_res
+                # if needed, implement later
                 to_module.device.program_change(feeder, channel=self.channel)
         to_module.state[self.name].update(feeder)
 
@@ -152,6 +162,7 @@ class ModulePadsOrKeys:
 
     def __post_init__(self):
         self.stream = False
+        self.high_res = "none"
 
     def __get__(self, instance, owner=None):
         if instance is None:
@@ -188,6 +199,13 @@ class ModulePitchwheel:
     cc_note: int = -1
     range: tuple[int, int] = (-8192, 8192)
     stream: bool = False
+    high_res: Literal["unipolar", "bipolar", "nope"] = "nope"
+
+    def __post_init__(self):
+        if self.high_res == "unipolar":
+            self.range = (0, 1)
+        elif self.high_res == "bipolar":
+            self.range = (-1, 1)
 
     def _instname(self):
         return f"{self.section_name}_pitch_{self.channel or 'default'}"
@@ -218,7 +236,12 @@ class ModulePitchwheel:
                 f.bind(getattr(target, self.name))
         else:
             # normal case (int)
-            target.device.pitchwheel(feeder, channel=self.channel)
+            pwheel = (
+                target.device.pitchwheel_hr
+                if self.high_res != "nope"
+                else target.device.pitchwheel
+            )
+            pwheel(feeder, channel=self.channel)
             target.state[self._instname()].update(feeder)
 
     def basic_set(self, device: "MidiDevice", value):
@@ -371,10 +394,15 @@ class DeviceState:
             for parameter in module.meta.parameters:
                 value = getattr(getattr(self, name), parameter.name)
                 orig_value = value
-                if conv_int:
-                    value = round(value)
-                if int(orig_value) != parameter.init_value or save_defaultvalues:
-                    module_state[parameter.name] = value
+                if parameter.high_res == "nope":
+                    if conv_int:
+                        value = round(value)
+                    if int(orig_value) != parameter.init_value or save_defaultvalues:
+                        module_state[parameter.name] = value
+                else:
+                    value = float(value)
+                    if value != parameter.init_value or save_defaultvalues:
+                        module_state[parameter.name] = value
                 if with_meta:
                     module_state[parameter.name] = {
                         "section_name": parameter.section_name,
@@ -425,6 +453,7 @@ class DeviceState:
 
 
 @dataclass(eq=False)
+# class MidiDevice:
 class MidiDevice(threading.Thread):
     device_name: str
     uuid: int = 0
@@ -614,6 +643,8 @@ class MidiDevice(threading.Thread):
         self.links_registry.clear()
         if delete and self in connected_devices:
             connected_devices.remove(self)
+        if self.is_alive():
+            self.join(timeout=1)  # Wait for the thread to finish
 
     stop = close
 
@@ -740,17 +771,6 @@ class MidiDevice(threading.Thread):
         if self.played_notes[note]:
             self.played_notes[note] -= 1
 
-    def pitchwheel(self, pitch, channel=None):
-        if not self.outport:
-            return
-        channel = channel if channel is not None else self.channel
-        pitch = round(pitch)
-        if pitch > 8191:
-            pitch = 8191
-        elif pitch < -8192:
-            pitch = -8192
-        self.outport.send(mido.Message("pitchwheel", channel=channel, pitch=pitch))
-
     def all_notes_off(self):
         for note, occurence in self.played_notes.items():
             for _ in range(occurence):
@@ -762,7 +782,18 @@ class MidiDevice(threading.Thread):
             for note in range(0, 128):
                 self.note_off(note, velocity=0)
 
-    def control_change(self, control, value=0, channel=None):
+    def pitchwheel(self, pitch, channel=None):
+        if not self.outport:
+            return
+        channel = channel if channel is not None else self.channel
+        pitch = round(pitch)
+        if pitch > 8191:
+            pitch = 8191
+        elif pitch < -8192:
+            pitch = -8192
+        self.outport.send(mido.Message("pitchwheel", channel=channel, pitch=pitch))
+
+    def control_change(self, control, value=0, channel=None, range=None):
         if not self.outport:
             return
         channel = channel if channel is not None else self.channel
@@ -962,3 +993,95 @@ class MidiDevice(threading.Thread):
                 parameter.name,
                 random.randint(0, 127),
             )
+
+
+import struct
+from queue import Empty, Full, Queue
+
+from ..utils import BAUDRATE, find_hr_device
+
+
+class HRDevice(MidiDevice):
+    def __post_init__(self, *args, **kwargs):
+        self.outport_hr = None
+        self.hr_queue = Queue(maxsize=BAUDRATE * 10)
+        super().__post_init__(*args, **kwargs)
+
+    def control_change_hr(self, control, value=0, channel=None, range=(-1, 1)):
+        minrange, maxrange = range
+        if value < minrange:
+            value = minrange
+        elif value > maxrange:
+            value = maxrange
+        value = self._encode_value(value, minrange, maxrange)
+        flags = 0b01 if minrange < 0 else 0b00
+        self._enqueue_msg(control, value, flags)
+
+    def pitchwheel_hr(self, value, channel=0):
+        if value < -1:
+            value = -1
+        elif value > 1:
+            value = 1
+        # pitchwheel equivalent is currently always bipolar
+        value = self._encode_value(value, -1, 1)
+        flags = 0b11
+        self._enqueue_msg(channel, value, flags)
+
+    def _encode_value(self, value, range_min, range_max):
+        normalized = (value - range_min) / (range_max - range_min)
+        return round(normalized * 65535)
+
+    def _enqueue_msg(self, cc, value, flags):
+        try:
+            self.hr_queue.put_nowait((cc, value, flags))
+        except Full:
+            logger.warning(
+                f"Warning: input_queue full for {self.uid()} — dropping message {cc}{value}{flags}"
+            )
+
+    def connect(self):
+        super().connect()
+        self.outport_hr, _ = find_hr_device(self.manufacturer, self.device_name)
+
+    def close_out(self):
+        try:
+            super().close_out()
+        except Exception:
+            logger.error(f"Error while closing {self.uid()}")
+        if self.outport_hr is not None:
+            self.outport_hr.close()
+            self.outport_hr = None
+        queue = self.hr_queue
+        while not queue.empty():
+            try:
+                queue.get_nowait()
+                queue.task_done()
+            except Empty:
+                break
+
+    def run(self):
+        import time
+
+        max_frame_size = 255
+        msg_size = 4  # 4bytes per msg
+        queue = self.hr_queue
+        frame = bytearray(255 * msg_size + 1)
+        frame_view = memoryview(frame)
+        timing = 1 / 1000
+        pack_into = struct.pack_into
+        while self._running:
+            count = 0
+            start = 1
+            for _ in range(max_frame_size):
+                try:
+                    pack_into("<BHB", frame, start, *queue.get_nowait())
+                    count += 1
+                    start += msg_size
+                except Empty:
+                    break
+            out = self.outport_hr
+            if out and count > 0:
+                frame[0] = count
+                out.write(frame_view[: count * msg_size + 1])
+                out.flush()
+            time.sleep(timing)

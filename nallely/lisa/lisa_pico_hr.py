@@ -1,22 +1,27 @@
 """
-Generated configuration for the drschlange - lisa
+Generated configuration for the dr-schlange - LISA
 """
 
 import nallely
 
 
 class GeneralSection(nallely.Module):
-    gain = nallely.ModuleParameter(3, init_value=100, description="General Gain")
-    master_volume = nallely.ModuleParameter(
-        7, init_value=100, description="General Volume"
+    gain = nallely.ModuleParameter(
+        3, init_value=100, description="General Gain", high_res="unipolar"
     )
-    panning = nallely.ModuleParameter(14, description="Panning")
+    master_volume = nallely.ModuleParameter(
+        7, init_value=100, description="General Volume", high_res="unipolar"
+    )
+    panning = nallely.ModuleParameter(14, description="Panning", high_res="unipolar")
     engine_select = nallely.ModuleParameter(8, description="Engine Selection")
     voice_mode = nallely.ModuleParameter(
         2, description="Mode for the voices", accepted_values=["poly", "unison", "mono"]
     )
     detune = nallely.ModuleParameter(
-        4, init_value=70, description="Detune applied to secondary voice in unison mode"
+        4,
+        init_value=70,
+        description="Detune applied to secondary voice in unison mode",
+        high_res="unipolar",
     )
     sustain = nallely.ModuleParameter(
         64, description="Sustain (Hold notes)", accepted_values=["OFF", "ON"]
@@ -33,8 +38,12 @@ class ButtonsSection(nallely.Module):
 
 
 class EnvelopeSection(nallely.Module):
-    attack = nallely.ModuleParameter(11, description="Envelope Attack")
-    release = nallely.ModuleParameter(12, description="Envelope Release")
+    attack = nallely.ModuleParameter(
+        11, description="Envelope Attack", high_res="unipolar"
+    )
+    release = nallely.ModuleParameter(
+        12, description="Envelope Release", high_res="unipolar"
+    )
 
 
 class FilterSection(nallely.Module):
@@ -43,52 +52,78 @@ class FilterSection(nallely.Module):
         description="Filter Type",
         accepted_values=["lowpass", "highpass", "bandpass"],
     )
-    cutoff = nallely.ModuleParameter(74, description="Filter Cutoff")
-    resonance = nallely.ModuleParameter(71, description="Filter Resonance")
+    cutoff = nallely.ModuleParameter(
+        74, description="Filter Cutoff", high_res="unipolar"
+    )
+    resonance = nallely.ModuleParameter(
+        71, description="Filter Resonance", high_res="unipolar"
+    )
 
 
 class ModulationSection(nallely.Module):
-    timbre = nallely.ModuleParameter(9, description="Timbre")
-    timbre_mod = nallely.ModuleParameter(16, description="Timbre Modulation")
-    color = nallely.ModuleParameter(10, description="Color")
-    color_mod = nallely.ModuleParameter(17, description="Color Modulation")
-    FM_mod = nallely.ModuleParameter(15, description="FM Modulation")
+    timbre = nallely.ModuleParameter(9, description="Timbre", high_res="unipolar")
+    timbre_mod = nallely.ModuleParameter(
+        16, description="Timbre Modulation", high_res="unipolar"
+    )
+    color = nallely.ModuleParameter(10, description="Color", high_res="unipolar")
+    color_mod = nallely.ModuleParameter(
+        17, description="Color Modulation", high_res="unipolar"
+    )
+    FM_mod = nallely.ModuleParameter(
+        15, description="FM Modulation", high_res="unipolar"
+    )
     FM_slew = nallely.ModuleParameter(
-        18, description="Slew applied to the FM modulation"
+        18, description="Slew applied to the FM modulation", high_res="unipolar"
     )
 
 
 class WavetableSection(nallely.Module):
-    stream_table1 = nallely.ModulePitchwheel(stream=True, channel=0)
-    stream_table2 = nallely.ModulePitchwheel(stream=True, channel=1)
-    stream_table3 = nallely.ModulePitchwheel(stream=True, channel=2)
-    stream_table4 = nallely.ModulePitchwheel(stream=True, channel=3)
-    phase_ratio_table1 = nallely.ModulePitchwheel(stream=True, channel=5)
-    phase_ratio_table2 = nallely.ModulePitchwheel(stream=True, channel=6)
-    phase_ratio_table3 = nallely.ModulePitchwheel(stream=True, channel=7)
-    phase_ratio_table4 = nallely.ModulePitchwheel(stream=True, channel=8)
-    phase_offset_table1 = nallely.ModulePitchwheel(stream=True, channel=9)
-    phase_offset_table2 = nallely.ModulePitchwheel(stream=True, channel=10)
-    phase_offset_table3 = nallely.ModulePitchwheel(stream=True, channel=11)
-    phase_offset_table4 = nallely.ModulePitchwheel(stream=True, channel=12)
+    stream_table1 = nallely.ModulePitchwheel(channel=0, stream=True, high_res="bipolar")
+    stream_table2 = nallely.ModulePitchwheel(channel=1, stream=True, high_res="bipolar")
+    stream_table3 = nallely.ModulePitchwheel(channel=2, stream=True, high_res="bipolar")
+    stream_table4 = nallely.ModulePitchwheel(channel=3, stream=True, high_res="bipolar")
+    phase_ratio_table1 = nallely.ModulePitchwheel(
+        channel=5, stream=True, high_res="bipolar"
+    )
+    phase_ratio_table2 = nallely.ModulePitchwheel(
+        channel=6, stream=True, high_res="bipolar"
+    )
+    phase_ratio_table3 = nallely.ModulePitchwheel(
+        channel=7, stream=True, high_res="bipolar"
+    )
+    phase_ratio_table4 = nallely.ModulePitchwheel(
+        channel=8, stream=True, high_res="bipolar"
+    )
+    phase_offset_table1 = nallely.ModulePitchwheel(
+        channel=9, stream=True, high_res="bipolar"
+    )
+    phase_offset_table2 = nallely.ModulePitchwheel(
+        channel=10, stream=True, high_res="bipolar"
+    )
+    phase_offset_table3 = nallely.ModulePitchwheel(
+        channel=11, stream=True, high_res="bipolar"
+    )
+    phase_offset_table4 = nallely.ModulePitchwheel(
+        channel=12, stream=True, high_res="bipolar"
+    )
     level_table1 = nallely.ModuleParameter(
-        96, init_value=127, description="Wavetable 1 mix level"
+        96, init_value=127, description="Wavetable 1 mix level", high_res="unipolar"
     )
     level_table2 = nallely.ModuleParameter(
-        97, init_value=127, description="Wavetable 2 mix level"
+        97, init_value=127, description="Wavetable 2 mix level", high_res="unipolar"
     )
     level_table3 = nallely.ModuleParameter(
-        98, init_value=127, description="Wavetable 3 mix level"
+        98, init_value=127, description="Wavetable 3 mix level", high_res="unipolar"
     )
     level_table4 = nallely.ModuleParameter(
-        99, init_value=127, description="Wavetable 4 mix level"
+        99, init_value=127, description="Wavetable 4 mix level", high_res="unipolar"
     )
     hard_sync = nallely.ModuleParameter(
         91, description="Hard sync all wavetable phases", accepted_values=["OFF", "ON"]
     )
     phase_reset = nallely.ModuleParameter(126, description="Reset the phase")
     phase_offset = nallely.ModuleParameter(
-        125, description="Add an offset to the phase"
+        125, description="Add an offset to the phase", high_res="bipolar"
     )
     retrigger = nallely.ModuleParameter(
         124, description="Reset the phase on note strike", accepted_values=["OFF", "ON"]
@@ -115,11 +150,6 @@ class WavetableSection(nallely.Module):
     )
     reset_all_wt = nallely.ModuleParameter(
         117, description="Reset all wavetables", accepted_values=["OFF", "ON"]
-    )
-    double_buffer = nallely.ModuleParameter(
-        116,
-        description="Activates double buffering (deprecated)",
-        accepted_values=["OFF", "ON"],
     )
     mode_wt1 = nallely.ModuleParameter(
         112,
@@ -154,7 +184,9 @@ class WavetableSection(nallely.Module):
         93, init_value=64, description="Slug mode depth (buffer size)"
     )
     manual_slug_level = nallely.ModuleParameter(
-        107, description="All wavetables slug blend level controled from external CC"
+        107,
+        description="All wavetables slug blend level controled from external CC",
+        high_res="unipolar",
     )
     auto_slug_factor = nallely.ModuleParameter(
         105,
@@ -162,7 +194,10 @@ class WavetableSection(nallely.Module):
         accepted_values=["ON", "OFF"],
     )
     sluggish_factor = nallely.ModuleParameter(
-        106, init_value=20, description="How sluggish is speed between blends"
+        106,
+        init_value=20,
+        description="How sluggish is speed between blends",
+        high_res="unipolar",
     )
     auto_slug_direction = nallely.ModuleParameter(
         92,
@@ -173,16 +208,16 @@ class WavetableSection(nallely.Module):
 
 class FeaturesSection(nallely.Module):
     peak_envelope = nallely.ModuleParameter(
-        95, description="Computed peak envelope (disabled atm)"
+        95, description="Computed peak envelope (disabled atm)", high_res="unipolar"
     )
 
 
 class KeysSection(nallely.Module):
     notes = nallely.ModulePadsOrKeys()
-    pitchwheel = nallely.ModulePitchwheel(channel=4)
+    pitchwheel = nallely.ModulePitchwheel(channel=4, stream=True, high_res="bipolar")
 
 
-class Lisa(nallely.MidiDevice):
+class LisaHR(nallely.HRDevice):
     general: GeneralSection  # type: ignore
     buttons: ButtonsSection  # type: ignore
     envelope: EnvelopeSection  # type: ignore
@@ -193,13 +228,12 @@ class Lisa(nallely.MidiDevice):
     keys: KeysSection  # type: ignore
 
     def __init__(self, device_name=None, *args, **kwargs):
+        self.manufacturer = "dr-schlange"
         super().__init__(
             *args,
             device_name=device_name or "LISA",
             **kwargs,
         )
-        # We send 1 on midi dev to get the current state of the synth
-        self.general.midi_dev = 1
 
     @property
     def general(self) -> GeneralSection:

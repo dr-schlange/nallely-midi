@@ -18,6 +18,7 @@
 * Add new diode-like behavior neuron
 * Add new THAT (The Analog Thing) components simulator (integrator, comparator, multiplier, summer, inverter, coef/pots)
 * Add possibility to set directly int values for pitchwheel
+* Add possibility to declare some ports for MIDI devices as bipolar or unipolar, with a 16bits resolution (dedicated protocol) 
 
 ### Fixes
 

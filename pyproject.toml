@@ -47,6 +47,7 @@ dependencies = [
     "ruamel.yaml",
     "dulwich",
     "python-osc",
+    "pyserial",
 ]
 
 [project.optional-dependencies]

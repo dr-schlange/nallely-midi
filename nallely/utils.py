@@ -377,3 +377,36 @@ def deactivate_logs():
     for logger in LOGGERS:
         logger.removeHandler(_console_handler)
     _console_handler = None
+
+
+# HR protocol
+# need to move it later somewhere else
+import serial
+from serial.tools import list_ports
+
+HELLO = b"HR01"
+READY = b"RDY1"
+BAUDRATE = 115200
+
+
+def find_hr_device(manufacturer, device):
+    candidates = []
+
+    for port in list_ports.comports():
+        if port.manufacturer == manufacturer and device in port.product:
+            candidates.append(port)
+
+    if not candidates:
+        return None, None
+
+    for candidate in candidates:
+        ser = serial.Serial(candidate.device, BAUDRATE, timeout=1)
+        ser.reset_input_buffer()
+        ser.write(HELLO)
+        ser.flush()
+        reply = ser.read(len(READY))
+        if reply != READY:
+            continue
+        return ser, candidate
+
+    return None, None

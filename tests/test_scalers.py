@@ -123,7 +123,7 @@ def test__scaler_default_scale_virtual():
 
 def test__scaler_default_scale_midi():
     adsr = ADSREnvelope(autoconnect=True, attack=0, decay=0, sustain=1.0)
-    from nallely.experimental.lisa_pico import Lisa
+    from nallely.lisa import Lisa
 
     lisa = Lisa(autoconnect=False)
     lisa.modulation.color = adsr.scale()

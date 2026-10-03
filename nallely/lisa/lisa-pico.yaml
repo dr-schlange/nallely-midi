@@ -1,18 +1,21 @@
-drschlange:
-  lisa:
+dr-schlange:
+  LISA:
     general:
       gain:
         cc: 3
         description: "General Gain"
         init: 100
+        hr: unipolar
       master_volume:
         cc: 7
         description: "General Volume"
         init: 100
+        hr: unipolar
       panning:
         cc: 14
         description: "Panning"
         init: 0
+        hr: unipolar
       engine_select:
         cc: 8
         description: "Engine Selection"
@@ -28,6 +31,7 @@ drschlange:
         cc: 4
         description: "Detune applied to secondary voice in unison mode"
         init: 70
+        hr: unipolar
       sustain:
         cc: 64
         description: "Sustain (Hold notes)"
@@ -63,10 +67,12 @@ drschlange:
         cc: 11
         description: "Envelope Attack"
         init: 0
+        hr: unipolar
       release:
         cc: 12
         description: "Envelope Release"
         init: 0
+        hr: unipolar
     filter:
       type:
         cc: 75
@@ -79,64 +85,76 @@ drschlange:
         cc: 74
         description: "Filter Cutoff"
         init: 0
+        hr: unipolar
       resonance:
         cc: 71
         description: "Filter Resonance"
         init: 0
+        hr: unipolar
     modulation:
       timbre:
         cc: 9
         description: "Timbre"
         init: 0
+        hr: unipolar
       timbre_mod:
         cc: 16
         description: "Timbre Modulation"
         init: 0
+        hr: unipolar
       color:
         cc: 10
         description: "Color"
         init: 0
+        hr: unipolar
       color_mod:
         cc: 17
         description: "Color Modulation"
         init: 0
+        hr: unipolar
       FM_mod:
         cc: 15
         description: "FM Modulation"
         init: 0
+        hr: unipolar
       FM_slew:
         cc: 18
         description: "Slew applied to the FM modulation"
         init: 0
+        hr: unipolar
     wavetable:
-      stream_table1: "pitchwheel+stream"
-      stream_table2: "pitchwheel+stream"
-      stream_table3: "pitchwheel+stream"
-      stream_table4: "pitchwheel+stream"
-      phase_ratio_table1: "pitchwheel+stream"
-      phase_ratio_table2: "pitchwheel+stream"
-      phase_ratio_table3: "pitchwheel+stream"
-      phase_ratio_table4: "pitchwheel+stream"
-      phase_offset_table1: "pitchwheel+stream"
-      phase_offset_table2: "pitchwheel+stream"
-      phase_offset_table3: "pitchwheel+stream"
-      phase_offset_table4: "pitchwheel+stream"
+      stream_table1: "pitchwheel+stream+channel0"
+      stream_table2: "pitchwheel+stream+channel1"
+      stream_table3: "pitchwheel+stream+channel2"
+      stream_table4: "pitchwheel+stream+channel3"
+      phase_ratio_table1: "pitchwheel+stream+channel5"
+      phase_ratio_table2: "pitchwheel+stream+channel6"
+      phase_ratio_table3: "pitchwheel+stream+channel7"
+      phase_ratio_table4: "pitchwheel+stream+channel8"
+      phase_offset_table1: "pitchwheel+stream+channel9"
+      phase_offset_table2: "pitchwheel+stream+channel10"
+      phase_offset_table3: "pitchwheel+stream+channel11"
+      phase_offset_table4: "pitchwheel+stream+channel12"
       level_table1:
         cc: 96
         description: "Wavetable 1 mix level"
         init: 127
+        hr: unipolar
       level_table2:
         cc: 97
         description: "Wavetable 2 mix level"
         init: 127
+        hr: unipolar
       level_table3:
         cc: 98
         description: "Wavetable 3 mix level"
         init: 127
+        hr: unipolar
       level_table4:
         cc: 99
         description: "Wavetable 4 mix level"
         init: 127
+        hr: unipolar
       hard_sync:
         cc: 91
         description: "Hard sync all wavetable phases"
@@ -149,6 +167,7 @@ drschlange:
       phase_offset:
         cc: 125
         description: "Add an offset to the phase"
+        hr: bipolar
       retrigger:
         cc: 124
         description: "Reset the phase on note strike"
@@ -194,12 +213,6 @@ drschlange:
       reset_all_wt:
         cc: 117
         description: "Reset all wavetables"
-        accepted_values:
-          - OFF
-          - ON
-      double_buffer:
-        cc: 116
-        description: "Activates double buffering (deprecated)"
         accepted_values:
           - OFF
           - ON
@@ -265,6 +278,7 @@ drschlange:
         cc: 107
         description: "All wavetables slug blend level controled from external CC"
         init: 0
+        hr: unipolar
       auto_slug_factor:
         cc: 105
         description: "Activates the auto-slug factor for the sluggish mode"
@@ -275,6 +289,7 @@ drschlange:
         cc: 106
         description: "How sluggish is speed between blends"
         init: 20
+        hr: unipolar
       auto_slug_direction:
         cc: 92
         description: "Do we blend with the near past or distant past (default near past)"
@@ -286,6 +301,7 @@ drschlange:
         cc: 95
         description: "Computed peak envelope (disabled atm)"
         init: 0
+        hr: unipolar
     keys:
       notes: "keys_or_pads"
-      pitchwheel: "pitchwheel"
+      pitchwheel: "pitchwheel+stream+channel4"

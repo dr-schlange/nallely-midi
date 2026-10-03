@@ -69,6 +69,7 @@ def generate_code(d: dict, out: Path | str):
     brand = next(iter(d))
     device = next(iter(d[brand]))
     sections = d[brand][device]
+    gen_hr = False
     with out.open("w") as f:
         f.write(f'''"""
 Generated configuration for the {brand} - {device}
@@ -81,15 +82,21 @@ Generated configuration for the {brand} - {device}
                     parameter_code = (
                         f"    {parameter_name} = nallely.ModulePadsOrKeys()\n"
                     )
-                elif config == "pitchwheel":
+                elif "pitchwheel" in config:
+                    # +channel needs to be at the end, not the best, but ok at the moment
+                    channel = config.split("+channel")
+                    channel = None if len(channel) == 1 else channel[-1]
+                    params = "" if channel is None else f"channel={channel}"
+                    if "+stream" in config:
+                        params += ", stream=True"
+                        gen_hr = True
                     parameter_code = (
-                        f"    {parameter_name} = nallely.ModulePitchwheel()\n"
+                        f"    {parameter_name} = nallely.ModulePitchwheel({params})\n"
                     )
-                elif config == "pitchwheel+stream":
-                    parameter_code = f"    {parameter_name} = nallely.ModulePitchwheel(stream=True)\n"
                 elif config == "program_change":
                     parameter_code = f"    {parameter_name} = nallely.ModuleParameter(type='program_change')\n"
                 else:
+                    gen_hr |= config.get("hr") is not None
                     cc = config["cc"]
                     min, max = config.get("min", 0), config.get("max", 127)
                     init = config.get("init", 0)
@@ -128,8 +135,84 @@ Generated configuration for the {brand} - {device}
             f.write(f"    def {section}(self) -> {section.capitalize()}Section:\n")
             f.write(f"        return self.modules.{section}\n\n")
 
+    return gen_hr
 
-def generate_api(input_path, output_path):
+
+# Copy of generate_code at the moment
+def generate_code_hr(d: dict, out: Path | str):
+    out = Path(out)
+    brand = next(iter(d))
+    device = next(iter(d[brand]))
+    sections = d[brand][device]
+    with out.open("w") as f:
+        f.write(f'''"""
+Generated configuration for the {brand} - {device}
+"""\n''')
+        f.write("import nallely\n\n")
+        for section, parameters in sections.items():
+            f.write(f"class {section.capitalize()}Section(nallely.Module):\n")
+            for parameter_name, config in parameters.items():
+                if config == "keys_or_pads":
+                    parameter_code = (
+                        f"    {parameter_name} = nallely.ModulePadsOrKeys()\n"
+                    )
+                elif "pitchwheel" in config:
+                    # +channel needs to be at the end, not the best, but ok at the moment
+                    channel = config.split("+channel")
+                    channel = None if len(channel) == 1 else channel[-1]
+                    params = "" if channel is None else f"channel={channel}"
+                    if "+stream" in config:
+                        params += ", stream=True, high_res='bipolar'"
+                    parameter_code = (
+                        f"    {parameter_name} = nallely.ModulePitchwheel({params})\n"
+                    )
+                elif config == "program_change":
+                    parameter_code = f"    {parameter_name} = nallely.ModuleParameter(type='program_change')\n"
+                else:
+                    cc = config["cc"]
+                    min, max = config.get("min", 0), config.get("max", 127)
+                    init = config.get("init", 0)
+                    if init == 0:
+                        init = ""
+                    else:
+                        init = f", init_value={init}"
+                    if min == 0 and max == 127:
+                        range = ""
+                    else:
+                        range = f", range=({min}, {max})"
+                    descr = config.get("description")
+                    descr = f", description={descr!r}" if descr else ""
+                    accepted_values = config.get("accepted_values")
+                    accepted_values = (
+                        f", accepted_values={accepted_values!r}"
+                        if accepted_values
+                        else ""
+                    )
+                    hr_range = config.get("hr", "")
+                    if hr_range:
+                        hr_range = f", high_res={hr_range!r}"
+                    parameter_code = f"    {parameter_name} = nallely.ModuleParameter({cc}{range}{init}{descr}{accepted_values}{hr_range})\n"
+                f.write(parameter_code)
+            f.write("\n\n")
+        device_name = device.replace("-", "").replace(" ", "")
+        f.write(f"class {device_name.capitalize()}HR(nallely.HRDevice):\n")
+        for section in sections:
+            f.write(f"    {section}: {section.capitalize()}Section  # type: ignore\n")
+        f.write("\n")
+        f.write("    def __init__(self, device_name=None, *args, **kwargs):\n")
+        f.write(f"        self.manufacturer = {brand!r}\n")
+        f.write("        super().__init__(\n")
+        f.write("            *args\n,")
+        f.write(f"            device_name=device_name or {device!r},\n")
+        f.write("            **kwargs,\n")
+        f.write("        )\n\n")
+        for section in sections:
+            f.write("    @property\n")
+            f.write(f"    def {section}(self) -> {section.capitalize()}Section:\n")
+            f.write(f"        return self.modules.{section}\n\n")
+
+
+def generate_api(input_path: Path, output_path: Path):
     yaml = YAML(typ="safe")
     if input_path.suffix == ".csv":
         device_config = convert(input_path)
@@ -140,7 +223,11 @@ def generate_api(input_path, output_path):
         print(f"File format {input_path.suffix} not supported")
         sys.exit(1)
 
-    generate_code(device_config, output_path)
+    need_hr_version = generate_code(device_config, output_path)
+    if need_hr_version:
+        generate_code_hr(
+            device_config, output_path.with_name(f"{output_path.stem}_hr.py")
+        )
 
 
 if __name__ == "__main__":

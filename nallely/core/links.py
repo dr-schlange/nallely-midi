@@ -733,12 +733,17 @@ class Link:
     def _compile_PitchwheelInstance__PitchwheelInstance(self):
         src = cast(PitchwheelInstance, self.src)
         dest = cast(PitchwheelInstance, self.dest)
-        # get_channel = self.get_channel
 
+        if dest.parameter.high_res != "nope":
+            self.cleanup_callback = lambda: dest.device.pitchwheel_hr(
+                0, channel=dest.parameter.channel
+            )
+            return lambda value, ctx: dest.device.pitchwheel_hr(
+                value, channel=dest.parameter.channel
+            )
         self.cleanup_callback = lambda: dest.device.pitchwheel(
             0, channel=dest.parameter.channel
         )
-
         return lambda value, ctx: dest.device.pitchwheel(
             value, channel=dest.parameter.channel
         )
@@ -754,7 +759,14 @@ class Link:
     def _compile_Int__PitchwheelInstance(self):
         src = cast(Int, self.src)
         dest = cast(PitchwheelInstance, self.dest)
-        # get_channel = self.get_channel
+
+        if dest.parameter.high_res != "nope":
+            self.cleanup_callback = lambda: dest.device.pitchwheel_hr(
+                0, channel=dest.parameter.channel
+            )
+            return lambda value, ctx: dest.device.pitchwheel_hr(
+                value, channel=dest.parameter.channel
+            )
 
         self.cleanup_callback = lambda: dest.device.pitchwheel(
             0, channel=dest.parameter.channel
@@ -775,7 +787,14 @@ class Link:
     def _compile_PadOrKey__PitchwheelInstance(self):
         src = cast(PadOrKey, self.src)
         dest = cast(PitchwheelInstance, self.dest)
-        # get_channel = self.get_channel
+
+        if dest.parameter.high_res != "nope":
+            self.cleanup_callback = lambda: dest.device.pitchwheel_hr(
+                0, channel=dest.parameter.channel
+            )
+            return lambda value, ctx: dest.device.pitchwheel_hr(
+                value, channel=dest.parameter.channel
+            )
 
         self.cleanup_callback = lambda: dest.device.pitchwheel(
             0, channel=dest.parameter.channel
@@ -796,7 +815,14 @@ class Link:
     def _compile_PadsOrKeysInstance__PitchwheelInstance(self):
         src = cast(PadsOrKeysInstance, self.src)
         dest = cast(PitchwheelInstance, self.dest)
-        # get_channel = self.get_channel
+
+        if dest.parameter.high_res != "nope":
+            self.cleanup_callback = lambda: dest.device.pitchwheel_hr(
+                0, channel=dest.parameter.channel
+            )
+            return lambda value, ctx: dest.device.pitchwheel_hr(
+                value, channel=dest.parameter.channel
+            )
 
         self.cleanup_callback = lambda: dest.device.pitchwheel(
             0, channel=dest.parameter.channel
@@ -817,7 +843,14 @@ class Link:
     def _compile_ParameterInstance__PitchwheelInstance(self):
         src = cast(ParameterInstance, self.src)
         dest = cast(PitchwheelInstance, self.dest)
-        # get_channel = self.get_channel
+
+        if dest.parameter.high_res != "nope":
+            self.cleanup_callback = lambda: dest.device.pitchwheel_hr(
+                0, channel=dest.parameter.channel
+            )
+            return lambda value, ctx: dest.device.pitchwheel_hr(
+                value, channel=dest.parameter.channel
+            )
 
         self.cleanup_callback = lambda: dest.device.pitchwheel(
             0, channel=dest.parameter.channel

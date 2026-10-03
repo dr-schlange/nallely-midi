@@ -262,7 +262,7 @@ class VirtualDevice(threading.Thread):
             defaultdict(list),
         )
         self.links_registry: dict[tuple[str, str], Link] = {}
-        self.input_queues = ThreadSafeDefaultDict(lambda: Queue(maxsize=2000))
+        self.input_queues = ThreadSafeDefaultDict(lambda: Queue(maxsize=4096))
         self.pause_event = threading.Event()
         self.paused = False
         self.running = False

@@ -5,6 +5,7 @@ except ImportError:
 
 from .bridge_device import Bridge, MIDIBridge
 from .midi_device import (
+    HRDevice,
     MidiDevice,
     Module,
     ModulePadsOrKeys,
@@ -40,6 +41,7 @@ from .world import (
 )
 
 __all__ = [
+    "HRDevice",
     "MidiDevice",
     "ModuleParameter",
     "ModulePadsOrKeys",

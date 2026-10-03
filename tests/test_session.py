@@ -57,7 +57,7 @@ def test__session_snapshot_without_proxy(wsbus, session):
 
 def test__session_create_hw_integration_stop_all_flushed(wsbus, session):
     wsbus.stop()
-    from nallely.experimental.hardware_integration import LISA
+    from nallely.lisa import LISA
 
     lisa = LISA()
     lisa.start()

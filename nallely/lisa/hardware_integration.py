@@ -7,10 +7,12 @@ from nallely import (
     on,
 )
 from nallely.codegen import gencode
-from nallely.core import get_virtual_devices
-from nallely.experimental.lisa_pico import Lisa
+
+# from nallely.core import get_virtual_devices
 from nallely.experimental.Minilab3 import Minilab3
-from nallely.trevor import TrevorBus
+from nallely.lisa.lisa_pico import Lisa
+
+# from nallely.trevor import TrevorBus
 
 
 # @gencode(keep_decorator=True)
