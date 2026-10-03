@@ -67,6 +67,10 @@ const Knobs = ({
 						minValue={minValue}
 						maxValue={maxValue}
 						rounded={false}
+						onDrag={(value) => {
+							setValues((prev) => ({ ...prev, [name]: value }));
+							device?.send(name, value);
+						}}
 						onManualSliderChange={(value) => {
 							setValues((prev) => ({ ...prev, [name]: value }));
 							device?.send(name, value);

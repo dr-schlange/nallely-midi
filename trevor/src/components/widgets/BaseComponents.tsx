@@ -2,8 +2,8 @@
 /** biome-ignore-all lint/a11y/noSvgWithoutTitle: <explanation> */
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import type { MidiParameter, VirtualParameter } from "../../model";
 import { generateAcronym, resolveAcceptedValueIndex } from "../../utils/utils";
-import { MidiParameter, VirtualParameter } from "../../model";
 
 export const Button = ({
 	activated = false,
@@ -392,6 +392,7 @@ export const CircularSlider = ({
 	value,
 	param,
 	onManualSliderChange,
+	onDrag,
 	onTap,
 	acronymeLimit = 5,
 	labelPosition = "top",
@@ -406,6 +407,7 @@ export const CircularSlider = ({
 	acronymeLimit?: number;
 	labelPosition?: "top" | "bottom";
 	onManualSliderChange: (value: number) => void;
+	onDrag?: (value: number) => void;
 	onTap?: () => void;
 	maxValue?: number;
 	minValue?: number;
@@ -524,6 +526,7 @@ export const CircularSlider = ({
 		}
 		ghostValueRef.current = newValue;
 		setGhostValue(newValue);
+		onDrag?.(newValue);
 
 		const svgRect = svgRectRef.current;
 		if (svgRect && span !== 0) {
