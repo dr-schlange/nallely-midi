@@ -292,54 +292,8 @@ class PadsOrKeysInstance:
 
 
 class PitchwheelInstance(Int):
-    #     def repr(self):
-    #         return (
-    #             f"{self.device.uuid}::{self.parameter.section_name}::{self.parameter.name}"
-    #         )
-    #
     def __str__(self):
         return str(self.__wrapped__)
-
-
-#
-#     def __isub__(self, other):
-#         other.device.unbind_link(other, self)
-#
-# def scale(
-#     self,
-#     min: int | float | None = None,
-#     max: int | float | None = None,
-#     method: Literal["lin", "log", "asinh", "pow"] = "lin",
-#     as_int: bool = False,
-# ):
-#     return Scaler(
-#         data=self,
-#         to_min=min,
-#         to_max=max,
-#         method=method,
-#         as_int=as_int,
-#         auto=min is None and max is None,
-#     )
-
-#     @property
-#     def incoming_links(self):
-#         links = []
-#         self_repr = self.repr()
-#         for device in all_devices():
-#             for (_, dst), link in device.links_registry.items():
-#                 if dst == self_repr:
-#                     links.append(link)
-#         return links
-#
-#     @property
-#     def outgoing_links(self):
-#         links = []
-#         self_repr = self.repr()
-#         for (src, _), link in self.device.links_registry.items():
-#             if src == self_repr:
-#                 links.append(link)
-#
-#         return links
 
 
 class padproperty(property):
