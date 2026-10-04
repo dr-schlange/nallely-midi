@@ -1,4 +1,5 @@
 from dataclasses import asdict
+from time import perf_counter_ns
 from typing import Literal, cast
 
 from ..utils import get_note_name
@@ -98,6 +99,7 @@ class Link:
         if self.muted:
             return
         ctx.raw_value = value
+        ctx.ts = perf_counter_ns()
         if self.chain:
             value = self.chain(value, ctx)
         if self.velocity:
@@ -106,10 +108,10 @@ class Link:
         if self.debug:
             print(f"# {value} -- {self.callback.__qualname__}\n  {ctx}\n")
         if self.extra_zero == "before":
-            self.callback(0, ThreadContext({}))  # type: ignore
+            self.callback(0, ThreadContext({"ts": perf_counter_ns()}))  # type: ignore
         result = self.callback(value, ctx)  # type: ignore
         if self.extra_zero == "after":
-            self.callback(0, ThreadContext({}))  # type: ignore
+            self.callback(0, ThreadContext({"ts": perf_counter_ns()}))  # type: ignore
         if self.bouncy:
             self.dest.device.bounce_link(self.dest, value, ctx)
         return result

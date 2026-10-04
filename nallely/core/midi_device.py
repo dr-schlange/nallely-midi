@@ -996,7 +996,8 @@ class MidiDevice(threading.Thread):
 
 
 import struct
-from queue import Empty, Full, Queue
+from queue import Empty, Full, PriorityQueue, Queue
+from time import perf_counter_ns
 
 import serial
 
@@ -1006,10 +1007,11 @@ from ..utils import BAUDRATE, find_hr_device
 class HRDevice(MidiDevice):
     def __post_init__(self, *args, **kwargs):
         self.outport_hr = None
-        self.hr_queue = Queue(maxsize=BAUDRATE * 10)
+        self.hr_queue = PriorityQueue(maxsize=BAUDRATE * 10)
         super().__post_init__(*args, **kwargs)
 
     def control_change_hr(self, control, value=0, channel=None, range=(-1, 1)):
+        ts = perf_counter_ns()
         minrange, maxrange = range
         if value < minrange:
             value = minrange
@@ -1017,9 +1019,10 @@ class HRDevice(MidiDevice):
             value = maxrange
         value = self._encode_value(value, minrange, maxrange)
         flags = 0b01 if minrange < 0 else 0b00
-        self._enqueue_msg(control, value, flags)
+        self._enqueue_msg(control, value, flags, ts)
 
     def pitchwheel_hr(self, value, channel=0):
+        ts = perf_counter_ns()
         if value < -1:
             value = -1
         elif value > 1:
@@ -1027,15 +1030,15 @@ class HRDevice(MidiDevice):
         # pitchwheel equivalent is currently always bipolar
         value = self._encode_value(value, -1, 1)
         flags = 0b11
-        self._enqueue_msg(channel, value, flags)
+        self._enqueue_msg(channel, value, flags, ts)
 
     def _encode_value(self, value, range_min, range_max):
         normalized = (value - range_min) / (range_max - range_min)
         return round(normalized * 65535)
 
-    def _enqueue_msg(self, cc, value, flags):
+    def _enqueue_msg(self, cc, value, flags, ts):
         try:
-            self.hr_queue.put_nowait((cc, value, flags))
+            self.hr_queue.put_nowait((ts, (cc, value, flags)))
         except Full:
             logger.warning(
                 f"Warning: input_queue full for {self.uid()} — dropping message {cc}{value}{flags}"
@@ -1079,7 +1082,8 @@ class HRDevice(MidiDevice):
             start = 1
             for _ in range(max_frame_size):
                 try:
-                    pack_into("<BHB", frame, start, *queue.get_nowait())
+                    _, values = queue.get_nowait()
+                    pack_into("<BHB", frame, start, *values)
                     count += 1
                     start += msg_size
                 except Empty:

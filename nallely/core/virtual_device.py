@@ -8,7 +8,7 @@ from dataclasses import asdict, dataclass
 from decimal import Decimal
 from functools import update_wrapper, wraps
 from pathlib import Path
-from queue import Empty, Full, Queue
+from queue import Empty, Full, PriorityQueue, Queue
 from types import GeneratorType
 from typing import Any, Callable, Literal, Self, Sequence, Type
 
@@ -262,7 +262,7 @@ class VirtualDevice(threading.Thread):
             defaultdict(list),
         )
         self.links_registry: dict[tuple[str, str], Link] = {}
-        self.input_queues = ThreadSafeDefaultDict(lambda: Queue(maxsize=4096))
+        self.input_queues = ThreadSafeDefaultDict(lambda: PriorityQueue(maxsize=4096))
         self.pause_event = threading.Event()
         self.paused = False
         self.running = False
@@ -403,8 +403,9 @@ class VirtualDevice(threading.Thread):
         try:
             previous = getattr(self, param, None)
             self.store_input(param, value)  # We store for immediate feedback
+            c = ctx or ThreadContext()
             self.input_queues[param].put_nowait(
-                (value, previous, ctx or ThreadContext())
+                (c.get("ts") or time.time_ns(), (value, previous, c))
             )
         except Full:
             logger.warning(
@@ -533,7 +534,7 @@ class VirtualDevice(threading.Thread):
                         batch_size = 100
                     for _ in range(batch_size):
                         try:
-                            value, previous, inner_ctx = input_queue.get_nowait()
+                            prio, (value, previous, inner_ctx) = input_queue.get_nowait()
                             changed.add(param)
                             self.store_input(param, value)
                             self._param_last_values[param] = previous
