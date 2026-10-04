@@ -998,6 +998,8 @@ class MidiDevice(threading.Thread):
 import struct
 from queue import Empty, Full, Queue
 
+import serial
+
 from ..utils import BAUDRATE, find_hr_device
 
 
@@ -1041,6 +1043,9 @@ class HRDevice(MidiDevice):
 
     def connect(self):
         super().connect()
+        self.connect_hr()
+
+    def connect_hr(self):
         self.outport_hr, _ = find_hr_device(self.manufacturer, self.device_name)
 
     def close_out(self):
@@ -1081,7 +1086,14 @@ class HRDevice(MidiDevice):
                     break
             out = self.outport_hr
             if out and count > 0:
-                frame[0] = count
-                out.write(frame_view[: count * msg_size + 1])
-                out.flush()
+                try:
+                    frame[0] = count
+                    out.write(frame_view[: count * msg_size + 1])
+                    out.flush()
+                except serial.SerialTimeoutException as e:
+                    logger.error(f"Got timeout exception {e}")
+                except serial.SerialException as e:
+                    logger.error(f"Got a serial exception {e}")
+                    self.connect_hr()
+
             time.sleep(timing)
