@@ -1092,8 +1092,17 @@ class HRDevice(MidiDevice):
                     out.flush()
                 except serial.SerialTimeoutException as e:
                     logger.error(f"Got timeout exception {e}")
+                    try:
+                        out.close()
+                        self.outport_hr = None
+                    finally:
+                        self.connect_hr()
                 except serial.SerialException as e:
                     logger.error(f"Got a serial exception {e}")
-                    self.connect_hr()
+                    try:
+                        out.close()
+                        self.outport_hr = None
+                    finally:
+                        self.connect_hr()
 
             time.sleep(timing)
