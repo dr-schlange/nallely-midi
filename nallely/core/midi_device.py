@@ -470,6 +470,7 @@ class MidiDevice(threading.Thread):
     on_midi_message: (
         Callable[["MidiDevice", mido.Message, ModuleParameter | None], None] | None
     ) = None
+    orig_name: str = ""
 
     def __init_subclass__(cls) -> None:
         midi_device_classes.append(cls)
@@ -492,6 +493,9 @@ class MidiDevice(threading.Thread):
 
         if not self.uuid:
             self.uuid = id(self)
+
+        if not self.orig_name:
+            self.orig_name = self.device_name
 
         if self not in connected_devices:
             connected_devices.append(self)
@@ -943,6 +947,7 @@ class MidiDevice(threading.Thread):
         d = {
             "id": self.uuid,
             "repr": self.uid(),
+            "name": self.orig_name,
             "ports": {
                 "input": self.inport.name if self.inport else None,
                 "output": self.outport.name if self.outport else None,
@@ -993,116 +998,3 @@ class MidiDevice(threading.Thread):
                 parameter.name,
                 random.randint(0, 127),
             )
-
-
-import struct
-from queue import Empty, Full, Queue
-
-import serial
-
-from ..utils import BAUDRATE, find_hr_device
-
-
-class HRDevice(MidiDevice):
-    def __post_init__(self, *args, **kwargs):
-        self.outport_hr = None
-        self.hr_queue = Queue(maxsize=BAUDRATE * 10)
-        super().__post_init__(*args, **kwargs)
-
-    def control_change_hr(self, control, value=0, channel=None, range=(-1, 1)):
-        minrange, maxrange = range
-        if value < minrange:
-            value = minrange
-        elif value > maxrange:
-            value = maxrange
-        value = self._encode_value(value, minrange, maxrange)
-        flags = 0b01 if minrange < 0 else 0b00
-        self._enqueue_msg(control, value, flags)
-
-    def pitchwheel_hr(self, value, channel=0):
-        if value < -1:
-            value = -1
-        elif value > 1:
-            value = 1
-        # pitchwheel equivalent is currently always bipolar
-        value = self._encode_value(value, -1, 1)
-        flags = 0b11
-        self._enqueue_msg(channel, value, flags)
-
-    def _encode_value(self, value, range_min, range_max):
-        normalized = (value - range_min) / (range_max - range_min)
-        return round(normalized * 65535)
-
-    def _enqueue_msg(self, cc, value, flags):
-        try:
-            self.hr_queue.put_nowait((cc, value, flags))
-        except Full:
-            logger.warning(
-                f"Warning: input_queue full for {self.uid()} — dropping message {cc}{value}{flags}"
-            )
-
-    def connect(self):
-        super().connect()
-        self.connect_hr()
-
-    def connect_hr(self):
-        self.outport_hr, _ = find_hr_device(self.manufacturer, self.device_name)
-
-    def close_out(self):
-        try:
-            super().close_out()
-        except Exception:
-            logger.error(f"Error while closing {self.uid()}")
-        if self.outport_hr is not None:
-            self.outport_hr.close()
-            self.outport_hr = None
-        queue = self.hr_queue
-        while not queue.empty():
-            try:
-                queue.get_nowait()
-                queue.task_done()
-            except Empty:
-                break
-
-    def run(self):
-        import time
-
-        max_frame_size = 255
-        msg_size = 4  # 4bytes per msg
-        queue = self.hr_queue
-        frame = bytearray(255 * msg_size + 1)
-        frame_view = memoryview(frame)
-        timing = 1 / 1000
-        pack_into = struct.pack_into
-        while self._running:
-            count = 0
-            start = 1
-            for _ in range(max_frame_size):
-                try:
-                    pack_into("<BHB", frame, start, *queue.get_nowait())
-                    count += 1
-                    start += msg_size
-                except Empty:
-                    break
-            out = self.outport_hr
-            if out and count > 0:
-                try:
-                    frame[0] = count
-                    out.write(frame_view[: count * msg_size + 1])
-                    out.flush()
-                except serial.SerialTimeoutException as e:
-                    logger.error(f"Got timeout exception {e}")
-                    try:
-                        out.close()
-                        self.outport_hr = None
-                    finally:
-                        self.connect_hr()
-                except serial.SerialException as e:
-                    logger.error(f"Got a serial exception {e}")
-                    try:
-                        out.close()
-                        self.outport_hr = None
-                    finally:
-                        self.connect_hr()
-
-            time.sleep(timing)

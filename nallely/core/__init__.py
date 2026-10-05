@@ -4,8 +4,8 @@ except ImportError:
     pass
 
 from .bridge_device import Bridge, MIDIBridge
+from .hr_device import HRDevice
 from .midi_device import (
-    HRDevice,
     MidiDevice,
     Module,
     ModulePadsOrKeys,

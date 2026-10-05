@@ -117,7 +117,7 @@ class Session:
         device_refs = {}
         errors = []
         for device in content.get("midi_devices", []):
-            common_port = longest_common_substring(
+            common_port = device.get("name") or longest_common_substring(
                 device["ports"]["input"], device["ports"]["output"]
             )
             is_proxy = device.get("proxy", False)

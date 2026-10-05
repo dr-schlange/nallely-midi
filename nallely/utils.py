@@ -176,7 +176,9 @@ def _dynamic_property(dev, param, conversion, getattr=getattr, setattr=setattr):
         (
             conversion(param.default)
             if param.default
-            else conversion(param.range[0]) if param.range[0] is not None else None
+            else conversion(param.range[0])
+            if param.range[0] is not None
+            else None
         ),
     )
     prop = getattr(dev.__class__, param.name, None)
@@ -347,7 +349,7 @@ flush_logs()
 
 def getlogger(name=None):
     logger = logging.getLogger(name)
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.DEBUG)
     fh = logging.FileHandler(logfile)
     fh.setFormatter(logging.Formatter(LOG_FORMAT))
     logger.addHandler(fh)
@@ -377,36 +379,3 @@ def deactivate_logs():
     for logger in LOGGERS:
         logger.removeHandler(_console_handler)
     _console_handler = None
-
-
-# HR protocol
-# need to move it later somewhere else
-import serial
-from serial.tools import list_ports
-
-HELLO = b"HR01"
-READY = b"RDY1"
-BAUDRATE = 115200
-
-
-def find_hr_device(manufacturer, device):
-    candidates = []
-
-    for port in list_ports.comports():
-        if port.manufacturer == manufacturer and device in port.product:
-            candidates.append(port)
-
-    if not candidates:
-        return None, None
-
-    for candidate in candidates:
-        ser = serial.Serial(candidate.device, BAUDRATE, timeout=1)
-        ser.reset_input_buffer()
-        ser.write(HELLO)
-        ser.flush()
-        reply = ser.read(len(READY))
-        if reply != READY:
-            continue
-        return ser, candidate
-
-    return None, None
