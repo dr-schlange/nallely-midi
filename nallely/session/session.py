@@ -117,9 +117,10 @@ class Session:
         device_refs = {}
         errors = []
         for device in content.get("midi_devices", []):
-            common_port = device.get("name") or longest_common_substring(
+            common_port = longest_common_substring(
                 device["ports"]["input"], device["ports"]["output"]
             )
+            orig_name = device.get("name")
             is_proxy = device.get("proxy", False)
             if is_proxy:
                 continue
@@ -132,6 +133,7 @@ class Session:
                     device_name=common_port,
                     channel=channel,
                     autoconnect=False,
+                    orig_name=orig_name,
                 )
                 if uuid:
                     mididev.uuid = uuid
