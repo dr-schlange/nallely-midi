@@ -590,7 +590,7 @@ class MidiDevice(threading.Thread):
         if exact and self.inport:
             inname = self.inport.name
         else:
-            inname = on or self.inport_name
+            inname = on or self.inport_name or self.orig_name
         if self.inport:
             try:
                 newport = mido.open_input(inname)  # type: ignore
@@ -610,7 +610,7 @@ class MidiDevice(threading.Thread):
         if exact and self.outport:
             outname = self.outport.name
         else:
-            outname = on or self.outport_name
+            outname = on or self.outport_name or self.orig_name
         if self.outport:
             try:
                 newport = mido.open_output(outname, autoreset=True)  # type: ignore
