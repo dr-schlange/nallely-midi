@@ -20,6 +20,7 @@
 * Add possibility to set directly int values for pitchwheel
 * Add possibility to declare some ports for MIDI devices as bipolar or unipolar, with a 16bits resolution (dedicated protocol) 
 * Add new bipolar, unipolar knobs widgets in TrevorUI
+* Add new LFO implementation under the name "LFOs" (tmp later it will be renamed as LFO and will be a breaking change)
 
 ### Fixes
 

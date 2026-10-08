@@ -176,9 +176,7 @@ def _dynamic_property(dev, param, conversion, getattr=getattr, setattr=setattr):
         (
             conversion(param.default)
             if param.default
-            else conversion(param.range[0])
-            if param.range[0] is not None
-            else None
+            else conversion(param.range[0]) if param.range[0] is not None else None
         ),
     )
     prop = getattr(dev.__class__, param.name, None)

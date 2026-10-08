@@ -242,7 +242,7 @@ class VirtualDevice(threading.Thread):
         self.uuid = uuid if uuid else id(self)
         self.exception_handlers = [
             lambda device, exception, trace: logger.error(
-                f"Exception caught on {device}: {exception}\n[ERROR] pausing device"
+                f"Exception caught on {device}: {exception}\n{traceback.format_exc()}\n[ERROR] pausing device"
             )
         ]
         self.debug = False
@@ -1084,9 +1084,7 @@ class TimeBasedDevice(VirtualDevice):
         "subdiv", accepted_values=(tuple(SUBDIVISIONS.keys())), default="1/1"
     )
     phase_cv = VirtualParameter("phase", range=(0.0, 1.0))
-    sampling_rate_cv = VirtualParameter(
-        "sampling_rate", range=(0.001, None), default=50
-    )
+    sampling_rate_cv = VirtualParameter("sampling_rate", range=(10, 8192), default=50)
     auto_srate_cv = VirtualParameter("auto_srate", accepted_values=("ON", "OFF"))
 
     def __init__(

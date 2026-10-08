@@ -28,7 +28,7 @@ from .core import (
 )
 from .eg import VCA, ADSREnvelope, EnvelopeSlew, Gate, SampleHold, VolumeMixer
 from .filters import Crossfade, Mixer, MultiPoleFilter, Waveshaper
-from .lfos import LFO, Cycler
+from .lfos import LFO, LFOs
 from .logicals import (
     Bitwise,
     Comparator,
@@ -87,7 +87,6 @@ __all__ = [
     "Module",
     "WebSocketBus",
     "LFO",
-    "Cycler",
     "ADSREnvelope",
     "get_virtual_device_classes",
     "virtual_devices",
@@ -151,4 +150,5 @@ __all__ = [
     "OSCBus",
     "SignalConverter",
     "Diode",
+    "LFOs",
 ]
