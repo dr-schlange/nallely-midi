@@ -469,6 +469,7 @@ class LFOs(VirtualDevice):
 
     @on(pps_cv, edge="any")
     def on_pps_any(self, value, ctx):
+        self.pps = Decimal(value)
         self.target_cycle_time = float(1 / self.pps)
 
     @on(speed_cv, edge="any")
