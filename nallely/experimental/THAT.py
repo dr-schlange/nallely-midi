@@ -125,7 +125,7 @@ class THATIntegrator(THATConfig):
     * X3_cv [-1, 1] init=0 <any>: entry 3 gain 10
     * X4_cv [-1, 1] init=0 <any>: entry 4 gain 10
     * IC_cv [-1, 1] init=0 <any>: initial condition
-    * gain_cv [0.01, 10] init=1: general gain (dt gain)
+    * time_factor_cv [0.01, 10] init=1: general time factor (dt inertie)
     * state_cv [OP, IC, HALT]: switch between IC forced, normal integration, and temp disconnected integration
     * mode_cv [continuous, ondemand]: switch between discrete/continuous computation
     * reset_cv [0, 1] <rising>: reset the integrator internal value
@@ -144,7 +144,9 @@ class THATIntegrator(THATConfig):
     X3_cv = VirtualParameter(name="X3", range=(-1.0, 1.0), default=0.0)
     X4_cv = VirtualParameter(name="X4", range=(-1.0, 1.0), default=0.0)
     IC_cv = VirtualParameter(name="IC", range=(-1.0, 1.0), default=0.0)
-    gain_cv = VirtualParameter(name="gain", range=(0.01, 10.0), default=1.0)
+    time_factor_cv = VirtualParameter(
+        name="time_factor", range=(0.01, 10.0), default=1.0
+    )
     state_cv = VirtualParameter(name="state", accepted_values=["OP", "IC", "HALT"])
     mode_cv = VirtualParameter(name="mode", accepted_values=["continuous", "ondemand"])
     reset_cv = VirtualParameter(name="reset", range=(0.0, 1.0))
@@ -167,7 +169,7 @@ class THATIntegrator(THATConfig):
         if self.state == "HALT":
             yield (-self.value, [self.OUT_cv])
             return
-        self.value += (X1 + X2 + 10 * X3 + 10 * X4) * dt * self.gain
+        self.value += (X1 + X2 + 10 * X3 + 10 * X4) * dt * self.time_factor
         if self.value > 1:
             yield (1, [self.OVERLOAD_cv])
             self.value = 1
@@ -389,7 +391,7 @@ class THATControlPanel(VirtualDevice):
     """General control panel to control all the THAT instances from the patch at once
 
     inputs:
-    * gain_integrators_cv [0.01, 10] init=1 <any>: gain of all integrators in the patch
+    * time_factor_integrators_cv [0.01, 10] init=1 <any>: time factor of all integrators in the patch
     * state_integrators_cv [OP, IC, HALT] <any>: the state of all integrators in the patch
     * reset_integrators_cv [0, 1] init=0 <rising>: resets all the integrators in the patch
     * sample_rate_cv [50, 1024] init=255 <any>: set sampling rate of all THAT instances in the patch
@@ -399,8 +401,8 @@ class THATControlPanel(VirtualDevice):
     meta: disable default output
     """
 
-    gain_integrators_cv = VirtualParameter(
-        name="gain_integrators", range=(0.01, 10.0), default=1.0
+    time_factor_integrators_cv = VirtualParameter(
+        name="time_factor_integrators", range=(0.01, 10.0), default=1.0
     )
     state_integrators_cv = VirtualParameter(
         name="state_integrators", accepted_values=["OP", "IC", "HALT"]
@@ -429,11 +431,11 @@ class THATControlPanel(VirtualDevice):
             if isinstance(vdev, THATIntegrator):
                 vdev.set_parameter("state", value)
 
-    @on(gain_integrators_cv, edge="any")
-    def on_gain_integrators_any(self, value, ctx):
+    @on(time_factor_integrators_cv, edge="any")
+    def on_time_factor_integrators_any(self, value, ctx):
         for vdev in get_virtual_devices():
             if isinstance(vdev, THATIntegrator):
-                vdev.set_parameter("gain", value)
+                vdev.set_parameter("time_factor", value)
 
     @on(sample_rate_cv, edge="any")
     def on_sample_rate_any(self, value, ctx):
