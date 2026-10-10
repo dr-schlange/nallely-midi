@@ -4,7 +4,7 @@ import pytest
 
 from nallely import LFO
 from nallely.core import VirtualDevice
-from nallely.core.virtual_device import VirtualParameter
+from nallely.core.virtual_device import VirtualParameter, group
 from nallely.core.world import ThreadContext
 from nallely.devices import NTS1
 
@@ -308,3 +308,47 @@ def test__disconnect_links():
     lfo.output_cv.disconnect_outgoing_links()
     assert len(nts1.filter.cutoff.incoming_links) == 0
     assert len(lfo.output_cv.outgoing_links) == 0
+
+
+def test__groups_no_group():
+    class MDevice(VirtualDevice):
+        port1_cv = VirtualParameter("port1")
+        port2_cv = VirtualParameter("port2")
+
+    assert MDevice.port1_cv.group is None
+    assert MDevice.port2_cv.group is None
+
+
+def test__groups_simple_group():
+    class MDevice(VirtualDevice):
+        port1_cv = VirtualParameter("port1")
+        with group("outputs"):
+            port2_cv = VirtualParameter("port2")
+
+    assert MDevice.port1_cv.group is None
+    assert MDevice.port2_cv.group is not None
+    assert MDevice.port2_cv.group.name == "outputs"
+    assert MDevice.port2_cv in MDevice.port2_cv.group.children
+
+
+def test__groups_inner_groups():
+    class MDevice(VirtualDevice):
+        with group("outputs"):
+            port1_cv = VirtualParameter("port1")
+            with group("sine"):
+                port2_cv = VirtualParameter("port2")
+
+    assert MDevice.port1_cv.group is not None
+    assert MDevice.port1_cv.group.parent_group is None
+    assert MDevice.port1_cv.group.name == "outputs"
+
+    assert MDevice.port2_cv.group is not None
+    assert MDevice.port2_cv.group.name == "sine"
+    assert MDevice.port2_cv.group.qualname == "outputs::sine"
+    assert MDevice.port2_cv.group.parent_group is MDevice.port1_cv.group
+
+    assert MDevice.port2_cv.group in MDevice.port1_cv.group.children
+    assert MDevice.port2_cv in MDevice.port2_cv.group.children
+
+    assert MDevice.port1_cv in MDevice.port1_cv.group.children
+    assert MDevice.port2_cv.group in MDevice.port1_cv.group.children

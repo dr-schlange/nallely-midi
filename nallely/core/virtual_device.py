@@ -4,12 +4,13 @@ import time
 import traceback
 import weakref
 from collections import defaultdict, deque
+from contextvars import ContextVar
 from dataclasses import asdict, dataclass
 from decimal import Decimal
 from functools import update_wrapper, wraps
 from pathlib import Path
 from queue import Empty, Full, Queue
-from types import GeneratorType
+from types import GeneratorType, MappingProxyType
 from typing import Any, Callable, Literal, Self, Sequence, Type
 
 from ..utils import (
@@ -33,6 +34,38 @@ from .world import (
 
 logger = getlogger("VIRTUAL")
 
+group_ctx = ContextVar("group", default=None)
+
+
+class group:
+    def __init__(self, name):
+        self.name = name
+        self.token = None
+        self.children = []
+        parent_ctx = group_ctx.get()
+        if parent_ctx is not None:
+            parent_ctx.children.append(self)
+            # parent_ctx = weakref.proxy(parent_ctx)
+        self.parent_group = parent_ctx
+
+    def __enter__(self):
+        self.token = group_ctx.set(self)
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.token is None:
+            return
+        group_ctx.reset(self.token)
+
+    @property
+    def qualname(self):
+        name = self.name
+        parent = self.parent_group
+        while parent:
+            name = f"{parent.name}::{name}"
+            parent = parent.parent_group
+        return name
+
 
 @dataclass
 class VirtualParameter:
@@ -50,10 +83,16 @@ class VirtualParameter:
     hidden: bool = False
     default: Any | None = None
     no_init: bool = False
+    group: "group | None" = None
 
     def __post_init__(self):
         if self.accepted_values and self.range == (None, None):
             self.range = (0, len(self.accepted_values) - 1)
+
+        parent_group = group_ctx.get()
+        if parent_group is not None:
+            parent_group.children.append(self)
+            self.group = parent_group
 
     def __set_name__(self, owner, name):
         self.cv_name = name
@@ -75,7 +114,7 @@ class VirtualParameter:
             assert self.cv_name
             value.bind(getattr(device, self.cv_name))
 
-    def map2accepted_values(self, value: int | float | Decimal):
+    def map2accepted_values(self, value: float | Decimal):
         accepted_values = self.accepted_values
         return accepted_values[int(value % len(accepted_values))]
 
@@ -98,16 +137,17 @@ class VirtualParameter:
 
 
 class OnChange:
-    conditions = {
-        "any": lambda _, __: True,
-        "flat": lambda prev, curr: prev is not None and curr == prev,
-        "both": lambda prev, curr: prev != curr,
-        "rising": lambda prev, curr: (prev or 0) == 0 and curr > 0,
-        "increase": lambda prev, curr: prev is not None and curr > prev,
-        "decrease": lambda prev, curr: prev is not None and curr < prev,
-        "falling": lambda prev, curr: (prev or 0) > 0 and curr == 0,
-    }
-    conditions_name = list(conditions.keys())
+    conditions = MappingProxyType(
+        {
+            "any": lambda _, __: True,
+            "flat": lambda prev, curr: prev is not None and curr == prev,
+            "both": lambda prev, curr: prev != curr,
+            "rising": lambda prev, curr: (prev or 0) == 0 and curr > 0,
+            "increase": lambda prev, curr: prev is not None and curr > prev,
+            "decrease": lambda prev, curr: prev is not None and curr < prev,
+            "falling": lambda prev, curr: (prev or 0) > 0 and curr == 0,
+        }
+    )
 
     def __init__(self, parameter, func, condition):
         self.parameter = parameter
@@ -204,6 +244,26 @@ class VRef(object):
         instance.__dict__[self.name] = value
 
 
+class VDeviceMeta(type):
+    # Not sure if I keep this or not.
+    def __new__(cls, name, bases, dct):
+        ndct = dict(dct)
+        for pname, obj in dct.items():
+            if isinstance(obj, VirtualParameter) and obj.group is not None:
+                grp = obj.group
+                setattr(grp, pname, obj)
+                grp_name = grp.name
+                parent = grp.parent_group
+                while parent:
+                    setattr(parent, grp_name, grp)
+                    grp_name = parent.name
+                    grp = parent
+                    parent = parent.parent_group
+                ndct.setdefault(grp_name, grp)
+        return super().__new__(cls, name, bases, ndct)
+
+
+# class VirtualDevice(threading.Thread, metaclass=VDeviceMeta):
 class VirtualDevice(threading.Thread):
     _devices_count: dict[str, int] = defaultdict(int)
     output_cv = VirtualParameter(name="output", range=(0, 127))
@@ -448,7 +508,7 @@ class VirtualDevice(threading.Thread):
         ctx = self.setup()
         ctx.parent = self
         ctx.last_values = {}
-        edge_keys = OnChange.conditions_name
+        edges = OnChange.conditions
         alias_name = OnChange.alias_name
         self.suspended_tasks = []
         main_gen = self.main(ctx)
@@ -565,7 +625,7 @@ class VirtualDevice(threading.Thread):
                     for param in changed:
                         current_value = getattr(self, param)
                         last_value = self._param_last_values.get(param)
-                        for key in edge_keys:
+                        for key in edges:
                             aliased_name = alias_name(param, key)
                             if hasattr(self, aliased_name):
                                 success, value = getattr(self, aliased_name)(
