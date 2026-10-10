@@ -28,11 +28,16 @@ class ForthShell(cmd.Cmd):
         print(" ".join(self.forth.dump_known_words()))
 
     def do_dump(self, args):
-        cfa, _ = self.forth.find(args)
-        if cfa:
-            self.forth.decode_def(cfa - 3)
-        else:
-            self.forth.decode_def(int(args, base=self.forth.memory[self.forth.base]))
+        try:
+            cfa, _ = self.forth.find(args)
+            if cfa:
+                self.forth.decode_def(cfa - 3)
+            else:
+                self.forth.decode_def(
+                    int(args, base=self.forth.memory[self.forth.base])
+                )
+        except Exception:
+            print(f"Cannot decode {args}")
 
     def boot(self, mode="full"):
         self.forth._reset_machine()
