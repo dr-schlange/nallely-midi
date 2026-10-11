@@ -68,7 +68,8 @@ class MultiPoleFilter(VirtualDevice):
         self.type = type
 
         self._states = [input] * self.MAX_POLES
-        self._prev_input = input
+        self._hp_prev = [input] * self.MAX_POLES
+        self._bp_lp = input
         super().__init__(**kwargs)
 
     def store_input(self, param: str, value):
@@ -80,6 +81,8 @@ class MultiPoleFilter(VirtualDevice):
     def reset_filter(self, value, ctx):
         # Reset all internal states to current input
         self._states = [self.input] * self.MAX_POLES
+        self._hp_prev = [self.input] * self.MAX_POLES
+        self._bp_lp = self.input
         return self._states[self.poles - 1]  # output last pole
 
     def _compute_alpha(self):
@@ -110,32 +113,20 @@ class MultiPoleFilter(VirtualDevice):
                 states[i] = states[i] + alpha * (x - states[i])
                 x = states[i]
         elif self.filter == "highpass":
-            prev_input = self._prev_input
+            # one-pole highpass per stage: y = a * (y_prev + x - x_prev)
+            a = 1.0 - alpha
+            prev = self._hp_prev
             for i in range(self.poles):
-                states[i] = alpha * (states[i] + x - prev_input)
+                states[i] = a * (states[i] + x - prev[i])
+                prev[i] = x
                 x = states[i]
-                prev_input = x if i == 0 else prev_input
-            self._prev_input = self.input
         else:
-            # lowpass branch
-            lp = x
-            lp_states = list(states)
+            # a one-pole highpass (x - lowpass(x)) feeding the lowpass
+            self._bp_lp += alpha * (x - self._bp_lp)
+            x = x - self._bp_lp
             for i in range(self.poles):
-                lp_states[i] = lp_states[i] + alpha * (lp - lp_states[i])
-                lp = lp_states[i]
-
-            # highpass branch
-            hp = x
-            hp_states = list(states)
-            prev_input = self._prev_input
-            for i in range(self.poles):
-                hp_states[i] = alpha * (hp_states[i] + hp - prev_input)
-                hp = hp_states[i]
-                prev_input = hp if i == 0 else prev_input
-            self._prev_input = self.input
-
-            # bandpass output = lowpass - highpass
-            y = lp - hp
+                states[i] = states[i] + alpha * (x - states[i])
+                x = states[i]
 
         self._states = states
         return states[self.poles - 1]  # output last pole

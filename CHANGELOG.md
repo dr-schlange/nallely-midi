@@ -34,6 +34,7 @@
 * Fix issue on Demultiplexer (bad value sent on port change)
 * Fix potential memory leak when modules/neurons are killed
 * Fix bad data still being in the queue after an exception is caught
+* Fix highpass and bandpass filter in the MultipoleFilter
 
 ## Nallely v0.6.0 -- Tepezcohuite
 
