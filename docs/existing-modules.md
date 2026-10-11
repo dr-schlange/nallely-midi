@@ -432,6 +432,40 @@ meta: disable default output
 </details>
 
 <details>
+    <summary>LFOs: Simple Low Frequency Oscillator</summary>
+
+
+```
+LFO
+
+Simple Low Frequency Oscillator
+
+inputs:
+* waveform_cv [-, invert_sawtooth, random, smooth_random_exp, smooth_random_cosine, pulse, white_noise, half_wave_rectified_sine]: Waveform of the main output
+* speed_cv [0, 20] init=1 <any>: LFO speed (cycle per seconds)
+* sync_cv [0, 1] init=0 <rising>: sync LFO speed (per second tick)
+* pps_cv [50, 8192] init=259 <any>: number of points per seconds
+* subdiv_cv [4/1, 2/1, 1/1, 1/2, 1/4, 1/8, 1/16, 1/32, 1/1t, 1/2t, 1/4t, 1/8t, 1/16t, 1/32t] init=1/1: sub-division when synced
+* phase_cv [0, 1]: LFO phase
+* lower_bound_cv [-1, 1] init=-1 <any>: lower bound the LFO can reach
+* upper_bound_cv [-1, 1] init=1 <any>: upper bound the LFO can reach
+* pulse_width_cv [0.01, 1] init=0.253: with of the pulse waveform
+
+outputs:
+* output_cv [-1, 1]: main LFO output
+* sine_cv [-1, 1]: sine output
+* triangle_cv [-1, 1]: triangle output
+* square_cv [-1, 1]: square output
+* sawtooth_cv [-1, 1]: sawtooth output
+
+type: continuous
+category: oscillator
+
+```
+
+</details>
+
+<details>
     <summary>Latch: No description/documentation</summary>
 
 </details>
@@ -588,11 +622,12 @@ Semi-tones can be decimal values, input can be also a decimal values, they are q
 inputs:
 * input_cv [0, 127] <any>: the input note to shift (0-127)
 * shift_cv [-48, 48] init=0 <both>: the amount of shift to apply (-48 to +48)
+* mode_cv [continuous, ondemand]: pull or push
 
 outputs:
 * output_cv [0, 127]: the shifted note (0-127)
 
-type: ondemand
+type: hybrid
 category: pitch
 
 ```
@@ -1234,31 +1269,6 @@ category: math
 </details>
 
 <details>
-    <summary>LISA: Interface with LISA, expose only few entries, spawns 4 LFOs and connects hardware. Manage lifecycles of each modules.</summary>
-
-
-```
-
-Interface with LISA, expose only few entries, spawns 4 LFOs and connects hardware. Manage lifecycles of each modules.
-
-inputs:
-* wt1_amplitude_cv [0, 1] init=1 <any>: amplitude for waveform of wavetable 1
-* wt2_amplitude_cv [0, 1] init=1 <any>: amplitude for waveform of wavetable 2
-* wt3_amplitude_cv [0, 1] init=1 <any>: amplitude for waveform of wavetable 3
-* wt4_amplitude_cv [0, 1] init=1 <any>: amplitude for waveform of wavetable 4
-* reconnect_cv [0, 1] init=0 <rising>: force a reconnection to MIDI devices
-* shift_cv [0, 1] init=0 <rising, falling>: access to second layer of buttons/sliders
-* perf_impact_cv [LOW, MEDIUM, HIGH] init="HIGH" <any>: low or high impact on CPU (low = slower buffers fill)
-
-type: ondemand
-category: hardware-integration
-meta: disable default output
-
-```
-
-</details>
-
-<details>
     <summary>Laplace: This neuron is a simple mathematical Laplace transformation applied</summary>
 
 
@@ -1475,12 +1485,35 @@ Comparator
 inputs:
 * A_cv [-1, 1] init=0 <any>: entry A gain 1
 * B_cv [-1, 1] init=0 <any>: entry B gain 1
+* sup_cv [-1, 1] init=0: > 0 entry
+* inf_cv [-1, 1] init=0: <= 0 entry
 * mode_cv [continuous, ondemand]: switch between discrete/continuous computation
 
 outputs:
 * OUT_cv [-1, 1]: the normalized output
 
 type: hybrid
+category: THAT
+meta: disable default output
+
+```
+
+</details>
+
+<details>
+    <summary>THATControlPanel: </summary>
+
+
+```
+General control panel to control all the THAT instances from the patch at once
+
+inputs:
+* time_factor_integrators_cv [0.01, 10] init=1 <any>: time factor of all integrators in the patch
+* state_integrators_cv [OP, IC, HALT] <any>: the state of all integrators in the patch
+* reset_integrators_cv [0, 1] init=0 <rising>: resets all the integrators in the patch
+* sample_rate_cv [50, 1024] init=255 <any>: set sampling rate of all THAT instances in the patch
+
+type: ondemand
 category: THAT
 meta: disable default output
 
@@ -1501,7 +1534,8 @@ inputs:
 * X3_cv [-1, 1] init=0 <any>: entry 3 gain 10
 * X4_cv [-1, 1] init=0 <any>: entry 4 gain 10
 * IC_cv [-1, 1] init=0 <any>: initial condition
-* state_cv [IC, OP, HALT]: switch between IC forced, normal integration, and temp disconnected integration
+* time_factor_cv [0.01, 10] init=1: general time factor (dt inertie)
+* state_cv [OP, IC, HALT]: switch between IC forced, normal integration, and temp disconnected integration
 * mode_cv [continuous, ondemand]: switch between discrete/continuous computation
 * reset_cv [0, 1] <rising>: reset the integrator internal value
 

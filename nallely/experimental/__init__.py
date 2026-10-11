@@ -23,7 +23,6 @@ __all__ = [
     "Delay",
     "ConveyorLine",
     "BroadcastRAM8",
-    "LISA",
     "ScannedString",
     "CyberneticNeuron",
     "CyberneticSynapse",
