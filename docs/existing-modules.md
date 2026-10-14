@@ -441,7 +441,7 @@ LFO
 Simple Low Frequency Oscillator
 
 inputs:
-* waveform_cv [-, invert_sawtooth, random, smooth_random_exp, smooth_random_cosine, pulse, white_noise, half_wave_rectified_sine]: Waveform of the main output
+* waveform_cv [pulse, invert_sawtooth, random, smooth_random_exp, smooth_random_cosine, white_noise, half_wave_rectified_sine, sine, triangle, square, sawtooth]: Waveform of the main output
 * speed_cv [0, 20] init=1 <any>: LFO speed (cycle per seconds)
 * sync_cv [0, 1] init=0 <rising>: sync LFO speed (per second tick)
 * pps_cv [50, 8192] init=259 <any>: number of points per seconds

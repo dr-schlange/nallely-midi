@@ -374,7 +374,7 @@ class LFOs(VirtualDevice):
     Simple Low Frequency Oscillator
 
     inputs:
-    * waveform_cv [-, invert_sawtooth, random, smooth_random_exp, smooth_random_cosine, pulse, white_noise, half_wave_rectified_sine]: Waveform of the main output
+    * waveform_cv [pulse, invert_sawtooth, random, smooth_random_exp, smooth_random_cosine, white_noise, half_wave_rectified_sine, sine, triangle, square, sawtooth]: Waveform of the main output
     * speed_cv [0, 20] init=1 <any>: LFO speed (cycle per seconds)
     * sync_cv [0, 1] init=0 <rising>: sync LFO speed (per second tick)
     * pps_cv [50, 8192] init=259 <any>: number of points per seconds
@@ -398,14 +398,17 @@ class LFOs(VirtualDevice):
     waveform_cv = VirtualParameter(
         name="waveform",
         accepted_values=[
-            "-",
+            "pulse",
             "invert_sawtooth",
             "random",
             "smooth_random_exp",
             "smooth_random_cosine",
-            "pulse",
             "white_noise",
             "half_wave_rectified_sine",
+            "sine",
+            "triangle",
+            "square",
+            "sawtooth",
         ],
     )
     speed_cv = VirtualParameter(name="speed", range=(0.0, 20.0), default=Decimal("1.0"))
@@ -552,6 +555,14 @@ class LFOs(VirtualDevice):
             return random.uniform(float(self.lower_bound), float(self.upper_bound))
         if waveform == "half_wave_rectified_sine":
             return lb + (ub - lb) * max(0, Decimal(math.sin(2 * Decimal(math.pi) * t)))
+        if waveform == "sine":
+            return self.generate_sine(t, lb, ub)
+        if waveform == "triangle":
+            return self.generate_triangle(t, lb, ub)
+        if waveform == "square":
+            return self.generate_square(t, lb, ub)
+        if waveform == "sawtooth":
+            return self.generate_sawtooth(t, lb, ub)
         raise ValueError(f"Unsupported waveform type: {waveform}")
 
     def generate_sine(self, t, lb, ub):
