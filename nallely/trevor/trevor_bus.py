@@ -81,13 +81,6 @@ class IOCapture(io.StringIO):
             return super().write(data)
 
     def send_line_to_websocket(self, line):
-        # if "<mem" in line:
-        #     self.send_message(
-        #         {
-        #             "command": "stdout",
-        #             "line": "INTERACTIVE DEBUG MODE!\nTODO=>IMPLEMENT ME\n",
-        #         }
-        #     )
         self.send_message({"command": "stdout", "line": line})
 
     def _ensure_queue(self):
@@ -160,9 +153,11 @@ class TrevorBus(VirtualDevice):
         self.trevor = TrevorAPI()
         self.session = Session(self, meta_env=self.exec_context)
         self.redirector = IOCapture(self.send_message)
-        self.cc_update_interval = int(0.05e9)  # every X ns
+        self.cc_update_interval = int(0.033e9)  # every X ns
         self.next_cc_update_time = time.perf_counter_ns() + self.cc_update_interval
         self.cc_update_package = defaultdict(make_ccvalues)
+        self.cc_update_lock = threading.Lock()
+        self.cc_flush_timer: threading.Timer | None = None
         self.refresh_websocket_bus(WebSocketBus())
         self.refresh_osc_bus(OSCBus())
         self.current_scan = None
@@ -184,7 +179,7 @@ class TrevorBus(VirtualDevice):
         if bus is None:
             trevorlog.info(f"No {cls.NAME} to refresh/reconnect to")
             return
-        bus.to_update = self  # type: ignore
+        bus.to_update = self
         bus.start()
         return bus
 
@@ -409,17 +404,34 @@ class TrevorBus(VirtualDevice):
         if not control:
             # If we are here, the control is not bind in the system, so we don't send updates
             return
-        current_parameter = self.cc_update_package[device.uuid][device.uid()][
-            control.section_name
-        ]
-        if msg.value != current_parameter[control.name]:
-            current_parameter[control.name] = msg.value
-        if time.perf_counter_ns() > self.next_cc_update_time:
-            self.send_message(
-                {"command": "RuntimeAPI::updateCCValues", "arg": self.cc_update_package}
-            )
-            self.cc_update_package.clear()
+        with self.cc_update_lock:
+            self.cc_update_package[device.uuid][device.uid()][control.section_name][
+                control.name
+            ] = msg.value
+            now = time.perf_counter_ns()
+            if now >= self.next_cc_update_time:
+                flush_now = True
+            else:
+                flush_now = False
+                if self.cc_flush_timer is None:
+                    # the last value of a burst must reach the listener even if no other message follows
+                    self.cc_flush_timer = threading.Timer(
+                        (self.next_cc_update_time - now) / 1e9, self.flush_cc_updates
+                    )
+                    self.cc_flush_timer.daemon = True
+                    self.cc_flush_timer.start()
+        if flush_now:
+            self.flush_cc_updates()
+
+    def flush_cc_updates(self):
+        with self.cc_update_lock:
+            self.cc_flush_timer = None
+            if not self.cc_update_package:
+                return
+            package = self.cc_update_package
+            self.cc_update_package = defaultdict(make_ccvalues)
             self.next_cc_update_time = time.perf_counter_ns() + self.cc_update_interval
+        self.send_message({"command": "RuntimeAPI::updateCCValues", "arg": package})
 
     def send_update(self, device=None):
         connected_devices = self.connected["trevor"]
