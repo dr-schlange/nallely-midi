@@ -52,6 +52,8 @@ export interface VirtualParameter {
 	accepted_values: any[];
 	section_name: string;
 	conversion_policy: ">0" | "!=0" | "round" | null;
+	// biome-ignore lint/suspicious/noExplicitAny: this might be any value really
+	default: any | null;
 }
 
 export interface MidiDevice {

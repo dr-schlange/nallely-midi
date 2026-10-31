@@ -353,7 +353,10 @@ export const clamp = (value: number, min: number, max: number) =>
 	Math.min(Math.max(value, min), max);
 
 export const isFloatRange = (range: [number, number]) =>
-	(range[0] === 0 && range[1] === 1) || (range[0] === -1 && range[1] === 1);
+	(range[0] === 0 && range[1] === 1) ||
+	(range[0] === -1 && range[1] === 1) ||
+	!Number.isInteger(range[0]) ||
+	!Number.isInteger(range[1]);
 
 export const extractCurrentIP = (fromURL = undefined) => {
 	const url = fromURL ?? store.getState().general.trevorWebsocketURL;

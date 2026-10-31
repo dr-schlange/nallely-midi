@@ -402,11 +402,11 @@ export const CircularSlider = ({
 	disabled = false,
 	stripPrefix = false,
 }: {
-	value: number | undefined;
 	param: MidiParameter | VirtualParameter;
+	onManualSliderChange: (value: number) => void;
+	value: number | undefined;
 	acronymeLimit?: number;
 	labelPosition?: "top" | "bottom";
-	onManualSliderChange: (value: number) => void;
 	onDrag?: (value: number) => void;
 	onTap?: () => void;
 	maxValue?: number;
@@ -708,6 +708,593 @@ export const CircularSlider = ({
 							strokeDasharray="5 4"
 						/>
 					</svg>,
+					document.body,
+				)}
+		</>
+	);
+};
+
+export const BarSlider = ({
+	value: rawValue,
+	param,
+	onManualSliderChange,
+	onDrag,
+	onTap,
+	acronymeLimit = 15,
+	maxValue: maxProp = 127,
+	minValue: minProp = 0,
+	rounded: roundedProp = true,
+	disabled = false,
+	stripPrefix = false,
+}: {
+	param: MidiParameter | VirtualParameter;
+	onManualSliderChange: (value: number | string) => void;
+	value: number | string | boolean | undefined;
+	acronymeLimit?: number;
+	onDrag?: (value: number) => void;
+	onTap?: () => void;
+	maxValue?: number;
+	minValue?: number;
+	rounded?: boolean;
+	disabled?: boolean;
+	stripPrefix?: boolean;
+}) => {
+	const acceptedValues = param.accepted_values;
+	const isChoice = !!acceptedValues?.length;
+	const [localIndex, setLocalIndex] = useState<number | null>(null);
+	const resolvedIndex = isChoice
+		? resolveAcceptedValueIndex(
+				rawValue as number | string | undefined,
+				acceptedValues,
+				param.range[1],
+			)
+		: 0;
+	useEffect(() => {
+		if (localIndex !== null && resolvedIndex === localIndex) {
+			setLocalIndex(null);
+		}
+	}, [rawValue]);
+
+	// label: name only; info: name + value (read-only); edit: name + value, editable
+	const [mode, setMode] = useState<"label" | "info" | "edit">("label");
+	const editing = mode === "edit";
+	const showing = mode !== "label";
+	const [draft, setDraft] = useState("");
+	const [menuPos, setMenuPos] = useState<{
+		left: number;
+		top: number;
+		maxHeight: number;
+	} | null>(null);
+	const lastTap = useRef(0);
+	const rootRef = useRef<HTMLDivElement>(null);
+	const menuRef = useRef<HTMLDivElement>(null);
+	const inputRef = useRef<HTMLInputElement>(null);
+
+	useEffect(() => {
+		if (editing && !isChoice) {
+			inputRef.current?.focus();
+			inputRef.current?.select();
+		}
+	}, [editing]);
+
+	// Leave the accepted-value edit state (and its menu) on a pointer down elsewhere
+	useEffect(() => {
+		if (!editing || !isChoice) return;
+		const onDown = (e: PointerEvent) => {
+			const target = e.target as Node;
+			if (
+				rootRef.current?.contains(target) ||
+				menuRef.current?.contains(target)
+			)
+				return;
+			setMenuPos(null);
+			setMode("info");
+		};
+		document.addEventListener("pointerdown", onDown);
+		return () => document.removeEventListener("pointerdown", onDown);
+	}, [mode]);
+
+	const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const captured = useRef<{ el: HTMLElement; id: number } | null>(null);
+	const cancelLongPress = () => {
+		if (longPressTimer.current) clearTimeout(longPressTimer.current);
+		longPressTimer.current = null;
+	};
+	useEffect(() => cancelLongPress, []);
+
+	// In choice mode the slider works on indexes into accepted_values
+	const value = isChoice
+		? (localIndex ?? resolvedIndex)
+		: (rawValue as number | undefined);
+	const minValue = isChoice ? 0 : minProp;
+	const maxValue = isChoice ? acceptedValues.length - 1 : maxProp;
+	const rounded = isChoice || roundedProp;
+
+	const width = 88;
+	const ACRONYM_LEFT = 4;
+	// room kept left of the edited value for the 5-char acronym
+	const ACRONYM_SPACE = 42;
+	const height = 22;
+	// anchor of the drag line: the edge of the filled zone
+	const pointAt = (t: number) => ({ x: t * width, y: height / 2 });
+
+	const [ghostValue, setGhostValue] = useState<number | null>(null);
+	const ghostValueRef = useRef<number | null>(null);
+	const svgInnerRef = useRef<HTMLDivElement>(null);
+	const svgRectRef = useRef<{ left: number; top: number } | null>(null);
+	const startY = useRef<number | null>(null);
+	const startX = useRef<number | null>(null);
+	const startValue = useRef<number>(value ?? minValue);
+	const hasMoved = useRef(false);
+	const isTouch = useRef(false);
+	const dragging = useRef(false);
+	const basePrecision = useRef<number>(0);
+	const extraDecimalsRef = useRef<number>(0);
+	const [extraDecimals, setExtraDecimals] = useState<number>(0);
+	const [dragOverlay, setDragOverlay] = useState<{
+		sx: number;
+		sy: number;
+		cx: number;
+		cy: number;
+	} | null>(null);
+
+	const span = maxValue - minValue;
+	const fraction = (v: number | undefined) =>
+		v !== undefined && span !== 0
+			? Math.min(1, Math.max(0, (v - minValue) / span))
+			: 0;
+
+	const countDecimals = (v: number): number => {
+		const s = v.toString();
+		const d = s.indexOf(".");
+		return d === -1 ? 0 : s.length - d - 1;
+	};
+
+	const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+		e.preventDefault();
+		e.currentTarget.setPointerCapture(e.pointerId);
+		isTouch.current = e.pointerType === "touch";
+		startY.current = e.clientY;
+		startX.current = e.clientX;
+		startValue.current = value ?? minValue;
+		ghostValueRef.current = null;
+		hasMoved.current = false;
+		dragging.current = true;
+		captured.current = { el: e.currentTarget, id: e.pointerId };
+		cancelLongPress();
+		longPressTimer.current = setTimeout(() => {
+			// a long press without moving switches to the editable view
+			longPressTimer.current = null;
+			dragging.current = false;
+			startY.current = null;
+			startX.current = null;
+			if (captured.current?.el.hasPointerCapture?.(captured.current.id)) {
+				captured.current.el.releasePointerCapture(captured.current.id);
+			}
+			setDraft(isChoice ? "" : String(value ?? ""));
+			setMode("edit");
+		}, 500);
+		if (!rounded) {
+			basePrecision.current = Math.max(2, countDecimals(value ?? minValue));
+			extraDecimalsRef.current = 0;
+			setExtraDecimals(0);
+		}
+		const svgEl = svgInnerRef.current;
+		svgRectRef.current = svgEl
+			? {
+					left: svgEl.getBoundingClientRect().left,
+					top: svgEl.getBoundingClientRect().top,
+				}
+			: null;
+	};
+
+	const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+		if (!dragging.current || startY.current === null) return;
+		const yDelta = startY.current - e.clientY;
+		if (!hasMoved.current && Math.abs(yDelta) < 4) return;
+		hasMoved.current = true;
+		cancelLongPress();
+
+		let newValue: number;
+		if (!rounded && startX.current !== null) {
+			const xDelta = e.clientX - startX.current;
+			const absDist = Math.abs(xDelta);
+			const magnitude =
+				absDist < 45 ? 0 : Math.min(6, 1 + Math.floor((absDist - 45) / 25));
+			const extra = Math.max(
+				-basePrecision.current,
+				xDelta < 0 ? magnitude : -magnitude,
+			);
+			if (extra !== extraDecimalsRef.current) {
+				startValue.current = ghostValueRef.current ?? startValue.current;
+				startY.current = e.clientY;
+				extraDecimalsRef.current = extra;
+				setExtraDecimals(extra);
+			}
+			const scale = Math.pow(10, -extra);
+			const currentYDelta = startY.current - e.clientY;
+			const raw =
+				startValue.current +
+				(currentYDelta / 2) * ((maxValue - minValue) / 127) * scale;
+			newValue = Math.min(maxValue, Math.max(minValue, raw));
+		} else {
+			const raw =
+				startValue.current +
+				(isChoice ? yDelta / 30 : (yDelta / 2) * ((maxValue - minValue) / 127));
+			newValue = Math.min(
+				maxValue,
+				Math.max(minValue, rounded ? Math.round(raw) : raw),
+			);
+		}
+		ghostValueRef.current = newValue;
+		setGhostValue(newValue);
+		onDrag?.(newValue);
+
+		const svgRect = svgRectRef.current;
+		if (svgRect && span !== 0) {
+			const ghostPoint = pointAt(fraction(newValue));
+			setDragOverlay({
+				sx: svgRect.left + ghostPoint.x,
+				sy: svgRect.top + ghostPoint.y,
+				cx: e.clientX,
+				cy: e.clientY,
+			});
+		}
+	};
+
+	const endDrag = (e: React.PointerEvent<HTMLDivElement>) => {
+		cancelLongPress();
+		if (!dragging.current) return;
+		dragging.current = false;
+		if (e.currentTarget.hasPointerCapture?.(e.pointerId)) {
+			e.currentTarget.releasePointerCapture(e.pointerId);
+		}
+		let committed = ghostValueRef.current;
+		if (!rounded && committed !== null) {
+			const precision = Math.max(
+				0,
+				basePrecision.current + extraDecimalsRef.current,
+			);
+			const factor = 10 ** precision;
+			committed = Math.round(committed * factor) / factor;
+		}
+		const moved = hasMoved.current;
+		startY.current = null;
+		startX.current = null;
+		ghostValueRef.current = null;
+		hasMoved.current = false;
+		extraDecimalsRef.current = 0;
+		setExtraDecimals(0);
+		setDragOverlay(null);
+		setGhostValue(null);
+		if (!moved) {
+			const now = Date.now();
+			if (now - lastTap.current < 350) {
+				lastTap.current = 0;
+				setMode((m) => (m === "info" ? "label" : "info"));
+			} else {
+				lastTap.current = now;
+			}
+			onTap?.();
+		} else if (committed !== null && committed !== value) {
+			if (isChoice) {
+				setLocalIndex(committed);
+				onManualSliderChange?.(acceptedValues[committed].toString());
+			} else {
+				onManualSliderChange?.(committed);
+			}
+		}
+	};
+
+	const splitTextStyle = (offset = 0): React.CSSProperties => ({
+		backgroundImage: `linear-gradient(to right, var(--browntext) ${fraction(value) * 100}%, var(--black) ${fraction(value) * 100}%)`,
+		backgroundPosition: `${-offset}px 0`,
+		backgroundSize: `${width}px 100%`,
+		backgroundRepeat: "no-repeat",
+		WebkitBackgroundClip: "text",
+		backgroundClip: "text",
+		WebkitTextFillColor: "transparent",
+		caretColor: "var(--black)",
+	});
+
+	const numericText = (() => {
+		if (value === undefined) return "...";
+		if (rounded) return String(Math.round(value));
+		const str = String(value);
+		const dot = str.indexOf(".");
+		if (dot === -1 || str.length - dot - 1 <= 4) return str;
+		return `${value.toFixed(4)}...`;
+	})();
+
+	const commitDraft = () => {
+		setMode("info");
+		const typed = Number(draft.replace(",", "."));
+		if (draft.trim() === "" || Number.isNaN(typed)) return;
+		let v = Math.min(maxValue, Math.max(minValue, typed));
+		if (rounded) v = Math.round(v);
+		if (v !== value) onManualSliderChange?.(v);
+	};
+
+	const openMenu = () => {
+		const r = rootRef.current?.getBoundingClientRect();
+		if (!r) return;
+		setMenuPos({
+			left: r.left,
+			top: r.bottom + 2,
+			maxHeight: Math.max(80, window.innerHeight - r.bottom - 10),
+		});
+	};
+
+	const pickAcceptedValue = (index: number) => {
+		setLocalIndex(index);
+		onManualSliderChange?.(acceptedValues[index].toString());
+		setMenuPos(null);
+		setMode("info");
+	};
+
+	const choiceName = isChoice ? String(acceptedValues[value ?? 0] ?? "") : "";
+
+	const ghostText =
+		ghostValue === null
+			? ""
+			: isChoice
+				? String(acceptedValues[ghostValue] ?? "")
+				: rounded
+					? String(ghostValue)
+					: ghostValue.toFixed(
+							Math.max(0, basePrecision.current + extraDecimals),
+						);
+
+	const label = generateAcronym(
+		param.name.replace(/_cv$/, "").replace(stripPrefix ? /^[^_]+_/ : "", ""),
+		acronymeLimit,
+	);
+
+	const shortLabel = generateAcronym(
+		param.name.replace(/_cv$/, "").replace(stripPrefix ? /^[^_]+_/ : "", ""),
+		5,
+	);
+
+	const dragLine = dragOverlay
+		? (() => {
+				const dx = dragOverlay.cx - dragOverlay.sx;
+				const dy = dragOverlay.cy - dragOverlay.sy;
+				const dist = Math.sqrt(dx * dx + dy * dy);
+				if (dist < 6) return null;
+				return {
+					x1: dragOverlay.sx,
+					y1: dragOverlay.sy,
+					x2: dragOverlay.cx,
+					y2: dragOverlay.cy,
+				};
+			})()
+		: null;
+
+	return (
+		<>
+			<div
+				ref={rootRef}
+				style={{
+					display: "flex",
+					alignItems: "center",
+					userSelect: "none",
+					touchAction: "none",
+					marginTop: "4px",
+					position: "relative",
+					gap: "2px",
+				}}
+				onPointerDown={disabled || editing ? undefined : handlePointerDown}
+				onPointerMove={disabled || editing ? undefined : handlePointerMove}
+				onPointerUp={disabled || editing ? undefined : endDrag}
+				onPointerCancel={disabled || editing ? undefined : endDrag}
+				onContextMenu={(e) => e.preventDefault()}
+			>
+				<div
+					ref={svgInnerRef}
+					style={{
+						position: "relative",
+						width,
+						height,
+						boxSizing: "border-box",
+						background: "var(--rack-bg-color)",
+						overflow: "hidden",
+						fontSize: "12px",
+						fontWeight: "bold",
+					}}
+				>
+					<div
+						style={{
+							position: "absolute",
+							inset: 0,
+							display: "flex",
+							alignItems: "center",
+							justifyContent: "center",
+							whiteSpace: "nowrap",
+							pointerEvents: editing ? "auto" : "none",
+							// above the orange fill, which would hide the text at max
+							zIndex: showing ? 1 : undefined,
+							color: "var(--black)",
+						}}
+					>
+						{showing && !isChoice ? (
+							<>
+								<span
+									style={{
+										position: "absolute",
+										left: ACRONYM_LEFT,
+										pointerEvents: "none",
+										...splitTextStyle(ACRONYM_LEFT),
+									}}
+								>
+									{shortLabel}
+								</span>
+								{editing ? (
+									<input
+										ref={inputRef}
+										value={draft}
+										inputMode={rounded ? "numeric" : "decimal"}
+										onChange={(e) => setDraft(e.target.value)}
+										onBlur={commitDraft}
+										onKeyDown={(e) => {
+											if (e.key === "Enter") commitDraft();
+											if (e.key === "Escape") setMode("info");
+										}}
+										style={{
+											width: "100%",
+											height: "100%",
+											boxSizing: "border-box",
+											padding: 0,
+											border: "none",
+											outline: "none",
+											textAlign: "center",
+											font: "inherit",
+											...splitTextStyle(),
+											paddingLeft: ACRONYM_SPACE,
+										}}
+									/>
+								) : (
+									<span
+										style={{
+											width: "100%",
+											boxSizing: "border-box",
+											textAlign: "center",
+											...splitTextStyle(),
+											paddingLeft: ACRONYM_SPACE,
+										}}
+									>
+										{numericText}
+									</span>
+								)}
+							</>
+						) : showing ? (
+							<span
+								onClick={editing ? openMenu : undefined}
+								style={{
+									cursor: editing ? "pointer" : undefined,
+									width: "100%",
+									textAlign: "center",
+									...splitTextStyle(),
+								}}
+							>
+								{choiceName}
+							</span>
+						) : (
+							label
+						)}
+					</div>
+					{!disabled && (
+						<div
+							style={{
+								position: "absolute",
+								inset: 0,
+								display: "flex",
+								alignItems: "center",
+								justifyContent: "center",
+								whiteSpace: "nowrap",
+								pointerEvents: "none",
+								background: "orange",
+								color: "var(--browntext)",
+								clipPath: `inset(0 ${100 - fraction(ghostValue ?? value) * 100}% 0 0)`,
+							}}
+						>
+							{showing ? null : label}
+						</div>
+					)}
+					{!disabled && ghostValue !== null && (
+						<div
+							style={{
+								position: "absolute",
+								inset: 0,
+								pointerEvents: "none",
+								background: "var(--browntext)",
+								opacity: 0.3,
+								// where the bar was when the drag started
+								clipPath: `inset(0 ${100 - fraction(value) * 100}% 0 0)`,
+							}}
+						/>
+					)}
+				</div>
+			</div>
+			{dragOverlay &&
+				createPortal(
+					<>
+						{dragLine && (
+							<svg
+								style={{
+									position: "fixed",
+									top: 0,
+									left: 0,
+									width: "100%",
+									height: "100%",
+									pointerEvents: "none",
+									zIndex: 9999,
+								}}
+							>
+								<line
+									x1={dragLine.x1}
+									y1={dragLine.y1}
+									x2={dragLine.x2}
+									y2={dragLine.y2}
+									stroke="rgba(0,0,0,0.45)"
+									strokeWidth={1.5}
+									strokeDasharray="5 4"
+								/>
+							</svg>
+						)}
+						<div
+							style={{
+								position: "fixed",
+								left: dragOverlay.cx,
+								top: dragOverlay.cy - (isTouch.current ? 72 : 36),
+								transform: "translateX(-50%)",
+								pointerEvents: "none",
+								zIndex: 10000,
+								fontSize: "13px",
+								padding: "2px 6px",
+								borderRadius: "4px",
+								background: "orange",
+								color: "var(--browntext)",
+								whiteSpace: "nowrap",
+							}}
+						>
+							{ghostText}
+						</div>
+					</>,
+					document.body,
+				)}
+			{menuPos &&
+				createPortal(
+					<div
+						ref={menuRef}
+						style={{
+							position: "fixed",
+							left: menuPos.left,
+							top: menuPos.top,
+							minWidth: width,
+							maxHeight: menuPos.maxHeight,
+							overflowY: "auto",
+							zIndex: 10000,
+							backgroundColor: "#e0e0e0",
+							border: "3px solid #808080",
+							fontSize: "12px",
+						}}
+					>
+						{acceptedValues.map((av, index) => (
+							<div
+								key={`${index}-${av}`}
+								onClick={() => pickAcceptedValue(index)}
+								style={{
+									padding: "3px 6px",
+									cursor: "pointer",
+									whiteSpace: "nowrap",
+									backgroundColor: index === value ? "orange" : "transparent",
+									color: index === value ? "var(--browntext)" : "var(--black)",
+								}}
+							>
+								{String(av)}
+							</div>
+						))}
+					</div>,
 					document.body,
 				)}
 		</>

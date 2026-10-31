@@ -18,6 +18,41 @@ import * as TrevorAPI from "../store/trevorSlice";
 import { setFullState } from "../store/trevorSlice";
 import { isPadOrdKey, isPadsOrdKeys, isVirtualParameter } from "../utils/utils";
 
+let pendingCCValues: Record<string, unknown> | null = null;
+const mergeDeep = (
+	target: Record<string, unknown>,
+	source: Record<string, unknown>,
+) => {
+	for (const [key, value] of Object.entries(source)) {
+		const current = target[key];
+		if (
+			typeof value === "object" &&
+			value !== null &&
+			typeof current === "object" &&
+			current !== null
+		) {
+			mergeDeep(
+				current as Record<string, unknown>,
+				value as Record<string, unknown>,
+			);
+		} else {
+			target[key] = value;
+		}
+	}
+};
+const queueCCValues = (values: Record<string, unknown>) => {
+	if (pendingCCValues !== null) {
+		mergeDeep(pendingCCValues, values);
+		return;
+	}
+	pendingCCValues = values;
+	requestAnimationFrame(() => {
+		const batch = pendingCCValues;
+		pendingCCValues = null;
+		if (batch) store.dispatch(RuntimeAPI.updateCCValues(batch as any));
+	});
+};
+
 // const WEBSOCKET_URL = `ws://${window.location.hostname}:6788/trevor`;
 
 export const WsStatus = {
@@ -127,6 +162,10 @@ export class TrevorWebSocket {
 			if (message.command === undefined) {
 				store.dispatch(setConnected(WsStatus.CONNECTED));
 				store.dispatch(setFullState(message));
+				return;
+			}
+			if (message.command === "RuntimeAPI::updateCCValues") {
+				queueCCValues(message.arg);
 				return;
 			}
 			if (message.command.startsWith("RuntimeAPI::")) {

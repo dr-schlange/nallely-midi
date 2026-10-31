@@ -8,6 +8,7 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { useConnectionDrawing } from "../hooks/useConnectionDrawing";
 import type {
 	Connection,
 	MidiDevice,
@@ -18,7 +19,7 @@ import type {
 	VirtualDeviceWithSection,
 } from "../model";
 import { useTrevorDispatch, useTrevorSelector } from "../store";
-import { setCurrentAddress } from "../store/runtimeSlice";
+import { resetCCState, setCurrentAddress } from "../store/runtimeSlice";
 import {
 	connectionId,
 	devUID,
@@ -26,16 +27,14 @@ import {
 	rejectedClasses,
 } from "../utils/utils";
 import { useTrevorWebSocket } from "../websockets/websocket";
-import { useConnectionDrawing } from "../hooks/useConnectionDrawing";
-import { SidePanel } from "./SidePanel";
 import { AboutModal } from "./modals/AboutModal";
 import { MemoryModal } from "./modals/MemoryModal";
 import PatchingModal from "./modals/PatchingModal";
 import { Portal } from "./Portal";
 import { RackRow } from "./RackRow";
-import { type RackRowCCRef, RackRowCCs } from "./RackRowCC";
 import { RackRowVirtual } from "./RackRowVirtual";
 import { type RackRowWidgetRef, RackRowWidgets } from "./RackRowWidgets";
+import { SidePanel } from "./SidePanel";
 
 const Playground = lazy(() =>
 	import("./modals/Playground").then((module) => ({
@@ -91,7 +90,6 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 		});
 
 	const widgetRack = useRef<RackRowWidgetRef>(null);
-	const ccsRack = useRef<RackRowCCRef>(null);
 	const [isExpanded, setIsExpanded] = useState<boolean>(false);
 	const [orientation, setOrientation] = useState<"horizontal" | "vertical">(
 		window.innerHeight < 450 ? "horizontal" : "vertical",
@@ -174,7 +172,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 	const resetAll = () => {
 		trevorSocket?.resetAll();
 		widgetRack.current?.resetAll();
-		ccsRack.current?.resetAll();
+		dispatch(resetCCState());
 		setCurrentSelected(undefined);
 		setDisplayedSection(undefined);
 	};
@@ -311,7 +309,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 
 	const handleLoadOk = () => {
 		widgetRack.current?.resetAll();
-		ccsRack.current?.resetAll();
+		dispatch(resetCCState());
 	};
 
 	const handleExpand = () => {
@@ -402,7 +400,6 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 				ref={mainSectionRef}
 				onScroll={updateConnectionsThrottled}
 			>
-				<RackRowCCs ref={ccsRack} orientation={orientation} />
 				<RackRow
 					devices={midi_devices}
 					onSectionClick={handleSectionClick}

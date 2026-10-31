@@ -25,7 +25,7 @@
 	text-rendering: optimizeLegibility;
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
-	--black: #2c281e;
+	--black: #333;
 	--browntext: rgb(123, 85, 15);
 	--rack-bg-color: #d0d0d0;
 	--button-bg-color: #d0d0d0;
