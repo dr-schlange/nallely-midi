@@ -888,6 +888,7 @@ export const BarSlider = ({
 			}
 			setDraft(isChoice ? "" : String(value ?? ""));
 			setMode("edit");
+			if (isChoice) openMenu();
 		}, 500);
 		if (!rounded) {
 			basePrecision.current = Math.max(2, countDecimals(value ?? minValue));
