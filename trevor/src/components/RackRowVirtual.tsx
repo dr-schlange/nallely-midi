@@ -359,6 +359,7 @@ const InlinedVDev = ({
 	const linking = useBarLinking();
 	const linked = useLinkedIds();
 	const vdevHighlight = useHighlightUnit(`${vdev.id}`);
+	const [continuous, setContinuous] = useState(false);
 	const ports = vdev.meta.parameters
 		.map((p) => ({ id: parameterUUID(vdev.id, p), name: p.name }))
 		.filter((i) => linked.has(i.id));
@@ -427,6 +428,13 @@ const InlinedVDev = ({
 				{isOpen && (
 					<>
 						<Button
+							text="C"
+							tooltip="Send every value while dragging, not only the last one"
+							activated={continuous}
+							onClick={() => setContinuous((prev) => !prev)}
+							style={lightButtonStyle(continuous, true)}
+						/>
+						<Button
 							text="«"
 							tooltip="Open or close the side panel on this device"
 							activated={openPanelDevice === `${vdev.id}::${vdev.repr}`}
@@ -456,6 +464,7 @@ const InlinedVDev = ({
 						minValue={p.range[0]}
 						maxValue={p.range[1]}
 						rounded={p.conversion_policy !== null}
+						continuous={continuous}
 						onManualSliderChange={(v) =>
 							trevorSocket?.setVirtualValue(vdev, p, v)
 						}

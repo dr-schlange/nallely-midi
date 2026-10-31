@@ -10,7 +10,8 @@ import {
 	useState,
 } from "react";
 import type { Connection } from "../model";
-import { useTrevorSelector } from "../store";
+import { useTrevorDispatch, useTrevorSelector } from "../store";
+import { setBarSelection, setHighlightedUnit } from "../store/runtimeSlice";
 import {
 	buildOwners,
 	type InlinedAnchor,
@@ -115,6 +116,7 @@ export const BarLinks = forwardRef<
 	{ containerRef: RefObject<HTMLElement | null> }
 >(({ containerRef }, ref) => {
 	const connections = useTrevorSelector((state) => state.nallely.connections);
+	const dispatch = useTrevorDispatch();
 	const midiDevices = useTrevorSelector((state) => state.nallely.midi_devices);
 	const virtualDevices = useTrevorSelector(
 		(state) => state.nallely.virtual_devices,
@@ -179,6 +181,9 @@ export const BarLinks = forwardRef<
 		pressTimer.current = setTimeout(() => {
 			pressTimer.current = null;
 			window.getSelection()?.removeAllRanges();
+			// the link takes the place of the selected parameter or highlighted title
+			dispatch(setBarSelection(null));
+			dispatch(setHighlightedUnit(null));
 			// between two collapsed ends (or several patches) the list comes first
 			const showList = link.bothCollapsed || link.connectionIds.length > 1;
 			setMenu({
@@ -530,12 +535,12 @@ export const BarLinks = forwardRef<
 	const drawn = links
 		.map((link) => ({
 			link,
-			highlighted:
-				(menu !== null &&
-					link.connectionIds.some((id) => menu.ids.includes(id))) ||
-				(highlightedUnit !== null && link.units.includes(highlightedUnit)) ||
-				(selectedParameter !== null &&
-					link.parameters.includes(selectedParameter)),
+			// with the menu of a link open, that link alone is highlighted
+			highlighted: menu
+				? link.connectionIds.some((id) => menu.ids.includes(id))
+				: (highlightedUnit !== null && link.units.includes(highlightedUnit)) ||
+					(selectedParameter !== null &&
+						link.parameters.includes(selectedParameter)),
 		}))
 		.sort((a, b) => Number(a.highlighted) - Number(b.highlighted));
 

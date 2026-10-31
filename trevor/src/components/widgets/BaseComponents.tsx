@@ -800,6 +800,7 @@ export const BarSlider = ({
 	bipolar = false,
 	selected = false,
 	linkId,
+	continuous = false,
 }: {
 	param: MidiParameter | VirtualParameter;
 	onManualSliderChange: (value: number | string) => void;
@@ -812,12 +813,10 @@ export const BarSlider = ({
 	rounded?: boolean;
 	disabled?: boolean;
 	stripPrefix?: boolean;
-	// the fill starts from the zero of the range (in the middle) instead of the left edge
 	bipolar?: boolean;
-	// picked as the source of a link (gold border)
 	selected?: boolean;
-	// anchor id the links are drawn to
 	linkId?: string;
+	continuous?: boolean;
 }) => {
 	const acceptedValues = param.accepted_values;
 	const isChoice = !!acceptedValues?.length;
@@ -891,7 +890,6 @@ export const BarSlider = ({
 		[],
 	);
 
-	// In choice mode the slider works on indexes into accepted_values
 	const value = isChoice
 		? (localIndex ?? resolvedIndex)
 		: (rawValue as number | undefined);
@@ -901,10 +899,8 @@ export const BarSlider = ({
 
 	const width = 88;
 	const ACRONYM_LEFT = 4;
-	// room kept left of the edited value for the 5-char acronym
 	const ACRONYM_SPACE = 42;
 	const height = 22;
-	// anchor of the drag line: the edge of the filled zone
 	const pointAt = (t: number) => ({ x: t * width, y: height / 2 });
 
 	const [ghostValue, setGhostValue] = useState<number | null>(null);
@@ -915,6 +911,7 @@ export const BarSlider = ({
 	const startX = useRef<number | null>(null);
 	const startValue = useRef<number>(value ?? minValue);
 	const hasMoved = useRef(false);
+	const lastSent = useRef<number | null>(null);
 	const isTouch = useRef(false);
 	const dragging = useRef(false);
 	const basePrecision = useRef<number>(0);
@@ -959,11 +956,11 @@ export const BarSlider = ({
 		startValue.current = value ?? minValue;
 		ghostValueRef.current = null;
 		hasMoved.current = false;
+		lastSent.current = null;
 		dragging.current = true;
 		captured.current = { el: e.currentTarget, id: e.pointerId };
 		cancelLongPress();
 		longPressTimer.current = setTimeout(() => {
-			// a long press without moving switches to the editable view
 			longPressTimer.current = null;
 			dragging.current = false;
 			startY.current = null;
@@ -1030,6 +1027,21 @@ export const BarSlider = ({
 		ghostValueRef.current = newValue;
 		setGhostValue(newValue);
 		onDrag?.(newValue);
+		if (continuous) {
+			const factor = rounded
+				? 1
+				: 10 ** Math.max(0, basePrecision.current + extraDecimalsRef.current);
+			const step = Math.round(newValue * factor) / factor;
+			if (step !== lastSent.current) {
+				lastSent.current = step;
+				if (isChoice) {
+					setLocalIndex(step);
+					onManualSliderChange?.(acceptedValues[step].toString());
+				} else {
+					onManualSliderChange?.(step);
+				}
+			}
+		}
 
 		const svgRect = svgRectRef.current;
 		if (svgRect && span !== 0) {

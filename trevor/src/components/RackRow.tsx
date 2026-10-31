@@ -258,11 +258,13 @@ const InlinedMidiSection = ({
 	section,
 	horizontal,
 	mirrored,
+	continuous,
 }: {
 	device: MidiDevice;
 	section: MidiDeviceSection;
 	horizontal: boolean;
 	mirrored: boolean;
+	continuous: boolean;
 }) => {
 	const sectionName = internalSectionName(section);
 	const parameters = [
@@ -380,6 +382,7 @@ const InlinedMidiSection = ({
 							maxValue={range[1]}
 							rounded={!isFloatRange(range)}
 							bipolar={p.high_res === "bipolar"}
+							continuous={continuous}
 							linkId={parameterUUID(device.id, p)}
 							selected={linking.selected === parameterUUID(device.id, p)}
 							onTap={() => linking.onTap(parameterUUID(device.id, p))}
@@ -443,10 +446,10 @@ const InlinedMidiDevice = ({
 		)
 			setIsOpen(true);
 	}, [revealTarget]);
-	// an expanded title keeps its name on the left: the swap is for collapsed ones
 	const flipped = mirrored && !isOpen;
 	const linked = useLinkedIds();
 	const deviceHighlight = useHighlightUnit(`${device.id}`);
+	const [continuous, setContinuous] = useState(false);
 	const trevorSocket = useTrevorWebSocket();
 	const devicePorts = device.meta.sections
 		.flatMap((section) => sectionPortItems(device, section))
@@ -518,6 +521,13 @@ const InlinedMidiDevice = ({
 							style={lightButtonStyle(false, true)}
 						/>
 						<Button
+							text="C"
+							tooltip="Send every value while dragging, not only the last one"
+							activated={continuous}
+							onClick={() => setContinuous((prev) => !prev)}
+							style={lightButtonStyle(continuous, true)}
+						/>
+						<Button
 							text="«"
 							tooltip="Open or close the side panel on this device"
 							activated={openPanelDevice === `${device.id}::${device.repr}`}
@@ -551,6 +561,7 @@ const InlinedMidiDevice = ({
 							section={section}
 							horizontal={horizontal}
 							mirrored={mirrored}
+							continuous={continuous}
 						/>
 					))}
 			</div>
