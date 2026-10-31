@@ -290,6 +290,9 @@ export const drawConnection = (
 	}
 };
 
+// distance from the border of a bar where its links attach
+const BAR_LINK_INSET = 8;
+
 export const drawCurvedConnection = (
 	svg: SVGSVGElement,
 	fromElement: Element | null,
@@ -311,10 +314,24 @@ export const drawCurvedConnection = (
 	const toCenterX = toRect.left + toRect.width / 2;
 	const toCenterY = toRect.top + toRect.height / 2;
 
-	const fromX = fromCenterX - svgRect.left;
+	let fromX = fromCenterX - svgRect.left;
 	const fromY = fromCenterY - svgRect.top;
-	const toX = toCenterX - svgRect.left;
+	let toX = toCenterX - svgRect.left;
 	const toY = toCenterY - svgRect.top;
+
+	// the wide parameter bars take the link near their left or right border, on the side
+	// facing the other end (both on the same side when they are one above the other)
+	const dx = toCenterX - fromCenterX;
+	const stacked = Math.abs(dx) < (fromRect.width + toRect.width) / 2;
+	const sideOf = (rect: DOMRect, facing: number) =>
+		(facing > 0 ? rect.right - BAR_LINK_INSET : rect.left + BAR_LINK_INSET) -
+		svgRect.left;
+	if (fromElement.hasAttribute("data-bar-id")) {
+		fromX = sideOf(fromRect, stacked ? 1 : Math.sign(dx));
+	}
+	if (toElement.hasAttribute("data-bar-id")) {
+		toX = sideOf(toRect, stacked ? 1 : -Math.sign(dx));
+	}
 
 	const ghosted =
 		isClippedByContainer(fromElement) || isClippedByContainer(toElement);

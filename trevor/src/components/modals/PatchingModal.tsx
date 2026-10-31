@@ -58,7 +58,7 @@ import {
 } from "../widgets/BaseComponents";
 import { MultiChanScope } from "../widgets/MultiChanScope";
 
-const TmpScopeOverlay = ({
+export const TmpScopeOverlay = ({
 	onClose,
 	numChannels,
 	portElemIds,
@@ -84,9 +84,22 @@ const TmpScopeOverlay = ({
 	} | null>(null);
 
 	useEffect(() => {
-		const onResize = () => setSizeKey((k) => k + 1);
-		window.addEventListener("resize", onResize);
-		return () => window.removeEventListener("resize", onResize);
+		let frame: number | null = null;
+		const refresh = () => {
+			if (frame !== null) return;
+			frame = requestAnimationFrame(() => {
+				frame = null;
+				setSizeKey((k) => k + 1);
+			});
+		};
+		window.addEventListener("resize", refresh);
+		// the racks scroll inside their own containers: the lines follow the parameters
+		window.addEventListener("scroll", refresh, true);
+		return () => {
+			window.removeEventListener("resize", refresh);
+			window.removeEventListener("scroll", refresh, true);
+			if (frame !== null) cancelAnimationFrame(frame);
+		};
 	}, []);
 
 	const portrait = window.innerWidth <= window.innerHeight;

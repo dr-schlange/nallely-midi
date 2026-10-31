@@ -13,25 +13,44 @@ import {
 	rectSortingStrategy,
 	SortableContext,
 } from "@dnd-kit/sortable";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+	lazy,
+	Suspense,
+	useCallback,
+	useEffect,
+	useMemo,
+	useState,
+} from "react";
 import type { VirtualDevice } from "../model";
-import { useTrevorSelector } from "../store";
+import { useTrevorDispatch, useTrevorSelector } from "../store";
+import { setClassCodeMode } from "../store/runtimeSlice";
 import {
 	devUID,
 	generateAcronym,
 	mergeDevicesPreservingOrder,
+	parameterUUID,
 	saveDeviceOrder,
 } from "../utils/utils";
+import { useBarLinking } from "../hooks/useBarLinking";
+import { useHighlightUnit } from "../hooks/useHighlightUnit";
+import { useLinkedIds } from "../hooks/useLinkedIds";
 import { useTrevorWebSocket } from "../websockets/websocket";
 import {
 	DragHandle,
 	type DragHandleProps,
 	InlinedSortableList,
 } from "./InlinedSortableList";
+import { PortDot } from "./PortDot";
 import VDeviceSelectionModal from "./modals/VirtualDeviceSelectionModal";
 import { Portal } from "./Portal";
+
+const ClassBrowser = lazy(() =>
+	import("./modals/ClassBrowser").then((module) => ({
+		default: module.ClassBrowser,
+	})),
+);
 import { MiniRack, moduleWeight } from "./VDevComponent";
-import { BarSlider, Button } from "./widgets/BaseComponents";
+import { BarSlider, Button, lightButtonStyle } from "./widgets/BaseComponents";
 
 const groupBySumLimit = (arr, limit, connections) => {
 	const result = [];
@@ -77,6 +96,10 @@ interface RackRowVirtualProps {
 	onDeviceDrop?: (draggedDevice: VirtualDevice, targetIndex: number) => void;
 	onDragEnd?: () => void;
 	onParameterClick: (device: VirtualDevice) => void;
+	// opens the side panel on a device
+	onOpenPanel?: (device: VirtualDevice) => void;
+	// the device shown in the open side panel ("id::repr"), if it is open
+	openPanelDevice?: string;
 	selectedSections: string[];
 	onNonSectionClick: () => void;
 	onSectionScroll?: () => void;
@@ -88,6 +111,8 @@ export const RackRowVirtual = ({
 	onDeviceDrop,
 	onDragEnd,
 	onParameterClick,
+	onOpenPanel,
+	openPanelDevice,
 	selectedSections,
 	onNonSectionClick,
 	onSectionScroll,
@@ -99,6 +124,7 @@ export const RackRowVirtual = ({
 	// 	(state) => state.nallely.classes.virtual,
 	// );
 	const connections = useTrevorSelector((state) => state.nallely.connections);
+	const oldView = useTrevorSelector((state) => state.runTime.oldView);
 	const [localDeviceOrder, setLocalDeviceOrder] =
 		useState<VirtualDevice[]>(devices);
 
@@ -201,52 +227,64 @@ export const RackRowVirtual = ({
 					/>
 				</div>
 				<div className={"inner-rack-row"} onScroll={() => onSectionScroll?.()}>
-					<InlinedSortableList
-						items={localDeviceOrder}
-						getId={devUID}
-						orientation={orientation}
-						onReorder={(activeId, overId) =>
-							handleDragEnd({
-								active: { id: activeId },
-								over: overId === null ? null : { id: overId },
-							})
-						}
-						renderItem={(d, handleProps) => (
-							<InlinedVDev
-								vdev={d}
+					{!oldView && (
+						<>
+							<InlinedSortableList
+								items={localDeviceOrder}
+								getId={devUID}
 								orientation={orientation}
-								handleProps={handleProps}
+								onReorder={(activeId, overId) =>
+									handleDragEnd({
+										active: { id: activeId },
+										over: overId === null ? null : { id: overId },
+									})
+								}
+								renderItem={(d, handleProps, index) => (
+									<InlinedVDev
+										vdev={d}
+										orientation={orientation}
+										handleProps={handleProps}
+										mirrored={index % 2 === 1}
+										onOpenPanel={onOpenPanel}
+										openPanelDevice={openPanelDevice}
+									/>
+								)}
 							/>
-						)}
-					/>
-					<DndContext
-						sensors={sensors}
-						onDragEnd={handleDragEnd}
-						modifiers={
-							orientation === "horizontal" ? [restrictToHorizontalAxis] : []
-						}
-					>
-						<SortableContext
-							items={localDeviceOrder.map((d) => devUID(d))}
-							strategy={
-								orientation === "horizontal"
-									? horizontalListSortingStrategy
-									: rectSortingStrategy
+							{localDeviceOrder.length === 0 && (
+								<p style={{ color: "gray" }}>Virtual devices</p>
+							)}
+						</>
+					)}
+					{oldView && (
+						<DndContext
+							sensors={sensors}
+							onDragEnd={handleDragEnd}
+							modifiers={
+								orientation === "horizontal" ? [restrictToHorizontalAxis] : []
 							}
 						>
-							{groupedDevices.map((rack, i) => (
-								<MiniRack
-									key={`mini-rack-${i}`}
-									devices={rack}
-									rackId={`${i}`}
-									onDeviceClick={onParameterClick}
-									onPlaceholderClick={handlePlaceholderClick}
-									selectedSections={selectedSections}
-									onDrag={onSectionScroll}
-								/>
-							))}
-						</SortableContext>
-					</DndContext>
+							<SortableContext
+								items={localDeviceOrder.map((d) => devUID(d))}
+								strategy={
+									orientation === "horizontal"
+										? horizontalListSortingStrategy
+										: rectSortingStrategy
+								}
+							>
+								{groupedDevices.map((rack, i) => (
+									<MiniRack
+										key={`mini-rack-${i}`}
+										devices={rack}
+										rackId={`${i}`}
+										onDeviceClick={onParameterClick}
+										onPlaceholderClick={handlePlaceholderClick}
+										selectedSections={selectedSections}
+										onDrag={onSectionScroll}
+									/>
+								))}
+							</SortableContext>
+						</DndContext>
+					)}
 				</div>
 			</div>
 			{selectorOpened && (
@@ -264,6 +302,10 @@ interface InlineVDevProps {
 	vdev: VirtualDevice;
 	orientation?: "vertical" | "horizontal";
 	handleProps: DragHandleProps;
+	// name on the right and dots on the left, alternating along the rack
+	mirrored: boolean;
+	onOpenPanel?: (device: VirtualDevice) => void;
+	openPanelDevice?: string;
 }
 
 export const barGridStyle = (
@@ -284,24 +326,59 @@ export const barGridStyle = (
 
 export const HORIZONTAL_ROWS = 4;
 
-const InlinedVDev = ({ vdev, orientation, handleProps }: InlineVDevProps) => {
+const InlinedVDev = ({
+	vdev,
+	orientation,
+	handleProps,
+	mirrored,
+	onOpenPanel,
+	openPanelDevice,
+}: InlineVDevProps) => {
 	const [isOpen, setIsOpen] = useState(false);
+	// with the C button (class code mode) active, a click on the title opens the code editor
+	const classCodeMode = useTrevorSelector(
+		(state) => state.runTime.classCodeMode,
+	);
+	const dispatch = useTrevorDispatch();
+	const [isCodeOpen, setIsCodeOpen] = useState(false);
+	// opened when one of its parameters has to be brought in view
+	const revealTarget = useTrevorSelector((state) => state.runTime.revealTarget);
+	useEffect(() => {
+		if (
+			revealTarget &&
+			vdev.meta.parameters.some(
+				(p) => parameterUUID(vdev.id, p) === revealTarget.id,
+			)
+		)
+			setIsOpen(true);
+	}, [revealTarget]);
+	// an expanded title keeps its name on the left: the swap is for collapsed ones
+	const flipped = mirrored && !isOpen;
+
 	const trevorSocket = useTrevorWebSocket();
+	const linking = useBarLinking();
+	const linked = useLinkedIds();
+	const vdevHighlight = useHighlightUnit(`${vdev.id}`);
+	const ports = vdev.meta.parameters
+		.map((p) => ({ id: parameterUUID(vdev.id, p), name: p.name }))
+		.filter((i) => linked.has(i.id));
 	const horizontal = orientation === "horizontal";
 	return (
 		<div
+			data-link-device={vdev.id}
 			style={{
 				backgroundColor: "#e0e0e0",
 				border: "3px solid #808080",
 				width: horizontal ? undefined : "100%",
-				height: horizontal ? "calc(100% - 10px)" : undefined,
+				height: horizontal ? "calc(100% - 4px)" : undefined,
 				boxSizing: "border-box",
-				margin: "5px 0",
+				margin: "2px 0",
 				display: horizontal ? "flex" : "block",
 				padding: horizontal ? "0" : "1px",
 			}}
 		>
 			<p
+				data-link-header
 				style={{
 					fontSize: "16px",
 					margin: "0",
@@ -311,18 +388,61 @@ const InlinedVDev = ({ vdev, orientation, handleProps }: InlineVDevProps) => {
 					backgroundColor: "gray",
 					color: "lightgray",
 					cursor: "pointer",
+					display: "flex",
+					alignItems: "center",
 				}}
-				onClick={() => setIsOpen((prev) => !prev)}
+				{...vdevHighlight.handlers}
+				onClick={(event) => {
+					if (vdevHighlight.consumeClick(event)) return;
+					if (classCodeMode) {
+						setIsCodeOpen((prev) => !prev);
+						dispatch(setClassCodeMode(false));
+						return;
+					}
+					setIsOpen((prev) => !prev);
+				}}
 			>
 				<DragHandle {...handleProps} />
-				{generateAcronym(vdev.repr, 10, true)}
+				<span
+					style={{
+						display: "flex",
+						flex: "1 1 0",
+						minWidth: 0,
+						flexDirection: flipped ? "row-reverse" : "row",
+						alignItems: "center",
+					}}
+				>
+					<span data-link-wall>{generateAcronym(vdev.repr, 10, true)}</span>
+					<PortDot
+						unit={`${vdev.id}`}
+						show={!isOpen && ports.length > 0}
+						name={vdev.repr}
+						mirrored={flipped}
+					/>
+				</span>
+				{isOpen && (
+					<>
+						<Button
+							text="«"
+							tooltip="Open or close the side panel on this device"
+							activated={openPanelDevice === `${vdev.id}::${vdev.repr}`}
+							onClick={() => onOpenPanel?.(vdev)}
+							style={lightButtonStyle(
+								openPanelDevice === `${vdev.id}::${vdev.repr}`,
+								true,
+							)}
+						/>
+					</>
+				)}
 			</p>
 			<div
+				data-link-frame
+				data-link-section={`${vdev.id}::__virtual__`}
 				style={{
 					display: isOpen ? "grid" : "none",
 					gap: "2px",
 					...barGridStyle(horizontal, HORIZONTAL_ROWS),
-					padding: "5px",
+					padding: "2px",
 				}}
 			>
 				{vdev.meta.parameters.map((p) => (
@@ -336,9 +456,19 @@ const InlinedVDev = ({ vdev, orientation, handleProps }: InlineVDevProps) => {
 							trevorSocket?.setVirtualValue(vdev, p, v)
 						}
 						value={vdev.config[p.name] ?? p.default ?? undefined}
+						linkId={parameterUUID(vdev.id, p)}
+						selected={linking.selected === parameterUUID(vdev.id, p)}
+						onTap={() => linking.onTap(parameterUUID(vdev.id, p))}
 					/>
 				))}
 			</div>
+			{isCodeOpen && (
+				<Portal>
+					<Suspense fallback={null}>
+						<ClassBrowser onClose={() => setIsCodeOpen(false)} device={vdev} />
+					</Suspense>
+				</Portal>
+			)}
 		</div>
 	);
 };

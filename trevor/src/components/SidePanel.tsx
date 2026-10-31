@@ -6,7 +6,8 @@ import type {
 	VirtualDevice,
 	VirtualDeviceWithSection,
 } from "../model";
-import { useTrevorSelector } from "../store";
+import { useTrevorDispatch, useTrevorSelector } from "../store";
+import { setOldView } from "../store/runtimeSlice";
 import { useTrevorWebSocket } from "../websockets/websocket";
 import { ConnectionList } from "./ConnectionList";
 import { DeviceInfoPanel } from "./DeviceInfoPanel";
@@ -66,6 +67,8 @@ export const SidePanel = ({
 	onMidiDeviceClick,
 }: SidePanelProps) => {
 	const trevorSocket = useTrevorWebSocket();
+	const dispatch = useTrevorDispatch();
+	const oldView = useTrevorSelector((state) => state.runTime.oldView);
 	const midi_devices = useTrevorSelector((state) => state.nallely.midi_devices);
 	const virtual_devices = useTrevorSelector(
 		(state) => state.nallely.virtual_devices,
@@ -192,6 +195,15 @@ export const SidePanel = ({
 					</div>
 					<div className="device-patching-top-panel">
 						<Button
+							text="Rack view"
+							tooltip="Shows racks instead of inlined devices"
+							onClick={() => dispatch(setOldView(!oldView))}
+							activated={oldView}
+							className="menu-button"
+						/>
+					</div>
+					<div className="device-patching-top-panel">
+						<Button
 							text="Open playground"
 							tooltip="Opens the playground"
 							onClick={onOpenPlayground}
@@ -233,6 +245,18 @@ export const SidePanel = ({
 						style={{
 							width: "inherit",
 							height: "37px",
+						}}
+					/>
+					<Button
+						text="rack"
+						tooltip="Shows rack instead of inlined devices"
+						onClick={() => dispatch(setOldView(!oldView))}
+						activated={oldView}
+						style={{
+							width: "inherit",
+							height: "37px",
+							fontSize: "11px",
+							color: "var(--black)",
 						}}
 					/>
 					<Button

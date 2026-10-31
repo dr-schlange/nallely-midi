@@ -1,0 +1,515 @@
+// LLM generated
+import {
+	forwardRef,
+	type RefObject,
+	useCallback,
+	useEffect,
+	useImperativeHandle,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
+import { useTrevorSelector } from "../store";
+import {
+	buildOwners,
+	type InlinedAnchor,
+	resolveInlinedAnchor,
+} from "../utils/inlinedAnchors";
+import {
+	type Point,
+	type Rect,
+	routeOrthogonal,
+	type Side,
+} from "../utils/orthogonalRoute";
+import { connectionEndId } from "../utils/utils";
+
+export interface BarLinksRef {
+	redraw: () => void;
+}
+
+// 100% LLM generated
+const LINK_COLOR = "#5a87bb"; // the blue of the other links
+const LINK_OPACITY = 0.7;
+const LINK_WIDTH = 2;
+const HIGHLIGHT_COLOR = "blue";
+const ARROW_LENGTH = 6;
+const NEARBY = 120; // obstacles farther than this from both ends are ignored
+
+const overlaps = (a: Rect, b: Rect) =>
+	a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+
+const relativeRect = (el: Element, origin: DOMRect): Rect | null => {
+	const r = el.getBoundingClientRect();
+	if (r.width === 0 || r.height === 0) return null; // collapsed
+	return {
+		left: r.left - origin.left,
+		top: r.top - origin.top,
+		right: r.right - origin.left,
+		bottom: r.bottom - origin.top,
+	};
+};
+
+const attributeOf = (el: Element, selector: string, attribute: string) =>
+	el.closest(selector)?.getAttribute(attribute) ?? null;
+
+// Splits a path into the line and the arrowhead drawn at its end (tip on the last point)
+const withArrow = (points: Point[]) => {
+	const tip = points[points.length - 1];
+	const before = points[points.length - 2];
+	if (!before) return { line: points, arrow: null };
+	const length = Math.hypot(tip.x - before.x, tip.y - before.y);
+	if (length < 0.01) return { line: points, arrow: null };
+	// in a tight spot the last run is shorter than the arrowhead: draw a smaller one over the corner
+	const size = length >= ARROW_LENGTH ? ARROW_LENGTH : 4;
+	const ux = (tip.x - before.x) / length;
+	const uy = (tip.y - before.y) / length;
+	const base = { x: tip.x - ux * size, y: tip.y - uy * size };
+	const half = size / 2;
+	const arrow = [
+		tip,
+		{ x: base.x - uy * half, y: base.y + ux * half },
+		{ x: base.x + uy * half, y: base.y - ux * half },
+	];
+	return {
+		line: length >= size ? [...points.slice(0, -1), base] : points.slice(0, -1),
+		arrow,
+	};
+};
+
+interface Placed {
+	anchor: InlinedAnchor;
+	rect: Rect;
+	section: string | null;
+	device: string | null;
+	// the title bar holding a port: not a wall for the links of that port
+	header: Element | null;
+	headerRect: Rect | null;
+	rack: Element | null;
+}
+
+interface DrawnLink {
+	d: string;
+	arrow: string;
+	// devices and sections at the ends of the patches this link stands for
+	units: string[];
+	// the parameters at the ends of those patches
+	parameters: string[];
+}
+
+// Draws the links between the parameters with 90 degree angles.
+// - A parameter whose section or device is collapsed is drawn to the single port of the
+//   collapsed title bar. Two collapsed ends give one link, whatever the number of patches.
+// - If an end is still open, each patched parameter keeps its own link.
+// - When two ports are patched both ways, the links use opposite sides of the ports.
+export const BarLinks = forwardRef<
+	BarLinksRef,
+	{ containerRef: RefObject<HTMLElement | null> }
+>(({ containerRef }, ref) => {
+	const connections = useTrevorSelector((state) => state.nallely.connections);
+	const midiDevices = useTrevorSelector((state) => state.nallely.midi_devices);
+	const virtualDevices = useTrevorSelector(
+		(state) => state.nallely.virtual_devices,
+	);
+	const owners = useMemo(
+		() => buildOwners(midiDevices, virtualDevices),
+		[midiDevices, virtualDevices],
+	);
+	const connectionsRef = useRef(connections);
+	connectionsRef.current = connections;
+	const highlightedUnit = useTrevorSelector(
+		(state) => state.runTime.highlightedUnit,
+	);
+	const selectedParameter = useTrevorSelector(
+		(state) => state.runTime.barSelection,
+	);
+	const ownersRef = useRef(owners);
+	ownersRef.current = owners;
+
+	const svgRef = useRef<SVGSVGElement>(null);
+	const frame = useRef<number | null>(null);
+	const [links, setLinks] = useState<DrawnLink[]>([]);
+	const [size, setSize] = useState({ width: 0, height: 0 });
+
+	const compute = useCallback(() => {
+		const svg = svgRef.current;
+		const container = containerRef.current;
+		if (!svg || !container) return;
+		const width = container.scrollWidth;
+		const height = container.scrollHeight;
+		setSize((prev) =>
+			prev.width === width && prev.height === height ? prev : { width, height },
+		);
+		const origin = svg.getBoundingClientRect();
+
+		// one link per pair of anchors, however many patches it stands for
+		const cache = new Map<string, InlinedAnchor | null>();
+		const resolve = (id: string) => {
+			if (!cache.has(id)) {
+				cache.set(id, resolveInlinedAnchor(container, ownersRef.current, id));
+			}
+			return cache.get(id) ?? null;
+		};
+		const pairs = new Map<
+			string,
+			{
+				src: InlinedAnchor;
+				dest: InlinedAnchor;
+				units: Set<string>;
+				parameters: Set<string>;
+			}
+		>();
+		for (const c of connectionsRef.current) {
+			const src = resolve(connectionEndId(c.src));
+			const dest = resolve(connectionEndId(c.dest));
+			if (!src || !dest || src.key === dest.key) continue;
+			const key = `${src.key}->${dest.key}`;
+			let pair = pairs.get(key);
+			if (!pair) {
+				pair = { src, dest, units: new Set(), parameters: new Set() };
+				pairs.set(key, pair);
+			}
+			for (const end of [c.src, c.dest]) {
+				pair.parameters.add(connectionEndId(end));
+				const owner = ownersRef.current.get(connectionEndId(end));
+				if (owner) {
+					pair.units.add(owner.device);
+					pair.units.add(owner.section);
+				}
+			}
+		}
+
+		const bars: {
+			id: string;
+			rect: Rect;
+			section: string | null;
+			rack: Element | null;
+		}[] = [];
+		for (const el of container.querySelectorAll("[data-bar-id]")) {
+			const rect = relativeRect(el, origin);
+			if (rect)
+				bars.push({
+					id: el.getAttribute("data-bar-id") as string,
+					rect,
+					section: attributeOf(el, "[data-link-section]", "data-link-section"),
+					rack: el.closest(".rack-row"),
+				});
+		}
+		const sections: { key: string; device: string | null; rect: Rect }[] = [];
+		for (const el of container.querySelectorAll("[data-link-section]")) {
+			const rect = relativeRect(el, origin);
+			if (rect)
+				sections.push({
+					key: el.getAttribute("data-link-section") as string,
+					device: attributeOf(el, "[data-link-device]", "data-link-device"),
+					rect,
+				});
+		}
+		const devices: { key: string; rect: Rect }[] = [];
+		for (const el of container.querySelectorAll("[data-link-device]")) {
+			const rect = relativeRect(el, origin);
+			if (rect)
+				devices.push({
+					key: el.getAttribute("data-link-device") as string,
+					rect,
+				});
+		}
+		const walls: {
+			el: Element;
+			device: string | null;
+			section: string | null;
+			rack: Element | null;
+			rect: Rect;
+		}[] = [];
+		for (const el of container.querySelectorAll("[data-link-wall]")) {
+			const rect = relativeRect(el, origin);
+			if (rect)
+				walls.push({
+					el,
+					device: attributeOf(el, "[data-link-device]", "data-link-device"),
+					section: attributeOf(el, "[data-link-section]", "data-link-section"),
+					rack: el.closest(".rack-row"),
+					rect,
+				});
+		}
+
+		// the whole title bars and section headers, as opposed to the text they hold
+		const headers: {
+			el: Element;
+			device: string | null;
+			section: string | null;
+			rect: Rect;
+		}[] = [];
+		for (const el of container.querySelectorAll("[data-link-header]")) {
+			const rect = relativeRect(el, origin);
+			if (rect)
+				headers.push({
+					el,
+					device: attributeOf(el, "[data-link-device]", "data-link-device"),
+					section: attributeOf(el, "[data-link-section]", "data-link-section"),
+					rect,
+				});
+		}
+
+		const place = (anchor: InlinedAnchor): Placed | null => {
+			const rect = relativeRect(anchor.element, origin);
+			if (!rect) return null;
+			const header = anchor.port
+				? anchor.element.closest("[data-link-header]")
+				: null;
+			return {
+				anchor,
+				rect,
+				section: attributeOf(
+					anchor.element,
+					"[data-link-section]",
+					"data-link-section",
+				),
+				device: attributeOf(
+					anchor.element,
+					"[data-link-device]",
+					"data-link-device",
+				),
+				header,
+				headerRect: header ? relativeRect(header, origin) : null,
+				rack: anchor.element.closest(".rack-row"),
+			};
+		};
+
+		const next: DrawnLink[] = [];
+		for (const pair of pairs.values()) {
+			const src = place(pair.src);
+			const dest = place(pair.dest);
+			if (!src || !dest) continue;
+
+			// patched both ways: one link per side of the ports
+			const reverse = `${pair.dest.key}->${pair.src.key}`;
+			const lane: Side | undefined = pairs.has(reverse)
+				? pair.src.key < pair.dest.key
+					? "top"
+					: "bottom"
+				: undefined;
+			const sidesOf = (placed: Placed): Side[] => {
+				if (!placed.header) return ["left", "right"];
+				return lane ? [lane] : ["top", "bottom"];
+			};
+
+			const zone: Rect = {
+				left: Math.min(src.rect.left, dest.rect.left) - NEARBY,
+				top: Math.min(src.rect.top, dest.rect.top) - NEARBY,
+				right: Math.max(src.rect.right, dest.rect.right) + NEARBY,
+				bottom: Math.max(src.rect.bottom, dest.rect.bottom) + NEARBY,
+			};
+			// only when both ends are open bars (device and section expanded) and in the same
+			// rack row; a collapsed end keeps the strict rules even in the same rack
+			const sameRack =
+				!pair.src.port &&
+				!pair.dest.port &&
+				src.rack !== null &&
+				src.rack === dest.rack;
+			const ownDevices = new Set([src.device, dest.device]);
+			const ownSections = new Set([src.section, dest.section]);
+			const obstacles: Rect[] = [];
+			if (sameRack) {
+				// in one rack the link may go through the space between the parameters, and
+				// across the devices and sections between them, and across the empty part of
+				// their title bars: only the parameters and the title texts are in the way
+				for (const bar of bars) {
+					if (
+						bar.rack === src.rack &&
+						bar.id !== pair.src.key &&
+						bar.id !== pair.dest.key &&
+						overlaps(bar.rect, zone)
+					)
+						obstacles.push(bar.rect);
+				}
+				for (const w of walls) {
+					if (w.rack === src.rack && overlaps(w.rect, zone))
+						obstacles.push(w.rect);
+				}
+			} else {
+				// the other devices are walls, the link only travels through the gaps between them
+				for (const d of devices) {
+					if (!ownDevices.has(d.key) && overlaps(d.rect, zone))
+						obstacles.push(d.rect);
+				}
+				// in its own devices it stays out of the other sections
+				for (const s of sections) {
+					if (
+						ownDevices.has(s.device) &&
+						!ownSections.has(s.key) &&
+						overlaps(s.rect, zone)
+					)
+						obstacles.push(s.rect);
+				}
+				// the titles and section headers of its own devices are walls, except the
+				// one holding its port
+				for (const h of headers) {
+					if (
+						h.el !== src.header &&
+						h.el !== dest.header &&
+						ownDevices.has(h.device) &&
+						(h.section === null || ownSections.has(h.section)) &&
+						overlaps(h.rect, zone)
+					)
+						obstacles.push(h.rect);
+				}
+				// in its own sections it goes around the parameters
+				for (const bar of bars) {
+					if (
+						bar.id !== pair.src.key &&
+						bar.id !== pair.dest.key &&
+						ownSections.has(bar.section) &&
+						overlaps(bar.rect, zone)
+					)
+						obstacles.push(bar.rect);
+				}
+			}
+
+			const points = routeOrthogonal(src.rect, dest.rect, obstacles, {
+				fromSides: sidesOf(src),
+				toSides: sidesOf(dest),
+				// a link clears the whole title bar of a port before it turns: it stays off the text
+				fromBounds: src.headerRect ?? undefined,
+				toBounds: dest.headerRect ?? undefined,
+				squeezeFirst: sameRack,
+			});
+			const { line, arrow } = withArrow(points);
+			next.push({
+				d: line.map((p, i) => `${i === 0 ? "M" : "L"}${p.x} ${p.y}`).join(" "),
+				arrow: arrow ? arrow.map((p) => `${p.x},${p.y}`).join(" ") : "",
+				units: [...pair.units],
+				parameters: [...pair.parameters],
+			});
+		}
+		setLinks((prev) =>
+			prev.length === next.length &&
+			prev.every(
+				(l, i) =>
+					l.d === next[i].d &&
+					l.arrow === next[i].arrow &&
+					l.units.join() === next[i].units.join() &&
+					l.parameters.join() === next[i].parameters.join(),
+			)
+				? prev
+				: next,
+		);
+	}, [containerRef]);
+
+	const redraw = useCallback(() => {
+		if (frame.current !== null) return;
+		frame.current = requestAnimationFrame(() => {
+			frame.current = null;
+			compute();
+		});
+	}, [compute]);
+
+	useImperativeHandle(ref, () => ({ redraw }), [redraw]);
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: redraw when what is patched or where changes
+	useEffect(() => {
+		redraw();
+	}, [connections, owners, redraw]);
+
+	useEffect(() => {
+		const container = containerRef.current;
+		if (!container) return undefined;
+		const resize = new ResizeObserver(redraw);
+		resize.observe(container);
+		// opening/closing a device or a section toggles the style of its body
+		const mutation = new MutationObserver((records) => {
+			const svg = svgRef.current;
+			if (
+				records.some(
+					(r) =>
+						!svg?.contains(r.target) &&
+						(r.type === "childList" ||
+							(r.target instanceof Element &&
+								r.target.hasAttribute("data-link-frame"))),
+				)
+			)
+				redraw();
+		});
+		mutation.observe(container, {
+			childList: true,
+			subtree: true,
+			attributes: true,
+			attributeFilter: ["style"],
+		});
+		container.addEventListener("scroll", redraw, true);
+		window.addEventListener("resize", redraw);
+		return () => {
+			resize.disconnect();
+			mutation.disconnect();
+			container.removeEventListener("scroll", redraw, true);
+			window.removeEventListener("resize", redraw);
+			if (frame.current !== null) cancelAnimationFrame(frame.current);
+			frame.current = null;
+		};
+	}, [containerRef, redraw]);
+
+	// the links of the highlighted device or section go last, on top
+	const drawn = links
+		.map((link) => ({
+			link,
+			highlighted:
+				(highlightedUnit !== null && link.units.includes(highlightedUnit)) ||
+				(selectedParameter !== null &&
+					link.parameters.includes(selectedParameter)),
+		}))
+		.sort((a, b) => Number(a.highlighted) - Number(b.highlighted));
+
+	return (
+		<svg
+			ref={svgRef}
+			style={{
+				position: "absolute",
+				top: 0,
+				left: 0,
+				width: size.width,
+				height: size.height,
+				pointerEvents: "none",
+				overflow: "visible",
+			}}
+		>
+			{drawn.map(({ link, highlighted }, i) => {
+				const color = highlighted ? HIGHLIGHT_COLOR : LINK_COLOR;
+				const width = highlighted ? LINK_WIDTH + 1 : LINK_WIDTH;
+				return (
+					// biome-ignore lint/suspicious/noArrayIndexKey: links have no identity
+					<g key={i}>
+						{/* white halo under the link and the arrowhead: marks it on the gray title bars */}
+						<path
+							d={link.d}
+							fill="none"
+							stroke="white"
+							strokeWidth={width + 2}
+							strokeLinejoin="round"
+							opacity={0.9}
+						/>
+						{link.arrow && (
+							<polygon
+								points={link.arrow}
+								fill="white"
+								stroke="white"
+								strokeWidth={width}
+								strokeLinejoin="round"
+								opacity={0.9}
+							/>
+						)}
+						{/* the group opacity covers the line and the arrowhead as one shape */}
+						<g opacity={highlighted ? 1 : LINK_OPACITY}>
+							<path
+								d={link.d}
+								fill="none"
+								stroke={color}
+								strokeWidth={width}
+								strokeLinejoin="round"
+							/>
+							{link.arrow && <polygon points={link.arrow} fill={color} />}
+						</g>
+					</g>
+				);
+			})}
+		</svg>
+	);
+});

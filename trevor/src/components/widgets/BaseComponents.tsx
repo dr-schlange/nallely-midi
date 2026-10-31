@@ -4,7 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { MidiParameter, PadsOrKeys, VirtualParameter } from "../../model";
 import { generateAcronym, resolveAcceptedValueIndex } from "../../utils/utils";
+import { useTrevorSelector } from "../../store";
 import { getNoteName } from "../MidiGrid";
+import { ParameterMenu } from "../ParameterMenu";
 
 export const Button = ({
 	activated = false,
@@ -63,6 +65,20 @@ export const Button = ({
 		</div>
 	);
 };
+
+// A whitish square for a Button on a colored bar, gold when activated (the inline color
+// would otherwise hide the one of the active class). On a title bar it also gets a border
+// that stands out on the gray, and room next to its neighbour.
+export const lightButtonStyle = (
+	activated = false,
+	onTitleBar = false,
+): React.CSSProperties => ({
+	backgroundColor: activated ? "gold" : "#e0e0e0",
+	fontSize: "12px",
+	...(onTitleBar
+		? { border: "2px solid lightgray", marginInlineStart: 3 }
+		: {}),
+});
 
 export interface WidgetProps {
 	id: string;
@@ -715,6 +731,60 @@ export const CircularSlider = ({
 	);
 };
 
+// When another parameter asks for this one (the T and S lists of its menu): scroll it into
+// view, then blink twice in orange. Returns whether it is lit right now.
+const useRevealBlink = (
+	linkId: string | undefined,
+	rootRef: React.RefObject<HTMLElement | null>,
+) => {
+	const revealTarget = useTrevorSelector((state) => state.runTime.revealTarget);
+	const [lit, setLit] = useState(false);
+	useEffect(() => {
+		if (!linkId || revealTarget?.id !== linkId) return undefined;
+		const timers: ReturnType<typeof setTimeout>[] = [];
+		let started = false;
+		const blink = () => {
+			if (started) return;
+			started = true;
+			// on, off, on, off
+			for (let i = 0; i < 4; i++) {
+				timers.push(setTimeout(() => setLit(i % 2 === 0), i * 220));
+			}
+		};
+		// the racks open what hides it, which can take more than a frame: wait for the bar
+		// to have a box, then scroll to it (nothing scrolls to a hidden element)
+		let tries = 0;
+		let frame = 0;
+		const scrollWhenVisible = () => {
+			const el = rootRef.current;
+			if (el && el.getBoundingClientRect().width > 0) {
+				el.scrollIntoView({
+					behavior: "smooth",
+					block: "center",
+					inline: "center",
+				});
+				// the blink waits for the end of the scroll; when it is already in view
+				// nothing scrolls, so a timeout starts it as well
+				window.addEventListener("scrollend", blink, {
+					once: true,
+					capture: true,
+				});
+				timers.push(setTimeout(blink, 700));
+				return;
+			}
+			if (tries++ < 90) frame = requestAnimationFrame(scrollWhenVisible);
+		};
+		frame = requestAnimationFrame(scrollWhenVisible);
+		return () => {
+			cancelAnimationFrame(frame);
+			window.removeEventListener("scrollend", blink, true);
+			for (const timer of timers) clearTimeout(timer);
+			setLit(false);
+		};
+	}, [revealTarget]);
+	return lit;
+};
+
 export const BarSlider = ({
 	value: rawValue,
 	param,
@@ -728,6 +798,8 @@ export const BarSlider = ({
 	disabled = false,
 	stripPrefix = false,
 	bipolar = false,
+	selected = false,
+	linkId,
 }: {
 	param: MidiParameter | VirtualParameter;
 	onManualSliderChange: (value: number | string) => void;
@@ -742,6 +814,10 @@ export const BarSlider = ({
 	stripPrefix?: boolean;
 	// the fill starts from the zero of the range (in the middle) instead of the left edge
 	bipolar?: boolean;
+	// picked as the source of a link (gold border)
+	selected?: boolean;
+	// anchor id the links are drawn to
+	linkId?: string;
 }) => {
 	const acceptedValues = param.accepted_values;
 	const isChoice = !!acceptedValues?.length;
@@ -769,8 +845,10 @@ export const BarSlider = ({
 		top: number;
 		maxHeight: number;
 	} | null>(null);
+
 	const lastTap = useRef(0);
 	const rootRef = useRef<HTMLDivElement>(null);
+	const blinking = useRevealBlink(linkId, rootRef);
 	const menuRef = useRef<HTMLDivElement>(null);
 	const inputRef = useRef<HTMLInputElement>(null);
 
@@ -804,7 +882,14 @@ export const BarSlider = ({
 		if (longPressTimer.current) clearTimeout(longPressTimer.current);
 		longPressTimer.current = null;
 	};
-	useEffect(() => cancelLongPress, []);
+	const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+	useEffect(
+		() => () => {
+			cancelLongPress();
+			if (tapTimer.current) clearTimeout(tapTimer.current);
+		},
+		[],
+	);
 
 	// In choice mode the slider works on indexes into accepted_values
 	const value = isChoice
@@ -985,13 +1070,19 @@ export const BarSlider = ({
 		setGhostValue(null);
 		if (!moved) {
 			const now = Date.now();
+			if (tapTimer.current) clearTimeout(tapTimer.current);
+			tapTimer.current = null;
 			if (now - lastTap.current < 350) {
 				lastTap.current = 0;
 				setMode((m) => (m === "info" ? "label" : "info"));
 			} else {
 				lastTap.current = now;
+				// a single tap is only confirmed once no second tap follows
+				tapTimer.current = setTimeout(() => {
+					tapTimer.current = null;
+					onTap?.();
+				}, 350);
 			}
-			onTap?.();
 		} else if (committed !== null && committed !== value) {
 			if (isChoice) {
 				setLocalIndex(committed);
@@ -1090,7 +1181,10 @@ export const BarSlider = ({
 		<>
 			<div
 				ref={rootRef}
+				data-bar-id={linkId}
+				id={linkId ? `bar-${linkId}` : undefined}
 				style={{
+					boxShadow: blinking ? "0 0 0 3px orange" : undefined,
 					display: "flex",
 					alignItems: "center",
 					userSelect: "none",
@@ -1229,8 +1323,32 @@ export const BarSlider = ({
 							}}
 						/>
 					)}
+					{blinking && (
+						<div
+							style={{
+								position: "absolute",
+								inset: 0,
+								background: "orange",
+								opacity: 0.6,
+								pointerEvents: "none",
+								zIndex: 3,
+							}}
+						/>
+					)}
+					{selected && (
+						<div
+							style={{
+								position: "absolute",
+								inset: 0,
+								border: "2px solid gold",
+								pointerEvents: "none",
+								zIndex: 2,
+							}}
+						/>
+					)}
 				</div>
 			</div>
+			{selected && linkId && <ParameterMenu id={linkId} anchorRef={rootRef} />}
 			{dragOverlay &&
 				createPortal(
 					<>
@@ -1282,6 +1400,7 @@ export const BarSlider = ({
 				createPortal(
 					<div
 						ref={menuRef}
+						data-bar-menu
 						style={{
 							position: "fixed",
 							left: menuPos.left,
@@ -1322,11 +1441,18 @@ export const KeysBar = ({
 	selected = [],
 	onSelectionChange,
 	acronymeLimit = 10,
+	linked = false,
+	linkId,
+	onTap,
 }: {
 	keys: PadsOrKeys;
 	selected?: number[];
 	onSelectionChange?: (notes: number[]) => void;
 	acronymeLimit?: number;
+	// picked as the source of a link (gold border)
+	linked?: boolean;
+	linkId?: string;
+	onTap?: () => void;
 }) => {
 	const width = 88;
 	const height = 22;
@@ -1340,6 +1466,8 @@ export const KeysBar = ({
 	const menuRef = useRef<HTMLDivElement>(null);
 	const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const origin = useRef<{ x: number; y: number } | null>(null);
+
+	const blinking = useRevealBlink(linkId, rootRef);
 
 	const cancelPress = () => {
 		if (timer.current) clearTimeout(timer.current);
@@ -1388,7 +1516,10 @@ export const KeysBar = ({
 		<>
 			<div
 				ref={rootRef}
+				data-bar-id={linkId}
+				id={linkId ? `bar-${linkId}` : undefined}
 				style={{
+					boxShadow: blinking ? "0 0 0 3px orange" : undefined,
 					position: "relative",
 					display: "flex",
 					alignItems: "center",
@@ -1398,8 +1529,8 @@ export const KeysBar = ({
 					height,
 					boxSizing: "border-box",
 					marginTop: "4px",
-					border: "2px solid orange",
-					background: "var(--rack-bg-color)",
+					border: `2px solid ${linked ? "gold" : "orange"}`,
+					background: blinking ? "orange" : "var(--rack-bg-color)",
 					color: "var(--black)",
 					fontSize: "12px",
 					fontWeight: "bold",
@@ -1425,7 +1556,12 @@ export const KeysBar = ({
 					)
 						cancelPress();
 				}}
-				onPointerUp={cancelPress}
+				onPointerUp={() => {
+					// released before the long press fired: a tap
+					const wasTap = timer.current !== null;
+					cancelPress();
+					if (wasTap) onTap?.();
+				}}
 				onPointerCancel={cancelPress}
 				onContextMenu={(e) => e.preventDefault()}
 			>
@@ -1434,10 +1570,12 @@ export const KeysBar = ({
 				</span>
 				<span>{generateAcronym(keys.name ?? "keys", acronymeLimit)}</span>
 			</div>
+			{linked && linkId && <ParameterMenu id={linkId} anchorRef={rootRef} />}
 			{menuPos &&
 				createPortal(
 					<div
 						ref={menuRef}
+						data-bar-menu
 						style={{
 							position: "fixed",
 							left: menuPos.left,

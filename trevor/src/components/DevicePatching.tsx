@@ -9,6 +9,8 @@ import {
 	useState,
 } from "react";
 import { useConnectionDrawing } from "../hooks/useConnectionDrawing";
+import { ScopeContext } from "../hooks/ScopeContext";
+import { useScopeManager } from "../hooks/useScopeManager";
 import type {
 	Connection,
 	MidiDevice,
@@ -19,7 +21,12 @@ import type {
 	VirtualDeviceWithSection,
 } from "../model";
 import { useTrevorDispatch, useTrevorSelector } from "../store";
-import { resetCCState, setCurrentAddress } from "../store/runtimeSlice";
+import {
+	resetCCState,
+	setBarSelection,
+	setCurrentAddress,
+	setHighlightedUnit,
+} from "../store/runtimeSlice";
 import {
 	connectionId,
 	devUID,
@@ -29,9 +36,10 @@ import {
 import { useTrevorWebSocket } from "../websockets/websocket";
 import { AboutModal } from "./modals/AboutModal";
 import { MemoryModal } from "./modals/MemoryModal";
-import PatchingModal from "./modals/PatchingModal";
+import PatchingModal, { TmpScopeOverlay } from "./modals/PatchingModal";
 import { Portal } from "./Portal";
 import { RackRow } from "./RackRow";
+import { BarLinks, type BarLinksRef } from "./BarLinks";
 import { RackRowVirtual } from "./RackRowVirtual";
 import { type RackRowWidgetRef, RackRowWidgets } from "./RackRowWidgets";
 import { SidePanel } from "./SidePanel";
@@ -48,6 +56,7 @@ interface DevicePatchingProps {
 
 const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 	const mainSectionRef = useRef(null);
+	const oldView = useTrevorSelector((state) => state.runTime.oldView);
 	const associateMode = useTrevorSelector(
 		(state) => state.runTime.associateMode,
 	);
@@ -88,6 +97,28 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 			selectedConnection,
 			selection,
 		});
+
+	// the debug scope of the patching modal, also reachable from the parameters of the racks
+	const scope = useScopeManager();
+	const scopeContext = useMemo(
+		() => ({
+			// no pointer to wait for: the channel stays until it is toggled off
+			toggle: (parameterId: string, portElemId: string) =>
+				scope.handleScopeLongPress(parameterId, portElemId, -1),
+			activePortIds: scope.scopePortElemIds,
+		}),
+		[scope.handleScopeLongPress, scope.scopePortElemIds],
+	);
+	const barLinks = useRef<BarLinksRef>(null);
+	// the racks tell when their layout changed: redraw both kinds of links
+	const redrawLinks = useCallback(() => {
+		updateConnections();
+		barLinks.current?.redraw();
+	}, [updateConnections]);
+	const redrawLinksThrottled = useCallback(() => {
+		updateConnectionsThrottled();
+		barLinks.current?.redraw();
+	}, [updateConnectionsThrottled]);
 
 	const widgetRack = useRef<RackRowWidgetRef>(null);
 	const [isExpanded, setIsExpanded] = useState<boolean>(false);
@@ -195,6 +226,35 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 			}
 		},
 		[handleMidiDeviceClick, setCurrentSelectedDevice],
+	);
+
+	// the "<" button of a title bar: select the device and open the side panel on it
+	const handleOpenPanel = useCallback(
+		(device: MidiDevice | VirtualDevice) => {
+			// the button of the device already shown in the panel closes it
+			if (isExpanded && currentSelected === `${device.id}::${device.repr}`) {
+				setIsExpanded(false);
+				setSelection([]);
+				return;
+			}
+			setCurrentSelectedDevice(device);
+			setSelectedConnection(undefined);
+			setDisplayedSection(undefined);
+			setSelection(
+				isVirtualDevice(device)
+					? [
+							{
+								device,
+								section: {
+									parameters: device.meta.parameters,
+								} as VirtualDeviceSection,
+							},
+						]
+					: [],
+			);
+			setIsExpanded(true);
+		},
+		[setCurrentSelectedDevice, isExpanded, currentSelected],
 	);
 
 	const handleParameterClick = useCallback(
@@ -325,6 +385,22 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 		(state) => state.runTime.usedAddresses,
 	);
 	const dispatch = useTrevorDispatch();
+
+	// a press anywhere but on a device (or the menu of one of its parameters) drops the
+	// selected parameter and the highlighted links
+	useEffect(() => {
+		const onPointerDown = (event: PointerEvent) => {
+			if (
+				event.target instanceof Element &&
+				event.target.closest("[data-link-device], [data-bar-menu]")
+			)
+				return;
+			dispatch(setBarSelection(null));
+			dispatch(setHighlightedUnit(null));
+		};
+		document.addEventListener("pointerdown", onPointerDown);
+		return () => document.removeEventListener("pointerdown", onPointerDown);
+	}, [dispatch]);
 	const savePatch = () => {
 		if (currentAddress) {
 			trevorSocket.saveAdress(currentAddress.hex, saveDefaultValue);
@@ -394,97 +470,115 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 	);
 
 	return (
-		<div className={`device-patching ${orientation}`}>
-			<div
-				className={`device-patching-main-section ${orientation}`}
-				ref={mainSectionRef}
-				onScroll={updateConnectionsThrottled}
-			>
-				<RackRow
-					devices={midi_devices}
-					onSectionClick={handleSectionClick}
-					onNonSectionClick={handleNonSectionClick}
-					selectedSections={selectedSectionIds}
-					onSectionScroll={updateConnectionsThrottled}
-					onDeviceClick={handleMidiDeviceClick}
-					orientation={orientation}
-					onDeviceDrop={updateConnections}
-					onDragEnd={updateConnections}
-				/>
-				<RackRowVirtual
-					devices={virtual_devices.filter(
-						(device) => !rejectedClasses.includes(device.meta.name),
-					)}
-					onParameterClick={handleParameterClick}
-					onNonSectionClick={handleNonSectionClick}
-					selectedSections={selectedVirtualSectionIds}
-					onSectionScroll={updateConnectionsThrottled}
-					orientation={orientation}
-					onDeviceDrop={updateConnections}
-					onDragEnd={updateConnections}
-				/>
-				<RackRowWidgets
-					ref={widgetRack}
-					onAddWidget={updateConnections}
-					orientation={orientation}
-					onDragEnd={updateConnections}
-					onRackScroll={updateConnectionsThrottled}
-					onNonSectionClick={handleNonSectionClick}
-				/>
-				<svg className={`device-patching-svg ${orientation}`} ref={svgRef} />
-			</div>
-
-			<SidePanel
-				isExpanded={isExpanded}
-				onToggleExpand={handleExpand}
-				currentSelected={currentSelected}
-				onDeviceSelect={handleDeviceSelect}
-				displayedSection={displayedSection}
-				onSectionChange={setDisplayedSection}
-				selectedConnection={selectedConnection}
-				orientation={orientation}
-				onToggleOrientation={toggleOrientation}
-				isMemoryOpen={isMemoryOpen}
-				onOpenMemory={openMemory}
-				onSavePatch={savePatch}
-				onOpenPlayground={openPlayground}
-				onResetAll={resetAll}
-				onOpenAbout={openAboutModal}
-				onDeleteAllConnections={deleteAllConnections}
-				onConnectionClick={handleConnectionClick}
-				onDeselect={handleDeselect}
-				onMidiDeviceClick={handleMidiDeviceClick}
-			/>
-			{isModalOpen && (
-				<Portal>
-					<PatchingModal
-						onClose={closeModal}
-						firstSection={selectedSections.firstSection}
-						secondSection={selectedSections.secondSection}
-						onSettingsClick={handleSettingsClick}
-						selectedSettings={displayedSection}
-						onSectionChange={handleSectionChangePatchingModal}
+		<ScopeContext.Provider value={scopeContext}>
+			<div className={`device-patching ${orientation}`}>
+				<div
+					className={`device-patching-main-section ${orientation}`}
+					ref={mainSectionRef}
+					onScroll={redrawLinksThrottled}
+				>
+					<RackRow
+						devices={midi_devices}
+						onSectionClick={handleSectionClick}
+						onNonSectionClick={handleNonSectionClick}
+						selectedSections={selectedSectionIds}
+						onSectionScroll={redrawLinksThrottled}
+						onDeviceClick={handleMidiDeviceClick}
+						onOpenPanel={handleOpenPanel}
+						openPanelDevice={isExpanded ? currentSelected : undefined}
+						orientation={orientation}
+						onDeviceDrop={redrawLinks}
+						onDragEnd={redrawLinks}
 					/>
-				</Portal>
-			)}
-			{isAboutOpen && (
-				<Portal>
-					<AboutModal onClose={closeModal} />
-				</Portal>
-			)}
-			{isPlaygroundOpen && (
-				<Portal>
-					<Suspense fallback={null}>
-						<Playground onClose={closeModal} />
-					</Suspense>
-				</Portal>
-			)}
-			{isMemoryOpen && (
-				<Portal>
-					<MemoryModal onClose={closeModal} onLoad={handleLoadOk} />
-				</Portal>
-			)}
-		</div>
+					<RackRowVirtual
+						devices={virtual_devices.filter(
+							(device) => !rejectedClasses.includes(device.meta.name),
+						)}
+						onParameterClick={handleParameterClick}
+						onOpenPanel={handleOpenPanel}
+						openPanelDevice={isExpanded ? currentSelected : undefined}
+						onNonSectionClick={handleNonSectionClick}
+						selectedSections={selectedVirtualSectionIds}
+						onSectionScroll={redrawLinksThrottled}
+						orientation={orientation}
+						onDeviceDrop={redrawLinks}
+						onDragEnd={redrawLinks}
+					/>
+					<RackRowWidgets
+						ref={widgetRack}
+						onAddWidget={redrawLinks}
+						orientation={orientation}
+						onDragEnd={redrawLinks}
+						onRackScroll={redrawLinksThrottled}
+						onNonSectionClick={handleNonSectionClick}
+					/>
+					<svg className={`device-patching-svg ${orientation}`} ref={svgRef} />
+					{!oldView && (
+						<BarLinks ref={barLinks} containerRef={mainSectionRef} />
+					)}
+				</div>
+
+				<SidePanel
+					isExpanded={isExpanded}
+					onToggleExpand={handleExpand}
+					currentSelected={currentSelected}
+					onDeviceSelect={handleDeviceSelect}
+					displayedSection={displayedSection}
+					onSectionChange={setDisplayedSection}
+					selectedConnection={selectedConnection}
+					orientation={orientation}
+					onToggleOrientation={toggleOrientation}
+					isMemoryOpen={isMemoryOpen}
+					onOpenMemory={openMemory}
+					onSavePatch={savePatch}
+					onOpenPlayground={openPlayground}
+					onResetAll={resetAll}
+					onOpenAbout={openAboutModal}
+					onDeleteAllConnections={deleteAllConnections}
+					onConnectionClick={handleConnectionClick}
+					onDeselect={handleDeselect}
+					onMidiDeviceClick={handleMidiDeviceClick}
+				/>
+				{isModalOpen && (
+					<Portal>
+						<PatchingModal
+							onClose={closeModal}
+							firstSection={selectedSections.firstSection}
+							secondSection={selectedSections.secondSection}
+							onSettingsClick={handleSettingsClick}
+							selectedSettings={displayedSection}
+							onSectionChange={handleSectionChangePatchingModal}
+						/>
+					</Portal>
+				)}
+				{isAboutOpen && (
+					<Portal>
+						<AboutModal onClose={closeModal} />
+					</Portal>
+				)}
+				{isPlaygroundOpen && (
+					<Portal>
+						<Suspense fallback={null}>
+							<Playground onClose={closeModal} />
+						</Suspense>
+					</Portal>
+				)}
+				{isMemoryOpen && (
+					<Portal>
+						<MemoryModal onClose={closeModal} onLoad={handleLoadOk} />
+					</Portal>
+				)}
+				{scope.isScopeOpen && (
+					<Portal>
+						<TmpScopeOverlay
+							onClose={scope.closeAllScopeChannels}
+							numChannels={scope.numScopeChannels}
+							portElemIds={scope.scopePortElemIds}
+						/>
+					</Portal>
+				)}
+			</div>
+		</ScopeContext.Provider>
 	);
 };
 

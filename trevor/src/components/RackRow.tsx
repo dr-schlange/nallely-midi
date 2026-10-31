@@ -14,24 +14,39 @@ import {
 	verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { useEffect, useState } from "react";
-import type { MidiDevice, MidiDeviceSection, MidiParameter } from "../model";
+import type {
+	MidiDevice,
+	MidiDeviceSection,
+	MidiParameter,
+	VirtualDevice,
+} from "../model";
+import { useBarLinking } from "../hooks/useBarLinking";
+import { useHighlightUnit } from "../hooks/useHighlightUnit";
+import { useLinkedIds } from "../hooks/useLinkedIds";
 import { useTrevorDispatch, useTrevorSelector } from "../store";
 import { updateCCState } from "../store/runtimeSlice";
 import {
 	internalSectionName,
 	isFloatRange,
+	parameterUUID,
 	mergeDevicesPreservingOrder,
 	saveDeviceOrder,
 } from "../utils/utils";
 import { useTrevorWebSocket } from "../websockets/websocket";
 import MidiDeviceComponent from "./DeviceComponent";
+import { PortDot } from "./PortDot";
 import {
 	DragHandle,
 	type DragHandleProps,
 	InlinedSortableList,
 } from "./InlinedSortableList";
 import { barGridStyle, HORIZONTAL_ROWS } from "./RackRowVirtual";
-import { BarSlider, KeysBar } from "./widgets/BaseComponents";
+import {
+	BarSlider,
+	Button,
+	KeysBar,
+	lightButtonStyle,
+} from "./widgets/BaseComponents";
 
 interface RackRowProps {
 	devices: MidiDevice[];
@@ -42,6 +57,10 @@ interface RackRowProps {
 	onNonSectionClick: () => void;
 	onSectionScroll?: () => void;
 	onDeviceClick?: (device: MidiDevice) => void;
+	// opens the side panel on a device
+	onOpenPanel?: (device: MidiDevice | VirtualDevice) => void;
+	// the device shown in the open side panel ("id::repr"), if it is open
+	openPanelDevice?: string;
 	orientation?: "horizontal" | "vertical";
 }
 
@@ -54,9 +73,12 @@ export const RackRow = ({
 	onNonSectionClick,
 	onSectionScroll,
 	onDeviceClick,
+	onOpenPanel,
+	openPanelDevice,
 	orientation,
 }: RackRowProps) => {
 	const midiClasses = useTrevorSelector((state) => state.nallely.classes.midi);
+	const oldView = useTrevorSelector((state) => state.runTime.oldView);
 	const [localDeviceOrder, setLocalDeviceOrder] =
 		useState<MidiDevice[]>(devices);
 
@@ -135,60 +157,72 @@ export const RackRow = ({
 				</select>
 			</div>
 			<div className={"inner-rack-row"} onScroll={() => onSectionScroll?.()}>
-				<InlinedSortableList
-					items={localDeviceOrder}
-					getId={(d) => d.id}
-					orientation={orientation}
-					onReorder={(activeId, overId) =>
-						handleDragEnd({
-							active: { id: activeId },
-							over: overId === null ? null : { id: overId },
-						})
-					}
-					renderItem={(device, handleProps) => (
-						<InlinedMidiDevice
-							device={device}
+				{!oldView && (
+					<>
+						<InlinedSortableList
+							items={localDeviceOrder}
+							getId={(d) => d.id}
 							orientation={orientation}
-							handleProps={handleProps}
+							onReorder={(activeId, overId) =>
+								handleDragEnd({
+									active: { id: activeId },
+									over: overId === null ? null : { id: overId },
+								})
+							}
+							renderItem={(device, handleProps, index) => (
+								<InlinedMidiDevice
+									device={device}
+									orientation={orientation}
+									handleProps={handleProps}
+									mirrored={index % 2 === 1}
+									onOpenPanel={onOpenPanel}
+									openPanelDevice={openPanelDevice}
+								/>
+							)}
 						/>
-					)}
-				/>
-				<DndContext
-					sensors={sensors}
-					collisionDetection={closestCenter}
-					onDragEnd={handleDragEnd}
-					onDragMove={onSectionScroll}
-					modifiers={[
-						orientation === "horizontal"
-							? restrictToHorizontalAxis
-							: restrictToVerticalAxis,
-						restrictToParentElement,
-					]}
-				>
-					<SortableContext
-						items={localDeviceOrder.map((d) => d.id)}
-						strategy={
-							orientation === "horizontal"
-								? horizontalListSortingStrategy
-								: verticalListSortingStrategy
-						}
-					>
-						{localDeviceOrder.map((device) => (
-							<SortableComponent
-								component={MidiDeviceComponent}
-								key={device.id}
-								device={device}
-								onSectionClick={(section) => onSectionClick(device, section)}
-								selectedSections={selectedSections}
-								onDeviceClick={onDeviceClick}
-							/>
-						))}
-
 						{localDeviceOrder.length === 0 && (
 							<p style={{ color: "gray" }}>MIDI devices</p>
 						)}
-					</SortableContext>
-				</DndContext>
+					</>
+				)}
+				{oldView && (
+					<DndContext
+						sensors={sensors}
+						collisionDetection={closestCenter}
+						onDragEnd={handleDragEnd}
+						onDragMove={onSectionScroll}
+						modifiers={[
+							orientation === "horizontal"
+								? restrictToHorizontalAxis
+								: restrictToVerticalAxis,
+							restrictToParentElement,
+						]}
+					>
+						<SortableContext
+							items={localDeviceOrder.map((d) => d.id)}
+							strategy={
+								orientation === "horizontal"
+									? horizontalListSortingStrategy
+									: verticalListSortingStrategy
+							}
+						>
+							{localDeviceOrder.map((device) => (
+								<SortableComponent
+									component={MidiDeviceComponent}
+									key={device.id}
+									device={device}
+									onSectionClick={(section) => onSectionClick(device, section)}
+									selectedSections={selectedSections}
+									onDeviceClick={onDeviceClick}
+								/>
+							))}
+
+							{localDeviceOrder.length === 0 && (
+								<p style={{ color: "gray" }}>MIDI devices</p>
+							)}
+						</SortableContext>
+					</DndContext>
+				)}
 			</div>
 		</div>
 	);
@@ -201,16 +235,34 @@ const toCCValue = (p: MidiParameter, v: number | string): number => {
 	return index * Math.floor((p.range[1] + 1) / p.accepted_values.length);
 };
 
+// the linkable parameters of a section: keys, parameters, pitchwheels
+const sectionPortItems = (device: MidiDevice, section: MidiDeviceSection) => [
+	...(section.pads_or_keys
+		? [
+				{
+					id: parameterUUID(device.id, section.pads_or_keys),
+					name: section.pads_or_keys.name,
+				},
+			]
+		: []),
+	...[...section.parameters, ...(section.pitchwheels ?? [])].map((p) => ({
+		id: parameterUUID(device.id, p),
+		name: p.name,
+	})),
+];
+
 const MIDI_SECTION_ROWS = HORIZONTAL_ROWS - 1; // the section header takes one bar row
 
 const InlinedMidiSection = ({
 	device,
 	section,
 	horizontal,
+	mirrored,
 }: {
 	device: MidiDevice;
 	section: MidiDeviceSection;
 	horizontal: boolean;
+	mirrored: boolean;
 }) => {
 	const sectionName = internalSectionName(section);
 	const parameters = [
@@ -218,12 +270,34 @@ const InlinedMidiSection = ({
 		...(section.pitchwheels ?? []),
 	] as MidiParameter[];
 	const [isOpen, setIsOpen] = useState(false);
+	// opened when one of its parameters has to be brought in view
+	const revealTarget = useTrevorSelector((state) => state.runTime.revealTarget);
+	useEffect(() => {
+		if (
+			revealTarget &&
+			sectionPortItems(device, section).some((i) => i.id === revealTarget.id)
+		)
+			setIsOpen(true);
+	}, [revealTarget]);
+	// an expanded title keeps its name on the left: the swap is for collapsed ones
+	const flipped = mirrored && !isOpen;
 	const trevorSocket = useTrevorWebSocket();
-	const ccValues = useTrevorSelector((state) => state.runTime.ccValues);
+	// only this section's slice: a CC elsewhere doesn't redraw it
+	const sectionCCValues = useTrevorSelector(
+		(state) =>
+			state.runTime.ccValues?.[device.id]?.[device.repr]?.[sectionName],
+	);
 	const dispatch = useTrevorDispatch();
+	const linking = useBarLinking();
+	const linked = useLinkedIds();
+	const sectionHighlight = useHighlightUnit(`${device.id}::${sectionName}`);
+	const ports = sectionPortItems(device, section).filter((i) =>
+		linked.has(i.id),
+	);
 
 	return (
 		<div
+			data-link-section={`${device.id}::${sectionName}`}
 			style={{
 				display: "flex",
 				flexDirection: "column",
@@ -233,6 +307,7 @@ const InlinedMidiSection = ({
 			}}
 		>
 			<p
+				data-link-header
 				title={sectionName}
 				style={{
 					fontSize: "12px",
@@ -244,20 +319,53 @@ const InlinedMidiSection = ({
 					padding: horizontal ? "2px" : "3px",
 					cursor: "pointer",
 					borderTop: horizontal ? "2px solid gray" : "unset",
+					display: "flex",
+					flexDirection: flipped ? "row-reverse" : "row",
+					alignItems: "center",
 				}}
-				onClick={() => setIsOpen((prev) => !prev)}
+				{...sectionHighlight.handlers}
+				onClick={(event) => {
+					if (sectionHighlight.consumeClick(event)) return;
+					setIsOpen((prev) => !prev);
+				}}
 			>
-				{sectionName}
+				<span data-link-wall>{sectionName}</span>
+				<PortDot
+					unit={`${device.id}::${sectionName}`}
+					show={!isOpen && ports.length > 0}
+					name={sectionName}
+					mirrored={flipped}
+				/>
 			</p>
 			<div
+				data-link-frame
 				style={{
 					display: isOpen ? "grid" : "none",
 					gap: "2px",
 					...barGridStyle(horizontal, MIDI_SECTION_ROWS),
-					padding: "5px",
+					padding: "2px",
 				}}
 			>
-				{section.pads_or_keys && <KeysBar keys={section.pads_or_keys} />}
+				{section.pads_or_keys && (
+					<KeysBar
+						keys={section.pads_or_keys}
+						linkId={parameterUUID(device.id, section.pads_or_keys)}
+						linked={
+							linking.selected ===
+							parameterUUID(device.id, section.pads_or_keys)
+						}
+						onTap={() =>
+							linking.onTap(
+								parameterUUID(
+									device.id,
+									section.pads_or_keys as NonNullable<
+										typeof section.pads_or_keys
+									>,
+								),
+							)
+						}
+					/>
+				)}
 				{parameters.map((p) => {
 					const range: [number, number] = p.range ?? [0, 127];
 					return (
@@ -268,6 +376,9 @@ const InlinedMidiSection = ({
 							maxValue={range[1]}
 							rounded={!isFloatRange(range)}
 							bipolar={p.high_res === "bipolar"}
+							linkId={parameterUUID(device.id, p)}
+							selected={linking.selected === parameterUUID(device.id, p)}
+							onTap={() => linking.onTap(parameterUUID(device.id, p))}
 							onManualSliderChange={(v) => {
 								trevorSocket?.setParameterValue(
 									device.id,
@@ -287,9 +398,7 @@ const InlinedMidiSection = ({
 								);
 							}}
 							value={
-								ccValues?.[device.id]?.[device.repr]?.[p.section_name]?.[
-									p.name
-								] ??
+								sectionCCValues?.[p.name] ??
 								device.config?.[p.section_name]?.[p.name] ??
 								p.init_value ??
 								(range[0] + range[1]) / 2 // pitchwheels have no init_value: rest in the middle
@@ -306,28 +415,56 @@ const InlinedMidiDevice = ({
 	device,
 	orientation,
 	handleProps,
+	mirrored,
+	onOpenPanel,
+	openPanelDevice,
 }: {
 	device: MidiDevice;
 	orientation?: "horizontal" | "vertical";
 	handleProps: DragHandleProps;
+	// name on the right and dots on the left, alternating along the rack
+	mirrored: boolean;
+	onOpenPanel?: (device: MidiDevice | VirtualDevice) => void;
+	openPanelDevice?: string;
 }) => {
 	const [isOpen, setIsOpen] = useState(false);
+	// opened when one of its parameters has to be brought in view
+	const revealTarget = useTrevorSelector((state) => state.runTime.revealTarget);
+	useEffect(() => {
+		if (
+			revealTarget &&
+			device.meta.sections.some((section) =>
+				sectionPortItems(device, section).some((i) => i.id === revealTarget.id),
+			)
+		)
+			setIsOpen(true);
+	}, [revealTarget]);
+	// an expanded title keeps its name on the left: the swap is for collapsed ones
+	const flipped = mirrored && !isOpen;
+	const linked = useLinkedIds();
+	const deviceHighlight = useHighlightUnit(`${device.id}`);
+	const trevorSocket = useTrevorWebSocket();
+	const devicePorts = device.meta.sections
+		.flatMap((section) => sectionPortItems(device, section))
+		.filter((i) => linked.has(i.id));
 	const horizontal = orientation === "horizontal";
 
 	return (
 		<div
+			data-link-device={device.id}
 			style={{
 				backgroundColor: "#e0e0e0",
 				border: "3px solid #808080",
 				width: horizontal ? undefined : "100%",
-				height: horizontal ? "calc(100% - 10px)" : undefined,
+				height: horizontal ? "calc(100% - 4px)" : undefined,
 				boxSizing: "border-box",
-				margin: "5px 0",
+				margin: "2px 0",
 				display: horizontal ? "flex" : "block",
 				padding: horizontal ? "0" : "1px",
 			}}
 		>
 			<p
+				data-link-header
 				style={{
 					fontSize: "16px",
 					margin: "0",
@@ -337,13 +474,56 @@ const InlinedMidiDevice = ({
 					backgroundColor: "gray",
 					color: "lightgray",
 					cursor: "pointer",
+					display: "flex",
+					alignItems: "center",
 				}}
-				onClick={() => setIsOpen((prev) => !prev)}
+				{...deviceHighlight.handlers}
+				onClick={(event) => {
+					if (deviceHighlight.consumeClick(event)) return;
+					setIsOpen((prev) => !prev);
+				}}
 			>
 				<DragHandle {...handleProps} />
-				{device.repr}
+				<span
+					style={{
+						display: "flex",
+						flex: "1 1 0",
+						minWidth: 0,
+						flexDirection: flipped ? "row-reverse" : "row",
+						alignItems: "center",
+					}}
+				>
+					<span data-link-wall>{device.repr}</span>
+					<PortDot
+						unit={`${device.id}`}
+						show={!isOpen && devicePorts.length > 0}
+						name={device.repr}
+						mirrored={flipped}
+					/>
+				</span>
+				{isOpen && (
+					<>
+						<Button
+							text="F"
+							tooltip="Force all notes off"
+							onClick={() => trevorSocket?.forceNoteOff(device.id)}
+							style={lightButtonStyle(false, true)}
+						/>
+						<Button
+							text="«"
+							tooltip="Open or close the side panel on this device"
+							activated={openPanelDevice === `${device.id}::${device.repr}`}
+							onClick={() => onOpenPanel?.(device)}
+							style={lightButtonStyle(
+								openPanelDevice === `${device.id}::${device.repr}`,
+								true,
+							)}
+						/>
+					</>
+				)}
 			</p>
 			<div
+				data-link-frame
 				style={{
 					display: isOpen ? "flex" : "none",
 					flexDirection: horizontal ? "row" : "column",
@@ -362,6 +542,7 @@ const InlinedMidiDevice = ({
 							device={device}
 							section={section}
 							horizontal={horizontal}
+							mirrored={mirrored}
 						/>
 					))}
 			</div>

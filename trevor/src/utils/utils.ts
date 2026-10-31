@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import type {
 	Connection,
+	ConnectionEnd,
 	MidiDevice,
 	MidiDeviceSection,
 	MidiParameter,
@@ -74,6 +75,12 @@ export const parameterUUID = (
 	}
 	return `${id}::${parameter.section_name}::${parameterName}`;
 };
+
+// Id of the bar a connection end is drawn to: a single key lands on the keys bar of its section
+export const connectionEndId = (end: ConnectionEnd) =>
+	isPadOrdKey(end.parameter)
+		? `${end.device}::${end.parameter.section_name}::all_keys_or_pads`
+		: parameterUUID(end.device, end.parameter);
 
 export const connectionId = (connection: Connection): string => {
 	const srcId = connection.src.device;

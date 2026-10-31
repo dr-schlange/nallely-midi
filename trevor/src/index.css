@@ -634,9 +634,15 @@ details[open]::details-content {
 	transform: rotate(-180deg);
 }
 
+.device-patching-main-section.vertical {
+	gap: 10px;
+}
+
 .device-patching-main-section.horizontal {
 	flex-direction: column;
 	overflow-y: auto;
+	/* adds to the 5px bottom margin of the racks */
+	gap: 5px;
 }
 
 .rightbar-button {

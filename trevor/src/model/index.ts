@@ -194,6 +194,12 @@ export interface RunTimeState {
 	associateMode: boolean;
 	classCode: ClassCode;
 	ccValues: CCValues;
+	// parameter picked as the source of the next link (parameterUUID)
+	barSelection: string | null;
+	// device ("12") or section ("12::name") whose links are highlighted
+	highlightedUnit: string | null;
+	// a parameter the racks have to open and bring in view (n tells two requests for it apart)
+	revealTarget: { id: string; n: number } | null;
 	patchDetails: PatchDetails | undefined;
 	usedAddresses: Address[];
 	stdin: WaitingStdinQueue;

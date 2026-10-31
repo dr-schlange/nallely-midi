@@ -17,6 +17,9 @@ export const initialRunTimeState: RunTimeState = {
 	classCode: undefined,
 	associateMode: true,
 	ccValues: {},
+	barSelection: null,
+	highlightedUnit: null,
+	revealTarget: null,
 	patchDetails: undefined,
 	usedAddresses: [],
 	stdin: {
@@ -69,6 +72,18 @@ const runtimeSlice = createSlice({
 		},
 		removeStdinWait: (state, action: PayloadAction<number>) => {
 			state.stdin.queue = state.stdin.queue.filter((f) => f !== action.payload);
+		},
+		setBarSelection: (state, action: PayloadAction<string | null>) => {
+			state.barSelection = action.payload;
+		},
+		setHighlightedUnit: (state, action: PayloadAction<string | null>) => {
+			state.highlightedUnit = action.payload;
+		},
+		revealParameter: (state, action: PayloadAction<string>) => {
+			state.revealTarget = {
+				id: action.payload,
+				n: (state.revealTarget?.n ?? 0) + 1,
+			};
 		},
 		setSaveDefaultValue: (state, action: PayloadAction<boolean>) => {
 			state.saveDefaultValue = action.payload;
@@ -143,6 +158,9 @@ export const {
 	setAssociateMode,
 	setClassCode,
 	setSaveDefaultValue,
+	setBarSelection,
+	setHighlightedUnit,
+	revealParameter,
 	updateCCState,
 	resetCCState,
 	updateCCValues,

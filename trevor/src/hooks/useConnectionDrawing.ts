@@ -1,15 +1,18 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import type {
 	Connection,
+	ConnectionEnd,
 	MidiDeviceWithSection,
 	VirtualDeviceWithSection,
 	VirtualParameter,
 } from "../model";
 import { useTrevorSelector } from "../store";
+import { buildOwners, resolveInlinedAnchor } from "../utils/inlinedAnchors";
 import { drawConnection, drawCurvedConnection } from "../utils/svgUtils";
 import {
 	buildParameterId,
 	buildSectionId,
+	connectionEndId,
 	connectionId,
 	internalSectionName,
 } from "../utils/utils";
@@ -30,12 +33,25 @@ export const useConnectionDrawing = ({
 		(state) => state.nallely.virtual_devices,
 	);
 
+	const owners = useMemo(
+		() => buildOwners(midi_devices, virtual_devices),
+		[midi_devices, virtual_devices],
+	);
+	const ownersRef = useRef(owners);
+	ownersRef.current = owners;
+	const barSelection = useTrevorSelector((state) => state.runTime.barSelection);
+	const highlightedUnit = useTrevorSelector(
+		(state) => state.runTime.highlightedUnit,
+	);
+	const barSelectionRef = useRef(barSelection);
+	barSelectionRef.current = barSelection;
+	const highlightedUnitRef = useRef(highlightedUnit);
+	highlightedUnitRef.current = highlightedUnit;
+
 	const svgRef = useRef<SVGSVGElement>(null);
 	const updateConnectionsRef = useRef<number | null>(null);
 	const throttleTimeoutRef = useRef<number | null>(null);
 
-	// Refs so the RAF callback always reads the latest values without being
-	// re-created on every state change (which would cancel in-flight frames).
 	const allConnectionsRef = useRef(allConnections);
 	const selectedConnectionRef = useRef(selectedConnection);
 	const selectionRef = useRef(selection);
@@ -72,12 +88,18 @@ export const useConnectionDrawing = ({
 			});
 
 			const elementCache = new Map<string, Element | null>();
-			const getElement = (id: string) => {
+			const getElement = (id: string, isSelector = false) => {
 				if (!elementCache.has(id)) {
-					elementCache.set(id, document.querySelector(`[id="${id}"]`));
+					elementCache.set(
+						id,
+						document.querySelector(isSelector ? id : `[id="${id}"]`),
+					);
 				}
 				return elementCache.get(id) ?? null;
 			};
+
+			const findInlinedAnchor = (end: ConnectionEnd) =>
+				resolveInlinedAnchor(document, ownersRef.current, connectionEndId(end));
 
 			for (const connection of sortedConnections) {
 				const srcSection = connection.src.parameter.section_name;
@@ -94,8 +116,11 @@ export const useConnectionDrawing = ({
 							)
 						: buildSectionId(connection.dest.device, dstSection);
 
-				const fromElement = getElement(srcId);
-				const toElement = getElement(destId);
+				const fromInlined = findInlinedAnchor(connection.src);
+				const toInlined = findInlinedAnchor(connection.dest);
+				if (fromInlined && toInlined) continue;
+				const fromElement = fromInlined?.element ?? getElement(srcId);
+				const toElement = toInlined?.element ?? getElement(destId);
 
 				const highlightConnected = sel.length === 1;
 				const firstSelected = sel[0];
@@ -103,8 +128,20 @@ export const useConnectionDrawing = ({
 					? internalSectionName(firstSelected.section)
 					: undefined;
 				const connectionRepr = connectionId(connection);
+				const endIds = [
+					connectionEndId(connection.src),
+					connectionEndId(connection.dest),
+				];
+				const focusedParameter = barSelectionRef.current;
+				const focusedUnit = highlightedUnitRef.current;
 				const highlighted =
 					connectionRepr === selected ||
+					(focusedParameter !== null && endIds.includes(focusedParameter)) ||
+					(focusedUnit !== null &&
+						endIds.some((id) => {
+							const owner = ownersRef.current.get(id);
+							return owner?.device === focusedUnit || owner?.section === focusedUnit;
+						})) ||
 					(highlightConnected &&
 						!!firstSelected &&
 						(connectionRepr.startsWith(
@@ -123,7 +160,6 @@ export const useConnectionDrawing = ({
 					connection.id,
 				);
 
-				// Draw an extra line from the widget tile to the port for WebSocketBus connections
 				if (connection.src.repr.includes("WebSocketBus")) {
 					const port = (connection.src.parameter as VirtualParameter).cv_name;
 					const widgetTarget = getElement(port.split(/_/)[0]);
@@ -159,6 +195,8 @@ export const useConnectionDrawing = ({
 		midi_devices,
 		virtual_devices,
 		selection,
+		barSelection,
+		highlightedUnit,
 		updateConnections,
 	]);
 
@@ -169,11 +207,33 @@ export const useConnectionDrawing = ({
 			resizeTimeout = window.setTimeout(() => updateConnections(), 100);
 		};
 		const observer = new ResizeObserver(handleResize);
-		if (svgRef.current) {
-			observer.observe(svgRef.current.parentElement as HTMLElement);
+		const parent = svgRef.current?.parentElement;
+		if (parent) {
+			observer.observe(parent);
+		}
+		const mutation = new MutationObserver((records) => {
+			if (
+				records.some(
+					(r) =>
+						!svgRef.current?.contains(r.target) &&
+						(r.type === "childList" ||
+							(r.target instanceof Element &&
+								r.target.hasAttribute("data-link-frame"))),
+				)
+			)
+				handleResize();
+		});
+		if (parent) {
+			mutation.observe(parent, {
+				childList: true,
+				subtree: true,
+				attributes: true,
+				attributeFilter: ["style"],
+			});
 		}
 		return () => {
 			observer.disconnect();
+			mutation.disconnect();
 			clearTimeout(resizeTimeout);
 		};
 	}, [updateConnections]);
