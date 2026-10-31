@@ -33,7 +33,7 @@ const NOTE_NAMES = [
 	"B",
 ];
 
-const getNoteName = (midiNumber: number) => {
+export const getNoteName = (midiNumber: number) => {
 	const note = NOTE_NAMES[midiNumber % 12];
 	const octave = Math.floor(midiNumber / 12);
 	return `${note}${octave}`;

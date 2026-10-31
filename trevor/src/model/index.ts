@@ -133,6 +133,7 @@ export interface MidiParameter {
 	range: [number, number];
 	stream: boolean;
 	accepted_values: string[] | null;
+	high_res?: "unipolar" | "bipolar" | "nope";
 }
 
 export type Pitchwheel = PadOrKey;

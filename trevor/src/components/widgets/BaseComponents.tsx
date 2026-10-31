@@ -2,8 +2,9 @@
 /** biome-ignore-all lint/a11y/noSvgWithoutTitle: <explanation> */
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import type { MidiParameter, VirtualParameter } from "../../model";
+import type { MidiParameter, PadsOrKeys, VirtualParameter } from "../../model";
 import { generateAcronym, resolveAcceptedValueIndex } from "../../utils/utils";
+import { getNoteName } from "../MidiGrid";
 
 export const Button = ({
 	activated = false,
@@ -726,6 +727,7 @@ export const BarSlider = ({
 	rounded: roundedProp = true,
 	disabled = false,
 	stripPrefix = false,
+	bipolar = false,
 }: {
 	param: MidiParameter | VirtualParameter;
 	onManualSliderChange: (value: number | string) => void;
@@ -738,6 +740,8 @@ export const BarSlider = ({
 	rounded?: boolean;
 	disabled?: boolean;
 	stripPrefix?: boolean;
+	// the fill starts from the zero of the range (in the middle) instead of the left edge
+	bipolar?: boolean;
 }) => {
 	const acceptedValues = param.accepted_values;
 	const isChoice = !!acceptedValues?.length;
@@ -843,6 +847,17 @@ export const BarSlider = ({
 		v !== undefined && span !== 0
 			? Math.min(1, Math.max(0, (v - minValue) / span))
 			: 0;
+
+	// filled zone of a value, in % of the bar width
+	const fillSpan = (v: number | undefined) => {
+		const f = fraction(v);
+		const zero = bipolar ? fraction(0) : 0;
+		return { from: Math.min(zero, f) * 100, to: Math.max(zero, f) * 100 };
+	};
+	const fillClip = (v: number | undefined) => {
+		const { from, to } = fillSpan(v);
+		return `inset(0 ${100 - to}% 0 ${from}%)`;
+	};
 
 	const countDecimals = (v: number): number => {
 		const s = v.toString();
@@ -987,7 +1002,7 @@ export const BarSlider = ({
 	};
 
 	const splitTextStyle = (offset = 0): React.CSSProperties => ({
-		backgroundImage: `linear-gradient(to right, var(--browntext) ${fraction(value) * 100}%, var(--black) ${fraction(value) * 100}%)`,
+		backgroundImage: `linear-gradient(to right, var(--black) ${fillSpan(value).from}%, var(--browntext) ${fillSpan(value).from}%, var(--browntext) ${fillSpan(value).to}%, var(--black) ${fillSpan(value).to}%)`,
 		backgroundPosition: `${-offset}px 0`,
 		backgroundSize: `${width}px 100%`,
 		backgroundRepeat: "no-repeat",
@@ -1194,7 +1209,7 @@ export const BarSlider = ({
 								pointerEvents: "none",
 								background: "orange",
 								color: "var(--browntext)",
-								clipPath: `inset(0 ${100 - fraction(ghostValue ?? value) * 100}% 0 0)`,
+								clipPath: fillClip(ghostValue ?? value),
 							}}
 						>
 							{showing ? null : label}
@@ -1209,7 +1224,7 @@ export const BarSlider = ({
 								background: "var(--browntext)",
 								opacity: 0.3,
 								// where the bar was when the drag started
-								clipPath: `inset(0 ${100 - fraction(value) * 100}% 0 0)`,
+								clipPath: fillClip(value),
 							}}
 						/>
 					)}
@@ -1292,6 +1307,170 @@ export const BarSlider = ({
 								}}
 							>
 								{String(av)}
+							</div>
+						))}
+					</div>,
+					document.body,
+				)}
+		</>
+	);
+};
+
+export const KeysBar = ({
+	keys,
+	selected = [],
+	onSelectionChange,
+	acronymeLimit = 10,
+}: {
+	keys: PadsOrKeys;
+	selected?: number[];
+	onSelectionChange?: (notes: number[]) => void;
+	acronymeLimit?: number;
+}) => {
+	const width = 88;
+	const height = 22;
+	const [localSelected, setLocalSelected] = useState<number[]>(selected);
+	const [menuPos, setMenuPos] = useState<{
+		left: number;
+		top: number;
+		maxHeight: number;
+	} | null>(null);
+	const rootRef = useRef<HTMLDivElement>(null);
+	const menuRef = useRef<HTMLDivElement>(null);
+	const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const origin = useRef<{ x: number; y: number } | null>(null);
+
+	const cancelPress = () => {
+		if (timer.current) clearTimeout(timer.current);
+		timer.current = null;
+		origin.current = null;
+	};
+	useEffect(() => cancelPress, []);
+
+	useEffect(() => {
+		if (!menuPos) return;
+		const onDown = (e: PointerEvent) => {
+			const target = e.target as Node;
+			if (
+				rootRef.current?.contains(target) ||
+				menuRef.current?.contains(target)
+			)
+				return;
+			setMenuPos(null);
+		};
+		document.addEventListener("pointerdown", onDown);
+		return () => document.removeEventListener("pointerdown", onDown);
+	}, [menuPos]);
+
+	const openMenu = () => {
+		const r = rootRef.current?.getBoundingClientRect();
+		if (!r) return;
+		setMenuPos({
+			left: r.left,
+			top: r.bottom + 2,
+			maxHeight: Math.max(80, window.innerHeight - r.bottom - 10),
+		});
+	};
+
+	const toggle = (note: number) => {
+		const next = localSelected.includes(note)
+			? localSelected.filter((n) => n !== note)
+			: [...localSelected, note].sort((a, c) => a - c);
+		setLocalSelected(next);
+		onSelectionChange?.(next);
+	};
+
+	const [low, high] = keys.range ?? [0, 127];
+	const notes = Array.from({ length: high - low + 1 }, (_, i) => low + i);
+
+	return (
+		<>
+			<div
+				ref={rootRef}
+				style={{
+					position: "relative",
+					display: "flex",
+					alignItems: "center",
+					justifyContent: "center",
+					gap: "4px",
+					width,
+					height,
+					boxSizing: "border-box",
+					marginTop: "4px",
+					border: "2px solid orange",
+					background: "var(--rack-bg-color)",
+					color: "var(--black)",
+					fontSize: "12px",
+					fontWeight: "bold",
+					whiteSpace: "nowrap",
+					userSelect: "none",
+					touchAction: "none",
+				}}
+				onPointerDown={(e) => {
+					cancelPress();
+					origin.current = { x: e.clientX, y: e.clientY };
+					timer.current = setTimeout(() => {
+						timer.current = null;
+						openMenu();
+					}, 500);
+				}}
+				onPointerMove={(e) => {
+					if (
+						origin.current &&
+						Math.hypot(
+							e.clientX - origin.current.x,
+							e.clientY - origin.current.y,
+						) > 8
+					)
+						cancelPress();
+				}}
+				onPointerUp={cancelPress}
+				onPointerCancel={cancelPress}
+				onContextMenu={(e) => e.preventDefault()}
+			>
+				<span role="img" aria-label="piano" style={{ fontSize: "12px" }}>
+					🎹
+				</span>
+				<span>{generateAcronym(keys.name ?? "keys", acronymeLimit)}</span>
+			</div>
+			{menuPos &&
+				createPortal(
+					<div
+						ref={menuRef}
+						style={{
+							position: "fixed",
+							left: menuPos.left,
+							top: menuPos.top,
+							minWidth: width,
+							maxHeight: menuPos.maxHeight,
+							overflowY: "auto",
+							zIndex: 10000,
+							backgroundColor: "#e0e0e0",
+							border: "3px solid #808080",
+							fontSize: "12px",
+						}}
+					>
+						{notes.map((note) => (
+							<div
+								key={note}
+								onClick={() => toggle(note)}
+								style={{
+									display: "flex",
+									justifyContent: "space-between",
+									gap: "12px",
+									padding: "3px 6px",
+									cursor: "pointer",
+									whiteSpace: "nowrap",
+									backgroundColor: localSelected.includes(note)
+										? "orange"
+										: "transparent",
+									color: localSelected.includes(note)
+										? "var(--browntext)"
+										: "var(--black)",
+								}}
+							>
+								<span>{getNoteName(note)}</span>
+								<span>{note}</span>
 							</div>
 						))}
 					</div>,

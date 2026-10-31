@@ -18,6 +18,7 @@ import type { MidiDevice, MidiDeviceSection, MidiParameter } from "../model";
 import { useTrevorDispatch, useTrevorSelector } from "../store";
 import { updateCCState } from "../store/runtimeSlice";
 import {
+	internalSectionName,
 	isFloatRange,
 	mergeDevicesPreservingOrder,
 	saveDeviceOrder,
@@ -30,7 +31,7 @@ import {
 	InlinedSortableList,
 } from "./InlinedSortableList";
 import { barGridStyle, HORIZONTAL_ROWS } from "./RackRowVirtual";
-import { BarSlider } from "./widgets/BaseComponents";
+import { BarSlider, KeysBar } from "./widgets/BaseComponents";
 
 interface RackRowProps {
 	devices: MidiDevice[];
@@ -204,15 +205,18 @@ const MIDI_SECTION_ROWS = HORIZONTAL_ROWS - 1; // the section header takes one b
 
 const InlinedMidiSection = ({
 	device,
-	sectionName,
-	parameters,
+	section,
 	horizontal,
 }: {
 	device: MidiDevice;
-	sectionName: string;
-	parameters: MidiParameter[];
+	section: MidiDeviceSection;
 	horizontal: boolean;
 }) => {
+	const sectionName = internalSectionName(section);
+	const parameters = [
+		...section.parameters,
+		...(section.pitchwheels ?? []),
+	] as MidiParameter[];
 	const [isOpen, setIsOpen] = useState(false);
 	const trevorSocket = useTrevorWebSocket();
 	const ccValues = useTrevorSelector((state) => state.runTime.ccValues);
@@ -253,6 +257,7 @@ const InlinedMidiSection = ({
 					padding: "5px",
 				}}
 			>
+				{section.pads_or_keys && <KeysBar keys={section.pads_or_keys} />}
 				{parameters.map((p) => {
 					const range: [number, number] = p.range ?? [0, 127];
 					return (
@@ -262,6 +267,7 @@ const InlinedMidiSection = ({
 							minValue={range[0]}
 							maxValue={range[1]}
 							rounded={!isFloatRange(range)}
+							bipolar={p.high_res === "bipolar"}
 							onManualSliderChange={(v) => {
 								trevorSocket?.setParameterValue(
 									device.id,
@@ -285,7 +291,8 @@ const InlinedMidiSection = ({
 									p.name
 								] ??
 								device.config?.[p.section_name]?.[p.name] ??
-								p.init_value
+								p.init_value ??
+								(range[0] + range[1]) / 2 // pitchwheels have no init_value: rest in the middle
 							}
 						/>
 					);
@@ -343,13 +350,17 @@ const InlinedMidiDevice = ({
 				}}
 			>
 				{device.meta.sections
-					.filter((section) => section.parameters?.length > 0)
+					.filter(
+						(section) =>
+							section.parameters?.length > 0 ||
+							section.pitchwheels?.length > 0 ||
+							section.pads_or_keys,
+					)
 					.map((section) => (
 						<InlinedMidiSection
-							key={section.parameters[0].section_name}
+							key={internalSectionName(section)}
 							device={device}
-							sectionName={section.parameters[0].section_name}
-							parameters={section.parameters}
+							section={section}
 							horizontal={horizontal}
 						/>
 					))}
