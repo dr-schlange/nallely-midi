@@ -8,7 +8,8 @@ interface ScalerFormProps {
 	connection: Connection;
 }
 
-export const ScalerForm = ({ connection }: ScalerFormProps) => {
+// What the fields below share: the values being edited and what they change on the link
+const useScalerState = (connection: Connection) => {
 	const scalerEnabled = Boolean(connection.src.chain);
 	const scalerId = scalerEnabled ? connection.src.chain?.id : 0;
 
@@ -35,62 +36,302 @@ export const ScalerForm = ({ connection }: ScalerFormProps) => {
 		setMin(max);
 	};
 
+	return {
+		connection,
+		trevorSocket,
+		scalerEnabled,
+		scalerId,
+		min,
+		setMin,
+		max,
+		setMax,
+		velocity,
+		setVelocity,
+		method,
+		setMethod,
+		extraZero,
+		setExtraZero,
+		asInt,
+		setAsInt,
+		switchMinMax,
+	};
+};
+
+type ScalerState = ReturnType<typeof useScalerState>;
+
+const MuteCheckbox = ({ connection, trevorSocket }: ScalerState) => (
+	<label style={{ width: "100%" }}>
+		<input
+			type="checkbox"
+			checked={connection.muted}
+			onChange={(e) => {
+				const src = connection.src;
+				const dst = connection.dest;
+				trevorSocket?.muteLink(
+					src.device,
+					src.parameter,
+					dst.device,
+					dst.parameter,
+					e.target.checked,
+				);
+			}}
+		/>
+		Mute
+	</label>
+);
+
+const BouncyCheckbox = ({ connection, trevorSocket }: ScalerState) => (
+	<label style={{ width: "100%" }}>
+		<input
+			type="checkbox"
+			checked={connection.bouncy}
+			onChange={(e) => {
+				const src = connection.src;
+				const dst = connection.dest;
+				trevorSocket?.makeLinkBouncy(
+					src.device,
+					src.parameter,
+					dst.device,
+					dst.parameter,
+					e.target.checked,
+				);
+			}}
+		/>
+		Bouncy
+	</label>
+);
+
+const RoundValuesCheckbox = ({
+	scalerEnabled,
+	scalerId,
+	asInt,
+	setAsInt,
+	trevorSocket,
+}: ScalerState) => (
+	<label style={{ width: "100%" }}>
+		<input
+			type="checkbox"
+			checked={asInt}
+			disabled={!scalerEnabled}
+			onChange={(e) => {
+				const value = e.target.checked;
+				setAsInt(value);
+				trevorSocket?.setScalerValue(scalerId, "as_int", value);
+			}}
+		/>
+		Round values
+	</label>
+);
+
+const ScalerCheckbox = ({
+	connection,
+	scalerEnabled,
+	trevorSocket,
+}: ScalerState) => (
+	<label style={{ width: "100%" }}>
+		<input
+			type="checkbox"
+			checked={scalerEnabled}
+			onChange={(e) => {
+				const src = connection.src;
+				const dst = connection.dest;
+				trevorSocket?.createScaler(
+					src.device,
+					src.parameter,
+					dst.device,
+					dst.parameter,
+					e.target.checked,
+				);
+			}}
+		/>
+		<span>Scaler</span>
+	</label>
+);
+
+const ScalerRange = ({
+	connection,
+	scalerEnabled,
+	scalerId,
+	min,
+	setMin,
+	max,
+	setMax,
+	switchMinMax,
+	trevorSocket,
+}: ScalerState) => (
+	<div
+		style={{
+			display: "flex",
+			gap: "4px",
+			width: "100%",
+			justifyContent: "space-between",
+		}}
+	>
+		<DragNumberInput
+			clearDecimalButton
+			style={{
+				width: "100%",
+			}}
+			disabled={!scalerEnabled}
+			value={min.toString()}
+			range={connection.dest.parameter.range}
+			onChange={(val) => setMin(val)}
+			onBlur={(val) =>
+				trevorSocket?.setScalerValue(scalerId, "to_min", Number.parseFloat(val))
+			}
+		/>
+		<Button
+			text="⇄"
+			tooltip="Switch min and max"
+			variant="big"
+			style={{
+				backgroundColor: "var(--button-bg-color)",
+				color: "var(--black)",
+			}}
+			onClick={switchMinMax}
+		/>
+		<DragNumberInput
+			clearDecimalButton
+			style={{
+				width: "100%",
+			}}
+			disabled={!scalerEnabled}
+			value={max.toString()}
+			range={connection.dest.parameter.range}
+			onChange={(val) => setMax(val)}
+			onBlur={(val) =>
+				trevorSocket?.setScalerValue(scalerId, "to_max", Number.parseFloat(val))
+			}
+		/>
+	</div>
+);
+
+const ScalerOptions = ({
+	connection,
+	scalerEnabled,
+	scalerId,
+	velocity,
+	setVelocity,
+	method,
+	setMethod,
+	extraZero,
+	setExtraZero,
+	trevorSocket,
+}: ScalerState) => (
+	<div
+		style={{
+			display: "flex",
+			flexDirection: "column",
+			gap: "4px",
+		}}
+	>
+		<label
+			style={{
+				display: "flex",
+				alignItems: "center",
+				justifyContent: "space-between",
+			}}
+		>
+			<span style={{ width: "100%" }}>Method</span>
+			<select
+				style={{ width: "100%" }}
+				value={method}
+				disabled={!scalerEnabled}
+				onChange={(e) => {
+					const val = e.target.value;
+					setMethod(val);
+					trevorSocket?.setScalerValue(scalerId, "method", val);
+				}}
+			>
+				<option value="lin" dir="ltr">
+					lin
+				</option>
+				<option value="log" dir="ltr">
+					log
+				</option>
+				<option value="asinh" dir="ltr">
+					asinh
+				</option>
+				<option value="pow" dir="ltr">
+					pow
+				</option>
+			</select>
+		</label>
+
+		{/** biome-ignore lint/a11y/noLabelWithoutControl: <explanation> */}
+		<label style={{ display: "flex", alignItems: "center" }}>
+			<span style={{ width: "100%" }}>Velocity</span>
+			<DragNumberInput
+				style={{ width: "100%" }}
+				disabled={!scalerEnabled}
+				value={velocity?.toString() || ""}
+				range={[0, 127]}
+				nullable
+				onChange={(val) => {
+					if (!val || val.length === 0) {
+						setVelocity(null);
+						return;
+					}
+					setVelocity(Number.parseInt(val, 10));
+				}}
+				onBlur={(val) =>
+					trevorSocket?.setLinkVelocity(
+						connection.src.device,
+						connection.src.parameter,
+						connection.dest.device,
+						connection.dest.parameter,
+						val !== null ? Number.parseInt(val, 10) : null,
+					)
+				}
+			/>
+		</label>
+		<label style={{ display: "flex", alignItems: "center" }}>
+			<span style={{ width: "100%" }}>Retrigger</span>
+			<select
+				style={{ width: "100%" }}
+				value={extraZero}
+				onChange={(e) => {
+					const val = e.target.value;
+					setExtraZero(val);
+					trevorSocket?.setLinkExtraZero(
+						connection.src.device,
+						connection.src.parameter,
+						connection.dest.device,
+						connection.dest.parameter,
+						val,
+					);
+				}}
+			>
+				<option value="none" dir="ltr">
+					-
+				</option>
+				<option value="before" dir="ltr">
+					before
+				</option>
+				<option value="after" dir="ltr">
+					after
+				</option>
+				<option value="remove-note-off" dir="ltr">
+					remove note off
+				</option>
+			</select>
+		</label>
+	</div>
+);
+
+export const ScalerForm = ({ connection }: ScalerFormProps) => {
+	const state = useScalerState(connection);
+
 	return (
 		<div className="connection-setup">
 			<div style={{ display: "flex" }}>
 				<div
 					style={{ display: "flex", flexDirection: "column", width: "100%" }}
 				>
-					<label style={{ width: "100%" }}>
-						<input
-							type="checkbox"
-							checked={connection.muted}
-							onChange={(e) => {
-								const src = connection.src;
-								const dst = connection.dest;
-								trevorSocket?.muteLink(
-									src.device,
-									src.parameter,
-									dst.device,
-									dst.parameter,
-									e.target.checked,
-								);
-							}}
-						/>
-						Mute
-					</label>
-					<label style={{ width: "100%" }}>
-						<input
-							type="checkbox"
-							checked={connection.bouncy}
-							onChange={(e) => {
-								const src = connection.src;
-								const dst = connection.dest;
-								trevorSocket?.makeLinkBouncy(
-									src.device,
-									src.parameter,
-									dst.device,
-									dst.parameter,
-									e.target.checked,
-								);
-							}}
-						/>
-						Bouncy
-					</label>
+					<MuteCheckbox {...state} />
+					<BouncyCheckbox {...state} />
 				</div>
-				<label style={{ width: "100%" }}>
-					<input
-						type="checkbox"
-						checked={asInt}
-						disabled={!scalerEnabled}
-						onChange={(e) => {
-							const value = e.target.checked;
-							setAsInt(value);
-							trevorSocket?.setScalerValue(scalerId, "as_int", value);
-						}}
-					/>
-					Round values
-				</label>
+				<RoundValuesCheckbox {...state} />
 			</div>
 
 			<div
@@ -100,179 +341,39 @@ export const ScalerForm = ({ connection }: ScalerFormProps) => {
 					flexDirection: "column",
 				}}
 			>
-				<label style={{ width: "100%" }}>
-					<input
-						type="checkbox"
-						checked={scalerEnabled}
-						onChange={(e) => {
-							const src = connection.src;
-							const dst = connection.dest;
-							trevorSocket?.createScaler(
-								src.device,
-								src.parameter,
-								dst.device,
-								dst.parameter,
-								e.target.checked,
-							);
-						}}
-					/>
-					<span>Scaler</span>
-				</label>
-				<div
-					style={{
-						display: "flex",
-						gap: "4px",
-						width: "100%",
-						justifyContent: "space-between",
-					}}
-				>
-					<DragNumberInput
-						clearDecimalButton
-						style={{
-							width: "100%",
-						}}
-						disabled={!scalerEnabled}
-						value={min.toString()}
-						range={connection.dest.parameter.range}
-						onChange={(val) => setMin(val)}
-						onBlur={(val) =>
-							trevorSocket?.setScalerValue(
-								scalerId,
-								"to_min",
-								Number.parseFloat(val),
-							)
-						}
-					/>
-					<Button
-						text="⇄"
-						tooltip="Switch min and max"
-						variant="big"
-						style={{
-							backgroundColor: "var(--button-bg-color)",
-							color: "var(--black)",
-						}}
-						onClick={switchMinMax}
-					/>
-					<DragNumberInput
-						clearDecimalButton
-						style={{
-							width: "100%",
-						}}
-						disabled={!scalerEnabled}
-						value={max.toString()}
-						range={connection.dest.parameter.range}
-						onChange={(val) => setMax(val)}
-						onBlur={(val) =>
-							trevorSocket?.setScalerValue(
-								scalerId,
-								"to_max",
-								Number.parseFloat(val),
-							)
-						}
-					/>
-				</div>
+				<ScalerCheckbox {...state} />
+				<ScalerRange {...state} />
 			</div>
 
-			<div
-				style={{
-					display: "flex",
-					flexDirection: "column",
-					gap: "4px",
-					marginTop: "10px",
-				}}
-			>
-				<label
-					style={{
-						display: "flex",
-						alignItems: "center",
-						justifyContent: "space-between",
-					}}
-				>
-					<span style={{ width: "100%" }}>Method</span>
-					<select
-						style={{ width: "100%" }}
-						value={method}
-						disabled={!scalerEnabled}
-						onChange={(e) => {
-							const val = e.target.value;
-							setMethod(val);
-							trevorSocket?.setScalerValue(scalerId, "method", val);
-						}}
-					>
-						<option value="lin" dir="ltr">
-							lin
-						</option>
-						<option value="log" dir="ltr">
-							log
-						</option>
-						<option value="asinh" dir="ltr">
-							asinh
-						</option>
-						<option value="pow" dir="ltr">
-							pow
-						</option>
-					</select>
-				</label>
-
-				{/** biome-ignore lint/a11y/noLabelWithoutControl: <explanation> */}
-				<label style={{ display: "flex", alignItems: "center" }}>
-					<span style={{ width: "100%" }}>Velocity</span>
-					<DragNumberInput
-						style={{ width: "100%" }}
-						disabled={!scalerEnabled}
-						value={velocity?.toString() || ""}
-						range={[0, 127]}
-						nullable
-						onChange={(val) => {
-							if (!val || val.length === 0) {
-								setVelocity(null);
-								return;
-							}
-							setVelocity(Number.parseInt(val, 10));
-						}}
-						onBlur={(val) =>
-							trevorSocket?.setLinkVelocity(
-								connection.src.device,
-								connection.src.parameter,
-								connection.dest.device,
-								connection.dest.parameter,
-								val !== null ? Number.parseInt(val, 10) : null,
-							)
-						}
-					/>
-				</label>
-				<label style={{ display: "flex", alignItems: "center" }}>
-					<span style={{ width: "100%" }}>Retrigger</span>
-					<select
-						style={{ width: "100%" }}
-						value={extraZero}
-						onChange={(e) => {
-							const val = e.target.value;
-							setExtraZero(val);
-							trevorSocket?.setLinkExtraZero(
-								connection.src.device,
-								connection.src.parameter,
-								connection.dest.device,
-								connection.dest.parameter,
-								val,
-							);
-						}}
-					>
-						<option value="none" dir="ltr">
-							-
-						</option>
-						<option value="before" dir="ltr">
-							before
-						</option>
-						<option value="after" dir="ltr">
-							after
-						</option>
-						<option value="remove-note-off" dir="ltr">
-							remove note off
-						</option>
-					</select>
-				</label>
+			<div style={{ marginTop: "10px" }}>
+				<ScalerOptions {...state} />
 			</div>
+		</div>
+	);
+};
+
+// The same fields as ScalerForm, split in two for the floating menus of a link: the
+// switches and the range of the scaler above, the other fields below.
+export const ScalerFormTop = ({ connection }: ScalerFormProps) => {
+	const state = useScalerState(connection);
+	return (
+		<div className="connection-setup">
+			<div style={{ display: "flex", gap: "8px" }}>
+				<ScalerCheckbox {...state} />
+				<BouncyCheckbox {...state} />
+				<MuteCheckbox {...state} />
+			</div>
+			<ScalerRange {...state} />
+		</div>
+	);
+};
+
+export const ScalerFormBottom = ({ connection }: ScalerFormProps) => {
+	const state = useScalerState(connection);
+	return (
+		<div className="connection-setup">
+			<RoundValuesCheckbox {...state} />
+			<ScalerOptions {...state} />
 		</div>
 	);
 };

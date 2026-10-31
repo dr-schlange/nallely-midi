@@ -58,7 +58,8 @@ export const resolveInlinedAnchor = (
 	if (!owner) return null;
 	for (const unit of [owner.section, owner.device]) {
 		const port = root.querySelector(`[data-port-unit="${unit}"]`);
-		if (isVisible(port)) return { element: port, key: `port:${unit}`, port: true };
+		if (isVisible(port))
+			return { element: port, key: `port:${unit}`, port: true };
 	}
 	return null;
 };

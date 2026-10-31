@@ -2190,3 +2190,47 @@ h3.details {
 		background-position: -160px 0px;
 	}
 }
+
+/* the settings of a link in its floating menus: the fields use the whole width */
+.link-menu .connection-setup {
+	height: auto;
+	flex-wrap: nowrap;
+	/* the phone layout gives the form half the width */
+	width: 100%;
+}
+
+.link-menu .connection-setup label > span {
+	width: auto !important;
+	min-width: 62px;
+}
+
+.link-menu .connection-setup label > select {
+	flex: 1;
+	width: auto !important;
+	min-width: 0;
+}
+
+/* a number field is its input plus the button next to it, wrapped in a div that would
+   keep the width of its content: it takes its share of the row instead */
+.link-menu .connection-setup [data-no-dnd] {
+	flex: 1;
+	min-width: 0;
+}
+
+.link-menu .connection-setup input[type="text"] {
+	min-width: 0;
+}
+
+/* a long press on the racks (or the gap between them) must not select text, the "«" of
+   the side bar included; the fields stay editable */
+.device-patching-main-section {
+	user-select: none;
+	-webkit-user-select: none;
+	-webkit-touch-callout: none;
+}
+
+.device-patching-main-section input,
+.device-patching-main-section textarea {
+	user-select: text;
+	-webkit-user-select: text;
+}

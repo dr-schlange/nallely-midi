@@ -20,6 +20,7 @@ export const initialRunTimeState: RunTimeState = {
 	barSelection: null,
 	highlightedUnit: null,
 	revealTarget: null,
+	oldView: false,
 	patchDetails: undefined,
 	usedAddresses: [],
 	stdin: {
@@ -78,6 +79,9 @@ const runtimeSlice = createSlice({
 		},
 		setHighlightedUnit: (state, action: PayloadAction<string | null>) => {
 			state.highlightedUnit = action.payload;
+		},
+		setOldView: (state, action: PayloadAction<boolean>) => {
+			state.oldView = action.payload;
 		},
 		revealParameter: (state, action: PayloadAction<string>) => {
 			state.revealTarget = {
@@ -161,6 +165,7 @@ export const {
 	setBarSelection,
 	setHighlightedUnit,
 	revealParameter,
+	setOldView,
 	updateCCState,
 	resetCCState,
 	updateCCValues,

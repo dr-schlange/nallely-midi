@@ -9,6 +9,7 @@ import {
 	useRef,
 	useState,
 } from "react";
+import type { Connection } from "../model";
 import { useTrevorSelector } from "../store";
 import {
 	buildOwners,
@@ -22,6 +23,7 @@ import {
 	type Side,
 } from "../utils/orthogonalRoute";
 import { connectionEndId } from "../utils/utils";
+import { LinkMenu } from "./LinkMenu";
 
 export interface BarLinksRef {
 	redraw: () => void;
@@ -34,6 +36,10 @@ const LINK_WIDTH = 2;
 const HIGHLIGHT_COLOR = "blue";
 const ARROW_LENGTH = 6;
 const NEARBY = 120; // obstacles farther than this from both ends are ignored
+
+// a long press on a link must not select text (the browser starts it by itself); one
+// function for good so that the listener added at the press is the one removed after it
+const blockSelection = (e: Event) => e.preventDefault();
 
 const overlaps = (a: Rect, b: Rect) =>
 	a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
@@ -90,6 +96,9 @@ interface Placed {
 interface DrawnLink {
 	d: string;
 	arrow: string;
+	// the connections the link stands for, and whether both ends are collapsed
+	connectionIds: number[];
+	bothCollapsed: boolean;
 	// devices and sections at the ends of the patches this link stands for
 	units: string[];
 	// the parameters at the ends of those patches
@@ -129,6 +138,64 @@ export const BarLinks = forwardRef<
 	const frame = useRef<number | null>(null);
 	const [links, setLinks] = useState<DrawnLink[]>([]);
 	const [size, setSize] = useState({ width: 0, height: 0 });
+	const [menu, setMenu] = useState<{
+		x: number;
+		y: number;
+		ids: number[];
+		showList: boolean;
+		selected: number | null;
+		// where the settings of the selected link open, when not at the pressed point
+		anchor: { x: number; y: number } | null;
+	} | null>(null);
+	const closeMenu = useCallback(() => setMenu(null), []);
+	const selectInMenu = useCallback(
+		(id: number | null, point?: { x: number; y: number }) =>
+			setMenu((current) =>
+				current
+					? { ...current, selected: id, anchor: point ?? current.anchor }
+					: current,
+			),
+		[],
+	);
+
+	// a long press on a link opens its menu
+	const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const pressOrigin = useRef<{ x: number; y: number } | null>(null);
+	const cancelPress = () => {
+		if (pressTimer.current) clearTimeout(pressTimer.current);
+		pressTimer.current = null;
+		pressOrigin.current = null;
+		document.removeEventListener("selectstart", blockSelection);
+	};
+	useEffect(() => cancelPress, []);
+	const startPress = (e: React.PointerEvent, link: DrawnLink) => {
+		// the link wins over what is under it
+		e.stopPropagation();
+		e.preventDefault();
+		cancelPress();
+		document.addEventListener("selectstart", blockSelection);
+		const { clientX: x, clientY: y } = e;
+		pressOrigin.current = { x, y };
+		pressTimer.current = setTimeout(() => {
+			pressTimer.current = null;
+			window.getSelection()?.removeAllRanges();
+			// between two collapsed ends (or several patches) the list comes first
+			const showList = link.bothCollapsed || link.connectionIds.length > 1;
+			setMenu({
+				x,
+				y,
+				ids: link.connectionIds,
+				showList,
+				selected: showList ? null : link.connectionIds[0],
+				anchor: null,
+			});
+		}, 500);
+	};
+	const movePress = (e: React.PointerEvent) => {
+		const origin = pressOrigin.current;
+		if (origin && Math.hypot(e.clientX - origin.x, e.clientY - origin.y) > 8)
+			cancelPress();
+	};
 
 	const compute = useCallback(() => {
 		const svg = svgRef.current;
@@ -156,6 +223,7 @@ export const BarLinks = forwardRef<
 				dest: InlinedAnchor;
 				units: Set<string>;
 				parameters: Set<string>;
+				connections: Connection[];
 			}
 		>();
 		for (const c of connectionsRef.current) {
@@ -165,9 +233,16 @@ export const BarLinks = forwardRef<
 			const key = `${src.key}->${dest.key}`;
 			let pair = pairs.get(key);
 			if (!pair) {
-				pair = { src, dest, units: new Set(), parameters: new Set() };
+				pair = {
+					src,
+					dest,
+					units: new Set(),
+					parameters: new Set(),
+					connections: [],
+				};
 				pairs.set(key, pair);
 			}
+			pair.connections.push(c);
 			for (const end of [c.src, c.dest]) {
 				pair.parameters.add(connectionEndId(end));
 				const owner = ownersRef.current.get(connectionEndId(end));
@@ -378,6 +453,8 @@ export const BarLinks = forwardRef<
 				d: line.map((p, i) => `${i === 0 ? "M" : "L"}${p.x} ${p.y}`).join(" "),
 				arrow: arrow ? arrow.map((p) => `${p.x},${p.y}`).join(" ") : "",
 				units: [...pair.units],
+				connectionIds: pair.connections.map((c) => c.id),
+				bothCollapsed: pair.src.port && pair.dest.port,
 				parameters: [...pair.parameters],
 			});
 		}
@@ -387,6 +464,8 @@ export const BarLinks = forwardRef<
 				(l, i) =>
 					l.d === next[i].d &&
 					l.arrow === next[i].arrow &&
+					l.connectionIds.join() === next[i].connectionIds.join() &&
+					l.bothCollapsed === next[i].bothCollapsed &&
 					l.units.join() === next[i].units.join() &&
 					l.parameters.join() === next[i].parameters.join(),
 			)
@@ -452,6 +531,8 @@ export const BarLinks = forwardRef<
 		.map((link) => ({
 			link,
 			highlighted:
+				(menu !== null &&
+					link.connectionIds.some((id) => menu.ids.includes(id))) ||
 				(highlightedUnit !== null && link.units.includes(highlightedUnit)) ||
 				(selectedParameter !== null &&
 					link.parameters.includes(selectedParameter)),
@@ -507,9 +588,38 @@ export const BarLinks = forwardRef<
 							/>
 							{link.arrow && <polygon points={link.arrow} fill={color} />}
 						</g>
+						{/* the link between two open bars answers to a long press; it is above the
+						    racks, so it gets the press before what is under it */}
+						{link.connectionIds.length > 0 && (
+							<path
+								d={link.d}
+								fill="none"
+								stroke="transparent"
+								strokeWidth={12}
+								pointerEvents="stroke"
+								onPointerDown={(e) => startPress(e, link)}
+								onPointerMove={movePress}
+								onPointerUp={cancelPress}
+								onPointerCancel={cancelPress}
+								onPointerLeave={cancelPress}
+								onContextMenu={(e) => e.preventDefault()}
+							/>
+						)}
 					</g>
 				);
 			})}
+			{menu && (
+				<LinkMenu
+					x={menu.x}
+					y={menu.y}
+					connectionIds={menu.ids}
+					showList={menu.showList}
+					selectedId={menu.selected}
+					anchor={menu.anchor}
+					onSelect={selectInMenu}
+					onClose={closeMenu}
+				/>
+			)}
 		</svg>
 	);
 });

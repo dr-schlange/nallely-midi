@@ -388,6 +388,10 @@ const InlinedVDev = ({
 					backgroundColor: "gray",
 					color: "lightgray",
 					cursor: "pointer",
+					// a long press on a title must not select its text
+					userSelect: "none",
+					WebkitUserSelect: "none",
+					WebkitTouchCallout: "none",
 					display: "flex",
 					alignItems: "center",
 				}}

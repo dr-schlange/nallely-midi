@@ -318,6 +318,10 @@ const InlinedMidiSection = ({
 					margin: "0",
 					padding: horizontal ? "2px" : "3px",
 					cursor: "pointer",
+					// a long press on a title must not select its text
+					userSelect: "none",
+					WebkitUserSelect: "none",
+					WebkitTouchCallout: "none",
 					borderTop: horizontal ? "2px solid gray" : "unset",
 					display: "flex",
 					flexDirection: flipped ? "row-reverse" : "row",
@@ -474,6 +478,10 @@ const InlinedMidiDevice = ({
 					backgroundColor: "gray",
 					color: "lightgray",
 					cursor: "pointer",
+					// a long press on a title must not select its text
+					userSelect: "none",
+					WebkitUserSelect: "none",
+					WebkitTouchCallout: "none",
 					display: "flex",
 					alignItems: "center",
 				}}

@@ -39,6 +39,9 @@ export const useConnectionDrawing = ({
 	);
 	const ownersRef = useRef(owners);
 	ownersRef.current = owners;
+	const oldView = useTrevorSelector((state) => state.runTime.oldView);
+	const oldViewRef = useRef(oldView);
+	oldViewRef.current = oldView;
 	const barSelection = useTrevorSelector((state) => state.runTime.barSelection);
 	const highlightedUnit = useTrevorSelector(
 		(state) => state.runTime.highlightedUnit,
@@ -98,8 +101,15 @@ export const useConnectionDrawing = ({
 				return elementCache.get(id) ?? null;
 			};
 
+			// (the old view has no inlined devices: everything goes to the old elements)
 			const findInlinedAnchor = (end: ConnectionEnd) =>
-				resolveInlinedAnchor(document, ownersRef.current, connectionEndId(end));
+				oldViewRef.current
+					? null
+					: resolveInlinedAnchor(
+							document,
+							ownersRef.current,
+							connectionEndId(end),
+						);
 
 			for (const connection of sortedConnections) {
 				const srcSection = connection.src.parameter.section_name;
@@ -140,7 +150,9 @@ export const useConnectionDrawing = ({
 					(focusedUnit !== null &&
 						endIds.some((id) => {
 							const owner = ownersRef.current.get(id);
-							return owner?.device === focusedUnit || owner?.section === focusedUnit;
+							return (
+								owner?.device === focusedUnit || owner?.section === focusedUnit
+							);
 						})) ||
 					(highlightConnected &&
 						!!firstSelected &&
@@ -197,6 +209,7 @@ export const useConnectionDrawing = ({
 		selection,
 		barSelection,
 		highlightedUnit,
+		oldView,
 		updateConnections,
 	]);
 

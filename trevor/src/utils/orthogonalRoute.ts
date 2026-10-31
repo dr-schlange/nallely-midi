@@ -177,7 +177,11 @@ const routeWithPadding = (
 ): Point[] | null => {
 	const fromPadded = expand(from, pad);
 	const toPadded = expand(to, pad);
-	const blockers = [...obstacles.map((o) => expand(o, pad)), fromPadded, toPadded];
+	const blockers = [
+		...obstacles.map((o) => expand(o, pad)),
+		fromPadded,
+		toPadded,
+	];
 	const fromAnchors = anchorsOf(from, lead, fromSides, fromBounds);
 	const toAnchors = anchorsOf(to, lead, toSides, toBounds);
 
@@ -191,8 +195,14 @@ const routeWithPadding = (
 		xsRaw.push(a.node.x);
 		ysRaw.push(a.node.y);
 	}
-	xsRaw.push(Math.min(...xsRaw) - OUTER_MARGIN, Math.max(...xsRaw) + OUTER_MARGIN);
-	ysRaw.push(Math.min(...ysRaw) - OUTER_MARGIN, Math.max(...ysRaw) + OUTER_MARGIN);
+	xsRaw.push(
+		Math.min(...xsRaw) - OUTER_MARGIN,
+		Math.max(...xsRaw) + OUTER_MARGIN,
+	);
+	ysRaw.push(
+		Math.min(...ysRaw) - OUTER_MARGIN,
+		Math.max(...ysRaw) + OUTER_MARGIN,
+	);
 	const xs = withGapMiddles(sortedUnique(xsRaw));
 	const ys = withGapMiddles(sortedUnique(ysRaw));
 	const nx = xs.length;
@@ -239,7 +249,10 @@ const routeWithPadding = (
 		const state = node * 4 + a.dir;
 		dist[state] = 0;
 		startAnchorOf.set(state, a);
-		heap.push(Math.abs(a.node.x - center.x) + Math.abs(a.node.y - center.y), state);
+		heap.push(
+			Math.abs(a.node.x - center.x) + Math.abs(a.node.y - center.y),
+			state,
+		);
 	}
 
 	let found = -1;
@@ -286,16 +299,15 @@ const routeWithPadding = (
 	}
 	nodes.reverse();
 	const endAnchor = targets.get(found >> 2) as Anchor;
-	return simplify([
-		(startAnchor as Anchor).edge,
-		...nodes,
-		endAnchor.edge,
-	]);
+	return simplify([(startAnchor as Anchor).edge, ...nodes, endAnchor.edge]);
 };
 
 // Last resort when every channel is closed: still only 90 degree angles
 const elbow = (from: Rect, to: Rect): Point[] => {
-	const a = { x: (from.left + from.right) / 2, y: (from.top + from.bottom) / 2 };
+	const a = {
+		x: (from.left + from.right) / 2,
+		y: (from.top + from.bottom) / 2,
+	};
 	const b = { x: (to.left + to.right) / 2, y: (to.top + to.bottom) / 2 };
 	return simplify([a, { x: b.x, y: a.y }, b]);
 };
@@ -322,7 +334,9 @@ export const routeOrthogonal = (
 	const widen = (sides: Side[], level: number): Side[] => {
 		const vertical = sides.includes("top") || sides.includes("bottom");
 		if (!vertical || level === 0) return sides;
-		return level === 1 ? [...sides, "right"] : ["right", "bottom", "left", "top"];
+		return level === 1
+			? [...sides, "right"]
+			: ["right", "bottom", "left", "top"];
 	};
 	for (const level of [0, 1, 2]) {
 		for (const [pad, lead] of options.squeezeFirst

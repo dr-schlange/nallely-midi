@@ -200,6 +200,8 @@ export interface RunTimeState {
 	highlightedUnit: string | null;
 	// a parameter the racks have to open and bring in view (n tells two requests for it apart)
 	revealTarget: { id: string; n: number } | null;
+	// shows the racks as they were before the inlined devices
+	oldView: boolean;
 	patchDetails: PatchDetails | undefined;
 	usedAddresses: Address[];
 	stdin: WaitingStdinQueue;

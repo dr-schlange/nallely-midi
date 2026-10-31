@@ -35,9 +35,7 @@ export const useHighlightUnit = (unit: string) => {
 			timer.current = setTimeout(() => {
 				timer.current = null;
 				fired.current = true;
-				dispatch(
-					setHighlightedUnit(currentRef.current === unit ? null : unit),
-				);
+				dispatch(setHighlightedUnit(currentRef.current === unit ? null : unit));
 			}, LONG_PRESS_MS);
 		},
 		onPointerMove: (e: React.PointerEvent) => {
