@@ -425,6 +425,8 @@ class TrevorBus(VirtualDevice):
 
     def flush_cc_updates(self):
         with self.cc_update_lock:
+            if self.cc_flush_timer is not None:
+                self.cc_flush_timer.cancel()
             self.cc_flush_timer = None
             if not self.cc_update_package:
                 return
