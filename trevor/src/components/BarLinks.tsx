@@ -47,6 +47,76 @@ const blockSelection = (e: Event) => e.preventDefault();
 const overlaps = (a: Rect, b: Rect) =>
 	a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
 
+const contains = (r: Rect, p: Point) =>
+	p.x > r.left && p.x < r.right && p.y > r.top && p.y < r.bottom;
+
+// The parts of a polyline that are outside of the rectangles, as polylines (a piece that goes
+// on after a rectangle starts a new one). Cut by the segment, not drawn through a clip path: a
+// clip on a large SVG makes the browser repaint it through an offscreen layer at every scroll.
+const clipPolyline = (points: Point[], rects: Rect[]): Point[][] => {
+	if (rects.length === 0) return [points];
+	const pieces: Point[][] = [];
+	let current: Point[] | null = null;
+	for (let i = 0; i + 1 < points.length; i++) {
+		const a = points[i];
+		const b = points[i + 1];
+		// the parts of the segment inside a rectangle, as parameters from 0 to 1
+		const inside: [number, number][] = [];
+		for (const r of rects) {
+			let t0 = 0;
+			let t1 = 1;
+			for (const [from, to, min, max] of [
+				[a.x, b.x, r.left, r.right],
+				[a.y, b.y, r.top, r.bottom],
+			]) {
+				const delta = to - from;
+				if (delta === 0) {
+					if (from <= min || from >= max) t1 = -1;
+				} else {
+					const u0 = (min - from) / delta;
+					const u1 = (max - from) / delta;
+					t0 = Math.max(t0, Math.min(u0, u1));
+					t1 = Math.min(t1, Math.max(u0, u1));
+				}
+			}
+			if (t1 > t0) inside.push([t0, t1]);
+		}
+		inside.sort((x, y) => x[0] - y[0]);
+		// what is left of 0..1
+		const kept: [number, number][] = [];
+		let at = 0;
+		for (const [t0, t1] of inside) {
+			if (t0 > at) kept.push([at, t0]);
+			at = Math.max(at, t1);
+		}
+		if (at < 1) kept.push([at, 1]);
+		const at1 = (t: number) => ({
+			x: a.x + (b.x - a.x) * t,
+			y: a.y + (b.y - a.y) * t,
+		});
+		for (const [t0, t1] of kept) {
+			if (current && t0 === 0) {
+				current.push(at1(t1));
+			} else {
+				if (current) pieces.push(current);
+				current = [at1(t0), at1(t1)];
+			}
+			// the piece stops where a rectangle begins
+			if (t1 < 1) {
+				pieces.push(current);
+				current = null;
+			}
+		}
+		// the segment is entirely inside: the piece ended before it
+		if (kept.length === 0 && current) {
+			pieces.push(current);
+			current = null;
+		}
+	}
+	if (current) pieces.push(current);
+	return pieces;
+};
+
 const relativeRect = (el: Element, origin: DOMRect): Rect | null => {
 	const r = el.getBoundingClientRect();
 	if (r.width === 0 || r.height === 0) return null; // collapsed
@@ -385,6 +455,12 @@ export const BarLinks = forwardRef<
 		}
 
 		const next: DrawnLink[] = [];
+		// the button bars on top of the racks: the links stop at them instead of crossing them
+		const topBars: Rect[] = [];
+		for (const el of container.querySelectorAll(".rack-top-bar")) {
+			const rect = relativeRect(el, origin);
+			if (rect) topBars.push(rect);
+		}
 		const keptRoutes = new Map<
 			string,
 			{ signature: string; at: Point; points: Point[] }
@@ -530,9 +606,20 @@ export const BarLinks = forwardRef<
 			}
 			keptRoutes.set(routeKey, { signature, at, points });
 			const { line, arrow } = withArrow(points);
+			const tip = points[points.length - 1];
+			const tipHidden = topBars.some((r) => contains(r, tip));
 			next.push({
-				d: line.map((p, i) => `${i === 0 ? "M" : "L"}${p.x} ${p.y}`).join(" "),
-				arrow: arrow ? arrow.map((p) => `${p.x},${p.y}`).join(" ") : "",
+				d: clipPolyline(line, topBars)
+					.map((piece) =>
+						piece
+							.map((p, i) => `${i === 0 ? "M" : "L"}${p.x} ${p.y}`)
+							.join(" "),
+					)
+					.join(" "),
+				arrow:
+					arrow && !tipHidden
+						? arrow.map((p) => `${p.x},${p.y}`).join(" ")
+						: "",
 				units: [...pair.units],
 				connectionIds: pair.connections.map((c) => c.id),
 				bothCollapsed: pair.src.port && pair.dest.port,
@@ -642,62 +729,64 @@ export const BarLinks = forwardRef<
 				zIndex: 1,
 			}}
 		>
-			{drawn.map(({ link, highlighted }, i) => {
-				const color = highlighted ? HIGHLIGHT_COLOR : LINK_COLOR;
-				const width = highlighted ? LINK_WIDTH + 1 : LINK_WIDTH;
-				return (
-					// biome-ignore lint/suspicious/noArrayIndexKey: links have no identity
-					<g key={i}>
-						{/* white halo under the link and the arrowhead: marks it on the gray title bars */}
-						<path
-							d={link.d}
-							fill="none"
-							stroke="white"
-							strokeWidth={width + 2}
-							strokeLinejoin="round"
-							opacity={0.9}
-						/>
-						{link.arrow && (
-							<polygon
-								points={link.arrow}
-								fill="white"
+			<g>
+				{drawn.map(({ link, highlighted }, i) => {
+					const color = highlighted ? HIGHLIGHT_COLOR : LINK_COLOR;
+					const width = highlighted ? LINK_WIDTH + 1 : LINK_WIDTH;
+					return (
+						// biome-ignore lint/suspicious/noArrayIndexKey: links have no identity
+						<g key={i}>
+							{/* white halo under the link and the arrowhead: marks it on the gray title bars */}
+							<path
+								d={link.d}
+								fill="none"
 								stroke="white"
-								strokeWidth={width}
+								strokeWidth={width + 2}
 								strokeLinejoin="round"
 								opacity={0.9}
 							/>
-						)}
-						{/* the group opacity covers the line and the arrowhead as one shape */}
-						<g opacity={highlighted ? 1 : LINK_OPACITY}>
-							<path
-								d={link.d}
-								fill="none"
-								stroke={color}
-								strokeWidth={width}
-								strokeLinejoin="round"
-							/>
-							{link.arrow && <polygon points={link.arrow} fill={color} />}
-						</g>
-						{/* the link between two open bars answers to a long press; it is above the
+							{link.arrow && (
+								<polygon
+									points={link.arrow}
+									fill="white"
+									stroke="white"
+									strokeWidth={width}
+									strokeLinejoin="round"
+									opacity={0.9}
+								/>
+							)}
+							{/* the group opacity covers the line and the arrowhead as one shape */}
+							<g opacity={highlighted ? 1 : LINK_OPACITY}>
+								<path
+									d={link.d}
+									fill="none"
+									stroke={color}
+									strokeWidth={width}
+									strokeLinejoin="round"
+								/>
+								{link.arrow && <polygon points={link.arrow} fill={color} />}
+							</g>
+							{/* the link between two open bars answers to a long press; it is above the
 						    racks, so it gets the press before what is under it */}
-						{link.connectionIds.length > 0 && (
-							<path
-								d={link.d}
-								fill="none"
-								stroke="transparent"
-								strokeWidth={12}
-								pointerEvents="stroke"
-								onPointerDown={(e) => startPress(e, link)}
-								onPointerMove={movePress}
-								onPointerUp={cancelPress}
-								onPointerCancel={cancelPress}
-								onPointerLeave={cancelPress}
-								onContextMenu={(e) => e.preventDefault()}
-							/>
-						)}
-					</g>
-				);
-			})}
+							{link.connectionIds.length > 0 && (
+								<path
+									d={link.d}
+									fill="none"
+									stroke="transparent"
+									strokeWidth={12}
+									pointerEvents="stroke"
+									onPointerDown={(e) => startPress(e, link)}
+									onPointerMove={movePress}
+									onPointerUp={cancelPress}
+									onPointerCancel={cancelPress}
+									onPointerLeave={cancelPress}
+									onContextMenu={(e) => e.preventDefault()}
+								/>
+							)}
+						</g>
+					);
+				})}
+			</g>
 			{menu && (
 				<LinkMenu
 					x={menu.x}

@@ -483,6 +483,9 @@ details[open]::details-content {
 	display: flex;
 	width: 100%;
 	height: 100%;
+	/* without it the padding comes on top of the 100%: the page is 4px wider than the screen,
+	   and a phone zooms out to show them */
+	box-sizing: border-box;
 	padding: 2px;
 	padding-top: 1px;
 }

@@ -233,7 +233,6 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 						text="Float"
 						tooltip="Floats the widgets over the page instead of keeping them in this rack"
 						activated={floating}
-						style={{ color: "var(--black)" }}
 						onClick={() => {
 							setFloating((prev) => !prev);
 							setTimeout(() => onDragEnd?.(), 10);
@@ -244,7 +243,6 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 						tooltip="Load a widget for a service that waits for it"
 						disabled={proxyWidgetCandidates.length === 0}
 						placement={orientation === "horizontal" ? "right" : "below"}
-						style={{ color: "var(--black)" }}
 						options={proxyWidgetCandidates.map(([, service]) => ({
 							key: service,
 							label: service.replace("::", ""),
@@ -260,7 +258,6 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 						text="+"
 						tooltip="Adds a new widget to the system"
 						placement={orientation === "horizontal" ? "right" : "below"}
-						style={{ color: "var(--black)" }}
 						options={Object.keys(WidgetComponents).map((name) => ({
 							key: name,
 							label: name,

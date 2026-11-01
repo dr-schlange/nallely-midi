@@ -71,19 +71,19 @@ export const Button = ({
 	);
 };
 
-// A whitish square for a Button on a colored bar, gold when activated (the inline color
-// would otherwise hide the one of the active class). On a title bar it also gets a border
-// that stands out on the gray, and room next to its neighbour.
 export const lightButtonStyle = (
 	activated = false,
 	onTitleBar = false,
-): React.CSSProperties => ({
-	backgroundColor: activated ? "gold" : "#e0e0e0",
-	fontSize: "12px",
-	...(onTitleBar
-		? { border: "2px solid lightgray", marginInlineStart: 3 }
-		: {}),
-});
+): React.CSSProperties => {
+	const background = activated ? "gold" : "#e0e0e0";
+	return {
+		backgroundColor: background,
+		fontSize: "12px",
+		...(onTitleBar
+			? { border: `2px solid ${background}`, marginInlineStart: 3 }
+			: {}),
+	};
+};
 
 export interface WidgetProps {
 	id: string;

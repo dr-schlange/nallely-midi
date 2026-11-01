@@ -206,18 +206,12 @@ export const RackRowVirtual = ({
 						text="Add many"
 						tooltip="Add multiple virtual devices at once"
 						variant="small"
-						style={{
-							color: "var(--black)",
-						}}
 						onClick={() => setSelectorOpened((prev) => !prev)}
 					/>
 					<Button
 						text="Create"
 						tooltip="Create a new virtual device"
 						variant="small"
-						style={{
-							color: "var(--black)",
-						}}
 						onClick={() => handleCreateNew()}
 					/>
 				</div>

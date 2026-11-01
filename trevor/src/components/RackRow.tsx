@@ -150,7 +150,6 @@ export const RackRow = ({
 					text="+"
 					tooltip="Adds a MIDI device to the system"
 					placement={orientation === "horizontal" ? "right" : "below"}
-					style={{ color: "var(--black)" }}
 					options={midiClasses.map((cls) => ({ key: cls, label: cls }))}
 					onSelect={handleDeviceClassClick}
 				/>
