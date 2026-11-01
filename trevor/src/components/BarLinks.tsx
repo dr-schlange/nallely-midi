@@ -41,14 +41,6 @@ const NEARBY = 120; // obstacles farther than this from both ends are ignored
 
 // a long press on a link must not select text (the browser starts it by itself); one
 // function for good so that the listener added at the press is the one removed after it
-const readDebugFlag = () => {
-	try {
-		return localStorage.getItem("debugLinks") !== null;
-	} catch {
-		return false;
-	}
-};
-
 const DEVICE_BORDER = 3; // px, as in the title bars of the racks
 const blockSelection = (e: Event) => e.preventDefault();
 
@@ -149,6 +141,12 @@ export const BarLinks = forwardRef<
 
 	const svgRef = useRef<SVGSVGElement>(null);
 	const frame = useRef<number | null>(null);
+	// The route of each link with what it was computed from, as positions relative to its source.
+	// A link whose surroundings moved all together (a rack scrolling) is not searched again: its
+	// path is moved by the same distance.
+	const routes = useRef(
+		new Map<string, { signature: string; at: Point; points: Point[] }>(),
+	);
 	const [links, setLinks] = useState<DrawnLink[]>([]);
 	const [size, setSize] = useState({ width: 0, height: 0 });
 	const [menu, setMenu] = useState<{
@@ -386,12 +384,11 @@ export const BarLinks = forwardRef<
 			);
 		}
 
-		// to find out how a link was routed: localStorage.debugLinks = 1, reload, then
-		// copy(JSON.stringify(window.__linksDebug))
-		const debugLinks = readDebugFlag()
-			? ((window as any).__linksDebug = [])
-			: null;
 		const next: DrawnLink[] = [];
+		const keptRoutes = new Map<
+			string,
+			{ signature: string; at: Point; points: Point[] }
+		>();
 		for (const pair of pairs.values()) {
 			const src = place(pair.src);
 			const dest = place(pair.dest);
@@ -487,26 +484,51 @@ export const BarLinks = forwardRef<
 				}
 			}
 
-			const points = routeOrthogonal(src.rect, dest.rect, obstacles, {
-				fromSides: sidesOf(src),
-				toSides: sidesOf(dest),
-				// a link clears the whole title bar of a port before it turns: it stays off the text
-				fromBounds: src.headerRect ?? undefined,
-				toBounds: dest.headerRect ?? undefined,
-				squeezeFirst: sameRack,
-				borders,
-				onResult: debugLinks
-					? (info) =>
-							debugLinks.push({
-								from: pair.src.key,
-								to: pair.dest.key,
-								...info,
-								obstacles: obstacles.length,
-								srcHeader: src.headerRect,
-								destHeader: dest.headerRect,
-							})
-					: undefined,
-			});
+			const fromSides = sidesOf(src);
+			const toSides = sidesOf(dest);
+			const routeKey = `${pair.src.key}->${pair.dest.key}`;
+			// everything the route depends on, relative to the source
+			const at = { x: src.rect.left, y: src.rect.top };
+			const rel = (r: Rect | null) =>
+				r
+					? `${(r.left - at.x).toFixed(1)},${(r.top - at.y).toFixed(1)},${(r.right - at.x).toFixed(1)},${(r.bottom - at.y).toFixed(1)}`
+					: "-";
+			const signature = [
+				rel(src.rect),
+				rel(dest.rect),
+				rel(src.headerRect),
+				rel(dest.headerRect),
+				fromSides.join(),
+				toSides.join(),
+				sameRack,
+				scale,
+				obstacles.map(rel).join(";"),
+				devices
+					.filter((d) => overlaps(d.rect, zone))
+					.map((d) => rel(d.rect))
+					.join(";"),
+			].join("|");
+			const known = routes.current.get(routeKey);
+			let points: Point[];
+			if (known && known.signature === signature) {
+				const dx = at.x - known.at.x;
+				const dy = at.y - known.at.y;
+				points =
+					dx === 0 && dy === 0
+						? known.points
+						: known.points.map((p) => ({ x: p.x + dx, y: p.y + dy }));
+			} else {
+				points = routeOrthogonal(src.rect, dest.rect, obstacles, {
+					fromSides,
+					toSides,
+					// a link clears the whole title bar of a port before it turns: it stays off the text
+					fromBounds: src.headerRect ?? undefined,
+					toBounds: dest.headerRect ?? undefined,
+					squeezeFirst: sameRack,
+					borders,
+				});
+			}
+			keptRoutes.set(routeKey, { signature, at, points });
 			const { line, arrow } = withArrow(points);
 			next.push({
 				d: line.map((p, i) => `${i === 0 ? "M" : "L"}${p.x} ${p.y}`).join(" "),
@@ -517,6 +539,7 @@ export const BarLinks = forwardRef<
 				parameters: [...pair.parameters],
 			});
 		}
+		routes.current = keptRoutes;
 		setLinks((prev) =>
 			prev.length === next.length &&
 			prev.every(
@@ -573,12 +596,17 @@ export const BarLinks = forwardRef<
 			attributes: true,
 			attributeFilter: ["style"],
 		});
-		container.addEventListener("scroll", redraw, true);
+		// the overlay scrolls with the container: only what scrolls inside it (a rack) moves
+		// the bars against it
+		const onScroll = (event: Event) => {
+			if (event.target !== container) redraw();
+		};
+		container.addEventListener("scroll", onScroll, true);
 		window.addEventListener("resize", redraw);
 		return () => {
 			resize.disconnect();
 			mutation.disconnect();
-			container.removeEventListener("scroll", redraw, true);
+			container.removeEventListener("scroll", onScroll, true);
 			window.removeEventListener("resize", redraw);
 			if (frame.current !== null) cancelAnimationFrame(frame.current);
 			frame.current = null;

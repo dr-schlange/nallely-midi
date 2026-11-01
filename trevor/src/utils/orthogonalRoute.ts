@@ -125,28 +125,6 @@ export interface Borders {
 	vertical: Rect[]; // left and right borders
 }
 
-const runsAlong = (
-	bands: Rect[],
-	horizontal: boolean,
-	line: number,
-	from: number,
-	to: number,
-) => {
-	const lo = Math.min(from, to);
-	const hi = Math.max(from, to);
-	return bands.some((b) =>
-		horizontal
-			? line > b.top - BORDER_CLEARANCE &&
-				line < b.bottom + BORDER_CLEARANCE &&
-				hi > b.left &&
-				lo < b.right
-			: line > b.left - BORDER_CLEARANCE &&
-				line < b.right + BORDER_CLEARANCE &&
-				hi > b.top &&
-				lo < b.bottom,
-	);
-};
-
 export type Side = "left" | "right" | "top" | "bottom";
 
 // Where a link may attach to an element: the given sides, in the middle of each
@@ -267,6 +245,49 @@ const routeWithPadding = (
 			for (let j = ja; j < jb; j++) blockedV[j * nx + i] = 1;
 	}
 
+	// the edges that run along a border of a device, marked once: looking at every border at
+	// every step of the search costs more than the search
+	const firstAbove = (coords: number[], value: number) => {
+		let lo = 0;
+		let hi = coords.length;
+		while (lo < hi) {
+			const mid = (lo + hi) >> 1;
+			if (coords[mid] > value) hi = mid;
+			else lo = mid + 1;
+		}
+		return lo;
+	};
+	const onBorderH = new Uint8Array(nx * ny); // edge (i,j) -> (i+1,j)
+	const onBorderV = new Uint8Array(nx * ny); // edge (i,j) -> (i,j+1)
+	if (borders) {
+		for (const band of borders.horizontal) {
+			for (
+				let j = firstAbove(ys, band.top - BORDER_CLEARANCE);
+				j < ny && ys[j] < band.bottom + BORDER_CLEARANCE;
+				j++
+			)
+				for (
+					let i = Math.max(0, firstAbove(xs, band.left) - 1);
+					i + 1 < nx && xs[i] < band.right;
+					i++
+				)
+					onBorderH[j * nx + i] = 1;
+		}
+		for (const band of borders.vertical) {
+			for (
+				let i = firstAbove(xs, band.left - BORDER_CLEARANCE);
+				i < nx && xs[i] < band.right + BORDER_CLEARANCE;
+				i++
+			)
+				for (
+					let j = Math.max(0, firstAbove(ys, band.top) - 1);
+					j + 1 < ny && ys[j] < band.bottom;
+					j++
+				)
+					onBorderV[j * nx + i] = 1;
+		}
+	}
+
 	const isBlocked = (i: number, j: number, dir: number) => {
 		if (dir === 0) return i + 1 >= nx || blockedH[j * nx + i] === 1;
 		if (dir === 2) return i - 1 < 0 || blockedH[j * nx + i - 1] === 1;
@@ -324,10 +345,9 @@ const routeWithPadding = (
 			// in a narrow gap the middle line is the one that stays clear of both borders
 			const hug = (d & 1 ? huggingX[i] : huggingY[j]) ? HUG_PENALTY : 1;
 			const onBorder =
-				borders &&
-				(d & 1
-					? runsAlong(borders.vertical, false, xs[i], ys[j], ys[nj])
-					: runsAlong(borders.horizontal, true, ys[j], xs[i], xs[ni]));
+				d & 1
+					? onBorderV[Math.min(j, nj) * nx + i] === 1
+					: onBorderH[j * nx + Math.min(i, ni)] === 1;
 			const length =
 				(Math.abs(xs[ni] - xs[i]) + Math.abs(ys[nj] - ys[j])) *
 				hug *
@@ -387,14 +407,6 @@ export const routeOrthogonal = (
 		// take the narrow gaps between neighbours before keeping a distance from them
 		squeezeFirst?: boolean;
 		borders?: Borders;
-		// told which settings finally worked ("elbow": none did, the obstacles are ignored)
-		onResult?: (info: {
-			level: number;
-			pad: number;
-			lead: number;
-			sides: [Side[], Side[]];
-			elbow: boolean;
-		}) => void;
 	} = {},
 ): Point[] => {
 	const fromSides = options.fromSides ?? ["left", "right"];
@@ -437,24 +449,8 @@ export const routeOrthogonal = (
 				options.toBounds,
 				options.borders,
 			);
-			if (path) {
-				options.onResult?.({
-					level,
-					pad,
-					lead,
-					sides: [widen(fromSides, level), widen(toSides, level)],
-					elbow: false,
-				});
-				return path;
-			}
+			if (path) return path;
 		}
 	}
-	options.onResult?.({
-		level: 3,
-		pad: 0,
-		lead: 0,
-		sides: [fromSides, toSides],
-		elbow: true,
-	});
 	return elbow(from, to);
 };

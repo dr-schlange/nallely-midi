@@ -570,7 +570,6 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 						className={`device-patching-main-section ${orientation}`}
 						ref={mainSectionRef}
 						style={mainStyle}
-						onScroll={redrawLinksThrottled}
 					>
 						<div
 							className={`device-patching-racks ${orientation}`}
