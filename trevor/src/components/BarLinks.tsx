@@ -567,6 +567,9 @@ export const BarLinks = forwardRef<
 				height: size.height,
 				pointerEvents: "none",
 				overflow: "hidden",
+				// the racks are reordered with CSS `order`, which also reorders painting: without
+				// this the overlay (order 0) is painted under all of them
+				zIndex: 1,
 			}}
 		>
 			{drawn.map(({ link, highlighted }, i) => {
