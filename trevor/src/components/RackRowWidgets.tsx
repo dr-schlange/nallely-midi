@@ -1,5 +1,6 @@
 /** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
 /** biome-ignore-all lint/a11y/useKeyWithClickEvents: <explanation> */
+import { FloatingWidgetLinks } from "./FloatingWidgetLinks";
 import { useCounterZoom } from "../hooks/RackScaleContext";
 import {
 	forwardRef,
@@ -110,6 +111,10 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 		>([]);
 		const [typeIds, setTypeIds] = useState<Record<string, number>>({});
 		const counterZoom = useCounterZoom();
+		const [floating, setFloating] = useState(false);
+		const [positions, setPositions] = useState<
+			Record<string, { x: number; y: number }>
+		>({});
 		const waitingServices = useTrevorSelector(
 			(state) => state.nallely.waiting_services,
 		);
@@ -220,11 +225,20 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 					onNonSectionClick();
 				}}
 			>
-				{/* a row of buttons, from the right: the first one in the code is the rightmost */}
 				<div
 					className="rack-top-bar"
 					style={{ flexDirection: "row-reverse", ...counterZoom }}
 				>
+					<Button
+						text="Float"
+						tooltip="Floats the widgets over the page instead of keeping them in this rack"
+						activated={floating}
+						style={{ color: "var(--black)" }}
+						onClick={() => {
+							setFloating((prev) => !prev);
+							setTimeout(() => onDragEnd?.(), 10);
+						}}
+					/>
 					<DropdownButton
 						text={`Waiting ${proxyWidgetCandidates.length === 0 ? "" : `[${proxyWidgetCandidates.length}]`}`}
 						tooltip="Load a widget for a service that waits for it"
@@ -270,25 +284,51 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 						]}
 					>
 						<SortableContext
-							items={widgets.map((w) => w.id)}
+							items={floating ? [] : widgets.map((w) => w.id)}
 							strategy={
 								orientation === "horizontal"
 									? horizontalListSortingStrategy
 									: verticalListSortingStrategy
 							}
 						>
-							{widgets.map(({ id, num, component: Widget }) => (
-								<SortableWidget key={id} id={id}>
-									<Widget
-										id={id.replace("::", "")}
-										num={num}
-										onClose={closeWidget}
-									/>
-								</SortableWidget>
-							))}
+							{!floating &&
+								widgets.map(({ id, num, component: Widget }) => (
+									<SortableWidget key={id} id={id}>
+										<Widget
+											id={id.replace("::", "")}
+											num={num}
+											onClose={closeWidget}
+										/>
+									</SortableWidget>
+								))}
 							{widgets.length === 0 && <p style={{ color: "gray" }}>Widgets</p>}
 						</SortableContext>
 					</DndContext>
+					{floating && (
+						<FloatingWidgetLinks
+							widgetIds={widgets.map((w) => w.id.replace("::", ""))}
+						/>
+					)}
+					{floating &&
+						widgets.map(({ id, num, component: Widget }, index) => (
+							<FloatingWindow
+								key={id}
+								id={id.replace("::", "")}
+								position={
+									positions[id] ?? { x: 24 + 28 * index, y: 90 + 28 * index }
+								}
+								onMove={(position) => {
+									setPositions((prev) => ({ ...prev, [id]: position }));
+									onRackScroll?.();
+								}}
+							>
+								<Widget
+									id={id.replace("::", "")}
+									num={num}
+									onClose={closeWidget}
+								/>
+							</FloatingWindow>
+						))}
 				</div>
 			</div>
 		);
@@ -318,7 +358,11 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { useTrevorSelector } from "../store";
 import { findFirstMissingValue } from "../utils/utils";
-import { DropdownButton } from "./widgets/BaseComponents";
+import {
+	Button,
+	DropdownButton,
+	FloatingWindow,
+} from "./widgets/BaseComponents";
 import { GPControl } from "./widgets/GPControlWidget";
 import { Keyboard } from "./widgets/KeyboardWidget";
 import { ViewMatrix } from "./widgets/ViewMatrix";

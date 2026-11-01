@@ -5,9 +5,9 @@ import { useScope } from "../hooks/ScopeContext";
 import type { Connection, ConnectionEnd } from "../model";
 import { useTrevorDispatch, useTrevorSelector } from "../store";
 import {
-  revealParameter,
-  setBarSelection,
-  setHighlightedUnit,
+	revealParameter,
+	setBarSelection,
+	setHighlightedUnit,
 } from "../store/runtimeSlice";
 import { CLONE_ACTIONS } from "../utils/cloneOptions";
 import { connectionEndId } from "../utils/utils";

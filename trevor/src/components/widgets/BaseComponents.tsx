@@ -843,7 +843,90 @@ export const DropdownButton = <K extends string | number>({
 	);
 };
 
-// Whether a link enters or leaves this parameter (a boolean: the bar redraws only when it flips)
+let topWindow = 100;
+export const FloatingWindow = ({
+	id,
+	position,
+	onMove,
+	children,
+}: {
+	id: string;
+	position: { x: number; y: number };
+	onMove: (position: { x: number; y: number }) => void;
+	children: React.ReactNode;
+}) => {
+	const [z, setZ] = useState(() => ++topWindow);
+	const grab = useRef<{ dx: number; dy: number } | null>(null);
+	const boxRef = useRef<HTMLDivElement>(null);
+	return createPortal(
+		<div
+			ref={boxRef}
+			id={id}
+			onPointerDownCapture={() => setZ(++topWindow)}
+			style={{
+				position: "fixed",
+				left: position.x,
+				top: position.y,
+				zIndex: z,
+			}}
+		>
+			<div style={{ position: "relative" }}>
+				<div
+					onPointerDown={(e) => {
+						e.preventDefault();
+						e.currentTarget.setPointerCapture(e.pointerId);
+						grab.current = {
+							dx: e.clientX - position.x,
+							dy: e.clientY - position.y,
+						};
+					}}
+					onPointerMove={(e) => {
+						const box = boxRef.current;
+						if (!grab.current || !box) return;
+						onMove({
+							x: Math.min(
+								Math.max(e.clientX - grab.current.dx, 0),
+								window.innerWidth - 40,
+							),
+							y: Math.min(
+								Math.max(e.clientY - grab.current.dy, 0),
+								window.innerHeight - 40,
+							),
+						});
+					}}
+					onPointerUp={() => {
+						grab.current = null;
+					}}
+					onPointerCancel={() => {
+						grab.current = null;
+					}}
+					style={{
+						position: "absolute",
+						top: 0,
+						left: 0,
+						zIndex: 1,
+						cursor: "grab",
+						touchAction: "none",
+						userSelect: "none",
+						fontSize: "23px",
+						color: "gray",
+						width: "34px",
+						height: "30px",
+						paddingLeft: "7px",
+						paddingTop: "5px",
+						boxSizing: "border-box",
+						lineHeight: "20px",
+					}}
+				>
+					=
+				</div>
+				{children}
+			</div>
+		</div>,
+		document.body,
+	);
+};
+
 const useHasLinks = (linkId: string | undefined) =>
 	useTrevorSelector(
 		(state) =>
@@ -855,8 +938,6 @@ const useHasLinks = (linkId: string | undefined) =>
 			),
 	);
 
-// When another parameter asks for this one (the T and S lists of its menu): scroll it into
-// view, then blink three times in orange. Returns whether it is lit right now.
 const useRevealBlink = (
 	linkId: string | undefined,
 	rootRef: React.RefObject<HTMLElement | null>,
@@ -875,8 +956,6 @@ const useRevealBlink = (
 				timers.push(setTimeout(() => setLit(i % 2 === 0), i * 220));
 			}
 		};
-		// the racks open what hides it, which can take more than a frame: wait for the bar
-		// to have a box, then scroll to it (nothing scrolls to a hidden element)
 		let tries = 0;
 		let frame = 0;
 		const scrollWhenVisible = () => {
@@ -887,8 +966,6 @@ const useRevealBlink = (
 					block: "center",
 					inline: "center",
 				});
-				// the blink waits for the end of the scroll; when it is already in view
-				// nothing scrolls, so a timeout starts it as well
 				window.addEventListener("scrollend", blink, {
 					once: true,
 					capture: true,
@@ -961,7 +1038,6 @@ export const BarSlider = ({
 		}
 	}, [rawValue]);
 
-	// label: name only; info: name + value (read-only); edit: name + value, editable
 	const [mode, setMode] = useState<"label" | "info" | "edit">("label");
 	const editing = mode === "edit";
 	const showing = mode !== "label";
@@ -987,7 +1063,6 @@ export const BarSlider = ({
 		}
 	}, [editing]);
 
-	// Leave the accepted-value edit state (and its menu) on a pointer down elsewhere
 	useEffect(() => {
 		if (!editing || !isChoice) return;
 		const onDown = (e: PointerEvent) => {
