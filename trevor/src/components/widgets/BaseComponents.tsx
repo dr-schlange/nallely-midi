@@ -900,7 +900,7 @@ export const BarSlider = ({
 	const maxValue = isChoice ? acceptedValues.length - 1 : maxProp;
 	const rounded = isChoice || roundedProp;
 
-	const width = 88;
+	const width = vertical ? 80 : 88;
 	const ACRONYM_LEFT = 4;
 	const ACRONYM_SPACE = 42;
 	const height = 22;
@@ -1490,7 +1490,7 @@ export const KeysBar = ({
 	// turned 90° to the left, reading bottom to top (horizontal racks)
 	vertical?: boolean;
 }) => {
-	const width = 88;
+	const width = vertical ? 80 : 88;
 	const height = 22;
 	const [localSelected, setLocalSelected] = useState<number[]>(selected);
 	const [menuPos, setMenuPos] = useState<{

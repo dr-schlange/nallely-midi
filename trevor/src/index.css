@@ -591,8 +591,8 @@ details[open]::details-content {
 	}
 	align-items: center;
 	width: 100%;
-	height: 250px; /* the width of a vertical rack */
-	min-height: 250px;
+	height: 184px; /* two rows of turned bars (2 x 80px) and the frame around them */
+	min-height: 184px;
 	flex-direction: row;
 	overflow-y: clip;
 }
@@ -649,6 +649,10 @@ details[open]::details-content {
 
 .device-patching-main-section.horizontal > :nth-child(1) {
 	order: 3;
+}
+
+.device-patching-main-section.horizontal > :nth-child(2) {
+	order: 2;
 }
 
 .device-patching-main-section.horizontal > :nth-child(3) {
@@ -1728,8 +1732,8 @@ h3.details {
 	}
 
 	.rack-row.horizontal {
-		height: 200px;
-		min-height: 200px;
+		height: 184px;
+		min-height: 184px;
 	}
 
 	.parameters-grid {
@@ -1900,8 +1904,8 @@ h3.details {
 	}
 
 	.rack-row.horizontal {
-		height: 200px;
-		min-height: 200px;
+		height: 184px;
+		min-height: 184px;
 	}
 
 	.rack-row select {
