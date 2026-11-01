@@ -547,7 +547,9 @@ const InlinedMidiDevice = ({
 					</>
 				)}
 			</p>
-			{highlighted && <DeviceMenu id={device.id} anchorRef={headerRef} />}
+			{highlighted && (
+				<DeviceMenu id={device.id} repr={device.repr} anchorRef={headerRef} />
+			)}
 			<div
 				data-link-frame
 				style={{

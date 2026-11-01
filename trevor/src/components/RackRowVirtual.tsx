@@ -354,10 +354,12 @@ const InlinedVDev = ({
 	const trevorSocket = useTrevorWebSocket();
 	const linking = useBarLinking();
 	const linked = useLinkedIds();
-	const vdevHighlight = useHighlightUnit(`${vdev.id}`);
+	// the services of a bus all have the id of the bus: the unit of a proxy includes its name
+	const unit = devUID(vdev);
+	const vdevHighlight = useHighlightUnit(unit);
 	const headerRef = useRef<HTMLParagraphElement>(null);
 	const highlighted = useTrevorSelector(
-		(state) => state.runTime.highlightedUnit === `${vdev.id}`,
+		(state) => state.runTime.highlightedUnit === unit,
 	);
 	const [continuous, setContinuous] = useState(false);
 	const ports = vdev.meta.parameters
@@ -366,7 +368,7 @@ const InlinedVDev = ({
 	const horizontal = orientation === "horizontal";
 	return (
 		<div
-			data-link-device={vdev.id}
+			data-link-device={unit}
 			style={{
 				backgroundColor: "#e0e0e0",
 				border: "3px solid #808080",
@@ -420,7 +422,7 @@ const InlinedVDev = ({
 				>
 					<span data-link-wall>{generateAcronym(vdev.repr, 10, true)}</span>
 					<PortDot
-						unit={`${vdev.id}`}
+						unit={unit}
 						show={!isOpen && ports.length > 0}
 						name={vdev.repr}
 						mirrored={flipped}
@@ -451,13 +453,15 @@ const InlinedVDev = ({
 			{highlighted && (
 				<DeviceMenu
 					id={vdev.id}
+					repr={vdev.repr}
 					anchorRef={headerRef}
+					proxy={vdev.proxy}
 					cloneable={!vdev.proxy}
 				/>
 			)}
 			<div
 				data-link-frame
-				data-link-section={`${vdev.id}::__virtual__`}
+				data-link-section={`${unit}::__virtual__`}
 				style={{
 					display: isOpen ? "grid" : "none",
 					gap: "2px",

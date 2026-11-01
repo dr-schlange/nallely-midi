@@ -5,13 +5,13 @@ import { useScope } from "../hooks/ScopeContext";
 import type { Connection, ConnectionEnd } from "../model";
 import { useTrevorDispatch, useTrevorSelector } from "../store";
 import {
-	revealParameter,
-	setBarSelection,
-	setHighlightedUnit,
+  revealParameter,
+  setBarSelection,
+  setHighlightedUnit,
 } from "../store/runtimeSlice";
-import { useTrevorWebSocket } from "../websockets/websocket";
 import { CLONE_ACTIONS } from "../utils/cloneOptions";
 import { connectionEndId } from "../utils/utils";
+import { useTrevorWebSocket } from "../websockets/websocket";
 import { Button, Dropdown, lightButtonStyle } from "./widgets/BaseComponents";
 
 const HEIGHT = 28;
@@ -176,12 +176,15 @@ export const ParameterMenu = ({
 // it): K kills the device.
 export const DeviceMenu = ({
 	id,
+	repr,
 	anchorRef,
+	proxy = false,
 	cloneable = false,
 }: {
 	id: number;
+	repr: string;
 	anchorRef: RefObject<HTMLElement | null>;
-	// virtual devices: C lists the ways to clone it, as the right bar does
+	proxy?: boolean;
 	cloneable?: boolean;
 }) => {
 	const [cloneOpen, setCloneOpen] = useState(false);
@@ -224,13 +227,18 @@ export const DeviceMenu = ({
 				}}
 			>
 				<Button
-					text="K"
-					tooltip="Kill this device"
+					text={proxy ? "U" : "K"}
+					tooltip={
+						proxy
+							? "Unregister the service from the network bus"
+							: "Kill this device"
+					}
 					style={menuButtonStyle()}
 					onClick={() => {
 						// the device is gone: nothing left to highlight
 						dispatch(setHighlightedUnit(null));
-						trevorSocket?.killDevice(id);
+						if (proxy) trevorSocket?.unregisterService(id, repr);
+						else trevorSocket?.killDevice(id);
 					}}
 				/>
 				{cloneable && (

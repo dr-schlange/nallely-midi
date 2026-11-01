@@ -1,6 +1,6 @@
 // LLM generated
 import type { MidiDevice, VirtualDevice } from "../model";
-import { internalSectionName, parameterUUID } from "./utils";
+import { devUID, internalSectionName, parameterUUID } from "./utils";
 
 export interface Owner {
 	section: string;
@@ -28,8 +28,8 @@ export const buildOwners = (
 	}
 	for (const device of virtualDevices) {
 		const owner = {
-			section: `${device.id}::__virtual__`,
-			device: `${device.id}`,
+			section: `${devUID(device)}::__virtual__`,
+			device: devUID(device),
 		};
 		for (const p of device.meta.parameters) {
 			owners.set(parameterUUID(device.id, p), owner);
