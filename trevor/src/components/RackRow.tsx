@@ -548,6 +548,8 @@ const InlinedMidiDevice = ({
 				style={{
 					display: isOpen ? "flex" : "none",
 					flexDirection: horizontal ? "row" : "column",
+					// turned section headers touch each other: a link needs a channel to leave by
+					gap: horizontal ? 2 : 0,
 				}}
 			>
 				{device.meta.sections

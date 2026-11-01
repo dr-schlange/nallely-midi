@@ -206,10 +206,14 @@ export const BarLinks = forwardRef<
 		const svg = svgRef.current;
 		const container = containerRef.current;
 		if (!svg || !container) return;
-		// the visible part only: sized to the scrollable content, this overlay itself extended
-		// the scroll area of what holds it, and the page slid
-		const width = container.clientWidth;
-		const height = container.clientHeight;
+		// The overlay lives in the scrolling content: it covers all of it, measured without
+		// itself (its own size would count and never shrink back, and the page would slide)
+		svg.style.width = "0px";
+		svg.style.height = "0px";
+		const width = container.scrollWidth;
+		const height = container.scrollHeight;
+		svg.style.width = `${width}px`;
+		svg.style.height = `${height}px`;
 		setSize((prev) =>
 			prev.width === width && prev.height === height ? prev : { width, height },
 		);

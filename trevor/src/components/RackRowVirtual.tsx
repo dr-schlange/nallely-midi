@@ -461,6 +461,8 @@ const InlinedVDev = ({
 				{vdev.meta.parameters.map((p) => (
 					<BarSlider
 						vertical={horizontal}
+						// a proxy's parameters start with the device name: the patching modal drops it too
+						stripPrefix={vdev.proxy}
 						key={p.cv_name}
 						param={p}
 						minValue={p.range[0]}

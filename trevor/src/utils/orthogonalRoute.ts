@@ -332,11 +332,12 @@ export const routeOrthogonal = (
 	const fromSides = options.fromSides ?? ["left", "right"];
 	const toSides = options.toSides ?? ["left", "right"];
 	const widen = (sides: Side[], level: number): Side[] => {
+		if (level === 0) return sides;
 		const vertical = sides.includes("top") || sides.includes("bottom");
-		if (!vertical || level === 0) return sides;
-		return level === 1
-			? [...sides, "right"]
-			: ["right", "bottom", "left", "top"];
+		if (level === 1) return vertical ? [...sides, "right"] : sides;
+		// any end ends up with every side before the elbow: the left and right of a turned
+		// title bar can be shut by its flush neighbours
+		return ["right", "bottom", "left", "top"];
 	};
 	for (const level of [0, 1, 2]) {
 		for (const [pad, lead] of options.squeezeFirst
