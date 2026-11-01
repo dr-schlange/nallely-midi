@@ -47,7 +47,8 @@ import {
 } from "../VDevComponent";
 import { Portal } from "../Portal";
 import VDeviceSelectionModal from "./VirtualDeviceSelectionModal";
-import { useScopeManager, TMP_SCOPE_ID } from "../../hooks/useScopeManager";
+import { useScope } from "../../hooks/ScopeContext";
+import { TMP_SCOPE_ID } from "../../hooks/useScopeManager";
 import { useTrevorWebSocket } from "../../websockets/websocket";
 import { MidiGrid } from "../MidiGrid";
 import { ScalerForm } from "../ScalerForm";
@@ -1038,7 +1039,7 @@ const PatchingModal = ({
 		handleScopeLongPress,
 		closeAllScopeChannels,
 		scopePortElemIds,
-	} = useScopeManager();
+	} = (useScope() as NonNullable<ReturnType<typeof useScope>>).manager;
 
 	const firstDeviceId = currentFirstSection?.device.id;
 	const secondDeviceId = currentSecondSection?.device.id;

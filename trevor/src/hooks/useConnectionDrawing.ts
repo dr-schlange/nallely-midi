@@ -229,7 +229,12 @@ export const useConnectionDrawing = ({
 				records.some(
 					(r) =>
 						!svgRef.current?.contains(r.target) &&
-						(r.type === "childList" ||
+						// not the overlay of the inlined links (it redraws itself), not the text of a value
+						!(r.target instanceof Element && r.target.closest("svg")) &&
+						((r.type === "childList" &&
+							[...r.addedNodes, ...r.removedNodes].some(
+								(node) => node instanceof Element,
+							)) ||
 							(r.target instanceof Element &&
 								r.target.hasAttribute("data-link-frame"))),
 				)

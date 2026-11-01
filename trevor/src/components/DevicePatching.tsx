@@ -98,19 +98,23 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 			selection,
 		});
 
-	// the debug scope of the patching modal, also reachable from the parameters of the racks
 	const scope = useScopeManager();
 	const scopeContext = useMemo(
 		() => ({
-			// no pointer to wait for: the channel stays until it is toggled off
 			toggle: (parameterId: string, portElemId: string) =>
 				scope.handleScopeLongPress(parameterId, portElemId, -1),
 			activePortIds: scope.scopePortElemIds,
+			manager: scope,
 		}),
-		[scope.handleScopeLongPress, scope.scopePortElemIds],
+		[
+			scope.handleScopeLongPress,
+			scope.scopePortElemIds,
+			scope.numScopeChannels,
+			scope.isScopeOpen,
+			scope.closeAllScopeChannels,
+		],
 	);
 	const barLinks = useRef<BarLinksRef>(null);
-	// the racks tell when their layout changed: redraw both kinds of links
 	const redrawLinks = useCallback(() => {
 		updateConnections();
 		barLinks.current?.redraw();
@@ -568,7 +572,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 						<MemoryModal onClose={closeModal} onLoad={handleLoadOk} />
 					</Portal>
 				)}
-				{scope.isScopeOpen && (
+				{scope.isScopeOpen && !isModalOpen && (
 					<Portal>
 						<TmpScopeOverlay
 							onClose={scope.closeAllScopeChannels}

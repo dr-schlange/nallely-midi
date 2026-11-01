@@ -255,9 +255,13 @@ const routeWithPadding = (
 		);
 	}
 
+	const closed = new Uint8Array(stateCount);
 	let found = -1;
 	while (heap.size > 0) {
 		const [, state] = heap.pop();
+		// an entry left behind by a better path to the same state
+		if (closed[state] === 1) continue;
+		closed[state] = 1;
 		const node = state >> 2;
 		const dir = state & 3;
 		if (targets.has(node)) {

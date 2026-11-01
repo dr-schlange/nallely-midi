@@ -69,6 +69,7 @@ export const SidePanel = ({
 	const trevorSocket = useTrevorWebSocket();
 	const dispatch = useTrevorDispatch();
 	const oldView = useTrevorSelector((state) => state.runTime.oldView);
+	const toggleOldView = () => dispatch(setOldView(!oldView));
 	const midi_devices = useTrevorSelector((state) => state.nallely.midi_devices);
 	const virtual_devices = useTrevorSelector(
 		(state) => state.nallely.virtual_devices,
@@ -197,7 +198,7 @@ export const SidePanel = ({
 						<Button
 							text="Rack view"
 							tooltip="Shows racks instead of inlined devices"
-							onClick={() => dispatch(setOldView(!oldView))}
+							onClick={toggleOldView}
 							activated={oldView}
 							className="menu-button"
 						/>
@@ -250,7 +251,7 @@ export const SidePanel = ({
 					<Button
 						text="rack"
 						tooltip="Shows rack instead of inlined devices"
-						onClick={() => dispatch(setOldView(!oldView))}
+						onClick={toggleOldView}
 						activated={oldView}
 						style={{
 							width: "inherit",

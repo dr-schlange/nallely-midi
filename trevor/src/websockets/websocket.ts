@@ -46,11 +46,16 @@ const queueCCValues = (values: Record<string, unknown>) => {
 		return;
 	}
 	pendingCCValues = values;
-	requestAnimationFrame(() => {
+	const flush = () => {
 		const batch = pendingCCValues;
 		pendingCCValues = null;
-		if (batch) store.dispatch(RuntimeAPI.updateCCValues(batch as any));
-	});
+		if (batch) {
+			store.dispatch(RuntimeAPI.updateCCValues(batch as any));
+		}
+	};
+	requestAnimationFrame(flush);
+	// no animation frames in a hidden tab: the values would pile up until it is shown again
+	setTimeout(flush, 100);
 };
 
 // const WEBSOCKET_URL = `ws://${window.location.hostname}:6788/trevor`;
@@ -161,6 +166,7 @@ export class TrevorWebSocket {
 			}
 			if (message.command === undefined) {
 				store.dispatch(setConnected(WsStatus.CONNECTED));
+				pendingCCValues = null;
 				store.dispatch(setFullState(message));
 				return;
 			}

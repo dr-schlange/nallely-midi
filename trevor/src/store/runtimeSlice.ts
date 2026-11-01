@@ -82,6 +82,9 @@ const runtimeSlice = createSlice({
 		},
 		setOldView: (state, action: PayloadAction<boolean>) => {
 			state.oldView = action.payload;
+			state.barSelection = null;
+			state.highlightedUnit = null;
+			state.revealTarget = null;
 		},
 		revealParameter: (state, action: PayloadAction<string>) => {
 			state.revealTarget = {

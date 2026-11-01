@@ -119,20 +119,12 @@ export const RackRowVirtual = ({
 	orientation,
 }: RackRowVirtualProps) => {
 	const [selectorOpened, setSelectorOpened] = useState(false);
-	const [_, setCodeEditorOpened] = useState(false);
-	// const virtualClasses = useTrevorSelector(
-	// 	(state) => state.nallely.classes.virtual,
-	// );
 	const connections = useTrevorSelector((state) => state.nallely.connections);
 	const oldView = useTrevorSelector((state) => state.runTime.oldView);
 	const [localDeviceOrder, setLocalDeviceOrder] =
 		useState<VirtualDevice[]>(devices);
 
 	const trevorSocket = useTrevorWebSocket();
-	// const handleDeviceClassClick = (deviceClass: string) => {
-	// 	trevorSocket?.createDevice(deviceClass);
-	// };
-
 	const sensors = useSensors(
 		useSensor(CustomPointerSensor, {
 			activationConstraint: {
@@ -185,7 +177,6 @@ export const RackRowVirtual = ({
 
 	const handleCreateNew = () => {
 		trevorSocket?.createNewDevice("MyDevice");
-		setCodeEditorOpened((prev) => !prev);
 	};
 
 	const groupedDevices = useMemo(
