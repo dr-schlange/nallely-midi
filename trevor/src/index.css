@@ -636,26 +636,38 @@ details[open]::details-content {
 	transform: rotate(-180deg);
 }
 
-.device-patching-main-section.vertical {
+/* the racks, in a box of their own so that the zoom only scales them */
+.device-patching-racks {
+	display: flex;
+	width: 100%;
+	flex-shrink: 0;
+}
+
+.device-patching-racks.vertical {
+	flex-direction: row;
 	gap: 10px;
+}
+
+.device-patching-racks.horizontal {
+	flex-direction: column;
+	gap: 5px;
 }
 
 .device-patching-main-section.horizontal {
 	flex-direction: column;
 	overflow-y: auto;
 	overflow-x: hidden;
-	gap: 5px;
 }
 
-.device-patching-main-section.horizontal > :nth-child(1) {
+.device-patching-racks.horizontal > :nth-child(1) {
 	order: 3;
 }
 
-.device-patching-main-section.horizontal > :nth-child(2) {
+.device-patching-racks.horizontal > :nth-child(2) {
 	order: 2;
 }
 
-.device-patching-main-section.horizontal > :nth-child(3) {
+.device-patching-racks.horizontal > :nth-child(3) {
 	order: 1;
 }
 

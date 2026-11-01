@@ -13,7 +13,7 @@ import {
 	SortableContext,
 	verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type {
 	MidiDevice,
 	MidiDeviceSection,
@@ -40,6 +40,7 @@ import {
 	type DragHandleProps,
 	InlinedSortableList,
 } from "./InlinedSortableList";
+import { DeviceMenu } from "./ParameterMenu";
 import { barGridStyle, HORIZONTAL_ROWS } from "./RackRowVirtual";
 import {
 	BarSlider,
@@ -452,6 +453,10 @@ const InlinedMidiDevice = ({
 	const flipped = mirrored && !isOpen;
 	const linked = useLinkedIds();
 	const deviceHighlight = useHighlightUnit(`${device.id}`);
+	const headerRef = useRef<HTMLParagraphElement>(null);
+	const highlighted = useTrevorSelector(
+		(state) => state.runTime.highlightedUnit === `${device.id}`,
+	);
 	const [continuous, setContinuous] = useState(false);
 	const trevorSocket = useTrevorWebSocket();
 	const devicePorts = device.meta.sections
@@ -474,6 +479,7 @@ const InlinedMidiDevice = ({
 			}}
 		>
 			<p
+				ref={headerRef}
 				data-link-header
 				style={{
 					fontSize: "16px",
@@ -543,6 +549,7 @@ const InlinedMidiDevice = ({
 					</>
 				)}
 			</p>
+			{highlighted && <DeviceMenu id={device.id} anchorRef={headerRef} />}
 			<div
 				data-link-frame
 				style={{

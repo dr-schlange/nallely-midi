@@ -1,4 +1,5 @@
 /** biome-ignore-all lint/a11y/noLabelWithoutControl: <explanation> */
+import { CLONE_ACTIONS } from "../utils/cloneOptions";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type {
 	Connection,
@@ -365,51 +366,18 @@ export const DeviceInfoPanel = ({
 						<hr />
 						<details>
 							<summary>Clone device</summary>
-							<Button
-								text="Clone and replace"
-								tooltip="Clone the device and kills the original device"
-								onClick={() => {
-									trevorSocket?.clone_device(device.id, {
-										startClone: true,
-										suicide: true,
-									});
-									onDeselect();
-								}}
-								className="menu-button"
-							/>
-							<Button
-								text="Clone and pause"
-								tooltip="Clone the device and pause it"
-								onClick={() => {
-									trevorSocket?.clone_device(device.id, {
-										startClone: false,
-										suicide: false,
-									});
-									onDeselect();
-								}}
-								className="menu-button"
-							/>
-							<Button
-								text="Clone and pause original"
-								tooltip="Clone the device and pause original device"
-								onClick={() => {
-									trevorSocket?.clone_device(device.id, {
-										startClone: true,
-										pauseDevice: true,
-									});
-									onDeselect();
-								}}
-								className="menu-button"
-							/>
-							<Button
-								text="Clone without patch"
-								tooltip="Clone the device without existing patches"
-								onClick={() => {
-									trevorSocket?.clone_device(device.id, { withLinks: false });
-									onDeselect();
-								}}
-								className="menu-button"
-							/>
+							{CLONE_ACTIONS.map(({ text, tooltip, options }) => (
+								<Button
+									key={text}
+									text={text}
+									tooltip={tooltip}
+									onClick={() => {
+										trevorSocket?.clone_device(device.id, options);
+										onDeselect();
+									}}
+									className="menu-button"
+								/>
+							))}
 						</details>
 						<details>
 							<summary>Expose to friends</summary>

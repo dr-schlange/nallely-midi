@@ -20,6 +20,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { ReactNode } from "react";
+import { useRackScale } from "../hooks/RackScaleContext";
 
 export type DragHandleProps = React.HTMLAttributes<HTMLElement>;
 
@@ -37,11 +38,19 @@ const SortableItem = ({
 }) => {
 	const { attributes, listeners, setNodeRef, transform, transition } =
 		useSortable({ id });
+	// the moves are measured in screen pixels and applied inside the zoomed racks
+	const scale = useRackScale();
 	return (
 		<div
 			ref={setNodeRef}
 			style={{
-				transform: CSS.Translate.toString(transform),
+				transform: CSS.Translate.toString(
+					transform && {
+						...transform,
+						x: transform.x / scale,
+						y: transform.y / scale,
+					},
+				),
 				transition,
 				width: horizontal ? undefined : "100%",
 				height: horizontal ? "100%" : undefined,

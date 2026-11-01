@@ -4,11 +4,13 @@ import {
 	Suspense,
 	useCallback,
 	useEffect,
+	useLayoutEffect,
 	useMemo,
 	useRef,
 	useState,
 } from "react";
 import { useConnectionDrawing } from "../hooks/useConnectionDrawing";
+import { RackScaleContext } from "../hooks/RackScaleContext";
 import { ScopeContext } from "../hooks/ScopeContext";
 import { useScopeManager } from "../hooks/useScopeManager";
 import type {
@@ -54,9 +56,14 @@ interface DevicePatchingProps {
 	open3DView?: (open: boolean) => void;
 }
 
+// a bar is 88px wide in the vertical racks; the zoom on a parameter leaves 50% around it
+const BAR_WIDTH = 88;
+const PARAMETER_MARGIN = 1.5;
+
 const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 	const mainSectionRef = useRef(null);
 	const oldView = useTrevorSelector((state) => state.runTime.oldView);
+	const rackZoom = useTrevorSelector((state) => state.runTime.rackZoom);
 	const associateMode = useTrevorSelector(
 		(state) => state.runTime.associateMode,
 	);
@@ -473,115 +480,212 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 		[isExpanded, setCurrentSelectedDevice],
 	);
 
+	// Zoom of the racks: one rack row fills the screen across (the width in vertical mode, the
+	// height in horizontal mode). The rest of the page does not scale.
+	const [rackScale, setRackScale] = useState(1);
+	// height of the racks area while zoomed: what the screen shows, without the part under the
+	// notification bar
+	const [zoomHeight, setZoomHeight] = useState<number | null>(null);
+	const zoomed = rackZoom > 0 && !oldView;
+	useLayoutEffect(() => {
+		const main = mainSectionRef.current as HTMLElement | null;
+		if (!zoomed || !main) {
+			setRackScale(1);
+			setZoomHeight(null);
+			return undefined;
+		}
+		const fit = () => {
+			const rack = main.querySelector(".rack-row") as HTMLElement | null;
+			if (!rack) return;
+			const bar =
+				document.querySelector<HTMLElement>(".notification-bar")
+					?.offsetHeight ?? 0;
+			const top = main.getBoundingClientRect().top + window.scrollY;
+			const height = Math.max(
+				100,
+				Math.floor(
+					Math.min(
+						main.parentElement?.clientHeight ?? Number.POSITIVE_INFINITY,
+						window.innerHeight - bar - top,
+					),
+				),
+			);
+			setZoomHeight(height);
+			// a rack and the gap that separates it from the next one (5px gap + 5px margin);
+			// offsetWidth, not clientWidth: a scrollbar coming and going must not change the zoom
+			const rackHeight = rack.offsetHeight + 10;
+			const scale =
+				orientation === "vertical"
+					? main.offsetWidth /
+						(rackZoom === 2
+							? BAR_WIDTH * PARAMETER_MARGIN
+							: rack.offsetWidth + 10)
+					: height / (rackZoom === 2 ? rackHeight : 2 * rackHeight);
+			setRackScale(Math.max(1, scale));
+		};
+		fit();
+		// the position is reset when the zoom starts, not on each resize (a link redraw can
+		// change the scrollbars): expanding a device must keep the view where it is
+		main.scrollTo(0, 0);
+		const resize = new ResizeObserver(fit);
+		if (main.parentElement) resize.observe(main.parentElement);
+		window.addEventListener("resize", fit);
+		return () => {
+			resize.disconnect();
+			window.removeEventListener("resize", fit);
+		};
+	}, [zoomed, orientation, rackZoom]);
+	// the rects of everything moved: the links follow
+	useEffect(() => {
+		const frame = requestAnimationFrame(redrawLinks);
+		return () => cancelAnimationFrame(frame);
+	}, [rackScale, zoomHeight, redrawLinks]);
+	const racksStyle: React.CSSProperties | undefined =
+		rackScale === 1
+			? undefined
+			: orientation === "vertical"
+				? {
+						transform: `scale(${rackScale})`,
+						transformOrigin: "0 0",
+						width: "max-content",
+						minWidth: `${100 / rackScale}%`,
+						height: `${(zoomHeight ?? 0) / rackScale}px`,
+						alignSelf: "flex-start",
+					}
+				: {
+						transform: `scale(${rackScale})`,
+						transformOrigin: "0 0",
+						width: `${100 / rackScale}%`,
+					};
+	const mainStyle: React.CSSProperties | undefined =
+		zoomed && zoomHeight !== null
+			? { height: zoomHeight, alignSelf: "flex-start" }
+			: undefined;
+
 	return (
 		<ScopeContext.Provider value={scopeContext}>
-			<div className={`device-patching ${orientation}`}>
-				<div
-					className={`device-patching-main-section ${orientation}`}
-					ref={mainSectionRef}
-					onScroll={redrawLinksThrottled}
-				>
-					<RackRow
-						devices={midi_devices}
-						onSectionClick={handleSectionClick}
-						onNonSectionClick={handleNonSectionClick}
-						selectedSections={selectedSectionIds}
-						onSectionScroll={redrawLinksThrottled}
-						onDeviceClick={handleMidiDeviceClick}
-						onOpenPanel={handleOpenPanel}
-						openPanelDevice={isExpanded ? currentSelected : undefined}
-						orientation={orientation}
-						onDeviceDrop={redrawLinks}
-						onDragEnd={redrawLinks}
-					/>
-					<RackRowVirtual
-						devices={virtual_devices.filter(
-							(device) => !rejectedClasses.includes(device.meta.name),
+			<RackScaleContext.Provider value={rackScale}>
+				<div className={`device-patching ${orientation}`}>
+					<div
+						className={`device-patching-main-section ${orientation}`}
+						ref={mainSectionRef}
+						style={mainStyle}
+						onScroll={redrawLinksThrottled}
+					>
+						<div
+							className={`device-patching-racks ${orientation}`}
+							style={racksStyle}
+						>
+							<RackRow
+								devices={midi_devices}
+								onSectionClick={handleSectionClick}
+								onNonSectionClick={handleNonSectionClick}
+								selectedSections={selectedSectionIds}
+								onSectionScroll={redrawLinksThrottled}
+								onDeviceClick={handleMidiDeviceClick}
+								onOpenPanel={handleOpenPanel}
+								openPanelDevice={isExpanded ? currentSelected : undefined}
+								orientation={orientation}
+								onDeviceDrop={redrawLinks}
+								onDragEnd={redrawLinks}
+							/>
+							<RackRowVirtual
+								devices={virtual_devices.filter(
+									(device) => !rejectedClasses.includes(device.meta.name),
+								)}
+								onParameterClick={handleParameterClick}
+								onOpenPanel={handleOpenPanel}
+								openPanelDevice={isExpanded ? currentSelected : undefined}
+								onNonSectionClick={handleNonSectionClick}
+								selectedSections={selectedVirtualSectionIds}
+								onSectionScroll={redrawLinksThrottled}
+								orientation={orientation}
+								onDeviceDrop={redrawLinks}
+								onDragEnd={redrawLinks}
+							/>
+							<RackRowWidgets
+								ref={widgetRack}
+								onAddWidget={redrawLinks}
+								orientation={orientation}
+								onDragEnd={redrawLinks}
+								onRackScroll={redrawLinksThrottled}
+								onNonSectionClick={handleNonSectionClick}
+							/>
+						</div>
+						<svg
+							className={`device-patching-svg ${orientation}`}
+							ref={svgRef}
+						/>
+						{!oldView && (
+							<BarLinks
+								ref={barLinks}
+								containerRef={mainSectionRef}
+								scale={rackScale}
+							/>
 						)}
-						onParameterClick={handleParameterClick}
-						onOpenPanel={handleOpenPanel}
-						openPanelDevice={isExpanded ? currentSelected : undefined}
-						onNonSectionClick={handleNonSectionClick}
-						selectedSections={selectedVirtualSectionIds}
-						onSectionScroll={redrawLinksThrottled}
+					</div>
+
+					<SidePanel
+						isExpanded={isExpanded}
+						onToggleExpand={handleExpand}
+						currentSelected={currentSelected}
+						onDeviceSelect={handleDeviceSelect}
+						displayedSection={displayedSection}
+						onSectionChange={setDisplayedSection}
+						selectedConnection={selectedConnection}
 						orientation={orientation}
-						onDeviceDrop={redrawLinks}
-						onDragEnd={redrawLinks}
+						onToggleOrientation={toggleOrientation}
+						isMemoryOpen={isMemoryOpen}
+						onOpenMemory={openMemory}
+						onSavePatch={savePatch}
+						onOpenPlayground={openPlayground}
+						onResetAll={resetAll}
+						onOpenAbout={openAboutModal}
+						onDeleteAllConnections={deleteAllConnections}
+						onConnectionClick={handleConnectionClick}
+						onDeselect={handleDeselect}
+						onMidiDeviceClick={handleMidiDeviceClick}
 					/>
-					<RackRowWidgets
-						ref={widgetRack}
-						onAddWidget={redrawLinks}
-						orientation={orientation}
-						onDragEnd={redrawLinks}
-						onRackScroll={redrawLinksThrottled}
-						onNonSectionClick={handleNonSectionClick}
-					/>
-					<svg className={`device-patching-svg ${orientation}`} ref={svgRef} />
-					{!oldView && (
-						<BarLinks ref={barLinks} containerRef={mainSectionRef} />
+					{isModalOpen && (
+						<Portal>
+							<PatchingModal
+								onClose={closeModal}
+								firstSection={selectedSections.firstSection}
+								secondSection={selectedSections.secondSection}
+								onSettingsClick={handleSettingsClick}
+								selectedSettings={displayedSection}
+								onSectionChange={handleSectionChangePatchingModal}
+							/>
+						</Portal>
+					)}
+					{isAboutOpen && (
+						<Portal>
+							<AboutModal onClose={closeModal} />
+						</Portal>
+					)}
+					{isPlaygroundOpen && (
+						<Portal>
+							<Suspense fallback={null}>
+								<Playground onClose={closeModal} />
+							</Suspense>
+						</Portal>
+					)}
+					{isMemoryOpen && (
+						<Portal>
+							<MemoryModal onClose={closeModal} onLoad={handleLoadOk} />
+						</Portal>
+					)}
+					{scope.isScopeOpen && !isModalOpen && (
+						<Portal>
+							<TmpScopeOverlay
+								onClose={scope.closeAllScopeChannels}
+								numChannels={scope.numScopeChannels}
+								portElemIds={scope.scopePortElemIds}
+							/>
+						</Portal>
 					)}
 				</div>
-
-				<SidePanel
-					isExpanded={isExpanded}
-					onToggleExpand={handleExpand}
-					currentSelected={currentSelected}
-					onDeviceSelect={handleDeviceSelect}
-					displayedSection={displayedSection}
-					onSectionChange={setDisplayedSection}
-					selectedConnection={selectedConnection}
-					orientation={orientation}
-					onToggleOrientation={toggleOrientation}
-					isMemoryOpen={isMemoryOpen}
-					onOpenMemory={openMemory}
-					onSavePatch={savePatch}
-					onOpenPlayground={openPlayground}
-					onResetAll={resetAll}
-					onOpenAbout={openAboutModal}
-					onDeleteAllConnections={deleteAllConnections}
-					onConnectionClick={handleConnectionClick}
-					onDeselect={handleDeselect}
-					onMidiDeviceClick={handleMidiDeviceClick}
-				/>
-				{isModalOpen && (
-					<Portal>
-						<PatchingModal
-							onClose={closeModal}
-							firstSection={selectedSections.firstSection}
-							secondSection={selectedSections.secondSection}
-							onSettingsClick={handleSettingsClick}
-							selectedSettings={displayedSection}
-							onSectionChange={handleSectionChangePatchingModal}
-						/>
-					</Portal>
-				)}
-				{isAboutOpen && (
-					<Portal>
-						<AboutModal onClose={closeModal} />
-					</Portal>
-				)}
-				{isPlaygroundOpen && (
-					<Portal>
-						<Suspense fallback={null}>
-							<Playground onClose={closeModal} />
-						</Suspense>
-					</Portal>
-				)}
-				{isMemoryOpen && (
-					<Portal>
-						<MemoryModal onClose={closeModal} onLoad={handleLoadOk} />
-					</Portal>
-				)}
-				{scope.isScopeOpen && !isModalOpen && (
-					<Portal>
-						<TmpScopeOverlay
-							onClose={scope.closeAllScopeChannels}
-							numChannels={scope.numScopeChannels}
-							portElemIds={scope.scopePortElemIds}
-						/>
-					</Portal>
-				)}
-			</div>
+			</RackScaleContext.Provider>
 		</ScopeContext.Provider>
 	);
 };

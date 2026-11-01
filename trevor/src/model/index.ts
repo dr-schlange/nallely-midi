@@ -202,6 +202,9 @@ export interface RunTimeState {
 	revealTarget: { id: string; n: number } | null;
 	// shows the racks as they were before the inlined devices
 	oldView: boolean;
+	// zoom of the racks: 0 none, 1 a rack row (two in horizontal mode) fills the screen across,
+	// 2 a parameter (one rack row in horizontal mode) does
+	rackZoom: 0 | 1 | 2;
 	patchDetails: PatchDetails | undefined;
 	usedAddresses: Address[];
 	stdin: WaitingStdinQueue;

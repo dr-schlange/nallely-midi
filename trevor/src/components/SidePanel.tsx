@@ -7,7 +7,7 @@ import type {
 	VirtualDeviceWithSection,
 } from "../model";
 import { useTrevorDispatch, useTrevorSelector } from "../store";
-import { setOldView } from "../store/runtimeSlice";
+import { setOldView, setRackZoom } from "../store/runtimeSlice";
 import { useTrevorWebSocket } from "../websockets/websocket";
 import { ConnectionList } from "./ConnectionList";
 import { DeviceInfoPanel } from "./DeviceInfoPanel";
@@ -70,6 +70,9 @@ export const SidePanel = ({
 	const dispatch = useTrevorDispatch();
 	const oldView = useTrevorSelector((state) => state.runTime.oldView);
 	const toggleOldView = () => dispatch(setOldView(!oldView));
+	const rackZoom = useTrevorSelector((state) => state.runTime.rackZoom);
+	const toggleRackZoom = (level: 1 | 2) =>
+		dispatch(setRackZoom(rackZoom === level ? 0 : level));
 	const midi_devices = useTrevorSelector((state) => state.nallely.midi_devices);
 	const virtual_devices = useTrevorSelector(
 		(state) => state.nallely.virtual_devices,
@@ -86,193 +89,251 @@ export const SidePanel = ({
 	return (
 		<div
 			style={{
-				display: "flex",
-				flexDirection: "column",
-				gap: "2px",
-				paddingLeft: "2px",
-				...(isExpanded
-					? {
-							minWidth: "262px",
-							overflowY: "auto",
-							height: "100%",
-							backgroundColor: "rgb(192, 192, 192)",
-							zIndex: 35,
-						}
-					: {
-							minWidth: "40px",
-						}),
+				position: "relative",
+				width: "40px",
+				minWidth: "40px",
+				flexShrink: 0,
 			}}
 		>
-			<Button
-				text={isExpanded ? "»" : "«"}
-				tooltip={isExpanded ? "Open panel" : "Close panel"}
-				onClick={onToggleExpand}
-				activated={isExpanded}
+			<div
 				style={{
-					width: "inherit",
-					textAlign: "left",
-					paddingLeft: "4px",
-					height: "20px",
+					display: "flex",
+					flexDirection: "column",
+					gap: "2px",
+					paddingLeft: "2px",
+					...(isExpanded
+						? {
+								position: "absolute",
+								top: 0,
+								right: 0,
+								width: "262px",
+								overflowY: "auto",
+								height: "100%",
+								backgroundColor: "rgb(192, 192, 192)",
+								zIndex: 35,
+							}
+						: {
+								minWidth: "40px",
+							}),
 				}}
-			/>
-			{isExpanded ? (
-				<div className="device-patching-side-section">
-					<div
-						style={{
-							display: "flex",
-							gap: "4px",
-							alignItems: "center",
-							padding: "4px",
-						}}
-					>
-						<Button
-							text={"⟳"}
-							tooltip="Pull full state"
-							variant={"big"}
-							style={{ backgroundColor: "var(--button-bg-color)" }}
-							onClick={() => trevorSocket?.pullFullState()}
-						/>
-						<select
-							style={{ width: "100%" }}
-							value={currentSelected ?? ""}
-							title="Select device to setup"
-							onChange={(e) => {
-								const val = e.target.value;
-								const device = all_devices.find(
-									(d) => `${d.id}::${d.repr}` === val,
-								);
-								if (!device) return;
-								onDeviceSelect(device);
+			>
+				<Button
+					text={isExpanded ? "»" : "«"}
+					tooltip={isExpanded ? "Open panel" : "Close panel"}
+					onClick={onToggleExpand}
+					activated={isExpanded}
+					style={{
+						width: "inherit",
+						textAlign: "left",
+						paddingLeft: "4px",
+						height: "20px",
+					}}
+				/>
+				{isExpanded ? (
+					<div className="device-patching-side-section">
+						<div
+							style={{
+								display: "flex",
+								gap: "4px",
+								alignItems: "center",
+								padding: "4px",
 							}}
 						>
-							<option value={""} dir="ltr">
-								--
-							</option>
-							{all_devices.map((device) => (
-								<option
-									key={device.repr}
-									value={`${device.id}::${device.repr}`}
-									dir="ltr"
-								>
-									{device.repr}
+							<Button
+								text={"⟳"}
+								tooltip="Pull full state"
+								variant={"big"}
+								style={{ backgroundColor: "var(--button-bg-color)" }}
+								onClick={() => trevorSocket?.pullFullState()}
+							/>
+							<select
+								style={{ width: "100%" }}
+								value={currentSelected ?? ""}
+								title="Select device to setup"
+								onChange={(e) => {
+									const val = e.target.value;
+									const device = all_devices.find(
+										(d) => `${d.id}::${d.repr}` === val,
+									);
+									if (!device) return;
+									onDeviceSelect(device);
+								}}
+							>
+								<option value={""} dir="ltr">
+									--
 								</option>
-							))}
-						</select>
-					</div>
-					<div>
-						<div className="device-patching-middle-panel">
-							<div className="information-panel">
-								<DeviceInfoPanel
-									currentSelected={currentSelected}
-									displayedSection={displayedSection}
-									onDeselect={onDeselect}
-									onMidiDeviceClick={onMidiDeviceClick}
-									onSectionChange={onSectionChange}
+								{all_devices.map((device) => (
+									<option
+										key={device.repr}
+										value={`${device.id}::${device.repr}`}
+										dir="ltr"
+									>
+										{device.repr}
+									</option>
+								))}
+							</select>
+						</div>
+						<div>
+							<div className="device-patching-middle-panel">
+								<div className="information-panel">
+									<DeviceInfoPanel
+										currentSelected={currentSelected}
+										displayedSection={displayedSection}
+										onDeselect={onDeselect}
+										onMidiDeviceClick={onMidiDeviceClick}
+										onSectionChange={onSectionChange}
+									/>
+								</div>
+							</div>
+							<div className="bottom-right-panel">
+								<ConnectionList
+									selectedConnection={selectedConnection}
+									onConnectionClick={onConnectionClick}
+									onDeleteAllConnections={onDeleteAllConnections}
 								/>
 							</div>
 						</div>
-						<div className="bottom-right-panel">
-							<ConnectionList
-								selectedConnection={selectedConnection}
-								onConnectionClick={onConnectionClick}
-								onDeleteAllConnections={onDeleteAllConnections}
+						<div className="device-patching-top-panel">
+							<Button
+								text="Addresses"
+								tooltip="Opens the memory manager"
+								onClick={onOpenMemory}
+								activated={isMemoryOpen}
+								className="menu-button"
+							/>
+							<Button
+								text={`Save at 0x${currentAddress?.hex ?? "????"}`}
+								tooltip={`Save the session at address  0x${currentAddress?.hex ?? "????"}`}
+								onClick={onSavePatch}
+								className="menu-button"
+							/>
+						</div>
+						<div className="device-patching-top-panel">
+							<Button
+								text="Rack view"
+								tooltip="Shows racks instead of inlined devices"
+								onClick={toggleOldView}
+								activated={oldView}
+								className="menu-button"
+							/>
+						</div>
+						<div className="device-patching-top-panel">
+							<Button
+								text="Zoom racks"
+								tooltip="Zooms the racks: a rack row fills the screen across (two rack rows in horizontal mode)"
+								onClick={() => toggleRackZoom(1)}
+								activated={rackZoom === 1}
+								disabled={oldView}
+								className="menu-button"
+							/>
+						</div>
+						<div className="device-patching-top-panel">
+							<Button
+								text="Zoom parameters"
+								tooltip="Zooms the racks: a parameter fills the screen across (one rack row in horizontal mode)"
+								onClick={() => toggleRackZoom(2)}
+								activated={rackZoom === 2}
+								disabled={oldView}
+								className="menu-button"
+							/>
+						</div>
+						<div className="device-patching-top-panel">
+							<Button
+								text="Open playground"
+								tooltip="Opens the playground"
+								onClick={onOpenPlayground}
+								className="menu-button"
+							/>
+						</div>
+						<div className="device-patching-top-panel">
+							<Button
+								text="Reset all"
+								tooltip="Reset the session"
+								onClick={onResetAll}
+								className="menu-button"
+							/>
+						</div>
+						<div className="device-patching-top-panel">
+							<Button
+								text="About"
+								tooltip="Opens the about menu"
+								onClick={onOpenAbout}
+								className="menu-button"
 							/>
 						</div>
 					</div>
-					<div className="device-patching-top-panel">
+				) : (
+					<div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
 						<Button
-							text="Addresses"
-							tooltip="Opens the memory manager"
-							onClick={onOpenMemory}
-							activated={isMemoryOpen}
-							className="menu-button"
+							text={ORIENTATIONS[orientation]}
+							tooltip="Change orientation"
+							onClick={onToggleOrientation}
+							style={{
+								width: "inherit",
+								height: "37px",
+							}}
 						/>
 						<Button
-							text={`Save at 0x${currentAddress?.hex ?? "????"}`}
-							tooltip={`Save the session at address  0x${currentAddress?.hex ?? "????"}`}
+							text="💾"
+							tooltip="Save patch"
 							onClick={onSavePatch}
-							className="menu-button"
+							style={{
+								width: "inherit",
+								height: "37px",
+							}}
 						/>
-					</div>
-					<div className="device-patching-top-panel">
 						<Button
-							text="Rack view"
-							tooltip="Shows racks instead of inlined devices"
+							text="zoom"
+							tooltip="Zooms the racks: a rack row fills the screen across (two rack rows in horizontal mode)"
+							onClick={() => toggleRackZoom(1)}
+							activated={rackZoom === 1}
+							disabled={oldView}
+							style={{
+								width: "inherit",
+								height: "37px",
+								fontSize: "11px",
+								color: "var(--black)",
+							}}
+						/>
+						<Button
+							text="zoom+"
+							tooltip="Zooms the racks: a parameter fills the screen across (one rack row in horizontal mode)"
+							onClick={() => toggleRackZoom(2)}
+							activated={rackZoom === 2}
+							disabled={oldView}
+							style={{
+								width: "inherit",
+								height: "37px",
+								fontSize: "11px",
+								color: "var(--black)",
+							}}
+						/>
+						<Button
+							text="rack"
+							tooltip="Shows rack instead of inlined devices"
 							onClick={toggleOldView}
 							activated={oldView}
-							className="menu-button"
+							style={{
+								width: "inherit",
+								height: "37px",
+								fontSize: "11px",
+								color: "var(--black)",
+							}}
 						/>
-					</div>
-					<div className="device-patching-top-panel">
 						<Button
-							text="Open playground"
-							tooltip="Opens the playground"
-							onClick={onOpenPlayground}
-							className="menu-button"
+							text={`0x${currentAddress?.hex ?? "????"}`}
+							tooltip="Manage memory"
+							onClick={onOpenMemory}
+							style={{
+								width: "inherit",
+								height: "37px",
+								fontSize: "11px",
+								color: "var(--black)",
+							}}
 						/>
 					</div>
-					<div className="device-patching-top-panel">
-						<Button
-							text="Reset all"
-							tooltip="Reset the session"
-							onClick={onResetAll}
-							className="menu-button"
-						/>
-					</div>
-					<div className="device-patching-top-panel">
-						<Button
-							text="About"
-							tooltip="Opens the about menu"
-							onClick={onOpenAbout}
-							className="menu-button"
-						/>
-					</div>
-				</div>
-			) : (
-				<div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-					<Button
-						text={ORIENTATIONS[orientation]}
-						tooltip="Change orientation"
-						onClick={onToggleOrientation}
-						style={{
-							width: "inherit",
-							height: "37px",
-						}}
-					/>
-					<Button
-						text="💾"
-						tooltip="Save patch"
-						onClick={onSavePatch}
-						style={{
-							width: "inherit",
-							height: "37px",
-						}}
-					/>
-					<Button
-						text="rack"
-						tooltip="Shows rack instead of inlined devices"
-						onClick={toggleOldView}
-						activated={oldView}
-						style={{
-							width: "inherit",
-							height: "37px",
-							fontSize: "11px",
-							color: "var(--black)",
-						}}
-					/>
-					<Button
-						text={`0x${currentAddress?.hex ?? "????"}`}
-						tooltip="Manage memory"
-						onClick={onOpenMemory}
-						style={{
-							width: "inherit",
-							height: "37px",
-							fontSize: "11px",
-							color: "var(--black)",
-						}}
-					/>
-				</div>
-			)}
+				)}
+			</div>
 		</div>
 	);
 };

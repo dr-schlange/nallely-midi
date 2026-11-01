@@ -4,9 +4,15 @@ import { createPortal } from "react-dom";
 import { useScope } from "../hooks/ScopeContext";
 import type { Connection, ConnectionEnd } from "../model";
 import { useTrevorDispatch, useTrevorSelector } from "../store";
-import { revealParameter, setBarSelection } from "../store/runtimeSlice";
+import {
+	revealParameter,
+	setBarSelection,
+	setHighlightedUnit,
+} from "../store/runtimeSlice";
+import { useTrevorWebSocket } from "../websockets/websocket";
+import { CLONE_ACTIONS } from "../utils/cloneOptions";
 import { connectionEndId } from "../utils/utils";
-import { Button, lightButtonStyle } from "./widgets/BaseComponents";
+import { Button, Dropdown, lightButtonStyle } from "./widgets/BaseComponents";
 
 const HEIGHT = 28;
 
@@ -62,8 +68,8 @@ const useAnchorRect = (anchorRef: RefObject<HTMLElement | null>) => {
 	return rect;
 };
 
-// The small menu on top of the selected parameter: T lists its targets, S its sources, D
-// adds it to the debug scope. Picking a target or a source brings it in view and makes it blink.
+// The small menu on top of the selected parameter: S lists its sources, D adds it to the debug
+// scope, T lists its targets. Picking a target or a source brings it in view and makes it blink.
 export const ParameterMenu = ({
 	id,
 	anchorRef,
@@ -121,12 +127,12 @@ export const ParameterMenu = ({
 				}}
 			>
 				<Button
-					text="T"
-					tooltip="Targets of the links of this parameter"
-					disabled={targets.length === 0}
-					activated={list === "targets"}
-					style={menuButtonStyle(list === "targets")}
-					onClick={() => toggleList("targets")}
+					text="S"
+					tooltip="Sources of the links of this parameter"
+					disabled={sources.length === 0}
+					activated={list === "sources"}
+					style={menuButtonStyle(list === "sources")}
+					onClick={() => toggleList("sources")}
 				/>
 				<Button
 					text="D"
@@ -137,48 +143,126 @@ export const ParameterMenu = ({
 					onClick={() => scope?.toggle(id, portElemId)}
 				/>
 				<Button
-					text="S"
-					tooltip="Sources of the links of this parameter"
-					disabled={sources.length === 0}
-					activated={list === "sources"}
-					style={menuButtonStyle(list === "sources")}
-					onClick={() => toggleList("sources")}
+					text="T"
+					tooltip="Targets of the links of this parameter"
+					disabled={targets.length === 0}
+					activated={list === "targets"}
+					style={menuButtonStyle(list === "targets")}
+					onClick={() => toggleList("targets")}
 				/>
 			</div>
 			{list && (
-				<div
-					data-bar-menu
-					style={{
-						position: "fixed",
+				<Dropdown
+					position={{
 						left: rect.left,
 						...(above
 							? { bottom: window.innerHeight - top + 2 }
 							: { top: top + HEIGHT + 2 }),
-						minWidth: rect.width,
-						maxHeight: 200,
-						overflowY: "auto",
-						zIndex: 10000,
-						backgroundColor: "#e0e0e0",
-						border: "3px solid #808080",
-						fontSize: "12px",
 					}}
-				>
-					{entries.map((entry) => (
-						// biome-ignore lint/a11y/useKeyWithClickEvents: same as the other floating menus
-						<div
-							key={entry.id}
-							onClick={() => pick(entry.id)}
-							style={{
-								padding: "3px 6px",
-								cursor: "pointer",
-								whiteSpace: "nowrap",
-								color: "var(--black)",
-							}}
-						>
-							{entry.label}
-						</div>
-					))}
-				</div>
+					minWidth={rect.width}
+					options={entries.map((entry) => ({
+						key: entry.id,
+						label: entry.label,
+					}))}
+					onSelect={pick}
+				/>
+			)}
+		</>,
+		document.body,
+	);
+};
+
+// The small menu on top of the title bar of a device whose links are highlighted (long press on
+// it): K kills the device.
+export const DeviceMenu = ({
+	id,
+	anchorRef,
+	cloneable = false,
+}: {
+	id: number;
+	anchorRef: RefObject<HTMLElement | null>;
+	// virtual devices: C lists the ways to clone it, as the right bar does
+	cloneable?: boolean;
+}) => {
+	const [cloneOpen, setCloneOpen] = useState(false);
+	const dispatch = useTrevorDispatch();
+	const trevorSocket = useTrevorWebSocket();
+	// the whole device, not only its title bar (a thin strip when the racks are horizontal)
+	const deviceRef = useMemo(
+		() => ({
+			get current() {
+				return (
+					anchorRef.current?.closest<HTMLElement>("[data-link-device]") ?? null
+				);
+			},
+		}),
+		[anchorRef],
+	);
+	const rect = useAnchorRect(deviceRef);
+	if (!rect) return null;
+	const above = rect.top >= HEIGHT + 4;
+	const top = above ? rect.top - HEIGHT - 2 : rect.bottom + 2;
+	return createPortal(
+		<>
+			<div
+				data-bar-menu
+				style={{
+					position: "fixed",
+					left: rect.left,
+					top,
+					width: rect.width,
+					height: HEIGHT,
+					boxSizing: "border-box",
+					display: "flex",
+					alignItems: "center",
+					// on the right of the device, the next buttons come on its left
+					flexDirection: "row-reverse",
+					justifyContent: "flex-start",
+					gap: 6,
+					zIndex: 10000,
+					fontSize: "12px",
+				}}
+			>
+				<Button
+					text="K"
+					tooltip="Kill this device"
+					style={menuButtonStyle()}
+					onClick={() => {
+						// the device is gone: nothing left to highlight
+						dispatch(setHighlightedUnit(null));
+						trevorSocket?.killDevice(id);
+					}}
+				/>
+				{cloneable && (
+					<Button
+						text="C"
+						tooltip="Clone this device"
+						activated={cloneOpen}
+						style={menuButtonStyle(cloneOpen)}
+						onClick={() => setCloneOpen((open) => !open)}
+					/>
+				)}
+			</div>
+			{cloneOpen && (
+				<Dropdown
+					position={{
+						right: window.innerWidth - rect.right,
+						...(above
+							? { bottom: window.innerHeight - top + 2 }
+							: { top: top + HEIGHT + 2 }),
+					}}
+					options={CLONE_ACTIONS.map(({ text, tooltip }) => ({
+						key: text,
+						label: text,
+						title: tooltip,
+					}))}
+					onSelect={(text) => {
+						const action = CLONE_ACTIONS.find((a) => a.text === text);
+						setCloneOpen(false);
+						dispatch(setHighlightedUnit(null));
+						if (action) trevorSocket?.clone_device(id, action.options);
+					}}
+				/>
 			)}
 		</>,
 		document.body,

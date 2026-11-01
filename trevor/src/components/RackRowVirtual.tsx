@@ -19,6 +19,7 @@ import {
 	useCallback,
 	useEffect,
 	useMemo,
+	useRef,
 	useState,
 } from "react";
 import type { VirtualDevice } from "../model";
@@ -42,6 +43,7 @@ import {
 } from "./InlinedSortableList";
 import { PortDot } from "./PortDot";
 import VDeviceSelectionModal from "./modals/VirtualDeviceSelectionModal";
+import { DeviceMenu } from "./ParameterMenu";
 import { Portal } from "./Portal";
 
 const ClassBrowser = lazy(() =>
@@ -351,6 +353,10 @@ const InlinedVDev = ({
 	const linking = useBarLinking();
 	const linked = useLinkedIds();
 	const vdevHighlight = useHighlightUnit(`${vdev.id}`);
+	const headerRef = useRef<HTMLParagraphElement>(null);
+	const highlighted = useTrevorSelector(
+		(state) => state.runTime.highlightedUnit === `${vdev.id}`,
+	);
 	const [continuous, setContinuous] = useState(false);
 	const ports = vdev.meta.parameters
 		.map((p) => ({ id: parameterUUID(vdev.id, p), name: p.name }))
@@ -371,6 +377,7 @@ const InlinedVDev = ({
 			}}
 		>
 			<p
+				ref={headerRef}
 				data-link-header
 				style={{
 					fontSize: "16px",
@@ -439,6 +446,13 @@ const InlinedVDev = ({
 					</>
 				)}
 			</p>
+			{highlighted && (
+				<DeviceMenu
+					id={vdev.id}
+					anchorRef={headerRef}
+					cloneable={!vdev.proxy}
+				/>
+			)}
 			<div
 				data-link-frame
 				data-link-section={`${vdev.id}::__virtual__`}

@@ -115,8 +115,9 @@ interface DrawnLink {
 // - When two ports are patched both ways, the links use opposite sides of the ports.
 export const BarLinks = forwardRef<
 	BarLinksRef,
-	{ containerRef: RefObject<HTMLElement | null> }
->(({ containerRef }, ref) => {
+	// scale: how much the racks are zoomed, the overlay itself never is
+	{ containerRef: RefObject<HTMLElement | null>; scale?: number }
+>(({ containerRef, scale = 1 }, ref) => {
 	const connections = useTrevorSelector((state) => state.nallely.connections);
 	const dispatch = useTrevorDispatch();
 	const midiDevices = useTrevorSelector((state) => state.nallely.midi_devices);
@@ -368,12 +369,12 @@ export const BarLinks = forwardRef<
 		for (const d of devices) {
 			const { left, right, top, bottom } = d.rect;
 			borders.horizontal.push(
-				{ left, right, top, bottom: top + DEVICE_BORDER },
-				{ left, right, top: bottom - DEVICE_BORDER, bottom },
+				{ left, right, top, bottom: top + DEVICE_BORDER * scale },
+				{ left, right, top: bottom - DEVICE_BORDER * scale, bottom },
 			);
 			borders.vertical.push(
-				{ left, right: left + DEVICE_BORDER, top, bottom },
-				{ left: right - DEVICE_BORDER, right, top, bottom },
+				{ left, right: left + DEVICE_BORDER * scale, top, bottom },
+				{ left: right - DEVICE_BORDER * scale, right, top, bottom },
 			);
 		}
 
@@ -506,7 +507,7 @@ export const BarLinks = forwardRef<
 				? prev
 				: next,
 		);
-	}, [containerRef]);
+	}, [containerRef, scale]);
 
 	const redraw = useCallback(() => {
 		if (frame.current !== null) return;

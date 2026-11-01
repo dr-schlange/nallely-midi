@@ -1,8 +1,9 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import type { Connection, ConnectionEnd } from "../model";
 import { useTrevorSelector } from "../store";
 import { ScalerFormBottom, ScalerFormTop } from "./ScalerForm";
+import { Dropdown } from "./widgets/BaseComponents";
 
 // from the pressed point: less than the label that follows a dragged value; the finger
 // covers more below the point than above it
@@ -95,25 +96,6 @@ export const LinkMenu = ({
 		Math.min(ax - WIDTH / 2, window.innerWidth - WIDTH - MARGIN),
 	);
 
-	// the list opens at the pressed point, moved back inside the screen once measured
-	const listRef = useRef<HTMLDivElement>(null);
-	const [listPosition, setListPosition] = useState({ left: x, top: y });
-	// biome-ignore lint/correctness/useExhaustiveDependencies: measured again when the list changes
-	useLayoutEffect(() => {
-		const rect = listRef.current?.getBoundingClientRect();
-		if (!rect) return;
-		setListPosition({
-			left: Math.max(
-				MARGIN,
-				Math.min(x, window.innerWidth - rect.width - MARGIN),
-			),
-			top: Math.max(
-				MARGIN,
-				Math.min(y, window.innerHeight - rect.height - MARGIN),
-			),
-		});
-	}, [x, y, showList, connections.length]);
-
 	return createPortal(
 		<>
 			{selected && (
@@ -152,43 +134,20 @@ export const LinkMenu = ({
 				</>
 			)}
 			{showList && (
-				<div
-					ref={listRef}
-					data-link-menu
-					data-bar-menu
-					style={{
-						...boxStyle,
-						padding: 0,
-						left: listPosition.left,
-						top: listPosition.top,
-						maxHeight: 240,
-						width: "max-content",
-						maxWidth: window.innerWidth - 2 * MARGIN,
-					}}
-				>
-					{connections.map((connection) => (
-						// biome-ignore lint/a11y/useKeyWithClickEvents: same as the other floating menus
-						<div
-							key={connection.id}
-							onClick={(e) =>
-								onSelect(connection.id, { x: e.clientX, y: e.clientY })
-							}
-							style={{
-								padding: "3px 6px",
-								cursor: "pointer",
-								whiteSpace: "nowrap",
-								backgroundColor:
-									connection.id === selectedId ? "orange" : "transparent",
-								color:
-									connection.id === selectedId
-										? "var(--browntext)"
-										: "var(--black)",
-							}}
-						>
-							{labelOf(connection.src)} → {labelOf(connection.dest)}
-						</div>
-					))}
-				</div>
+				<Dropdown
+					// at the pressed point, moved back inside the screen once measured
+					position={{ left: x, top: y }}
+					keepOnScreen
+					width="max-content"
+					maxHeight={240}
+					attributes={{ "data-link-menu": true }}
+					options={connections.map((connection) => ({
+						key: connection.id,
+						label: `${labelOf(connection.src)} → ${labelOf(connection.dest)}`,
+						active: connection.id === selectedId,
+					}))}
+					onSelect={(id, e) => onSelect(id, { x: e.clientX, y: e.clientY })}
+				/>
 			)}
 		</>,
 		document.body,

@@ -1,6 +1,6 @@
 /** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
 /** biome-ignore-all lint/a11y/noSvgWithoutTitle: <explanation> */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { MidiParameter, PadsOrKeys, VirtualParameter } from "../../model";
 import {
@@ -8,6 +8,7 @@ import {
 	generateAcronym,
 	resolveAcceptedValueIndex,
 } from "../../utils/utils";
+import { useRackScale } from "../../hooks/RackScaleContext";
 import { useTrevorSelector } from "../../store";
 import { getNoteName } from "../MidiGrid";
 import { ParameterMenu } from "../ParameterMenu";
@@ -735,6 +736,115 @@ export const CircularSlider = ({
 	);
 };
 
+// Window of a double tap on a bar. A single tap waits this long before it counts, so shorter
+// means less delay, and more risk that a slow double tap is read as two single taps.
+const DOUBLE_TAP_MS = 250;
+
+export interface DropdownOption<K extends string | number> {
+	key: K;
+	label: React.ReactNode;
+	title?: string;
+	// the current choice: orange, as the fill of a bar
+	active?: boolean;
+}
+
+const DROPDOWN_MARGIN = 4;
+
+// A list of options floating over the page, at a fixed place of the screen. It is a portal, so
+// it is never clipped by what holds the component that renders it. `onSelect` gets the key of
+// the option and the click; the list stays open until its owner stops rendering it.
+//  - position: where it is, with the sides of your choice (`right` and `bottom` grow it
+//    leftwards and upwards);
+//  - keepOnScreen: position is a point, and the list is moved back inside the window once
+//    measured;
+//  - innerRef: to tell a press inside the list from one outside;
+//  - attributes: data attributes for the owner's own checks.
+export const Dropdown = <K extends string | number>({
+	options,
+	onSelect,
+	position,
+	minWidth,
+	width,
+	maxHeight = 200,
+	keepOnScreen = false,
+	optionStyle,
+	innerRef,
+	attributes,
+}: {
+	options: DropdownOption<K>[];
+	onSelect: (key: K, event: React.MouseEvent) => void;
+	position: { left?: number; right?: number; top?: number; bottom?: number };
+	minWidth?: number;
+	width?: "max-content";
+	maxHeight?: number;
+	keepOnScreen?: boolean;
+	optionStyle?: React.CSSProperties;
+	innerRef?: React.RefObject<HTMLDivElement | null>;
+	attributes?: Record<`data-${string}`, string | boolean>;
+}) => {
+	const ownRef = useRef<HTMLDivElement>(null);
+	const ref = innerRef ?? ownRef;
+	const [moved, setMoved] = useState<{ left: number; top: number } | null>(
+		null,
+	);
+	// biome-ignore lint/correctness/useExhaustiveDependencies: measured again when the point or the options change
+	useLayoutEffect(() => {
+		const rect = ref.current?.getBoundingClientRect();
+		if (!keepOnScreen || !rect) return;
+		const clampTo = (value: number, size: number, screen: number) =>
+			Math.max(
+				DROPDOWN_MARGIN,
+				Math.min(value, screen - size - DROPDOWN_MARGIN),
+			);
+		setMoved({
+			left: clampTo(position.left ?? 0, rect.width, window.innerWidth),
+			top: clampTo(position.top ?? 0, rect.height, window.innerHeight),
+		});
+	}, [keepOnScreen, position.left, position.top, options.length]);
+
+	return createPortal(
+		<div
+			ref={ref}
+			data-bar-menu
+			{...attributes}
+			style={{
+				position: "fixed",
+				...position,
+				...(keepOnScreen && moved ? moved : {}),
+				minWidth,
+				width,
+				maxWidth: window.innerWidth - 2 * DROPDOWN_MARGIN,
+				maxHeight,
+				overflowY: "auto",
+				zIndex: 10000,
+				backgroundColor: "#e0e0e0",
+				border: "3px solid #808080",
+				fontSize: "12px",
+			}}
+		>
+			{options.map((option) => (
+				// biome-ignore lint/a11y/useKeyWithClickEvents: same as the other floating menus
+				<div
+					key={option.key}
+					title={option.title}
+					onClick={(event) => onSelect(option.key, event)}
+					style={{
+						padding: "3px 6px",
+						cursor: "pointer",
+						whiteSpace: "nowrap",
+						backgroundColor: option.active ? "orange" : "transparent",
+						color: option.active ? "var(--browntext)" : "var(--black)",
+						...optionStyle,
+					}}
+				>
+					{option.label}
+				</div>
+			))}
+		</div>,
+		document.body,
+	);
+};
+
 // Whether a link enters or leaves this parameter (a boolean: the bar redraws only when it flips)
 const useHasLinks = (linkId: string | undefined) =>
 	useTrevorSelector(
@@ -868,6 +978,7 @@ export const BarSlider = ({
 	const rootRef = useRef<HTMLDivElement>(null);
 	const blinking = useRevealBlink(linkId, rootRef);
 	const hasLinks = useHasLinks(linkId);
+	const rackScale = useRackScale();
 	const menuRef = useRef<HTMLDivElement>(null);
 	const inputRef = useRef<HTMLInputElement>(null);
 
@@ -1069,11 +1180,11 @@ export const BarSlider = ({
 			// rotated bar: svgRect is its bounding box, the value grows upward
 			setDragOverlay({
 				sx: vertical
-					? svgRect.left + ghostPoint.y
-					: svgRect.left + ghostPoint.x,
+					? svgRect.left + ghostPoint.y * rackScale
+					: svgRect.left + ghostPoint.x * rackScale,
 				sy: vertical
-					? svgRect.top + width - ghostPoint.x
-					: svgRect.top + ghostPoint.y,
+					? svgRect.top + (width - ghostPoint.x) * rackScale
+					: svgRect.top + ghostPoint.y * rackScale,
 				cx: e.clientX,
 				cy: e.clientY,
 			});
@@ -1109,7 +1220,7 @@ export const BarSlider = ({
 			const now = Date.now();
 			if (tapTimer.current) clearTimeout(tapTimer.current);
 			tapTimer.current = null;
-			if (now - lastTap.current < 350) {
+			if (now - lastTap.current < DOUBLE_TAP_MS) {
 				lastTap.current = 0;
 				setMode((m) => (m === "info" ? "label" : "info"));
 			} else {
@@ -1118,7 +1229,7 @@ export const BarSlider = ({
 				tapTimer.current = setTimeout(() => {
 					tapTimer.current = null;
 					onTap?.();
-				}, 350);
+				}, DOUBLE_TAP_MS);
 			}
 		} else if (committed !== null && committed !== value) {
 			if (isChoice) {
@@ -1459,42 +1570,20 @@ export const BarSlider = ({
 					</>,
 					document.body,
 				)}
-			{menuPos &&
-				createPortal(
-					<div
-						ref={menuRef}
-						data-bar-menu
-						style={{
-							position: "fixed",
-							left: menuPos.left,
-							top: menuPos.top,
-							minWidth: width,
-							maxHeight: menuPos.maxHeight,
-							overflowY: "auto",
-							zIndex: 10000,
-							backgroundColor: "#e0e0e0",
-							border: "3px solid #808080",
-							fontSize: "12px",
-						}}
-					>
-						{acceptedValues.map((av, index) => (
-							<div
-								key={`${index}-${av}`}
-								onClick={() => pickAcceptedValue(index)}
-								style={{
-									padding: "3px 6px",
-									cursor: "pointer",
-									whiteSpace: "nowrap",
-									backgroundColor: index === value ? "orange" : "transparent",
-									color: index === value ? "var(--browntext)" : "var(--black)",
-								}}
-							>
-								{String(av)}
-							</div>
-						))}
-					</div>,
-					document.body,
-				)}
+			{menuPos && (
+				<Dropdown
+					innerRef={menuRef}
+					position={{ left: menuPos.left, top: menuPos.top }}
+					minWidth={width}
+					maxHeight={menuPos.maxHeight}
+					options={acceptedValues.map((av, index) => ({
+						key: index,
+						label: String(av),
+						active: index === value,
+					}))}
+					onSelect={pickAcceptedValue}
+				/>
+			)}
 		</>
 	);
 };
@@ -1643,50 +1732,30 @@ export const KeysBar = ({
 				<span>{generateAcronym(keys.name ?? "keys", acronymeLimit)}</span>
 			</div>
 			{linked && linkId && <ParameterMenu id={linkId} anchorRef={rootRef} />}
-			{menuPos &&
-				createPortal(
-					<div
-						ref={menuRef}
-						data-bar-menu
-						style={{
-							position: "fixed",
-							left: menuPos.left,
-							top: menuPos.top,
-							minWidth: width,
-							maxHeight: menuPos.maxHeight,
-							overflowY: "auto",
-							zIndex: 10000,
-							backgroundColor: "#e0e0e0",
-							border: "3px solid #808080",
-							fontSize: "12px",
-						}}
-					>
-						{notes.map((note) => (
-							<div
-								key={note}
-								onClick={() => toggle(note)}
-								style={{
-									display: "flex",
-									justifyContent: "space-between",
-									gap: "12px",
-									padding: "3px 6px",
-									cursor: "pointer",
-									whiteSpace: "nowrap",
-									backgroundColor: localSelected.includes(note)
-										? "orange"
-										: "transparent",
-									color: localSelected.includes(note)
-										? "var(--browntext)"
-										: "var(--black)",
-								}}
-							>
+			{menuPos && (
+				<Dropdown
+					innerRef={menuRef}
+					position={{ left: menuPos.left, top: menuPos.top }}
+					minWidth={width}
+					maxHeight={menuPos.maxHeight}
+					optionStyle={{
+						display: "flex",
+						justifyContent: "space-between",
+						gap: "12px",
+					}}
+					options={notes.map((note) => ({
+						key: note,
+						label: (
+							<>
 								<span>{getNoteName(note)}</span>
 								<span>{note}</span>
-							</div>
-						))}
-					</div>,
-					document.body,
-				)}
+							</>
+						),
+						active: localSelected.includes(note),
+					}))}
+					onSelect={toggle}
+				/>
+			)}
 		</>
 	);
 };
