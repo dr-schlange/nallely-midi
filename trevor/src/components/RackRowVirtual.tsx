@@ -32,6 +32,7 @@ import {
 	parameterUUID,
 	saveDeviceOrder,
 } from "../utils/utils";
+import { useCounterZoom } from "../hooks/RackScaleContext";
 import { useBarLinking } from "../hooks/useBarLinking";
 import { useHighlightUnit } from "../hooks/useHighlightUnit";
 import { useLinkedIds } from "../hooks/useLinkedIds";
@@ -123,6 +124,7 @@ export const RackRowVirtual = ({
 	const [selectorOpened, setSelectorOpened] = useState(false);
 	const connections = useTrevorSelector((state) => state.nallely.connections);
 	const oldView = useTrevorSelector((state) => state.runTime.oldView);
+	const counterZoom = useCounterZoom();
 	const [localDeviceOrder, setLocalDeviceOrder] =
 		useState<VirtualDevice[]>(devices);
 
@@ -199,7 +201,7 @@ export const RackRowVirtual = ({
 					onNonSectionClick();
 				}}
 			>
-				<div className="rack-top-bar">
+				<div className="rack-top-bar" style={counterZoom}>
 					<Button
 						text="Add many"
 						tooltip="Add multiple virtual devices at once"

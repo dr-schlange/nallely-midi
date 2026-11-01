@@ -41,6 +41,14 @@ const NEARBY = 120; // obstacles farther than this from both ends are ignored
 
 // a long press on a link must not select text (the browser starts it by itself); one
 // function for good so that the listener added at the press is the one removed after it
+const readDebugFlag = () => {
+	try {
+		return localStorage.getItem("debugLinks") !== null;
+	} catch {
+		return false;
+	}
+};
+
 const DEVICE_BORDER = 3; // px, as in the title bars of the racks
 const blockSelection = (e: Event) => e.preventDefault();
 
@@ -378,6 +386,11 @@ export const BarLinks = forwardRef<
 			);
 		}
 
+		// to find out how a link was routed: localStorage.debugLinks = 1, reload, then
+		// copy(JSON.stringify(window.__linksDebug))
+		const debugLinks = readDebugFlag()
+			? ((window as any).__linksDebug = [])
+			: null;
 		const next: DrawnLink[] = [];
 		for (const pair of pairs.values()) {
 			const src = place(pair.src);
@@ -482,6 +495,17 @@ export const BarLinks = forwardRef<
 				toBounds: dest.headerRect ?? undefined,
 				squeezeFirst: sameRack,
 				borders,
+				onResult: debugLinks
+					? (info) =>
+							debugLinks.push({
+								from: pair.src.key,
+								to: pair.dest.key,
+								...info,
+								obstacles: obstacles.length,
+								srcHeader: src.headerRect,
+								destHeader: dest.headerRect,
+							})
+					: undefined,
 			});
 			const { line, arrow } = withArrow(points);
 			next.push({

@@ -222,6 +222,10 @@ const routeWithPadding = (
 		...obstacles.map((o) => expand(o, pad)),
 		fromPadded,
 		toPadded,
+		// the title bar around a port: the link leaves it by the short stub to the node in front
+		// of it, and never runs inside it (the middle of a small gap would be a cheap way)
+		...(fromBounds ? [fromBounds] : []),
+		...(toBounds ? [toBounds] : []),
 	];
 	const fromAnchors = anchorsOf(from, lead, fromSides, fromBounds);
 	const toAnchors = anchorsOf(to, lead, toSides, toBounds);
@@ -383,6 +387,14 @@ export const routeOrthogonal = (
 		// take the narrow gaps between neighbours before keeping a distance from them
 		squeezeFirst?: boolean;
 		borders?: Borders;
+		// told which settings finally worked ("elbow": none did, the obstacles are ignored)
+		onResult?: (info: {
+			level: number;
+			pad: number;
+			lead: number;
+			sides: [Side[], Side[]];
+			elbow: boolean;
+		}) => void;
 	} = {},
 ): Point[] => {
 	const fromSides = options.fromSides ?? ["left", "right"];
@@ -425,8 +437,24 @@ export const routeOrthogonal = (
 				options.toBounds,
 				options.borders,
 			);
-			if (path) return path;
+			if (path) {
+				options.onResult?.({
+					level,
+					pad,
+					lead,
+					sides: [widen(fromSides, level), widen(toSides, level)],
+					elbow: false,
+				});
+				return path;
+			}
 		}
 	}
+	options.onResult?.({
+		level: 3,
+		pad: 0,
+		lead: 0,
+		sides: [fromSides, toSides],
+		elbow: true,
+	});
 	return elbow(from, to);
 };

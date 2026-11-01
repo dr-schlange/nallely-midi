@@ -1,5 +1,6 @@
 /** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
 /** biome-ignore-all lint/a11y/useKeyWithClickEvents: <explanation> */
+import { useCounterZoom } from "../hooks/RackScaleContext";
 import {
 	forwardRef,
 	type ReactElement,
@@ -108,6 +109,7 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 			{ num: number; id: string; type: string; component: React.FC<any> }[]
 		>([]);
 		const [typeIds, setTypeIds] = useState<Record<string, number>>({});
+		const counterZoom = useCounterZoom();
 		const waitingServices = useTrevorSelector(
 			(state) => state.nallely.waiting_services,
 		);
@@ -129,7 +131,6 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 				});
 			return [...uniqueServices.values()];
 		}, [waitingServices]);
-		const [displayWaitingServices, setDisplayWaitingServices] = useState(false);
 
 		const sensors = useSensors(
 			useSensor(CustomPointerSensor, {
@@ -185,7 +186,6 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 				setWidgets([]);
 				setWidgets([]);
 				setTypeIds({});
-				setDisplayWaitingServices(false);
 			},
 		}));
 
@@ -220,38 +220,40 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 					onNonSectionClick();
 				}}
 			>
-				<div className="rack-top-bar">
-					<select
-						value={""}
-						title="Adds a new widget to the system"
-						onChange={(e) => {
-							const val = e.target.value;
-							if (val && WidgetComponents[val]) {
-								addWidget(WidgetComponents[val], val.toLocaleLowerCase());
-							}
-						}}
-					>
-						<option value={""} dir="ltr">
-							--
-						</option>
-						{Object.keys(WidgetComponents).map((name) => (
-							<option key={name} value={name} dir="ltr">
-								{name}
-							</option>
-						))}
-					</select>
-					<Button
+				{/* a row of buttons, from the right: the first one in the code is the rightmost */}
+				<div
+					className="rack-top-bar"
+					style={{ flexDirection: "row-reverse", ...counterZoom }}
+				>
+					<DropdownButton
 						text={`Waiting ${proxyWidgetCandidates.length === 0 ? "" : `[${proxyWidgetCandidates.length}]`}`}
-						tooltip="Show waiting services"
+						tooltip="Load a widget for a service that waits for it"
 						disabled={proxyWidgetCandidates.length === 0}
-						activated={
-							displayWaitingServices && proxyWidgetCandidates.length > 0
-						}
-						variant="small"
-						style={{
-							color: "var(--black)",
+						placement={orientation === "horizontal" ? "right" : "below"}
+						style={{ color: "var(--black)" }}
+						options={proxyWidgetCandidates.map(([, service]) => ({
+							key: service,
+							label: service.replace("::", ""),
+						}))}
+						onSelect={(service) => {
+							const candidate = proxyWidgetCandidates.find(
+								([, candidateService]) => candidateService === service,
+							);
+							if (candidate) loadWidget(candidate[0], service);
 						}}
-						onClick={() => setDisplayWaitingServices((prev) => !prev)}
+					/>
+					<DropdownButton
+						text="+"
+						tooltip="Adds a new widget to the system"
+						placement={orientation === "horizontal" ? "right" : "below"}
+						style={{ color: "var(--black)" }}
+						options={Object.keys(WidgetComponents).map((name) => ({
+							key: name,
+							label: name,
+						}))}
+						onSelect={(name) =>
+							addWidget(WidgetComponents[name], name.toLocaleLowerCase())
+						}
 					/>
 				</div>
 				<div className={"inner-rack-row"} onScroll={() => onRackScroll?.()}>
@@ -284,22 +286,7 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 									/>
 								</SortableWidget>
 							))}
-							{proxyWidgetCandidates.map(([component, service]) => (
-								<PlaceholderWidget
-									key={service}
-									id={service}
-									onClose={closeWidget}
-									onClickLoad={loadWidget}
-									componentKey={component}
-									removeCloseButton
-									visible={displayWaitingServices}
-								>
-									<p>Placeholder for {service.replace("::", "")}</p>
-								</PlaceholderWidget>
-							))}
-							{widgets.length === 0 && proxyWidgetCandidates.length === 0 && (
-								<p style={{ color: "gray" }}>Widgets</p>
-							)}
+							{widgets.length === 0 && <p style={{ color: "gray" }}>Widgets</p>}
 						</SortableContext>
 					</DndContext>
 				</div>
@@ -331,7 +318,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { useTrevorSelector } from "../store";
 import { findFirstMissingValue } from "../utils/utils";
-import { Button, PlaceholderWidget } from "./widgets/BaseComponents";
+import { DropdownButton } from "./widgets/BaseComponents";
 import { GPControl } from "./widgets/GPControlWidget";
 import { Keyboard } from "./widgets/KeyboardWidget";
 import { ViewMatrix } from "./widgets/ViewMatrix";

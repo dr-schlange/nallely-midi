@@ -20,6 +20,7 @@ import type {
 	MidiParameter,
 	VirtualDevice,
 } from "../model";
+import { useCounterZoom } from "../hooks/RackScaleContext";
 import { useBarLinking } from "../hooks/useBarLinking";
 import { useHighlightUnit } from "../hooks/useHighlightUnit";
 import { useLinkedIds } from "../hooks/useLinkedIds";
@@ -45,6 +46,7 @@ import { barGridStyle, HORIZONTAL_ROWS } from "./RackRowVirtual";
 import {
 	BarSlider,
 	Button,
+	DropdownButton,
 	KeysBar,
 	lightButtonStyle,
 } from "./widgets/BaseComponents";
@@ -80,6 +82,7 @@ export const RackRow = ({
 }: RackRowProps) => {
 	const midiClasses = useTrevorSelector((state) => state.nallely.classes.midi);
 	const oldView = useTrevorSelector((state) => state.runTime.oldView);
+	const counterZoom = useCounterZoom();
 	const [localDeviceOrder, setLocalDeviceOrder] =
 		useState<MidiDevice[]>(devices);
 
@@ -138,24 +141,19 @@ export const RackRow = ({
 				onNonSectionClick();
 			}}
 		>
-			<div className="rack-top-bar">
-				<select
-					value=""
-					title="Adds a MIDI device to the system"
-					onChange={(e) => {
-						const val = e.target.value;
-						if (val) handleDeviceClassClick(val);
-					}}
-				>
-					<option value="" dir="ltr">
-						--
-					</option>
-					{midiClasses.map((cls) => (
-						<option key={cls} value={cls} dir="ltr">
-							{cls}
-						</option>
-					))}
-				</select>
+			{/* a row of buttons, from the right: the next ones come on the left of this one */}
+			<div
+				className="rack-top-bar"
+				style={{ flexDirection: "row-reverse", ...counterZoom }}
+			>
+				<DropdownButton
+					text="+"
+					tooltip="Adds a MIDI device to the system"
+					placement={orientation === "horizontal" ? "right" : "below"}
+					style={{ color: "var(--black)" }}
+					options={midiClasses.map((cls) => ({ key: cls, label: cls }))}
+					onSelect={handleDeviceClassClick}
+				/>
 			</div>
 			<div className={"inner-rack-row"} onScroll={() => onSectionScroll?.()}>
 				{!oldView && (

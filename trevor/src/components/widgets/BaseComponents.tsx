@@ -160,73 +160,6 @@ export const TextInput = ({
 	);
 };
 
-export const PlaceholderWidget = ({
-	id,
-	componentKey,
-	onClose,
-	children,
-	onClickLoad,
-	removeCloseButton = false,
-	visible = true,
-}: {
-	componentKey: string;
-	id: string;
-	onClose?: (e: string) => void;
-	children: React.ReactNode;
-	removeCloseButton?: boolean;
-	onClickLoad?: (service: string, componentKey: string) => void;
-	visible: boolean;
-}) => {
-	return (
-		<div className="scope" style={{ display: visible ? "block" : "none" }}>
-			<div
-				style={{
-					position: "absolute",
-					color: "gray",
-					zIndex: 1,
-					top: "1%",
-					right: "1%",
-					width: "90%",
-					textAlign: "center",
-					cursor: "pointer",
-					display: "flex",
-					justifyContent: "flex-end",
-					flexDirection: "row",
-					pointerEvents: "none",
-					gap: "4px",
-				}}
-			>
-				{!removeCloseButton && (
-					<Button
-						text="x"
-						onClick={() => onClose?.(id)}
-						tooltip="Close window"
-					/>
-				)}
-			</div>
-			<div
-				style={{
-					height: "100%",
-					display: "flex",
-					flexDirection: "column",
-					justifyContent: "space-between",
-					alignItems: "center",
-				}}
-			>
-				{children}
-				<Button
-					text="Load"
-					onClick={() => onClickLoad?.(componentKey, id)}
-					tooltip="Load the widget"
-					style={{
-						width: "100%",
-					}}
-				/>
-			</div>
-		</div>
-	);
-};
-
 export const AcceptedValuesKnob = ({
 	value,
 	param,
@@ -842,6 +775,71 @@ export const Dropdown = <K extends string | number>({
 			))}
 		</div>,
 		document.body,
+	);
+};
+
+export const DropdownButton = <K extends string | number>({
+	text,
+	tooltip,
+	options,
+	onSelect,
+	placement = "below",
+	disabled = false,
+	style,
+	className,
+}: {
+	text: string;
+	tooltip: string;
+	disabled?: boolean;
+	options: DropdownOption<K>[];
+	onSelect: (key: K, event: React.MouseEvent) => void;
+	placement?: "below" | "right";
+	style?: React.CSSProperties;
+	className?: string;
+}) => {
+	const [anchor, setAnchor] = useState<HTMLElement | null>(null);
+	const listRef = useRef<HTMLDivElement>(null);
+	useEffect(() => {
+		if (!anchor) return;
+		const onDown = (e: PointerEvent) => {
+			const target = e.target as Node;
+			if (anchor.contains(target) || listRef.current?.contains(target)) return;
+			setAnchor(null);
+		};
+		document.addEventListener("pointerdown", onDown);
+		return () => document.removeEventListener("pointerdown", onDown);
+	}, [anchor]);
+	const rect = anchor?.getBoundingClientRect();
+	return (
+		<>
+			<Button
+				text={text}
+				tooltip={tooltip}
+				activated={anchor !== null}
+				disabled={disabled}
+				style={style}
+				className={className}
+				onClick={(event) =>
+					setAnchor((current) => (current ? null : event.currentTarget))
+				}
+			/>
+			{rect && (
+				<Dropdown
+					innerRef={listRef}
+					position={
+						placement === "below"
+							? { left: rect.left, top: rect.bottom + 2 }
+							: { left: rect.right + 2, top: rect.top }
+					}
+					minWidth={placement === "below" ? rect.width : undefined}
+					options={options}
+					onSelect={(key, event) => {
+						setAnchor(null);
+						onSelect(key, event);
+					}}
+				/>
+			)}
+		</>
 	);
 };
 
