@@ -3,7 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { MidiParameter, PadsOrKeys, VirtualParameter } from "../../model";
-import { generateAcronym, resolveAcceptedValueIndex } from "../../utils/utils";
+import {
+	connectionEndId,
+	generateAcronym,
+	resolveAcceptedValueIndex,
+} from "../../utils/utils";
 import { useTrevorSelector } from "../../store";
 import { getNoteName } from "../MidiGrid";
 import { ParameterMenu } from "../ParameterMenu";
@@ -731,8 +735,20 @@ export const CircularSlider = ({
 	);
 };
 
+// Whether a link enters or leaves this parameter (a boolean: the bar redraws only when it flips)
+const useHasLinks = (linkId: string | undefined) =>
+	useTrevorSelector(
+		(state) =>
+			!!linkId &&
+			state.nallely.connections.some(
+				(c) =>
+					connectionEndId(c.src) === linkId ||
+					connectionEndId(c.dest) === linkId,
+			),
+	);
+
 // When another parameter asks for this one (the T and S lists of its menu): scroll it into
-// view, then blink twice in orange. Returns whether it is lit right now.
+// view, then blink three times in orange. Returns whether it is lit right now.
 const useRevealBlink = (
 	linkId: string | undefined,
 	rootRef: React.RefObject<HTMLElement | null>,
@@ -746,8 +762,8 @@ const useRevealBlink = (
 		const blink = () => {
 			if (started) return;
 			started = true;
-			// on, off, on, off
-			for (let i = 0; i < 4; i++) {
+			// on, off, on, off, on, off
+			for (let i = 0; i < 6; i++) {
 				timers.push(setTimeout(() => setLit(i % 2 === 0), i * 220));
 			}
 		};
@@ -851,6 +867,7 @@ export const BarSlider = ({
 	const lastTap = useRef(0);
 	const rootRef = useRef<HTMLDivElement>(null);
 	const blinking = useRevealBlink(linkId, rootRef);
+	const hasLinks = useHasLinks(linkId);
 	const menuRef = useRef<HTMLDivElement>(null);
 	const inputRef = useRef<HTMLInputElement>(null);
 
@@ -1368,6 +1385,19 @@ export const BarSlider = ({
 							}}
 						/>
 					)}
+					{hasLinks && (
+						<div
+							style={{
+								position: "absolute",
+								inset: 0,
+								border: "2px solid var(--browntext)",
+								// the text brown at 45%: lighter on the gray of the rack
+								opacity: 0.45,
+								pointerEvents: "none",
+								zIndex: 1,
+							}}
+						/>
+					)}
 					{selected && (
 						<div
 							style={{
@@ -1504,6 +1534,7 @@ export const KeysBar = ({
 	const origin = useRef<{ x: number; y: number } | null>(null);
 
 	const blinking = useRevealBlink(linkId, rootRef);
+	const hasLinks = useHasLinks(linkId);
 
 	const cancelPress = () => {
 		if (timer.current) clearTimeout(timer.current);
@@ -1570,7 +1601,7 @@ export const KeysBar = ({
 					boxSizing: "border-box",
 					marginTop: vertical ? 0 : "4px",
 					marginLeft: vertical ? "4px" : 0,
-					border: `2px solid ${linked ? "gold" : "orange"}`,
+					border: `2px solid ${linked ? "gold" : hasLinks ? "rgba(123, 85, 15, 0.45)" : "orange"}`,
 					background: blinking ? "orange" : "var(--rack-bg-color)",
 					color: "var(--black)",
 					fontSize: "12px",
