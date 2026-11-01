@@ -21,6 +21,7 @@ import {
 	type Point,
 	type Rect,
 	routeOrthogonal,
+	type Borders,
 	type Side,
 } from "../utils/orthogonalRoute";
 import { connectionEndId } from "../utils/utils";
@@ -40,6 +41,7 @@ const NEARBY = 120; // obstacles farther than this from both ends are ignored
 
 // a long press on a link must not select text (the browser starts it by itself); one
 // function for good so that the listener added at the press is the one removed after it
+const DEVICE_BORDER = 3; // px, as in the title bars of the racks
 const blockSelection = (e: Event) => e.preventDefault();
 
 const overlaps = (a: Rect, b: Rect) =>
@@ -361,6 +363,20 @@ export const BarLinks = forwardRef<
 			};
 		};
 
+		// the 3px border of every device: a link crosses it to leave, and never runs along it
+		const borders: Borders = { horizontal: [], vertical: [] };
+		for (const d of devices) {
+			const { left, right, top, bottom } = d.rect;
+			borders.horizontal.push(
+				{ left, right, top, bottom: top + DEVICE_BORDER },
+				{ left, right, top: bottom - DEVICE_BORDER, bottom },
+			);
+			borders.vertical.push(
+				{ left, right: left + DEVICE_BORDER, top, bottom },
+				{ left: right - DEVICE_BORDER, right, top, bottom },
+			);
+		}
+
 		const next: DrawnLink[] = [];
 		for (const pair of pairs.values()) {
 			const src = place(pair.src);
@@ -464,6 +480,7 @@ export const BarLinks = forwardRef<
 				fromBounds: src.headerRect ?? undefined,
 				toBounds: dest.headerRect ?? undefined,
 				squeezeFirst: sameRack,
+				borders,
 			});
 			const { line, arrow } = withArrow(points);
 			next.push({

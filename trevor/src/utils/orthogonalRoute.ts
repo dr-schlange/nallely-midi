@@ -14,6 +14,9 @@ export interface Point {
 const BEND_PENALTY = 20;
 const SMALL_GAP = 12; // gaps up to this size get a routing line through their middle
 const OUTER_MARGIN = 8;
+const BORDER_PENALTY = 8; // cost factor of a run along the border of a device
+const BORDER_CLEARANCE = 1.9; // a line closer than this to a border counts as on it
+const HUG_PENALTY = 1.5; // cost factor of a run along the border of a narrow gap
 
 // directions: 0 right, 1 down, 2 left, 3 up
 const DX = [1, 0, -1, 0];
@@ -35,13 +38,22 @@ const sortedUnique = (values: number[]) => {
 	return out;
 };
 
+// The routing lines, with one through the middle of each small gap. `hugging[i]` tells that
+// line i is next to such a middle line: it runs along the border of what bounds the gap.
 const withGapMiddles = (coords: number[]) => {
-	const out = [...coords];
+	const middles = new Set<number>();
 	for (let i = 0; i + 1 < coords.length; i++) {
 		const gap = coords[i + 1] - coords[i];
-		if (gap > 0.5 && gap <= SMALL_GAP) out.push(coords[i] + gap / 2);
+		if (gap > 0.5 && gap <= SMALL_GAP) middles.add(coords[i] + gap / 2);
 	}
-	return sortedUnique(out);
+	const all = sortedUnique([...coords, ...middles]);
+	const hugging = all.map(
+		(c, i) =>
+			!middles.has(c) &&
+			((i > 0 && middles.has(all[i - 1])) ||
+				(i + 1 < all.length && middles.has(all[i + 1]))),
+	);
+	return { coords: all, hugging };
 };
 
 const indexOf = (coords: number[], value: number) => {
@@ -106,6 +118,34 @@ interface Anchor {
 	edge: Point; // on the element border itself
 	dir: number; // direction leaving the element
 }
+
+// The borders of the devices, as thin boxes: a link may cross them but not run along them
+export interface Borders {
+	horizontal: Rect[]; // top and bottom borders
+	vertical: Rect[]; // left and right borders
+}
+
+const runsAlong = (
+	bands: Rect[],
+	horizontal: boolean,
+	line: number,
+	from: number,
+	to: number,
+) => {
+	const lo = Math.min(from, to);
+	const hi = Math.max(from, to);
+	return bands.some((b) =>
+		horizontal
+			? line > b.top - BORDER_CLEARANCE &&
+				line < b.bottom + BORDER_CLEARANCE &&
+				hi > b.left &&
+				lo < b.right
+			: line > b.left - BORDER_CLEARANCE &&
+				line < b.right + BORDER_CLEARANCE &&
+				hi > b.top &&
+				lo < b.bottom,
+	);
+};
 
 export type Side = "left" | "right" | "top" | "bottom";
 
@@ -174,6 +214,7 @@ const routeWithPadding = (
 	toSides: Side[],
 	fromBounds?: Rect,
 	toBounds?: Rect,
+	borders?: Borders,
 ): Point[] | null => {
 	const fromPadded = expand(from, pad);
 	const toPadded = expand(to, pad);
@@ -203,8 +244,8 @@ const routeWithPadding = (
 		Math.min(...ysRaw) - OUTER_MARGIN,
 		Math.max(...ysRaw) + OUTER_MARGIN,
 	);
-	const xs = withGapMiddles(sortedUnique(xsRaw));
-	const ys = withGapMiddles(sortedUnique(ysRaw));
+	const { coords: xs, hugging: huggingX } = withGapMiddles(sortedUnique(xsRaw));
+	const { coords: ys, hugging: huggingY } = withGapMiddles(sortedUnique(ysRaw));
 	const nx = xs.length;
 	const ny = ys.length;
 
@@ -276,7 +317,17 @@ const routeWithPadding = (
 			if (isBlocked(i, j, d)) continue;
 			const ni = i + DX[d];
 			const nj = j + DY[d];
-			const length = Math.abs(xs[ni] - xs[i]) + Math.abs(ys[nj] - ys[j]);
+			// in a narrow gap the middle line is the one that stays clear of both borders
+			const hug = (d & 1 ? huggingX[i] : huggingY[j]) ? HUG_PENALTY : 1;
+			const onBorder =
+				borders &&
+				(d & 1
+					? runsAlong(borders.vertical, false, xs[i], ys[j], ys[nj])
+					: runsAlong(borders.horizontal, true, ys[j], xs[i], xs[ni]));
+			const length =
+				(Math.abs(xs[ni] - xs[i]) + Math.abs(ys[nj] - ys[j])) *
+				hug *
+				(onBorder ? BORDER_PENALTY : 1);
 			const cost = base + length + (d === dir ? 0 : BEND_PENALTY);
 			const next = (nj * nx + ni) * 4 + d;
 			if (cost < dist[next]) {
@@ -331,6 +382,7 @@ export const routeOrthogonal = (
 		toBounds?: Rect;
 		// take the narrow gaps between neighbours before keeping a distance from them
 		squeezeFirst?: boolean;
+		borders?: Borders;
 	} = {},
 ): Point[] => {
 	const fromSides = options.fromSides ?? ["left", "right"];
@@ -353,8 +405,12 @@ export const routeOrthogonal = (
 				]
 			: [
 					[2.5, 8],
-					[0.5, 8],
+					// 4px between two devices: at 1.5 the link runs beside their borders, and
+					// clear of them (a 2px line at 0.5 sits on the border)
+					[1.5, 8],
 					[2.5, 2.5],
+					[1.5, 1.5],
+					[0.5, 8],
 					[0.5, 0.5],
 				]) {
 			const path = routeWithPadding(
@@ -367,6 +423,7 @@ export const routeOrthogonal = (
 				widen(toSides, level),
 				options.fromBounds,
 				options.toBounds,
+				options.borders,
 			);
 			if (path) return path;
 		}
