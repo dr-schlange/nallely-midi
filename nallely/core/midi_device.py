@@ -516,6 +516,7 @@ class MidiDevice(threading.Thread):
         if autoconnect:
             connected = self.try_connection(read_input_only)
             if not connected:
+                self.stop()
                 raise DeviceNotFound(self.device_name)
 
     def start(self):
