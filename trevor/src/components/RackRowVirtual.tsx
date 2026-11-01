@@ -324,7 +324,8 @@ export const barGridStyle = (
 				justifyContent: "space-between",
 			};
 
-export const HORIZONTAL_ROWS = 4;
+// rows of turned bars in horizontal racks (the rack height is in index.css)
+export const HORIZONTAL_ROWS = 2;
 
 const InlinedVDev = ({
 	vdev,
@@ -373,9 +374,9 @@ const InlinedVDev = ({
 				width: horizontal ? undefined : "100%",
 				height: horizontal ? "calc(100% - 4px)" : undefined,
 				boxSizing: "border-box",
-				margin: "2px 0",
+				margin: horizontal ? "2px" : "2px 0", // 2px each side: the gap between devices turns too
 				display: horizontal ? "flex" : "block",
-				padding: horizontal ? "0" : "1px",
+				padding: "1px",
 			}}
 		>
 			<p
@@ -383,7 +384,7 @@ const InlinedVDev = ({
 				style={{
 					fontSize: "16px",
 					margin: "0",
-					padding: horizontal ? "4px 2px" : "4px",
+					padding: "4px",
 					writingMode: horizontal ? "vertical-rl" : undefined,
 					transform: horizontal ? "rotate(180deg)" : undefined,
 					backgroundColor: "gray",
@@ -459,6 +460,7 @@ const InlinedVDev = ({
 			>
 				{vdev.meta.parameters.map((p) => (
 					<BarSlider
+						vertical={horizontal}
 						key={p.cv_name}
 						param={p}
 						minValue={p.range[0]}

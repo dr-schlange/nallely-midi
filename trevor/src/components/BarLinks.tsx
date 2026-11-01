@@ -206,8 +206,10 @@ export const BarLinks = forwardRef<
 		const svg = svgRef.current;
 		const container = containerRef.current;
 		if (!svg || !container) return;
-		const width = container.scrollWidth;
-		const height = container.scrollHeight;
+		// the visible part only: sized to the scrollable content, this overlay itself extended
+		// the scroll area of what holds it, and the page slid
+		const width = container.clientWidth;
+		const height = container.clientHeight;
 		setSize((prev) =>
 			prev.width === width && prev.height === height ? prev : { width, height },
 		);
@@ -368,9 +370,15 @@ export const BarLinks = forwardRef<
 					? "top"
 					: "bottom"
 				: undefined;
+			// a turned title bar (horizontal racks) is crossed from its sides, not from its ends
 			const sidesOf = (placed: Placed): Side[] => {
 				if (!placed.header) return ["left", "right"];
-				return lane ? [lane] : ["top", "bottom"];
+				const turned = getComputedStyle(placed.header).writingMode.startsWith(
+					"vertical",
+				);
+				if (lane === "top") return [turned ? "left" : "top"];
+				if (lane === "bottom") return [turned ? "right" : "bottom"];
+				return turned ? ["left", "right"] : ["top", "bottom"];
 			};
 
 			const zone: Rect = {
@@ -554,7 +562,7 @@ export const BarLinks = forwardRef<
 				width: size.width,
 				height: size.height,
 				pointerEvents: "none",
-				overflow: "visible",
+				overflow: "hidden",
 			}}
 		>
 			{drawn.map(({ link, highlighted }, i) => {

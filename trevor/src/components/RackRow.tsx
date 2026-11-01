@@ -251,8 +251,6 @@ const sectionPortItems = (device: MidiDevice, section: MidiDeviceSection) => [
 	})),
 ];
 
-const MIDI_SECTION_ROWS = HORIZONTAL_ROWS - 1; // the section header takes one bar row
-
 const InlinedMidiSection = ({
 	device,
 	section,
@@ -281,8 +279,9 @@ const InlinedMidiSection = ({
 		)
 			setIsOpen(true);
 	}, [revealTarget]);
-	// an expanded title keeps its name on the left: the swap is for collapsed ones
-	const flipped = mirrored && !isOpen;
+	// vertical racks keep the label on the left and the port on the right; the swap is for
+	// the turned headers of horizontal racks, and for collapsed ones only
+	const flipped = horizontal && mirrored && !isOpen;
 	const trevorSocket = useTrevorWebSocket();
 	// only this section's slice: a CC elsewhere doesn't redraw it
 	const sectionCCValues = useTrevorSelector(
@@ -302,7 +301,7 @@ const InlinedMidiSection = ({
 			data-link-section={`${device.id}::${sectionName}`}
 			style={{
 				display: "flex",
-				flexDirection: "column",
+				flexDirection: horizontal ? "row" : "column",
 				width: horizontal ? undefined : "100%",
 				height: horizontal ? "100%" : undefined,
 				boxSizing: "border-box",
@@ -315,16 +314,18 @@ const InlinedMidiSection = ({
 					fontSize: "12px",
 					backgroundColor: "orange",
 					color: "#7b550f",
-					width: "100%",
+					width: horizontal ? undefined : "100%",
 					boxSizing: "border-box",
 					margin: "0",
-					padding: horizontal ? "2px" : "3px",
+					padding: "3px",
+					// turned like the device title: reads bottom to top
+					writingMode: horizontal ? "vertical-rl" : undefined,
+					transform: horizontal ? "rotate(180deg)" : undefined,
 					cursor: "pointer",
 					// a long press on a title must not select its text
 					userSelect: "none",
 					WebkitUserSelect: "none",
 					WebkitTouchCallout: "none",
-					borderTop: horizontal ? "2px solid gray" : "unset",
 					display: "flex",
 					flexDirection: flipped ? "row-reverse" : "row",
 					alignItems: "center",
@@ -348,12 +349,13 @@ const InlinedMidiSection = ({
 				style={{
 					display: isOpen ? "grid" : "none",
 					gap: "2px",
-					...barGridStyle(horizontal, MIDI_SECTION_ROWS),
+					...barGridStyle(horizontal, HORIZONTAL_ROWS),
 					padding: "2px",
 				}}
 			>
 				{section.pads_or_keys && (
 					<KeysBar
+						vertical={horizontal}
 						keys={section.pads_or_keys}
 						linkId={parameterUUID(device.id, section.pads_or_keys)}
 						linked={
@@ -376,6 +378,7 @@ const InlinedMidiSection = ({
 					const range: [number, number] = p.range ?? [0, 127];
 					return (
 						<BarSlider
+							vertical={horizontal}
 							key={`${device.id}::${p.section_name}::${p.name}`}
 							param={p}
 							minValue={range[0]}
@@ -465,9 +468,9 @@ const InlinedMidiDevice = ({
 				width: horizontal ? undefined : "100%",
 				height: horizontal ? "calc(100% - 4px)" : undefined,
 				boxSizing: "border-box",
-				margin: "2px 0",
+				margin: horizontal ? "2px" : "2px 0", // 2px each side: the gap between devices turns too
 				display: horizontal ? "flex" : "block",
-				padding: horizontal ? "0" : "1px",
+				padding: "1px",
 			}}
 		>
 			<p
@@ -475,7 +478,7 @@ const InlinedMidiDevice = ({
 				style={{
 					fontSize: "16px",
 					margin: "0",
-					padding: horizontal ? "4px 2px" : "4px",
+					padding: "4px",
 					writingMode: horizontal ? "vertical-rl" : undefined,
 					transform: horizontal ? "rotate(180deg)" : undefined,
 					backgroundColor: "gray",

@@ -801,6 +801,7 @@ export const BarSlider = ({
 	selected = false,
 	linkId,
 	continuous = false,
+	vertical = false,
 }: {
 	param: MidiParameter | VirtualParameter;
 	onManualSliderChange: (value: number | string) => void;
@@ -817,6 +818,8 @@ export const BarSlider = ({
 	selected?: boolean;
 	linkId?: string;
 	continuous?: boolean;
+	// turned 90° to the left, reading bottom to top: the bars of the horizontal racks
+	vertical?: boolean;
 }) => {
 	const acceptedValues = param.accepted_values;
 	const isChoice = !!acceptedValues?.length;
@@ -1046,9 +1049,14 @@ export const BarSlider = ({
 		const svgRect = svgRectRef.current;
 		if (svgRect && span !== 0) {
 			const ghostPoint = pointAt(fraction(newValue));
+			// rotated bar: svgRect is its bounding box, the value grows upward
 			setDragOverlay({
-				sx: svgRect.left + ghostPoint.x,
-				sy: svgRect.top + ghostPoint.y,
+				sx: vertical
+					? svgRect.left + ghostPoint.y
+					: svgRect.left + ghostPoint.x,
+				sy: vertical
+					? svgRect.top + width - ghostPoint.x
+					: svgRect.top + ghostPoint.y,
 				cx: e.clientX,
 				cy: e.clientY,
 			});
@@ -1204,6 +1212,13 @@ export const BarSlider = ({
 					marginTop: "4px",
 					position: "relative",
 					gap: "2px",
+					// the 4px that separate the bars become a left margin: the gaps turn with the bars
+					...(vertical && {
+						width: height,
+						height: width,
+						marginTop: 0,
+						marginLeft: "4px",
+					}),
 				}}
 				onPointerDown={disabled || editing ? undefined : handlePointerDown}
 				onPointerMove={disabled || editing ? undefined : handlePointerMove}
@@ -1214,7 +1229,13 @@ export const BarSlider = ({
 				<div
 					ref={svgInnerRef}
 					style={{
-						position: "relative",
+						position: vertical ? "absolute" : "relative",
+						...(vertical && {
+							left: 0,
+							top: width,
+							transformOrigin: "0 0",
+							transform: "rotate(-90deg)",
+						}),
 						width,
 						height,
 						boxSizing: "border-box",
@@ -1456,6 +1477,7 @@ export const KeysBar = ({
 	linked = false,
 	linkId,
 	onTap,
+	vertical = false,
 }: {
 	keys: PadsOrKeys;
 	selected?: number[];
@@ -1465,6 +1487,8 @@ export const KeysBar = ({
 	linked?: boolean;
 	linkId?: string;
 	onTap?: () => void;
+	// turned 90° to the left, reading bottom to top (horizontal racks)
+	vertical?: boolean;
 }) => {
 	const width = 88;
 	const height = 22;
@@ -1537,10 +1561,15 @@ export const KeysBar = ({
 					alignItems: "center",
 					justifyContent: "center",
 					gap: "4px",
-					width,
-					height,
+					width: vertical ? height : width,
+					height: vertical ? width : height,
+					...(vertical && {
+						writingMode: "vertical-rl",
+						transform: "rotate(180deg)",
+					}),
 					boxSizing: "border-box",
-					marginTop: "4px",
+					marginTop: vertical ? 0 : "4px",
+					marginLeft: vertical ? "4px" : 0,
 					border: `2px solid ${linked ? "gold" : "orange"}`,
 					background: blinking ? "orange" : "var(--rack-bg-color)",
 					color: "var(--black)",

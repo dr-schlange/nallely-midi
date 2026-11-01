@@ -546,7 +546,7 @@ details[open]::details-content {
 .rack-row {
 	position: relative;
 	background-color: var(--rack-bg-color);
-	border: 1px solid #aaa;
+	border: 1px solid transparent; /* keeps the size, hides the line */
 	margin-bottom: 5px;
 	width: 250px;
 	display: flex;
