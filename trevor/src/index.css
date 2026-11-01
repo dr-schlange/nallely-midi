@@ -643,10 +643,16 @@ details[open]::details-content {
 .device-patching-main-section.horizontal {
 	flex-direction: column;
 	overflow-y: auto;
-	/* the racks are 100% wide plus their border: without this the stack also pans sideways */
 	overflow-x: hidden;
-	/* adds to the 5px bottom margin of the racks */
 	gap: 5px;
+}
+
+.device-patching-main-section.horizontal > :nth-child(1) {
+	order: 3;
+}
+
+.device-patching-main-section.horizontal > :nth-child(3) {
+	order: 1;
 }
 
 .rightbar-button {
