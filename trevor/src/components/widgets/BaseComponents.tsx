@@ -1338,8 +1338,7 @@ export const BarSlider = ({
 		setMode("info");
 		const typed = Number(draft.replace(",", "."));
 		if (draft.trim() === "" || Number.isNaN(typed)) return;
-		let v = Math.min(maxValue, Math.max(minValue, typed));
-		if (rounded) v = Math.round(v);
+		const v = rounded ? Math.round(typed) : typed;
 		if (v !== value) onManualSliderChange?.(v);
 	};
 

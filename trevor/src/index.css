@@ -550,7 +550,7 @@ details[open]::details-content {
 	background-color: var(--rack-bg-color);
 	border: 1px solid transparent; /* keeps the size, hides the line */
 	margin-bottom: 5px;
-	width: 250px;
+	width: 255px;
 	display: flex;
 	align-items: center;
 	justify-content: flex-start;
@@ -1350,9 +1350,9 @@ button.active {
 
 .bottom-section {
 	display: flex;
-	height: 100%;
+	flex: 1;
+	min-height: 0;
 	width: 100%;
-	/* room for the notification bar, which is fixed at the bottom of the screen */
 	margin-bottom: 32px;
 }
 
@@ -1742,8 +1742,8 @@ h3.details {
 	}
 
 	.rack-row {
-		width: 200px;
-		min-width: 200px;
+		width: 205px;
+		min-width: 205px;
 	}
 
 	.rack-row.horizontal {
@@ -1914,8 +1914,8 @@ h3.details {
 
 	.rack-row {
 		align-items: center;
-		width: 200px;
-		min-width: 200px;
+		width: 205px;
+		min-width: 205px;
 	}
 
 	.rack-row.horizontal {

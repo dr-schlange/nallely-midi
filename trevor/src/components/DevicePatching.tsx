@@ -1,47 +1,47 @@
 /** biome-ignore-all lint/a11y/noLabelWithoutControl: <explanation> */
 import {
-	lazy,
-	Suspense,
-	useCallback,
-	useEffect,
-	useLayoutEffect,
-	useMemo,
-	useRef,
-	useState,
+    lazy,
+    Suspense,
+    useCallback,
+    useEffect,
+    useLayoutEffect,
+    useMemo,
+    useRef,
+    useState,
 } from "react";
-import { useConnectionDrawing } from "../hooks/useConnectionDrawing";
 import { RackScaleContext } from "../hooks/RackScaleContext";
 import { ScopeContext } from "../hooks/ScopeContext";
+import { useConnectionDrawing } from "../hooks/useConnectionDrawing";
 import { useScopeManager } from "../hooks/useScopeManager";
 import type {
-	Connection,
-	MidiDevice,
-	MidiDeviceSection,
-	MidiDeviceWithSection,
-	VirtualDevice,
-	VirtualDeviceSection,
-	VirtualDeviceWithSection,
+    Connection,
+    MidiDevice,
+    MidiDeviceSection,
+    MidiDeviceWithSection,
+    VirtualDevice,
+    VirtualDeviceSection,
+    VirtualDeviceWithSection,
 } from "../model";
 import { useTrevorDispatch, useTrevorSelector } from "../store";
 import {
-	resetCCState,
-	setBarSelection,
-	setCurrentAddress,
-	setHighlightedUnit,
+    resetCCState,
+    setBarSelection,
+    setCurrentAddress,
+    setHighlightedUnit,
 } from "../store/runtimeSlice";
 import {
-	connectionId,
-	devUID,
-	isVirtualDevice,
-	rejectedClasses,
+    connectionId,
+    devUID,
+    isVirtualDevice,
+    rejectedClasses,
 } from "../utils/utils";
 import { useTrevorWebSocket } from "../websockets/websocket";
+import { BarLinks, type BarLinksRef } from "./BarLinks";
 import { AboutModal } from "./modals/AboutModal";
 import { MemoryModal } from "./modals/MemoryModal";
 import PatchingModal, { TmpScopeOverlay } from "./modals/PatchingModal";
 import { Portal } from "./Portal";
 import { RackRow } from "./RackRow";
-import { BarLinks, type BarLinksRef } from "./BarLinks";
 import { RackRowVirtual } from "./RackRowVirtual";
 import { type RackRowWidgetRef, RackRowWidgets } from "./RackRowWidgets";
 import { SidePanel } from "./SidePanel";
@@ -480,11 +480,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 		[isExpanded, setCurrentSelectedDevice],
 	);
 
-	// Zoom of the racks: one rack row fills the screen across (the width in vertical mode, the
-	// height in horizontal mode). The rest of the page does not scale.
 	const [rackScale, setRackScale] = useState(1);
-	// height of the racks area while zoomed: what the screen shows, without the part under the
-	// notification bar
 	const [zoomHeight, setZoomHeight] = useState<number | null>(null);
 	const zoomed = rackZoom > 0 && !oldView;
 	useLayoutEffect(() => {
@@ -497,22 +493,20 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 		const fit = () => {
 			const rack = main.querySelector(".rack-row") as HTMLElement | null;
 			if (!rack) return;
-			const bar =
-				document.querySelector<HTMLElement>(".notification-bar")
-					?.offsetHeight ?? 0;
-			const top = main.getBoundingClientRect().top + window.scrollY;
+			const barTop =
+				document
+					.querySelector<HTMLElement>(".notification-bar")
+					?.getBoundingClientRect().top ?? window.innerHeight;
 			const height = Math.max(
 				100,
 				Math.floor(
 					Math.min(
 						main.parentElement?.clientHeight ?? Number.POSITIVE_INFINITY,
-						window.innerHeight - bar - top,
+						barTop - main.getBoundingClientRect().top,
 					),
 				),
 			);
 			setZoomHeight(height);
-			// a rack and the gap that separates it from the next one (5px gap + 5px margin);
-			// offsetWidth, not clientWidth: a scrollbar coming and going must not change the zoom
 			const rackHeight = rack.offsetHeight + 10;
 			const scale =
 				orientation === "vertical"
@@ -524,8 +518,6 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 			setRackScale(Math.max(1, scale));
 		};
 		fit();
-		// the position is reset when the zoom starts, not on each resize (a link redraw can
-		// change the scrollbars): expanding a device must keep the view where it is
 		main.scrollTo(0, 0);
 		const resize = new ResizeObserver(fit);
 		if (main.parentElement) resize.observe(main.parentElement);
@@ -535,7 +527,6 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 			window.removeEventListener("resize", fit);
 		};
 	}, [zoomed, orientation, rackZoom]);
-	// the rects of everything moved: the links follow
 	useEffect(() => {
 		const frame = requestAnimationFrame(redrawLinks);
 		return () => cancelAnimationFrame(frame);
