@@ -22,6 +22,9 @@
 * Add new bipolar, unipolar knobs widgets in TrevorUI
 * Add new LFO implementation under the name "LFOs" (tmp later it will be renamed as LFO and will be a breaking change)
 * Add possibility to add "groups" when defining a VirtualDevice
+* Add new rack rows (new interface and new way of patching ports/parameters together)
+* Add zoom and zoom+ mode
+* Add quick navigation between linked ports
 
 ### Fixes
 
