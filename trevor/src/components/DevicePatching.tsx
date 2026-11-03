@@ -1,39 +1,39 @@
 /** biome-ignore-all lint/a11y/noLabelWithoutControl: <explanation> */
 import {
-    lazy,
-    Suspense,
-    useCallback,
-    useEffect,
-    useLayoutEffect,
-    useMemo,
-    useRef,
-    useState,
+	lazy,
+	Suspense,
+	useCallback,
+	useEffect,
+	useLayoutEffect,
+	useMemo,
+	useRef,
+	useState,
 } from "react";
 import { RackScaleContext } from "../hooks/RackScaleContext";
 import { ScopeContext } from "../hooks/ScopeContext";
 import { useConnectionDrawing } from "../hooks/useConnectionDrawing";
 import { useScopeManager } from "../hooks/useScopeManager";
 import type {
-    Connection,
-    MidiDevice,
-    MidiDeviceSection,
-    MidiDeviceWithSection,
-    VirtualDevice,
-    VirtualDeviceSection,
-    VirtualDeviceWithSection,
+	Connection,
+	MidiDevice,
+	MidiDeviceSection,
+	MidiDeviceWithSection,
+	VirtualDevice,
+	VirtualDeviceSection,
+	VirtualDeviceWithSection,
 } from "../model";
 import { useTrevorDispatch, useTrevorSelector } from "../store";
 import {
-    resetCCState,
-    setBarSelection,
-    setCurrentAddress,
-    setHighlightedUnit,
+	resetCCState,
+	setBarSelection,
+	setCurrentAddress,
+	setHighlightedUnit,
 } from "../store/runtimeSlice";
 import {
-    connectionId,
-    devUID,
-    isVirtualDevice,
-    rejectedClasses,
+	connectionId,
+	devUID,
+	isVirtualDevice,
+	rejectedClasses,
 } from "../utils/utils";
 import { useTrevorWebSocket } from "../websockets/websocket";
 import { BarLinks, type BarLinksRef } from "./BarLinks";

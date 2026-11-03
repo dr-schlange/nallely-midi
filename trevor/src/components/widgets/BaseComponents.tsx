@@ -671,6 +671,7 @@ export const CircularSlider = ({
 
 // Window of a double tap on a bar. A single tap waits this long before it counts, so shorter
 // means less delay, and more risk that a slow double tap is read as two single taps.
+const CONTINUOUS_SEND_MS = 50;
 const DOUBLE_TAP_MS = 250;
 
 export interface DropdownOption<K extends string | number> {
@@ -1116,6 +1117,7 @@ export const BarSlider = ({
 	const startValue = useRef<number>(value ?? minValue);
 	const hasMoved = useRef(false);
 	const lastSent = useRef<number | null>(null);
+	const lastSentAt = useRef(0);
 	const isTouch = useRef(false);
 	const dragging = useRef(false);
 	const basePrecision = useRef<number>(0);
@@ -1161,6 +1163,7 @@ export const BarSlider = ({
 		ghostValueRef.current = null;
 		hasMoved.current = false;
 		lastSent.current = null;
+		lastSentAt.current = 0;
 		dragging.current = true;
 		captured.current = { el: e.currentTarget, id: e.pointerId };
 		cancelLongPress();
@@ -1236,8 +1239,13 @@ export const BarSlider = ({
 				? 1
 				: 10 ** Math.max(0, basePrecision.current + extraDecimalsRef.current);
 			const step = Math.round(newValue * factor) / factor;
-			if (step !== lastSent.current) {
+			const now = performance.now();
+			if (
+				step !== lastSent.current &&
+				now - lastSentAt.current >= CONTINUOUS_SEND_MS
+			) {
 				lastSent.current = step;
+				lastSentAt.current = now;
 				if (isChoice) {
 					setLocalIndex(step);
 					onManualSliderChange?.(acceptedValues[step].toString());
