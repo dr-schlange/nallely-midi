@@ -1,5 +1,11 @@
 // LLM generated
-import { type RefObject, useLayoutEffect, useMemo, useState } from "react";
+import {
+	type RefObject,
+	useLayoutEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
 import { createPortal } from "react-dom";
 import { useScope } from "../hooks/ScopeContext";
 import type { Connection, ConnectionEnd } from "../model";
@@ -12,19 +18,11 @@ import {
 import { CLONE_ACTIONS } from "../utils/cloneOptions";
 import { connectionEndId } from "../utils/utils";
 import { useTrevorWebSocket } from "../websockets/websocket";
-import { Button, Dropdown, lightButtonStyle } from "./widgets/BaseComponents";
+import { ScalerRangeForm } from "./ScalerForm";
+import { Button, Dropdown, menuButtonStyle } from "./widgets/BaseComponents";
 
 const HEIGHT = 28;
-
-// a little bigger than the small buttons of the title bars
-const menuButtonStyle = (activated = false): React.CSSProperties => ({
-	...lightButtonStyle(activated),
-	width: 20,
-	minWidth: 20,
-	height: 20,
-	minHeight: 20,
-	fontSize: "14px",
-});
+const LIMITS_WIDTH = 250;
 
 const labelOf = (end: ConnectionEnd) => `${end.repr} · ${end.parameter.name}`;
 
@@ -81,7 +79,9 @@ export const ParameterMenu = ({
 	const dispatch = useTrevorDispatch();
 	const scope = useScope();
 	const rect = useAnchorRect(anchorRef);
-	const [list, setList] = useState<"targets" | "sources" | null>(null);
+	const [list, setList] = useState<"targets" | "sources" | "limits" | null>(
+		null,
+	);
 
 	const targets = useMemo(
 		() => collectLinked(connections, id, "src"),
@@ -92,12 +92,41 @@ export const ParameterMenu = ({
 		[connections, id],
 	);
 
+	const incoming = useMemo(
+		() => connections.filter((c) => connectionEndId(c.dest) === id),
+		[connections, id],
+	);
+
+	// The panel is placed so that its range bar is centered on the parameter, and kept on
+	// screen: it is measured once drawn.
+	const limitsRef = useRef<HTMLDivElement>(null);
+	const [limitsBox, setLimitsBox] = useState({
+		width: LIMITS_WIDTH,
+		barCenter: LIMITS_WIDTH / 2,
+	});
+	useLayoutEffect(() => {
+		const panel = limitsRef.current;
+		if (!panel) return;
+		const bar = panel
+			.querySelector("[data-range-bar]")
+			?.getBoundingClientRect();
+		const width = panel.offsetWidth;
+		const barCenter = bar
+			? bar.left + bar.width / 2 - panel.getBoundingClientRect().left
+			: width / 2;
+		setLimitsBox((box) =>
+			box.width === width && box.barCenter === barCenter
+				? box
+				: { width, barCenter },
+		);
+	});
+
 	if (!rect) return null;
 	const portElemId = `bar-${id}`;
 	const above = rect.top >= HEIGHT + 4;
 	const top = above ? rect.top - HEIGHT - 2 : rect.bottom + 2;
 	const entries = list === "targets" ? targets : sources;
-	const toggleList = (which: "targets" | "sources") =>
+	const toggleList = (which: "targets" | "sources" | "limits") =>
 		setList((current) => (current === which ? null : which));
 
 	const pick = (target: string) => {
@@ -135,6 +164,14 @@ export const ParameterMenu = ({
 					onClick={() => toggleList("sources")}
 				/>
 				<Button
+					text="L"
+					tooltip="Lower and upper bounds of the scalers of the incoming links"
+					disabled={incoming.length === 0}
+					activated={list === "limits"}
+					style={menuButtonStyle(list === "limits")}
+					onClick={() => toggleList("limits")}
+				/>
+				<Button
 					text="D"
 					tooltip="Show this parameter in the debug scope"
 					disabled={!scope}
@@ -151,7 +188,45 @@ export const ParameterMenu = ({
 					onClick={() => toggleList("targets")}
 				/>
 			</div>
-			{list && (
+			{list === "limits" && incoming.length > 0 && (
+				<div
+					ref={limitsRef}
+					data-bar-menu
+					style={{
+						position: "fixed",
+						zIndex: 10000,
+						boxSizing: "border-box",
+						width: "max-content",
+						maxWidth: LIMITS_WIDTH,
+						padding: 4,
+						overflowY: "auto",
+						maxHeight: 240,
+						backgroundColor: "#e0e0e0",
+						// the frame of the other floating menus with several choices
+						border: "3px solid #808080",
+						fontSize: "12px",
+						color: "var(--black)",
+						left: Math.max(
+							4,
+							Math.min(
+								rect.left + rect.width / 2 - limitsBox.barCenter,
+								window.innerWidth - limitsBox.width - 4,
+							),
+						),
+						...(above
+							? { bottom: window.innerHeight - top + 2 }
+							: { top: top + HEIGHT + 2 }),
+					}}
+				>
+					{incoming.map((connection) => (
+						<div key={connection.id} style={{ marginBottom: 4 }}>
+							<div>{labelOf(connection.src)}</div>
+							<ScalerRangeForm connection={connection} />
+						</div>
+					))}
+				</div>
+			)}
+			{(list === "targets" || list === "sources") && (
 				<Dropdown
 					position={{
 						left: rect.left,

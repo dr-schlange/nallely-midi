@@ -1,3 +1,4 @@
+// LLM generated
 import { useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import type { Connection, ConnectionEnd } from "../model";
@@ -12,11 +13,13 @@ const BOTTOM_OFFSET = 22;
 const WIDTH = 250;
 const MARGIN = 4;
 
-// The parameter, with its section for a MIDI device: the devices are left out, the colour of
-// the link already tells which ones they are
-const labelOf = (end: ConnectionEnd) => {
+// The parameter, with its section for a MIDI device. The device is left out when all the
+// links join the same two devices: the link itself tells which ones they are.
+const labelOf = (end: ConnectionEnd, withDevice: boolean) => {
 	const { name, section_name: section } = end.parameter;
-	return section && section !== "__virtual__" ? `${section} · ${name}` : name;
+	const parameter =
+		section && section !== "__virtual__" ? `${section} · ${name}` : name;
+	return withDevice ? `${end.repr} · ${parameter}` : parameter;
 };
 
 const boxStyle: React.CSSProperties = {
@@ -40,6 +43,7 @@ export const LinkMenu = ({
 	x,
 	y,
 	connectionIds,
+	withDevices = false,
 	showList,
 	selectedId,
 	anchor,
@@ -49,6 +53,7 @@ export const LinkMenu = ({
 	x: number;
 	y: number;
 	connectionIds: number[];
+	withDevices?: boolean;
 	showList: boolean;
 	selectedId: number | null;
 	// where the settings open: the pressed point, or the entry clicked in the list
@@ -143,7 +148,7 @@ export const LinkMenu = ({
 					attributes={{ "data-link-menu": true }}
 					options={connections.map((connection) => ({
 						key: connection.id,
-						label: `${labelOf(connection.src)} → ${labelOf(connection.dest)}`,
+						label: `${labelOf(connection.src, withDevices)} → ${labelOf(connection.dest, withDevices)}`,
 						active: connection.id === selectedId,
 					}))}
 					onSelect={(id, e) => onSelect(id, { x: e.clientX, y: e.clientY })}

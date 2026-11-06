@@ -59,6 +59,99 @@ import {
 } from "../widgets/BaseComponents";
 import { MultiChanScope } from "../widgets/MultiChanScope";
 
+const ORANGE_SELECTOR =
+	'[style*="background: orange"], [style*="background-color: orange"]';
+const INSET = /inset\(0(?:px)?\s+([\d.]+)%\s+0(?:px)?\s+([\d.]+)%\)/;
+type Box = { left: number; right: number; top: number; bottom: number };
+
+const collectOrangeBoxes = (): Box[] => {
+	const boxes: Box[] = [];
+	for (const el of document.querySelectorAll<HTMLElement>(ORANGE_SELECTOR)) {
+		const r = el.getBoundingClientRect();
+		if (r.width === 0 || r.height === 0) continue;
+		const box = { left: r.left, right: r.right, top: r.top, bottom: r.bottom };
+		const clip = INSET.exec(el.style.clipPath);
+		if (clip) {
+			const cutEnd = Number(clip[1]) / 100;
+			const cutStart = Number(clip[2]) / 100;
+			if (el.parentElement?.style.transform.includes("rotate(-90deg)")) {
+				box.top = r.bottom - (1 - cutEnd) * r.height;
+				box.bottom = r.bottom - cutStart * r.height;
+			} else {
+				box.left = r.left + cutStart * r.width;
+				box.right = r.right - cutEnd * r.width;
+			}
+		}
+		boxes.push(box);
+	}
+	return boxes;
+};
+
+const insideBox = (
+	a: { x: number; y: number },
+	b: { x: number; y: number },
+	box: Box,
+): [number, number] | null => {
+	const dx = b.x - a.x;
+	const dy = b.y - a.y;
+	let t0 = 0;
+	let t1 = 1;
+	for (const [p, q] of [
+		[-dx, a.x - box.left],
+		[dx, box.right - a.x],
+		[-dy, a.y - box.top],
+		[dy, box.bottom - a.y],
+	]) {
+		if (p === 0) {
+			if (q < 0) return null;
+			continue;
+		}
+		const t = q / p;
+		if (p < 0) {
+			if (t > t1) return null;
+			t0 = Math.max(t0, t);
+		} else {
+			if (t < t0) return null;
+			t1 = Math.min(t1, t);
+		}
+	}
+	return t0 < t1 ? [t0, t1] : null;
+};
+
+const splitLine = (
+	a: { x: number; y: number },
+	b: { x: number; y: number },
+	boxes: Box[],
+): ScopePiece[] => {
+	const length = Math.hypot(b.x - a.x, b.y - a.y);
+	const ranges = boxes
+		.map((box) => insideBox(a, b, box))
+		.filter((r): r is [number, number] => r !== null)
+		.sort((r1, r2) => r1[0] - r2[0]);
+	const pieces: ScopePiece[] = [];
+	const add = (from: number, to: number, stroke: string) => {
+		if (to - from <= 0) return;
+		const at = (t: number) =>
+			`${a.x + (b.x - a.x) * t},${a.y + (b.y - a.y) * t}`;
+		pieces.push({
+			d: `M ${at(from)} L ${at(to)}`,
+			stroke,
+			offset: from * length,
+		});
+	};
+	let cursor = 0;
+	for (const [from, to] of ranges) {
+		if (to <= cursor) continue;
+		add(cursor, Math.max(from, cursor), "orange");
+		add(Math.max(from, cursor), to, "gray");
+		cursor = to;
+	}
+	add(cursor, 1, "orange");
+	return pieces;
+};
+
+type ScopePiece = { d: string; stroke: string; offset: number };
+
 export const TmpScopeOverlay = ({
 	onClose,
 	numChannels,
@@ -71,7 +164,7 @@ export const TmpScopeOverlay = ({
 	refreshKey?: string;
 }) => {
 	const scopeRef = useRef<HTMLDivElement>(null);
-	const [paths, setPaths] = useState<string[]>([]);
+	const [paths, setPaths] = useState<ScopePiece[]>([]);
 	const [sizeKey, setSizeKey] = useState(0);
 	const portElemIdsKey = portElemIds.join(",");
 	const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
@@ -164,14 +257,15 @@ export const TmpScopeOverlay = ({
 		const scopeRect = scopeRef.current.getBoundingClientRect();
 		const x1 = scopeRect.left + scopeRect.width / 2;
 		const y1 = scopeRect.bottom;
-		const newPaths: string[] = [];
+		const newPaths: ScopePiece[] = [];
+		const orange = collectOrangeBoxes();
 		for (const id of portElemIds) {
 			const portEl = document.getElementById(id);
 			if (!portEl) continue;
 			const portRect = portEl.getBoundingClientRect();
 			const x2 = portRect.left + portRect.width / 2;
 			const y2 = portRect.top + portRect.height / 2;
-			newPaths.push(`M ${x1},${y1} L ${x2},${y2}`);
+			newPaths.push(...splitLine({ x: x1, y: y1 }, { x: x2, y: y2 }, orange));
 		}
 		setPaths(newPaths);
 		// eslint-disable-next-line react-hooks/exhaustive-deps
@@ -212,15 +306,16 @@ export const TmpScopeOverlay = ({
 						zIndex: 9998,
 					}}
 				>
-					{paths.map((d, i) => (
+					{paths.map((piece, i) => (
 						<path
+							// biome-ignore lint/suspicious/noArrayIndexKey: pieces have no identity
 							key={i}
-							d={d}
+							d={piece.d}
 							fill="none"
-							stroke="gray"
+							stroke={piece.stroke}
 							strokeWidth="2"
 							strokeDasharray="5,5"
-							strokeOpacity="0.8"
+							strokeDashoffset={piece.offset}
 						/>
 					))}
 				</svg>

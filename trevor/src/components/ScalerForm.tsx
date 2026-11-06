@@ -1,8 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Connection } from "../model";
 import { useTrevorWebSocket } from "../websockets/websocket";
 import DragNumberInput from "./DragInputs";
-import { Button } from "./widgets/BaseComponents";
+import {
+	Button,
+	menuButtonStyle,
+	RangeBarSlider,
+} from "./widgets/BaseComponents";
 
 interface ScalerFormProps {
 	connection: Connection;
@@ -352,8 +356,6 @@ export const ScalerForm = ({ connection }: ScalerFormProps) => {
 	);
 };
 
-// The same fields as ScalerForm, split in two for the floating menus of a link: the
-// switches and the range of the scaler above, the other fields below.
 export const ScalerFormTop = ({ connection }: ScalerFormProps) => {
 	const state = useScalerState(connection);
 	return (
@@ -374,6 +376,98 @@ export const ScalerFormBottom = ({ connection }: ScalerFormProps) => {
 		<div className="connection-setup">
 			<RoundValuesCheckbox {...state} />
 			<ScalerOptions {...state} />
+		</div>
+	);
+};
+
+export const ScalerRangeForm = ({ connection }: ScalerFormProps) => {
+	const state = useScalerState(connection);
+	const { scalerEnabled, scalerId, min, setMin, max, setMax, trevorSocket } =
+		state;
+	const wantsUnit = useRef(false);
+	useEffect(() => {
+		if (!scalerEnabled || !wantsUnit.current) return;
+		wantsUnit.current = false;
+		trevorSocket?.setScalerValue(scalerId, "to_min", -1);
+		trevorSocket?.setScalerValue(scalerId, "to_max", 1);
+		setMin(-1);
+		setMax(1);
+	}, [scalerEnabled, scalerId, trevorSocket, setMin, setMax]);
+
+	const asNumber = (v: number | string) =>
+		v === "" || Number.isNaN(Number(v)) ? undefined : Number(v);
+
+	return (
+		<div style={{ display: "flex", gap: "4px", alignItems: "center" }}>
+			<Button
+				text="B"
+				tooltip="Bouncy link"
+				activated={connection.bouncy}
+				style={menuButtonStyle(connection.bouncy)}
+				onClick={() =>
+					trevorSocket?.makeLinkBouncy(
+						connection.src.device,
+						connection.src.parameter,
+						connection.dest.device,
+						connection.dest.parameter,
+						!connection.bouncy,
+					)
+				}
+			/>
+			<Button
+				text="M"
+				tooltip="Mute link"
+				activated={connection.muted}
+				style={menuButtonStyle(connection.muted)}
+				onClick={() =>
+					trevorSocket?.muteLink(
+						connection.src.device,
+						connection.src.parameter,
+						connection.dest.device,
+						connection.dest.parameter,
+						!connection.muted,
+					)
+				}
+			/>
+			<RangeBarSlider
+				lower={asNumber(min)}
+				upper={asNumber(max)}
+				range={connection.dest.parameter.range}
+				disabled={!scalerEnabled}
+				onChange={(side, value) => {
+					if (side === "lower") {
+						setMin(value);
+						trevorSocket?.setScalerValue(scalerId, "to_min", value);
+					} else {
+						setMax(value);
+						trevorSocket?.setScalerValue(scalerId, "to_max", value);
+					}
+				}}
+			/>
+			<Button
+				text="⇄"
+				tooltip="Switch min and max"
+				disabled={!scalerEnabled}
+				style={menuButtonStyle()}
+				onClick={state.switchMinMax}
+			/>
+			{!scalerEnabled && (
+				<Button
+					text="±1"
+					tooltip="Add a scaler with the range -1 to 1"
+					style={{ ...menuButtonStyle(), width: "auto" }}
+					onClick={() => {
+						wantsUnit.current = true;
+						trevorSocket?.createScaler(
+							connection.src.device,
+							connection.src.parameter,
+							connection.dest.device,
+							connection.dest.parameter,
+							true,
+						);
+					}}
+				/>
+			)}
 		</div>
 	);
 };

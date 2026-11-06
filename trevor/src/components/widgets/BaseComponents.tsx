@@ -2,14 +2,14 @@
 /** biome-ignore-all lint/a11y/noSvgWithoutTitle: <explanation> */
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import type { MidiParameter, PadsOrKeys, VirtualParameter } from "../../model";
-import {
-	connectionEndId,
-	generateAcronym,
-	resolveAcceptedValueIndex,
-} from "../../utils/utils";
 import { useRackScale } from "../../hooks/RackScaleContext";
+import type { MidiParameter, PadsOrKeys, VirtualParameter } from "../../model";
 import { useTrevorSelector } from "../../store";
+import {
+    connectionEndId,
+    generateAcronym,
+    resolveAcceptedValueIndex,
+} from "../../utils/utils";
 import { getNoteName } from "../MidiGrid";
 import { ParameterMenu } from "../ParameterMenu";
 
@@ -84,6 +84,15 @@ export const lightButtonStyle = (
 			: {}),
 	};
 };
+
+export const menuButtonStyle = (activated = false): React.CSSProperties => ({
+	...lightButtonStyle(activated),
+	width: 20,
+	minWidth: 20,
+	height: 20,
+	minHeight: 20,
+	fontSize: "14px",
+});
 
 export interface WidgetProps {
 	id: string;
@@ -669,8 +678,6 @@ export const CircularSlider = ({
 	);
 };
 
-// Window of a double tap on a bar. A single tap waits this long before it counts, so shorter
-// means less delay, and more risk that a slow double tap is read as two single taps.
 const CONTINUOUS_SEND_MS = 50;
 const DOUBLE_TAP_MS = 250;
 
@@ -678,21 +685,11 @@ export interface DropdownOption<K extends string | number> {
 	key: K;
 	label: React.ReactNode;
 	title?: string;
-	// the current choice: orange, as the fill of a bar
 	active?: boolean;
 }
 
 const DROPDOWN_MARGIN = 4;
 
-// A list of options floating over the page, at a fixed place of the screen. It is a portal, so
-// it is never clipped by what holds the component that renders it. `onSelect` gets the key of
-// the option and the click; the list stays open until its owner stops rendering it.
-//  - position: where it is, with the sides of your choice (`right` and `bottom` grow it
-//    leftwards and upwards);
-//  - keepOnScreen: position is a point, and the list is moved back inside the window once
-//    measured;
-//  - innerRef: to tell a press inside the list from one outside;
-//  - attributes: data attributes for the owner's own checks.
 export const Dropdown = <K extends string | number>({
 	options,
 	onSelect,
@@ -1837,5 +1834,275 @@ export const KeysBar = ({
 				/>
 			)}
 		</>
+	);
+};
+
+const RANGE_BAR_HEIGHT = 22;
+const RANGE_BAR_WIDTH = 88; // as the parameter bars
+const RANGE_BAR_MARGIN = 3;
+
+type RangeSide = "lower" | "upper";
+
+export const RangeBarSlider = ({
+	lower,
+	upper,
+	range,
+	disabled = false,
+	onChange,
+}: {
+	lower: number | undefined;
+	upper: number | undefined;
+	range: [number, number];
+	disabled?: boolean;
+	onChange: (side: RangeSide, value: number) => void;
+}) => {
+	const [low, high] = range;
+	const span = high - low;
+	const countDecimals = (v: number) => {
+		const str = v.toString();
+		const dot = str.indexOf(".");
+		return dot === -1 ? 0 : str.length - dot - 1;
+	};
+	const [drag, setDrag] = useState<{
+		side: RangeSide;
+		value: number;
+		precision: number;
+	} | null>(null);
+	const dragRef = useRef<{
+		side: RangeSide;
+		startX: number;
+		startY: number;
+		startValue: number;
+		moved: boolean;
+		value: number;
+		basePrecision: number;
+		extra: number;
+	} | null>(null);
+	const [editing, setEditing] = useState<{
+		side: RangeSide;
+		draft: string;
+	} | null>(null);
+	const typingDone = useRef(false);
+
+	const crosses = (side: RangeSide, value: number) => {
+		if (lower === undefined || upper === undefined) return false;
+		const before = Math.sign(lower - upper);
+		const after = Math.sign(
+			(side === "lower" ? value : lower) - (side === "upper" ? value : upper),
+		);
+		return before !== 0 && after !== 0 && before !== after;
+	};
+	const dragCrossed = drag ? crosses(drag.side, drag.value) : false;
+	const moved = {
+		lower: drag?.side === "lower" ? drag.value : lower,
+		upper: drag?.side === "upper" ? drag.value : upper,
+	};
+	const shown = dragCrossed
+		? { lower: moved.upper, upper: moved.lower }
+		: moved;
+	const dragSide: RangeSide | undefined = drag
+		? dragCrossed
+			? drag.side === "lower"
+				? "upper"
+				: "lower"
+			: drag.side
+		: undefined;
+	const apply = (side: RangeSide, value: number) => {
+		if (!crosses(side, value)) {
+			onChange(side, value);
+			return;
+		}
+		const other: RangeSide = side === "lower" ? "upper" : "lower";
+		onChange(side, (other === "lower" ? lower : upper) as number);
+		onChange(other, value);
+	};
+	const percent = (v: number | undefined) =>
+		v === undefined || span === 0
+			? undefined
+			: Math.min(100, Math.max(0, ((v - low) / span) * 100));
+	const from = percent(shown.lower);
+	const to = percent(shown.upper);
+	const text = (side: RangeSide) => {
+		const v = shown[side];
+		if (v === undefined) return "...";
+		if (drag && dragSide === side) return v.toFixed(drag.precision);
+		return String(Number(v.toFixed(4)));
+	};
+
+	const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+		const box = e.currentTarget.getBoundingClientRect();
+		const side: RangeSide =
+			e.clientX - box.left < box.width / 2 ? "lower" : "upper";
+		const startValue = shown[side] ?? low + span / 2;
+		dragRef.current = {
+			side,
+			startX: e.clientX,
+			startY: e.clientY,
+			startValue,
+			moved: false,
+			value: startValue,
+			basePrecision: Math.max(2, countDecimals(startValue)),
+			extra: 0,
+		};
+		e.currentTarget.setPointerCapture?.(e.pointerId);
+	};
+	const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+		const d = dragRef.current;
+		if (!d) return;
+		if (!d.moved && Math.abs(d.startY - e.clientY) < 4) return;
+		d.moved = true;
+		// as in BarSlider: the further to the left, the finer; to the right, the coarser
+		const xDelta = e.clientX - d.startX;
+		const distance = Math.abs(xDelta);
+		const magnitude =
+			distance < 45 ? 0 : Math.min(6, 1 + Math.floor((distance - 45) / 25));
+		const extra = Math.max(
+			-d.basePrecision,
+			xDelta < 0 ? magnitude : -magnitude,
+		);
+		if (extra !== d.extra) {
+			d.startValue = d.value;
+			d.startY = e.clientY;
+			d.extra = extra;
+		}
+		const raw =
+			d.startValue + ((d.startY - e.clientY) / 2) * (span / 127) * 10 ** -extra;
+		d.value = Math.min(high, Math.max(low, raw));
+		setDrag({
+			side: d.side,
+			value: d.value,
+			precision: Math.max(0, d.basePrecision + extra),
+		});
+	};
+	const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+		const d = dragRef.current;
+		dragRef.current = null;
+		if (e.currentTarget.hasPointerCapture?.(e.pointerId)) {
+			e.currentTarget.releasePointerCapture(e.pointerId);
+		}
+		setDrag(null);
+		if (!d) return;
+		if (d.moved) {
+			const factor = 10 ** Math.max(0, d.basePrecision + d.extra);
+			const committed = Math.round(d.value * factor) / factor;
+			// against the props: `shown` already holds the dragged value
+			const current = d.side === "lower" ? lower : upper;
+			if (committed !== current) apply(d.side, committed);
+		} else if (e.type === "pointerup") {
+			typingDone.current = false;
+			setEditing({ side: d.side, draft: String(shown[d.side] ?? "") });
+		}
+	};
+
+	const commit = () => {
+		if (!editing || typingDone.current) return;
+		typingDone.current = true;
+		const typed = Number(editing.draft.replace(",", "."));
+		// typed values are not capped to the declared range
+		if (editing.draft.trim() !== "" && !Number.isNaN(typed)) {
+			apply(editing.side, typed);
+		}
+		setEditing(null);
+	};
+
+	return (
+		<div
+			data-range-bar
+			style={{
+				position: "relative",
+				width: RANGE_BAR_WIDTH,
+				flexShrink: 0,
+				height: RANGE_BAR_HEIGHT,
+				boxSizing: "border-box",
+				background: "var(--rack-bg-color)",
+				overflow: "hidden",
+				userSelect: "none",
+				touchAction: "none",
+				fontSize: "12px",
+				fontWeight: "bold",
+				color: "var(--black)",
+				opacity: disabled ? 0.5 : 1,
+			}}
+			onPointerDown={disabled || editing ? undefined : handlePointerDown}
+			onPointerMove={disabled || editing ? undefined : handlePointerMove}
+			onPointerUp={disabled || editing ? undefined : handlePointerUp}
+			onPointerCancel={disabled || editing ? undefined : handlePointerUp}
+			onContextMenu={(e) => e.preventDefault()}
+		>
+			{!disabled && from !== undefined && to !== undefined && (
+				<div
+					style={{
+						position: "absolute",
+						top: 0,
+						bottom: 0,
+						left: `${Math.min(from, to)}%`,
+						width: `${Math.abs(to - from)}%`,
+						background: "orange",
+						pointerEvents: "none",
+					}}
+				/>
+			)}
+			<div
+				style={{
+					position: "absolute",
+					top: 0,
+					bottom: 0,
+					left: "50%",
+					width: 1,
+					background: "#808080",
+					// only a hint of the sides
+					opacity: 0.3,
+					pointerEvents: "none",
+				}}
+			/>
+			<div
+				style={{
+					position: "absolute",
+					inset: 0,
+					display: "flex",
+					alignItems: "center",
+					justifyContent: "space-between",
+					padding: `0 ${RANGE_BAR_MARGIN}px`,
+					whiteSpace: "nowrap",
+					pointerEvents: "none",
+				}}
+			>
+				<span>{text("lower")}</span>
+				<span>{text("upper")}</span>
+			</div>
+			{editing && (
+				<input
+					// biome-ignore lint/a11y/noAutofocus: opened by the tap
+					autoFocus
+					value={editing.draft}
+					inputMode="decimal"
+					onChange={(e) => setEditing({ ...editing, draft: e.target.value })}
+					onFocus={(e) => e.currentTarget.select()}
+					onBlur={commit}
+					onKeyDown={(e) => {
+						if (e.key === "Enter") commit();
+						if (e.key === "Escape") {
+							typingDone.current = true;
+							setEditing(null);
+						}
+					}}
+					style={{
+						position: "absolute",
+						top: 0,
+						bottom: 0,
+						left: editing.side === "lower" ? 0 : "50%",
+						width: "50%",
+						boxSizing: "border-box",
+						padding: 0,
+						border: "none",
+						outline: "none",
+						textAlign: "center",
+						font: "inherit",
+						background: "var(--rack-bg-color)",
+						color: "var(--black)",
+					}}
+				/>
+			)}
+		</div>
 	);
 };

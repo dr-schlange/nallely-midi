@@ -1,28 +1,28 @@
 // LLM generated
 import {
-	forwardRef,
-	type RefObject,
-	useCallback,
-	useEffect,
-	useImperativeHandle,
-	useMemo,
-	useRef,
-	useState,
+    forwardRef,
+    type RefObject,
+    useCallback,
+    useEffect,
+    useImperativeHandle,
+    useMemo,
+    useRef,
+    useState,
 } from "react";
 import type { Connection } from "../model";
 import { useTrevorDispatch, useTrevorSelector } from "../store";
 import { setBarSelection, setHighlightedUnit } from "../store/runtimeSlice";
 import {
-	buildOwners,
-	type InlinedAnchor,
-	resolveInlinedAnchor,
+    buildOwners,
+    type InlinedAnchor,
+    resolveInlinedAnchor,
 } from "../utils/inlinedAnchors";
 import {
-	type Point,
-	type Rect,
-	routeOrthogonal,
-	type Borders,
-	type Side,
+    type Borders,
+    type Point,
+    type Rect,
+    routeOrthogonal,
+    type Side,
 } from "../utils/orthogonalRoute";
 import { connectionEndId } from "../utils/utils";
 import { LinkMenu } from "./LinkMenu";
@@ -32,10 +32,12 @@ export interface BarLinksRef {
 }
 
 // 100% LLM generated
-const LINK_COLOR = "#5a87bb"; // the blue of the other links
-const LINK_OPACITY = 0.7;
+const LINK_COLOR = "#808080"; // gray at rest, HIGHLIGHT_COLOR when highlighted
+const HIT_TOLERANCE = 6; // px from a link's line: half of its transparent hit stroke
 const LINK_WIDTH = 2;
 const HIGHLIGHT_COLOR = "blue";
+const BOUNCY_OPACITY = 0.7;
+const BOUNCY_COLOR = "green"; // as the bouncy links of the rack view
 const ARROW_LENGTH = 6;
 const NEARBY = 120; // obstacles farther than this from both ends are ignored
 
@@ -46,6 +48,27 @@ const blockSelection = (e: Event) => e.preventDefault();
 
 const overlaps = (a: Rect, b: Rect) =>
 	a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+
+const distanceToSegment = (p: Point, a: Point, b: Point) => {
+	const dx = b.x - a.x;
+	const dy = b.y - a.y;
+	const lengthSquared = dx * dx + dy * dy;
+	const t =
+		lengthSquared === 0
+			? 0
+			: Math.max(
+					0,
+					Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / lengthSquared),
+				);
+	return Math.hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy));
+};
+
+const isNear = (points: Point[], p: Point) =>
+	points.some(
+		(a, i) =>
+			i + 1 < points.length &&
+			distanceToSegment(p, a, points[i + 1]) <= HIT_TOLERANCE,
+	);
 
 const contains = (r: Rect, p: Point) =>
 	p.x > r.left && p.x < r.right && p.y > r.top && p.y < r.bottom;
@@ -168,10 +191,14 @@ interface Placed {
 
 interface DrawnLink {
 	d: string;
+	// the whole route, before the cut around the toolbars: what a press is tested against
+	points: Point[];
 	arrow: string;
 	// the connections the link stands for, and whether both ends are collapsed
 	connectionIds: number[];
 	bothCollapsed: boolean;
+	// one of the patches bounces: green, as in the rack view
+	bouncy: boolean;
 	// devices and sections at the ends of the patches this link stands for
 	units: string[];
 	// the parameters at the ends of those patches
@@ -218,11 +245,15 @@ export const BarLinks = forwardRef<
 		new Map<string, { signature: string; at: Point; points: Point[] }>(),
 	);
 	const [links, setLinks] = useState<DrawnLink[]>([]);
+	const linksRef = useRef(links);
+	linksRef.current = links;
 	const [size, setSize] = useState({ width: 0, height: 0 });
 	const [menu, setMenu] = useState<{
 		x: number;
 		y: number;
 		ids: number[];
+		// the links come from several pairs of ends: the list names the devices
+		withDevices: boolean;
 		showList: boolean;
 		selected: number | null;
 		// where the settings of the selected link open, when not at the pressed point
@@ -233,7 +264,12 @@ export const BarLinks = forwardRef<
 		(id: number | null, point?: { x: number; y: number }) =>
 			setMenu((current) =>
 				current
-					? { ...current, selected: id, anchor: point ?? current.anchor }
+					? // the forms stay where they first opened, whichever entry is picked next
+						{
+							...current,
+							selected: id,
+							anchor: current.anchor ?? point ?? null,
+						}
 					: current,
 			),
 		[],
@@ -263,14 +299,24 @@ export const BarLinks = forwardRef<
 			// the link takes the place of the selected parameter or highlighted title
 			dispatch(setBarSelection(null));
 			dispatch(setHighlightedUnit(null));
+			// every link under the pressed point: overlapping links are asked for, not guessed
+			const origin = svgRef.current?.getBoundingClientRect();
+			const under = origin
+				? linksRef.current.filter((l) =>
+						isNear(l.points, { x: x - origin.left, y: y - origin.top }),
+					)
+				: [];
+			const hits = [link, ...under.filter((l) => l !== link)];
+			const ids = [...new Set(hits.flatMap((l) => l.connectionIds))];
 			// between two collapsed ends (or several patches) the list comes first
-			const showList = link.bothCollapsed || link.connectionIds.length > 1;
+			const showList = link.bothCollapsed || ids.length > 1;
 			setMenu({
 				x,
 				y,
-				ids: link.connectionIds,
+				ids,
+				withDevices: hits.length > 1,
 				showList,
-				selected: showList ? null : link.connectionIds[0],
+				selected: showList ? null : ids[0],
 				anchor: null,
 			});
 		}, 500);
@@ -609,6 +655,7 @@ export const BarLinks = forwardRef<
 			const tip = points[points.length - 1];
 			const tipHidden = topBars.some((r) => contains(r, tip));
 			next.push({
+				points,
 				d: clipPolyline(line, topBars)
 					.map((piece) =>
 						piece
@@ -623,6 +670,7 @@ export const BarLinks = forwardRef<
 				units: [...pair.units],
 				connectionIds: pair.connections.map((c) => c.id),
 				bothCollapsed: pair.src.port && pair.dest.port,
+				bouncy: pair.connections.some((c) => c.bouncy),
 				parameters: [...pair.parameters],
 			});
 		}
@@ -635,6 +683,7 @@ export const BarLinks = forwardRef<
 					l.arrow === next[i].arrow &&
 					l.connectionIds.join() === next[i].connectionIds.join() &&
 					l.bothCollapsed === next[i].bothCollapsed &&
+					l.bouncy === next[i].bouncy &&
 					l.units.join() === next[i].units.join() &&
 					l.parameters.join() === next[i].parameters.join(),
 			)
@@ -731,7 +780,11 @@ export const BarLinks = forwardRef<
 		>
 			<g>
 				{drawn.map(({ link, highlighted }, i) => {
-					const color = highlighted ? HIGHLIGHT_COLOR : LINK_COLOR;
+					const color = highlighted
+						? HIGHLIGHT_COLOR
+						: link.bouncy
+							? BOUNCY_COLOR
+							: LINK_COLOR;
 					const width = highlighted ? LINK_WIDTH + 1 : LINK_WIDTH;
 					return (
 						// biome-ignore lint/suspicious/noArrayIndexKey: links have no identity
@@ -756,7 +809,7 @@ export const BarLinks = forwardRef<
 								/>
 							)}
 							{/* the group opacity covers the line and the arrowhead as one shape */}
-							<g opacity={highlighted ? 1 : LINK_OPACITY}>
+							<g opacity={link.bouncy && !highlighted ? BOUNCY_OPACITY : 1}>
 								<path
 									d={link.d}
 									fill="none"
@@ -792,6 +845,7 @@ export const BarLinks = forwardRef<
 					x={menu.x}
 					y={menu.y}
 					connectionIds={menu.ids}
+					withDevices={menu.withDevices}
 					showList={menu.showList}
 					selectedId={menu.selected}
 					anchor={menu.anchor}
