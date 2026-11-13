@@ -13,6 +13,14 @@ class GeneralSection(nallely.Module):
         7, init_value=100, description="General Volume", high_res="unipolar"
     )
     panning = nallely.ModuleParameter(14, description="Panning", high_res="unipolar")
+    spread = nallely.ModuleParameter(
+        13, description="Stereo spread of the voices", high_res="unipolar"
+    )
+    spread_mode = nallely.ModuleParameter(
+        19,
+        description="How a note gets its stereo position",
+        accepted_values=["voice_index", "note", "random", "ping_pong"],
+    )
     engine_select = nallely.ModuleParameter(8, description="Engine Selection")
     voice_mode = nallely.ModuleParameter(
         2, description="Mode for the voices", accepted_values=["poly", "unison", "mono"]

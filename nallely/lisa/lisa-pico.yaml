@@ -16,6 +16,19 @@ dr-schlange:
         description: "Panning"
         init: 0
         hr: unipolar
+      spread:
+        cc: 13
+        description: "Stereo spread of the voices"
+        init: 0
+        hr: unipolar
+      spread_mode:
+        cc: 19
+        description: "How a note gets its stereo position"
+        accepted_values:
+          - voice_index
+          - note
+          - random
+          - ping_pong
       engine_select:
         cc: 8
         description: "Engine Selection"
