@@ -12,7 +12,7 @@ class GeneralSection(nallely.Module):
     master_volume = nallely.ModuleParameter(
         7, init_value=100, description="General Volume", high_res="unipolar"
     )
-    panning = nallely.ModuleParameter(14, description="Panning", high_res="unipolar")
+    panning = nallely.ModuleParameter(14, description="Panning", high_res="bipolar")
     spread = nallely.ModuleParameter(
         13, description="Stereo spread of the voices", high_res="unipolar"
     )

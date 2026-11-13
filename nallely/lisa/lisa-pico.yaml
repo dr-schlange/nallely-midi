@@ -15,7 +15,7 @@ dr-schlange:
         cc: 14
         description: "Panning"
         init: 0
-        hr: unipolar
+        hr: bipolar
       spread:
         cc: 13
         description: "Stereo spread of the voices"
