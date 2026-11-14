@@ -4,17 +4,17 @@ dr-schlange:
       gain:
         cc: 3
         description: "General Gain"
-        init: 100
+        init: 127
         hr: unipolar
       master_volume:
         cc: 7
         description: "General Volume"
-        init: 100
+        init: 127
         hr: unipolar
       panning:
         cc: 14
         description: "Panning"
-        init: 0
+        init: 64
         hr: bipolar
       spread:
         cc: 13

@@ -175,7 +175,7 @@ Generated configuration for the {brand} - {device}
                     if init == 0:
                         init = ""
                     else:
-                        init = f", init_value={init}"
+                        init = f", init_value={init / 127:.4f}"
                     if min == 0 and max == 127:
                         range = ""
                     else:
