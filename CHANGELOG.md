@@ -25,6 +25,10 @@
 * Add new rack rows (new interface and new way of patching ports/parameters together)
 * Add zoom and zoom+ mode
 * Add quick navigation between linked ports
+* Add high resolution support for LISA (or any device implementing the HR protocol) over a dedicated USB serial port (HR protocol, 16 bits for CC and pitchwheel values), with clean reconnection, and throttled sending of values.
+* Add LISA MIDI API described in a YAML file (`lisa-pico.yaml`), from which the Python API of the device is generated (standard and HR versions), including bipolar/unipolar declarations for the HR protocol
+* Add LISA parameters for the stereo spread (`general.spread`, `general.spread_mode`), the sluggish mode, the per-wavetable phase ratio and phase offset, the write modes and indices, and the hard sync (requires LISA v0.3.0 or later)
+* Add notes and pitchwheel support in the new rack interface
 
 ### Fixes
 
@@ -38,6 +42,9 @@
 * Fix potential memory leak when modules/neurons are killed
 * Fix bad data still being in the queue after an exception is caught
 * Fix highpass and bandpass filter in the MultipoleFilter
+* Fix LISA panning and detune declared as unipolar instead of bipolar
+* Fix LISA default and init values for unipolar and bipolar parameters
+* Fix potential thread leak when a MIDI device cannot be found
 
 ## Nallely v0.6.0 -- Tepezcohuite
 
