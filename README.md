@@ -183,6 +183,22 @@ All the embedded visuals are available at [http://localhost:3000/visuals](http:/
 </details>
 
 
+## Brain and engine
+
+Nallely doesn't make sound. It sits next to instruments and talks to them.
+
+The instrument is the engine: a synth, a MIDI device, any software that accepts MIDI. 
+It owns what has to be on time. 
+Nallely is the brain: LFOs, sequencers, sensors, scripts, Forth, all running as independent neurons with no global clock. 
+They are late sometimes, they drift, and they are allowed to. 
+The sound never waits for them.
+
+A modular rack splits one synth into modules joined by cables. 
+Nallely splits one level higher: the instrument is one highly patcheable module, the rest of the rack is software. 
+The cables carry messages, and a message can reach as deep as the instrument allows. 
+With [LISA](https://github.com/dr-schlange/LISA), a synth built for this, a signal from Nallely doesn't only turn knobs, it can also draw in real time the waveforms that LISA plays.
+
+
 ## Architecture
 
 Nallely and Trevor is based on a simple classical decoupled architecture:
