@@ -122,7 +122,7 @@ Generated configuration for the {brand} - {device}
         device_name = device.replace("-", "").replace(" ", "")
         f.write(f"class {device_name.capitalize()}(nallely.MidiDevice):\n")
         for section in sections:
-            f.write(f"    {section}: {section.capitalize()}Section  # type: ignore\n")
+            f.write(f"    {section}: {section.capitalize()}Section\n")
         f.write("\n")
         f.write("    def __init__(self, device_name=None, *args, **kwargs):\n")
         f.write("        super().__init__(\n")
@@ -197,7 +197,7 @@ Generated configuration for the {brand} - {device}
         device_name = device.replace("-", "").replace(" ", "")
         f.write(f"class {device_name.capitalize()}HR(nallely.HRDevice):\n")
         for section in sections:
-            f.write(f"    {section}: {section.capitalize()}Section  # type: ignore\n")
+            f.write(f"    {section}: {section.capitalize()}Section\n")
         f.write("\n")
         f.write("    def __init__(self, device_name=None, *args, **kwargs):\n")
         f.write(f"        self.manufacturer = {brand!r}\n")
