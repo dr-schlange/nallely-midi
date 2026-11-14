@@ -44,7 +44,7 @@ dr-schlange:
         cc: 4
         description: "Detune applied to secondary voice in unison mode"
         init: 70
-        hr: unipolar
+        hr: bipolar
       sustain:
         cc: 64
         description: "Sustain (Hold notes)"

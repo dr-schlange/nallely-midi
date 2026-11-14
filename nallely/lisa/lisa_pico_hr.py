@@ -29,7 +29,7 @@ class GeneralSection(nallely.Module):
         4,
         init_value=70,
         description="Detune applied to secondary voice in unison mode",
-        high_res="unipolar",
+        high_res="bipolar",
     )
     sustain = nallely.ModuleParameter(
         64, description="Sustain (Hold notes)", accepted_values=["OFF", "ON"]
@@ -226,14 +226,14 @@ class KeysSection(nallely.Module):
 
 
 class LisaHR(nallely.HRDevice):
-    general: GeneralSection  # type: ignore
-    buttons: ButtonsSection  # type: ignore
-    envelope: EnvelopeSection  # type: ignore
-    filter: FilterSection  # type: ignore
-    modulation: ModulationSection  # type: ignore
-    wavetable: WavetableSection  # type: ignore
-    features: FeaturesSection  # type: ignore
-    keys: KeysSection  # type: ignore
+    general: GeneralSection
+    buttons: ButtonsSection
+    envelope: EnvelopeSection
+    filter: FilterSection
+    modulation: ModulationSection
+    wavetable: WavetableSection
+    features: FeaturesSection
+    keys: KeysSection
 
     def __init__(self, device_name=None, *args, **kwargs):
         self.manufacturer = "dr-schlange"

@@ -184,14 +184,14 @@ class KeysSection(nallely.Module):
 
 
 class Lisa(nallely.MidiDevice):
-    general: GeneralSection  # type: ignore
-    buttons: ButtonsSection  # type: ignore
-    envelope: EnvelopeSection  # type: ignore
-    filter: FilterSection  # type: ignore
-    modulation: ModulationSection  # type: ignore
-    wavetable: WavetableSection  # type: ignore
-    features: FeaturesSection  # type: ignore
-    keys: KeysSection  # type: ignore
+    general: GeneralSection
+    buttons: ButtonsSection
+    envelope: EnvelopeSection
+    filter: FilterSection
+    modulation: ModulationSection
+    wavetable: WavetableSection
+    features: FeaturesSection
+    keys: KeysSection
 
     def __init__(self, device_name=None, *args, **kwargs):
         super().__init__(
