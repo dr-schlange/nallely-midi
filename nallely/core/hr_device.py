@@ -2,13 +2,18 @@ import struct
 import time
 from queue import Empty, Full, Queue
 
-import serial
-from serial.tools import list_ports
-
 from ..utils import getlogger
 from .midi_device import MidiDevice
 
 logger = getlogger("HR")
+
+try:
+    import serial
+    from serial.tools import list_ports
+except ImportError:
+    logger.warning(
+        "'serial' cannot be imported, HR cannot be used. Install 'pyserial' in your Python environment if you plan to use it."
+    )
 
 
 HELLO = b"HR01"
