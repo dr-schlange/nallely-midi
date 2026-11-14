@@ -171,11 +171,17 @@ Generated configuration for the {brand} - {device}
                 else:
                     cc = config["cc"]
                     min, max = config.get("min", 0), config.get("max", 127)
+                    hr_range = config.get("hr", "")
                     init = config.get("init", 0)
                     if init == 0:
                         init = ""
                     else:
-                        init = f", init_value={init / 127:.4f}"
+                        init = (
+                            f"{init / 127}"
+                            if hr_range == "unipolar"
+                            else f"{(init - 64) / 64:.4f}"
+                        )
+                        init = f", init_value={init}"
                     if min == 0 and max == 127:
                         range = ""
                     else:
@@ -188,7 +194,6 @@ Generated configuration for the {brand} - {device}
                         if accepted_values
                         else ""
                     )
-                    hr_range = config.get("hr", "")
                     if hr_range:
                         hr_range = f", high_res={hr_range!r}"
                     parameter_code = f"    {parameter_name} = nallely.ModuleParameter({cc}{range}{init}{descr}{accepted_values}{hr_range})\n"

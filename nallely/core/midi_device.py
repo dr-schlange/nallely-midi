@@ -33,7 +33,7 @@ class ModuleParameter:
     channel: int | None = None
     name: str = NOT_INIT
     section_name: str = NOT_INIT
-    init_value: int = 0
+    init_value: int | float = 0
     description: str | None = None
     range: tuple[int, int] = (0, 127)
     accepted_values: Sequence[str] = ()

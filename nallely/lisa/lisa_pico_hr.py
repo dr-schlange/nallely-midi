@@ -7,13 +7,13 @@ import nallely
 
 class GeneralSection(nallely.Module):
     gain = nallely.ModuleParameter(
-        3, init_value=1.0000, description="General Gain", high_res="unipolar"
+        3, init_value=1.0, description="General Gain", high_res="unipolar"
     )
     master_volume = nallely.ModuleParameter(
-        7, init_value=1.0000, description="General Volume", high_res="unipolar"
+        7, init_value=1.0, description="General Volume", high_res="unipolar"
     )
     panning = nallely.ModuleParameter(
-        14, init_value=0.5039, description="Panning", high_res="bipolar"
+        14, init_value=0.0000, description="Panning", high_res="bipolar"
     )
     spread = nallely.ModuleParameter(
         13, description="Stereo spread of the voices", high_res="unipolar"
@@ -29,7 +29,7 @@ class GeneralSection(nallely.Module):
     )
     detune = nallely.ModuleParameter(
         4,
-        init_value=0.5512,
+        init_value=0.0938,
         description="Detune applied to secondary voice in unison mode",
         high_res="bipolar",
     )
@@ -117,16 +117,16 @@ class WavetableSection(nallely.Module):
         channel=12, stream=True, high_res="bipolar"
     )
     level_table1 = nallely.ModuleParameter(
-        96, init_value=1.0000, description="Wavetable 1 mix level", high_res="unipolar"
+        96, init_value=1.0, description="Wavetable 1 mix level", high_res="unipolar"
     )
     level_table2 = nallely.ModuleParameter(
-        97, init_value=1.0000, description="Wavetable 2 mix level", high_res="unipolar"
+        97, init_value=1.0, description="Wavetable 2 mix level", high_res="unipolar"
     )
     level_table3 = nallely.ModuleParameter(
-        98, init_value=1.0000, description="Wavetable 3 mix level", high_res="unipolar"
+        98, init_value=1.0, description="Wavetable 3 mix level", high_res="unipolar"
     )
     level_table4 = nallely.ModuleParameter(
-        99, init_value=1.0000, description="Wavetable 4 mix level", high_res="unipolar"
+        99, init_value=1.0, description="Wavetable 4 mix level", high_res="unipolar"
     )
     hard_sync = nallely.ModuleParameter(
         91, description="Hard sync all wavetable phases", accepted_values=["OFF", "ON"]
@@ -191,7 +191,7 @@ class WavetableSection(nallely.Module):
         accepted_values=["ON", "OFF"],
     )
     slug_depth = nallely.ModuleParameter(
-        93, init_value=0.5039, description="Slug mode depth (buffer size)"
+        93, init_value=0.0000, description="Slug mode depth (buffer size)"
     )
     manual_slug_level = nallely.ModuleParameter(
         107,
@@ -205,7 +205,7 @@ class WavetableSection(nallely.Module):
     )
     sluggish_factor = nallely.ModuleParameter(
         106,
-        init_value=0.1575,
+        init_value=0.15748031496062992,
         description="How sluggish is speed between blends",
         high_res="unipolar",
     )
