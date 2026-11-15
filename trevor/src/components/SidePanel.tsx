@@ -274,12 +274,13 @@ export const SidePanel = ({
 							}}
 						/>
 						<Button
-							text="💾"
+							text="save"
 							tooltip="Save patch"
 							onClick={onSavePatch}
 							style={{
 								width: "inherit",
 								height: "37px",
+								fontSize: "11px",
 							}}
 						/>
 						<Button
@@ -292,7 +293,6 @@ export const SidePanel = ({
 								width: "inherit",
 								height: "37px",
 								fontSize: "11px",
-								color: "var(--black)",
 							}}
 						/>
 						<Button
@@ -305,10 +305,9 @@ export const SidePanel = ({
 								width: "inherit",
 								height: "37px",
 								fontSize: "11px",
-								color: "var(--black)",
 							}}
 						/>
-						<Button
+						{/*<Button
 							text="rack"
 							tooltip="Shows rack instead of inlined devices"
 							onClick={toggleOldView}
@@ -317,9 +316,8 @@ export const SidePanel = ({
 								width: "inherit",
 								height: "37px",
 								fontSize: "11px",
-								color: "var(--black)",
 							}}
-						/>
+						/>*/}
 						<Button
 							text={`0x${currentAddress?.hex ?? "????"}`}
 							tooltip="Manage memory"
@@ -328,8 +326,19 @@ export const SidePanel = ({
 								width: "inherit",
 								height: "37px",
 								fontSize: "11px",
-								color: "var(--black)",
 							}}
+						/>
+						<Button
+							text={"⟳"}
+							tooltip="Pull full state"
+							variant={"big"}
+							style={{
+								width: "inherit",
+								height: "37px",
+								fontSize: "18px",
+								backgroundColor: "var(--button-bg-color)",
+							}}
+							onClick={() => trevorSocket?.pullFullState()}
 						/>
 					</div>
 				)}
