@@ -255,12 +255,14 @@ export const DeviceMenu = ({
 	anchorRef,
 	proxy = false,
 	cloneable = false,
+	onOpenSourceCode,
 }: {
 	id: number;
 	repr: string;
 	anchorRef: RefObject<HTMLElement | null>;
 	proxy?: boolean;
 	cloneable?: boolean;
+	onOpenSourceCode?: () => void;
 }) => {
 	const [cloneOpen, setCloneOpen] = useState(false);
 	const dispatch = useTrevorDispatch();
@@ -323,6 +325,17 @@ export const DeviceMenu = ({
 						activated={cloneOpen}
 						style={menuButtonStyle(cloneOpen)}
 						onClick={() => setCloneOpen((open) => !open)}
+					/>
+				)}
+				{onOpenSourceCode && (
+					<Button
+						text="S"
+						tooltip="Source code"
+						style={menuButtonStyle()}
+						onClick={() => {
+							dispatch(setHighlightedUnit(null));
+							onOpenSourceCode();
+						}}
 					/>
 				)}
 			</div>

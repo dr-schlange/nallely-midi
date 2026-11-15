@@ -23,8 +23,7 @@ import {
 	useState,
 } from "react";
 import type { VirtualDevice } from "../model";
-import { useTrevorDispatch, useTrevorSelector } from "../store";
-import { setClassCodeMode } from "../store/runtimeSlice";
+import { useTrevorSelector } from "../store";
 import {
 	devUID,
 	generateAcronym,
@@ -325,11 +324,6 @@ const InlinedVDev = ({
 	openPanelDevice,
 }: InlineVDevProps) => {
 	const [isOpen, setIsOpen] = useState(false);
-	// with the C button (class code mode) active, a click on the title opens the code editor
-	const classCodeMode = useTrevorSelector(
-		(state) => state.runTime.classCodeMode,
-	);
-	const dispatch = useTrevorDispatch();
 	const [isCodeOpen, setIsCodeOpen] = useState(false);
 	// opened when one of its parameters has to be brought in view
 	const revealTarget = useTrevorSelector((state) => state.runTime.revealTarget);
@@ -396,11 +390,6 @@ const InlinedVDev = ({
 				{...vdevHighlight.handlers}
 				onClick={(event) => {
 					if (vdevHighlight.consumeClick(event)) return;
-					if (classCodeMode) {
-						setIsCodeOpen((prev) => !prev);
-						dispatch(setClassCodeMode(false));
-						return;
-					}
 					setIsOpen((prev) => !prev);
 				}}
 			>
@@ -451,6 +440,7 @@ const InlinedVDev = ({
 					anchorRef={headerRef}
 					proxy={vdev.proxy}
 					cloneable={!vdev.proxy}
+					onOpenSourceCode={vdev.proxy ? undefined : () => setIsCodeOpen(true)}
 				/>
 			)}
 			<div

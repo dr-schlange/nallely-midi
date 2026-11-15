@@ -112,6 +112,7 @@ const InstanceCreation = () => {
 	const dispatch = useTrevorDispatch();
 	const [logMessages, setLogMessages] = useState<string>("");
 	const logMode = useTrevorSelector((state) => state.runTime.logMode);
+	const oldView = useTrevorSelector((state) => state.runTime.oldView);
 	const loggedComponent = useTrevorSelector(
 		(state) => state.runTime.loggedComponent,
 	);
@@ -394,13 +395,15 @@ const InstanceCreation = () => {
 						variant="big"
 						onClick={toggleAssociateMode}
 					/>
-					<Button
-						activated={classCodeMode}
-						text={"C"}
-						tooltip="Class code"
-						variant="big"
-						onClick={handleClassCodeMode}
-					/>
+					{oldView && (
+						<Button
+							activated={classCodeMode}
+							text={"C"}
+							tooltip="Class code"
+							variant="big"
+							onClick={handleClassCodeMode}
+						/>
+					)}
 					<Button
 						activated={logMode}
 						text={"L"}
