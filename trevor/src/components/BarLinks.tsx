@@ -1,28 +1,28 @@
 // LLM generated
 import {
-    forwardRef,
-    type RefObject,
-    useCallback,
-    useEffect,
-    useImperativeHandle,
-    useMemo,
-    useRef,
-    useState,
+	forwardRef,
+	type RefObject,
+	useCallback,
+	useEffect,
+	useImperativeHandle,
+	useMemo,
+	useRef,
+	useState,
 } from "react";
 import type { Connection } from "../model";
 import { useTrevorDispatch, useTrevorSelector } from "../store";
 import { setBarSelection, setHighlightedUnit } from "../store/runtimeSlice";
 import {
-    buildOwners,
-    type InlinedAnchor,
-    resolveInlinedAnchor,
+	buildOwners,
+	type InlinedAnchor,
+	resolveInlinedAnchor,
 } from "../utils/inlinedAnchors";
 import {
-    type Borders,
-    type Point,
-    type Rect,
-    routeOrthogonal,
-    type Side,
+	type Borders,
+	type Point,
+	type Rect,
+	routeOrthogonal,
+	type Side,
 } from "../utils/orthogonalRoute";
 import { connectionEndId } from "../utils/utils";
 import { LinkMenu } from "./LinkMenu";
@@ -36,6 +36,7 @@ const LINK_COLOR = "#808080"; // gray at rest, HIGHLIGHT_COLOR when highlighted
 const HIT_TOLERANCE = 6; // px from a link's line: half of its transparent hit stroke
 const LINK_WIDTH = 2;
 const HIGHLIGHT_COLOR = "blue";
+const MUTED_DASH = "5,5";
 const BOUNCY_OPACITY = 0.7;
 const BOUNCY_COLOR = "green"; // as the bouncy links of the rack view
 const ARROW_LENGTH = 6;
@@ -199,6 +200,8 @@ interface DrawnLink {
 	bothCollapsed: boolean;
 	// one of the patches bounces: green, as in the rack view
 	bouncy: boolean;
+	// every patch is muted: dashed, as in the rack view
+	muted: boolean;
 	// devices and sections at the ends of the patches this link stands for
 	units: string[];
 	// the parameters at the ends of those patches
@@ -671,6 +674,7 @@ export const BarLinks = forwardRef<
 				connectionIds: pair.connections.map((c) => c.id),
 				bothCollapsed: pair.src.port && pair.dest.port,
 				bouncy: pair.connections.some((c) => c.bouncy),
+				muted: pair.connections.every((c) => c.muted),
 				parameters: [...pair.parameters],
 			});
 		}
@@ -684,6 +688,7 @@ export const BarLinks = forwardRef<
 					l.connectionIds.join() === next[i].connectionIds.join() &&
 					l.bothCollapsed === next[i].bothCollapsed &&
 					l.bouncy === next[i].bouncy &&
+					l.muted === next[i].muted &&
 					l.units.join() === next[i].units.join() &&
 					l.parameters.join() === next[i].parameters.join(),
 			)
@@ -786,6 +791,7 @@ export const BarLinks = forwardRef<
 							? BOUNCY_COLOR
 							: LINK_COLOR;
 					const width = highlighted ? LINK_WIDTH + 1 : LINK_WIDTH;
+					const dash = link.muted ? MUTED_DASH : undefined;
 					return (
 						// biome-ignore lint/suspicious/noArrayIndexKey: links have no identity
 						<g key={i}>
@@ -796,6 +802,7 @@ export const BarLinks = forwardRef<
 								stroke="white"
 								strokeWidth={width + 2}
 								strokeLinejoin="round"
+								strokeDasharray={dash}
 								opacity={0.9}
 							/>
 							{link.arrow && (
@@ -816,6 +823,7 @@ export const BarLinks = forwardRef<
 									stroke={color}
 									strokeWidth={width}
 									strokeLinejoin="round"
+									strokeDasharray={dash}
 								/>
 								{link.arrow && <polygon points={link.arrow} fill={color} />}
 							</g>

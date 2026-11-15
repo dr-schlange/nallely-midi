@@ -6,9 +6,9 @@ import { useRackScale } from "../../hooks/RackScaleContext";
 import type { MidiParameter, PadsOrKeys, VirtualParameter } from "../../model";
 import { useTrevorSelector } from "../../store";
 import {
-    connectionEndId,
-    generateAcronym,
-    resolveAcceptedValueIndex,
+	connectionEndId,
+	generateAcronym,
+	resolveAcceptedValueIndex,
 } from "../../utils/utils";
 import { getNoteName } from "../MidiGrid";
 import { ParameterMenu } from "../ParameterMenu";

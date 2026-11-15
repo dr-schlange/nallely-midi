@@ -1487,13 +1487,13 @@ button.active {
 	box-sizing: border-box;
 	font-family:
 		"TopazPlusA1200", system-ui, Avenir, Helvetica, Arial, sans-serif;
-	font-size: 19px;
+	font-size: 14px;
 	touch-action: manipulation;
 	pointer-events: auto;
 }
 
 .cm-gutters {
-	font-size: 18px;
+	font-size: 13px;
 }
 
 .cm-tooltip {
@@ -1503,7 +1503,7 @@ button.active {
 	border-radius: 4px;
 	font-family:
 		"TopazPlusA1200", system-ui, Avenir, Helvetica, Arial, sans-serif;
-	font-size: 19px;
+	font-size: 14px;
 	box-shadow: 4px 4px 0px #ccc;
 }
 
@@ -1875,11 +1875,11 @@ h3.details {
 	}
 
 	.cm-content {
-		font-size: 14px;
+		font-size: 11px;
 	}
 
 	.cm-gutters {
-		font-size: 13px;
+		font-size: 11px;
 	}
 
 	.terminal {
@@ -2193,11 +2193,11 @@ h3.details {
 	}
 
 	.cm-content {
-		font-size: 13px;
+		font-size: 11px;
 	}
 
 	.cm-gutters {
-		font-size: 12px;
+		font-size: 10px;
 	}
 
 	.terminal {
