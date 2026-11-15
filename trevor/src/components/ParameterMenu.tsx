@@ -77,6 +77,7 @@ export const ParameterMenu = ({
 }) => {
 	const connections = useTrevorSelector((state) => state.nallely.connections);
 	const dispatch = useTrevorDispatch();
+	const trevorSocket = useTrevorWebSocket();
 	const scope = useScope();
 	const rect = useAnchorRect(anchorRef);
 	const [list, setList] = useState<"targets" | "sources" | "limits" | null>(
@@ -128,6 +129,11 @@ export const ParameterMenu = ({
 	const entries = list === "targets" ? targets : sources;
 	const toggleList = (which: "targets" | "sources" | "limits") =>
 		setList((current) => (current === which ? null : which));
+
+	const removeLink = (other: string) =>
+		list === "targets"
+			? trevorSocket?.associate(id, other, true)
+			: trevorSocket?.associate(other, id, true);
 
 	const pick = (target: string) => {
 		setList(null);
@@ -226,7 +232,7 @@ export const ParameterMenu = ({
 					))}
 				</div>
 			)}
-			{(list === "targets" || list === "sources") && (
+			{(list === "targets" || list === "sources") && entries.length > 0 && (
 				<Dropdown
 					position={{
 						left: rect.left,
@@ -238,6 +244,7 @@ export const ParameterMenu = ({
 					options={entries.map((entry) => ({
 						key: entry.id,
 						label: entry.label,
+						onRemove: () => removeLink(entry.id),
 					}))}
 					onSelect={pick}
 				/>

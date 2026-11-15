@@ -686,6 +686,7 @@ export interface DropdownOption<K extends string | number> {
 	label: React.ReactNode;
 	title?: string;
 	active?: boolean;
+	onRemove?: () => void;
 }
 
 const DROPDOWN_MARGIN = 4;
@@ -765,10 +766,28 @@ export const Dropdown = <K extends string | number>({
 						whiteSpace: "nowrap",
 						backgroundColor: option.active ? "orange" : "transparent",
 						color: option.active ? "var(--browntext)" : "var(--black)",
+						...(option.onRemove && {
+							display: "flex",
+							alignItems: "center",
+							justifyContent: "space-between",
+							gap: 8,
+						}),
 						...optionStyle,
 					}}
 				>
 					{option.label}
+					{option.onRemove && (
+						<span
+							title="Remove this link"
+							style={{ padding: "0 3px", fontWeight: "bold" }}
+							onClick={(event) => {
+								event.stopPropagation();
+								option.onRemove?.();
+							}}
+						>
+							x
+						</span>
+					)}
 				</div>
 			))}
 		</div>,
