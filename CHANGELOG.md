@@ -45,6 +45,7 @@
 * Fix LISA panning and detune declared as unipolar instead of bipolar
 * Fix LISA default and init values for unipolar and bipolar parameters
 * Fix potential thread leak when a MIDI device cannot be found
+* Fix Sequencer8 not sending the reset/no-note signal when changing step (direct link/patch from a step to a target port)
 
 ## Nallely v0.6.0 -- Tepezcohuite
 

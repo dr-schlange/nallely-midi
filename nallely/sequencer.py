@@ -251,6 +251,7 @@ class Sequencer8(VirtualDevice):
             yield (0, [self.trig_out_cv])
             output_value = getattr(self, f"step{int(current_step)}")
             yield output_value
+            yield (0, [getattr(self, f"step{int(current_step)}_cv")])
             yield (output_value, [getattr(self, f"step{int(current_step)}_cv")])
         else:
             yield 0
