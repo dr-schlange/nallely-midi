@@ -27,6 +27,7 @@ import { useLinkedIds } from "../hooks/useLinkedIds";
 import { useTrevorDispatch, useTrevorSelector } from "../store";
 import { updateCCState } from "../store/runtimeSlice";
 import {
+	acceptedValueNumber,
 	internalSectionName,
 	isFloatRange,
 	parameterUUID,
@@ -230,7 +231,7 @@ const toCCValue = (p: MidiParameter, v: number | string): number => {
 	if (typeof v === "number") return v;
 	const index = p.accepted_values?.findIndex((av) => av.toString() === v) ?? -1;
 	if (index < 0) return p.init_value;
-	return index * Math.floor((p.range[1] + 1) / p.accepted_values.length);
+	return acceptedValueNumber(index, p.accepted_values.length, p.range[1]);
 };
 
 // the linkable parameters of a section: keys, parameters, pitchwheels

@@ -8,6 +8,7 @@ import { useTrevorSelector } from "../../store";
 import {
 	connectionEndId,
 	generateAcronym,
+	acceptedValueNumber,
 	resolveAcceptedValueIndex,
 } from "../../utils/utils";
 import { getNoteName } from "../MidiGrid";
@@ -1867,12 +1868,14 @@ export const RangeBarSlider = ({
 	upper,
 	range,
 	disabled = false,
+	acceptedValues,
 	onChange,
 }: {
 	lower: number | undefined;
 	upper: number | undefined;
 	range: [number, number];
 	disabled?: boolean;
+	acceptedValues?: (string | number | boolean)[];
 	onChange: (side: RangeSide, value: number) => void;
 }) => {
 	const [low, high] = range;
@@ -1902,6 +1905,14 @@ export const RangeBarSlider = ({
 		draft: string;
 	} | null>(null);
 	const typingDone = useRef(false);
+	const choices =
+		acceptedValues && acceptedValues.length > 0 ? acceptedValues : null;
+	const longPress = useRef<number | undefined>(undefined);
+	const [choiceMenu, setChoiceMenu] = useState<{
+		side: RangeSide;
+		left: number;
+		top: number;
+	} | null>(null);
 
 	const crosses = (side: RangeSide, value: number) => {
 		if (lower === undefined || upper === undefined) return false;
@@ -1944,6 +1955,8 @@ export const RangeBarSlider = ({
 	const text = (side: RangeSide) => {
 		const v = shown[side];
 		if (v === undefined) return "...";
+		if (choices)
+			return String(choices[resolveAcceptedValueIndex(v, choices, high)]);
 		if (drag && dragSide === side) return v.toFixed(drag.precision);
 		return String(Number(v.toFixed(4)));
 	};
@@ -1964,13 +1977,25 @@ export const RangeBarSlider = ({
 			extra: 0,
 		};
 		e.currentTarget.setPointerCapture?.(e.pointerId);
+		if (choices) {
+			window.clearTimeout(longPress.current);
+			longPress.current = window.setTimeout(() => {
+				if (!dragRef.current || dragRef.current.moved) return;
+				dragRef.current = null;
+				setChoiceMenu({
+					side,
+					left: side === "lower" ? box.left : box.left + box.width / 2,
+					top: box.bottom + 2,
+				});
+			}, 500);
+		}
 	};
 	const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
 		const d = dragRef.current;
 		if (!d) return;
 		if (!d.moved && Math.abs(d.startY - e.clientY) < 4) return;
 		d.moved = true;
-		// as in BarSlider: the further to the left, the finer; to the right, the coarser
+		window.clearTimeout(longPress.current);
 		const xDelta = e.clientX - d.startX;
 		const distance = Math.abs(xDelta);
 		const magnitude =
@@ -1994,6 +2019,7 @@ export const RangeBarSlider = ({
 		});
 	};
 	const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+		window.clearTimeout(longPress.current);
 		const d = dragRef.current;
 		dragRef.current = null;
 		if (e.currentTarget.hasPointerCapture?.(e.pointerId)) {
@@ -2004,7 +2030,6 @@ export const RangeBarSlider = ({
 		if (d.moved) {
 			const factor = 10 ** Math.max(0, d.basePrecision + d.extra);
 			const committed = Math.round(d.value * factor) / factor;
-			// against the props: `shown` already holds the dragged value
 			const current = d.side === "lower" ? lower : upper;
 			if (committed !== current) apply(d.side, committed);
 		} else if (e.type === "pointerup") {
@@ -2017,7 +2042,6 @@ export const RangeBarSlider = ({
 		if (!editing || typingDone.current) return;
 		typingDone.current = true;
 		const typed = Number(editing.draft.replace(",", "."));
-		// typed values are not capped to the declared range
 		if (editing.draft.trim() !== "" && !Number.isNaN(typed)) {
 			apply(editing.side, typed);
 		}
@@ -2122,6 +2146,33 @@ export const RangeBarSlider = ({
 					}}
 				/>
 			)}
+			{choiceMenu &&
+				choices &&
+				createPortal(
+					<>
+						<div
+							style={{ position: "fixed", inset: 0, zIndex: 9999 }}
+							onPointerDown={() => setChoiceMenu(null)}
+						/>
+						<Dropdown
+							keepOnScreen
+							width="max-content"
+							position={{ left: choiceMenu.left, top: choiceMenu.top }}
+							options={choices.map((name, index) => ({
+								key: index,
+								label: String(name),
+							}))}
+							onSelect={(index) => {
+								apply(
+									choiceMenu.side,
+									acceptedValueNumber(index, choices.length, high),
+								);
+								setChoiceMenu(null);
+							}}
+						/>
+					</>,
+					document.body,
+				)}
 		</div>
 	);
 };

@@ -372,6 +372,12 @@ export const extractCurrentIP = (fromURL = undefined) => {
 
 export const rejectedClasses = ["TrevorBus", "WebSocketBus", "OSCBus"];
 
+export const acceptedValueNumber = (
+	index: number,
+	count: number,
+	upper: number,
+): number => index * Math.floor((upper + 1) / count);
+
 export const resolveAcceptedValueIndex = (
 	value: number | string | undefined | null,
 	acceptedValues: (string | number | boolean)[],

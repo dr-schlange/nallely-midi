@@ -434,6 +434,7 @@ export const ScalerRangeForm = ({ connection }: ScalerFormProps) => {
 				upper={asNumber(max)}
 				range={connection.dest.parameter.range}
 				disabled={!scalerEnabled}
+				acceptedValues={connection.dest.parameter.accepted_values}
 				onChange={(side, value) => {
 					if (side === "lower") {
 						setMin(value);
