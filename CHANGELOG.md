@@ -29,6 +29,8 @@
 * Add LISA MIDI API described in a YAML file (`lisa-pico.yaml`), from which the Python API of the device is generated (standard and HR versions), including bipolar/unipolar declarations for the HR protocol
 * Add LISA parameters for the stereo spread (`general.spread`, `general.spread_mode`), the sluggish mode, the per-wavetable phase ratio and phase offset, the write modes and indices, and the hard sync (requires LISA v0.3.0 or later)
 * Add notes and pitchwheel support in the new rack interface
+* Add new ConvutionFilter module
+* Add new RingMod module
 
 ### Fixes
 

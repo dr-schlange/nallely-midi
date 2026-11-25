@@ -143,6 +143,34 @@ meta: disable default output
 </details>
 
 <details>
+    <summary>ConvolutionFilter: ConvolutionFilter</summary>
+
+
+```
+
+ConvolutionFilter
+
+inputs:
+# * %inname [%range] %options: %doc
+* input_cv [-1, 1] init=0: Input signal
+* ir_cv [-1, 1] init=0: Impulse response signal
+* gain_cv [0.1, 100] init=1 : final gain
+* ir_size_cv [65, 512] init=128 <any>: Impule response size
+* freeze_ir_cv [0, 1] round : Freeze feeding of the IR buf
+
+outputs:
+# * %outname [%range]: %doc
+* output_cv [-1, 1]: Filter output
+
+type: continuous
+category: filter
+# meta: disable default output
+
+```
+
+</details>
+
+<details>
     <summary>Crossfade: Dual crossfader, proposes 2 inputs and 2 outputs.</summary>
 
 
@@ -641,6 +669,33 @@ category: pitch
 
 <details>
     <summary>RingCounter: No description/documentation</summary>
+
+</details>
+
+<details>
+    <summary>RingMod: RingMod</summary>
+
+
+```
+
+RingMod
+
+inputs:
+# * %inname [%range] %options: %doc
+* input_cv [-1, 1] init=0 : Input signal
+* carrier_cv [-1, 1] init=0 : Carrier signal
+* drive_cv [0.1, 2] init=1 : Output signal drive
+* mix_cv [0, 1] init=1 : Dry-wet mix
+
+outputs:
+# * %outname [%range]: %doc
+* output_cv [-1, 1]: output
+
+type: continuous
+category: ringmod
+# meta: disable default output
+
+```
 
 </details>
 

@@ -405,3 +405,99 @@ class Crossfade(VirtualDevice):
         alpha = level / 100.0
         yield (1 - alpha) * in0 + alpha * in1, [self.out0_cv]
         yield (1 - alpha) * in2 + alpha * in3, [self.out1_cv]
+
+
+class ConvolutionFilter(VirtualDevice):
+    """
+    ConvolutionFilter
+
+    inputs:
+    # * %inname [%range] %options: %doc
+    * input_cv [-1, 1] init=0: Input signal
+    * ir_cv [-1, 1] init=0: Impulse response signal
+    * gain_cv [0.1, 100] init=1 : final gain
+    * ir_size_cv [65, 512] init=128 <any>: Impule response size
+    * freeze_ir_cv [0, 1] round : Freeze feeding of the IR buf
+
+    outputs:
+    # * %outname [%range]: %doc
+    * output_cv [-1, 1]: Filter output
+
+    type: continuous
+    category: filter
+    # meta: disable default output
+    """
+
+    freeze_ir_cv = VirtualParameter(
+        name="freeze_ir", range=(0.0, 1.0), conversion_policy="round"
+    )
+    ir_size_cv = VirtualParameter(name="ir_size", range=(65.0, 512.0), default=128.0)
+    gain_cv = VirtualParameter(name="gain", range=(0.1, 100.0), default=1.0)
+    input_cv = VirtualParameter(name="input", range=(-1.0, 1.0), default=0.0)
+    ir_cv = VirtualParameter(name="ir", range=(-1.0, 1.0), default=0.0)
+    output_cv = VirtualParameter(name="output", range=(-1.0, 1.0))
+
+    def __post_init__(self, *args, **kwargs):
+        from collections import deque
+
+        self.M = int(self.ir_size)
+        self.BUF_SIZE = 512
+        self.x_buf = deque([0.0] * self.BUF_SIZE, maxlen=self.BUF_SIZE)
+        self.h_buf = deque([0.0] * self.M, maxlen=self.M)
+
+    def main(self, ctx):
+        import math
+
+        self.x_buf.appendleft(self.input)
+        if not self.freeze_ir:
+            self.h_buf.appendleft(self.ir)
+        res = 0
+        weights = 0
+        for h_k, x_k in zip(self.h_buf, self.x_buf):
+            res += h_k * x_k
+            weights += abs(h_k)
+        if weights < 1e-08:
+            return 0
+        return math.tanh(res / weights * self.gain)
+
+    @on(ir_size_cv, edge="any")
+    def on_ir_size_any(self, value, ctx):
+        from collections import deque
+
+        self.M = int(value)
+        self.h_buf = deque(self.h_buf, maxlen=self.M)
+
+
+class RingMod(VirtualDevice):
+    """
+    RingMod
+
+    inputs:
+    # * %inname [%range] %options: %doc
+    * input_cv [-1, 1] init=0 : Input signal
+    * carrier_cv [-1, 1] init=0 : Carrier signal
+    * drive_cv [0.1, 2] init=1 : Output signal drive
+    * mix_cv [0, 1] init=1 : Dry-wet mix
+
+    outputs:
+    # * %outname [%range]: %doc
+    * output_cv [-1, 1]: output
+
+    type: continuous
+    category: ringmod
+    # meta: disable default output
+    """
+
+    drive_cv = VirtualParameter(name="drive", range=(0.1, 2.0), default=1.0)
+    mix_cv = VirtualParameter(name="mix", range=(0.0, 1.0), default=1.0)
+    input_cv = VirtualParameter(name="input", range=(-1.0, 1.0), default=0.0)
+    carrier_cv = VirtualParameter(name="carrier", range=(-1.0, 1.0), default=0.0)
+    output_cv = VirtualParameter(name="output", range=(-1.0, 1.0))
+
+    def main(self, ctx):
+        import math
+
+        mix = self.mix
+        return math.tanh(
+            (1 - mix) * self.input + mix * (self.input * self.carrier * self.drive)
+        )
