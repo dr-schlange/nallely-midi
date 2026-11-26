@@ -501,3 +501,57 @@ class RingMod(VirtualDevice):
         return math.tanh(
             (1 - mix) * self.input + mix * (self.input * self.carrier * self.drive)
         )
+
+
+class CombFilter(VirtualDevice):
+    """
+    CombFilter
+
+    inputs:
+    * input_cv [-1, 1] init=0: Input signal
+    * delay_cv [1, 512] init=64 <any>: Delay length in samples (M)
+    * alpha_cv [-0.99, 0.99] init=0.5: Feedback/feedforward gain
+    * mode_cv [0, 1] round init=1: 0=Feedforward (FIR), 1=Feedback (IIR)
+    * gain_cv [0.1, 10] init=1: Final output drive
+
+    outputs:
+    * output_cv [-1, 1]: Filter output
+
+    type: continuous
+    category: filter
+    """
+
+    input_cv = VirtualParameter(name="input", range=(-1.0, 1.0), default=0.0)
+    delay_cv = VirtualParameter(name="delay", range=(1.0, 512.0), default=64.0)
+    alpha_cv = VirtualParameter(name="alpha", range=(-0.99, 0.99), default=0.5)
+    mode_cv = VirtualParameter(
+        name="mode", range=(0.0, 1.0), conversion_policy="round", default=1.0
+    )
+    gain_cv = VirtualParameter(name="gain", range=(0.1, 10.0), default=1.0)
+    output_cv = VirtualParameter(name="output", range=(-1.0, 1.0))
+
+    def __post_init__(self, *args, **kwargs):
+        from collections import deque
+
+        self.BUF_SIZE = 512
+        self.M = int(self.delay)
+        self.buf = deque([0.0] * self.BUF_SIZE, maxlen=self.BUF_SIZE)
+
+    def main(self, ctx):
+        import math
+
+        delayed = self.buf[self.M - 1]
+
+        if self.mode == 0:
+            y = self.input + self.alpha * delayed
+            self.buf.appendleft(self.input)
+        else:
+            y = self.input + self.alpha * delayed
+            self.buf.appendleft(y)
+
+        norm = 1.0 + abs(self.alpha)
+        return math.tanh((y / norm) * self.gain)
+
+    @on(delay_cv, edge="any")
+    def on_delay_any(self, value, ctx):
+        self.M = max(1, min(self.BUF_SIZE, int(value)))
