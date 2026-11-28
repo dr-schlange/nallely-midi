@@ -1,18 +1,21 @@
 /** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
 /** biome-ignore-all lint/a11y/useKeyWithClickEvents: <explanation> */
-import { FloatingWidgetLinks } from "./FloatingWidgetLinks";
-import { useCounterZoom } from "../hooks/RackScaleContext";
 import {
 	forwardRef,
 	type ReactElement,
+	useEffect,
 	useImperativeHandle,
 	useMemo,
+	useRef,
 	useState,
 } from "react";
+import { useCounterZoom } from "../hooks/RackScaleContext";
+import { useScope } from "../hooks/ScopeContext";
+import { FloatingWidgetLinks } from "./FloatingWidgetLinks";
 import { WindowWidget } from "./widgets/BaseWindowWidget";
 import { BipolarKnobs, UnipolarKnobs } from "./widgets/KnobsWidget";
-import { Scope } from "./widgets/Oscilloscope";
 import { MultiChanScope } from "./widgets/MultiChanScope";
+import { Scope } from "./widgets/Oscilloscope";
 import { Pads } from "./widgets/PadsWidget";
 import { Sliders } from "./widgets/SlidersWidget";
 import { XYPad } from "./widgets/XYPadWidget";
@@ -107,7 +110,13 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 		ref,
 	) => {
 		const [widgets, setWidgets] = useState<
-			{ num: number; id: string; type: string; component: React.FC<any> }[]
+			{
+				num: number;
+				id: string;
+				type: string;
+				component: React.FC<any>;
+				props?: Record<string, unknown>;
+			}[]
 		>([]);
 		const [typeIds, setTypeIds] = useState<Record<string, number>>({});
 		const counterZoom = useCounterZoom();
@@ -145,27 +154,44 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 			}),
 		);
 
-		const addWidget = (Component, widgetType: string) => {
-			setWidgets((oldWidgets) => {
-				const idsUsed = oldWidgets
-					.filter((w) => w.type === widgetType)
-					.map((w) => w.num);
-				const nextId = findFirstMissingValue(idsUsed);
-				const widgetId = `${widgetType}::${nextId}`;
-				setTimeout(() => {
-					onAddWidget?.(widgetId, Component);
-				}, 10);
-				return [
-					...oldWidgets,
-					{
-						id: widgetId,
-						num: nextId,
-						type: widgetType,
-						component: Component,
-					},
-				];
-			});
+		const addWidget = (
+			Component,
+			widgetType: string,
+			props?: Record<string, unknown>,
+		) => {
+			const idsUsed = widgets
+				.filter((w) => w.type === widgetType)
+				.map((w) => w.num);
+			const nextId = findFirstMissingValue(idsUsed);
+			const widgetId = `${widgetType}::${nextId}`;
+			setWidgets((oldWidgets) => [
+				...oldWidgets,
+				{
+					id: widgetId,
+					num: nextId,
+					type: widgetType,
+					component: Component,
+					props,
+				},
+			]);
+			setTimeout(() => {
+				onAddWidget?.(widgetId, Component);
+			}, 10);
+			return widgetId;
 		};
+
+		const scope = useScope();
+		const lastSpawn = useRef(0);
+		// biome-ignore lint/correctness/useExhaustiveDependencies: only a new spawns
+		useEffect(() => {
+			const spawn = scope?.manager.spawn;
+			if (!spawn || spawn.token === lastSpawn.current) return;
+			lastSpawn.current = spawn.token;
+			const widgetId = addWidget(MultiChanScope, "multichanscope", {
+				numChannels: spawn.channels,
+			});
+			scope?.manager.registerSpawned(widgetId.replace("::", ""));
+		}, [scope?.manager.spawn]);
 
 		const loadWidget = (componentKey: string, widgetId: string) => {
 			setWidgets((oldWidgets) => {
@@ -289,12 +315,13 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 							}
 						>
 							{!floating &&
-								widgets.map(({ id, num, component: Widget }) => (
+								widgets.map(({ id, num, component: Widget, props }) => (
 									<SortableWidget key={id} id={id}>
 										<Widget
 											id={id.replace("::", "")}
 											num={num}
 											onClose={closeWidget}
+											{...props}
 										/>
 									</SortableWidget>
 								))}
@@ -307,7 +334,7 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 						/>
 					)}
 					{floating &&
-						widgets.map(({ id, num, component: Widget }, index) => (
+						widgets.map(({ id, num, component: Widget, props }, index) => (
 							<FloatingWindow
 								key={id}
 								id={id.replace("::", "")}
@@ -323,6 +350,7 @@ export const RackRowWidgets = forwardRef<RackRowWidgetRef, WidgetRackProps>(
 									id={id.replace("::", "")}
 									num={num}
 									onClose={closeWidget}
+									{...props}
 								/>
 							</FloatingWindow>
 						))}
@@ -339,7 +367,6 @@ import {
 	useSensor,
 	useSensors,
 } from "@dnd-kit/core";
-import { CustomPointerSensor } from "./RackRowVirtual";
 import {
 	restrictToHorizontalAxis,
 	restrictToParentElement,
@@ -355,6 +382,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { useTrevorSelector } from "../store";
 import { findFirstMissingValue } from "../utils/utils";
+import { CustomPointerSensor } from "./RackRowVirtual";
 import {
 	Button,
 	DropdownButton,

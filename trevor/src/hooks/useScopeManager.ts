@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { MidiParameter, VirtualDevice, VirtualParameter } from "../model";
 import { useTrevorSelector } from "../store";
+import { parameterUUID } from "../utils/utils";
 import { useTrevorWebSocket } from "../websockets/websocket";
 
 export const TMP_SCOPE_ID = "dbg";
@@ -32,6 +33,30 @@ export const useScopeManager = () => {
 	>([]);
 	const dbgDeviceRef = useRef<VirtualDevice | null>(null);
 
+	const [spawn, setSpawn] = useState<{
+		token: number;
+		channels: number;
+	} | null>(null);
+	const [spawnTick, setSpawnTick] = useState(0);
+	const spawnCounter = useRef(0);
+	const pendingSpawn = useRef<{
+		repr: string | null;
+		links: {
+			index: number;
+			srcId: string;
+			scaler: {
+				to_min: number;
+				to_max: number;
+				method: string;
+				as_int: boolean;
+			} | null;
+			linked: boolean;
+			scaled: boolean;
+		}[];
+	} | null>(null);
+	const allConnectionsRef = useRef(allConnections);
+	allConnectionsRef.current = allConnections;
+
 	useEffect(() => {
 		if (numScopeChannels === 0) return;
 		const bus = virtualDevices.find((d) => d.repr === TMP_SCOPE_ID);
@@ -60,6 +85,79 @@ export const useScopeManager = () => {
 			ch.connected = true;
 		}
 	}, [virtualDevices, allConnections, websocket, numScopeChannels]);
+
+	useEffect(() => {
+		const pending = pendingSpawn.current;
+		if (!pending?.repr) return;
+		const device = virtualDevices.find((d) => d.repr === pending.repr);
+		if (!device) return;
+		for (const link of pending.links) {
+			const cvName = `${pending.repr}_ch${link.index + 1}_cv`;
+			if (!link.linked) {
+				if (!device.meta.parameters.some((p) => p.cv_name === cvName)) continue;
+				websocket?.associate(
+					link.srcId,
+					`${device.id}::__virtual__::${cvName}`,
+					false,
+				);
+				link.linked = true;
+				continue;
+			}
+			if (link.scaled) continue;
+			const chain = allConnections.find(
+				(c) =>
+					c.dest.device === device.id &&
+					(c.dest.parameter as VirtualParameter).cv_name === cvName,
+			)?.src.chain;
+			if (!chain || !link.scaler) continue;
+			for (const [name, value] of Object.entries(link.scaler)) {
+				websocket?.setScalerValue(chain.id, name, value);
+			}
+			link.scaled = true;
+		}
+		if (pending.links.every((l) => l.linked && l.scaled))
+			pendingSpawn.current = null;
+	}, [virtualDevices, allConnections, websocket, spawnTick]);
+
+	const spawnScope = useCallback(() => {
+		const bus = dbgDeviceRef.current;
+		if (!bus) return;
+		const links: NonNullable<typeof pendingSpawn.current>["links"] = [];
+		SCOPE_CV_NAMES.forEach((cvName, index) => {
+			const connection = allConnectionsRef.current.find(
+				(c) =>
+					c.dest.device === bus.id &&
+					(c.dest.parameter as VirtualParameter).cv_name === cvName,
+			);
+			if (!connection) return;
+			const chain = connection.src.chain;
+			links.push({
+				index,
+				srcId: parameterUUID(connection.src.device, connection.src.parameter),
+				scaler: chain && {
+					to_min: chain.to_min,
+					to_max: chain.to_max,
+					method: chain.method,
+					as_int: chain.as_int,
+				},
+				linked: false,
+				scaled: !chain,
+			});
+		});
+		if (links.length === 0) return;
+		pendingSpawn.current = { repr: null, links };
+		spawnCounter.current += 1;
+		setSpawn({
+			token: spawnCounter.current,
+			channels: Math.max(...links.map((l) => l.index)) + 1,
+		});
+	}, []);
+
+	const registerSpawned = useCallback((repr: string) => {
+		if (!pendingSpawn.current) return;
+		pendingSpawn.current.repr = repr;
+		setSpawnTick((tick) => tick + 1);
+	}, []);
 
 	const removeChannel = useCallback((idx: number) => {
 		const channels = scopeChannelsRef.current;
@@ -171,5 +269,8 @@ export const useScopeManager = () => {
 		handleScopeLongPress,
 		closeAllScopeChannels,
 		scopePortElemIds,
+		spawn,
+		spawnScope,
+		registerSpawned,
 	};
 };

@@ -119,6 +119,9 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 			scope.numScopeChannels,
 			scope.isScopeOpen,
 			scope.closeAllScopeChannels,
+			scope.spawn,
+			scope.spawnScope,
+			scope.registerSpawned,
 		],
 	);
 	const barLinks = useRef<BarLinksRef>(null);
@@ -669,6 +672,7 @@ const DevicePatching = ({ open3DView }: DevicePatchingProps) => {
 						<Portal>
 							<TmpScopeOverlay
 								onClose={scope.closeAllScopeChannels}
+								onSpawn={scope.spawnScope}
 								numChannels={scope.numScopeChannels}
 								portElemIds={scope.scopePortElemIds}
 							/>

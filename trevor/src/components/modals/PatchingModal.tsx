@@ -154,11 +154,13 @@ type ScopePiece = { d: string; stroke: string; offset: number };
 
 export const TmpScopeOverlay = ({
 	onClose,
+	onSpawn,
 	numChannels,
 	portElemIds,
 	refreshKey,
 }: {
 	onClose: () => void;
+	onSpawn: () => void;
 	numChannels: number;
 	portElemIds: string[];
 	refreshKey?: string;
@@ -290,6 +292,7 @@ export const TmpScopeOverlay = ({
 						id={TMP_SCOPE_ID}
 						num={0}
 						onClose={onClose}
+						onSpawn={onSpawn}
 						numChannels={numChannels}
 					/>
 				</div>
@@ -1134,6 +1137,7 @@ const PatchingModal = ({
 		handleScopeLongPress,
 		closeAllScopeChannels,
 		scopePortElemIds,
+		spawnScope,
 	} = (useScope() as NonNullable<ReturnType<typeof useScope>>).manager;
 
 	const firstDeviceId = currentFirstSection?.device.id;
@@ -1781,6 +1785,7 @@ const PatchingModal = ({
 				<Portal>
 					<TmpScopeOverlay
 						onClose={closeAllScopeChannels}
+						onSpawn={spawnScope}
 						numChannels={numScopeChannels}
 						portElemIds={scopePortElemIds}
 						refreshKey={`${currentFirstSection?.device.id}-${internalSectionName(currentFirstSection?.section)}-${currentSecondSection?.device.id}-${internalSectionName(currentSecondSection?.section)}`}

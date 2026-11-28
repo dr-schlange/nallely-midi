@@ -7,7 +7,7 @@ import { useScopeWorker } from "../../hooks/wsHooks";
 import DragNumberInput from "../DragInputs";
 import { Button, type WidgetProps } from "./BaseComponents";
 
-const BUFFER_SIZE = 255;
+const BUFFER_SIZE = 256;
 const BUFFER_UPPER = 5000;
 const BUFFER_LOWER = 2;
 const MAX_CHANNELS = 4;
@@ -79,7 +79,11 @@ export const MultiChanScope = ({
 	num,
 	style,
 	numChannels: controlledNumChannels,
-}: WidgetProps & { numChannels?: number }) => {
+	onSpawn,
+}: WidgetProps & {
+	numChannels?: number;
+	onSpawn?: () => void;
+}) => {
 	const [bufferSize, setBufferSize] = useState<number>(BUFFER_SIZE);
 	const bufferSizeRef = useRef<number>(BUFFER_SIZE);
 
@@ -414,6 +418,13 @@ export const MultiChanScope = ({
 					onClick={cycleChannels}
 					tooltip={`Active channels: ${numChannels} — click to cycle 1–4`}
 				/>
+				{onSpawn && (
+					<Button
+						text="§"
+						onClick={onSpawn}
+						tooltip="Pin this view as a scope"
+					/>
+				)}
 				<Button text="x" onClick={() => onClose?.(id)} tooltip="Close" />
 			</div>
 			<UplotReact

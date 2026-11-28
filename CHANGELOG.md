@@ -31,6 +31,8 @@
 * Add notes and pitchwheel support in the new rack interface
 * Add new ConvutionFilter module
 * Add new RingMod module
+* Add new ComFilter module
+* Add possibility to spawn a multiscope view from the debugger scope 
 
 ### Fixes
 
