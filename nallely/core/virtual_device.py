@@ -276,6 +276,12 @@ class VirtualDevice(threading.Thread):
         no_init=True,
         conversion_policy="round",
     )
+    pps_cv = VirtualParameter(
+        name="pps",
+        range=(0.1, 8192.0),
+        default=256.0,
+        no_init=True,
+    )
 
     def __new__(cls, *args, **kwargs):
         instance = super().__new__(cls)
@@ -293,6 +299,7 @@ class VirtualDevice(threading.Thread):
         target_cycle_time: float = 1 / 256,
         autoconnect: bool = False,
         disable_output: bool = False,
+        pps: float | None = None,
         **kwargs,
     ):
         from ..utils import ThreadSafeDefaultDict
@@ -328,6 +335,8 @@ class VirtualDevice(threading.Thread):
         self.running = False
         self.pause_event.set()
         self.target_cycle_time = target_cycle_time
+        if pps is not None:  # wins over target_cycle_time
+            self.pps = pps
         self.ready_event = threading.Event()
         self.closed_ports = set()
         self._param_last_values = {}
@@ -792,6 +801,19 @@ class VirtualDevice(threading.Thread):
         else:
             self.pause()
 
+    @property
+    def pps(self):
+        # return (
+        #     round(1 / self.target_cycle_time, 6) if self.target_cycle_time > 0 else 0.0
+        # )
+        return 1 / self.target_cycle_time if self.target_cycle_time > 0 else 0.0
+
+    @pps.setter
+    def pps(self, value):
+        value = float(value)
+        if value > 0:
+            self.target_cycle_time = 1 / value
+
     def resume(self):
         if self.running and self.paused:
             self.paused = False
@@ -1043,7 +1065,7 @@ class VirtualDevice(threading.Thread):
         import random
 
         for parameter in self.all_parameters():
-            if parameter.name == "set_pause":
+            if parameter.name in ("set_pause", "pps"):
                 continue
             min, max = parameter.range
             min = min or 0
@@ -1150,27 +1172,34 @@ class TimeBasedDevice(VirtualDevice):
     phase_cv = VirtualParameter("phase", range=(0.0, 1.0))
     sampling_rate_cv = VirtualParameter("sampling_rate", range=(10, 8192), default=50)
     auto_srate_cv = VirtualParameter("auto_srate", accepted_values=("ON", "OFF"))
+    pps_cv = VirtualParameter(
+        name="pps",
+        range=(0.1, 8192.0),
+        default=256.0,
+        no_init=True,
+        hidden=True,
+    )
 
     def __init__(
         self,
-        speed: int | float | Decimal = 1.0,
+        speed: float | Decimal = 1.0,
         sampling_rate: int | Literal["auto"] = "auto",
         **kwargs,
     ):
         self.auto_srate = "ON" if sampling_rate == "auto" else "OFF"
         self._speed = Decimal(speed)
-        self._sampling_rate = (
+        rate = (
             self.compute_sampling_rate() if sampling_rate == "auto" else sampling_rate
         )
-        self.time_step = Decimal(speed) / Decimal(self._sampling_rate)
-        self.phase = Decimal(0.0)
+        self.time_step = Decimal(speed) / Decimal(rate)
+        self.phase = Decimal("0.0")
         self.sync = 0
         self.window_size = 4
         self.smoothing = Decimal("0.1")
         self.last_sync_time = time.perf_counter()
         self.sync_intervals = deque(maxlen=self.window_size)
         self._subdiv = "1/1"
-        super().__init__(target_cycle_time=1 / self._sampling_rate, **kwargs)
+        super().__init__(target_cycle_time=1 / rate, **kwargs)
 
     @property
     def speed(self):
@@ -1180,19 +1209,22 @@ class TimeBasedDevice(VirtualDevice):
     def speed(self, value):
         self._speed = Decimal(value)
         if self.auto_srate == "ON":
-            self._sampling_rate = self.compute_sampling_rate()
-        self.time_step = Decimal(value) / self._sampling_rate
-        self.target_cycle_time = float(1 / self._sampling_rate)
+            self.pps = self.compute_sampling_rate()
+        self.time_step = Decimal(value) / self.sampling_rate
 
     @property
     def sampling_rate(self):
-        return self._sampling_rate
+        return Decimal(self.pps)
 
     @sampling_rate.setter
     def sampling_rate(self, value):
-        self._sampling_rate = Decimal(value)
-        self.time_step = Decimal(self.speed) / self._sampling_rate
-        self.target_cycle_time = float(1 / self._sampling_rate)
+        self.pps = value
+        self.time_step = Decimal(self.speed) / self.sampling_rate
+
+    def current_preset(self, *args, **kwargs):
+        d = super().current_preset(*args, **kwargs)
+        d.pop("pps", None)
+        return d
 
     def compute_sampling_rate(self):
         if self.speed <= 1:

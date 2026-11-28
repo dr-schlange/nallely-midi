@@ -33,6 +33,7 @@
 * Add new RingMod module
 * Add new ComFilter module
 * Add possibility to spawn a multiscope view from the debugger scope 
+* All devices gain a "pps" port (port per seconds) which gives the possibility to change the neurone/module sleep time dynamically and fine tune them, especially for hybrid moduels
 
 ### Fixes
 

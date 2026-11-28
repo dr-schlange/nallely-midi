@@ -39,7 +39,7 @@ def test__direct_set_pause():
 
     l.set_pause = 0
 
-    time.sleep(1)
+    time.sleep(0.75)
 
     v = l.output
     assert v == 0
@@ -66,7 +66,7 @@ def test__indirect_set_pause():
 
     l.receiving(0, on="set_pause", ctx=ThreadContext({}))
 
-    time.sleep(1)
+    time.sleep(0.85)
 
     v = l.output
     assert v == 0
@@ -182,20 +182,22 @@ def test__introspection_allparameters_nonstandardoutput():
 
     parameters = A.all_parameters()
 
-    assert len(parameters) == 3  # we have the input/output and the set_pause
+    assert len(parameters) == 4
 
-    a, b, c = parameters
+    a, b, c, d = parameters
     assert a.name == "output"
     assert b.name == "set_pause"
-    assert c.name == "input"
+    assert c.name == "pps"
+    assert d.name == "input"
 
     assert a.range == (-5, 5)
     assert b.range == (0, 1)
-    assert c.range == (-1, 1)
+    assert d.range == (-1, 1)
 
-    assert c.conversion_policy == "round"
+    assert d.conversion_policy == "round"
     assert a.conversion_policy is None
     assert b.conversion_policy == "round"
+    assert c.conversion_policy is None
 
 
 def test__introspection_meta_new_syntaxe():
@@ -352,3 +354,54 @@ def test__groups_inner_groups():
 
     assert MDevice.port1_cv in MDevice.port1_cv.group.children
     assert MDevice.port2_cv.group in MDevice.port1_cv.group.children
+
+
+def test__pps_is_derived_from_target_cycle_time():
+    class A(VirtualDevice):
+        output_cv = VirtualParameter(name="output", range=(0, 1))
+
+    assert A().pps == 256.0
+    assert A(target_cycle_time=1 / 50).pps == 50.0
+    a = A(pps=512)
+    assert a.target_cycle_time == 1 / 512
+    assert a.pps == 512.0
+
+
+def test__pps_setter_keeps_the_rate_on_zero_and_rounds():
+    class A(VirtualDevice):
+        output_cv = VirtualParameter(name="output", range=(0, 1))
+
+    a = A()
+    a.pps = 259
+    assert a.pps == 259.0  # not 258.99999
+    a.pps = 0
+    a.pps = -3
+    assert a.pps == 259.0
+
+
+def test__pps_through_the_input_queue_and_random_preset():
+    class A(VirtualDevice):
+        output_cv = VirtualParameter(name="output", range=(0, 1))
+
+    a = A(pps=300)
+    a.start()
+    a.set_parameter("pps", 100)  # applied by the device loop, like any parameter
+    time.sleep(0.1)
+    assert a.pps == 100.0
+    a.random_preset()
+    assert a.pps == 100.0
+    a.stop()
+
+
+def test__pps_on_lfos_and_lfo():
+    from nallely import LFOs
+
+    assert LFOs().pps == 256.0
+    assert LFOs(pps=512).target_cycle_time == 1 / 512
+    # LFO keeps sampling_rate as the same value
+    lfo = LFO(sampling_rate=300, auto_srate="OFF")
+    assert lfo.pps == 300.0
+    lfo.pps = 350
+    assert lfo.sampling_rate == 350
+    assert lfo.target_cycle_time == 1 / 350
+    assert "pps" not in lfo.current_preset(save_defaultvalues=False)

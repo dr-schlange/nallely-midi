@@ -413,7 +413,6 @@ class LFOs(VirtualDevice):
     )
     speed_cv = VirtualParameter(name="speed", range=(0.0, 20.0), default=Decimal("1.0"))
     sync_cv = VirtualParameter(name="sync", range=(0.0, 1.0), default=0.0)
-    pps_cv = VirtualParameter(name="pps", range=(50.0, 8192.0), default=256.0)
     subdiv_cv = VirtualParameter(
         name="subdiv",
         accepted_values=[
@@ -455,9 +454,6 @@ class LFOs(VirtualDevice):
         self.lower_bound = Decimal(self.lower_bound)
         self.upper_bound = Decimal(self.upper_bound)
         self.speed = Decimal(self.speed)
-        self.pps = Decimal(self.pps)
-        self.target_cycle_time = float(1 / self.pps)
-        self.time_step = self.speed / self.pps
         self.phase = Decimal(self.phase)
         self.window_size = 4
         self.smoothing = Decimal("0.1")
@@ -470,16 +466,10 @@ class LFOs(VirtualDevice):
     def setup(self):
         return ThreadContext({"ticks": 0, "t": 0})
 
-    @on(pps_cv, edge="any")
-    def on_pps_any(self, value, ctx):
-        self.pps = Decimal(value)
-        self.target_cycle_time = float(1 / self.pps)
-
     @on(speed_cv, edge="any")
     def on_speed_any(self, value, ctx):
         value = Decimal(value)
         self.speed = value
-        self.time_step = value / self.pps
 
     @on(lower_bound_cv, edge="any")
     def on_lower_bound_any(self, value, ctx):
