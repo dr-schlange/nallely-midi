@@ -377,7 +377,7 @@ class LFOs(VirtualDevice):
     * waveform_cv [pulse, invert_sawtooth, random, smooth_random_exp, smooth_random_cosine, white_noise, half_wave_rectified_sine, sine, triangle, square, sawtooth]: Waveform of the main output
     * speed_cv [0, 20] init=1 <any>: LFO speed (cycle per seconds)
     * sync_cv [0, 1] init=0 <rising>: sync LFO speed (per second tick)
-    * pps_cv [50, 8192] init=259 <any>: number of points per seconds
+    * pps_cv [50, 8192] init=256 <any>: number of points per seconds
     * subdiv_cv [4/1, 2/1, 1/1, 1/2, 1/4, 1/8, 1/16, 1/32, 1/1t, 1/2t, 1/4t, 1/8t, 1/16t, 1/32t] init=1/1: sub-division when synced
     * phase_cv [0, 1]: LFO phase
     * lower_bound_cv [-1, 1] init=-1 <any>: lower bound the LFO can reach
@@ -413,7 +413,7 @@ class LFOs(VirtualDevice):
     )
     speed_cv = VirtualParameter(name="speed", range=(0.0, 20.0), default=Decimal("1.0"))
     sync_cv = VirtualParameter(name="sync", range=(0.0, 1.0), default=0.0)
-    pps_cv = VirtualParameter(name="pps", range=(50.0, 8192.0), default=259.0)
+    pps_cv = VirtualParameter(name="pps", range=(50.0, 8192.0), default=256.0)
     subdiv_cv = VirtualParameter(
         name="subdiv",
         accepted_values=[

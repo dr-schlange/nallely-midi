@@ -570,9 +570,11 @@ class VirtualDevice(threading.Thread):
 
             self.suspended_tasks = still_pending
 
+        perf_counter = time.perf_counter
+        sleep = time.sleep
+        next_tick = perf_counter()
         while self.running:
             try:
-                start_time = time.perf_counter()
                 self.pause_event.wait()  # Block if paused
 
                 if not self.running:
@@ -652,10 +654,12 @@ class VirtualDevice(threading.Thread):
                 if finished:
                     main_gen = None
 
-                # Adaptive sleep
-                elapsed_time = time.perf_counter() - start_time
-                sleep_time = max(0, self.target_cycle_time - elapsed_time)
-                time.sleep(sleep_time)
+                next_tick += self.target_cycle_time
+                delay = next_tick - perf_counter()
+                if delay > 0:
+                    sleep(delay)
+                else:
+                    next_tick = perf_counter()
             except Exception as e:
                 self.pause()
                 self.paused_on_exception = True
@@ -1158,7 +1162,7 @@ class TimeBasedDevice(VirtualDevice):
         self._sampling_rate = (
             self.compute_sampling_rate() if sampling_rate == "auto" else sampling_rate
         )
-        self.time_step = Decimal(speed) / self._sampling_rate
+        self.time_step = Decimal(speed) / Decimal(self._sampling_rate)
         self.phase = Decimal(0.0)
         self.sync = 0
         self.window_size = 4
